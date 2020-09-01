@@ -7,10 +7,10 @@ import (
 var (
 	AccountAddressPrefix   = "cro"
 	AccountPubKeyPrefix    = "cropub"
-	ValidatorAddressPrefix = "crovaloper"
-	ValidatorPubKeyPrefix  = "crovaloperpub"
-	ConsNodeAddressPrefix  = "crovalcons"
-	ConsNodePubKeyPrefix   = "crovalconspub"
+	ValidatorAddressPrefix = "crocncl"
+	ValidatorPubKeyPrefix  = "crocnclpub"
+	ConsNodeAddressPrefix  = "crocnclcons"
+	ConsNodePubKeyPrefix   = "crocnclconspub"
 )
 
 func SetConfig() {

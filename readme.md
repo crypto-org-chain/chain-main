@@ -1,6 +1,6 @@
-# chainmain
+# Crypto.com Chain
 
-**chainmain** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
+**Crypto.com Chain** is a blockchain application built using Cosmos SDK and Tendermint and generated with [Starport](https://github.com/tendermint/starport).
 
 ## Get started
 

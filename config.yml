@@ -1,5 +1,11 @@
 accounts:
-  - name: user1
-    coins: ["1000token", "100000000stake"]
-  - name: user2
-    coins: ["500token"]
+  - name: testvalidator
+    coins: ["100000000stake"]
+  - name: community
+    coins: ["10000000000token"]
+  - name: ecosystem
+    coins: ["20000000000token"]
+  - name: reserve
+    coins: ["20000000000token"]
+  - name: launch
+    coins: ["10000000000token"]

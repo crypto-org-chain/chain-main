@@ -25,15 +25,18 @@ import (
 	"github.com/crypto-com/chain-main/x/chainmain"
 	chainmainkeeper "github.com/crypto-com/chain-main/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
-  // this line is used by starport scaffolding
+	// this line is used by starport scaffolding
+	distr "github.com/cosmos/cosmos-sdk/x/distribution"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 )
 
-const appName = "chainmain"
+const appName = "Crypto.com Chain"
 
 var (
-	DefaultCLIHome = os.ExpandEnv("$HOME/.chainmaincli")
+	DefaultCLIHome  = os.ExpandEnv("$HOME/.chainmaincli")
 	DefaultNodeHome = os.ExpandEnv("$HOME/.chainmaind")
-	ModuleBasics = module.NewBasicManager(
+	ModuleBasics    = module.NewBasicManager(
 		genutil.AppModuleBasic{},
 		auth.AppModuleBasic{},
 		bank.AppModuleBasic{},
@@ -41,13 +44,15 @@ var (
 		params.AppModuleBasic{},
 		supply.AppModuleBasic{},
 		chainmain.AppModuleBasic{},
-    // this line is used by starport scaffolding # 2
+		// this line is used by starport scaffolding # 2
+		gov.NewAppModuleBasic(paramsclient.ProposalHandler, distr.ProposalHandler),
 	)
 
 	maccPerms = map[string][]string{
 		auth.FeeCollectorName:     nil,
 		staking.BondedPoolName:    {supply.Burner, supply.Staking},
 		staking.NotBondedPoolName: {supply.Burner, supply.Staking},
+		gov.ModuleName:            {supply.Burner},
 	}
 )
 
@@ -72,16 +77,16 @@ type NewApp struct {
 
 	subspaces map[string]params.Subspace
 
-	accountKeeper  auth.AccountKeeper
-	bankKeeper     bank.Keeper
-	stakingKeeper  staking.Keeper
-	supplyKeeper   supply.Keeper
-	paramsKeeper   params.Keeper
+	accountKeeper   auth.AccountKeeper
+	bankKeeper      bank.Keeper
+	stakingKeeper   staking.Keeper
+	supplyKeeper    supply.Keeper
+	paramsKeeper    params.Keeper
 	chainmainKeeper chainmainkeeper.Keeper
-  // this line is used by starport scaffolding # 3
-	mm *module.Manager
-
-	sm *module.SimulationManager
+	// this line is used by starport scaffolding # 3
+	mm        *module.Manager
+	govKeeper gov.Keeper
+	sm        *module.SimulationManager
 }
 
 var _ simapp.App = (*NewApp)(nil)
@@ -97,14 +102,15 @@ func NewInitApp(
 	bApp.SetAppVersion(version.Version)
 
 	keys := sdk.NewKVStoreKeys(
-    bam.MainStoreKey,
-    auth.StoreKey,
-    staking.StoreKey,
+		bam.MainStoreKey,
+		auth.StoreKey,
+		staking.StoreKey,
 		supply.StoreKey,
-    params.StoreKey,
-    chainmaintypes.StoreKey,
-    // this line is used by starport scaffolding # 5
-  )
+		params.StoreKey,
+		chainmaintypes.StoreKey,
+		gov.StoreKey,
+		// this line is used by starport scaffolding # 5
+	)
 
 	tKeys := sdk.NewTransientStoreKeys(staking.TStoreKey, params.TStoreKey)
 
@@ -121,6 +127,7 @@ func NewInitApp(
 	app.subspaces[auth.ModuleName] = app.paramsKeeper.Subspace(auth.DefaultParamspace)
 	app.subspaces[bank.ModuleName] = app.paramsKeeper.Subspace(bank.DefaultParamspace)
 	app.subspaces[staking.ModuleName] = app.paramsKeeper.Subspace(staking.DefaultParamspace)
+	govSubspace := app.paramsKeeper.Subspace(gov.DefaultParamspace).WithKeyTable(gov.ParamKeyTable())
 
 	app.accountKeeper = auth.NewAccountKeeper(
 		app.cdc,
@@ -160,7 +167,19 @@ func NewInitApp(
 		keys[chainmaintypes.StoreKey],
 	)
 
-  // this line is used by starport scaffolding # 4
+	govRouter := gov.NewRouter()
+	govRouter.AddRoute(gov.RouterKey, gov.ProposalHandler)
+
+	app.govKeeper = gov.NewKeeper(
+		app.cdc,
+		keys[gov.StoreKey],
+		govSubspace,
+		app.supplyKeeper,
+		&stakingKeeper,
+		govRouter,
+	)
+
+	// this line is used by starport scaffolding # 4
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.accountKeeper, app.stakingKeeper, app.BaseApp.DeliverTx),
@@ -169,10 +188,13 @@ func NewInitApp(
 		supply.NewAppModule(app.supplyKeeper, app.accountKeeper),
 		chainmain.NewAppModule(app.chainmainKeeper, app.bankKeeper),
 		staking.NewAppModule(app.stakingKeeper, app.accountKeeper, app.supplyKeeper),
-    // this line is used by starport scaffolding # 6
+		// this line is used by starport scaffolding # 6
+		gov.NewAppModule(app.govKeeper, app.accountKeeper, app.supplyKeeper),
 	)
 
 	app.mm.SetOrderEndBlockers(staking.ModuleName)
+
+	app.mm.SetOrderEndBlockers(gov.ModuleName, staking.ModuleName)
 
 	app.mm.SetOrderInitGenesis(
 		staking.ModuleName,
@@ -181,7 +203,8 @@ func NewInitApp(
 		chainmaintypes.ModuleName,
 		supply.ModuleName,
 		genutil.ModuleName,
-    // this line is used by starport scaffolding # 7
+		gov.ModuleName,
+		// this line is used by starport scaffolding # 7
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter())
