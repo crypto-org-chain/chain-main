@@ -1,0 +1,15 @@
+Crypto.com Chain
+Copyright 2020, Foris Limited ("Crypto.com"). 
+
+This project contains portions of code derived from the following libraries:
+
+* Starport
+ * Copyright: Copyright (c) 2020 All in Bits, Inc
+ * License: Apache License 2.0
+ * Repository: https://github.com/tendermint/starport
+
+* Cosmos SDK
+ * Copyright: Copyright (c) 2016-2020 All in Bits, Inc
+ * License: Apache License 2.0
+ * Repository: https://github.com/cosmos/cosmos-sdk
+
