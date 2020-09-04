@@ -1,0 +1,65 @@
+before:
+  hooks:
+  - go mod download
+
+builds:
+  - main: ./cmd/chain-maincli
+    id: "chain-maincli"
+    binary: chain-maincli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - main: ./cmd/chain-maind
+    id: "chain-maind"
+    binary: chain-maind
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+
+archives:
+- name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    386: i386
+    amd64: x86_64
+  format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+# snapshot:
+#   name_template: "{{ .Tag }}-next"
+
+# brews:
+#   - name: "chain-maind"
+#     description: "chain-main daemon"
+#     homepage: "https://github.com/crypto-com/chain-main"
+#     github:
+#       owner: "crypto-com"
+#       name: "homebrew-tap"
+#     install: |
+#       bin.install "chain-maind"
