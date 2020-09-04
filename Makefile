@@ -1,7 +1,9 @@
 PACKAGES=$(shell go list ./... | grep -v '/simulation')
 
-VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
+VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
+
+OUTPUT?=build/
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
@@ -16,6 +18,11 @@ all: install
 install: go.sum
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maincli
+
+build: go.sum
+		go build -mod=readonly $(BUILD_FLAGS) -o $(OUTPUT)/chain-maind ./cmd/chain-maind 
+		go build -mod=readonly $(BUILD_FLAGS) -o $(OUTPUT)/chain-maincli ./cmd/chain-maincli 
+.PHONY: build
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
