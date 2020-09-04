@@ -1,0 +1,31 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/**
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v3
+        with:
+          SUFFIX_FILTER: |
+            .go
+            .mod
+            .sum
+          SET_ENV_NAME_INSERTIONS: 1
+          SET_ENV_NAME_LINES: 1
+      - name: Set GOBIN
+        run: |
+          echo "::add-path::$(go env GOPATH)/bin"
+      - name: build
+        run: make build
+        if: "env.GIT_DIFF != ''"
+# FIXME: `make test` + coverage when there are tests
