@@ -4,7 +4,7 @@ before:
 
 builds:
   - main: ./cmd/chain-maincli
-    id: "chain-maincli"
+    id: chain-maincli
     binary: chain-maincli
     env:
       - CGO_ENABLED=0
@@ -12,9 +12,8 @@ builds:
       - linux
       - darwin
       - windows
-    ignore:
-      - goos: darwin
-        goarch: 386
+    goarch:
+      - amd64
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - main: ./cmd/chain-maind
@@ -26,23 +25,24 @@ builds:
       - linux
       - darwin
       - windows
-    ignore:
-      - goos: darwin
-        goarch: 386
+    goarch:
+      - amd64
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
-- name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+- name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
   replacements:
     darwin: Darwin
     linux: Linux
     windows: Windows
-    386: i386
     amd64: x86_64
   format_overrides:
     - goos: windows
       format: zip
+  builds:
+  - chain-maincli
+  - chain-maind
 checksum:
   name_template: 'checksums.txt'
 changelog:
@@ -51,8 +51,8 @@ changelog:
     exclude:
     - '^docs:'
     - '^test:'
-# snapshot:
-#   name_template: "{{ .Tag }}-next"
+snapshot:
+  name_template: "{{ .Tag }}-next"
 
 # brews:
 #   - name: "chain-maind"
