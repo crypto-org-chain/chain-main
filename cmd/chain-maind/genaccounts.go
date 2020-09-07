@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/crypto-com/chain-main/app"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -50,6 +51,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			inBuf := bufio.NewReader(cmd.InOrStdin())
 			if err != nil {
 				// attempt to lookup address from Keybase if no address was provided
+				// nolint: govet
 				kb, err := keys.NewKeyring(
 					sdk.KeyringServiceName(),
 					viper.GetString(flags.FlagKeyringBackend),
@@ -72,6 +74,14 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			if err != nil {
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
+			for i := 0; i < len(coins); i++ {
+				// nolint: govet
+				coin, err := sdk.ConvertCoin(coins[i], app.BaseCoinUnit)
+				if err != nil {
+					return fmt.Errorf("failed to convert coins: %w", err)
+				}
+				coins[i] = coin
+			}
 
 			vestingStart := viper.GetInt64(flagVestingStart)
 			vestingEnd := viper.GetInt64(flagVestingEnd)
@@ -80,11 +90,21 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
 			}
 
+			for i := 0; i < len(vestingAmt); i++ {
+				// nolint: govet
+				coin, err := sdk.ConvertCoin(vestingAmt[i], app.BaseCoinUnit)
+				if err != nil {
+					return fmt.Errorf("failed to convert coins: %w", err)
+				}
+				vestingAmt[i] = coin
+			}
+
 			// create concrete account type based on input parameters
 			var genAccount authexported.GenesisAccount
 
 			baseAccount := auth.NewBaseAccount(addr, coins.Sort(), nil, 0, 0)
 			if !vestingAmt.IsZero() {
+				// nolint: govet
 				baseVestingAccount, err := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
 				if err != nil {
 					return fmt.Errorf("failed to create base vesting account: %w", err)
@@ -104,6 +124,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				genAccount = baseAccount
 			}
 
+			// nolint: govet
 			if err := genAccount.Validate(); err != nil {
 				return fmt.Errorf("failed to validate new genesis account: %w", err)
 			}

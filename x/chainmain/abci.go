@@ -2,9 +2,8 @@ package chainmain
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/crypto-com/chain-main/x/chainmain/keeper"
-	// abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 // BeginBlocker check for infraction evidence or downtime of validators

@@ -8,5 +8,5 @@ import (
 
 // RegisterRoutes registers chainmain-related REST handlers to a router
 func RegisterRoutes(cliCtx context.CLIContext, r *mux.Router) {
-  // this line is used by starport scaffolding
+	// this line is used by starport scaffolding
 }
