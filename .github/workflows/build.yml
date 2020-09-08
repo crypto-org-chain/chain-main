@@ -28,4 +28,7 @@ jobs:
       - name: build
         run: make build
         if: "env.GIT_DIFF != ''"
-# FIXME: `make test` + coverage when there are tests
+      - name: test
+        run: make test
+        if: "env.GIT_DIFF != ''"
+# FIXME: coverage when there are tests
