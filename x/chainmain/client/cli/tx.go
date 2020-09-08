@@ -22,7 +22,7 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 	}
 
 	chainmainTxCmd.AddCommand(flags.PostCommands(
-    // this line is used by starport scaffolding
+	// this line is used by starport scaffolding
 	)...)
 
 	return chainmainTxCmd

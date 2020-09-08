@@ -18,17 +18,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
+	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/params"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/supply"
 	"github.com/crypto-com/chain-main/x/chainmain"
 	chainmainkeeper "github.com/crypto-com/chain-main/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
 	// this line is used by starport scaffolding
-	distr "github.com/cosmos/cosmos-sdk/x/distribution"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 )
 
 const appName = "Crypto.com Chain"
