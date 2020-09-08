@@ -1,0 +1,39 @@
+name: codecov
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/**
+
+jobs:
+  codecov:
+    name: codecov
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14.8
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v3
+        with:
+          SUFFIX_FILTER: |
+            .go
+            .mod
+            .sum
+          SET_ENV_NAME_INSERTIONS: 1
+          SET_ENV_NAME_LINES: 1
+
+      - name: test
+        run: COVERAGE=coverage.txt make test
+        if: "env.GIT_DIFF != ''"
+
+      # - name: Upload coverage report
+      #   uses: codecov/codecov-action@v1
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     file: ./coverage.txt
+      #     flags: unittests
+      #     fail_ci_if_error: true

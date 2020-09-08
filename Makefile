@@ -2,7 +2,7 @@ PACKAGES=$(shell go list ./... | grep -v '/simulation')
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
-
+COVERAGE?=
 OUTPUT?=build/
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
@@ -29,7 +29,7 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test:
-	@go test -mod=readonly $(PACKAGES)
+	@go test -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 
 # look into .golangci.yml for enabling / disabling linters
 lint:
