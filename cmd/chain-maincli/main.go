@@ -17,7 +17,7 @@ import (
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	authrest "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	"github.com/cosmos/cosmos-sdk/x/bank"
-
+	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -168,12 +168,15 @@ func txCmd(cdc *amino.Codec) *cobra.Command {
 	var cmdsToRemove []*cobra.Command
 
 	for _, cmd := range txCmd.Commands() {
-		if cmd.Use == auth.ModuleName || cmd.Use == bank.ModuleName {
+		if cmd.Use == auth.ModuleName || cmd.Use == bank.ModuleName || cmd.Use == staking.ModuleName {
 			cmdsToRemove = append(cmdsToRemove, cmd)
 		}
 	}
 
 	txCmd.RemoveCommand(cmdsToRemove...)
+
+	// replacing staking command
+	txCmd.AddCommand(GetStakingTxCmd(cdc))
 
 	return txCmd
 }
