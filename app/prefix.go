@@ -6,6 +6,11 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	CoinType       = 394
+	FundraiserPath = "44'/394'/0'/0/1"
+)
+
 var (
 	AccountAddressPrefix   = "cro"
 	AccountPubKeyPrefix    = "cropub"
@@ -22,6 +27,9 @@ func SetConfig() {
 	config.SetBech32PrefixForAccount(AccountAddressPrefix, AccountPubKeyPrefix)
 	config.SetBech32PrefixForValidator(ValidatorAddressPrefix, ValidatorPubKeyPrefix)
 	config.SetBech32PrefixForConsensusNode(ConsNodeAddressPrefix, ConsNodePubKeyPrefix)
+
+	config.SetCoinType(CoinType)
+	config.SetFullFundraiserPath(FundraiserPath)
 
 	croUnit := sdk.OneDec()
 	err := sdk.RegisterDenom(HumanCoinUnit, croUnit)
