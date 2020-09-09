@@ -58,3 +58,9 @@ test-sim-import-export:
 test-sim-after-import:
 	@echo "Running application simulation-after-import. This may take several minutes..."
 	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) 50 5 TestAppSimulationAfterImport
+
+clean:
+	rm -rf $(OUTPUT)/
+
+clean-docker-compose:
+	rm -rf .validator*

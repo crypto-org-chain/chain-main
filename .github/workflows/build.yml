@@ -6,12 +6,15 @@ on:
     branches:
       - master
       - release/**
+  issue_comment:
+    types: [created, edited]
 
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v2
       - uses: technote-space/get-diff-action@v3
@@ -49,6 +52,7 @@ jobs:
   test-sim-nondeterminism:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v2
       - uses: technote-space/get-diff-action@v3
@@ -72,6 +76,7 @@ jobs:
   test-sim-import-export:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v2
       - uses: technote-space/get-diff-action@v3
@@ -95,6 +100,7 @@ jobs:
   test-sim-after-import:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v2
       - uses: technote-space/get-diff-action@v3

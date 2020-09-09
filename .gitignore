@@ -1,4 +1,20 @@
+# OS
+.DS_Store
+*.swp
+*.swo
+*.swl
+*.swm
+*.swn
+.vscode
+.idea
+
+# Build
+build
+
+# Testing
+coverage.txt
+
+# Others
 frontend/node_modules
 frontend/dist
 frontend/.cache
-build
