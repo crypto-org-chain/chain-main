@@ -1,19 +1,14 @@
 accounts:
   - name: testvalidator
-    coins: ["100000000cro"]
+    coins: ["100000000basecro"]
   - name: community
-    coins: ["10000000000cro"]
+    coins: ["10000000000basecro"]
   - name: ecosystem
-    coins: ["20000000000cro"]
+    coins: ["20000000000basecro"]
   - name: reserve
-    coins: ["20000000000cro"]
+    coins: ["20000000000basecro"]
   - name: launch
-    coins: ["10000000000cro"]
+    coins: ["10000000000basecro"]
 validator:
   name: testvalidator
-  staked: "100000000cro"
-genesis:
-  app_state:
-    staking:
-      params:
-        bond_denom: "cro"
+  staked: "100000000basecro"
