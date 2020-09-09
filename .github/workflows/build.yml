@@ -31,4 +31,86 @@ jobs:
       - name: test
         run: make test
         if: "env.GIT_DIFF != ''"
-# FIXME: coverage when there are tests
+
+  install-runsim:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' || (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinlauco' || github.actor == 'foreseaz' || github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' || github.actor == 'cdc-Hitesh'))
+    steps:
+      - uses: actions/setup-go@v2.1.2
+      - name: install runsim
+        run: |
+          export GO111MODULE="on" && go get github.com/cosmos/tools/cmd/runsim@v1.0.0
+      - uses: actions/cache@v2.1.1
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-runsim-binary
+
+  test-sim-nondeterminism:
+    runs-on: ubuntu-latest
+    needs: [build, install-runsim]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v3
+        with:
+          SUFFIX_FILTER: |
+            .go
+            .mod
+            .sum
+          SET_ENV_NAME_INSERTIONS: 1
+          SET_ENV_NAME_LINES: 1
+      - uses: actions/cache@v2.1.1
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-runsim-binary
+        if: "env.GIT_DIFF != ''"
+      - name: test-sim-nondeterminism
+        run: |
+          make test-sim-nondeterminism
+        if: "env.GIT_DIFF != ''"
+
+  test-sim-import-export:
+    runs-on: ubuntu-latest
+    needs: [build, install-runsim]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v3
+        with:
+          SUFFIX_FILTER: |
+            .go
+            .mod
+            .sum
+          SET_ENV_NAME_INSERTIONS: 1
+          SET_ENV_NAME_LINES: 1
+      - uses: actions/cache@v2.1.1
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-runsim-binary
+        if: "env.GIT_DIFF != ''"
+      - name: test-sim-import-export
+        run: |
+          make test-sim-import-export
+        if: "env.GIT_DIFF != ''"
+
+  test-sim-after-import:
+    runs-on: ubuntu-latest
+    needs: [build, install-runsim]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: technote-space/get-diff-action@v3
+        with:
+          SUFFIX_FILTER: |
+            .go
+            .mod
+            .sum
+          SET_ENV_NAME_INSERTIONS: 1
+          SET_ENV_NAME_LINES: 1
+      - uses: actions/cache@v2.1.1
+        with:
+          path: ~/go/bin
+          key: ${{ runner.os }}-go-runsim-binary
+        if: "env.GIT_DIFF != ''"
+      - name: test-sim-after-import
+        run: |
+          make test-sim-after-import
+        if: "env.GIT_DIFF != ''"
