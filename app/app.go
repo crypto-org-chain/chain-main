@@ -24,6 +24,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
+	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	"github.com/cosmos/cosmos-sdk/x/supply"
 	"github.com/crypto-com/chain-main/x/chainmain"
@@ -45,6 +46,7 @@ var (
 		params.AppModuleBasic{},
 		supply.AppModuleBasic{},
 		chainmain.AppModuleBasic{},
+		slashing.AppModuleBasic{},
 		// this line is used by starport scaffolding # 2
 		gov.NewAppModuleBasic(paramsclient.ProposalHandler, distr.ProposalHandler),
 	)
@@ -85,6 +87,7 @@ type NewApp struct {
 	supplyKeeper    supply.Keeper
 	paramsKeeper    params.Keeper
 	chainmainKeeper chainmainkeeper.Keeper
+	slashingKeeper  slashing.Keeper
 	// this line is used by starport scaffolding # 3
 	mm        *module.Manager
 	govKeeper gov.Keeper
@@ -111,6 +114,7 @@ func NewInitApp(
 		params.StoreKey,
 		chainmaintypes.StoreKey,
 		gov.StoreKey,
+		slashing.StoreKey,
 		// this line is used by starport scaffolding # 5
 	)
 
@@ -129,6 +133,7 @@ func NewInitApp(
 	app.subspaces[auth.ModuleName] = app.paramsKeeper.Subspace(auth.DefaultParamspace)
 	app.subspaces[bank.ModuleName] = app.paramsKeeper.Subspace(bank.DefaultParamspace)
 	app.subspaces[staking.ModuleName] = app.paramsKeeper.Subspace(staking.DefaultParamspace)
+	app.subspaces[slashing.ModuleName] = app.paramsKeeper.Subspace(slashing.DefaultParamspace)
 	govSubspace := app.paramsKeeper.Subspace(gov.DefaultParamspace).WithKeyTable(gov.ParamKeyTable())
 
 	app.accountKeeper = auth.NewAccountKeeper(
@@ -159,8 +164,15 @@ func NewInitApp(
 		app.subspaces[staking.ModuleName],
 	)
 
+	app.slashingKeeper = slashing.NewKeeper(
+		app.cdc,
+		keys[slashing.StoreKey],
+		&stakingKeeper,
+		app.subspaces[slashing.ModuleName],
+	)
+
 	app.stakingKeeper = *stakingKeeper.SetHooks(
-		staking.NewMultiStakingHooks(),
+		staking.NewMultiStakingHooks(app.slashingKeeper.Hooks()),
 	)
 
 	app.chainmainKeeper = chainmainkeeper.NewKeeper(
@@ -189,10 +201,13 @@ func NewInitApp(
 		bank.NewAppModule(app.bankKeeper, app.accountKeeper),
 		supply.NewAppModule(app.supplyKeeper, app.accountKeeper),
 		chainmain.NewAppModule(app.chainmainKeeper, app.bankKeeper),
+		slashing.NewAppModule(app.slashingKeeper, app.accountKeeper, app.stakingKeeper),
 		staking.NewAppModule(app.stakingKeeper, app.accountKeeper, app.supplyKeeper),
 		// this line is used by starport scaffolding # 6
 		gov.NewAppModule(app.govKeeper, app.accountKeeper, app.supplyKeeper),
 	)
+
+	app.mm.SetOrderBeginBlockers(slashing.ModuleName)
 
 	app.mm.SetOrderEndBlockers(staking.ModuleName)
 
@@ -203,6 +218,7 @@ func NewInitApp(
 		auth.ModuleName,
 		bank.ModuleName,
 		chainmaintypes.ModuleName,
+		slashing.ModuleName,
 		supply.ModuleName,
 		genutil.ModuleName,
 		gov.ModuleName,
@@ -235,7 +251,7 @@ func NewInitApp(
 		// mint.NewAppModule(app.mintKeeper),
 		// distr.NewAppModule(app.distrKeeper, app.accountKeeper, app.supplyKeeper, app.stakingKeeper),
 		staking.NewAppModule(app.stakingKeeper, app.accountKeeper, app.supplyKeeper),
-		// slashing.NewAppModule(app.slashingKeeper, app.accountKeeper, app.stakingKeeper),
+		slashing.NewAppModule(app.slashingKeeper, app.accountKeeper, app.stakingKeeper),
 		// TODO: Add your module(s)
 	)
 
