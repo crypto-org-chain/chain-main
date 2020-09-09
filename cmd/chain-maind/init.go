@@ -135,7 +135,7 @@ func CustomInitCmd(ctx *server.Context, cdc *codec.Codec, mbm module.BasicManage
 
 			genDoc := &types.GenesisDoc{}
 			if _, err2 := os.Stat(genFile); err2 != nil {
-				if !os.IsNotExist(err) {
+				if !os.IsNotExist(err2) {
 					return err2
 				}
 			} else {
