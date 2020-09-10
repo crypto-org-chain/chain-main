@@ -1,12 +1,40 @@
 package app_test
 
 import (
+	"bytes"
+	"encoding/hex"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-com/chain-main/app"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMnemonic(t *testing.T) {
+	kb := keys.NewInMemory()
+	account, err := kb.CreateAccount(
+		"croTest",
+		//nolint:lll
+		"point shiver hurt flight fun online hub antenna engine pave chef fantasy front interest poem accident catch load frequent praise elite pet remove used",
+		"",
+		"",
+		app.FundraiserPath,
+		keys.Secp256k1,
+	)
+	require.NoError(t, err)
+
+	publicKey := account.GetPubKey()
+	expectedPublicKey := []byte("0396bb69cbbf27c07e08c0a9d8ac2002ed75a6287a3f2e4cfe11977817ca14fad0")
+
+	expectedPublicKeyBytes := make([]byte, hex.DecodedLen(len(expectedPublicKey)))
+	_, err = hex.Decode(expectedPublicKeyBytes, expectedPublicKey)
+	require.NoError(t, err)
+
+	if !bytes.Equal(expectedPublicKeyBytes, publicKey.Bytes()[5:]) {
+		t.Error("HD public key does not match to expected public key")
+	}
+}
 
 func TestConversion(t *testing.T) {
 	app.SetConfig()
