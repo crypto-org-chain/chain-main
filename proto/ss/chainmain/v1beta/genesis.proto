@@ -1,0 +1,9 @@
+syntax = "proto3";
+package chainmain.chainmain.v1beta1;
+
+option go_package = "github.com/crypto-com/chain-main/x/chainmain/types";
+
+// GenesisState defines the capability module's genesis state.
+message GenesisState {
+}
+
