@@ -3,7 +3,7 @@ PACKAGES=$(shell go list ./... | grep -v '/simulation')
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
 COVERAGE?=
-OUTPUT?=build/
+BUILDDIR ?= $(CURDIR)/build
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
@@ -23,9 +23,12 @@ install: go.sum
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maincli
 
 build: go.sum
-		go build -mod=readonly $(BUILD_FLAGS) -o $(OUTPUT)/chain-maind ./cmd/chain-maind 
-		go build -mod=readonly $(BUILD_FLAGS) -o $(OUTPUT)/chain-maincli ./cmd/chain-maincli 
+		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
+		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maincli ./cmd/chain-maincli
 .PHONY: build
+
+build-linux: go.sum
+		GOOS=linux GOARCH=amd64 $(MAKE) build
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
@@ -59,8 +62,27 @@ test-sim-after-import:
 	@echo "Running application simulation-after-import. This may take several minutes..."
 	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) 50 5 TestAppSimulationAfterImport
 
+###############################################################################
+###                                Localnet                                 ###
+###############################################################################
+
+build-docker-chainmaindnode:
+	$(MAKE) -C networks/local
+
+# Run a 4-node testnet locally
+localnet-start: build-linux build-docker-chainmaindnode localnet-stop
+	@if ! [ -f $(BUILDDIR)/node0/.chainmaind/config/genesis.json ]; \
+	then docker run --rm -v $(BUILDDIR):/chain-maind:Z cryptocom/chainmaindnode testnet --v 4 -o . --starting-ip-address 192.168.10.2 ; \
+	fi
+	docker-compose up -d
+
+# Stop testnet
+localnet-stop:
+	docker-compose down
+	docker network prune -f
+
 clean:
-	rm -rf $(OUTPUT)/
+	rm -rf $(BUILDDIR)/
 
 clean-docker-compose:
-	rm -rf .validator*
+	rm -rf $(BUILDDIR)/node* $(BUILDDIR)/gentxs

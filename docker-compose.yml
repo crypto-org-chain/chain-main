@@ -3,60 +3,56 @@ version: '3'
 services:
   chainmainnode0:
     container_name: chainmainnode0
-    image: "cryptocom/chain-main"
+    image: "cryptocom/chainmaindnode"
     ports:
       - "26656-26657:26656-26657"
     environment:
       - ID=0
       - LOG=${LOG:-chain-maind.log}
-    command: 'chain-maind start'
     volumes:
-      - ./.validator0/.chainmaind:/chain-main/.chainmaind:Z
+      - ./build:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.2
 
   chainmainnode1:
     container_name: chainmainnode1
-    image: "cryptocom/chain-main"
+    image: "cryptocom/chainmaindnode"
     ports:
       - "26659-26660:26656-26657"
     environment:
       - ID=1
       - LOG=${LOG:-chain-maind.log}
-    command: 'chain-maind start'
     volumes:
-      - ./.validator1/.chainmaind:/chain-main/.chainmaind:Z
+      - ./build:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.3
 
   chainmainnode2:
     container_name: chainmainnode2
-    image: "cryptocom/chain-main"
+    image: "cryptocom/chainmaindnode"
     environment:
       - ID=2
       - LOG=${LOG:-chain-maind.log}
-    command: 'chain-maind start'
     ports:
       - "26661-26662:26656-26657"
     volumes:
-      - ./.validator2/.chainmaind:/chain-main/.chainmaind:Z
+      - ./build:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.4
 
   chainmainnode3:
     container_name: chainmainnode3
-    image: "cryptocom/chain-main"
+    image: "cryptocom/chainmaindnode"
     environment:
       - ID=3
       - LOG=${LOG:-chain-maind.log}
-    command: 'chain-maind start'
     ports:
       - "26663-26664:26656-26657"
     volumes:
-      - ./.validator3/.chainmaind:/chain-main/.chainmaind:Z
+      - ./build:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.5

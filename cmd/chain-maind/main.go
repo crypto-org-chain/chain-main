@@ -52,6 +52,7 @@ func main() {
 			auth.GenesisAccountIterator{}, app.DefaultNodeHome, app.DefaultCLIHome,
 		),
 	)
+	rootCmd.AddCommand(testnetCmd(ctx, cdc, app.ModuleBasics, auth.GenesisAccountIterator{}))
 	rootCmd.AddCommand(genutilcli.ValidateGenesisCmd(ctx, cdc, app.ModuleBasics))
 	rootCmd.AddCommand(AddGenesisAccountCmd(ctx, cdc, app.DefaultNodeHome, app.DefaultCLIHome))
 	rootCmd.AddCommand(flags.NewCompletionCmd(rootCmd, true))
