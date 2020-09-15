@@ -35,7 +35,7 @@ import (
 	"github.com/crypto-com/chain-main/app"
 )
 
-// NewRootCmd creates a new root command for simd. It is called once in the
+// NewRootCmd creates a new root command for chain-maind. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	app.SetConfig()
@@ -130,6 +130,20 @@ func convertDenom(args []string) {
 			if len(args) >= 3 {
 				args[2] = convertCoins(args[2])
 			}
+		case "testnet":
+			{
+				// search for --amount and take the argument next to it
+				idx := -1
+				for i, arg := range args {
+					if arg == "--amount" || arg == "--staking-amount" || arg == "--vesting-amount" || arg == "--minimum-gas-prices" {
+						idx = i
+					}
+					if idx > 0 && len(args) > idx+1 {
+						args[idx+1] = convertCoins(args[idx+1])
+						idx = -1
+					}
+				}
+			}
 		}
 	}
 }
@@ -218,6 +232,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics, encodingConfig.TxConfig),
 		AddGenesisAccountCmd(app.DefaultNodeHome(appName)),
 		tmcli.NewCompletionCmd(rootCmd, true),
+		testnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 	)
 
