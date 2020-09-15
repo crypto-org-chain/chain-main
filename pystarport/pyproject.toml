@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "pystarport"
+version = "0.1.0"
+description = "python version of cosmos starport"
+authors = ["yihuang <yi.codeplayer@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fire = "^0.3.1"
+tomlkit = "^0.7.0"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+pystarport = "pystarport.cli:main"
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
