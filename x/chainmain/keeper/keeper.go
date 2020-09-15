@@ -11,6 +11,7 @@ import (
 )
 
 type (
+	// Keeper of the chainmain store
 	Keeper struct {
 		cdc      codec.BinaryMarshaler
 		storeKey sdk.StoreKey
@@ -18,6 +19,7 @@ type (
 	}
 )
 
+// NewKeeper creates a chainmain keeper
 func NewKeeper(cdc codec.BinaryMarshaler, storeKey, memKey sdk.StoreKey) *Keeper {
 	return &Keeper{
 		cdc:      cdc,
@@ -26,6 +28,7 @@ func NewKeeper(cdc codec.BinaryMarshaler, storeKey, memKey sdk.StoreKey) *Keeper
 	}
 }
 
-func logger(ctx sdk.Context) log.Logger {
+// Logger returns a module-specific logger.
+func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 	return ctx.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName))
 }

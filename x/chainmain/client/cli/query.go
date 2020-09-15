@@ -2,13 +2,11 @@ package cli
 
 import (
 	"fmt"
-	// "strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	// sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
@@ -24,8 +22,7 @@ func GetQueryCmd(queryRoute string) *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-    flags.AddQueryFlagsToCmd(chainmainQueryCmd)
+	flags.AddQueryFlagsToCmd(chainmainQueryCmd)
 
 	return chainmainQueryCmd
 }
-

@@ -86,7 +86,8 @@ var (
 		slashing.AppModuleBasic{},
 		distr.AppModuleBasic{},
 		gov.NewAppModuleBasic(
-			paramsclient.ProposalHandler, distrclient.ProposalHandler, upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
+			paramsclient.ProposalHandler, distrclient.ProposalHandler,
+			upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
@@ -152,8 +153,10 @@ type ChainApp struct {
 
 // New returns a reference to an initialized Chain.
 func New(
-	appName string, logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
-	homePath string, invCheckPeriod uint, encodingConfig appparams.EncodingConfig, baseAppOptions ...func(*baseapp.BaseApp),
+	appName string, logger log.Logger, db dbm.DB,
+	traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
+	homePath string, invCheckPeriod uint, encodingConfig appparams.EncodingConfig,
+	baseAppOptions ...func(*baseapp.BaseApp),
 ) *ChainApp {
 
 	appCodec := encodingConfig.Marshaler
@@ -167,8 +170,10 @@ func New(
 	bApp.GRPCQueryRouter().RegisterSimulateService(bApp.Simulate, interfaceRegistry, std.DefaultPublicKeyCodec{})
 
 	keys := sdk.NewKVStoreKeys(
-		authtypes.StoreKey, banktypes.StoreKey, paramstypes.StoreKey, stakingtypes.StoreKey, minttypes.StoreKey,
-		distrtypes.StoreKey, slashingtypes.StoreKey, govtypes.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey, chainmaintypes.StoreKey,
+		authtypes.StoreKey, banktypes.StoreKey, paramstypes.StoreKey,
+		stakingtypes.StoreKey, minttypes.StoreKey,
+		distrtypes.StoreKey, slashingtypes.StoreKey, govtypes.StoreKey,
+		upgradetypes.StoreKey, evidencetypes.StoreKey, chainmaintypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 
@@ -212,7 +217,8 @@ func New(
 	)
 
 	app.MintKeeper = mintkeeper.NewKeeper(
-		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName), app.StakingKeeper, app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
+		appCodec, keys[minttypes.StoreKey], app.GetSubspace(minttypes.ModuleName),
+		app.StakingKeeper, app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
 	)
 
 	app.UpgradeKeeper = upgradekeeper.NewKeeper(skipUpgradeHeights, keys[upgradetypes.StoreKey], appCodec, homePath)
@@ -451,7 +457,8 @@ func (app *ChainApp) SimulationManager() *module.SimulationManager {
 }
 
 // initParamsKeeper init params keeper and its subspaces
-func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
+func initParamsKeeper(appCodec codec.BinaryMarshaler,
+	legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 
 	paramsKeeper.Subspace(authtypes.ModuleName)

@@ -51,9 +51,13 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			addr, err := sdk.AccAddressFromBech32(args[0])
 			if err != nil {
 				inBuf := bufio.NewReader(cmd.InOrStdin())
-				keyringBackend, _ := cmd.Flags().GetString(flags.FlagKeyringBackend)
+				keyringBackend, kerr := cmd.Flags().GetString(flags.FlagKeyringBackend)
+				if kerr != nil {
+					return kerr
+				}
 
 				// attempt to lookup address from Keybase if no address was provided
+				// nolint: govet
 				kb, err := keyring.New(sdk.KeyringServiceName(), keyringBackend, clientCtx.HomeDir, inBuf)
 				if err != nil {
 					return err
@@ -72,10 +76,18 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
 
-			vestingStart, _ := cmd.Flags().GetInt64(flagVestingStart)
-			vestingEnd, _ := cmd.Flags().GetInt64(flagVestingEnd)
-			vestingAmtStr, _ := cmd.Flags().GetString(flagVestingAmt)
-
+			vestingStart, errstart := cmd.Flags().GetInt64(flagVestingStart)
+			if errstart != nil {
+				return fmt.Errorf("failed to parse vesting start: %w", errstart)
+			}
+			vestingEnd, errend := cmd.Flags().GetInt64(flagVestingEnd)
+			if errend != nil {
+				return fmt.Errorf("failed to parse vesting end: %w", errend)
+			}
+			vestingAmtStr, erramt := cmd.Flags().GetString(flagVestingAmt)
+			if erramt != nil {
+				return fmt.Errorf("failed to parse vesting amount: %w", erramt)
+			}
 			vestingAmt, err := sdk.ParseCoins(vestingAmtStr)
 			if err != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
@@ -109,6 +121,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				genAccount = baseAccount
 			}
 
+			// nolint: govet
 			if err := genAccount.Validate(); err != nil {
 				return fmt.Errorf("failed to validate new genesis account: %w", err)
 			}
@@ -121,6 +134,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			authGenState := authtypes.GetGenesisStateFromAppState(cdc, appState)
 
+			// nolint: govet
 			accs, err := authtypes.UnpackAccounts(authGenState.Accounts)
 			if err != nil {
 				return fmt.Errorf("failed to get accounts from any: %w", err)
@@ -135,6 +149,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			accs = append(accs, genAccount)
 			accs = authtypes.SanitizeGenesisAccounts(accs)
 
+			// nolint: govet
 			genAccs, err := authtypes.PackAccounts(accs)
 			if err != nil {
 				return fmt.Errorf("failed to convert accounts into any's: %w", err)
@@ -152,6 +167,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			bankGenState.Balances = append(bankGenState.Balances, balances)
 			bankGenState.Balances = banktypes.SanitizeGenesisBalances(bankGenState.Balances)
 
+			// nolint: govet
 			bankGenStateBz, err := cdc.MarshalJSON(bankGenState)
 			if err != nil {
 				return fmt.Errorf("failed to marshal bank genesis state: %w", err)
@@ -159,6 +175,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			appState[banktypes.ModuleName] = bankGenStateBz
 
+			// nolint: govet
 			appStateJSON, err := json.Marshal(appState)
 			if err != nil {
 				return fmt.Errorf("failed to marshal application genesis state: %w", err)

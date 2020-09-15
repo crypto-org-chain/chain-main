@@ -20,7 +20,7 @@ func GetTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-    flags.AddTxFlagsToCmd(chainmainTxCmd)
+	flags.AddTxFlagsToCmd(chainmainTxCmd)
 
 	return chainmainTxCmd
 }

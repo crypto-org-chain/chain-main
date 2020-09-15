@@ -93,28 +93,44 @@ func convertCoins(s string) string {
 	return coins.String()
 }
 
+// hack for intercepting the arguments and converting amounts
 func convertDenom(args []string) {
-	if len(args) >= 5 && args[0] == "tx" && args[1] == "bank" && args[2] == "send" {
-		args[5] = convertCoin(args[5])
-	} else if len(args) >= 4 && args[0] == "tx" && args[1] == "staking" && args[2] == "delegate" {
-		args[4] = convertCoin(args[4])
-	} else if len(args) >= 4 && args[0] == "tx" && args[1] == "staking" && args[2] == "unbond" {
-		args[4] = convertCoin(args[4])
-	} else if len(args) >= 4 && args[0] == "tx" && args[1] == "staking" && args[2] == "redelegate" {
-		args[5] = convertCoin(args[5])
-	} else if len(args) >= 1 && args[0] == "gentx" {
-		// search for --amount and take the argument next to it
-		idx := -1
-		for i, arg := range args {
-			if arg == "--amount" {
-				idx = i
+	if len(args) >= 1 {
+		switch args[0] {
+		case "tx":
+			if len(args) >= 4 {
+				temp := args[1] + " " + args[2]
+				switch temp {
+				case "bank send":
+					if len(args) >= 5 {
+						args[5] = convertCoin(args[5])
+					}
+				case "staking delegate", "staking unbond":
+					args[4] = convertCoin(args[4])
+				case "staking redelegate":
+					if len(args) >= 5 {
+						args[5] = convertCoin(args[5])
+					}
+				}
+			}
+		case "gentx":
+			{
+				// search for --amount and take the argument next to it
+				idx := -1
+				for i, arg := range args {
+					if arg == "--amount" {
+						idx = i
+					}
+				}
+				if idx > 0 && len(args) > idx+1 {
+					args[idx+1] = convertCoin(args[idx+1])
+				}
+			}
+		case "add-genesis-account":
+			if len(args) >= 3 {
+				args[2] = convertCoins(args[2])
 			}
 		}
-		if idx > 0 && len(args) > idx+1 {
-			args[idx+1] = convertCoin(args[idx+1])
-		}
-	} else if len(args) >= 3 && args[0] == "add-genesis-account" {
-		args[2] = convertCoins(args[2])
 	}
 }
 
@@ -171,7 +187,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		config.SetRoot(clientCtx.HomeDir)
 		path := config.GenesisFile()
 
-		file, err := os.OpenFile(path, os.O_RDWR, 644)
+		file, err := os.OpenFile(path, os.O_RDWR, 0644)
 		if err != nil {
 			return err
 		}
@@ -197,7 +213,8 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		initCmd,
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
 		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
+		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig,
+			banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics, encodingConfig.TxConfig),
 		AddGenesisAccountCmd(app.DefaultNodeHome(appName)),
 		tmcli.NewCompletionCmd(rootCmd, true),
@@ -266,7 +283,8 @@ func txCommand() *cobra.Command {
 	return cmd
 }
 
-func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+func newApp(logger log.Logger, db dbm.DB,
+	traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
