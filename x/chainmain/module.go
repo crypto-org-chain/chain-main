@@ -2,146 +2,145 @@ package chainmain
 
 import (
 	"encoding/json"
+	"fmt"
 
+	"github.com/gogo/protobuf/grpc"
 	"github.com/gorilla/mux"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/crypto-com/chain-main/x/chainmain/client/cli"
-	"github.com/crypto-com/chain-main/x/chainmain/client/rest"
 	"github.com/crypto-com/chain-main/x/chainmain/keeper"
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
-// Type check to ensure the interface is properly implemented
 var (
 	_ module.AppModule      = AppModule{}
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// AppModuleBasic defines the basic application module used by the chainmain module.
-type AppModuleBasic struct{}
+// ----------------------------------------------------------------------------
+// AppModuleBasic
+// ----------------------------------------------------------------------------
 
-// Name returns the chainmain module's name.
+// AppModuleBasic implements the AppModuleBasic interface for the capability module.
+type AppModuleBasic struct {
+	cdc codec.Marshaler
+}
+
+func NewAppModuleBasic(cdc codec.Marshaler) AppModuleBasic {
+	return AppModuleBasic{cdc: cdc}
+}
+
+// Name returns the capability module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterCodec registers the chainmain module's types for the given codec.
-func (AppModuleBasic) RegisterCodec(cdc *codec.Codec) {
-	types.RegisterCodec(cdc)
+// RegisterLegacyAminoCodec does nothing. IBC does not support amino.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the chainmain
-// module.
-func (AppModuleBasic) DefaultGenesis() json.RawMessage {
-	return types.ModuleCdc.MustMarshalJSON(types.DefaultGenesisState())
+// RegisterInterfaces registers the module's interface types
+func (a AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
+
+// DefaultGenesis returns the capability module's default genesis state.
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONMarshaler) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesis())
 }
 
-// ValidateGenesis performs genesis state validation for the chainmain module.
-func (AppModuleBasic) ValidateGenesis(bz json.RawMessage) error {
-	var data types.GenesisState
-	err := types.ModuleCdc.UnmarshalJSON(bz, &data)
-	if err != nil {
-		return err
+// ValidateGenesis performs genesis state validation for the capability module.
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONMarshaler,
+	config client.TxEncodingConfig, bz json.RawMessage) error {
+	var genState types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
-	return types.ValidateGenesis(data)
+	return genState.Validate()
 }
 
-// RegisterRESTRoutes registers the REST routes for the chainmain module.
-func (AppModuleBasic) RegisterRESTRoutes(ctx context.CLIContext, rtr *mux.Router) {
-	rest.RegisterRoutes(ctx, rtr)
+// RegisterRESTRoutes registers the capability module's REST service handlers.
+func (a AppModuleBasic) RegisterRESTRoutes(_ client.Context, _ *mux.Router) {}
+
+// RegisterGRPCRoutes registers the gRPC Gateway routes for the capability module.
+func (a AppModuleBasic) RegisterGRPCRoutes(_ client.Context, _ *runtime.ServeMux) {
 }
 
-// GetTxCmd returns the root tx command for the chainmain module.
-func (AppModuleBasic) GetTxCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetTxCmd(cdc)
-}
+// GetTxCmd returns the capability module's root tx command.
+func (a AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
-// GetQueryCmd returns no root query command for the chainmain module.
-func (AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(types.StoreKey, cdc)
-}
+// GetQueryCmd returns the capability module's root query command.
+func (AppModuleBasic) GetQueryCmd() *cobra.Command { return nil }
 
-// ____________________________________________________________________________
+// ----------------------------------------------------------------------------
+// AppModule
+// ----------------------------------------------------------------------------
 
-// AppModule implements an application module for the chainmain module.
+// AppModule implements the AppModule interface for the capability module.
 type AppModule struct {
 	AppModuleBasic
 
-	keeper     keeper.Keeper
-	coinKeeper bank.Keeper
-	// TODO: Add keepers that your application depends on
-
+	keeper keeper.Keeper
 }
 
-// NewAppModule creates a new AppModule object
-func NewAppModule(k keeper.Keeper, bankKeeper bank.Keeper) AppModule {
+func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         k,
-		coinKeeper:     bankKeeper,
-		// TODO: Add keepers that your application depends on
+		AppModuleBasic: NewAppModuleBasic(cdc),
+		keeper:         keeper,
 	}
 }
 
-// Name returns the chainmain module's name.
-func (AppModule) Name() string {
-	return types.ModuleName
+// Name returns the capability module's name.
+func (am AppModule) Name() string {
+	return am.AppModuleBasic.Name()
 }
 
-// RegisterInvariants registers the chainmain module invariants.
+// Route returns the capability module's message routing key.
+func (AppModule) Route() sdk.Route { return sdk.Route{} }
+
+// QuerierRoute returns the capability module's query routing key.
+func (AppModule) QuerierRoute() string { return "" }
+
+// LegacyQuerierHandler returns the capability module's Querier.
+func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier { return nil }
+
+// RegisterQueryService registers a GRPC query service to respond to the
+// module-specific GRPC queries.
+func (am AppModule) RegisterQueryService(grpc.Server) {}
+
+// RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// Route returns the message routing key for the chainmain module.
-func (AppModule) Route() string {
-	return types.RouterKey
-}
-
-// NewHandler returns an sdk.Handler for the chainmain module.
-func (am AppModule) NewHandler() sdk.Handler {
-	return NewHandler(am.keeper)
-}
-
-// QuerierRoute returns the chainmain module's querier route name.
-func (AppModule) QuerierRoute() string {
-	return types.QuerierRoute
-}
-
-// NewQuerierHandler returns the chainmain module sdk.Querier.
-func (am AppModule) NewQuerierHandler() sdk.Querier {
-	return keeper.NewQuerier(am.keeper)
-}
-
-// InitGenesis performs genesis initialization for the chainmain module. It returns
+// InitGenesis performs the capability module's genesis initialization It returns
 // no validator updates.
-func (am AppModule) InitGenesis(ctx sdk.Context, data json.RawMessage) []abci.ValidatorUpdate {
-	var genesisState types.GenesisState
-	types.ModuleCdc.MustUnmarshalJSON(data, &genesisState)
-	InitGenesis(ctx, am.keeper, genesisState)
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONMarshaler, gs json.RawMessage) []abci.ValidatorUpdate {
+	var genState types.GenesisState
+	// Initialize global index to index in genesis state
+	cdc.MustUnmarshalJSON(gs, &genState)
+
+	InitGenesis(ctx, am.keeper, genState)
+
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the chainmain
-// module.
-func (am AppModule) ExportGenesis(ctx sdk.Context) json.RawMessage {
-	gs := ExportGenesis(ctx, am.keeper)
-	return types.ModuleCdc.MustMarshalJSON(gs)
+// ExportGenesis returns the capability module's exported genesis state as raw JSON bytes.
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONMarshaler) json.RawMessage {
+	genState := ExportGenesis(ctx, am.keeper)
+	return cdc.MustMarshalJSON(genState)
 }
 
-// BeginBlock returns the begin blocker for the chainmain module.
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
-	BeginBlocker(ctx, req, am.keeper)
-}
+// BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
+func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
 
-// EndBlock returns the end blocker for the chainmain module. It returns no validator
-// updates.
-func (AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
+// EndBlock executes all ABCI EndBlock logic respective to the capability module. It
+// returns no validator updates.
+func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
 }

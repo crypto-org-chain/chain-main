@@ -7,7 +7,6 @@ BUILDDIR ?= $(CURDIR)/build
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
-	-X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) 
 
@@ -20,11 +19,9 @@ all: install
 
 install: go.sum
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
-		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maincli
 
 build: go.sum
-		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
-		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maincli ./cmd/chain-maincli
+		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind 
 .PHONY: build
 
 build-linux: go.sum

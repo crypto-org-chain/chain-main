@@ -1,4 +1,4 @@
-# Test frontend for Crypto.com Chain
+# chainmain
 
 ## Project setup
 

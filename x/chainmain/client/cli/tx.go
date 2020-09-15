@@ -7,12 +7,11 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 // GetTxCmd returns the transaction commands for this module
-func GetTxCmd(cdc *codec.Codec) *cobra.Command {
+func GetTxCmd() *cobra.Command {
 	chainmainTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      fmt.Sprintf("%s transactions subcommands", types.ModuleName),
@@ -21,9 +20,7 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	chainmainTxCmd.AddCommand(flags.PostCommands(
-	// this line is used by starport scaffolding
-	)...)
+	flags.AddTxFlagsToCmd(chainmainTxCmd)
 
 	return chainmainTxCmd
 }

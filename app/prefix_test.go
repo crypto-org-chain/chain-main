@@ -5,7 +5,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys"
+	"github.com/cosmos/cosmos-sdk/crypto/hd"
+	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-com/chain-main/app"
 	"github.com/stretchr/testify/require"
@@ -13,14 +14,13 @@ import (
 
 func TestMnemonic(t *testing.T) {
 	kb := keys.NewInMemory()
-	account, err := kb.CreateAccount(
+	account, err := kb.NewAccount(
 		"croTest",
 		//nolint:lll
 		"point shiver hurt flight fun online hub antenna engine pave chef fantasy front interest poem accident catch load frequent praise elite pet remove used",
 		"",
-		"",
 		app.FundraiserPath,
-		keys.Secp256k1,
+		hd.Secp256k1,
 	)
 	require.NoError(t, err)
 
@@ -31,7 +31,7 @@ func TestMnemonic(t *testing.T) {
 	_, err = hex.Decode(expectedPublicKeyBytes, expectedPublicKey)
 	require.NoError(t, err)
 
-	if !bytes.Equal(expectedPublicKeyBytes, publicKey.Bytes()[5:]) {
+	if !bytes.Equal(expectedPublicKeyBytes, publicKey.Bytes()) {
 		t.Error("HD public key does not match to expected public key")
 	}
 }
