@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/hex"
 	"io"
 	"os"
 
@@ -149,6 +150,15 @@ type ChainApp struct {
 
 	// simulation manager
 	sm *module.SimulationManager
+}
+
+// InitChain Baseapp InitChain override
+func (app *ChainApp) InitChain(req abci.RequestInitChain) (res abci.ResponseInitChain) {
+	ret := app.BaseApp.InitChain(req)
+	if hex.EncodeToString(ret.AppHash) != "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" {
+		panic("invalid genesis apphash")
+	}
+	return ret
 }
 
 // New returns a reference to an initialized Chain.
