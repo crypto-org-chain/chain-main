@@ -2,7 +2,7 @@ PACKAGES=$(shell go list ./... | grep -v '/simulation')
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
-COVERAGE?=
+COVERAGE ?=
 BUILDDIR ?= $(CURDIR)/build
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
@@ -11,7 +11,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) 
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
-
+TESTNET_FLAGS ?=
 SIMAPP = github.com/crypto-com/chain-main/app
 BINDIR ?= ~/go/bin
 
@@ -69,7 +69,7 @@ build-docker-chainmaindnode:
 # Run a 4-node testnet locally
 localnet-start: build-linux build-docker-chainmaindnode localnet-stop
 	@if ! [ -f $(BUILDDIR)/node0/.chainmaind/config/genesis.json ]; \
-	then docker run --rm -v $(BUILDDIR):/chain-maind:Z cryptocom/chainmaindnode testnet --v 4 -o . --starting-ip-address 192.168.10.2 ; \
+	then docker run --rm -v $(BUILDDIR):/chain-maind:Z cryptocom/chainmaindnode testnet --v 4 -o . --starting-ip-address 192.168.10.2 $(TESTNET_FLAGS); \
 	fi
 	docker-compose up -d
 

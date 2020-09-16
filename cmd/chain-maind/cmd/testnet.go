@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/crypto-com/chain-main/app"
 	"github.com/spf13/cobra"
@@ -46,6 +47,7 @@ var (
 	flagStartingIPAddress = "starting-ip-address"
 	flagAmount            = "amount"
 	flagStakingAmount     = "staking-amount"
+	flagUnbondingTime     = "unbonding-time"
 )
 
 // get cmd to initialize all files for tendermint testnet and application
@@ -133,8 +135,9 @@ Example:
 	cmd.Flags().String(flagAmount, "20000000000000000basecro", "amount of coins for accounts")
 	cmd.Flags().String(flagStakingAmount, "", "amount of coins for staking (default half of account amount)")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
-	cmd.Flags().Uint64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
-	cmd.Flags().Uint64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
+	cmd.Flags().Int64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
+	cmd.Flags().Int64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
+	cmd.Flags().String(flagUnbondingTime, "1814400s", "unbonding time")
 
 	return cmd
 }
@@ -203,6 +206,14 @@ func InitTestnet(
 	vestingCoins, err := sdk.ParseCoins(vestingAmtStr)
 	if err != nil {
 		return fmt.Errorf("failed to parse vesting amount: %w", err)
+	}
+	unbondingTimeStr, unbondingTimeStrErr := cmd.Flags().GetString(flagUnbondingTime)
+	if unbondingTimeStrErr != nil {
+		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeStrErr)
+	}
+	unbondingTime, unbondingTimeErr := time.ParseDuration(unbondingTimeStr)
+	if unbondingTimeStrErr != nil {
+		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeErr)
 	}
 
 	inBuf := bufio.NewReader(cmd.InOrStdin())
@@ -341,7 +352,9 @@ func InitTestnet(
 		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), chainmainConfig)
 	}
 
-	if err = initGenFiles(clientCtx, mbm, chainID, genAccounts, genBalances, genFiles, numValidators); err != nil {
+	if err = initGenFiles(
+		clientCtx, mbm, chainID, genAccounts, genBalances,
+		genFiles, numValidators, unbondingTime); err != nil {
 		return err
 	}
 
@@ -361,14 +374,18 @@ func initGenFiles(
 	clientCtx client.Context, mbm module.BasicManager, chainID string,
 	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
 	genFiles []string, numValidators int,
+	unbondingTime time.Duration,
 ) error {
 
 	appGenState := mbm.DefaultGenesis(clientCtx.JSONMarshaler)
 
 	// set staking param in the genesis state
+
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
 	stakingGenState.Params.BondDenom = app.BaseCoinUnit
+	stakingGenState.Params.UnbondingTime = unbondingTime
+
 	appGenState[stakingtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&stakingGenState)
 
 	// set gov min_deposit in the genesis state
