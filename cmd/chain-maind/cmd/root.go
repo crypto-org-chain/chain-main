@@ -192,6 +192,28 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 						"mint_denom": app.BaseCoinUnit,
 					},
 				},
+				"bank": map[string]interface{}{
+					"denom_metadata": []interface{}{
+						map[string]interface{}{
+							"description": "The native token of Crypto.com Chain.",
+							"denom_units": []interface{}{
+								map[string]interface{}{
+									"denom":    "basecro",
+									"exponent": 0,
+									"aliases": []interface{}{
+										"carson",
+									},
+								},
+								map[string]interface{}{
+									"denom":    "cro",
+									"exponent": 8,
+								},
+							},
+							"base":    "basecro",
+							"display": "cro",
+						},
+					},
+				},
 			},
 		}
 
