@@ -170,11 +170,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler
 
 	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome(appName))
-	oldRunE := initCmd.RunE
-	initCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if err := oldRunE(cmd, args); err != nil {
-			return err
-		}
+	initCmd.PostRunE = func(cmd *cobra.Command, args []string) error {
 		genesisPatch := map[string]interface{}{
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{

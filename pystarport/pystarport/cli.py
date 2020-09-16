@@ -3,14 +3,18 @@ import os
 import json
 from pathlib import Path
 import asyncio
+
 import fire
 import tomlkit
+import yaml
+import jsonmerge
+
 from .utils import execute, interact, local_ip
 from .ports import p2p_port, rpc_port, api_port, grpc_port, pprof_port
 
 CHAIN = 'chain-maind'
 CHAIN_ID = 'chainmaind'
-BASE_PORT = 26600
+BASE_PORT = 26650
 
 
 async def node_id(i):
@@ -47,31 +51,47 @@ def edit_app_cfg(path, base_port, i):
     open(path, 'w').write(tomlkit.dumps(doc))
 
 
-async def init(count):
+async def create_account(i, name):
+    output = await chaind('keys', 'add', name, home=f'data/node{i}', output='json', keyring_backend='test')
+    return json.loads(output)
+
+
+async def init(config):
     await interact('rm -r data', ignore_error=True)
-    for i in range(count):
+    for i in range(len(config['validators'])):
         await chaind('init', f'node{i}', chain_id=CHAIN_ID, home=f'data/node{i}')
     await interact('mv data/node0/config/genesis.json data/')
     await interact('mkdir data/gentx')
-    for i in range(count):
+    for i in range(len(config['validators'])):
         await interact(f'ln -sf ../../genesis.json data/node{i}/config/')
         await interact(f'ln -sf ../../gentx data/node{i}/config/')
 
+    # patch the genesis file
+    genesis = jsonmerge.merge(json.load(open('data/genesis.json')), config.get('genesis', {}))
+    json.dump(genesis, open('data/genesis.json', 'w'))
+    await chaind('validate-genesis', home=f'data/node0')
+
     # create accounts
-    for i in range(count):
-        output = await chaind('keys', 'add', 'validator', home=f'data/node{i}', output='json', keyring_backend='test')
-        account = json.loads(output)
+    for i, node in enumerate(config['validators']):
+        account = await create_account(i, 'validator')
         print('account', account)
-        await chaind('add-genesis-account', account['address'], '1cro', home=f'data/node{i}')
-        await chaind('gentx', 'validator', amount='1cro', keyring_backend='test', chain_id=CHAIN_ID, home=f'data/node{i}')
+        await chaind('add-genesis-account', account['address'], node['coins'], home=f'data/node{i}')
+        await chaind('gentx', 'validator', amount=node['staked'], keyring_backend='test', chain_id=CHAIN_ID, home=f'data/node{i}')
+
+    for account in config['accounts']:
+        acct = await create_account(0, account['name'])
+        await chaind('add-genesis-account', acct['address'], account['coins'], home=f'data/node0')
 
     # collect-gentxs
     await chaind('collect-gentxs', gentx_dir='data/gentx', home=f'data/node0')
 
     # write tendermint config
     ip = local_ip()
-    peers = ','.join(['tcp://%s@%s:%d' % (await node_id(i), ip, p2p_port(BASE_PORT, i)) for i in range(count)])
-    for i in range(count):
+    peers = ','.join([
+        'tcp://%s@%s:%d' % (await node_id(i), ip, p2p_port(BASE_PORT, i))
+        for i in range(len(config['validators']))
+    ])
+    for i in range(len(config['validators'])):
         edit_tm_cfg(f'data/node{i}/config/config.toml', BASE_PORT, i, peers)
         edit_app_cfg(f'data/node{i}/config/app.toml', BASE_PORT, i)
 
@@ -88,18 +108,18 @@ async def start():
     await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
 
-async def serve(count):
+async def serve(config):
     await execute('go install -mod readonly ./cmd/chain-maind')
-    await init(count)
+    await init(config)
     await start()
 
 
 class CLI:
-    def init(self, count=1):
+    def init(self, config):
         '''
         initialize testnet data directory
         '''
-        asyncio.run(init(count))
+        asyncio.run(init(yaml.safe_load(open(config))))
 
     def start(self):
         '''
@@ -107,11 +127,11 @@ class CLI:
         '''
         asyncio.run(start())
 
-    def serve(self, count=1):
+    def serve(self, config):
         '''
         build, init and start
         '''
-        asyncio.run(serve(count))
+        asyncio.run(serve(yaml.safe_load(open(config))))
 
 
 def main():
