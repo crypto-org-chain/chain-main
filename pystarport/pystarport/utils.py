@@ -27,13 +27,15 @@ async def interact(cmd, ignore_error=False, input=None, **kwargs):
 
 
 def local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-    except IOError:
-        addr = '127.0.0.1'
-    else:
-        addr = s.getsockname()[0]
-    finally:
-        s.close()
-    return addr
+    # don't work well with vpn
+    # s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # try:
+    #     s.connect(("8.8.8.8", 80))
+    # except IOError:
+    #     addr = '127.0.0.1'
+    # else:
+    #     addr = s.getsockname()[0]
+    # finally:
+    #     s.close()
+    # return addr
+    return '127.0.0.1'

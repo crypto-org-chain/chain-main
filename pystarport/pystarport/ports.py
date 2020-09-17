@@ -3,7 +3,7 @@ def p2p_port(base_port, i):
 
 
 def rpc_port(base_port, i):
-    return base_port + i * 10 + 1
+    return base_port + i * 10 + 7
 
 
 def abci_port(base_port, i):

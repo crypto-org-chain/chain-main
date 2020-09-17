@@ -8,6 +8,8 @@ authors = ["yihuang <yi.codeplayer@gmail.com>"]
 python = "^3.7"
 fire = "^0.3.1"
 tomlkit = "^0.7.0"
+jsonmerge = "^1.7.0"
+PyYAML = "^5.3.1"
 
 [tool.poetry.dev-dependencies]
 
