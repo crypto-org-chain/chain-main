@@ -26,9 +26,9 @@ fi
 export CHAINMAINDHOME="/chain-maind/node${ID}/.chainmaind"
 
 if [ -d "`dirname ${CHAINMAINDHOME}/${LOG}`" ]; then
-  "$BINARY" --home "$CHAINMAINDHOME" "$@" | tee "${CHAINMAINDHOME}/${LOG}"
+  "$BINARY" "$@" --home "$CHAINMAINDHOME"  | tee "${CHAINMAINDHOME}/${LOG}"
 else
-  "$BINARY" --home "$CHAINMAINDHOME" "$@"
+  "$BINARY" "$@" --home "$CHAINMAINDHOME" 
 fi
 
 chmod 777 -R /chain-maind
