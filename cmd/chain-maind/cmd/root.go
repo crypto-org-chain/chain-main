@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/crypto-com/chain-main/app/params"
@@ -94,58 +95,211 @@ func convertCoins(s string) string {
 }
 
 // hack for intercepting the arguments and converting amounts
-func convertDenom(args []string) {
-	if len(args) >= 1 {
-		switch args[0] {
+func ConvertDenom(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+
+	if cmd, found := FindCommand(args); found {
+		switch cmd {
 		case "tx":
-			if len(args) >= 4 {
-				temp := args[1] + " " + args[2]
-				switch temp {
-				case "bank send":
-					if len(args) >= 5 {
-						args[5] = convertCoin(args[5])
-					}
-				case "staking delegate", "staking unbond":
-					args[4] = convertCoin(args[4])
-				case "staking redelegate":
-					if len(args) >= 5 {
-						args[5] = convertCoin(args[5])
-					}
-				}
-			}
+			convertTxCommandDenom(args)
 		case "gentx":
-			{
-				// search for --amount and take the argument next to it
-				idx := -1
-				for i, arg := range args {
-					if arg == "--amount" {
-						idx = i
-					}
-				}
-				if idx > 0 && len(args) > idx+1 {
-					args[idx+1] = convertCoin(args[idx+1])
-				}
-			}
+			convertGenTxCommandDenom(args)
 		case "add-genesis-account":
-			if len(args) >= 3 {
-				args[2] = convertCoins(args[2])
-			}
+			convertAddGenesisAccountCommandDenom(args)
 		case "testnet":
-			{
-				// search for --amount and take the argument next to it
-				idx := -1
-				for i, arg := range args {
-					if arg == "--amount" || arg == "--staking-amount" || arg == "--vesting-amount" || arg == "--minimum-gas-prices" {
-						idx = i
-					}
-					if idx > 0 && len(args) > idx+1 {
-						args[idx+1] = convertCoins(args[idx+1])
-						idx = -1
-					}
-				}
+			convertTestnetCommandDenom(args)
+		}
+	}
+
+	return args
+}
+
+// Find the command name from list of arguments.
+func FindCommand(args []string) (cmd string, found bool) {
+	nextArgIsFlagValue := false
+	for _, arg := range args {
+		if nextArgIsFlagValue {
+			nextArgIsFlagValue = false
+			continue
+		}
+
+		if argIsFlag(arg) {
+			if !argIsKeyValueFlag(arg) {
+				nextArgIsFlagValue = true
+			}
+			continue
+		}
+
+		return arg, true
+	}
+
+	return "", false
+}
+
+func convertTxCommandDenom(args []string) {
+	if len(args) < 4 {
+		return
+	}
+	if moduleCmd, found := FindModuleCommand(args); found {
+		switch moduleCmd {
+		case "bank send":
+			// tx bank send [from] [to] [amount]
+			if index, found := FindModuleCommandArgIndex(args, 5); found {
+				args[index] = convertCoin(args[index])
+			}
+		case "staking delegate", "staking unbond":
+			// tx staking delegate/unbond [node-pub-key] [amount]
+			if index, found := FindModuleCommandArgIndex(args, 4); found {
+				args[index] = convertCoin(args[index])
+			}
+		case "staking redelegate":
+			// tx staking redelegate [from-node-pub-key] [to-node-pub-key] [amount]
+			if index, found := FindModuleCommandArgIndex(args, 5); found {
+				args[index] = convertCoin(args[index])
 			}
 		}
 	}
+}
+
+func convertGenTxCommandDenom(args []string) {
+	// search for --amount and take the argument next to it
+	for i, arg := range args {
+		if strings.HasPrefix(arg, "--amount") {
+			ConvertFlagAmountValueDenom(args, i)
+		}
+	}
+}
+
+func convertTestnetCommandDenom(args []string) {
+	// search for --amount and take the argument next to it
+	for i, arg := range args {
+		if strings.HasPrefix(arg, "--amount") {
+			ConvertFlagAmountValueDenom(args, i)
+		}
+		if strings.HasPrefix(arg, "--staking-amount") {
+			ConvertFlagAmountValueDenom(args, i)
+		}
+		if strings.HasPrefix(arg, "--vesting-amount") {
+			ConvertFlagAmountValueDenom(args, i)
+		}
+		if strings.HasPrefix(arg, "--minimum-gas-prices") {
+			ConvertFlagAmountValueDenom(args, i)
+		}
+	}
+}
+
+// Find module command in the form "[module] [command]". e.g. "bank send"
+func FindModuleCommand(args []string) (moduleCmd string, found bool) {
+	module := ""
+	nextArgIsFlagValue := false
+	for _, arg := range args {
+		if nextArgIsFlagValue {
+			nextArgIsFlagValue = false
+			continue
+		}
+		if argIsFlag(arg) {
+			if !argIsKeyValueFlag(arg) {
+				nextArgIsFlagValue = true
+			}
+			continue
+		}
+
+		if arg == "tx" {
+			continue
+		}
+		if module == "" {
+			module = arg
+			continue
+		}
+		return module + " " + arg, true
+	}
+
+	return "", false
+}
+
+// Find the actual index of an argument in the command ignoreing the flags
+func FindModuleCommandArgIndex(args []string, targetArgIndex int) (index int, found bool) {
+	idx := -1
+	nextArgIsFlagValue := false
+	for i, arg := range args {
+		if nextArgIsFlagValue {
+			nextArgIsFlagValue = false
+			continue
+		}
+		if argIsFlag(arg) {
+			if !argIsKeyValueFlag(arg) {
+				nextArgIsFlagValue = true
+			}
+			continue
+		}
+
+		idx++
+		if idx == targetArgIndex {
+			return i, true
+		}
+	}
+
+	return -1, false
+}
+
+// Convert amount value of flag in place
+func ConvertFlagAmountValueDenom(args []string, flagIndex int) []string {
+	if !argIsFlag((args[flagIndex])) {
+		return args
+	}
+
+	if argIsKeyValueFlag(args[flagIndex]) {
+		flagParts := strings.SplitN(args[flagIndex], "=", 2)
+		args[flagIndex] = flagParts[0] + "=" + convertCoins(flagParts[1])
+		return args
+	}
+
+	if len(args) > flagIndex+1 {
+		args[flagIndex+1] = convertCoins(args[flagIndex+1])
+	}
+	return args
+}
+
+// Convert amount argument in add-genesis-account command in place
+func convertAddGenesisAccountCommandDenom(args []string) []string {
+	if len(args) < 3 {
+		return args
+	}
+	nonFlagArgIdx := -1
+	nextArgIsFlagValue := false
+	for i, arg := range args {
+		if nextArgIsFlagValue {
+			nextArgIsFlagValue = false
+			continue
+		}
+		if argIsFlag(arg) {
+			if !argIsKeyValueFlag(arg) {
+				nextArgIsFlagValue = true
+			}
+			continue
+		}
+
+		nonFlagArgIdx++
+
+		// add-genesis-account [name] [amount]
+		if nonFlagArgIdx == 2 {
+			args[i] = convertCoins(args[i])
+			return args
+		}
+	}
+
+	return args
+}
+
+func argIsFlag(arg string) bool {
+	return strings.HasPrefix(arg, "--")
+}
+
+// argument is a flag in the form "--key=value"
+func argIsKeyValueFlag(arg string) bool {
+	return strings.HasPrefix(arg, "--") && strings.Contains(arg, "=")
 }
 
 // Execute executes the root command.
@@ -160,7 +314,7 @@ func Execute(rootCmd *cobra.Command) error {
 	ctx = context.WithValue(ctx, client.ClientContextKey, &client.Context{})
 	ctx = context.WithValue(ctx, server.ServerContextKey, server.NewDefaultContext())
 
-	convertDenom(os.Args[1:])
+	ConvertDenom(os.Args[1:])
 	rootCmd.SetArgs(os.Args[1:])
 	executor := tmcli.PrepareBaseCmd(rootCmd, "", app.DefaultNodeHome(appName))
 	return executor.ExecuteContext(ctx)
