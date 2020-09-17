@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"bufio"
@@ -20,6 +20,7 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 const (
@@ -29,7 +30,7 @@ const (
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
-func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
+func AddGenesisAccountCmd(defaultNodeHome string, coinParser chainsdk.CoinParser) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add-genesis-account [address_or_key_name] [coin][,[coin]]",
 		Short: "Add a genesis account to genesis.json",
@@ -72,7 +73,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				addr = info.GetAddress()
 			}
 
-			coins, err := sdk.ParseCoins(args[1])
+			coins, err := coinParser.ParseCoins(args[1])
 			if err != nil {
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
