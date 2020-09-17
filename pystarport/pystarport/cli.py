@@ -12,7 +12,7 @@ import jsonmerge
 from .utils import execute, interact, local_ip
 from .ports import p2p_port, rpc_port, api_port, grpc_port, pprof_port
 
-CHAIN = 'chain-maind'
+CHAIN = 'chain-maind'  # edit by nix-build
 CHAIN_ID = 'chainmaind'
 BASE_PORT = 26650
 
@@ -109,7 +109,6 @@ async def start():
 
 
 async def serve(config):
-    await execute('go install -mod readonly ./cmd/chain-maind')
     await init(config)
     await start()
 
