@@ -13,6 +13,7 @@ build
 
 # Testing
 coverage.txt
+/data
 
 # Others
 frontend/node_modules
