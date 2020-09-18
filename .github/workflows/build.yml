@@ -16,7 +16,30 @@ jobs:
     timeout-minutes: 5
     if: github.event_name == 'push' || github.event_name == 'pull_request' || (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinlauco' || github.actor == 'foreseaz' || github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' || github.actor == 'cdc-Hitesh'))
     steps:
-      - uses: actions/checkout@v2
+      - name: Github API Request
+        id: request
+        uses: octokit/request-action@v2.0.0
+        if: github.event_name == 'issue_comment'
+        with:
+          route: ${{ github.event.issue.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Comment PR informations
+        id: pr_data
+        if: github.event_name == 'issue_comment'
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+      - name: Checkout Comment PR Branch
+        uses: actions/checkout@v2
+        if: github.event_name == 'issue_comment'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+      - name: Normal check out code
+        uses: actions/checkout@v2
+        if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
@@ -30,15 +53,15 @@ jobs:
           echo "::add-path::$(go env GOPATH)/bin"
       - name: build
         run: make build
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
       - name: test
         run: make test
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
 
   install-runsim:
     runs-on: ubuntu-latest
     needs: build
-    if: github.event_name == 'push' || (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinlauco' || github.actor == 'foreseaz' || github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' || github.actor == 'cdc-Hitesh'))
+    if: github.event_name == 'push' || github.event_name == 'issue_comment'
     steps:
       - uses: actions/setup-go@v2.1.2
       - name: install runsim
@@ -53,7 +76,30 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/checkout@v2
+      - name: Github API Request
+        id: request
+        uses: octokit/request-action@v2.0.0
+        if: github.event_name == 'issue_comment'
+        with:
+          route: ${{ github.event.issue.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Comment PR informations
+        id: pr_data
+        if: github.event_name == 'issue_comment'
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+      - name: Checkout Comment PR Branch
+        uses: actions/checkout@v2
+        if: github.event_name == 'issue_comment'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+      - name: Normal check out code
+        uses: actions/checkout@v2
+        if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
@@ -66,17 +112,40 @@ jobs:
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
       - name: test-sim-nondeterminism
         run: |
           make test-sim-nondeterminism
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
 
   test-sim-import-export:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/checkout@v2
+      - name: Github API Request
+        id: request
+        uses: octokit/request-action@v2.0.0
+        if: github.event_name == 'issue_comment'
+        with:
+          route: ${{ github.event.issue.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Comment PR informations
+        id: pr_data
+        if: github.event_name == 'issue_comment'
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+      - name: Checkout Comment PR Branch
+        uses: actions/checkout@v2
+        if: github.event_name == 'issue_comment'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+      - name: Normal check out code
+        uses: actions/checkout@v2
+        if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
@@ -89,17 +158,40 @@ jobs:
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
       - name: test-sim-import-export
         run: |
           make test-sim-import-export
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
 
   test-sim-after-import:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/checkout@v2
+      - name: Github API Request
+        id: request
+        uses: octokit/request-action@v2.0.0
+        if: github.event_name == 'issue_comment'
+        with:
+          route: ${{ github.event.issue.pull_request.url }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Comment PR informations
+        id: pr_data
+        if: github.event_name == 'issue_comment'
+        run: |
+          echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
+          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+      - name: Checkout Comment PR Branch
+        uses: actions/checkout@v2
+        if: github.event_name == 'issue_comment'
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ steps.pr_data.outputs.repo_name }}
+          ref: ${{ steps.pr_data.outputs.branch }}
+      - name: Normal check out code
+        uses: actions/checkout@v2
+        if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
@@ -112,8 +204,8 @@ jobs:
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
       - name: test-sim-after-import
         run: |
           make test-sim-after-import
-        if: "env.GIT_DIFF != ''"
+        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
