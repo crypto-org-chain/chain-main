@@ -23,7 +23,7 @@ fi
 ##
 ## Run binary with all parameters
 ##
-export CHAINMAINDHOME="/chain-maind/node${ID}/.chainmaind"
+export CHAINMAINDHOME="/chain-maind/node${ID}/.chain-maind"
 
 if [ -d "`dirname ${CHAINMAINDHOME}/${LOG}`" ]; then
   "$BINARY" "$@" --home "$CHAINMAINDHOME"  | tee "${CHAINMAINDHOME}/${LOG}"

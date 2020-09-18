@@ -68,7 +68,7 @@ build-docker-chainmaindnode:
 
 # Run a 4-node testnet locally
 localnet-start: build-linux build-docker-chainmaindnode localnet-stop
-	@if ! [ -f $(BUILDDIR)/node0/.chainmaind/config/genesis.json ]; \
+	@if ! [ -f $(BUILDDIR)/node0/.chain-maind/config/genesis.json ]; \
 	then docker run --rm -v $(BUILDDIR):/chain-maind:Z cryptocom/chainmaindnode testnet --v 4 -o . --starting-ip-address 192.168.10.2 $(TESTNET_FLAGS); \
 	fi
 	docker-compose up -d
