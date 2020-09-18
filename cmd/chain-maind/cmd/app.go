@@ -1,3 +1,3 @@
 package cmd
 
-const appName = "chainmain"
+const appName = "chain-maind"
