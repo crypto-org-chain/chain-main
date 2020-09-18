@@ -1,4 +1,4 @@
-name: nix-build
+name: nix flow
 on:
   pull_request:
   push:
@@ -7,11 +7,11 @@ on:
       - release/**
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - run: nix-build
+    - run: nix-shell --run integration-tests/run.sh

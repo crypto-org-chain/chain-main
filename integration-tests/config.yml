@@ -1,0 +1,19 @@
+validators:
+  - coins: 10cro
+    staked: 10cro
+  - coins: 10cro
+    staked: 10cro
+accounts:
+  - name: community
+    coins: 100cro
+  - name: ecosystem
+    coins: 200cro
+  - name: reserve
+    coins: 200cro
+  - name: launch
+    coins: 100cro
+genesis:
+ app_state:
+   staking:
+     params:
+       unbonding_time: "10s"
