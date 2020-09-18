@@ -33,6 +33,8 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/crypto-com/chain-main/app"
+
+	chain "github.com/crypto-com/chain-main/x/chainmain"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -72,7 +74,7 @@ func convertCoin(s string) string {
 	if err != nil {
 		panic(err)
 	}
-	coin, err = sdk.ConvertCoin(coin, app.BaseCoinUnit)
+	coin, err = sdk.ConvertCoin(coin, chain.BaseCoinUnit)
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +87,7 @@ func convertCoins(s string) string {
 		panic(err)
 	}
 	for i, coin := range coins {
-		coins[i], err = sdk.ConvertCoin(coin, app.BaseCoinUnit)
+		coins[i], err = sdk.ConvertCoin(coin, chain.BaseCoinUnit)
 		if err != nil {
 			panic(err)
 		}
@@ -175,17 +177,17 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{
 					"params": map[string]string{
-						"bond_denom": app.BaseCoinUnit,
+						"bond_denom": chain.BaseCoinUnit,
 					},
 				},
 				"gov": map[string]interface{}{
 					"deposit_params": map[string]interface{}{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
+						"min_deposit": sdk.NewCoins(sdk.NewCoin(chain.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
 					},
 				},
 				"mint": map[string]interface{}{
 					"params": map[string]string{
-						"mint_denom": app.BaseCoinUnit,
+						"mint_denom": chain.BaseCoinUnit,
 					},
 				},
 				"bank": map[string]interface{}{

@@ -4,41 +4,26 @@ import (
 	"log"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-)
-
-const (
-	CoinType       = 394
-	FundraiserPath = "44'/394'/0'/0/1"
-)
-
-var (
-	AccountAddressPrefix   = "cro"
-	AccountPubKeyPrefix    = "cropub"
-	ValidatorAddressPrefix = "crocncl"
-	ValidatorPubKeyPrefix  = "crocnclpub"
-	ConsNodeAddressPrefix  = "crocnclcons"
-	ConsNodePubKeyPrefix   = "crocnclconspub"
-	HumanCoinUnit          = "cro"
-	BaseCoinUnit           = "basecro" // 10^-8 AKA "carson"
+	chain "github.com/crypto-com/chain-main/x/chainmain"
 )
 
 func SetConfig() {
 	config := sdk.GetConfig()
-	config.SetBech32PrefixForAccount(AccountAddressPrefix, AccountPubKeyPrefix)
-	config.SetBech32PrefixForValidator(ValidatorAddressPrefix, ValidatorPubKeyPrefix)
-	config.SetBech32PrefixForConsensusNode(ConsNodeAddressPrefix, ConsNodePubKeyPrefix)
+	config.SetBech32PrefixForAccount(chain.AccountAddressPrefix, chain.AccountPubKeyPrefix)
+	config.SetBech32PrefixForValidator(chain.ValidatorAddressPrefix, chain.ValidatorPubKeyPrefix)
+	config.SetBech32PrefixForConsensusNode(chain.ConsNodeAddressPrefix, chain.ConsNodePubKeyPrefix)
 
-	config.SetCoinType(CoinType)
-	config.SetFullFundraiserPath(FundraiserPath)
+	config.SetCoinType(chain.CoinType)
+	config.SetFullFundraiserPath(chain.FundraiserPath)
 
 	croUnit := sdk.OneDec()
-	err := sdk.RegisterDenom(HumanCoinUnit, croUnit)
+	err := sdk.RegisterDenom(chain.HumanCoinUnit, croUnit)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	carsonUnit := sdk.NewDecWithPrec(1, 8) // 10^-8 (carson)
-	err = sdk.RegisterDenom(BaseCoinUnit, carsonUnit)
+	carsonUnit := sdk.NewDecWithPrec(1, int64(chain.CroExponential)) // 10^-8 (carson)
+	err = sdk.RegisterDenom(chain.BaseCoinUnit, carsonUnit)
 
 	if err != nil {
 		log.Fatal(err)
