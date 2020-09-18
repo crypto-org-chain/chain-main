@@ -70,7 +70,7 @@ import (
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome = func(appName string) string {
-		return os.ExpandEnv("$HOME/.chainmaind")
+		return os.ExpandEnv("$HOME/.chain-maind")
 	}
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
