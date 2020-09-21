@@ -16,7 +16,7 @@ type SDKCoinParser struct {
 	baseUnit string
 }
 
-func NewCoinParser(baseUnit string) *SDKCoinParser {
+func NewSDKCoinParser(baseUnit string) *SDKCoinParser {
 	return &SDKCoinParser{
 		baseUnit,
 	}

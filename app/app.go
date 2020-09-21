@@ -75,7 +75,7 @@ var (
 		return os.ExpandEnv("$HOME/.chain-maind")
 	}
 
-	DefaultCoinParser = chainmaintypes.NewCoinParser(BaseCoinUnit)
+	DefaultCoinParser = chainmaintypes.NewSDKCoinParser(BaseCoinUnit)
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
