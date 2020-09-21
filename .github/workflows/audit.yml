@@ -17,3 +17,6 @@ jobs:
       run: go list -json -m all > go.list
     - name: Nancy
       uses: sonatype-nexus-community/nancy-github-action@master
+      # FIXME: https://github.com/crypto-com/chain-main/issues/25 remove exclusion when viper+tendermint are upgraded
+      with:
+        nancyCommand: sleuth --exclude-vulnerability CVE-2018-17848,CVE-2018-17846,CVE-2018-17847,CVE-2018-17142,CVE-2018-17143,CVE-2020-15115,CVE-2020-15136,CVE-2020-15114
