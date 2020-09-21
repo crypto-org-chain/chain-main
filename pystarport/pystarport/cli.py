@@ -3,13 +3,14 @@ import os
 import json
 from pathlib import Path
 import asyncio
+import atexit
 
 import fire
 import tomlkit
 import yaml
 import jsonmerge
 
-from .utils import execute, interact, local_ip
+from .utils import interact, local_ip
 from .ports import p2p_port, rpc_port, api_port, grpc_port, pprof_port
 
 CHAIN = 'chain-maind'  # edit by nix-build
@@ -103,9 +104,17 @@ async def start():
         return
     for i in range(count):
         Path(f'data/node{i}.log').touch()
-    tasks = [execute('tail -f ' + ' '.join(f'data/node{i}.log' for i in range(count)))] + \
-        [execute(f'{CHAIN} start --home data/node{i} > data/node{i}.log') for i in range(count)]
-    await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+    tail_process = await asyncio.create_subprocess_exec('tail', '-f', *(f'data/node{i}.log' for i in range(count)))
+    chain_processes = [await asyncio.create_subprocess_exec(CHAIN, 'start', '--home', f'data/node{i}') for i in range(count)]
+    def terminate():
+        processes = chain_processes + [tail_process]
+        for p in processes:
+            try:
+                p.terminate()
+            except BaseException as e:
+                print(e, file=sys.stderr)
+    atexit.register(terminate)
+    await asyncio.wait([tail_process.wait()] + [p.wait() for p in chain_processes], return_when=asyncio.FIRST_COMPLETED)
 
 
 async def serve(config):

@@ -2,15 +2,6 @@ import socket
 import asyncio
 
 
-async def execute(cmd, ignore_error=False, **kwargs):
-    proc = await asyncio.create_subprocess_shell(cmd, **kwargs)
-    # begin = time.perf_counter()
-    retcode = await proc.wait()
-    # print('[%.02f] %s' % (time.perf_counter() - begin, cmd))
-    if not ignore_error:
-        assert retcode == 0, cmd
-
-
 async def interact(cmd, ignore_error=False, input=None, **kwargs):
     proc = await asyncio.create_subprocess_shell(
         cmd,
