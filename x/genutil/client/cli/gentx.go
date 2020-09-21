@@ -40,6 +40,7 @@ func GenTxCmd(
 	defaultNodeHome string,
 	coinParser chainsdk.CoinParser,
 ) *cobra.Command {
+	//nolint:errcheck
 	ipDefault, _ := server.ExternalIP()
 	fsCreateValidator, defaultsDesc := chainstakingcli.CreateValidatorMsgFlagSet(ipDefault)
 
@@ -79,11 +80,13 @@ $ %s gentx my-key-name --home=/path/to/home/dir --keyring-backend=os --chain-id=
 			}
 
 			// read --nodeID, if empty take it from priv_validator.json
+			//nolint:errcheck
 			if nodeIDString, _ := cmd.Flags().GetString(cli.FlagNodeID); nodeIDString != "" {
 				nodeID = nodeIDString
 			}
 
 			// read --pubkey, if empty take it from priv_validator.json
+			//nolint:errcheck
 			if valPubKeyString, _ := cmd.Flags().GetString(cli.FlagPubKey); valPubKeyString != "" {
 				valPubKey, err = sdk.GetPubKeyFromBech32(sdk.Bech32PubKeyTypeConsPub, valPubKeyString)
 				if err != nil {
@@ -114,16 +117,20 @@ $ %s gentx my-key-name --home=/path/to/home/dir --keyring-backend=os --chain-id=
 			}
 
 			moniker := config.Moniker
+			//nolint:errcheck
 			if m, _ := cmd.Flags().GetString(cli.FlagMoniker); m != "" {
 				moniker = m
 			}
 
 			// set flags for creating a gentx
-			createValCfg, err := chainstakingcli.PrepareConfigForTxCreateValidator(cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey)
+			createValCfg, err := chainstakingcli.PrepareConfigForTxCreateValidator(
+				cmd.Flags(), moniker, nodeID, genDoc.ChainID, valPubKey,
+			)
 			if err != nil {
 				return errors.Wrap(err, "error creating configuration to create validator msg")
 			}
 
+			//nolint:errcheck
 			amount, _ := cmd.Flags().GetString(cli.FlagAmount)
 			coins, err := sdk.ParseCoins(amount)
 			if err != nil {
@@ -180,6 +187,7 @@ $ %s gentx my-key-name --home=/path/to/home/dir --keyring-backend=os --chain-id=
 				return errors.Wrap(err, "failed to sign std tx")
 			}
 
+			//nolint:errcheck
 			outputDocument, _ := cmd.Flags().GetString(flags.FlagOutputDocument)
 			if outputDocument == "" {
 				outputDocument, err = makeOutputFilepath(config.RootDir, nodeID)
@@ -198,7 +206,11 @@ $ %s gentx my-key-name --home=/path/to/home/dir --keyring-backend=os --chain-id=
 	}
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
-	cmd.Flags().String(flags.FlagOutputDocument, "", "Write the genesis transaction JSON document to the given file instead of the default location")
+	cmd.Flags().String(
+		flags.FlagOutputDocument,
+		"",
+		"Write the genesis transaction JSON document to the given file instead of the default location",
+	)
 	cmd.Flags().String(flags.FlagChainID, "", "The network chain ID")
 	cmd.Flags().AddFlagSet(fsCreateValidator)
 	flags.AddTxFlagsToCmd(cmd)

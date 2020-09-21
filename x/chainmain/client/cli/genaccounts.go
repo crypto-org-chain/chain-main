@@ -100,7 +100,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			if erramt != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", erramt)
 			}
-			vestingAmt, err := sdk.ParseCoins(vestingAmtStr)
+			vestingAmt, err := coinParser.ParseCoins(vestingAmtStr)
 			if err != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
 			}

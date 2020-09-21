@@ -36,6 +36,7 @@ func NewSendTxCmd(coinParser chainsdk.CoinParser) *cobra.Command {
 ignored as it is implied from [from_key_or_address].`,
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			//nolint:errcheck
 			cmd.Flags().Set(flags.FlagFrom, args[0])
 
 			clientCtx := client.GetClientContextFromCmd(cmd)

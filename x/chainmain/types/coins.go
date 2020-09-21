@@ -35,11 +35,11 @@ func (parser *SDKCoinParser) ParseCoin(s string) (sdk.Coin, error) {
 }
 
 func (parser *SDKCoinParser) ParseCoinToa(s string) (string, error) {
-	if coin, err := parser.ParseCoin(s); err != nil {
+	coin, err := parser.ParseCoin(s)
+	if err != nil {
 		return "", err
-	} else {
-		return coin.String(), nil
 	}
+	return coin.String(), nil
 }
 
 func (parser *SDKCoinParser) ParseCoins(s string) (sdk.Coins, error) {
@@ -57,9 +57,9 @@ func (parser *SDKCoinParser) ParseCoins(s string) (sdk.Coins, error) {
 }
 
 func (parser *SDKCoinParser) ParseCoinsToa(s string) (string, error) {
-	if coins, err := parser.ParseCoins(s); err != nil {
+	coins, err := parser.ParseCoins(s)
+	if err != nil {
 		return "", err
-	} else {
-		return coins.String(), nil
 	}
+	return coins.String(), nil
 }

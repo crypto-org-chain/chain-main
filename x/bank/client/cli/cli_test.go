@@ -1,14 +1,12 @@
 package cli_test
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -49,8 +47,8 @@ func (s *IntegrationTestSuite) TestNewSendTxCmdGenOnly() {
 
 	clientCtx := val.ClientCtx
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, client.ClientContextKey, &clientCtx)
+	// ctx := context.Background()
+	// ctx = context.WithValue(context.Background(), client.ClientContextKey, &clientCtx)
 
 	fakeCoinMappings := map[string]sdk.Coin{
 		"1node0supertoken": sdk.NewCoin(fmt.Sprintf("%stoken", val.Moniker), sdk.NewInt(10)),

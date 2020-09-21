@@ -19,19 +19,19 @@ func NewFakeCoinParser(mapping map[string]sdk.Coin) *FakeCoinParser {
 }
 
 func (parser *FakeCoinParser) ParseCoin(s string) (sdk.Coin, error) {
-	if coin, exist := parser.mapping[s]; exist {
+	coin, exist := parser.mapping[s]
+	if exist {
 		return coin, nil
-	} else {
-		return sdk.Coin{}, fmt.Errorf("Coin mapping not found for %s", s)
 	}
+	return sdk.Coin{}, fmt.Errorf("coin mapping not found: %s", s)
 }
 
 func (parser *FakeCoinParser) ParseCoinToa(s string) (string, error) {
-	if coin, err := parser.ParseCoin(s); err != nil {
+	coin, err := parser.ParseCoin(s)
+	if err != nil {
 		return "", err
-	} else {
-		return coin.String(), nil
 	}
+	return coin.String(), nil
 }
 
 func (parser *FakeCoinParser) ParseCoins(s string) (sdk.Coins, error) {
@@ -54,9 +54,9 @@ func (parser *FakeCoinParser) ParseCoins(s string) (sdk.Coins, error) {
 }
 
 func (parser *FakeCoinParser) ParseCoinsToa(s string) (string, error) {
-	if coins, err := parser.ParseCoins(s); err != nil {
+	coins, err := parser.ParseCoins(s)
+	if err != nil {
 		return "", err
-	} else {
-		return coins.String(), nil
 	}
+	return coins.String(), nil
 }

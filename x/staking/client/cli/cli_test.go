@@ -179,6 +179,7 @@ func (s *IntegrationTestSuite) TestNewCreateValidatorCmd() {
 		},
 	}
 
+	//nolint:dupl
 	for _, tc := range testCases {
 		tc := tc
 
@@ -267,6 +268,7 @@ func (s *IntegrationTestSuite) TestNewCmdDelegate() {
 		},
 	}
 
+	//nolint:dupl
 	for _, tc := range testCases {
 		tc := tc
 
@@ -358,6 +360,7 @@ func (s *IntegrationTestSuite) TestNewCmdRedelegate() {
 		},
 	}
 
+	//nolint:dupl
 	for _, tc := range testCases {
 		tc := tc
 
@@ -430,6 +433,7 @@ func (s *IntegrationTestSuite) TestNewCmdUnbond() {
 		},
 	}
 
+	//nolint:dupl
 	for _, tc := range testCases {
 		tc := tc
 
