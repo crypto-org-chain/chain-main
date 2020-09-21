@@ -1,8 +1,8 @@
 
 # Simple usage with a mounted data directory:
 # > docker build -t cryptocom/chain-main .
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chainmaind:/chain-main/.chainmaind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind init [moniker] [flags]
-# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chainmaind:/chain-main/.chainmaind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind start
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chain-maind:/chain-main/.chain-maind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind init [moniker] [flags]
+# > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chain-maind:/chain-main/.chain-maind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind start
 FROM golang:alpine AS build-env
 
 # Set up dependencies
@@ -35,7 +35,6 @@ WORKDIR $CHAIN_MAIN
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/chain-maind /usr/bin/chain-maind
-COPY --from=build-env /go/bin/chain-maincli /usr/bin/chain-maincli
 
 # Run chain-maind by default, omit entrypoint to ease using container with chain-maincli
 CMD ["chain-maind"]
