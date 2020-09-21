@@ -24,6 +24,13 @@ async def main():
     validators = json.loads(await chaind('query', 'staking', 'validators', output='json'))
     assert len(validators) == 2
 
+    # check vesting account
+    output = await chaind('keys', 'show', 'reserve', '-a', home='data/node0', keyring_backend='test')
+    addr = output.strip().decode()
+    account = json.loads(await chaind('query', 'auth', 'account', addr, output='json'))
+    assert account['@type'] == '/cosmos.vesting.v1beta1.DelayedVestingAccount'
+    assert account['base_vesting_account']['original_vesting'] == [{"denom":"basecro","amount":"20000000000"}]
+
 
 if __name__ == '__main__':
     asyncio.run(main())

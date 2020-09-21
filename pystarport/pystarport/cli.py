@@ -1,5 +1,7 @@
 import re
 import os
+import sys
+import datetime
 import json
 from pathlib import Path
 import asyncio
@@ -9,6 +11,8 @@ import fire
 import tomlkit
 import yaml
 import jsonmerge
+import dateutil.parser
+import durations
 
 from .utils import interact, local_ip
 from .ports import p2p_port, rpc_port, api_port, grpc_port, pprof_port
@@ -81,7 +85,15 @@ async def init(config):
 
     for account in config['accounts']:
         acct = await create_account(0, account['name'])
-        await chaind('add-genesis-account', acct['address'], account['coins'], home=f'data/node0')
+        vesting = account.get('vesting')
+        if not vesting:
+            await chaind('add-genesis-account', acct['address'], account['coins'], home=f'data/node0')
+        else:
+            genesis_time = dateutil.parser.isoparse(genesis['genesis_time'])
+            end_time = genesis_time + datetime.timedelta(seconds=durations.Duration(vesting).to_seconds())
+            await chaind('add-genesis-account', acct['address'], account['coins'], home=f'data/node0',
+                         vesting_amount=account['coins'],
+                         vesting_end_time=end_time.replace(tzinfo=None).isoformat('T')+'Z')
 
     # collect-gentxs
     await chaind('collect-gentxs', gentx_dir='data/gentx', home=f'data/node0')
