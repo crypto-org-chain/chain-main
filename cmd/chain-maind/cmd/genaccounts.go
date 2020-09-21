@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -76,14 +77,24 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
 
-			vestingStart, errstart := cmd.Flags().GetInt64(flagVestingStart)
+			vestingStartStr, errstart := cmd.Flags().GetString(flagVestingStart)
 			if errstart != nil {
 				return fmt.Errorf("failed to parse vesting start: %w", errstart)
 			}
-			vestingEnd, errend := cmd.Flags().GetInt64(flagVestingEnd)
+			vestingStart, errstart := ParseTime(vestingStartStr)
+			if errstart != nil {
+				return fmt.Errorf("failed to parse vesting start: %w", errstart)
+			}
+
+			vestingEndStr, errend := cmd.Flags().GetString(flagVestingEnd)
 			if errend != nil {
 				return fmt.Errorf("failed to parse vesting end: %w", errend)
 			}
+			vestingEnd, errend := ParseTime(vestingEndStr)
+			if errend != nil {
+				return fmt.Errorf("failed to parse vesting end: %w", errend)
+			}
+
 			vestingAmtStr, erramt := cmd.Flags().GetString(flagVestingAmt)
 			if erramt != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", erramt)
@@ -188,9 +199,20 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
-	cmd.Flags().Int64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
-	cmd.Flags().Int64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
+	// nolint: lll
+	cmd.Flags().String(flagVestingStart, "2006-01-02T15:04:05Z", "schedule start time (RFC-3339 format) for vesting accounts")
+	// nolint: lll
+	cmd.Flags().String(flagVestingEnd, "2006-01-02T15:04:05Z", "schedule end time (RFC-3339 format) for vesting accounts")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd
+}
+
+// ParseTime parses RFC-3339 string (2006-01-02T15:04:05Z07:00) into unix timestamp
+func ParseTime(value string) (int64, error) {
+	valueTime, err := time.Parse(time.RFC3339, value)
+	if err != nil {
+		return 0, err
+	}
+	return valueTime.Unix(), nil
 }
