@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 cd "$(dirname "${BASH_SOURCE[0]}")"
-pystarport serve config.yml > test.log &
+pystarport serve config.yml --quiet &
 PID=$!
+
 pytest -v --ignore data
 RETCODE=$?
-kill $PID
-wait
+
+echo 'quit starport...'
+kill -TERM $PID
+wait $PID
+
 if [ $RETCODE -ne 0 ]; then
-    cat test.log
+    cat data/node*.log
 else
     echo 'success'
 fi
-rm test.log
+
 exit $RETCODE
