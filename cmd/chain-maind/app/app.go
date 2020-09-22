@@ -34,6 +34,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/crypto-com/chain-main/app"
+	chain "github.com/crypto-com/chain-main/x/chainmain"
 	chaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
 	chaingenutilcli "github.com/crypto-com/chain-main/x/genutil/client/cli"
 )
@@ -97,17 +98,17 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{
 					"params": map[string]string{
-						"bond_denom": app.BaseCoinUnit,
+						"bond_denom": chain.BaseCoinUnit,
 					},
 				},
 				"gov": map[string]interface{}{
 					"deposit_params": map[string]interface{}{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
+						"min_deposit": sdk.NewCoins(sdk.NewCoin(chain.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
 					},
 				},
 				"mint": map[string]interface{}{
 					"params": map[string]string{
-						"mint_denom": app.BaseCoinUnit,
+						"mint_denom": chain.BaseCoinUnit,
 					},
 				},
 				"bank": map[string]interface{}{

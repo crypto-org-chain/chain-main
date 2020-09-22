@@ -201,9 +201,9 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
 	// nolint: lll
-	cmd.Flags().String(flagVestingStart, "2006-01-02T15:04:05Z", "schedule start time (RFC-3339 format) for vesting accounts")
+	cmd.Flags().String(flagVestingStart, "1970-01-01T00:00:00Z", "schedule start time (RFC-3339 format) for vesting accounts")
 	// nolint: lll
-	cmd.Flags().String(flagVestingEnd, "2006-01-02T15:04:05Z", "schedule end time (RFC-3339 format) for vesting accounts")
+	cmd.Flags().String(flagVestingEnd, "1970-01-01T00:00:00Z", "schedule end time (RFC-3339 format) for vesting accounts")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

@@ -4,5 +4,5 @@ let
   pystarport = import ./pystarport/default.nix { inherit pkgs; };
 in
   pkgs.mkShell {
-    buildInputs = [chain pystarport];
+    buildInputs = [chain pystarport pkgs.python3Packages.pytest-asyncio pkgs.python3Packages.pytest];
   }

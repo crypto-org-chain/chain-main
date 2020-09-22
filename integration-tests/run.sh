@@ -2,7 +2,7 @@
 cd "$(dirname "${BASH_SOURCE[0]}")"
 pystarport serve config.yml > test.log &
 PID=$!
-./simple.py
+pytest -v --ignore data
 RETCODE=$?
 kill $PID
 wait
