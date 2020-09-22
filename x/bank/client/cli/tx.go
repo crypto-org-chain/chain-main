@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
@@ -50,7 +48,6 @@ ignored as it is implied from [from_key_or_address].`,
 				return err
 			}
 
-			fmt.Println(args[2])
 			coins, err := coinParser.ParseCoins(args[2])
 			if err != nil {
 				return err
