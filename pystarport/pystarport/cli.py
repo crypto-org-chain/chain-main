@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import signal
 import datetime
 import json
 from pathlib import Path
@@ -79,12 +80,13 @@ async def init(config):
     # create accounts
     for i, node in enumerate(config['validators']):
         account = await create_account(i, 'validator')
-        print('account', account)
+        print(account)
         await chaind('add-genesis-account', account['address'], node['coins'], home=f'data/node{i}')
         await chaind('gentx', 'validator', amount=node['staked'], keyring_backend='test', chain_id=CHAIN_ID, home=f'data/node{i}')
 
     for account in config['accounts']:
         acct = await create_account(0, account['name'])
+        print(acct)
         vesting = account.get('vesting')
         if not vesting:
             await chaind('add-genesis-account', acct['address'], account['coins'], home=f'data/node0')
@@ -109,29 +111,30 @@ async def init(config):
         edit_app_cfg(f'data/node{i}/config/app.toml', BASE_PORT, i)
 
 
-async def start():
+async def start(quiet):
     count = len([name for name in os.listdir('data') if re.match(r'^node\d+$', name)])
     if count == 0:
         print('not initialized yet', file=sys.stderr)
         return
     for i in range(count):
         Path(f'data/node{i}.log').touch()
-    tail_process = await asyncio.create_subprocess_exec('tail', '-f', *(f'data/node{i}.log' for i in range(count)))
-    chain_processes = [await asyncio.create_subprocess_exec(CHAIN, 'start', '--home', f'data/node{i}') for i in range(count)]
+    processes = [await asyncio.create_subprocess_shell(f'{CHAIN} start --home data/node{i} > data/node{i}.log', preexec_fn=os.setsid) for i in range(count)]
+    if not quiet:
+        processes.append(await asyncio.create_subprocess_exec('tail', '-f', *(f'data/node{i}.log' for i in
+                                                                              range(count))))
+
     def terminate():
-        processes = chain_processes + [tail_process]
+        print('terminate child processes')
         for p in processes:
-            try:
-                p.terminate()
-            except BaseException as e:
-                print(e, file=sys.stderr)
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
     atexit.register(terminate)
-    await asyncio.wait([tail_process.wait()] + [p.wait() for p in chain_processes], return_when=asyncio.FIRST_COMPLETED)
+
+    await asyncio.wait([p.wait() for p in processes], return_when=asyncio.FIRST_COMPLETED)
 
 
-async def serve(config):
+async def serve(config, quiet):
     await init(config)
-    await start()
+    await start(quiet)
 
 
 class CLI:
@@ -141,20 +144,25 @@ class CLI:
         '''
         asyncio.run(init(yaml.safe_load(open(config))))
 
-    def start(self):
+    def start(self, tail=True):
         '''
         start testnet processes
         '''
-        asyncio.run(start())
+        asyncio.run(start(tail))
 
-    def serve(self, config):
+    def serve(self, config, quiet=False):
         '''
         build, init and start
         '''
-        asyncio.run(serve(yaml.safe_load(open(config))))
+        asyncio.run(serve(yaml.safe_load(open(config)), quiet))
+
+
+def terminate(*args):
+    sys.exit(1)
 
 
 def main():
+    signal.signal(signal.SIGTERM, terminate)
     fire.Fire(CLI())
 
 if __name__ == '__main__':
