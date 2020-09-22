@@ -18,7 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking/client/cli"
 	stakingtestutil "github.com/cosmos/cosmos-sdk/x/staking/client/testutil"
 
-	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
+	"github.com/crypto-com/chain-main/test"
 	chainstakingcli "github.com/crypto-com/chain-main/x/staking/client/cli"
 )
 
@@ -184,7 +184,7 @@ func (s *IntegrationTestSuite) TestNewCreateValidatorCmd() {
 		tc := tc
 
 		s.Run(tc.name, func() {
-			fakeCoinParser := chainsdk.NewFakeCoinParser(map[string]sdk.Coin{
+			fakeCoinParser := test.NewFakeCoinParser(map[string]sdk.Coin{
 				"10superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)),
 				"15superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(150)),
 				"100stake":     sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)),
@@ -273,7 +273,7 @@ func (s *IntegrationTestSuite) TestNewCmdDelegate() {
 		tc := tc
 
 		s.Run(tc.name, func() {
-			fakeCoinParser := chainsdk.NewFakeCoinParser(map[string]sdk.Coin{
+			fakeCoinParser := test.NewFakeCoinParser(map[string]sdk.Coin{
 				"15superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(150)),
 				"150stake":     sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(150)),
 			})
@@ -365,7 +365,7 @@ func (s *IntegrationTestSuite) TestNewCmdRedelegate() {
 		tc := tc
 
 		s.Run(tc.name, func() {
-			fakeCoinParser := chainsdk.NewFakeCoinParser(map[string]sdk.Coin{
+			fakeCoinParser := test.NewFakeCoinParser(map[string]sdk.Coin{
 				"15superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(150)),
 				"150stake":     sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(150)),
 			})
@@ -438,7 +438,7 @@ func (s *IntegrationTestSuite) TestNewCmdUnbond() {
 		tc := tc
 
 		s.Run(tc.name, func() {
-			fakeCoinParser := chainsdk.NewFakeCoinParser(map[string]sdk.Coin{
+			fakeCoinParser := test.NewFakeCoinParser(map[string]sdk.Coin{
 				"10superstake":  sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(1000)),
 				"150superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(15000)),
 				"150stake":      sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(100)),

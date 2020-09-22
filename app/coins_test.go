@@ -1,6 +1,7 @@
-package types_test
+package app_test
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -8,7 +9,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-com/chain-main/app"
-	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 func TestParseCoin(t *testing.T) {
@@ -16,7 +16,7 @@ func TestParseCoin(t *testing.T) {
 
 	assert := assert.New(t)
 
-	coinParser := chainsdk.NewSDKCoinParser("basecro")
+	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
 
 	var coin sdk.Coin
 	var err error
@@ -38,7 +38,7 @@ func TestParseCoin(t *testing.T) {
 func TestParseCoins(t *testing.T) {
 	assert := assert.New(t)
 
-	coinParser := chainsdk.NewSDKCoinParser("basecro")
+	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
 
 	var coins sdk.Coins
 	var err error
@@ -63,5 +63,26 @@ func TestParseCoins(t *testing.T) {
 		sdk.NewCoin("basecro", sdk.NewInt(2000)),
 		sdk.NewCoin("basecro", sdk.NewInt(100000000000)),
 	}, coins)
+	assert.Nil(err)
+}
+
+func TestSprintBaseCoin(t *testing.T) {
+	assert := assert.New(t)
+
+	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
+
+	var coin string
+	var err error
+
+	_, err = coinParser.SprintBaseCoin(sdk.NewInt(1), "invalid")
+	assert.Error(err, "invalid coin expression: invalid")
+
+	coin, err = coinParser.SprintBaseCoin(sdk.NewInt(1), "cro")
+	assert.Equal("0.00000001", coin)
+	assert.Nil(err)
+
+	totalSupply, _ := new(big.Int).SetString("100_000_000_000_0000_0000", 0)
+	coin, err = coinParser.SprintBaseCoin(sdk.NewIntFromBigInt(totalSupply), "cro")
+	assert.Equal("100000000000.00000000", coin)
 	assert.Nil(err)
 }

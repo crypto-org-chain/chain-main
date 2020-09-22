@@ -13,8 +13,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/crypto-com/chain-main/test"
 	banktestutil "github.com/crypto-com/chain-main/x/bank/client/cli/testutil"
-	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 type IntegrationTestSuite struct {
@@ -54,7 +54,7 @@ func (s *IntegrationTestSuite) TestNewSendTxCmdGenOnly() {
 		"1node0supertoken": sdk.NewCoin(fmt.Sprintf("%stoken", val.Moniker), sdk.NewInt(10)),
 		"1superstake":      sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
 	}
-	fakeCoinParser := chainsdk.NewFakeCoinParser(fakeCoinMappings)
+	fakeCoinParser := test.NewFakeCoinParser(fakeCoinMappings)
 
 	from := val.Address
 	to := val.Address
@@ -170,7 +170,7 @@ func (s *IntegrationTestSuite) TestNewSendTxCmd() {
 				"0superstake":      sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(0)),
 				"1superstake":      sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
 			}
-			fakeCoinParser := chainsdk.NewFakeCoinParser(fakeCoinMappings)
+			fakeCoinParser := test.NewFakeCoinParser(fakeCoinMappings)
 
 			bz, err := banktestutil.MsgSendExec(clientCtx, fakeCoinParser, tc.from, tc.to, tc.amount, tc.args...)
 			if tc.expectErr {

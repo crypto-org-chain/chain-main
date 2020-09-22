@@ -33,6 +33,7 @@ go.sum: go.mod
 
 test:
 	@go test -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+.PHONY: test
 
 # look into .golangci.yml for enabling / disabling linters
 lint:

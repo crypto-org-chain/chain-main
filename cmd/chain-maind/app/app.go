@@ -34,8 +34,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/crypto-com/chain-main/app"
-	chain "github.com/crypto-com/chain-main/x/chainmain"
-	chaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
+	chainmaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
 	chaingenutilcli "github.com/crypto-com/chain-main/x/genutil/client/cli"
 )
 
@@ -98,23 +97,23 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{
 					"params": map[string]string{
-						"bond_denom": chain.BaseCoinUnit,
+						"bond_denom": app.BaseCoinUnit,
 					},
 				},
 				"gov": map[string]interface{}{
 					"deposit_params": map[string]interface{}{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(chain.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
+						"min_deposit": sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
 					},
 				},
 				"mint": map[string]interface{}{
 					"params": map[string]string{
-						"mint_denom": chain.BaseCoinUnit,
+						"mint_denom": app.BaseCoinUnit,
 					},
 				},
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
-							"description": "The native token of Crypto.com Chain.",
+							"description": "The native token of Crypto.com app.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
 									"denom":    "basecro",
@@ -176,9 +175,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			app.DefaultCoinParser,
 		),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics, encodingConfig.TxConfig),
-		chaincli.AddGenesisAccountCmd(app.DefaultNodeHome(appName), app.DefaultCoinParser),
+		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome(appName), app.DefaultCoinParser),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		chaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		chainmaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}, app.DefaultCoinParser),
 		debug.Cmd(),
 	)
 

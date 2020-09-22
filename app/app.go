@@ -75,7 +75,7 @@ var (
 		return os.ExpandEnv("$HOME/.chain-maind")
 	}
 
-	DefaultCoinParser = chainmaintypes.NewSDKCoinParser(BaseCoinUnit)
+	DefaultCoinParser = NewSDKCoinParser(BaseCoinUnit, CoinToBaseUnitMuls)
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
@@ -95,7 +95,7 @@ var (
 		),
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		chainmain.AppModuleBasic{},
+		chainmain.NewAppModuleBasicWithCoinParser(DefaultCoinParser),
 	)
 
 	// module account permissions
@@ -267,7 +267,7 @@ func New(
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
+		chainmain.NewAppModule(appCodec, app.chainmainKeeper, DefaultCoinParser),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that

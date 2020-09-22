@@ -16,7 +16,7 @@ import (
 	tmconfig "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
 	tmos "github.com/tendermint/tendermint/libs/os"
-	"github.com/tendermint/tendermint/types"
+	tmtypes "github.com/tendermint/tendermint/types"
 	tmtime "github.com/tendermint/tendermint/types/time"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -36,7 +36,8 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	chain "github.com/crypto-com/chain-main/x/chainmain"
+
+	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 var (
@@ -51,7 +52,11 @@ var (
 )
 
 // get cmd to initialize all files for tendermint testnet and application
-func AddTestnetCmd(mbm module.BasicManager, genBalIterator banktypes.GenesisBalancesIterator) *cobra.Command {
+func AddTestnetCmd(
+	mbm module.BasicManager,
+	genBalIterator banktypes.GenesisBalancesIterator,
+	coinParser types.CoinParser,
+) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
 		Short: "Initialize files for a simapp testnet",
@@ -113,7 +118,7 @@ Example:
 			}
 
 			return InitTestnet(
-				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
+				clientCtx, coinParser, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, numValidators,
 			)
 		},
@@ -153,6 +158,7 @@ var (
 // Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
+	coinParser types.CoinParser,
 	cmd *cobra.Command,
 	nodeConfig *tmconfig.Config,
 	mbm module.BasicManager,
@@ -169,7 +175,6 @@ func InitTestnet(
 	stakingAmount string,
 	numValidators int,
 ) error {
-
 	nodeIDs := make([]string, numValidators)
 	valPubKeys := make([]crypto.PubKey, numValidators)
 
@@ -181,12 +186,12 @@ func InitTestnet(
 	chainmainConfig.Telemetry.EnableHostnameLabel = false
 	chainmainConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
 
-	coins, err := sdk.ParseCoins(amount)
+	coins, err := coinParser.ParseCoins(amount)
 	if err != nil {
 		return fmt.Errorf("failed to parse coins: %w", err)
 	}
 
-	stakingCoin, err := parseStakingCoin(coins, stakingAmount)
+	stakingCoin, err := parseStakingCoin(coins, stakingAmount, coinParser)
 	if err != nil {
 		return err
 	}
@@ -203,7 +208,7 @@ func InitTestnet(
 	if erramt != nil {
 		return fmt.Errorf("failed to parse vesting amount: %w", erramt)
 	}
-	vestingCoins, err := sdk.ParseCoins(vestingAmtStr)
+	vestingCoins, err := coinParser.ParseCoins(vestingAmtStr)
 	if err != nil {
 		return fmt.Errorf("failed to parse vesting amount: %w", err)
 	}
@@ -355,7 +360,7 @@ func InitTestnet(
 	}
 
 	if err = initGenFiles(
-		clientCtx, mbm, chainID, genAccounts, genBalances,
+		clientCtx, coinParser, mbm, chainID, genAccounts, genBalances,
 		genFiles, numValidators, unbondingTime); err != nil {
 		return err
 	}
@@ -373,19 +378,18 @@ func InitTestnet(
 }
 
 func initGenFiles(
-	clientCtx client.Context, mbm module.BasicManager, chainID string,
+	clientCtx client.Context, coinParser types.CoinParser, mbm module.BasicManager, chainID string,
 	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
 	genFiles []string, numValidators int,
 	unbondingTime time.Duration,
 ) error {
-
 	appGenState := mbm.DefaultGenesis(clientCtx.JSONMarshaler)
 
 	// set staking param in the genesis state
 
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
-	stakingGenState.Params.BondDenom = chain.BaseCoinUnit
+	stakingGenState.Params.BondDenom = coinParser.GetBaseUnit()
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
 	appGenState[stakingtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&stakingGenState)
@@ -393,14 +397,14 @@ func initGenFiles(
 	// set gov min_deposit in the genesis state
 	var govGenState govtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
-	govGenState.DepositParams.MinDeposit[0].Denom = chain.BaseCoinUnit
+	govGenState.DepositParams.MinDeposit[0].Denom = coinParser.GetBaseUnit()
 	govGenState.DepositParams.MinDeposit[0].Amount = govtypes.DefaultMinDepositTokens
 	appGenState[govtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
 	var mintGenState minttypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[minttypes.ModuleName], &mintGenState)
-	mintGenState.Params.MintDenom = chain.BaseCoinUnit
+	mintGenState.Params.MintDenom = coinParser.GetBaseUnit()
 	appGenState[minttypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&mintGenState)
 
 	// set the accounts in the genesis state
@@ -427,7 +431,7 @@ func initGenFiles(
 		return err
 	}
 
-	genDoc := types.GenesisDoc{
+	genDoc := tmtypes.GenesisDoc{
 		ChainID:    chainID,
 		AppState:   appGenStateJSON,
 		Validators: nil,
@@ -462,7 +466,7 @@ func collectGenFiles(
 		nodeID, valPubKey := nodeIDs[i], valPubKeys[i]
 		initCfg := genutiltypes.NewInitConfig(chainID, gentxsDir, nodeID, valPubKey)
 
-		genDoc, err := types.GenesisDocFromFile(nodeConfig.GenesisFile())
+		genDoc, err := tmtypes.GenesisDocFromFile(nodeConfig.GenesisFile())
 		if err != nil {
 			return err
 		}
@@ -531,15 +535,15 @@ func writeFile(name string, dir string, contents []byte) error {
 	return nil
 }
 
-func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
+func parseStakingCoin(coins sdk.Coins, stakingAmount string, coinParser types.CoinParser) (sdk.Coin, error) {
 	stakingCoin := sdk.Coin{
-		Denom:  chain.BaseCoinUnit,
+		Denom:  coinParser.GetBaseUnit(),
 		Amount: sdk.ZeroInt(),
 	}
 	if stakingAmount == "" {
 		stakingCoin.Amount = halfCoins(coins)
 	} else {
-		coins, err := sdk.ParseCoins(stakingAmount)
+		coins, err := coinParser.ParseCoins(stakingAmount)
 		if err != nil {
 			return stakingCoin, fmt.Errorf("failed to parse staking coin: %w", err)
 		}

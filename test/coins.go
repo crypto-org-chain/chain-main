@@ -1,4 +1,4 @@
-package types
+package test
 
 import (
 	fmt "fmt"
@@ -24,6 +24,20 @@ func (parser *FakeCoinParser) ParseCoin(s string) (sdk.Coin, error) {
 		return coin, nil
 	}
 	return sdk.Coin{}, fmt.Errorf("coin mapping not found: %s", s)
+}
+
+func (parser *FakeCoinParser) GetBaseUnit() string {
+	return "baseunit"
+}
+
+// FIXME: NOT IMPLEMENTED
+func (parser *FakeCoinParser) MustSprintBaseCoin(baseCoin sdk.Int, denom string) string {
+	return ""
+}
+
+// FIXME: NOT IMPLEMENTED
+func (parser *FakeCoinParser) SprintBaseCoin(baseCoin sdk.Int, denom string) (string, error) {
+	return "", nil
 }
 
 func (parser *FakeCoinParser) ParseCoinToa(s string) (string, error) {

@@ -1,10 +1,8 @@
 package chainmain
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/gogo/protobuf/grpc"
 	"github.com/gorilla/mux"
@@ -14,13 +12,11 @@ import (
 	abci "github.com/tendermint/tendermint/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/version"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/crypto-com/chain-main/x/chainmain/client/cli"
 	"github.com/crypto-com/chain-main/x/chainmain/keeper"
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
@@ -37,10 +33,21 @@ var (
 // AppModuleBasic implements the AppModuleBasic interface for the capability module.
 type AppModuleBasic struct {
 	cdc codec.Marshaler
+
+	coinParser types.CoinParser
 }
 
-func NewAppModuleBasic(cdc codec.Marshaler) AppModuleBasic {
-	return AppModuleBasic{cdc: cdc}
+func NewAppModuleBasic(cdc codec.Marshaler, coinParser types.CoinParser) AppModuleBasic {
+	return AppModuleBasic{
+		cdc,
+		coinParser,
+	}
+}
+
+func NewAppModuleBasicWithCoinParser(coinParser types.CoinParser) AppModuleBasic {
+	return AppModuleBasic{
+		coinParser: coinParser,
+	}
 }
 
 // Name returns the capability module's name.
@@ -84,82 +91,9 @@ func (a AppModuleBasic) RegisterGRPCRoutes(clientCtx client.Context, mux *runtim
 // GetTxCmd returns the capability module's root tx command.
 func (a AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
-func GetBalancesCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "balances [address]",
-		Short: "Query for account balances by address",
-		Long: strings.TrimSpace(
-			fmt.Sprintf(`Query the total balance of an account or of a specific denomination.
-
-Example:
-  $ %s query %s balances [address]
-  $ %s query %s balances [address] --denom=[denom]
-`,
-				version.AppName, types.ModuleName, version.AppName, types.ModuleName,
-			),
-		),
-		Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, queryErr := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
-			clientCtx = clientCtx.WithNodeURI("http://localhost:26657")
-			if queryErr != nil {
-				return queryErr
-			}
-
-			denom := ""
-			queryClient := banktypes.NewQueryClient(clientCtx)
-
-			addr, addressErr := sdk.AccAddressFromBech32(args[0])
-			if addressErr != nil {
-				return addressErr
-			}
-
-			pageReq, clientErr := client.ReadPageRequest(cmd.Flags())
-			if clientErr != nil {
-				return clientErr
-			}
-			if denom == "" {
-				params := banktypes.NewQueryAllBalancesRequest(addr, pageReq)
-				res, allBalancesErr := queryClient.AllBalances(context.Background(), params)
-				basecro := res.Balances.AmountOf(BaseCoinUnit).Uint64()
-				carson := uint64(OneCroInCarson)
-				fmt.Printf("%d.%08d CRO (%d BASECRO)\n", basecro/carson, basecro%carson, basecro)
-				if allBalancesErr != nil {
-					return allBalancesErr
-				}
-				return nil
-			}
-
-			params := banktypes.NewQueryBalanceRequest(addr, denom)
-			res, balancesErr := queryClient.Balance(context.Background(), params)
-			if balancesErr != nil {
-				return balancesErr
-			}
-
-			return clientCtx.PrintOutput(res.Balance)
-		},
-	}
-
-	flags.AddPaginationFlagsToCmd(cmd, "all balances")
-
-	return cmd
-}
-
 // GetQueryCmd returns the capability module's root query command.
-func (AppModuleBasic) GetQueryCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:                        types.ModuleName,
-		Short:                      "Querying commands for the chain module",
-		DisableFlagParsing:         true,
-		SuggestionsMinimumDistance: 2,
-		RunE:                       client.ValidateCmd,
-	}
-
-	cmd.AddCommand(
-		GetBalancesCmd(),
-	)
-	return cmd
+func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
+	return cli.GetQueryCmd(a.coinParser)
 }
 
 // ----------------------------------------------------------------------------
@@ -173,9 +107,9 @@ type AppModule struct {
 	keeper keeper.Keeper
 }
 
-func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper) AppModule {
+func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper, coinParser types.CoinParser) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc),
+		AppModuleBasic: NewAppModuleBasic(cdc, coinParser),
 		keeper:         keeper,
 	}
 }
