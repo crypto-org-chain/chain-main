@@ -7,6 +7,7 @@ let
     /go.mod
     /go.sum
     /integration-tests
+    /result
   '';
 in
 buildGoPackage rec {

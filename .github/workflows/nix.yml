@@ -14,4 +14,13 @@ jobs:
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
+    - uses: cachix/cachix-action@v6
+      with:
+        name: crypto-com
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - run: nix-shell --run integration-tests/run.sh
+    - run: nix-build -o pystarportImage -A pystarportImage docker.nix
+    - uses: actions/upload-artifact@v2
+      with:
+        name: docker_image
+        path: ./pystarportImage
