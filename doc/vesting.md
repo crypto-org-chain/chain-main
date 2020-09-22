@@ -7,7 +7,7 @@ It can be configured using command-line tooling (the time is currently specified
 e.g.:
 
 ```
-chain-maind add-genesis-account cro18mdlqc9w2ecdveky9sqz9yum4yze0ec2wny5sx 20000000000cro --vesting-amount 20000000000cro --vesting-end-time 2006-01-02T15:04:05Z07:00
+chain-maind add-genesis-account cro18mdlqc9w2ecdveky9sqz9yum4yze0ec2wny5sx 20000000000cro --vesting-amount 20000000000cro --vesting-end-time 2006-01-02T15:04:05+07:00
 ```
 
 The first amount specified the total amount, the second one (after `--vesting-amount` flag) 
