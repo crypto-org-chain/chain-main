@@ -8,6 +8,7 @@ let
     /go.sum
     /integration-tests
     /result
+    /*.nix
   '';
 in
 buildGoPackage rec {
