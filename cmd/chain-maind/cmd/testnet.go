@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/crypto-com/chain-main/app"
 	"github.com/spf13/cobra"
 	tmconfig "github.com/tendermint/tendermint/config"
 	"github.com/tendermint/tendermint/crypto"
@@ -37,6 +36,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	chain "github.com/crypto-com/chain-main/x/chainmain"
 )
 
 var (
@@ -385,7 +385,7 @@ func initGenFiles(
 
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
-	stakingGenState.Params.BondDenom = app.BaseCoinUnit
+	stakingGenState.Params.BondDenom = chain.BaseCoinUnit
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
 	appGenState[stakingtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&stakingGenState)
@@ -393,14 +393,14 @@ func initGenFiles(
 	// set gov min_deposit in the genesis state
 	var govGenState govtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
-	govGenState.DepositParams.MinDeposit[0].Denom = app.BaseCoinUnit
+	govGenState.DepositParams.MinDeposit[0].Denom = chain.BaseCoinUnit
 	govGenState.DepositParams.MinDeposit[0].Amount = govtypes.DefaultMinDepositTokens
 	appGenState[govtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
 	var mintGenState minttypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[minttypes.ModuleName], &mintGenState)
-	mintGenState.Params.MintDenom = app.BaseCoinUnit
+	mintGenState.Params.MintDenom = chain.BaseCoinUnit
 	appGenState[minttypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&mintGenState)
 
 	// set the accounts in the genesis state
@@ -533,7 +533,7 @@ func writeFile(name string, dir string, contents []byte) error {
 
 func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 	stakingCoin := sdk.Coin{
-		Denom:  app.BaseCoinUnit,
+		Denom:  chain.BaseCoinUnit,
 		Amount: sdk.ZeroInt(),
 	}
 	if stakingAmount == "" {
