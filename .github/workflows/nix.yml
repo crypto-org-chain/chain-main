@@ -14,19 +14,19 @@ jobs:
     - uses: cachix/install-nix-action@v10
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    - if github.ref == 'master'
-      uses: cachix/cachix-action@v6
+    - uses: cachix/cachix-action@v6
+      if: github.ref == 'refs/heads/master'
       with:
         name: crypto-com
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - if github.ref != 'master'
-      run: |
+    - run: |
         nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use crypto-com
+      if: github.ref != 'refs/heads/master'
     - run: nix-shell --run integration-tests/run.sh
     - run: nix-build -o pystarportImage -A pystarportImage docker.nix
-    - if github.ref == 'master'
-      uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v2
+      if: github.ref == 'refs/heads/master'
       with:
         name: docker_image
         path: ./pystarportImage
