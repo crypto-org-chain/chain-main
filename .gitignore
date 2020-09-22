@@ -15,6 +15,7 @@ build
 # Testing
 coverage.txt
 /data
+__pycache__
 
 # Others
 frontend/node_modules
