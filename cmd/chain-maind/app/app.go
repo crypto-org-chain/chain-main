@@ -1,4 +1,4 @@
-package cmd
+package app
 
 import (
 	"context"
@@ -32,10 +32,13 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/crypto-com/chain-main/app"
 
-	chain "github.com/crypto-com/chain-main/x/chainmain"
+	"github.com/crypto-com/chain-main/app"
+	chainmaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
+	chaingenutilcli "github.com/crypto-com/chain-main/x/genutil/client/cli"
 )
+
+const appName = "chain-maind"
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
 // main function.
@@ -69,87 +72,6 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	return rootCmd, encodingConfig
 }
 
-func convertCoin(s string) string {
-	coin, err := sdk.ParseCoin(s)
-	if err != nil {
-		panic(err)
-	}
-	coin, err = sdk.ConvertCoin(coin, chain.BaseCoinUnit)
-	if err != nil {
-		panic(err)
-	}
-	return coin.String()
-}
-
-func convertCoins(s string) string {
-	coins, err := sdk.ParseCoins(s)
-	if err != nil {
-		panic(err)
-	}
-	for i, coin := range coins {
-		coins[i], err = sdk.ConvertCoin(coin, chain.BaseCoinUnit)
-		if err != nil {
-			panic(err)
-		}
-	}
-	return coins.String()
-}
-
-// hack for intercepting the arguments and converting amounts
-func convertDenom(args []string) {
-	if len(args) >= 1 {
-		switch args[0] {
-		case "tx":
-			if len(args) >= 4 {
-				temp := args[1] + " " + args[2]
-				switch temp {
-				case "bank send":
-					if len(args) >= 5 {
-						args[5] = convertCoin(args[5])
-					}
-				case "staking delegate", "staking unbond":
-					args[4] = convertCoin(args[4])
-				case "staking redelegate":
-					if len(args) >= 5 {
-						args[5] = convertCoin(args[5])
-					}
-				}
-			}
-		case "gentx":
-			{
-				// search for --amount and take the argument next to it
-				idx := -1
-				for i, arg := range args {
-					if arg == "--amount" {
-						idx = i
-					}
-				}
-				if idx > 0 && len(args) > idx+1 {
-					args[idx+1] = convertCoin(args[idx+1])
-				}
-			}
-		case "add-genesis-account":
-			if len(args) >= 3 {
-				args[2] = convertCoins(args[2])
-			}
-		case "testnet":
-			{
-				// search for --amount and take the argument next to it
-				idx := -1
-				for i, arg := range args {
-					if arg == "--amount" || arg == "--staking-amount" || arg == "--vesting-amount" || arg == "--minimum-gas-prices" {
-						idx = i
-					}
-					if idx > 0 && len(args) > idx+1 {
-						args[idx+1] = convertCoins(args[idx+1])
-						idx = -1
-					}
-				}
-			}
-		}
-	}
-}
-
 // Execute executes the root command.
 func Execute(rootCmd *cobra.Command) error {
 	// Create and set a client.Context on the command's Context. During the pre-run
@@ -162,8 +84,6 @@ func Execute(rootCmd *cobra.Command) error {
 	ctx = context.WithValue(ctx, client.ClientContextKey, &client.Context{})
 	ctx = context.WithValue(ctx, server.ServerContextKey, server.NewDefaultContext())
 
-	convertDenom(os.Args[1:])
-	rootCmd.SetArgs(os.Args[1:])
 	executor := tmcli.PrepareBaseCmd(rootCmd, "", app.DefaultNodeHome(appName))
 	return executor.ExecuteContext(ctx)
 }
@@ -177,23 +97,23 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{
 					"params": map[string]string{
-						"bond_denom": chain.BaseCoinUnit,
+						"bond_denom": app.BaseCoinUnit,
 					},
 				},
 				"gov": map[string]interface{}{
 					"deposit_params": map[string]interface{}{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(chain.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
+						"min_deposit": sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
 					},
 				},
 				"mint": map[string]interface{}{
 					"params": map[string]string{
-						"mint_denom": chain.BaseCoinUnit,
+						"mint_denom": app.BaseCoinUnit,
 					},
 				},
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
-							"description": "The native token of Crypto.com Chain.",
+							"description": "The native token of Crypto.com app.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
 									"denom":    "basecro",
@@ -247,12 +167,17 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		initCmd,
 		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
 		genutilcli.MigrateGenesisCmd(),
-		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig,
-			banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
+		chaingenutilcli.GenTxCmd(
+			app.ModuleBasics,
+			encodingConfig.TxConfig,
+			banktypes.GenesisBalancesIterator{},
+			app.DefaultNodeHome(appName),
+			app.DefaultCoinParser,
+		),
 		genutilcli.ValidateGenesisCmd(app.ModuleBasics, encodingConfig.TxConfig),
-		AddGenesisAccountCmd(app.DefaultNodeHome(appName)),
+		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome(appName), app.DefaultCoinParser),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		testnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		chainmaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}, app.DefaultCoinParser),
 		debug.Cmd(),
 	)
 
