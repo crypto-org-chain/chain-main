@@ -3,7 +3,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 pystarport serve config.yml --quiet &
 PID=$!
 
-pytest -v --ignore data
+python -mpytest -v --ignore data
 RETCODE=$?
 
 echo 'quit starport...'
