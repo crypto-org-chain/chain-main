@@ -5,8 +5,8 @@
     fetch = {
       type = "git";
       url = "https://github.com/googleapis/google-cloud-go";
-      rev = "firestore/v1.1.0";
-      sha256 = "0slvm0vx5f8l2vs4k9k8jv8qnz6z9dzq25xmrhza82cj9j51ghvb";
+      rev = "datastore/v1.0.0";
+      sha256 = "0d7ikvbyasifhbxgc2gw97zqc27ihi9a22wdywh5gw2cwjwpw5gi";
     };
   }
   {
@@ -1148,8 +1148,8 @@
     fetch = {
       type = "git";
       url = "https://github.com/hashicorp/consul";
-      rev = "api/v1.3.0";
-      sha256 = "1g4zns616kck9mf7ik2wj40h2aw1x4yhgzhyafgdf7cl62792qi2";
+      rev = "sdk/v0.3.0";
+      sha256 = "1nip38v34bgdzj9hdcw41yz2259468jzqd5kcsihx98qghkyzv5i";
     };
   }
   {
@@ -2435,8 +2435,8 @@
     fetch = {
       type = "git";
       url = "https://github.com/ugorji/go";
-      rev = "d75b2dcb6bc8";
-      sha256 = "0di1k35gpq9bp958ywranpbskx2vdwlb38s22vl9rybm3wa5g3ps";
+      rev = "v1.1.4";
+      sha256 = "0ma2qvn5wqvjidpdz74x832a813qnr1cxbx6n6n125ak9b3wbn5w";
     };
   }
   {

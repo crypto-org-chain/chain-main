@@ -62,9 +62,11 @@ import (
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	appparams "github.com/crypto-com/chain-main/app/params"
+	chainbank "github.com/crypto-com/chain-main/x/bank"
 	"github.com/crypto-com/chain-main/x/chainmain"
 	chainmainkeeper "github.com/crypto-com/chain-main/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
+	chainstaking "github.com/crypto-com/chain-main/x/staking"
 )
 
 var (
@@ -73,15 +75,17 @@ var (
 		return os.ExpandEnv("$HOME/.chain-maind")
 	}
 
+	DefaultCoinParser = NewSDKCoinParser(BaseCoinUnit, CoinToBaseUnitMuls)
+
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
 	ModuleBasics = module.NewBasicManager(
 		genutil.AppModuleBasic{},
 		auth.AppModuleBasic{},
-		bank.AppModuleBasic{},
+		chainbank.NewAppModuleBasic(DefaultCoinParser),
 		mint.AppModuleBasic{},
-		staking.AppModuleBasic{},
+		chainstaking.NewAppModuleBasic(DefaultCoinParser),
 		params.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		distr.AppModuleBasic{},
@@ -91,7 +95,7 @@ var (
 		),
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
-		chainmain.AppModuleBasic{},
+		chainmain.NewAppModuleBasicWithCoinParser(DefaultCoinParser),
 	)
 
 	// module account permissions
@@ -263,7 +267,7 @@ func New(
 		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper),
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		params.NewAppModule(app.ParamsKeeper),
-		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
+		chainmain.NewAppModule(appCodec, app.chainmainKeeper, DefaultCoinParser),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
