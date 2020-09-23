@@ -1,6 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
 let
-  chain = import ./default.nix { inherit pkgs; };
+  chain = import ./. { inherit pkgs; };
   pystarport = pkgs.poetry2nix.mkPoetryEnv {
     projectDir = ./pystarport;
     editablePackageSources = {
