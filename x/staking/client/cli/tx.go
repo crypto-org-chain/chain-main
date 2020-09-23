@@ -246,6 +246,9 @@ $ %s tx staking unbond %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj 1000cro --from 
 func NewBuildCreateValidatorMsg(
 	clientCtx client.Context, txf tx.Factory, fs *flag.FlagSet, coinParser chainsdk.CoinParser,
 ) (tx.Factory, sdk.Msg, error) {
+	// cmd.Flags().GetString error check can be ignored because Cosmos SDK always add
+	// flags with default value
+
 	//nolint:errcheck
 	fAmount, _ := fs.GetString(cli.FlagAmount)
 	amount, err := coinParser.ParseCoin(fAmount)

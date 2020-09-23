@@ -67,6 +67,9 @@ $ %s gentx my-key-name --home=/path/to/home/dir --keyring-backend=os --chain-id=
 `, defaultsDesc, version.AppName,
 		),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// cmd.Flags().GetString error check can be ignored because Cosmos SDK always add
+			// flags with default value
+
 			serverCtx := server.GetServerContextFromCmd(cmd)
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			cdc := clientCtx.JSONMarshaler
