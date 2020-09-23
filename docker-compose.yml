@@ -11,7 +11,7 @@ services:
       - ID=0
       - LOG=${LOG:-chain-maind.log}
     volumes:
-      - ./build:/chain-maind:Z
+      - ${BUILDDIR:-./build}:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.2
@@ -26,7 +26,7 @@ services:
       - ID=1
       - LOG=${LOG:-chain-maind.log}
     volumes:
-      - ./build:/chain-maind:Z
+      - ${BUILDDIR:-./build}:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.3
@@ -41,7 +41,7 @@ services:
       - "26661-26662:26656-26657"
       - "1319:1317"
     volumes:
-      - ./build:/chain-maind:Z
+      - ${BUILDDIR:-./build}:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.4
@@ -56,7 +56,7 @@ services:
       - "26663-26664:26656-26657"
       - "1320:1317"
     volumes:
-      - ./build:/chain-maind:Z
+      - ${BUILDDIR:-./build}:/chain-maind:Z
     networks:
       localnet:
         ipv4_address: 192.168.10.5

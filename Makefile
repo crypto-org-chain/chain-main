@@ -32,7 +32,7 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test:
-	@go test -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+	@go test -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 # look into .golangci.yml for enabling / disabling linters
@@ -72,7 +72,7 @@ localnet-start: build-linux build-docker-chainmaindnode localnet-stop
 	@if ! [ -f $(BUILDDIR)/node0/.chain-maind/config/genesis.json ]; \
 	then docker run --rm -v $(BUILDDIR):/chain-maind:Z cryptocom/chainmaindnode testnet --v 4 -o . --starting-ip-address 192.168.10.2 $(TESTNET_FLAGS); \
 	fi
-	docker-compose up -d
+	BUILDDIR=$(BUILDDIR) docker-compose up -d
 
 # Stop testnet
 localnet-stop:
