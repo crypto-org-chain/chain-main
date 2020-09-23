@@ -39,7 +39,7 @@ func TestMnemonic(t *testing.T) {
 }
 
 func TestConversion(t *testing.T) {
-	app.SetConfig()
+	app.SetTestingConfig()
 
 	testCases := []struct {
 		input  sdk.Coin

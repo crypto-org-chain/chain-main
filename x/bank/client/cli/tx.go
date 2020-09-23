@@ -1,9 +1,13 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/spf13/cobra"
 
@@ -28,10 +32,20 @@ func NewTxCmd(coinParser chainsdk.CoinParser) *cobra.Command {
 
 // NewSendTxCmd returns a CLI command handler for creating a MsgSend transaction.
 func NewSendTxCmd(coinParser chainsdk.CoinParser) *cobra.Command {
+	bech32PrefixAddr := sdk.GetConfig().GetBech32AccountAddrPrefix()
+
 	cmd := &cobra.Command{
-		Use: "send [from_key_or_address] [to_address] [amount]",
-		Short: `Send funds from one account to another. Note, the'--from' flag is
-ignored as it is implied from [from_key_or_address].`,
+		Use:   "send [from_key_or_address] [to_address] [amount]",
+		Short: `Send funds from one account to another.`,
+		Long: strings.TrimSpace(
+			//nolint:lll
+			fmt.Sprintf(`Send funds from one account to another. Note, the'--from' flag is ignored as it is implied from [from_key_or_address].
+Example:
+$ %s tx bank send %s158ecvsn6wccdf3knmser5vk53nxk5sr %s1d8kyuler5axgh6pndshqx6sfttes3jq5jnswdt 1000cro
+		`,
+				version.AppName, bech32PrefixAddr, bech32PrefixAddr,
+			),
+		),
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			//nolint:errcheck

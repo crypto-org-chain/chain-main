@@ -40,7 +40,6 @@ func GetBalancesCmd(coinParser types.CoinParser) *cobra.Command {
 		Short: "Query for account balances by address",
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Query the total balance of an account.
-
 Example:
   $ %s query %s balances [address]
 `,

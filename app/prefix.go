@@ -1,6 +1,7 @@
 package app
 
 import (
+	"flag"
 	"log"
 	"sync"
 
@@ -27,21 +28,7 @@ var (
 	}
 )
 
-var configState = struct {
-	mtx   sync.Mutex
-	isSet bool
-}{
-	isSet: false,
-}
-
 func SetConfig() {
-	configState.mtx.Lock()
-	defer configState.mtx.Unlock()
-
-	if configState.isSet {
-		return
-	}
-
 	config := sdk.GetConfig()
 	config.SetBech32PrefixForAccount(AccountAddressPrefix, AccountPubKeyPrefix)
 	config.SetBech32PrefixForValidator(ValidatorAddressPrefix, ValidatorPubKeyPrefix)
@@ -63,6 +50,33 @@ func SetConfig() {
 		log.Fatal(err)
 	}
 
-	configState.isSet = true
 	config.Seal()
+}
+
+var testingConfigState = struct {
+	mtx   sync.Mutex
+	isSet bool
+}{
+	isSet: false,
+}
+
+func SetTestingConfig() {
+	if !isGoTest() {
+		panic("SetTestingConfig called but not running go test")
+	}
+
+	testingConfigState.mtx.Lock()
+	defer testingConfigState.mtx.Unlock()
+
+	if testingConfigState.isSet {
+		return
+	}
+
+	SetConfig()
+
+	testingConfigState.isSet = true
+}
+
+func isGoTest() bool {
+	return flag.Lookup("test.v") != nil
 }

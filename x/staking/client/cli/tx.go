@@ -106,7 +106,7 @@ func NewDelegateCmd(coinParser chainsdk.CoinParser) *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Delegate an amount of liquid coins to a validator from your wallet.
 Example:
-$ %s tx staking delegate %s1l2rsakp388kuv9k8qzq6lrm9taddae7fpx59wm 1000stake --from mykey
+$ %s tx staking delegate %s1l2rsakp388kuv9k8qzq6lrm9taddae7fpx59wm 1000cro --from mykey
 `,
 				version.AppName, bech32PrefixValAddr,
 			),
@@ -154,7 +154,7 @@ func NewRedelegateCmd(coinParser chainsdk.CoinParser) *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Redelegate an amount of illiquid staking tokens from one validator to another.
 Example:
-$ %s tx staking redelegate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj %s1l2rsakp388kuv9k8qzq6lrm9taddae7fpx59wm 100stake --from mykey
+$ %s tx staking redelegate %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj %s1l2rsakp388kuv9k8qzq6lrm9taddae7fpx59wm 1000cro --from mykey
 `,
 				version.AppName, bech32PrefixValAddr, bech32PrefixValAddr,
 			),
@@ -206,7 +206,7 @@ func NewUnbondCmd(coinParser chainsdk.CoinParser) *cobra.Command {
 		Long: strings.TrimSpace(
 			fmt.Sprintf(`Unbond an amount of bonded shares from a validator.
 Example:
-$ %s tx staking unbond %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj 100stake --from mykey
+$ %s tx staking unbond %s1gghjut3ccd8ay0zduzj64hwre2fxs9ldmqhffj 1000cro --from mykey
 `,
 				version.AppName, bech32PrefixValAddr,
 			),

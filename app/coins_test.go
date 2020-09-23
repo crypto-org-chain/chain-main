@@ -12,7 +12,7 @@ import (
 )
 
 func TestParseCoin(t *testing.T) {
-	app.SetConfig()
+	app.SetTestingConfig()
 
 	assert := assert.New(t)
 
@@ -36,6 +36,8 @@ func TestParseCoin(t *testing.T) {
 }
 
 func TestParseCoins(t *testing.T) {
+	app.SetTestingConfig()
+
 	assert := assert.New(t)
 
 	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
@@ -67,6 +69,8 @@ func TestParseCoins(t *testing.T) {
 }
 
 func TestSprintBaseCoin(t *testing.T) {
+	app.SetTestingConfig()
+
 	assert := assert.New(t)
 
 	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
