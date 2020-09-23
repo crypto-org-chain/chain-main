@@ -1,6 +1,6 @@
 module github.com/crypto-com/chain-main
 
-go 1.14
+go 1.15
 
 require (
 	github.com/cosmos/cosmos-sdk v0.34.4-0.20200914065108-201787bba330
