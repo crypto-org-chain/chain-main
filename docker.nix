@@ -3,8 +3,8 @@
 let
   pkgs = import <nixpkgs> { inherit system; };
 
-  chaind = import ./default.nix { inherit pkgs; };
-  pystarport = import ./pystarport/default.nix { inherit pkgs; };
+  chaind = import ./. { inherit pkgs; };
+  pystarport = import ./pystarport { inherit pkgs; };
 
   chaindImage =
     pkgs.dockerTools.buildImage {

@@ -1,5 +1,5 @@
 { pkgs ? import <nixpkgs> {} }:
-let chain = import ../default.nix { inherit pkgs; };
+let chain = import ../. { inherit pkgs; };
 in
   pkgs.poetry2nix.mkPoetryApplication {
     projectDir = ./.;

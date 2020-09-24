@@ -9,8 +9,7 @@ accounts:
   - name: ecosystem
     coins: 200cro
   - name: reserve
-    # FIXME change to 200cro after coin conversion fixed
-    coins: 20000000000basecro
+    coins: 200cro
     vesting: "60s"
   - name: launch
     coins: 100cro
