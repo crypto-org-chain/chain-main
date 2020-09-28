@@ -287,7 +287,7 @@ func InitTestnet(
 		// create concrete account type based on input parameters
 		var genAccount authtypes.GenesisAccount
 
-		genbalance := banktypes.Balance{Address: addr, Coins: coins.Sort()}
+		genbalance := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
 		baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
 
 		if !vestingCoins.IsZero() {
