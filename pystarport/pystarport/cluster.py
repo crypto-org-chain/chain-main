@@ -118,6 +118,99 @@ class ClusterCLI:
             node=self.node_rpc(i),
         )
 
+    async def get_balance(self, addr, i=0):
+        coin = json.loads(
+            await self(
+                "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
+            )
+        )["balances"][0]
+        assert coin["denom"] == "basecro"
+        return int(coin["amount"])
+
+    async def make_multisig(self, name, signer1, signer2, i=0):
+        await self(
+            "keys",
+            "add",
+            name,
+            multisig=f"{signer1},{signer2}",
+            multisig_threshold="2",
+            home=self.home(i),
+            keyring_backend="test",
+            output="json",
+        )
+        list_reply = await self(
+            "keys", "list", home=self.home(i), keyring_backend="test", output="json"
+        )
+        json_reply = json.loads(list_reply)
+        return json_reply
+
+    async def send_amount_generation_only(self, from_addr, to_addr, amount, i=0):
+        json = await self(
+            "tx",
+            "bank",
+            "send",
+            from_addr,
+            to_addr,
+            amount,
+            "--generate-only",
+            home=self.home(i),
+            keyring_backend="test",
+            chain_id=self.chain_id,
+        )
+        return json
+
+    async def sign_multisig_tx(self, tx_file, multi_addr, signer_name, i=0):
+        json = await self(
+            "tx",
+            "sign",
+            tx_file,
+            f"--from {signer_name}",
+            multisig=multi_addr,
+            home=self.home(i),
+            keyring_backend="test",
+            chain_id=self.chain_id,
+        )
+        return json
+
+    async def combine_multisig_tx(
+        self, tx_file, multi_name, signer1_file, signer2_file, i=0
+    ):
+        json = await self(
+            "tx",
+            "multisign",
+            tx_file,
+            multi_name,
+            signer1_file,
+            signer2_file,
+            home=self.home(i),
+            keyring_backend="test",
+            chain_id=self.chain_id,
+        )
+        return json
+
+    async def broadcast_tx(self, tx_file, i=0):
+        tx = await self("tx", "broadcast", tx_file, node=self.node_rpc(i))
+        json_reply = json.loads(tx)
+        return json_reply
+
+    async def send_amount(self, from_addr, to_addr, amount, i=0):
+        tx = json.loads(
+            await self(
+                "tx",
+                "bank",
+                "send",
+                from_addr,
+                to_addr,
+                amount,
+                "-y",
+                home=self.home(i),
+                keyring_backend="test",
+                node=self.node_rpc(i),
+                chain_id=self.chain_id,
+            )
+        )
+        return tx
+
 
 class Cluster:
     def __init__(self, config, data_dir, base_port, cmd=CHAIN):
@@ -135,7 +228,8 @@ class Cluster:
         if self._supervisorctl is None:
             self._supervisorctl = xmlrpclib.ServerProxy(
                 # dumbass ServerProxy won't allow us to pass in a non-HTTP url,
-                # so we fake the url we pass into it and always use the transport's
+                # so we fake the url we pass into it and
+                # always use the transport's
                 # 'serverurl' to figure out what to attach to
                 "http://127.0.0.1",
                 transport=xmlrpc.SupervisorTransport(
@@ -212,11 +306,12 @@ class Cluster:
                 end_time = genesis_time + datetime.timedelta(
                     seconds=durations.Duration(vesting).to_seconds()
                 )
+                vend = end_time.replace(tzinfo=None).isoformat("T") + "Z"
                 await self.cli.add_genesis_account(
                     acct["address"],
                     account["coins"],
                     vesting_amount=account["coins"],
-                    vesting_end_time=end_time.replace(tzinfo=None).isoformat("T") + "Z",
+                    vesting_end_time=vend,
                 )
 
         # collect-gentxs
