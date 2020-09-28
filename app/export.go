@@ -85,7 +85,16 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 	// withdraw all delegator rewards
 	dels := app.StakingKeeper.GetAllDelegations(ctx)
 	for _, delegation := range dels {
-		_, err := app.DistrKeeper.WithdrawDelegationRewards(ctx, delegation.DelegatorAddress, delegation.ValidatorAddress)
+		valAddr, errv := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
+		if errv != nil {
+			panic(errv)
+		}
+
+		delAddr, errd := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
+		if errd != nil {
+			panic(errd)
+		}
+		_, err := app.DistrKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
 		if err != nil {
 			log := app.DistrKeeper.Logger(ctx)
 			log.Error(fmt.Sprintf("Withdraw delegation rewards: %v", err))
@@ -116,8 +125,17 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 
 	// reinitialize all delegations
 	for _, del := range dels {
-		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, del.DelegatorAddress, del.ValidatorAddress)
-		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, del.DelegatorAddress, del.ValidatorAddress)
+		valAddr, errv := sdk.ValAddressFromBech32(del.ValidatorAddress)
+		if errv != nil {
+			panic(errv)
+		}
+
+		delAddr, errd := sdk.AccAddressFromBech32(del.DelegatorAddress)
+		if errd != nil {
+			panic(errd)
+		}
+		app.DistrKeeper.Hooks().BeforeDelegationCreated(ctx, delAddr, valAddr)
+		app.DistrKeeper.Hooks().AfterDelegationModified(ctx, delAddr, valAddr)
 	}
 
 	// reset context height
