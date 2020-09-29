@@ -113,6 +113,17 @@ version = "1.15.0"
 
 [[package]]
 category = "main"
+description = "A system for controlling process state under UNIX"
+name = "supervisor"
+optional = false
+python-versions = "*"
+version = "4.2.1"
+
+[package.extras]
+testing = ["pytest", "pytest-cov"]
+
+[[package]]
+category = "main"
 description = "ANSII Color formatting for output in terminal."
 name = "termcolor"
 optional = false
@@ -140,7 +151,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "7c9f8a2300fd1f8301caea6a4ba6070321b1d2875eba720977186dab8720895c"
+content-hash = "1e309fa1a6e849c782fe11ed5d97c254136c244b74d89089b4e4f12342ef49aa"
 lock-version = "1.1"
 python-versions = "^3.7"
 
@@ -189,6 +200,10 @@ pyyaml = [
 six = [
     {file = "six-1.15.0-py2.py3-none-any.whl", hash = "sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"},
     {file = "six-1.15.0.tar.gz", hash = "sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259"},
+]
+supervisor = [
+    {file = "supervisor-4.2.1-py2.py3-none-any.whl", hash = "sha256:75ae1d758fd6a1cb5f878333b309e0e2cb351bd6487188e4c457cc1c8ec29904"},
+    {file = "supervisor-4.2.1.tar.gz", hash = "sha256:c479c875853e9c013d1fa73e529fd2165ff1ecaecc7e82810ba57e7362ae984d"},
 ]
 termcolor = [
     {file = "termcolor-1.1.0.tar.gz", hash = "sha256:1d6d69ce66211143803fbc56652b41d73b4a400a2891d7bf7a1cdf4c02de613b"},

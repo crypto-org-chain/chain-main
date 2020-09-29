@@ -2,8 +2,6 @@ import asyncio
 import datetime
 import json
 import os
-import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -11,9 +9,11 @@ import dateutil.parser
 import durations
 import jsonmerge
 import tomlkit
+from supervisor import xmlrpc
+from supervisor.compat import xmlrpclib
 
 from . import ports
-from .utils import interact, local_ip
+from .utils import interact, local_ip, write_ini
 
 CHAIN = "chain-maind"  # edit by nix-build
 
@@ -126,62 +126,41 @@ class Cluster:
         self.data_dir = data_dir
         self.base_port = base_port
         self.cli = ClusterCLI(data_dir, base_port, config["chain_id"], cmd)
-        # subprocesses spawned
-        self.processes = []
+        self.supervisord_process = None
+        self._supervisorctl = None
+
+    @property
+    def supervisorctl(self):
+        # https://github.com/Supervisor/supervisor/blob/76df237032f7d9fbe80a0adce3829c8b916d5b58/supervisor/options.py#L1718
+        if self._supervisorctl is None:
+            self._supervisorctl = xmlrpclib.ServerProxy(
+                # dumbass ServerProxy won't allow us to pass in a non-HTTP url,
+                # so we fake the url we pass into it and always use the transport's
+                # 'serverurl' to figure out what to attach to
+                "http://127.0.0.1",
+                transport=xmlrpc.SupervisorTransport(
+                    serverurl=f"unix://{self.data_dir}/supervisor.sock"
+                ),
+            )
+        return self._supervisorctl
 
     async def start(self):
-        assert not self.processes, "already started"
-
-        count = len(
-            [name for name in os.listdir(self.data_dir) if re.match(r"^node\d+$", name)]
-        )
-        if count == 0:
-            print("not initialized yet", file=sys.stderr)
-            return
-        for i in range(count):
-            (self.data_dir / f"node{i}.log").touch()
-        self.processes = [
-            await asyncio.create_subprocess_exec(
-                self.cmd,
-                "start",
-                "--home",
-                str(self.cli.home(i)),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            for i in range(count)
-        ]
-
-    async def watch_logs(self):
-        async def watch_one(reader, prefix):
-            while True:
-                line = await reader.readline()
-                if not line:
-                    break
-                log = prefix + line.decode()
-                sys.stdout.write(log)
-
-        await asyncio.wait(
-            [
-                watch_one(p.stdout, f"node{i}-stdout: ")
-                for i, p in enumerate(self.processes)
-            ]
-            + [
-                watch_one(p.stderr, f"node{i}-stderr: ")
-                for i, p in enumerate(self.processes)
-            ]
+        assert not self.supervisord_process, "already started"
+        self.supervisord_process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-msupervisor.supervisord",
+            "-c",
+            self.data_dir / "tasks.ini",
         )
 
     async def wait(self):
-        await asyncio.wait(
-            [p.wait() for p in self.processes], return_when=asyncio.FIRST_COMPLETED
-        )
+        await self.supervisord_process.wait()
 
     async def terminate(self):
-        for p in self.processes:
-            p.terminate()
-        for p in self.processes:
-            await p.wait()
+        self.supervisord_process.terminate()
+        await self.supervisord_process.wait()
+        self.supervisord_process = None
+        self._supervisorctl = None
 
     async def init(self):
         """
@@ -258,6 +237,34 @@ class Cluster:
             )
             edit_app_cfg(self.data_dir / f"node{i}/config/app.toml", self.base_port, i)
 
+        # write supervisord config file
+        supervisord_ini = {
+            "supervisord": {
+                "pidfile": "%(here)s/supervisord.pid",
+                "nodaemon": "true",
+                "logfile": "/dev/null",
+                "logfile_maxbytes": "0",
+            },
+            "rpcinterface:supervisor": {
+                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:"
+                "make_main_rpcinterface",
+            },
+            "unix_http_server": {"file": "%(here)s/supervisor.sock"},
+            "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
+        }
+        for i, node in enumerate(self.config["validators"]):
+            supervisord_ini[f"program:node{i}"] = {
+                "command": f"{self.cmd} start --home {self.cli.home(i)}",
+                # redirect to supervisord's stdout, easier to collect all logs
+                "stdout_logfile": "/dev/fd/1",
+                "stdout_logfile_maxbytes": "0",
+                "autostart": "true",
+                "autorestart": "true",
+                "redirect_stderr": "true",
+                "startsecs": "3",
+            }
+        write_ini(open(self.data_dir / "tasks.ini", "w"), supervisord_ini)
+
 
 def edit_tm_cfg(path, base_port, i, peers):
     doc = tomlkit.parse(open(path).read())
@@ -290,6 +297,6 @@ if __name__ == "__main__":
         )
         await c.init()
         await c.start()
-        await c.watch_logs()
+        await c.wait()
 
     asyncio.run(test())

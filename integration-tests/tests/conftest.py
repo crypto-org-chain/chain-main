@@ -20,22 +20,15 @@ def event_loop(request):
 
 @pytest.fixture(scope="session")
 async def cluster():
-    data_dir = tempfile.TemporaryDirectory(suffix="chain-test")
-    cluster = Cluster(
-        yaml.safe_load(open(CURRENT_DIR / "config.yml")),
-        Path(data_dir.name),
-        CLUSTER_BASE_PORT,
-    )
-    await cluster.init()
-    await cluster.start()
-    log_task = asyncio.create_task(cluster.watch_logs())
+    with tempfile.TemporaryDirectory(suffix="chain-test") as tempdir:
+        cluster = Cluster(
+            yaml.safe_load(open(CURRENT_DIR / "config.yml")),
+            Path(tempdir),
+            CLUSTER_BASE_PORT,
+        )
+        await cluster.init()
+        await cluster.start()
 
-    yield cluster
+        yield cluster
 
-    log_task.cancel()
-    try:
-        await log_task
-    except asyncio.CancelledError:
-        pass
-    await cluster.terminate()
-    data_dir.cleanup()
+        await cluster.terminate()
