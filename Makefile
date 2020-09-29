@@ -92,7 +92,7 @@ clean-docker-compose:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test:
-	nix-shell --run "python -mpytest -v integration-tests/tests"
+	nix-shell --run "python -mpytest -v -n 3 --dist loadscope integration_tests"
 
 nix-build-%: check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \

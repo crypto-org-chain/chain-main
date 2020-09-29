@@ -33,19 +33,19 @@ class ClusterCLI:
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port, i)
 
-    async def __call__(self, *args, **kwargs):
-        args = list(args)
+    async def raw(self, cmd, *args, **kwargs):
+        args = [cmd] + list(args)
         for k, v in kwargs.items():
-            args.append("--" + k.replace("_", "-"))
+            args.append("--" + k.strip("_").replace("_", "-"))
             args.append(v)
         return await interact(" ".join((self.cmd, *map(str, args))))
 
     async def node_id(self, i):
-        output = await self("tendermint", "show-node-id", home=self.home(i))
+        output = await self.raw("tendermint", "show-node-id", home=self.home(i))
         return output.decode().strip()
 
     async def create_account(self, name, i=0):
-        output = await self(
+        output = await self.raw(
             "keys",
             "add",
             name,
@@ -56,18 +56,20 @@ class ClusterCLI:
         return json.loads(output)
 
     async def init(self, i):
-        return await self("init", f"node{i}", chain_id=self.chain_id, home=self.home(i))
+        return await self.raw(
+            "init", f"node{i}", chain_id=self.chain_id, home=self.home(i)
+        )
 
     async def validate_genesis(self, i=0):
-        return await self("validate-genesis", home=self.home(i))
+        return await self.raw("validate-genesis", home=self.home(i))
 
     async def add_genesis_account(self, addr, coins, i=0, **kwargs):
-        return await self(
+        return await self.raw(
             "add-genesis-account", addr, coins, home=self.home(i), **kwargs
         )
 
     async def gentx(self, name, coins, i):
-        return await self(
+        return await self.raw(
             "gentx",
             name,
             amount=coins,
@@ -77,58 +79,78 @@ class ClusterCLI:
         )
 
     async def collect_gentxs(self, gentx_dir, i=0):
-        return await self("collect-gentxs", gentx_dir, home=self.home(i))
+        return await self.raw("collect-gentxs", gentx_dir, home=self.home(i))
 
     async def status(self, i=0):
-        return json.loads(await self("status", node=self.node_rpc(i)))
+        return json.loads(await self.raw("status", node=self.node_rpc(i)))
 
-    async def query_balance(self, addr, i=0):
+    async def balance(self, addr, i=0):
         coin = json.loads(
-            await self(
+            await self.raw(
                 "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
             )
         )["balances"][0]
         assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
-    async def get_account(self, name, i=0):
-        return json.loads(
-            await self(
-                "keys",
-                "show",
-                name,
-                home=self.home(i),
-                keyring_backend="test",
-                output="json",
-            )
-        )
-
-    async def transfer(self, from_, to, coins, i=0):
-        return await self(
-            "tx",
-            "bank",
-            "send",
-            from_,
-            to,
-            coins,
-            "-y",
+    async def address(self, name, i=0, bech="acc"):
+        output = await self.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
             home=self.home(i),
             keyring_backend="test",
-            chain_id=self.chain_id,
-            node=self.node_rpc(i),
+            bech=bech,
+        )
+        return output.strip().decode()
+
+    async def account(self, addr, i=0):
+        return json.loads(
+            await self.raw(
+                "query", "auth", "account", addr, output="json", node=self.node_rpc(i)
+            )
         )
 
-    async def get_balance(self, addr, i=0):
-        coin = json.loads(
-            await self(
-                "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
+    async def validator(self, addr, i=0):
+        return json.loads(
+            await self.raw(
+                "query",
+                "staking",
+                "validator",
+                addr,
+                output="json",
+                node=self.node_rpc(i),
             )
-        )["balances"][0]
-        assert coin["denom"] == "basecro"
-        return int(coin["amount"])
+        )
+
+    async def validators(self, i=0):
+        return json.loads(
+            await self.raw(
+                "query", "staking", "validators", output="json", node=self.node_rpc(i)
+            )
+        )
+
+    async def transfer(self, from_, to, coins, i=0, generate_only=False):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "bank",
+                "send",
+                from_,
+                to,
+                coins,
+                "-y",
+                "--generate-only" if generate_only else "",
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(i),
+            )
+        )
 
     async def make_multisig(self, name, signer1, signer2, i=0):
-        await self(
+        await self.raw(
             "keys",
             "add",
             name,
@@ -138,78 +160,57 @@ class ClusterCLI:
             keyring_backend="test",
             output="json",
         )
-        list_reply = await self(
-            "keys", "list", home=self.home(i), keyring_backend="test", output="json"
-        )
-        json_reply = json.loads(list_reply)
-        return json_reply
-
-    async def send_amount_generation_only(self, from_addr, to_addr, amount, i=0):
-        json = await self(
-            "tx",
-            "bank",
-            "send",
-            from_addr,
-            to_addr,
-            amount,
-            "--generate-only",
-            home=self.home(i),
-            keyring_backend="test",
-            chain_id=self.chain_id,
-        )
-        return json
 
     async def sign_multisig_tx(self, tx_file, multi_addr, signer_name, i=0):
-        json = await self(
-            "tx",
-            "sign",
-            tx_file,
-            f"--from {signer_name}",
-            multisig=multi_addr,
-            home=self.home(i),
-            keyring_backend="test",
-            chain_id=self.chain_id,
+        return json.loads(
+            await self.raw(
+                "tx",
+                "sign",
+                tx_file,
+                f"--from {signer_name}",
+                multisig=multi_addr,
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
         )
-        return json
 
     async def combine_multisig_tx(
         self, tx_file, multi_name, signer1_file, signer2_file, i=0
     ):
-        json = await self(
-            "tx",
-            "multisign",
-            tx_file,
-            multi_name,
-            signer1_file,
-            signer2_file,
-            home=self.home(i),
-            keyring_backend="test",
-            chain_id=self.chain_id,
-        )
-        return json
-
-    async def broadcast_tx(self, tx_file, i=0):
-        tx = await self("tx", "broadcast", tx_file, node=self.node_rpc(i))
-        json_reply = json.loads(tx)
-        return json_reply
-
-    async def send_amount(self, from_addr, to_addr, amount, i=0):
-        tx = json.loads(
-            await self(
+        return json.loads(
+            await self.raw(
                 "tx",
-                "bank",
-                "send",
-                from_addr,
-                to_addr,
-                amount,
-                "-y",
+                "multisign",
+                tx_file,
+                multi_name,
+                signer1_file,
+                signer2_file,
                 home=self.home(i),
                 keyring_backend="test",
-                node=self.node_rpc(i),
                 chain_id=self.chain_id,
             )
         )
-        return tx
+
+    async def broadcast_tx(self, tx_file, i=0):
+        return json.loads(
+            await self.raw("tx", "broadcast", tx_file, node=self.node_rpc(i))
+        )
+
+    async def unjail(self, addr, i=0):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "slashing",
+                "unjail",
+                "-y",
+                from_=addr,
+                home=self.home(i),
+                node=self.node_rpc(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
 
 
 class Cluster:
@@ -223,7 +224,7 @@ class Cluster:
         self._supervisorctl = None
 
     @property
-    def supervisorctl(self):
+    def supervisor(self):
         # https://github.com/Supervisor/supervisor/blob/76df237032f7d9fbe80a0adce3829c8b916d5b58/supervisor/options.py#L1718
         if self._supervisorctl is None:
             self._supervisorctl = xmlrpclib.ServerProxy(
@@ -236,7 +237,7 @@ class Cluster:
                     serverurl=f"unix://{self.data_dir}/supervisor.sock"
                 ),
             )
-        return self._supervisorctl
+        return self._supervisorctl.supervisor
 
     async def start(self):
         assert not self.supervisord_process, "already started"
@@ -372,6 +373,7 @@ def edit_tm_cfg(path, base_port, i, peers):
     doc["p2p"]["persistent_peers"] = peers
     doc["p2p"]["addr_book_strict"] = False
     doc["p2p"]["allow_duplicate_ip"] = True
+    doc["consensus"]["timeout_commit"] = "1s"
     open(path, "w").write(tomlkit.dumps(doc))
 
 
