@@ -1,4 +1,5 @@
 import asyncio
+import configparser
 
 
 async def interact(cmd, ignore_error=False, input=None, **kwargs):
@@ -19,3 +20,12 @@ async def interact(cmd, ignore_error=False, input=None, **kwargs):
 
 def local_ip():
     return "127.0.0.1"
+
+
+def write_ini(fp, cfg):
+    ini = configparser.ConfigParser()
+    for section, items in cfg.items():
+        ini.add_section(section)
+        sec = ini[section]
+        sec.update(items)
+    ini.write(fp)

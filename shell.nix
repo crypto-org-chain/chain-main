@@ -13,6 +13,7 @@ in
     buildInputs = [
       chain
       pystarport
+      python3Packages.poetry
       python3Packages.pytest-asyncio
       python3Packages.pytest
       python3Packages.flake8
