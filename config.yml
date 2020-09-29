@@ -1,3 +1,4 @@
+chain_id: chainmaind
 validators:
   - coins: 10cro
     staked: 10cro

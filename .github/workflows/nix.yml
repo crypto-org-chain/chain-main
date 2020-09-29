@@ -23,7 +23,10 @@ jobs:
         nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use crypto-com
       if: github.ref != 'refs/heads/master'
-    - run: nix-shell --run integration-tests/run.sh
+    - run: nix run nixpkgs.python3Packages.flake8 -c flake8 --max-line-length 88 --extend-ignore E203 integration-tests/tests pystarport
+    - run: nix run nixpkgs.python3Packages.black -c black --check --diff integration-tests/tests pystarport
+    - run: nix-shell --run "isort -c --diff -rc integration-tests/tests pystarport"
+    - run: nix-shell --run "python -mpytest integration-tests/tests"
     - run: nix-build -o pystarportImage -A pystarportImage docker.nix
     - uses: actions/upload-artifact@v2
       if: github.ref == 'refs/heads/master'

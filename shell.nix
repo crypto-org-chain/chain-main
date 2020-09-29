@@ -1,13 +1,22 @@
 { pkgs ? import <nixpkgs> {} }:
+with pkgs;
 let
   chain = import ./. { inherit pkgs; };
-  pystarport = pkgs.poetry2nix.mkPoetryEnv {
+  pystarport = poetry2nix.mkPoetryEnv {
     projectDir = ./pystarport;
     editablePackageSources = {
       pystarport = ./pystarport;
     };
   };
 in
-  pkgs.mkShell {
-    buildInputs = [chain pystarport pkgs.python3Packages.pytest-asyncio pkgs.python3Packages.pytest];
+  mkShell {
+    buildInputs = [
+      chain
+      pystarport
+      python3Packages.pytest-asyncio
+      python3Packages.pytest
+      python3Packages.flake8
+      python3Packages.black
+      python3Packages.isort
+    ];
   }
