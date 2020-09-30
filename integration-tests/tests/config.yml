@@ -14,6 +14,10 @@ accounts:
     vesting: "60s"
   - name: launch
     coins: 100cro
+  - name: signer1
+    coins: 10000cro
+  - name: signer2
+    coins: 2000cro
 genesis:
  app_state:
    staking:
