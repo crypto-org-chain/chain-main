@@ -1,0 +1,61 @@
+We use [pytest](https://docs.pytest.org/) to run integration tests. pytest discover test cases
+[automatically](https://docs.pytest.org/en/3.0.6/goodpractices.html#conventions-for-python-test-discovery). notably the
+python source files whose name starts with `test_` is treated as test modules, and the functions in them whose name
+starts with `test_` will be executed as test cases.
+
+We use [pytest.fixture]() to setup/teardown testnet cluster, fixture can be defined at different scopes, we use a
+session scoped fixture for default cluster, we can override it with a module scoped one at test modules which require
+special testnet setup.
+
+To use a custom cluster for your test case, just create module scoped fixture in your test module [like
+this](https://github.com/crypto-com/chain-main/blob/cb0005fd64250e08e4f758138db6a11fcec71d03/integration_tests/test_slashing.py#L17).
+you can put the custom cluster config file into the `integration_tests/configs` directory.
+
+To write test case which depend on the default cluster, one only need to accept a `cluster` parameter, then you get
+access to the `ClusterCLI` object automagically.
+
+We use [python-xdist](https://pypi.org/project/pytest-xdist/) to execute test cases in multi-processess in parallel, the
+implications are:
+
+- no memory sharing between test modules
+
+- session scope fixtures might get setup multiple times in different processes, be aware of system resource conflict
+  like tcp port numbers. the default cluster fixture compute `base_port` like this: `(100 + worker_id) * 100`, be aware
+of this when choosing `base_port` when overriding the default cluster.
+
+  > an alternative is to always choose free port for all the services, might worth to try that approach.
+
+We can use `@pytest.mark.slow` to mark slow test cases (like slashing test which need to sleep quit long time to wait
+for blockchain events), we can pass command line argument `-m 'not slow'` to pytest to skip these slow test cases for
+faster development.
+
+`cluster` is an instance of
+[`ClusterCLI`](https://github.com/crypto-com/chain-main/blob/master/pystarport/pystarport/cluster.py#L21), which is used
+to interact with the chain. `cluster.supervisor` is used to access the embedded [supervisord](http://supervisord.org/)'s
+xmlrpc service([api](http://supervisord.org/api.html)). for example:
+
+```python
+# stop the chain-maind process of node2
+cluster.supervisor.stopProcess('node2')
+# start the chain-maind process of node2
+cluster.supervisor.startProcess('node2')
+
+# get address of specified account of node0
+cluster.address('community')
+# get the validator address of node2
+cluster.address('validator', i=2, bech='val')
+# call the "chain-maind tx bank send -y"
+cluster.transfer('from addr', 'to addr', '1cro', i=2)
+```
+
+The apis of `cluster` can also called from `pystarport` cli:
+
+```
+$ pystarport serve &
+...
+
+$ pystarport cli status
+node_info:      ...
+sync_info:      ...
+validator_info: ...
+```
