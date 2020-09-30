@@ -71,6 +71,7 @@ import (
 	"github.com/crypto-com/chain-main/x/chainmain"
 	chainmainkeeper "github.com/crypto-com/chain-main/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
+	chaingov "github.com/crypto-com/chain-main/x/gov"
 	chainstaking "github.com/crypto-com/chain-main/x/staking"
 )
 
@@ -94,7 +95,8 @@ var (
 		params.AppModuleBasic{},
 		slashing.AppModuleBasic{},
 		distr.AppModuleBasic{},
-		gov.NewAppModuleBasic(
+		chaingov.NewAppModuleBasic(
+			DefaultCoinParser,
 			paramsclient.ProposalHandler, distrclient.ProposalHandler,
 			upgradeclient.ProposalHandler, upgradeclient.CancelProposalHandler,
 		),
