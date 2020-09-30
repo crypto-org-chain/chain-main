@@ -1,5 +1,7 @@
-chain_id: chainmaind
+chain_id: slashingtest
 validators:
+  - coins: 40cro
+    staked: 40cro
   - coins: 10cro
     staked: 10cro
   - coins: 10cro
@@ -14,12 +16,13 @@ accounts:
     vesting: "60s"
   - name: launch
     coins: 100cro
-  - name: signer1
-    coins: 10000cro
-  - name: signer2
-    coins: 2000cro
 genesis:
  app_state:
    staking:
      params:
        unbonding_time: "10s"
+   slashing:
+     params:
+       signed_blocks_window: "10"
+       slash_fraction_downtime: "0.01"
+       downtime_jail_duration: "60s"

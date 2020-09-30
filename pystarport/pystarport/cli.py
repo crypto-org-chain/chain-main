@@ -60,10 +60,10 @@ class CLI:
         """
         asyncio.run(self._serve())
 
-    def supervisorctl(self):
+    def supervisorctl(self, *args):
         from supervisor.supervisorctl import main
 
-        main(["-c", self._cluster.data_dir / "tasks.ini"])
+        main(("-c", self._cluster.data_dir / "tasks.ini", *args))
 
 
 def main():
