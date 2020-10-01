@@ -73,6 +73,9 @@ import (
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
 	chaingov "github.com/crypto-com/chain-main/x/gov"
 	chainstaking "github.com/crypto-com/chain-main/x/staking"
+
+	// unnamed import of statik for swagger UI support
+	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
 
 var (
