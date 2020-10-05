@@ -1,73 +1,65 @@
-import asyncio
 import signal
 from pathlib import Path
 
 import fire
 import yaml
 
-from .cluster import CHAIN, Cluster
+from .cluster import ClusterCLI, init_cluster, start_cluster
 from .utils import interact
 
 
+def init(data, config, base_port, cmd=None):
+    interact(
+        f"rm -r {data}; mkdir {data}", ignore_error=True,
+    )
+    init_cluster(data, yaml.safe_load(open(config)), base_port, cmd)
+
+
+def start(data):
+    supervisord = start_cluster(data)
+
+    # register signal to quit supervisord
+    for signame in ("SIGINT", "SIGTERM"):
+        signal.signal(getattr(signal, signame), supervisord.terminate)
+
+    supervisord.wait()
+
+
+def serve(data, config, base_port, cmd=None):
+    init(data, config, base_port, cmd)
+    start(data)
+
+
 class CLI:
-    def __init__(
-        self, command=CHAIN, data_dir="./data", config="./config.yml", base_port=26650
-    ):
-        self._cluster = Cluster(
-            yaml.safe_load(open(config)), Path(data_dir), base_port, command
-        )
-        self.cli = self._cluster.cli
-
-    async def _init(self):
-        await interact(
-            f"rm -r {self._cluster.data_dir}; mkdir {self._cluster.data_dir}",
-            ignore_error=True,
-        )
-        await self._cluster.init()
-
-    def init(self):
+    def init(self, data="./data", config="./config.yaml", base_port=26650, cmd=None):
         """
         initialize testnet data directory
         """
-        asyncio.run(self._init())
+        init(Path(data), config, base_port, cmd)
 
-    async def _start(self):
-        await self._cluster.start()
-
-        # register signal to quit supervisord
-        loop = asyncio.get_event_loop()
-        for signame in ("SIGINT", "SIGTERM"):
-            loop.add_signal_handler(
-                getattr(signal, signame),
-                lambda: asyncio.ensure_future(self._cluster.terminate()),
-            )
-
-        await self._cluster.wait()
-
-    def start(self):
+    def start(self, data="./data"):
         """
         start testnet processes
         """
-        asyncio.run(self._start())
+        start(Path(data))
 
-    async def _serve(self):
-        await self._init()
-        await self._start()
-
-    def serve(self):
+    def serve(self, data="./data", config="./config.yaml", base_port=26650, cmd=None):
         """
         init + start
         """
-        asyncio.run(self._serve())
+        serve(Path(data), config, base_port, cmd)
 
-    def supervisorctl(self, *args):
+    def supervisorctl(self, *args, data="./data"):
         from supervisor.supervisorctl import main
 
-        main(("-c", self._cluster.data_dir / "tasks.ini", *args))
+        main(("-c", Path(data) / "tasks.ini", *args))
+
+    def cli(self, *args, data="./data", cmd=None):
+        return ClusterCLI(Path(data), cmd)
 
 
 def main():
-    fire.Fire(CLI)
+    fire.Fire(CLI())
 
 
 if __name__ == "__main__":
