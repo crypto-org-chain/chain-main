@@ -8,10 +8,20 @@ BUILDDIR ?= $(CURDIR)/build
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) 
+	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 TESTNET_FLAGS ?=
+
+ledger ?= HID
+BUILD_TAGS := -tags cgo,ledger,!test_ledger_mock,!ledger_mock
+ifeq ($(ledger), ZEMU)
+	BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
+else
+	BUILD_TAGS := $(BUILD_TAGS),!ledger_zemu
+endif
+
+
 SIMAPP = github.com/crypto-com/chain-main/app
 BINDIR ?= ~/go/bin
 
@@ -23,11 +33,14 @@ install: go.sum
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
 
 build: go.sum
-		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind 
+		go build -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
 .PHONY: build
 
 build-linux: go.sum
 		GOOS=linux GOARCH=amd64 $(MAKE) build
+
+build-mac: go.sum
+		GOOS=darwin GOARCH=amd64 $(MAKE) build
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
