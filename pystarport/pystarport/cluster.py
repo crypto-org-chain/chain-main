@@ -366,6 +366,10 @@ def edit_tm_cfg(path, base_port, i, peers):
 
 def edit_app_cfg(path, base_port, i):
     doc = tomlkit.parse(open(path).read())
+    # enable api server
+    doc["api"]["enable"] = True
+    doc["api"]["swagger"] = True
+    doc["api"]["enabled-unsafe-cors"] = True
     doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port, i)
     doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port, i)
     open(path, "w").write(tomlkit.dumps(doc))
