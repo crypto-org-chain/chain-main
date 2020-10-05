@@ -6,18 +6,19 @@ authors = ["yihuang <yi.codeplayer@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-fire = "^0.3.1"
+fire = {git = "https://github.com/jpic/python-fire.git"}
 tomlkit = "^0.7.0"
 jsonmerge = "^1.7.0"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
 durations = "^0.3.3"
+supervisor = "^4.2.1"
 
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
 pystarport = "pystarport.cli:main"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-

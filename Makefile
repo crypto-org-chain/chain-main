@@ -25,6 +25,8 @@ endif
 SIMAPP = github.com/crypto-com/chain-main/app
 BINDIR ?= ~/go/bin
 
+OS := $(shell uname)
+
 all: install
 
 install: go.sum
@@ -97,3 +99,33 @@ clean:
 
 clean-docker-compose:
 	rm -rf $(BUILDDIR)/node* $(BUILDDIR)/gentxs
+
+###############################################################################
+###                                Nix                                      ###
+###############################################################################
+# nix installation: https://nixos.org/download.html
+nix-integration-test:
+	nix-shell --run "python -mpytest -v -n 3 --dist loadscope integration_tests"
+
+nix-build-%: check-os
+	@if [ -e ~/.nix/remote-build-env ]; then \
+		. ~/.nix/remote-build-env; \
+	fi && \
+	nix-build -o $* -A $* docker.nix;
+	docker load < $*;
+
+chaindImage: nix-build-chaindImage
+pystarportImage: nix-build-pystarportImage
+
+check-os:
+ifeq ($(OS), Darwin)
+ifneq ("$(wildcard ~/.nix/remote-build-env))","")
+	@echo "installed nix-remote-builder before" && \
+	docker run --restart always --name nix-docker -d -p 3022:22 lnl7/nix:ssh 2> /dev/null || echo "nix-docker is already running"
+else
+	@echo install nix-remote-builder
+	git clone https://github.com/holidaycheck/nix-remote-builder.git
+	cd nix-remote-builder && ./init.sh
+	rm -rf nix-remote-builder
+endif
+endif

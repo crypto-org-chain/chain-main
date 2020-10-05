@@ -2,8 +2,6 @@ import asyncio
 import datetime
 import json
 import os
-import re
-import subprocess
 import sys
 from pathlib import Path
 
@@ -11,9 +9,11 @@ import dateutil.parser
 import durations
 import jsonmerge
 import tomlkit
+from supervisor import xmlrpc
+from supervisor.compat import xmlrpclib
 
 from . import ports
-from .utils import interact, local_ip
+from .utils import interact, local_ip, write_ini
 
 CHAIN = "chain-maind"  # edit by nix-build
 
@@ -33,19 +33,19 @@ class ClusterCLI:
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port, i)
 
-    async def __call__(self, *args, **kwargs):
-        args = list(args)
+    async def raw(self, cmd, *args, **kwargs):
+        args = [cmd] + list(args)
         for k, v in kwargs.items():
-            args.append("--" + k.replace("_", "-"))
+            args.append("--" + k.strip("_").replace("_", "-"))
             args.append(v)
         return await interact(" ".join((self.cmd, *map(str, args))))
 
     async def node_id(self, i):
-        output = await self("tendermint", "show-node-id", home=self.home(i))
+        output = await self.raw("tendermint", "show-node-id", home=self.home(i))
         return output.decode().strip()
 
     async def create_account(self, name, i=0):
-        output = await self(
+        output = await self.raw(
             "keys",
             "add",
             name,
@@ -56,18 +56,20 @@ class ClusterCLI:
         return json.loads(output)
 
     async def init(self, i):
-        return await self("init", f"node{i}", chain_id=self.chain_id, home=self.home(i))
+        return await self.raw(
+            "init", f"node{i}", chain_id=self.chain_id, home=self.home(i)
+        )
 
     async def validate_genesis(self, i=0):
-        return await self("validate-genesis", home=self.home(i))
+        return await self.raw("validate-genesis", home=self.home(i))
 
     async def add_genesis_account(self, addr, coins, i=0, **kwargs):
-        return await self(
+        return await self.raw(
             "add-genesis-account", addr, coins, home=self.home(i), **kwargs
         )
 
     async def gentx(self, name, coins, i):
-        return await self(
+        return await self.raw(
             "gentx",
             name,
             amount=coins,
@@ -77,45 +79,137 @@ class ClusterCLI:
         )
 
     async def collect_gentxs(self, gentx_dir, i=0):
-        return await self("collect-gentxs", gentx_dir, home=self.home(i))
+        return await self.raw("collect-gentxs", gentx_dir, home=self.home(i))
 
     async def status(self, i=0):
-        return json.loads(await self("status", node=self.node_rpc(i)))
+        return json.loads(await self.raw("status", node=self.node_rpc(i)))
 
-    async def query_balance(self, addr, i=0):
+    async def balance(self, addr, i=0):
         coin = json.loads(
-            await self(
+            await self.raw(
                 "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
             )
         )["balances"][0]
         assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
-    async def get_account(self, name, i=0):
+    async def address(self, name, i=0, bech="acc"):
+        output = await self.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
+            home=self.home(i),
+            keyring_backend="test",
+            bech=bech,
+        )
+        return output.strip().decode()
+
+    async def account(self, addr, i=0):
         return json.loads(
-            await self(
-                "keys",
-                "show",
-                name,
-                home=self.home(i),
-                keyring_backend="test",
-                output="json",
+            await self.raw(
+                "query", "auth", "account", addr, output="json", node=self.node_rpc(i)
             )
         )
 
-    async def transfer(self, from_, to, coins, i=0):
-        return await self(
-            "tx",
-            "bank",
-            "send",
-            from_,
-            to,
-            coins,
-            "-y",
+    async def validator(self, addr, i=0):
+        return json.loads(
+            await self.raw(
+                "query",
+                "staking",
+                "validator",
+                addr,
+                output="json",
+                node=self.node_rpc(i),
+            )
+        )
+
+    async def validators(self, i=0):
+        return json.loads(
+            await self.raw(
+                "query", "staking", "validators", output="json", node=self.node_rpc(i)
+            )
+        )
+
+    async def transfer(self, from_, to, coins, i=0, generate_only=False):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "bank",
+                "send",
+                from_,
+                to,
+                coins,
+                "-y",
+                "--generate-only" if generate_only else "",
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(i),
+            )
+        )
+
+    async def make_multisig(self, name, signer1, signer2, i=0):
+        await self.raw(
+            "keys",
+            "add",
+            name,
+            multisig=f"{signer1},{signer2}",
+            multisig_threshold="2",
             home=self.home(i),
             keyring_backend="test",
-            chain_id=self.chain_id,
-            node=self.node_rpc(i),
+            output="json",
+        )
+
+    async def sign_multisig_tx(self, tx_file, multi_addr, signer_name, i=0):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "sign",
+                tx_file,
+                f"--from {signer_name}",
+                multisig=multi_addr,
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
+
+    async def combine_multisig_tx(
+        self, tx_file, multi_name, signer1_file, signer2_file, i=0
+    ):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "multisign",
+                tx_file,
+                multi_name,
+                signer1_file,
+                signer2_file,
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
+
+    async def broadcast_tx(self, tx_file, i=0):
+        return json.loads(
+            await self.raw("tx", "broadcast", tx_file, node=self.node_rpc(i))
+        )
+
+    async def unjail(self, addr, i=0):
+        return json.loads(
+            await self.raw(
+                "tx",
+                "slashing",
+                "unjail",
+                "-y",
+                from_=addr,
+                home=self.home(i),
+                node=self.node_rpc(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
         )
 
 
@@ -126,62 +220,42 @@ class Cluster:
         self.data_dir = data_dir
         self.base_port = base_port
         self.cli = ClusterCLI(data_dir, base_port, config["chain_id"], cmd)
-        # subprocesses spawned
-        self.processes = []
+        self.supervisord_process = None
+        self._supervisorctl = None
+
+    @property
+    def supervisor(self):
+        # https://github.com/Supervisor/supervisor/blob/76df237032f7d9fbe80a0adce3829c8b916d5b58/supervisor/options.py#L1718
+        if self._supervisorctl is None:
+            self._supervisorctl = xmlrpclib.ServerProxy(
+                # dumbass ServerProxy won't allow us to pass in a non-HTTP url,
+                # so we fake the url we pass into it and
+                # always use the transport's
+                # 'serverurl' to figure out what to attach to
+                "http://127.0.0.1",
+                transport=xmlrpc.SupervisorTransport(
+                    serverurl=f"unix://{self.data_dir}/supervisor.sock"
+                ),
+            )
+        return self._supervisorctl.supervisor
 
     async def start(self):
-        assert not self.processes, "already started"
-
-        count = len(
-            [name for name in os.listdir(self.data_dir) if re.match(r"^node\d+$", name)]
-        )
-        if count == 0:
-            print("not initialized yet", file=sys.stderr)
-            return
-        for i in range(count):
-            (self.data_dir / f"node{i}.log").touch()
-        self.processes = [
-            await asyncio.create_subprocess_exec(
-                self.cmd,
-                "start",
-                "--home",
-                str(self.cli.home(i)),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            for i in range(count)
-        ]
-
-    async def watch_logs(self):
-        async def watch_one(reader, prefix):
-            while True:
-                line = await reader.readline()
-                if not line:
-                    break
-                log = prefix + line.decode()
-                sys.stdout.write(log)
-
-        await asyncio.wait(
-            [
-                watch_one(p.stdout, f"node{i}-stdout: ")
-                for i, p in enumerate(self.processes)
-            ]
-            + [
-                watch_one(p.stderr, f"node{i}-stderr: ")
-                for i, p in enumerate(self.processes)
-            ]
+        assert not self.supervisord_process, "already started"
+        self.supervisord_process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-msupervisor.supervisord",
+            "-c",
+            self.data_dir / "tasks.ini",
         )
 
     async def wait(self):
-        await asyncio.wait(
-            [p.wait() for p in self.processes], return_when=asyncio.FIRST_COMPLETED
-        )
+        await self.supervisord_process.wait()
 
     async def terminate(self):
-        for p in self.processes:
-            p.terminate()
-        for p in self.processes:
-            await p.wait()
+        self.supervisord_process.terminate()
+        await self.supervisord_process.wait()
+        self.supervisord_process = None
+        self._supervisorctl = None
 
     async def init(self):
         """
@@ -233,11 +307,12 @@ class Cluster:
                 end_time = genesis_time + datetime.timedelta(
                     seconds=durations.Duration(vesting).to_seconds()
                 )
+                vend = end_time.replace(tzinfo=None).isoformat("T") + "Z"
                 await self.cli.add_genesis_account(
                     acct["address"],
                     account["coins"],
                     vesting_amount=account["coins"],
-                    vesting_end_time=end_time.replace(tzinfo=None).isoformat("T") + "Z",
+                    vesting_end_time=vend,
                 )
 
         # collect-gentxs
@@ -258,6 +333,34 @@ class Cluster:
             )
             edit_app_cfg(self.data_dir / f"node{i}/config/app.toml", self.base_port, i)
 
+        # write supervisord config file
+        supervisord_ini = {
+            "supervisord": {
+                "pidfile": "%(here)s/supervisord.pid",
+                "nodaemon": "true",
+                "logfile": "/dev/null",
+                "logfile_maxbytes": "0",
+            },
+            "rpcinterface:supervisor": {
+                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:"
+                "make_main_rpcinterface",
+            },
+            "unix_http_server": {"file": "%(here)s/supervisor.sock"},
+            "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
+        }
+        for i, node in enumerate(self.config["validators"]):
+            supervisord_ini[f"program:node{i}"] = {
+                "command": f"{self.cmd} start --home {self.cli.home(i)}",
+                # redirect to supervisord's stdout, easier to collect all logs
+                "stdout_logfile": "/dev/fd/1",
+                "stdout_logfile_maxbytes": "0",
+                "autostart": "true",
+                "autorestart": "true",
+                "redirect_stderr": "true",
+                "startsecs": "3",
+            }
+        write_ini(open(self.data_dir / "tasks.ini", "w"), supervisord_ini)
+
 
 def edit_tm_cfg(path, base_port, i, peers):
     doc = tomlkit.parse(open(path).read())
@@ -270,6 +373,7 @@ def edit_tm_cfg(path, base_port, i, peers):
     doc["p2p"]["persistent_peers"] = peers
     doc["p2p"]["addr_book_strict"] = False
     doc["p2p"]["allow_duplicate_ip"] = True
+    doc["consensus"]["timeout_commit"] = "1s"
     open(path, "w").write(tomlkit.dumps(doc))
 
 
@@ -290,6 +394,6 @@ if __name__ == "__main__":
         )
         await c.init()
         await c.start()
-        await c.watch_logs()
+        await c.wait()
 
     asyncio.run(test())

@@ -1,4 +1,5 @@
 import asyncio
+import signal
 from pathlib import Path
 
 import fire
@@ -32,7 +33,16 @@ class CLI:
 
     async def _start(self):
         await self._cluster.start()
-        await self._cluster.watch_logs()
+
+        # register signal to quit supervisord
+        loop = asyncio.get_event_loop()
+        for signame in ("SIGINT", "SIGTERM"):
+            loop.add_signal_handler(
+                getattr(signal, signame),
+                lambda: asyncio.ensure_future(self._cluster.terminate()),
+            )
+
+        await self._cluster.wait()
 
     def start(self):
         """
@@ -49,6 +59,11 @@ class CLI:
         init + start
         """
         asyncio.run(self._serve())
+
+    def supervisorctl(self, *args):
+        from supervisor.supervisorctl import main
+
+        main(("-c", self._cluster.data_dir / "tasks.ini", *args))
 
 
 def main():

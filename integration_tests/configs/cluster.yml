@@ -1,0 +1,25 @@
+chain_id: chaintest
+validators:
+  - coins: 10cro
+    staked: 10cro
+  - coins: 10cro
+    staked: 10cro
+accounts:
+  - name: community
+    coins: 100cro
+  - name: ecosystem
+    coins: 200cro
+  - name: reserve
+    coins: 200cro
+    vesting: "60s"
+  - name: launch
+    coins: 100cro
+  - name: signer1
+    coins: 10000cro
+  - name: signer2
+    coins: 2000cro
+genesis:
+ app_state:
+   staking:
+     params:
+       unbonding_time: "10s"
