@@ -77,7 +77,7 @@ Optionally, you can also use a binary cache to speed up the build process:
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install
 $ cachix use crypto-com
 ```
-
+<a id="start-local-full-node" />
 ## 6. Start a Local Full Node
 
 TODO
