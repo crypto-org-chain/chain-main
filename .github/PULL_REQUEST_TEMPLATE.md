@@ -10,8 +10,8 @@
 - [ ] Have you included tests for any non-trivial functionality?
 - [ ] Have you checked your code passes the unit tests? (`make test`)
 - [ ] Have you checked your code formatting is correct? (`go fmt`)
-- [ ] Have you checked your basic code style is fine? (`goreporter` / `gosec` / `golint` / `govet` / ...)
-- [ ] If you added any dependencies, have you checked they do not contain any known vulnerabilities? (`go list -json -m all | nancy sleuth` / `nancy sleuth -p /path/to/Gopkg.lock`)
+- [ ] Have you checked your basic code style is fine? (`golangci-lint run`)
+- [ ] If you added any dependencies, have you checked they do not contain any known vulnerabilities? (`go list -json -m all | nancy sleuth`)
 - [ ] If your changes affect the client infrastructure, have you run the integration test?
 - [ ] If your changes affect public APIs, does your PR follow the [C4 evolution of public contracts](https://rfc.zeromq.org/spec:42/C4/#26-evolution-of-public-contracts)?
 - [ ] If your code changes public APIs, have you incremented the crate version numbers and documented your changes in the [CHANGELOG.md](https://github.com/crypto-com/chain-main/blob/master/CHANGELOG.md)?

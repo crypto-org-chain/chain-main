@@ -4,6 +4,9 @@ package chainmain.chainmain.v1beta1;
 option go_package = "github.com/crypto-com/chain-main/x/chainmain/types";
 
 // GenesisState defines the capability module's genesis state.
+// TODO: currently left empty (for versioning),
+// later, it may include fields needed for custom capabilities
+// (subscriptions, vaultable accounts, ...)
 message GenesisState {
 }
 
