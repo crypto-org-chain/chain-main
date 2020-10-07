@@ -239,10 +239,12 @@ class ClusterCLI:
         )
 
 
-def start_cluster(data_dir):
-    return subprocess.Popen(
-        [sys.executable, "-msupervisor.supervisord", "-c", data_dir / "tasks.ini"]
-    )
+def start_cluster(data_dir, quiet=False):
+    cmd = [sys.executable, "-msupervisor.supervisord", "-c", data_dir / "tasks.ini"]
+    if quiet:
+        return subprocess.Popen(cmd, stdout=(data_dir / "supervisord.log").open("w"))
+    else:
+        return subprocess.Popen(cmd)
 
 
 def init_cluster(data_dir, config, base_port, cmd=None):
