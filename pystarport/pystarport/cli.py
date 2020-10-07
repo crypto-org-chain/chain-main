@@ -4,11 +4,11 @@ from pathlib import Path
 import fire
 import yaml
 
-from .cluster import ClusterCLI, init_cluster, start_cluster
+from .cluster import CHAIN, ClusterCLI, init_cluster, start_cluster
 from .utils import interact
 
 
-def init(data, config, base_port, cmd=None):
+def init(data, config, base_port, cmd):
     interact(
         f"rm -r {data}; mkdir {data}", ignore_error=True,
     )
@@ -20,41 +20,67 @@ def start(data):
 
     # register signal to quit supervisord
     for signame in ("SIGINT", "SIGTERM"):
-        signal.signal(getattr(signal, signame), supervisord.terminate)
+        signal.signal(getattr(signal, signame), lambda *args: supervisord.terminate())
 
     supervisord.wait()
 
 
-def serve(data, config, base_port, cmd=None):
+def serve(data, config, base_port, cmd):
     init(data, config, base_port, cmd)
     start(data)
 
 
 class CLI:
-    def init(self, data="./data", config="./config.yaml", base_port=26650, cmd=None):
+    def init(
+        self,
+        data: str = "./data",
+        config: str = "./config.yaml",
+        base_port: int = 26650,
+        cmd: str = CHAIN,
+    ):
         """
-        initialize testnet data directory
+        prepare all the configurations of a devnet
+
+        :param data: path to the root data directory
+        :param config: path to the configuration file
+        :param base_port: the base port to use, the service ports of different nodes
+        are calculated based on this
+        :param cmd: the chain binary to use
         """
         init(Path(data), config, base_port, cmd)
 
-    def start(self, data="./data"):
+    def start(self, data: str = "./data"):
         """
-        start testnet processes
+        start the prepared devnet
+
+        :param data: path to the root data directory
         """
         start(Path(data))
 
-    def serve(self, data="./data", config="./config.yaml", base_port=26650, cmd=None):
+    def serve(
+        self,
+        data: str = "./data",
+        config: str = "./config.yaml",
+        base_port: int = 26650,
+        cmd: str = CHAIN,
+    ):
         """
-        init + start
+        prepare and start a devnet from scatch
+
+        :param data: path to the root data directory
+        :param config: path to the configuration file
+        :param base_port: the base port to use, the service ports of different nodes
+        are calculated based on this
+        :param cmd: the chain binary to use
         """
         serve(Path(data), config, base_port, cmd)
 
-    def supervisorctl(self, *args, data="./data"):
+    def supervisorctl(self, *args, data: str = "./data"):
         from supervisor.supervisorctl import main
 
         main(("-c", Path(data) / "tasks.ini", *args))
 
-    def cli(self, *args, data="./data", cmd=None):
+    def cli(self, *args, data: str = "./data", cmd: str = CHAIN):
         return ClusterCLI(Path(data), cmd)
 
 
