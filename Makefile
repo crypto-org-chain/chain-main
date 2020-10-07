@@ -4,6 +4,7 @@ VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//'
 COMMIT := $(shell git log -1 --format='%H')
 COVERAGE ?=
 BUILDDIR ?= $(CURDIR)/build
+LEDGER_ENABLED ?= true
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
@@ -14,13 +15,14 @@ BUILD_FLAGS := -ldflags '$(ldflags)'
 TESTNET_FLAGS ?=
 
 ledger ?= HID
-BUILD_TAGS := -tags cgo,ledger,!test_ledger_mock,!ledger_mock
-ifeq ($(ledger), ZEMU)
-	BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
-else
-	BUILD_TAGS := $(BUILD_TAGS),!ledger_zemu
+ifeq ($(LEDGER_ENABLED),true)
+	BUILD_TAGS := -tags cgo,ledger,!test_ledger_mock,!ledger_mock
+	ifeq ($(ledger), ZEMU)
+		BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
+	else
+		BUILD_TAGS := $(BUILD_TAGS),!ledger_zemu
+	endif
 endif
-
 
 SIMAPP = github.com/crypto-com/chain-main/app
 BINDIR ?= ~/go/bin
@@ -37,10 +39,18 @@ build: go.sum
 .PHONY: build
 
 build-linux: go.sum
+ifeq ($(OS), Linux)
 		GOOS=linux GOARCH=amd64 $(MAKE) build
+else
+		LEDGER_ENABLED=false GOOS=linux GOARCH=amd64 $(MAKE) build
+endif
 
 build-mac: go.sum
+ifeq ($(OS), Darwin)
 		GOOS=darwin GOARCH=amd64 $(MAKE) build
+else
+		LEDGER_ENABLED=false GOOS=darwin GOARCH=amd64 $(MAKE) build
+endif
 
 go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
@@ -97,7 +107,7 @@ localnet-stop:
 clean:
 	rm -rf $(BUILDDIR)/
 
-clean-docker-compose:
+clean-docker-compose: localnet-stop
 	rm -rf $(BUILDDIR)/node* $(BUILDDIR)/gentxs
 
 ###############################################################################
