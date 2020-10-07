@@ -177,6 +177,76 @@ class ClusterCLI:
             )
         )
 
+    def get_delegated_amount(self, which_addr, i=0):
+        return json.loads(
+            self.raw(
+                "query",
+                "staking",
+                "delegations",
+                which_addr,
+                home=self.home(i),
+                chain_id=self.chain_id,
+                node=self.node_rpc(0),
+                output="json",
+            )
+        )
+
+    def delegate_amount(self, to_addr, amount, from_addr, i=0):
+        return json.loads(
+            self.raw(
+                "tx",
+                "staking",
+                "delegate",
+                to_addr,
+                amount,
+                "-y",
+                home=self.home(i),
+                from_=from_addr,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(0),
+            )
+        )
+
+    # to_addr: croclcl1...  , from_addr: cro1...
+    def unbond_amount(self, to_addr, amount, from_addr, i=0):
+        return json.loads(
+            self.raw(
+                "tx",
+                "staking",
+                "unbond",
+                to_addr,
+                amount,
+                "-y",
+                home=self.home(i),
+                from_=from_addr,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(0),
+            )
+        )
+
+    # to_validator_addr: crocncl1...  ,  from_from_validator_addraddr: crocl1...
+    def redelegate_amount(
+        self, to_validator_addr, from_validator_addr, amount, from_addr, i=0
+    ):
+        return json.loads(
+            self.raw(
+                "tx",
+                "staking",
+                "redelegate",
+                from_validator_addr,
+                to_validator_addr,
+                amount,
+                "-y",
+                home=self.home(i),
+                from_=from_addr,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(0),
+            )
+        )
+
     def make_multisig(self, name, signer1, signer2, i=0):
         self.raw(
             "keys",
