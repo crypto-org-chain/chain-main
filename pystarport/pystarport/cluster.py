@@ -248,8 +248,6 @@ def start_cluster(data_dir):
 def init_cluster(data_dir, config, base_port, cmd=None):
     """
     init data directory
-    working directory is already set to data directory
-    data directory is empty
     """
     cmd = cmd or CHAIN
     for i in range(len(config["validators"])):

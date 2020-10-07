@@ -12,7 +12,7 @@ this](https://github.com/crypto-com/chain-main/blob/cb0005fd64250e08e4f758138db6
 you can put the custom cluster config file into the `integration_tests/configs` directory.
 
 To write test case which depend on the default cluster, one only need to accept a `cluster` parameter, then you get
-access to the `ClusterCLI` object automagically.
+access to the [`ClusterCLI`](../pystarport/pystarport/cluster.py#L38) object automagically.
 
 We use [python-xdist](https://pypi.org/project/pytest-xdist/) to execute test cases in multi-processess in parallel, the
 implications are:
@@ -23,9 +23,9 @@ implications are:
   like tcp port numbers. the default cluster fixture compute `base_port` like this: `(100 + worker_id) * 100`, be aware
 of this when choosing `base_port` when overriding the default cluster.
 
-  > an alternative is to always choose free port for all the services, might worth to try that approach.
+  > [pystarport's port rules](../pystarport/README.md#port-rules)
 
-We can use `@pytest.mark.slow` to mark slow test cases (like slashing test which need to sleep quit long time to wait
+We can use `@pytest.mark.slow` to mark slow test cases (like slashing test which need to sleep quit long time to wait
 for blockchain events), we can pass command line argument `-m 'not slow'` to pytest to skip these slow test cases for
 faster development.
 
@@ -48,14 +48,4 @@ cluster.address('validator', i=2, bech='val')
 cluster.transfer('from addr', 'to addr', '1cro', i=2)
 ```
 
-The apis of `cluster` can also called from `pystarport` cli:
-
-```
-$ pystarport serve &
-...
-
-$ pystarport cli status
-node_info:      ...
-sync_info:      ...
-validator_info: ...
-```
+[pystarport doc](../pystarport/README.md)
