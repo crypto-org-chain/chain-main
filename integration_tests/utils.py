@@ -56,12 +56,13 @@ def wait_for_port(port, host="127.0.0.1", timeout=40.0):
                 ) from ex
 
 
-def cluster_fixture(config_path, base_port):
+def cluster_fixture(config_path, base_port, quiet=False):
     config = yaml.safe_load(open(config_path))
     with tempfile.TemporaryDirectory(suffix=config["chain_id"]) as tmpdir:
+        print("init cluster at", tmpdir, ", base port:", base_port)
         data = Path(tmpdir)
         cluster.init_cluster(data, config, base_port)
-        supervisord = cluster.start_cluster(data)
+        supervisord = cluster.start_cluster(data, quiet=quiet)
         # wait for first node rpc port available before start testing
         wait_for_port(rpc_port(base_port, 0))
         cli = cluster.ClusterCLI(data)
