@@ -1,6 +1,7 @@
-import yaml
 import threading
 import time
+
+import yaml
 
 
 class TxJobThread(threading.Thread):
@@ -12,8 +13,7 @@ class TxJobThread(threading.Thread):
 
     def transfer_tx_job(self):
         from_address = self.cluster_cli.address(
-            self.job["from_account"],
-            self.job.get("node", 0),
+            self.job["from_account"], self.job.get("node", 0),
         )
         to_address = self.job["to_address"]
         amount = self.job.get("amount", "1basecro")
@@ -21,12 +21,11 @@ class TxJobThread(threading.Thread):
 
         while 1:
             begin = time.time()
-            print("[%s] Transfer %s from %s to %s" % (
-                self.label, amount, from_address, to_address,
-            ))
-            result = self.cluster_cli.transfer(
-                from_address, to_address, amount,
+            print(
+                "[%s] Transfer %s from %s to %s"
+                % (self.label, amount, from_address, to_address)
             )
+            result = self.cluster_cli.transfer(from_address, to_address, amount)
             print(result)
 
             duration = time.time() - begin

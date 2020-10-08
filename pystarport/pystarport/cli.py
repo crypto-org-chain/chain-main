@@ -4,8 +4,8 @@ from pathlib import Path
 import fire
 import yaml
 
-from .cluster import CHAIN, ClusterCLI, init_cluster, start_cluster
 from .bot import BotCLI
+from .cluster import CHAIN, ClusterCLI, init_cluster, start_cluster
 from .utils import interact
 
 
