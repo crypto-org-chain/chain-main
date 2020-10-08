@@ -3,7 +3,8 @@ module github.com/crypto-com/chain-main
 go 1.15
 
 require (
-	github.com/cosmos/cosmos-sdk v0.34.4-0.20200927215114-04ff40a8df14
+	github.com/confluentinc/bincover v0.1.0
+	github.com/cosmos/cosmos-sdk v0.34.4-0.20201007125611-a87d6ea3ab6b
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/gorilla/mux v1.8.0
@@ -24,3 +25,5 @@ require (
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.4
 
 replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
+
+replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.34.4-0.20201008043740-32f528c88d8e

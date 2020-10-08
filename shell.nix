@@ -11,7 +11,9 @@ let
 in
   mkShell {
     buildInputs = [
+      go
       chain
+      chain.instrumented
       pystarport
       python3Packages.poetry
       python3Packages.pytest_xdist

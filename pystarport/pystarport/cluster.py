@@ -41,7 +41,7 @@ class ClusterCLI:
     def __init__(self, data_dir, cmd=None):
         self.data_dir = data_dir
         self._genesis = json.load(open(data_dir / "genesis.json"))
-        self.base_port = int((data_dir / "base_port").open().read())
+        self.base_port = int((data_dir / "base_port").read_text())
         self.chain_id = self._genesis["chain_id"]
         self.raw = ChainCommand(cmd)
         self._supervisorctl = None
@@ -267,7 +267,7 @@ def init_cluster(data_dir, config, base_port, cmd=None):
         os.symlink("../../genesis.json", data_dir / f"node{i}/config/genesis.json")
         os.symlink("../../gentx", data_dir / f"node{i}/config/gentx")
 
-    open(data_dir / "base_port", "w").write(str(base_port))
+    (data_dir / "base_port").write_text(str(base_port))
 
     # now we can create ClusterCLI
     cli = ClusterCLI(data_dir, cmd)

@@ -24,5 +24,20 @@ buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = sha256:0c6lwyvf2cwj02pb7nx06wp08zkbwp49xiphlxbxfr7823lf9r85;
+  vendorSha256 = sha256:05w1v3smx5j9i647bn7rw5fbs04sa356v9qp8pis8aajw6y5pr3l;
+  outputs = [ "out" "instrumented"];
+
+  instrumentedBinary = "chain-maind-inst";
+  # FIXME remove the ldflags, https://github.com/golang/go/issues/40974
+  postBuild = ''
+    go test ./cmd/chain-maind --tags testbincover -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -ldflags "-w -s" -c -o ${instrumentedBinary}
+  '';
+  postInstall = ''
+    mkdir -p $instrumented/bin
+    mv ./${instrumentedBinary} $instrumented/bin/
+  '';
+  preFixup = ''
+    find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
+  '';
+
 }
