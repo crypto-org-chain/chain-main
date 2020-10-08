@@ -21,7 +21,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def cluster(worker_id, pytestconfig):
+def cluster(worker_id, pytestconfig, tmp_path_factory):
     "default cluster fixture"
     match = re.search(r"\d+", worker_id)
     worker_id = int(match[0]) if match is not None else 0
@@ -29,6 +29,7 @@ def cluster(worker_id, pytestconfig):
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
         base_port,
+        tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
     )
 
@@ -37,7 +38,7 @@ def cluster(worker_id, pytestconfig):
 def suspend_capture(pytestconfig):
     "used for pause in testing"
 
-    class suspend_guard:
+    class SuspendGuard:
         def __init__(self):
             self.capmanager = pytestconfig.pluginmanager.getplugin("capturemanager")
 
@@ -47,4 +48,4 @@ def suspend_capture(pytestconfig):
         def __exit__(self, _1, _2, _3):
             self.capmanager.resume_global_capture()
 
-    yield suspend_guard()
+    yield SuspendGuard()

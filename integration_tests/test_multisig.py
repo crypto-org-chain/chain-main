@@ -1,21 +1,14 @@
 import json
-import tempfile
-from pathlib import Path
 
 from .utils import wait_for_new_blocks
 
 
-def test_multi_signature(cluster):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        do_test_multi_signature(cluster, Path(tmpdir))
-
-
-def do_test_multi_signature(cluster, tmpdir):
+def test_multi_signature(cluster, tmp_path):
     # prepare files
-    m_txt = tmpdir / "m.txt"
-    p1_txt = tmpdir / "p1.txt"
-    p2_txt = tmpdir / "p2.txt"
-    tx_txt = tmpdir / "tx.txt"
+    m_txt = tmp_path / "m.txt"
+    p1_txt = tmp_path / "p1.txt"
+    p2_txt = tmp_path / "p2.txt"
+    tx_txt = tmp_path / "tx.txt"
 
     # make multi-sig
     cluster.make_multisig("multitest1", "signer1", "signer2")

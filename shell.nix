@@ -1,25 +1,18 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
-let
-  chain = import ./. { inherit pkgs; };
-  pystarport = poetry2nix.mkPoetryEnv {
-    projectDir = ./pystarport;
-    editablePackageSources = {
-      pystarport = ./pystarport;
-    };
-  };
-in
-  mkShell {
-    buildInputs = [
-      go
-      chain
-      chain.instrumented
-      pystarport
-      python3Packages.poetry
-      python3Packages.pytest_xdist
-      python3Packages.pytest
-      python3Packages.flake8
-      python3Packages.black
-      python3Packages.isort
-    ];
-  }
+mkShell {
+  inputsFrom = [
+    # base env
+    (import ./integration_tests/shell.nix { inherit pkgs; })
+  ];
+  buildInputs = [
+    go
+    # make default chain-maind available on PATH
+    (import ./. { inherit pkgs; })
+    python3Packages.poetry
+  ];
+  shellHook = ''
+  # prefer local pystarport directory for development
+  export PYTHONPATH=./pystarport:$PYTHONPATH
+  '';
+}

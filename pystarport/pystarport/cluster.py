@@ -337,7 +337,7 @@ def init_cluster(data_dir, config, base_port, cmd=None):
     }
     for i, node in enumerate(config["validators"]):
         supervisord_ini[f"program:node{i}"] = {
-            "command": f"{cmd} start --home {home_dir(data_dir, i)}",
+            "command": f"{cmd} start --home %(here)s/node{i}",
             # redirect to supervisord's stdout, easier to collect all logs
             "stdout_logfile": "/dev/fd/1",
             "stdout_logfile_maxbytes": "0",
