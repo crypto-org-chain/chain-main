@@ -62,6 +62,18 @@ def cluster_fixture(config_path, base_port, quiet=False):
         print("init cluster at", tmpdir, ", base port:", base_port)
         data = Path(tmpdir)
         cluster.init_cluster(data, config, base_port)
+
+        # replace the first node with the instrumented binary
+        ini = data / "tasks.ini"
+        ini.write_text(
+            ini.read_text().replace(
+                "chain-maind",
+                f"chain-maind-inst -test.coverprofile={data}/coverage.out",
+                1,
+            )
+        )
+        begin = time.time()
+
         supervisord = cluster.start_cluster(data, quiet=quiet)
         # wait for first node rpc port available before start testing
         wait_for_port(rpc_port(base_port, 0))
@@ -71,5 +83,19 @@ def cluster_fixture(config_path, base_port, quiet=False):
 
         yield cli
 
+        duration = time.time() - begin
+        # wait for server startup complete to generate the coverage report
+        if duration < 15:
+            time.sleep(15 - duration)
+
         supervisord.terminate()
         supervisord.wait()
+
+        # collect the coverage results
+        txt = (data / "coverage.out").read_text()
+        merged = Path("coverage.txt")
+        if merged.exists():
+            assert txt.startswith("mode: set")
+            txt = txt[10:]
+        with merged.open("a") as f:
+            f.write(txt)
