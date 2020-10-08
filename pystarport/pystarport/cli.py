@@ -5,6 +5,7 @@ import fire
 import yaml
 
 from .cluster import CHAIN, ClusterCLI, init_cluster, start_cluster
+from .bot import BotCLI
 from .utils import interact
 
 
@@ -82,6 +83,23 @@ class CLI:
 
     def cli(self, *args, data: str = "./data", cmd: str = CHAIN):
         return ClusterCLI(Path(data), cmd)
+
+    def bot(
+        self,
+        *args,
+        data: str = "./data",
+        config_path: str = "./bot.yaml",
+        cmd: str = CHAIN,
+    ):
+        """
+        transaction bot CLI
+
+        :param data: path to the root data directory
+        :param config: path to the bot configuration file
+        (refer bot.yaml.example for reference)
+        """
+        cluster_cli = ClusterCLI(Path(data), cmd)
+        return BotCLI(config_path, cluster_cli)
 
 
 def main():
