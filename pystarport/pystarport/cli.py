@@ -95,8 +95,9 @@ class CLI:
         transaction bot CLI
 
         :param data: path to the root data directory
-        :param config: path to the bot configuration file
-        (refer bot.yaml.example for reference)
+        :param config_path: path to the bot configuration file
+        (copy bot.yaml.example for reference)
+        :param cmd: the chain binary to use
         """
         cluster_cli = ClusterCLI(Path(data), cmd)
         return BotCLI(config_path, cluster_cli)
