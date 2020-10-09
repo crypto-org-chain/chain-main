@@ -58,4 +58,4 @@ class BotCLI:
             thread.start()
 
         for thread in threads:
-            thread.wait()
+            thread.join()
