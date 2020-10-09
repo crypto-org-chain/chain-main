@@ -23,9 +23,7 @@ jobs:
         nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use crypto-com
       if: github.ref != 'refs/heads/master'
-    - run: nix run nixpkgs.python3Packages.flake8 -c flake8 --max-line-length 88 --extend-ignore E203 integration_tests pystarport
-    - run: nix run nixpkgs.python3Packages.black -c black --check --diff integration_tests pystarport
-    - run: nix-shell --run "isort -c --diff -rc integration_tests pystarport"
+    - run: nix-shell integration_tests/shell.nix --run "make lintpy"
     - run: make nix-integration-test
     - name: Upload coverage report
       uses: codecov/codecov-action@v1

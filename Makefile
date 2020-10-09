@@ -66,6 +66,11 @@ lint:
 	@golangci-lint run
 	@go mod verify
 
+lintpy:
+	@flake8
+	@black --check --diff .
+	@isort -c --diff -rc .
+
 test-sim-nondeterminism:
 	@echo "Running non-determinism test..."
 	@go test -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
@@ -115,7 +120,7 @@ clean-docker-compose: localnet-stop
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test:
-	nix-shell --run "python -mpytest -v -n 3 --dist loadscope integration_tests"
+	nix-shell integration_tests/shell.nix --run "pytest -v -n 3 --dist loadscope"
 
 nix-build-%: check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \
