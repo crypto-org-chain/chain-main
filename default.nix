@@ -24,7 +24,7 @@ buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = sha256:05w1v3smx5j9i647bn7rw5fbs04sa356v9qp8pis8aajw6y5pr3l;
+  vendorSha256 = sha256:14nbdviafjpx8a0vc7839nkrs441r9aw4mxjhb6f4213n72kj3zn;
   outputs = [ "out" "instrumented"];
 
   instrumentedBinary = "chain-maind-inst";
