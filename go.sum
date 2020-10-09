@@ -118,6 +118,8 @@ github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwc
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
+github.com/crypto-com/cosmos-sdk v0.34.4-0.20201009052558-35ba8ffa5418 h1:FUtho+0Xd5XNFgfQ/lYZf7lqGJA2lfaAz876QZzUZNA=
+github.com/crypto-com/cosmos-sdk v0.34.4-0.20201009052558-35ba8ffa5418/go.mod h1:YZcO00Tq/qqj4ncsfn+PobyTelsot7wEMGPpxEbEAT0=
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929025122-fcf27aeb5eaa h1:M+EDEEuQahKHLhrvqUQkyfWZcz3zzzJwiQc8k+QXpLw=
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929025122-fcf27aeb5eaa/go.mod h1:TJ0bt9M3eOD5V6ZCUvenKA1ODkvOcYuJDMBr9/XW1QY=
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f h1:pizxWsDWb07eC9jhw1oEUraFSZr3q17jvBU8CZ5Cp6s=
@@ -577,6 +579,8 @@ github.com/tendermint/tendermint v0.34.0-rc3/go.mod h1:BoHcEpjfpBHc1Be7RQz3AHaXF
 github.com/tendermint/tendermint v0.34.0-rc3.0.20200907055413-3359e0bf2f84/go.mod h1:ZgOz3PoriH5yHRJmUmhDTVX8ps4+hzFvhmDq6MDUHxU=
 github.com/tendermint/tendermint v0.34.0-rc4 h1:fnPyDFz9QGAU6tjExoQ8ZY63eHkzdBg5StQgDoeuK0s=
 github.com/tendermint/tendermint v0.34.0-rc4/go.mod h1:yotsojf2C1QBOw4dZrTcxbyxmPUrT4hNuOQWX9XUwB4=
+github.com/tendermint/tendermint v0.34.0-rc4.0.20201005135527-d7d0ffea13c6 h1:gqZ0WDpDYgMm/iaiMEXvI1nt/GoWCuwtBomVpUMiAIs=
+github.com/tendermint/tendermint v0.34.0-rc4.0.20201005135527-d7d0ffea13c6/go.mod h1:BSXqR6vWbOecet726v66qVwSkFDLfEeBrq+EhkKbij4=
 github.com/tendermint/tm-db v0.5.1/go.mod h1:g92zWjHpCYlEvQXvy9M168Su8V1IBEeawpXVVBaK4f4=
 github.com/tendermint/tm-db v0.6.1/go.mod h1:m3x9kRP4UFd7JODJL0yBAZqE7wTw+S37uAE90cTx7OA=
 github.com/tendermint/tm-db v0.6.2 h1:DOn8jwCdjJblrCFJbtonEIPD1IuJWpbRUUdR8GWE4RM=
