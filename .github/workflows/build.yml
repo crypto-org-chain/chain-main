@@ -75,6 +75,12 @@ jobs:
       - name: test
         run: make test
         if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.txt
+          flags: unit_tests
       - name: Create file status_build.txt and write the job status into it
         if: github.event_name == 'issue_comment'
         run: |

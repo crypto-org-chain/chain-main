@@ -2,7 +2,7 @@ PACKAGES=$(shell go list ./... | grep -v '/simulation')
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
-COVERAGE ?=
+COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
 
