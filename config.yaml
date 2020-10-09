@@ -2,6 +2,7 @@ chain_id: chainmaind
 validators:
   - coins: 10cro
     staked: 10cro
+    # name: moniker_name #default node{i}
   - coins: 10cro
     staked: 10cro
 accounts:
@@ -15,7 +16,7 @@ accounts:
   - name: launch
     coins: 100cro
 genesis:
- app_state:
-   staking:
-     params:
-       unbonding_time: "10s"
+  app_state:
+    staking:
+      params:
+        unbonding_time: "10s"
