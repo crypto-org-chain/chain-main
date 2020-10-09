@@ -21,3 +21,6 @@ __pycache__
 frontend/node_modules
 frontend/dist
 frontend/.cache
+
+# Pystarport
+bot.yaml
