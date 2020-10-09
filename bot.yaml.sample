@@ -1,0 +1,7 @@
+jobs:
+  - label: Test           # arbitrary label 
+    node: 0               # index of the node where the `from account` is created
+    from_account: launch  # from account (should be pre-created in the node data folder)
+    to_address: cro19zyg34kkrllfqvtumsu3jacg9lgf6lw22xsqye 
+    amount: 1cro
+    interval: 5           # job interval in second
