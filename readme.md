@@ -13,16 +13,17 @@
 
 ## Table of Contents
 
-1. [Description](#description)
-2. [Contributing](#contributing)
-3. [License](#license)
-4. [Documentation](#documentation)
-5. [Build](#build)
-   1. [Nix](#nix)
-6. [Start a Local Full Node](#start-local-full-node)
-7. [Send your First Transaction](#send-first-transaction)
-8. [Testing](#testing)
-9. [Useful Links](#useful-links)
+- [Table of Contents](#table-of-contents)
+- [1. Description](#1-description)
+- [2. Contributing](#2-contributing)
+- [3. License](#3-license)
+- [4. Documentation](#4-documentation)
+- [5. Build full node](#5-build-full-node)
+    - [1. Nix](#1-nix)
+- [6. Start a Local Full Node](#6-start-a-local-full-node)
+- [7. Send Your First Transaction](#7-send-your-first-transaction)
+- [8. Testing](#8-testing)
+- [Useful links](#useful-links)
 
 <a id="description" />
 
@@ -52,6 +53,16 @@ Technical documentation can be found in this [Github repository](https://github.
 <a id="build" />
 
 ## 5. Build full node
+
+```bash
+make build
+```
+By default, the command will build a binary with Mainnet configurations.
+
+To build with different network, provided `NETWORK` variable to `make` command
+```bash
+NETWORK=testnet make build
+```
 
 <a id="nix" />
 

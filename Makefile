@@ -2,6 +2,7 @@ PACKAGES=$(shell go list ./... | grep -v '/simulation')
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
+NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
@@ -24,6 +25,17 @@ ifeq ($(LEDGER_ENABLED),true)
 	endif
 endif
 
+ifeq ($(NETWORK),mainnet)	
+	BUILD_TAGS := $(BUILD_TAGS),mainnet
+	TEST_TAGS := "--tags=mainnet"
+else ifeq ($(NETWORK),testnet)	
+	BUILD_TAGS := $(BUILD_TAGS),testnet
+	TEST_TAGS := "--tags=testnet"
+else ifeq ($(NETWORK),devnet)	
+	BUILD_TAGS := $(BUILD_TAGS),devnet
+	TEST_TAGS := "--tags=devnet"
+endif
+
 SIMAPP = github.com/crypto-com/chain-main/app
 BINDIR ?= ~/go/bin
 
@@ -31,10 +43,10 @@ OS := $(shell uname)
 
 all: install
 
-install: go.sum
-		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
+install: check-network go.sum
+		go install -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) ./cmd/chain-maind
 
-build: go.sum
+build: check-network go.sum
 		go build -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
 .PHONY: build
 
@@ -56,8 +68,8 @@ go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
 
-test:
-	@go test -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+test: check-network
+	@go test $(TEST_TAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 # look into .golangci.yml for enabling / disabling linters
@@ -71,15 +83,15 @@ lintpy:
 	@black --check --diff .
 	@isort -c --diff -rc .
 
-test-sim-nondeterminism:
+test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
-	@go test -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=0 -v -timeout 24h
 
-test-sim-custom-genesis-fast:
+test-sim-custom-genesis-fast: check-network
 	@echo "Running custom genesis simulation..."
 	@echo "By default, ${HOME}/.chain-maind/config/genesis.json will be used."
-	@go test -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
+	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
 		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h
 
 test-sim-import-export:
@@ -95,7 +107,7 @@ test-sim-after-import:
 ###############################################################################
 
 build-docker-chainmaindnode:
-	$(MAKE) -C networks/local
+	$(MAKE) -C check-networks/local
 
 # Run a 4-node testnet locally
 localnet-start: build-linux build-docker-chainmaindnode localnet-stop
@@ -107,7 +119,7 @@ localnet-start: build-linux build-docker-chainmaindnode localnet-stop
 # Stop testnet
 localnet-stop:
 	docker-compose down
-	docker network prune -f
+	docker check-network prune -f
 
 # local build pystarport
 build-pystarport:
@@ -127,7 +139,7 @@ clean-docker-compose: localnet-stop
 ###                                Nix                                      ###
 ###############################################################################
 # nix installation: https://nixos.org/download.html
-nix-integration-test:
+nix-integration-test: check-network
 	nix-shell integration_tests/shell.nix --run "pytest -v -n 3 --dist loadscope"
 
 nix-build-%: check-os
@@ -139,6 +151,15 @@ nix-build-%: check-os
 
 chaindImage: nix-build-chaindImage
 pystarportImage: nix-build-pystarportImage
+
+check-network:
+ifeq ($(NETWORK),mainnet)	
+else ifeq ($(NETWORK),testnet)	
+else ifeq ($(NETWORK),devnet)	
+else
+	@echo "Unrecognized network: ${NETWORK}"
+endif
+	@echo "building network: ${NETWORK}"
 
 check-os:
 ifeq ($(OS), Darwin)

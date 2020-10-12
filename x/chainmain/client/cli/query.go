@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/crypto-com/chain-main/app"
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 

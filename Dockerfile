@@ -5,6 +5,8 @@
 # > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chain-maind:/chain-main/.chain-maind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind start
 FROM golang:alpine AS build-env
 
+ARG NETWORK=testnet
+
 # Set up dependencies
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
@@ -16,7 +18,7 @@ COPY . .
 
 # Install minimum necessary dependencies, build Cosmos SDK, remove packages
 RUN apk add --no-cache $PACKAGES && \
-  make install
+  NETWORK=${NETWORK} make install
 
 # Final image
 FROM alpine:edge
