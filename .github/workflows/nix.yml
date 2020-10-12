@@ -9,13 +9,38 @@ on:
       - '*'
 
 jobs:
+  lintpy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: cachix/install-nix-action@v11
+      with:
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz
+    - name: use cachix
+      run: |
+        nix-env -iA cachix -f https://cachix.org/api/v1/install
+        cachix use crypto-com
+    - name: lint python
+      run: nix-shell -E "$SHELL" --run "$CMD"
+      env:
+        CMD: >
+          flake8 --show-source --count --statistics
+          --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s"
+        SHELL: >
+          with import <nixpkgs> {};
+          mkShell {
+            buildInputs = [
+              (poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; })
+            ];
+          }
+
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: cachix/install-nix-action@v10
+    - uses: cachix/install-nix-action@v11
       with:
-        nix_path: nixpkgs=channel:nixos-unstable
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz
     - uses: cachix/cachix-action@v6
       if: github.ref == 'refs/heads/master'
       with:
@@ -25,8 +50,6 @@ jobs:
         nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use crypto-com
       if: github.ref != 'refs/heads/master'
-    - name: Lint python
-      run: nix-shell integration_tests/shell.nix --run "make lintpy"
     - name: Run integration tests
       run: make nix-integration-test
     - name: Upload coverage report

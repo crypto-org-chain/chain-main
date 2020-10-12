@@ -6,7 +6,6 @@ from pathlib import Path
 
 import yaml
 from dateutil.parser import isoparse
-
 from pystarport import cluster
 from pystarport.ports import rpc_port
 
