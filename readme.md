@@ -13,17 +13,16 @@
 
 ## Table of Contents
 
-- [Table of Contents](#table-of-contents)
-- [1. Description](#1-description)
-- [2. Contributing](#2-contributing)
-- [3. License](#3-license)
-- [4. Documentation](#4-documentation)
-- [5. Build full node](#5-build-full-node)
-    - [1. Nix](#1-nix)
-- [6. Start a Local Full Node](#6-start-a-local-full-node)
-- [7. Send Your First Transaction](#7-send-your-first-transaction)
-- [8. Testing](#8-testing)
-- [Useful links](#useful-links)
+1. [Description](#description)
+2. [Contributing](#contributing)
+3. [License](#license)
+4. [Documentation](#documentation)
+5. [Build](#build)
+   1. [Nix](#nix)
+6. [Start a Local Full Node](#start-local-full-node)
+7. [Send your First Transaction](#send-first-transaction)
+8. [Testing](#testing)
+9. [Useful Links](#useful-links)
 
 <a id="description" />
 
@@ -113,7 +112,7 @@ There are different tests that can be executed in the following ways:
 
 <a id="useful-links" />
 
-## Useful links
+## 9. Useful links
 
 - [Project Website](http://chain.crypto.com/)
 - [Technical Documentation](http://chain.crypto.com/)
