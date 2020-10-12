@@ -324,7 +324,10 @@ def init_cluster(data_dir, config, base_port, cmd=None):
     cmd = cmd or CHAIN
     for i in range(len(config["validators"])):
         ChainCommand(cmd)(
-            "init", f"node{i}", chain_id=config["chain_id"], home=home_dir(data_dir, i)
+            "init",
+            config["validators"][i].get("name", f"node{i}"),
+            chain_id=config["chain_id"],
+            home=home_dir(data_dir, i),
         )
 
     os.rename(data_dir / "node0/config/genesis.json", data_dir / "genesis.json")
@@ -350,15 +353,18 @@ def init_cluster(data_dir, config, base_port, cmd=None):
     cli.validate_genesis(i)
 
     # create accounts
+    accounts = []
     for i, node in enumerate(config["validators"]):
         account = cli.create_account("validator", i)
         print(account)
+        accounts.append(account)
         cli.add_genesis_account(account["address"], node["coins"], i)
         cli.gentx("validator", node["staked"], i)
 
     for account in config["accounts"]:
         acct = cli.create_account(account["name"])
         print(acct)
+        accounts.append(acct)
         vesting = account.get("vesting")
         if not vesting:
             cli.add_genesis_account(acct["address"], account["coins"])
@@ -374,6 +380,10 @@ def init_cluster(data_dir, config, base_port, cmd=None):
                 vesting_amount=account["coins"],
                 vesting_end_time=vend,
             )
+    # output accounts
+    (data_dir / "accounts.txt").write_text(
+        "\n".join(str(account) for account in accounts)
+    )
 
     # collect-gentxs
     cli.collect_gentxs(data_dir / "gentx", i)
