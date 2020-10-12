@@ -1,5 +1,3 @@
-// +build !testnet
-
 package config
 
 import (

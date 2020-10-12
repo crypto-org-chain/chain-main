@@ -14,10 +14,10 @@ var (
 	ValidatorPubKeyPrefix  = "dcrocnclpub"
 	ConsNodeAddressPrefix  = "dcrocnclcons"
 	ConsNodePubKeyPrefix   = "dcrocnclconspub"
-	HumanCoinUnit          = "cro"
-	BaseCoinUnit           = "basecro" // 10^-8 AKA "carson"
+	HumanCoinUnit          = "dcro"
+	BaseCoinUnit           = "basedcro" // 10^-8 AKA "carson"
 	CroExponent            = 8
 	CoinToBaseUnitMuls     = map[string]uint64{
-		"cro": 1_0000_0000,
+		"dcro": 1_0000_0000,
 	}
 )
