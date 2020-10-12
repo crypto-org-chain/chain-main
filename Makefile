@@ -109,6 +109,14 @@ localnet-stop:
 	docker-compose down
 	docker network prune -f
 
+# local build pystarport
+build-pystarport:
+	pip install ./pystarport
+
+# Run a local testnet by pystarport
+localnet-pystartport: build-pystarport
+	pystarport serve
+
 clean:
 	rm -rf $(BUILDDIR)/
 
