@@ -1,6 +1,6 @@
 // +build !testnet
 
-package app
+package config
 
 import (
 	"flag"

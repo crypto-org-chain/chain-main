@@ -74,6 +74,8 @@ import (
 	chaingov "github.com/crypto-com/chain-main/x/gov"
 	chainstaking "github.com/crypto-com/chain-main/x/staking"
 
+	appconfig "github.com/crypto-com/chain-main/config"
+
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
 )
@@ -84,7 +86,7 @@ var (
 		return os.ExpandEnv("$HOME/.chain-maind")
 	}
 
-	DefaultCoinParser = NewSDKCoinParser(BaseCoinUnit, CoinToBaseUnitMuls)
+	DefaultCoinParser = NewSDKCoinParser(appconfig.BaseCoinUnit, appconfig.CoinToBaseUnitMuls)
 
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration

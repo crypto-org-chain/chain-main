@@ -1,6 +1,6 @@
 // +build mainnet
 
-package app
+package config
 
 const (
 	CoinType       = 394

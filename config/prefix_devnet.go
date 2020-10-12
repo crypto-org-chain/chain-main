@@ -1,6 +1,6 @@
 // +build devnet
 
-package app
+package config
 
 const (
 	CoinType       = 394

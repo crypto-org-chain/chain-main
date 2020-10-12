@@ -1,4 +1,4 @@
-package app_test
+package config_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-com/chain-main/app"
+	"github.com/crypto-com/chain-main/config"
 )
 
 func TestMnemonic(t *testing.T) {
@@ -21,7 +21,7 @@ func TestMnemonic(t *testing.T) {
 		//nolint:lll
 		"point shiver hurt flight fun online hub antenna engine pave chef fantasy front interest poem accident catch load frequent praise elite pet remove used",
 		"",
-		app.FundraiserPath,
+		config.FundraiserPath,
 		hd.Secp256k1,
 	)
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestMnemonic(t *testing.T) {
 }
 
 func TestConversion(t *testing.T) {
-	app.SetTestingConfig()
+	config.SetTestingConfig()
 
 	testCases := []struct {
 		input  sdk.Coin
@@ -47,15 +47,15 @@ func TestConversion(t *testing.T) {
 		result sdk.Coin
 		expErr bool
 	}{
-		{sdk.NewCoin("foo", sdk.ZeroInt()), app.HumanCoinUnit, sdk.Coin{}, true},
-		{sdk.NewCoin(app.HumanCoinUnit, sdk.ZeroInt()), "foo", sdk.Coin{}, true},
-		{sdk.NewCoin(app.HumanCoinUnit, sdk.ZeroInt()), "FOO", sdk.Coin{}, true},
+		{sdk.NewCoin("foo", sdk.ZeroInt()), config.HumanCoinUnit, sdk.Coin{}, true},
+		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "foo", sdk.Coin{}, true},
+		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "FOO", sdk.Coin{}, true},
 
-		{sdk.NewCoin(app.HumanCoinUnit, sdk.NewInt(5)),
-			app.BaseCoinUnit, sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(500000000)), false}, // cro => carson
+		{sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)),
+			config.BaseCoinUnit, sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)), false}, // cro => carson
 
-		{sdk.NewCoin(app.BaseCoinUnit, sdk.NewInt(500000000)),
-			app.HumanCoinUnit, sdk.NewCoin(app.HumanCoinUnit, sdk.NewInt(5)), false}, // carson => cro
+		{sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)),
+			config.HumanCoinUnit, sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)), false}, // carson => cro
 
 	}
 

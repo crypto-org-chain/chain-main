@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, network ? "mainnet" }:
 with pkgs;
 let
   chain = import ../. { inherit pkgs; };

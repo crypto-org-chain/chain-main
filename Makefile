@@ -140,13 +140,13 @@ clean-docker-compose: localnet-stop
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network
-	nix-shell integration_tests/shell.nix --run "pytest -v -n 3 --dist loadscope"
+	nix-shell integration_tests/shell.nix --run "pytest -v -n 3 --dist loadscope" --argstr network $(NETWORK)
 
-nix-build-%: check-os
+nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \
 		. ~/.nix/remote-build-env; \
 	fi && \
-	nix-build -o $* -A $* docker.nix;
+	nix-build -o $* -A $* docker.nix --argstr network $(NETWORK);
 	docker load < $*;
 
 chaindImage: nix-build-chaindImage
