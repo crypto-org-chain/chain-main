@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - release/**
+    tags:
+      - '*'
 
 jobs:
   test:
@@ -23,17 +25,29 @@ jobs:
         nix-env -iA cachix -f https://cachix.org/api/v1/install
         cachix use crypto-com
       if: github.ref != 'refs/heads/master'
-    - run: nix-shell integration_tests/shell.nix --run "make lintpy"
-    - run: make nix-integration-test
+    - name: Lint python
+      run: nix-shell integration_tests/shell.nix --run "make lintpy"
+    - name: Run integration tests
+      run: make nix-integration-test
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.txt
         flags: integration_tests
-    - run: make pystarportImage
-    - uses: actions/upload-artifact@v2
-      if: github.ref == 'refs/heads/master'
-      with:
-        name: docker_image
-        path: ./pystarportImage
+    - name: Publish docker image
+      if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+      run: |
+        nix-build -A pystarportImage docker.nix
+        IMAGE=$(docker load < result)
+        IMAGE=${IMAGE#Loaded image: }
+        if [ "$GITHUB_REF" == "refs/tags/*" ]; then
+          TAG=${GITHUB_REF#refs/tags/}
+        else
+          TAG="latest"
+        fi
+        TARGET="docker.pkg.github.com/${{ github.repository }}/chain-main-pystarport:$TAG"
+        docker tag $IMAGE $TARGET
+        docker login -u "$GITHUB_ACTOR" -p "${{ github.token }}" docker.pkg.github.com
+        docker push $TARGET
+        echo "pushed: $TARGET"
