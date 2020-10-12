@@ -116,19 +116,19 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 							"description": "The native token of Crypto.com app.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
-									"denom":    "basecro",
+									"denom":    app.BaseCoinUnit,
 									"exponent": 0,
 									"aliases": []interface{}{
 										"carson",
 									},
 								},
 								map[string]interface{}{
-									"denom":    "cro",
+									"denom":    app.HumanCoinUnit,
 									"exponent": 8,
 								},
 							},
-							"base":    "basecro",
-							"display": "cro",
+							"base":    app.BaseCoinUnit,
+							"display": app.HumanCoinUnit,
 						},
 					},
 				},

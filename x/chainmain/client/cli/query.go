@@ -77,7 +77,7 @@ Example:
 			baseAmount := res.Balances.AmountOf(baseUnit)
 			fmt.Printf(
 				"%s CRO (%s baseCRO)\n",
-				coinParser.MustSprintBaseCoin(baseAmount, "cro"),
+				coinParser.MustSprintBaseCoin(baseAmount, app.HumanCoinUnit),
 				baseAmount.String(),
 			)
 			return nil
