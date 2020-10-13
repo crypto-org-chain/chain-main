@@ -9,14 +9,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-com/chain-main/app"
+	"github.com/crypto-com/chain-main/config"
 )
 
 func TestParseCoin(t *testing.T) {
-	app.SetTestingConfig()
+	config.SetTestingConfig()
 
 	assert := assert.New(t)
 
-	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
+	coinParser := app.NewSDKCoinParser("basecro", config.CoinToBaseUnitMuls)
 
 	var coin sdk.Coin
 	var err error
@@ -36,11 +37,11 @@ func TestParseCoin(t *testing.T) {
 }
 
 func TestParseCoins(t *testing.T) {
-	app.SetTestingConfig()
+	config.SetTestingConfig()
 
 	assert := assert.New(t)
 
-	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
+	coinParser := app.NewSDKCoinParser("basecro", config.CoinToBaseUnitMuls)
 
 	var coins sdk.Coins
 	var err error
@@ -69,11 +70,11 @@ func TestParseCoins(t *testing.T) {
 }
 
 func TestSprintBaseCoin(t *testing.T) {
-	app.SetTestingConfig()
+	config.SetTestingConfig()
 
 	assert := assert.New(t)
 
-	coinParser := app.NewSDKCoinParser("basecro", app.CoinToBaseUnitMuls)
+	coinParser := app.NewSDKCoinParser("basecro", config.CoinToBaseUnitMuls)
 
 	var coin string
 	var err error

@@ -6,6 +6,8 @@ let
     "^x/.*"
     "^app$"
     "^app/.*"
+    "^config$"
+    "^config/.*"
     "^cmd$"
     "^cmd/.*"
     "^proto$"

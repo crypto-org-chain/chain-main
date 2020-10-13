@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
+	"github.com/crypto-com/chain-main/config"
 	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
@@ -77,7 +78,7 @@ Example:
 			baseAmount := res.Balances.AmountOf(baseUnit)
 			fmt.Printf(
 				"%s CRO (%s baseCRO)\n",
-				coinParser.MustSprintBaseCoin(baseAmount, "cro"),
+				coinParser.MustSprintBaseCoin(baseAmount, config.HumanCoinUnit),
 				baseAmount.String(),
 			)
 			return nil

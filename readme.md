@@ -53,6 +53,16 @@ Technical documentation can be found in this [Github repository](https://github.
 
 ## 5. Build full node
 
+```bash
+make build
+```
+By default, the command will build a binary with Mainnet configurations.
+
+To build with different network, provided `NETWORK` variable to `make` command
+```bash
+NETWORK=testnet make build
+```
+
 <a id="nix" />
 
 #### 1. Nix
@@ -102,7 +112,7 @@ There are different tests that can be executed in the following ways:
 
 <a id="useful-links" />
 
-## Useful links
+## 9. Useful links
 
 - [Project Website](http://chain.crypto.com/)
 - [Technical Documentation](http://chain.crypto.com/)

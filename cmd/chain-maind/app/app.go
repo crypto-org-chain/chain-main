@@ -34,6 +34,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/crypto-com/chain-main/app"
+	"github.com/crypto-com/chain-main/config"
 	chainmaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
 	chaingenutilcli "github.com/crypto-com/chain-main/x/genutil/client/cli"
 )
@@ -43,7 +44,7 @@ const appName = "chain-maind"
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
-	app.SetConfig()
+	config.SetConfig()
 	encodingConfig := app.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
 		WithJSONMarshaler(encodingConfig.Marshaler).
@@ -97,17 +98,17 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			"app_state": map[string]interface{}{
 				"staking": map[string]interface{}{
 					"params": map[string]string{
-						"bond_denom": app.BaseCoinUnit,
+						"bond_denom": config.BaseCoinUnit,
 					},
 				},
 				"gov": map[string]interface{}{
 					"deposit_params": map[string]interface{}{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(app.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
+						"min_deposit": sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govtypes.DefaultMinDepositTokens)),
 					},
 				},
 				"mint": map[string]interface{}{
 					"params": map[string]string{
-						"mint_denom": app.BaseCoinUnit,
+						"mint_denom": config.BaseCoinUnit,
 					},
 				},
 				"bank": map[string]interface{}{
@@ -116,19 +117,19 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 							"description": "The native token of Crypto.com app.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
-									"denom":    "basecro",
+									"denom":    config.BaseCoinUnit,
 									"exponent": 0,
 									"aliases": []interface{}{
 										"carson",
 									},
 								},
 								map[string]interface{}{
-									"denom":    "cro",
+									"denom":    config.HumanCoinUnit,
 									"exponent": 8,
 								},
 							},
-							"base":    "basecro",
-							"display": "cro",
+							"base":    config.BaseCoinUnit,
+							"display": config.HumanCoinUnit,
 						},
 					},
 				},
