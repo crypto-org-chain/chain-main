@@ -6,7 +6,6 @@ from dateutil.parser import isoparse
 
 from .utils import cluster_fixture, wait_for_block_time, wait_for_new_blocks
 
-
 """
 slashing testing
 """

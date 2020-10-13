@@ -350,7 +350,8 @@ def init_cluster(data_dir, config, base_port, cmd=None):
 
     # patch the genesis file
     genesis = jsonmerge.merge(
-        json.load(open(data_dir / "genesis.json")), config.get("genesis", {}),
+        json.load(open(data_dir / "genesis.json")),
+        config.get("genesis", {}),
     )
     json.dump(genesis, open(data_dir / "genesis.json", "w"))
     cli.validate_genesis(i)

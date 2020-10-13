@@ -11,7 +11,8 @@ from .utils import interact
 
 def init(data, config, base_port, cmd):
     interact(
-        f"rm -r {data}; mkdir {data}", ignore_error=True,
+        f"rm -r {data}; mkdir {data}",
+        ignore_error=True,
     )
     init_cluster(data, yaml.safe_load(open(config)), base_port, cmd)
 
