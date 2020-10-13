@@ -311,10 +311,13 @@ class ClusterCLI:
 
 def start_cluster(data_dir, quiet=False):
     cmd = [sys.executable, "-msupervisor.supervisord", "-c", data_dir / "tasks.ini"]
+    env = dict(os.environ, PYTHONPATH=":".join(sys.path))
     if quiet:
-        return subprocess.Popen(cmd, stdout=(data_dir / "supervisord.log").open("w"))
+        return subprocess.Popen(
+            cmd, stdout=(data_dir / "supervisord.log").open("w"), env=env
+        )
     else:
-        return subprocess.Popen(cmd)
+        return subprocess.Popen(cmd, env=env)
 
 
 def init_cluster(data_dir, config, base_port, cmd=None):

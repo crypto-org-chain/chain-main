@@ -16,8 +16,8 @@ def init(data, config, base_port, cmd):
     init_cluster(data, yaml.safe_load(open(config)), base_port, cmd)
 
 
-def start(data):
-    supervisord = start_cluster(data)
+def start(data, quiet):
+    supervisord = start_cluster(data, quiet=quiet)
 
     # register signal to quit supervisord
     for signame in ("SIGINT", "SIGTERM"):
@@ -26,9 +26,9 @@ def start(data):
     supervisord.wait()
 
 
-def serve(data, config, base_port, cmd):
+def serve(data, config, base_port, cmd, quiet):
     init(data, config, base_port, cmd)
-    start(data)
+    start(data, quiet)
 
 
 class CLI:
@@ -50,13 +50,14 @@ class CLI:
         """
         init(Path(data), config, base_port, cmd)
 
-    def start(self, data: str = "./data"):
+    def start(self, data: str = "./data", quiet: bool = False):
         """
         start the prepared devnet
 
         :param data: path to the root data directory
+        :param quiet: redirect supervisord stdout to supervisord.log if True
         """
-        start(Path(data))
+        start(Path(data), quiet)
 
     def serve(
         self,
@@ -64,6 +65,7 @@ class CLI:
         config: str = "./config.yaml",
         base_port: int = 26650,
         cmd: str = CHAIN,
+        quiet: bool = False,
     ):
         """
         prepare and start a devnet from scatch
@@ -73,8 +75,9 @@ class CLI:
         :param base_port: the base port to use, the service ports of different nodes
         are calculated based on this
         :param cmd: the chain binary to use
+        :param quiet: redirect supervisord stdout to supervisord.log if True
         """
-        serve(Path(data), config, base_port, cmd)
+        serve(Path(data), config, base_port, cmd, quiet)
 
     def supervisorctl(self, *args, data: str = "./data"):
         from supervisor.supervisorctl import main

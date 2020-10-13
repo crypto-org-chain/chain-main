@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, commit ? "" }:
 with pkgs;
 let
   src_regexes = [
@@ -17,7 +17,7 @@ let
   ];
 in
 buildGoModule rec {
-  pname = "chain-main";
+  pname = "chain-maind";
   version = "0.0.1";
   src = lib.cleanSourceWith {
     name = "src";
@@ -25,12 +25,20 @@ buildGoModule rec {
   };
   subPackages = [ "cmd/chain-maind" ];
   vendorSha256 = sha256:14nbdviafjpx8a0vc7839nkrs441r9aw4mxjhb6f4213n72kj3zn;
-  outputs = [ "out" "instrumented"];
+  outputs = [ "out" "instrumented" ];
+  buildFlagsArray = ''
+    -ldflags=
+    -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain
+    -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
+    -X github.com/cosmos/cosmos-sdk/version.Version=${version}
+    -X github.com/cosmos/cosmos-sdk/version.Commit=${commit}
+  '';
 
   instrumentedBinary = "chain-maind-inst";
-  # FIXME remove the ldflags, https://github.com/golang/go/issues/40974
+  # FIXME remove the "-w -s" ldflags, https://github.com/golang/go/issues/40974
   postBuild = ''
-    go test ./cmd/chain-maind --tags testbincover -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -ldflags "-w -s" -c -o ${instrumentedBinary}
+    echo "Build instrumented binary"
+    go test ./cmd/chain-maind --tags testbincover "${buildFlagsArray} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
   '';
   postInstall = ''
     mkdir -p $instrumented/bin
