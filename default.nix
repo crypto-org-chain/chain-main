@@ -27,7 +27,6 @@ buildGoModule rec {
   vendorSha256 = sha256:14nbdviafjpx8a0vc7839nkrs441r9aw4mxjhb6f4213n72kj3zn;
   outputs = [ "out" "instrumented" ];
   buildFlagsArray = ''
-    -tags=${network}
     -ldflags=
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
@@ -39,7 +38,7 @@ buildGoModule rec {
   # FIXME remove the "-w -s" ldflags, https://github.com/golang/go/issues/40974
   postBuild = ''
     echo "Build instrumented binary"
-    go test ./cmd/chain-maind --tags mainnet,testbincover "${buildFlagsArray} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
+    go test ./cmd/chain-maind --tags testbincover "${buildFlagsArray} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
   '';
   postInstall = ''
     mkdir -p $instrumented/bin

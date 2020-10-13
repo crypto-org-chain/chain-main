@@ -1,4 +1,4 @@
-// +build mainnet
+// +build !testnet
 
 package config
 
