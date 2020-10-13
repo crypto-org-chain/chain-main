@@ -3,7 +3,7 @@
 package config
 
 const (
-	CoinType       = 394
+	CoinType       = 1
 	FundraiserPath = "44'/1'/0'/0/1"
 )
 
