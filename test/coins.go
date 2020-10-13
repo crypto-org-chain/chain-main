@@ -9,12 +9,21 @@ import (
 
 // FakeCoinParser maintains string to sdk.Coin mapping for testing
 type FakeCoinParser struct {
-	mapping map[string]sdk.Coin
+	mapping  map[string]sdk.Coin
+	baseUnit string
 }
 
 func NewFakeCoinParser(mapping map[string]sdk.Coin) *FakeCoinParser {
 	return &FakeCoinParser{
 		mapping,
+		"baseunit",
+	}
+}
+
+func NewFakeCoinParserWithBaseUnit(mapping map[string]sdk.Coin, baseUnit string) *FakeCoinParser {
+	return &FakeCoinParser{
+		mapping,
+		baseUnit,
 	}
 }
 
@@ -27,7 +36,7 @@ func (parser *FakeCoinParser) ParseCoin(s string) (sdk.Coin, error) {
 }
 
 func (parser *FakeCoinParser) GetBaseUnit() string {
-	return "baseunit"
+	return parser.baseUnit
 }
 
 // FIXME: NOT IMPLEMENTED
