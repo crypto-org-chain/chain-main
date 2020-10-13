@@ -25,15 +25,9 @@ ifeq ($(LEDGER_ENABLED),true)
 	endif
 endif
 
-ifeq ($(NETWORK),mainnet)	
-	BUILD_TAGS := $(BUILD_TAGS),mainnet
-	TEST_TAGS := "--tags=mainnet"
-else ifeq ($(NETWORK),testnet)	
+ifeq ($(NETWORK),testnet)
 	BUILD_TAGS := $(BUILD_TAGS),testnet
 	TEST_TAGS := "--tags=testnet"
-else ifeq ($(NETWORK),devnet)	
-	BUILD_TAGS := $(BUILD_TAGS),devnet
-	TEST_TAGS := "--tags=devnet"
 endif
 
 SIMAPP = github.com/crypto-com/chain-main/app
@@ -154,8 +148,7 @@ pystarportImage: nix-build-pystarportImage
 
 check-network:
 ifeq ($(NETWORK),mainnet)	
-else ifeq ($(NETWORK),testnet)	
-else ifeq ($(NETWORK),devnet)	
+else ifeq ($(NETWORK),testnet)
 else
 	@echo "Unrecognized network: ${NETWORK}"
 endif
