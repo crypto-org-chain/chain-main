@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, commit ? "", network ? "mainnet" }:
+{ pkgs ? import <nixpkgs> {}, commit ? "" }:
 with pkgs;
 let
   src_regexes = [
