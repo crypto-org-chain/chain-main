@@ -186,6 +186,132 @@ func (s *IntegrationTestSuite) TestNewSendTxCmd() {
 	}
 }
 
+func (s *IntegrationTestSuite) TestNewMultiSend1ToManyTxCmd() {
+	val := s.network.Validators[0]
+
+	testCases := []struct {
+		name            string
+		from            sdk.AccAddress
+		outputs         []types.Output
+		expectedOutputs []types.Output
+		args            []string
+		expectErr       bool
+		respType        proto.Message
+		expectedCode    uint32
+	}{
+		{
+			"valid transaction",
+			val.Address,
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin("superstake", sdk.NewInt(1)),
+					),
+				},
+			},
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
+					),
+				},
+			},
+			[]string{
+				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10))).String()),
+			},
+			false,
+			&sdk.TxResponse{},
+			0,
+		},
+		{
+			"not enough fees",
+			val.Address,
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin("superstake", sdk.NewInt(1)),
+					),
+				},
+			},
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
+					),
+				},
+			},
+			[]string{
+				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(1))).String()),
+			},
+			false,
+			&sdk.TxResponse{},
+			sdkerrors.ErrInsufficientFee.ABCICode(),
+		},
+		{
+			"not enough gas",
+			val.Address,
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin("superstake", sdk.NewInt(1)),
+					),
+				},
+			},
+			[]types.Output{
+				{
+					Address: val.Address.String(),
+					Coins: sdk.NewCoins(
+						sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
+					),
+				},
+			},
+			[]string{
+				fmt.Sprintf("--%s=true", flags.FlagSkipConfirmation),
+				fmt.Sprintf("--%s=%s", flags.FlagBroadcastMode, flags.BroadcastBlock),
+				fmt.Sprintf("--%s=%s", flags.FlagFees, sdk.NewCoins(sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10))).String()),
+				"--gas=10",
+			},
+			false,
+			&sdk.TxResponse{},
+			sdkerrors.ErrOutOfGas.ABCICode(),
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		s.Run(tc.name, func() {
+			clientCtx := val.ClientCtx
+
+			fakeCoinMappings := map[string]sdk.Coin{
+				"0superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(0)),
+				"1superstake": sdk.NewCoin(s.cfg.BondDenom, sdk.NewInt(10)),
+			}
+			fakeCoinParser := test.NewFakeCoinParserWithBaseUnit(fakeCoinMappings, s.cfg.BondDenom)
+
+			bz, err := banktestutil.MsgMultiSend1ToManyExec(clientCtx, fakeCoinParser, tc.from, tc.outputs, tc.args...)
+			if tc.expectErr {
+				s.Require().Error(err)
+			} else {
+				s.Require().NoError(err)
+
+				s.Require().NoError(clientCtx.JSONMarshaler.UnmarshalJSON(bz.Bytes(), tc.respType), bz.String())
+				txResp := tc.respType.(*sdk.TxResponse)
+				s.Require().Equal(tc.expectedCode, txResp.Code)
+			}
+		})
+	}
+}
+
 func TestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationTestSuite))
 }
