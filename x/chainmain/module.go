@@ -132,6 +132,9 @@ func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier { retur
 // module-specific GRPC queries.
 func (am AppModule) RegisterQueryService(grpc.Server) {}
 
+// RegisterQueryService performs a no-op.
+func (am AppModule) RegisterServices(_ module.Configurator) {}
+
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
