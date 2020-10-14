@@ -14,6 +14,8 @@ builds:
       - windows
     goarch:
       - amd64
+    flags:
+      - -tags=testnet
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
