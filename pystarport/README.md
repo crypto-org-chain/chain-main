@@ -120,3 +120,22 @@ are shortcuts for commonly used commands, so arguments are shorter.
 $ pystarport cli - --help
 ...
 ```
+
+## docker-compose
+
+When used with `docker-compose` or multiple machines, you need to config hostnames, and you probabely want to use a same
+`base_port` since you don't have port conflicts, you can config the `validators` like this:
+
+```yaml
+validators:
+  - coins: 10cro
+    staked: 10cro
+    base_port: 26650
+    hostname: node0
+  - coins: 10cro
+    staked: 10cro
+    base_port: 26650
+    hostname: node1
+```
+
+`pystarport init --gen_compose_file` will also generate a `docker-compose.yml` file for you.

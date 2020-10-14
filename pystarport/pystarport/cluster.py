@@ -11,13 +11,15 @@ import dateutil.parser
 import durations
 import jsonmerge
 import tomlkit
+import yaml
 from supervisor import xmlrpc
 from supervisor.compat import xmlrpclib
 
 from . import ports
-from .utils import interact, local_ip, write_ini
+from .utils import build_cli_args_safe, interact, write_ini
 
 CHAIN = "chain-maind"  # edit by nix-build
+IMAGE = "docker.pkg.github.com/crypto-com/chain-main/chain-main-pystarport:latest"
 
 COMMON_PROG_OPTIONS = {
     # redirect to supervisord's stdout, easier to collect all logs
@@ -41,11 +43,8 @@ class ChainCommand:
 
     def __call__(self, cmd, *args, **kwargs):
         "execute chain-maind"
-        args = [cmd] + list(args)
-        for k, v in kwargs.items():
-            args.append("--" + k.strip("_").replace("_", "-"))
-            args.append('"%s"' % v)
-        return interact(" ".join((self.cmd, *map(str, args))))
+        args = " ".join(build_cli_args_safe(cmd, *args, **kwargs))
+        return interact(f"{self.cmd} {args}")
 
 
 class ClusterCLI:
@@ -54,7 +53,7 @@ class ClusterCLI:
     def __init__(self, data_dir, cmd=None):
         self.data_dir = data_dir
         self._genesis = json.load(open(data_dir / "genesis.json"))
-        self.base_port = int((data_dir / "base_port").read_text())
+        self.config = json.load((data_dir / "config.json").open())
         self.chain_id = self._genesis["chain_id"]
         self.raw = ChainCommand(cmd)
         self._supervisorctl = None
@@ -83,28 +82,46 @@ class ClusterCLI:
             [p for p in self.data_dir.iterdir() if re.match(r"^node\d+$", p.name)]
         )
 
-    def create_node(self):
+    def create_node(self, base_port=None, moniker=None, hostname="localhost"):
         """create new node in the data directory,
         process information is written into supervisor config
         start it manually with supervisor commands
 
-        :return: new node index
+        :return: new node index and config
         """
-        # init home directory
         i = self.nodes_len()
+
+        # default configs
+        if base_port is None:
+            # use the node0's base_port + i * 10 as default base port for new ndoe
+            base_port = self.config["validators"][0]["base_port"] + i * 10
+        if moniker is None:
+            moniker = f"node{i}"
+
+        # add config
+        assert len(self.config["validators"]) == i
+        self.config["validators"].append(
+            {
+                "base_port": base_port,
+                "hostname": hostname,
+                "moniker": moniker,
+            }
+        )
+        json.dump(self.config, (self.data_dir / "config.json").open("w"))
+
+        # init home directory
         self.init(i)
         home = self.home(i)
         (home / "config/genesis.json").unlink()
         (home / "config/genesis.json").symlink_to("../../genesis.json")
-        # get peers from node0's config
+        # use p2p peers from node0's config
         node0 = tomlkit.parse((self.data_dir / "node0/config/config.toml").read_text())
         edit_tm_cfg(
             home / "config/config.toml",
-            self.base_port,
-            i,
+            base_port,
             node0["p2p"]["persistent_peers"],
         )
-        edit_app_cfg(home / "config/app.toml", self.base_port, i)
+        edit_app_cfg(home / "config/app.toml", base_port)
 
         # create validator account
         self.create_account("validator", i)
@@ -132,9 +149,12 @@ class ClusterCLI:
         "home directory of i-th node"
         return home_dir(self.data_dir, i)
 
+    def base_port(self, i):
+        return self.config["validators"][i]["base_port"]
+
     def node_rpc(self, i):
         "rpc url of i-th node"
-        return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port, i)
+        return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port(i))
 
     def node_id(self, i):
         "get i-th node's tendermint node id"
@@ -154,7 +174,13 @@ class ClusterCLI:
         return json.loads(output)
 
     def init(self, i):
-        return self.raw("init", f"node{i}", chain_id=self.chain_id, home=self.home(i))
+        "the i-th node's config is already added"
+        return self.raw(
+            "init",
+            self.config["validators"][i]["moniker"],
+            chain_id=self.chain_id,
+            home=self.home(i),
+        )
 
     def validate_genesis(self, i=0):
         return self.raw("validate-genesis", home=self.home(i))
@@ -235,7 +261,7 @@ class ClusterCLI:
                 to,
                 coins,
                 "-y",
-                "--generate-only" if generate_only else "",
+                "--generate-only" if generate_only else None,
                 home=self.home(i),
                 keyring_backend="test",
                 chain_id=self.chain_id,
@@ -408,7 +434,7 @@ class ClusterCLI:
                 commission_max_rate=commission_max_rate,
                 commission_max_change_rate=commission_max_change_rate,
                 # description
-                moniker=moniker or f"node{i}",
+                moniker=moniker or self.config["validators"][i]["moniker"],
                 identity=identity,
                 website=website,
                 security_contact=security_contact,
@@ -473,19 +499,42 @@ def start_cluster(data_dir, quiet=False):
         return subprocess.Popen(cmd, env=env)
 
 
-def init_cluster(data_dir, config, base_port, cmd=None):
+def process_config(config, base_port):
+    """
+    fill default values in config
+    """
+    for i, val in enumerate(config["validators"]):
+        if "moniker" not in val:
+            val["moniker"] = f"node{i}"
+        if "base_port" not in val:
+            val["base_port"] = base_port + i * 10
+        if "hostname" not in val:
+            val["hostname"] = "localhost"
+
+
+def init_cluster(
+    data_dir,
+    config,
+    base_port,
+    image=IMAGE,
+    cmd=None,
+    gen_compose_file=False,
+):
     """
     init data directory
     """
+    process_config(config, base_port)
+    json.dump(config, (data_dir / "config.json").open("w"))
     cmd = cmd or CHAIN
-    for i in range(len(config["validators"])):
+
+    # init home directories
+    for i, val in enumerate(config["validators"]):
         ChainCommand(cmd)(
             "init",
-            config["validators"][i].get("name", f"node{i}"),
+            val["moniker"],
             chain_id=config["chain_id"],
             home=home_dir(data_dir, i),
         )
-
     os.rename(data_dir / "node0/config/genesis.json", data_dir / "genesis.json")
     os.mkdir(data_dir / "gentx")
     for i in range(len(config["validators"])):
@@ -496,8 +545,6 @@ def init_cluster(data_dir, config, base_port, cmd=None):
         (data_dir / f"node{i}/config/genesis.json").symlink_to("../../genesis.json")
         (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
 
-    (data_dir / "base_port").write_text(str(base_port))
-
     # now we can create ClusterCLI
     cli = ClusterCLI(data_dir, cmd)
 
@@ -507,7 +554,7 @@ def init_cluster(data_dir, config, base_port, cmd=None):
         config.get("genesis", {}),
     )
     json.dump(genesis, open(data_dir / "genesis.json", "w"))
-    cli.validate_genesis(i)
+    cli.validate_genesis()
 
     # create accounts
     accounts = []
@@ -545,20 +592,41 @@ def init_cluster(data_dir, config, base_port, cmd=None):
     # collect-gentxs
     cli.collect_gentxs(data_dir / "gentx", i)
 
+    # realise the symbolic links, so the node directories can be used independently
+    genesis_bytes = (data_dir / "genesis.json").read_bytes()
+    for i in range(len(config["validators"])):
+        (data_dir / f"node{i}/config/gentx").unlink()
+        tmp = data_dir / f"node{i}/config/genesis.json"
+        tmp.unlink()
+        tmp.write_bytes(genesis_bytes)
+
     # write tendermint config
-    ip = local_ip()
     peers = ",".join(
         [
-            "tcp://%s@%s:%d" % (cli.node_id(i), ip, ports.p2p_port(base_port, i))
-            for i in range(len(config["validators"]))
+            "tcp://%s@%s:%d"
+            % (cli.node_id(i), val["hostname"], ports.p2p_port(val["base_port"]))
+            for i, val in enumerate(config["validators"])
         ]
     )
-    for i in range(len(config["validators"])):
-        edit_tm_cfg(data_dir / f"node{i}/config/config.toml", base_port, i, peers)
-        edit_app_cfg(data_dir / f"node{i}/config/app.toml", base_port, i)
+    for i, val in enumerate(config["validators"]):
+        edit_tm_cfg(data_dir / f"node{i}/config/config.toml", val["base_port"], peers)
+        edit_app_cfg(data_dir / f"node{i}/config/app.toml", val["base_port"])
 
     # write supervisord config file
-    supervisord_ini = {
+    write_ini(
+        (data_dir / SUPERVISOR_CONFIG_FILE).open("w"),
+        supervisord_ini(cmd, config["validators"]),
+    )
+
+    if gen_compose_file:
+        yaml.dump(
+            docker_compose_yml(cmd, config["validators"], data_dir, image),
+            (data_dir / "docker-compose.yml").open("w"),
+        )
+
+
+def supervisord_ini(cmd, validators):
+    ini = {
         "supervisord": {
             "pidfile": "%(here)s/supervisord.pid",
             "nodaemon": "true",
@@ -572,22 +640,35 @@ def init_cluster(data_dir, config, base_port, cmd=None):
         "unix_http_server": {"file": "%(here)s/supervisor.sock"},
         "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
     }
-    for i, node in enumerate(config["validators"]):
-        supervisord_ini[f"program:node{i}"] = dict(
+    for i, node in enumerate(validators):
+        ini[f"program:node{i}"] = dict(
             COMMON_PROG_OPTIONS,
             command=f"{cmd} start --home %(here)s/node{i}",
         )
-    write_ini(open(data_dir / SUPERVISOR_CONFIG_FILE, "w"), supervisord_ini)
+    return ini
 
 
-def edit_tm_cfg(path, base_port, i, peers):
+def docker_compose_yml(cmd, validators, data_dir, image):
+    return {
+        "version": "3",
+        "services": {
+            f"node{i}": {
+                "image": image,
+                "command": "chaind start",
+                "volumes": [f"{data_dir.absolute() / f'node{i}'}:/.chain-maind:Z"],
+            }
+            for i, val in enumerate(validators)
+        },
+    }
+
+
+def edit_tm_cfg(path, base_port, peers):
     doc = tomlkit.parse(open(path).read())
-    doc["moniker"] = "node%d" % i
     # tendermint is start in process, not needed
-    # doc['proxy_app'] = 'tcp://127.0.0.1:%d' % abci_port(base_port, i)
-    doc["rpc"]["laddr"] = "tcp://0.0.0.0:%d" % ports.rpc_port(base_port, i)
-    doc["rpc"]["pprof_laddr"] = "localhost:%d" % ports.pprof_port(base_port, i)
-    doc["p2p"]["laddr"] = "tcp://0.0.0.0:%d" % ports.p2p_port(base_port, i)
+    # doc['proxy_app'] = 'tcp://127.0.0.1:%d' % abci_port(base_port)
+    doc["rpc"]["laddr"] = "tcp://0.0.0.0:%d" % ports.rpc_port(base_port)
+    doc["rpc"]["pprof_laddr"] = "localhost:%d" % ports.pprof_port(base_port)
+    doc["p2p"]["laddr"] = "tcp://0.0.0.0:%d" % ports.p2p_port(base_port)
     doc["p2p"]["persistent_peers"] = peers
     doc["p2p"]["addr_book_strict"] = False
     doc["p2p"]["allow_duplicate_ip"] = True
@@ -595,20 +676,18 @@ def edit_tm_cfg(path, base_port, i, peers):
     open(path, "w").write(tomlkit.dumps(doc))
 
 
-def edit_app_cfg(path, base_port, i):
+def edit_app_cfg(path, base_port):
     doc = tomlkit.parse(open(path).read())
     # enable api server
     doc["api"]["enable"] = True
     doc["api"]["swagger"] = True
     doc["api"]["enabled-unsafe-cors"] = True
-    doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port, i)
-    doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port, i)
+    doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port)
+    doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port)
     open(path, "w").write(tomlkit.dumps(doc))
 
 
 if __name__ == "__main__":
-    import yaml
-
     interact("rm -r data; mkdir data", ignore_error=True)
     data_dir = Path("data")
     init_cluster(data_dir, yaml.safe_load(open("config.yaml")), 26650)

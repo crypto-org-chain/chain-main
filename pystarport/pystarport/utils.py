@@ -19,10 +19,6 @@ def interact(cmd, ignore_error=False, input=None, **kwargs):
     return stdout
 
 
-def local_ip():
-    return "127.0.0.1"
-
-
 def write_ini(fp, cfg):
     ini = configparser.ConfigParser()
     for section, items in cfg.items():
@@ -30,3 +26,28 @@ def write_ini(fp, cfg):
         sec = ini[section]
         sec.update(items)
     ini.write(fp)
+
+
+def safe_cli_string(s):
+    'wrap string in "", used for cli argument when contains spaces'
+    return f'"{s}"'
+
+
+def build_cli_args_safe(*args, **kwargs):
+    args = [safe_cli_string(arg) for arg in args if arg is not None]
+    for k, v in kwargs.items():
+        if v is None:
+            continue
+        args.append("--" + k.strip("_").replace("_", "-"))
+        args.append(safe_cli_string(v))
+    return list(map(str, args))
+
+
+def build_cli_args(*args, **kwargs):
+    args = [arg for arg in args if arg is not None]
+    for k, v in kwargs.items():
+        if v is None:
+            continue
+        args.append("--" + k.strip("_").replace("_", "-"))
+        args.append(v)
+    return list(map(str, args))
