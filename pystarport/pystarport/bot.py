@@ -13,7 +13,8 @@ class TxJobThread(threading.Thread):
 
     def transfer_tx_job(self):
         from_address = self.cluster_cli.address(
-            self.job["from_account"], self.job.get("node", 0),
+            self.job["from_account"],
+            self.job.get("node", 0),
         )
         to_address = self.job["to_address"]
         amount = self.job.get("amount", "1basecro")

@@ -73,9 +73,7 @@ lint:
 	@go mod verify
 
 lintpy:
-	@flake8
-	@black --check --diff .
-	@isort -c --diff -rc .
+	@flake8 --show-source --count --statistics
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
