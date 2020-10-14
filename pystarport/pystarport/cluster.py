@@ -1,6 +1,8 @@
+import configparser
 import datetime
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -17,6 +19,17 @@ from .utils import interact, local_ip, write_ini
 
 CHAIN = "chain-maind"  # edit by nix-build
 
+COMMON_PROG_OPTIONS = {
+    # redirect to supervisord's stdout, easier to collect all logs
+    "stdout_logfile": "/dev/fd/1",
+    "stdout_logfile_maxbytes": "0",
+    "autostart": "true",
+    "autorestart": "true",
+    "redirect_stderr": "true",
+    "startsecs": "3",
+}
+SUPERVISOR_CONFIG_FILE = "tasks.ini"
+
 
 def home_dir(data_dir, i):
     return data_dir / f"node{i}"
@@ -24,15 +37,15 @@ def home_dir(data_dir, i):
 
 class ChainCommand:
     def __init__(self, cmd=None):
-        self._cmd = cmd or CHAIN
+        self.cmd = cmd or CHAIN
 
     def __call__(self, cmd, *args, **kwargs):
         "execute chain-maind"
         args = [cmd] + list(args)
         for k, v in kwargs.items():
             args.append("--" + k.strip("_").replace("_", "-"))
-            args.append(v)
-        return interact(" ".join((self._cmd, *map(str, args))))
+            args.append('"%s"' % v)
+        return interact(" ".join((self.cmd, *map(str, args))))
 
 
 class ClusterCLI:
@@ -48,6 +61,8 @@ class ClusterCLI:
 
     @property
     def supervisor(self):
+        "http://supervisord.org/api.html"
+        # copy from:
         # https://github.com/Supervisor/supervisor/blob/76df237032f7d9fbe80a0adce3829c8b916d5b58/supervisor/options.py#L1718
         if self._supervisorctl is None:
             self._supervisorctl = xmlrpclib.ServerProxy(
@@ -61,6 +76,57 @@ class ClusterCLI:
                 ),
             )
         return self._supervisorctl.supervisor
+
+    def nodes_len(self):
+        "find how many 'node{i}' sub-directories"
+        return len(
+            [p for p in self.data_dir.iterdir() if re.match(r"^node\d+$", p.name)]
+        )
+
+    def create_node(self):
+        """create new node in the data directory,
+        process information is written into supervisor config
+        start it manually with supervisor commands
+
+        :return: new node index
+        """
+        # init home directory
+        i = self.nodes_len()
+        self.init(i)
+        home = self.home(i)
+        (home / "config/genesis.json").unlink()
+        (home / "config/genesis.json").symlink_to("../../genesis.json")
+        # get peers from node0's config
+        node0 = tomlkit.parse((self.data_dir / "node0/config/config.toml").read_text())
+        edit_tm_cfg(
+            home / "config/config.toml",
+            self.base_port,
+            i,
+            node0["p2p"]["persistent_peers"],
+        )
+        edit_app_cfg(home / "config/app.toml", self.base_port, i)
+
+        # create validator account
+        self.create_account("validator", i)
+
+        # add process config into supervisor
+        path = self.data_dir / SUPERVISOR_CONFIG_FILE
+        ini = configparser.ConfigParser()
+        ini.read_file(path.open())
+        section = f"program:node{i}"
+        ini.add_section(section)
+        ini[section].update(
+            dict(
+                COMMON_PROG_OPTIONS,
+                command=f"{self.raw.cmd} start --home %(here)s/node{i}",
+                autostart="false",
+            )
+        )
+        ini.write(path.open("w"))
+        (added, _, _) = self.supervisor.reloadConfig()[0]
+        assert f"node{i}" in added
+        self.supervisor.addProcessGroup(f"node{i}")
+        return i
 
     def home(self, i):
         "home directory of i-th node"
@@ -308,9 +374,96 @@ class ClusterCLI:
             )
         )
 
+    def create_validator(
+        self,
+        amount,
+        i,
+        moniker=None,
+        commission_max_change_rate="0.01",
+        commission_rate="0.1",
+        commission_max_rate="0.2",
+        min_self_delegation="1",
+        identity="",
+        website="",
+        security_contact="",
+        details="",
+    ):
+        """MsgCreateValidator
+        create the node with create_node before call this"""
+        pubkey = (
+            self.raw("tendermint", "show-validator", home=self.home(i)).strip().decode()
+        )
+        return json.loads(
+            self.raw(
+                "tx",
+                "staking",
+                "create-validator",
+                "-y",
+                from_=self.address("validator", i),
+                amount=amount,
+                pubkey=pubkey,
+                min_self_delegation=min_self_delegation,
+                # commision
+                commission_rate=commission_rate,
+                commission_max_rate=commission_max_rate,
+                commission_max_change_rate=commission_max_change_rate,
+                # description
+                moniker=moniker or f"node{i}",
+                identity=identity,
+                website=website,
+                security_contact=security_contact,
+                details=details,
+                # basic
+                home=self.home(i),
+                node=self.node_rpc(0),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
+
+    def edit_validator(
+        self,
+        i,
+        commission_rate=None,
+        moniker=None,
+        identity=None,
+        website=None,
+        security_contact=None,
+        details=None,
+    ):
+        """MsgEditValidator"""
+        options = dict(
+            commission_rate=commission_rate,
+            # description
+            moniker=moniker,
+            identity=identity,
+            website=website,
+            security_contact=security_contact,
+            details=details,
+        )
+        return json.loads(
+            self.raw(
+                "tx",
+                "staking",
+                "edit-validator",
+                "-y",
+                from_=self.address("validator", i),
+                home=self.home(i),
+                node=self.node_rpc(0),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                **{k: v for k, v in options.items() if v is not None},
+            )
+        )
+
 
 def start_cluster(data_dir, quiet=False):
-    cmd = [sys.executable, "-msupervisor.supervisord", "-c", data_dir / "tasks.ini"]
+    cmd = [
+        sys.executable,
+        "-msupervisor.supervisord",
+        "-c",
+        data_dir / SUPERVISOR_CONFIG_FILE,
+    ]
     env = dict(os.environ, PYTHONPATH=":".join(sys.path))
     if quiet:
         return subprocess.Popen(
@@ -337,11 +490,11 @@ def init_cluster(data_dir, config, base_port, cmd=None):
     os.mkdir(data_dir / "gentx")
     for i in range(len(config["validators"])):
         try:
-            os.remove(data_dir / f"node{i}/config/genesis.json")
+            (data_dir / f"node{i}/config/genesis.json").unlink()
         except OSError:
             pass
-        os.symlink("../../genesis.json", data_dir / f"node{i}/config/genesis.json")
-        os.symlink("../../gentx", data_dir / f"node{i}/config/gentx")
+        (data_dir / f"node{i}/config/genesis.json").symlink_to("../../genesis.json")
+        (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
 
     (data_dir / "base_port").write_text(str(base_port))
 
@@ -420,17 +573,11 @@ def init_cluster(data_dir, config, base_port, cmd=None):
         "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
     }
     for i, node in enumerate(config["validators"]):
-        supervisord_ini[f"program:node{i}"] = {
-            "command": f"{cmd} start --home %(here)s/node{i}",
-            # redirect to supervisord's stdout, easier to collect all logs
-            "stdout_logfile": "/dev/fd/1",
-            "stdout_logfile_maxbytes": "0",
-            "autostart": "true",
-            "autorestart": "true",
-            "redirect_stderr": "true",
-            "startsecs": "3",
-        }
-    write_ini(open(data_dir / "tasks.ini", "w"), supervisord_ini)
+        supervisord_ini[f"program:node{i}"] = dict(
+            COMMON_PROG_OPTIONS,
+            command=f"{cmd} start --home %(here)s/node{i}",
+        )
+    write_ini(open(data_dir / SUPERVISOR_CONFIG_FILE, "w"), supervisord_ini)
 
 
 def edit_tm_cfg(path, base_port, i, peers):

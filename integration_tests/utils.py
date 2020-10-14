@@ -62,10 +62,10 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     cluster.init_cluster(data, config, base_port)
 
     # replace the first node with the instrumented binary
-    ini = data / "tasks.ini"
+    ini = data / cluster.SUPERVISOR_CONFIG_FILE
     ini.write_text(
         re.sub(
-            r"^command = .*/chain-maind",
+            r"^command = (.*/)?chain-maind",
             "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.out",
             ini.read_text(),
             count=1,
