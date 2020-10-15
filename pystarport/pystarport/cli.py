@@ -1,3 +1,4 @@
+import os
 import signal
 from pathlib import Path
 
@@ -7,20 +8,21 @@ import yaml
 from .bot import BotCLI
 from .cluster import (
     CHAIN,
+    IMAGE,
     SUPERVISOR_CONFIG_FILE,
     ClusterCLI,
     init_cluster,
     start_cluster,
 )
-from .utils import interact
+from .utils import build_cli_args, interact
 
 
-def init(data, config, base_port, cmd):
+def init(data, config, *args, **kwargs):
     interact(
         f"rm -r {data}; mkdir {data}",
         ignore_error=True,
     )
-    init_cluster(data, yaml.safe_load(open(config)), base_port, cmd)
+    init_cluster(data, yaml.safe_load(open(config)), *args, **kwargs)
 
 
 def start(data, quiet):
@@ -45,6 +47,8 @@ class CLI:
         config: str = "./config.yaml",
         base_port: int = 26650,
         cmd: str = CHAIN,
+        image: str = IMAGE,
+        gen_compose_file: bool = False,
     ):
         """
         prepare all the configurations of a devnet
@@ -54,8 +58,10 @@ class CLI:
         :param base_port: the base port to use, the service ports of different nodes
         are calculated based on this
         :param cmd: the chain binary to use
+        :param image: the image used in the generated docker-compose.yml
+        :param gen_compose_file: generate a docker-compose.yml
         """
-        init(Path(data), config, base_port, cmd)
+        init(Path(data), config, base_port, image, cmd, gen_compose_file)
 
     def start(self, data: str = "./data", quiet: bool = False):
         """
@@ -65,6 +71,16 @@ class CLI:
         :param quiet: redirect supervisord stdout to supervisord.log if True
         """
         start(Path(data), quiet)
+
+    def chaind(self, *args, **kwargs):
+        """
+        start one node whose home directory is already initialized
+        can be used to launch chain-maind
+
+        :param home: home directory
+        :param cmd: the chain binary to use
+        """
+        os.execvp(CHAIN, [CHAIN] + build_cli_args(*args, **kwargs))
 
     def serve(
         self,

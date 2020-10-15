@@ -76,7 +76,7 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
 
     supervisord = cluster.start_cluster(data, quiet=quiet)
     # wait for first node rpc port available before start testing
-    wait_for_port(rpc_port(base_port, 0))
+    wait_for_port(rpc_port(config["validators"][0]["base_port"]))
     cli = cluster.ClusterCLI(data)
     # wait for first block generated before start testing
     wait_for_block(cli, 1)

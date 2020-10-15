@@ -67,7 +67,7 @@ def test_staking_redelegate(cluster):
 
 
 def test_join_validator(cluster):
-    i = cluster.create_node()
+    i = cluster.create_node(moniker="new joined")
     addr = cluster.address("validator", i)
     # transfer 1cro from ecosystem account
     assert cluster.transfer(cluster.address("ecosystem"), addr, "1cro")["code"] == 0
@@ -75,7 +75,7 @@ def test_join_validator(cluster):
 
     # start the node
     cluster.supervisor.startProcess(f"node{i}")
-    wait_for_port(rpc_port(cluster.base_port, i))
+    wait_for_port(rpc_port(cluster.base_port(i)))
 
     count1 = len(cluster.validators())
 
@@ -91,7 +91,7 @@ def test_join_validator(cluster):
     assert not val["jailed"]
     assert val["status"] == "BOND_STATUS_BONDED"
     assert val["tokens"] == str(10 ** 8)
-    assert val["description"]["moniker"] == f"node{i}"
+    assert val["description"]["moniker"] == "new joined"
     assert val["commission"]["commission_rates"] == {
         "rate": "0.100000000000000000",
         "max_rate": "0.200000000000000000",
