@@ -8,6 +8,7 @@ from .utils import cluster_fixture
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks tests as slow")
+    config.addinivalue_line("markers", "ledger: marks tests as ledger hardware test")
 
 
 def pytest_addoption(parser):

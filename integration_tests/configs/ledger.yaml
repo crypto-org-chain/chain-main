@@ -1,0 +1,19 @@
+chain_id: chaintest
+validators:
+  - coins: 10cro
+    staked: 10cro
+  - coins: 10cro
+    staked: 10cro
+accounts:
+  - name: reserve
+    coins: 200cro
+    vesting: "60s"
+hw_account:
+  name: hw
+  coins: 100cro
+
+genesis:
+ app_state:
+   staking:
+     params:
+       unbonding_time: "10s"
