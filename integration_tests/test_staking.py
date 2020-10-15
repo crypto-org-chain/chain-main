@@ -1,4 +1,6 @@
-from .utils import wait_for_new_blocks
+from pystarport.ports import rpc_port
+
+from .utils import wait_for_new_blocks, wait_for_port
 
 
 def test_staking_delegate(cluster):
@@ -62,3 +64,41 @@ def test_staking_redelegate(cluster):
     delegation_info = cluster.get_delegated_amount(signer1_address)
     output = delegation_info["delegation_responses"][0]["balance"]["amount"]
     assert int(old_output) + 2 == int(output)
+
+
+def test_join_validator(cluster):
+    i = cluster.create_node()
+    addr = cluster.address("validator", i)
+    # transfer 1cro from ecosystem account
+    assert cluster.transfer(cluster.address("ecosystem"), addr, "1cro")["code"] == 0
+    assert cluster.balance(addr) == 10 ** 8
+
+    # start the node
+    cluster.supervisor.startProcess(f"node{i}")
+    wait_for_port(rpc_port(cluster.base_port, i))
+
+    count1 = len(cluster.validators())
+
+    # create validator tx
+    assert cluster.create_validator("1cro", i)["code"] == 0
+    wait_for_new_blocks(cluster, 2)
+
+    count2 = len(cluster.validators())
+    assert count2 == count1 + 1, "new validator should joined successfully"
+
+    val_addr = cluster.address("validator", i, bech="val")
+    val = cluster.validator(val_addr)
+    assert not val["jailed"]
+    assert val["status"] == "BOND_STATUS_BONDED"
+    assert val["tokens"] == str(10 ** 8)
+    assert val["description"]["moniker"] == f"node{i}"
+    assert val["commission"]["commission_rates"] == {
+        "rate": "0.100000000000000000",
+        "max_rate": "0.200000000000000000",
+        "max_change_rate": "0.010000000000000000",
+    }
+    assert (
+        cluster.edit_validator(i, commission_rate="0.2")["code"] == 13
+    ), "commission cannot be changed more than once in 24h"
+    assert cluster.edit_validator(i, moniker="awesome node")["code"] == 0
+    assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"

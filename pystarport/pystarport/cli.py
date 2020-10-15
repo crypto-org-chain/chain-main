@@ -5,7 +5,13 @@ import fire
 import yaml
 
 from .bot import BotCLI
-from .cluster import CHAIN, ClusterCLI, init_cluster, start_cluster
+from .cluster import (
+    CHAIN,
+    SUPERVISOR_CONFIG_FILE,
+    ClusterCLI,
+    init_cluster,
+    start_cluster,
+)
 from .utils import interact
 
 
@@ -83,7 +89,7 @@ class CLI:
     def supervisorctl(self, *args, data: str = "./data"):
         from supervisor.supervisorctl import main
 
-        main(("-c", Path(data) / "tasks.ini", *args))
+        main(("-c", Path(data) / SUPERVISOR_CONFIG_FILE, *args))
 
     def cli(self, *args, data: str = "./data", cmd: str = CHAIN):
         return ClusterCLI(Path(data), cmd)
