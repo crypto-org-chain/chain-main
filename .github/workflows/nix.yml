@@ -64,7 +64,7 @@ jobs:
         nix-build -A pystarportImage docker.nix
         IMAGE=$(docker load < result)
         IMAGE=${IMAGE#Loaded image: }
-        if [ "$GITHUB_REF" == "refs/tags/*" ]; then
+        if [[ "$GITHUB_REF" = "refs/tags/"* ]]; then
           TAG=${GITHUB_REF#refs/tags/}
         else
           TAG="latest"
