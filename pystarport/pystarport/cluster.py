@@ -43,6 +43,8 @@ class ChainCommand:
         "execute chain-maind"
         args = [cmd] + list(args)
         for k, v in kwargs.items():
+            if v is None:
+                continue
             args.append("--" + k.strip("_").replace("_", "-"))
             args.append('"%s"' % v)
         return interact(" ".join((self.cmd, *map(str, args))))
@@ -187,6 +189,44 @@ class ClusterCLI:
         assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
+    def distribution_commision(self, addr, i=0):
+        coin = json.loads(
+            self.raw(
+                "query",
+                "distribution",
+                "commission",
+                addr,
+                output="json",
+                node=self.node_rpc(i),
+            )
+        )["commission"][0]
+        return float(coin["amount"])
+
+    def distribution_community(self, i=0):
+        coin = json.loads(
+            self.raw(
+                "query",
+                "distribution",
+                "community-pool",
+                output="json",
+                node=self.node_rpc(i),
+            )
+        )["pool"][0]
+        return float(coin["amount"])
+
+    def distribution_reward(self, delegator_addr, i=0):
+        coin = json.loads(
+            self.raw(
+                "query",
+                "distribution",
+                "rewards",
+                delegator_addr,
+                output="json",
+                node=self.node_rpc(i),
+            )
+        )["total"][0]
+        return float(coin["amount"])
+
     def address(self, name, i=0, bech="acc"):
         output = self.raw(
             "keys",
@@ -225,7 +265,7 @@ class ClusterCLI:
             )
         )
 
-    def transfer(self, from_, to, coins, i=0, generate_only=False):
+    def transfer(self, from_, to, coins, i=0, generate_only=False, fees=None):
         return json.loads(
             self.raw(
                 "tx",
@@ -240,6 +280,7 @@ class ClusterCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc(0),
+                fees=fees,
             )
         )
 
