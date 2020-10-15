@@ -107,6 +107,8 @@ github.com/coreos/pkg v0.0.0-20160727233714-3ac0863d7acf/go.mod h1:E3G3o1h8I7cfc
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20200927215114-04ff40a8df14 h1:q5SDjq78xWkwazunbRptBMmFuwzZBAGIR1lmLnAkdbE=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20200927215114-04ff40a8df14/go.mod h1:bLowJxl+f0nyM10MQbRIyBdXqC7yb5GErM/qsmSbz3M=
+github.com/cosmos/cosmos-sdk v0.34.4-0.20201014201753-24714f80cb16 h1:RdYVJKxHzkuST+w3zlMIcWhSyVMevafE28uf79FOXwQ=
+github.com/cosmos/cosmos-sdk v0.34.4-0.20201014201753-24714f80cb16/go.mod h1:8bhQHQPnYRaNEg3pzOfT0A/5ud8AK09hCoUYrliqovo=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d h1:49RLWk1j44Xu4fjHb6JFYmeUnDORVwHNkDxaQ0ctCVU=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/iavl v0.15.0-rc3 h1:rSm60IFfDCD9qDfvXKEmaJhcv0rB5uCbVlBDKsynxqw=
