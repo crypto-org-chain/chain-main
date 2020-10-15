@@ -2,7 +2,7 @@ import re
 import socket
 import sys
 import time
-from pathlib import Path
+import uuid
 
 import yaml
 from dateutil.parser import isoparse
@@ -66,7 +66,7 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     ini.write_text(
         re.sub(
             r"^command = (.*/)?chain-maind",
-            "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.out",
+            "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.txt",
             ini.read_text(),
             count=1,
             flags=re.M,
@@ -92,10 +92,4 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     supervisord.wait()
 
     # collect the coverage results
-    txt = (data / "coverage.out").read_text()
-    merged = Path("coverage.txt")
-    if merged.exists():
-        assert txt.startswith("mode: set")
-        txt = txt[10:]
-    with merged.open("a") as f:
-        f.write(txt)
+    (data / "coverage.txt").rename(f"coverage.{uuid.uuid1()}.txt")
