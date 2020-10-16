@@ -19,7 +19,10 @@ accounts:
   - name: signer2
     coins: 2000cro
 genesis:
- app_state:
-   staking:
-     params:
-       unbonding_time: "10s"
+  app_state:
+    staking:
+      params:
+        unbonding_time: "10s"
+    gov:
+      voting_params:
+        voting_period: "10s"

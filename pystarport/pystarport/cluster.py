@@ -5,13 +5,14 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
-import dateutil.parser
 import durations
 import jsonmerge
 import tomlkit
 import yaml
+from dateutil.parser import isoparse
 from supervisor import xmlrpc
 from supervisor.compat import xmlrpclib
 
@@ -203,6 +204,12 @@ class ClusterCLI:
 
     def status(self, i=0):
         return json.loads(self.raw("status", node=self.node_rpc(i)))
+
+    def block_height(self, i=0):
+        return int(self.status(i)["sync_info"]["latest_block_height"])
+
+    def block_time(self, i=0):
+        return isoparse(self.status(i)["sync_info"]["latest_block_time"])
 
     def balance(self, addr, i=0):
         coin = json.loads(
@@ -521,6 +528,76 @@ class ClusterCLI:
             )
         )
 
+    def gov_propose(self, proposor, proposal, i=0):
+        with tempfile.NamedTemporaryFile("w") as fp:
+            json.dump(proposal, fp)
+            fp.flush()
+            return json.loads(
+                self.raw(
+                    "tx",
+                    "gov",
+                    "submit-proposal",
+                    "param-change",
+                    fp.name,
+                    "-y",
+                    from_=proposor,
+                    # basic
+                    home=self.home(i),
+                    node=self.node_rpc(0),
+                    keyring_backend="test",
+                    chain_id=self.chain_id,
+                )
+            )
+
+    def gov_vote(self, voter, proposal_id, option, i=0):
+        return json.loads(
+            self.raw(
+                "tx",
+                "gov",
+                "vote",
+                proposal_id,
+                option,
+                "-y",
+                from_=voter,
+                home=self.home(i),
+                node=self.node_rpc(0),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
+
+    def gov_deposit(self, depositor, proposal_id, amount, i=0):
+        return json.loads(
+            self.raw(
+                "tx",
+                "gov",
+                "deposit",
+                proposal_id,
+                amount,
+                "-y",
+                from_=depositor,
+                home=self.home(i),
+                node=self.node_rpc(0),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+            )
+        )
+
+    def query_proposals(self, depositor=None, limit=None, status=None, voter=None):
+        return json.loads(
+            self.raw(
+                "query",
+                "gov",
+                "proposals",
+                depositor=depositor,
+                count_total=limit,
+                status=status,
+                voter=voter,
+                output="json",
+                node=self.node_rpc(0),
+            )
+        )
+
 
 def start_cluster(data_dir, quiet=False):
     cmd = [
@@ -612,7 +689,7 @@ def init_cluster(
         if not vesting:
             cli.add_genesis_account(acct["address"], account["coins"])
         else:
-            genesis_time = dateutil.parser.isoparse(genesis["genesis_time"])
+            genesis_time = isoparse(genesis["genesis_time"])
             end_time = genesis_time + datetime.timedelta(
                 seconds=durations.Duration(vesting).to_seconds()
             )
