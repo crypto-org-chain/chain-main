@@ -1,7 +1,4 @@
-{ pkgs ? import <nixpkgs> {},
-  commit ? "",
-  ledger_zemu ? false,
-}:
+{ pkgs ? import <nixpkgs> { }, commit ? "", ledger_zemu ? false, }:
 with pkgs;
 let
   src_regexes = [
@@ -17,10 +14,11 @@ let
     "^proto/.*"
     "^test$"
     "^test/.*"
-    "^go\.mod$"
-    "^go\.sum$"
+    "^go.mod$"
+    "^go.sum$"
   ];
-in buildGoModule rec {
+in
+buildGoModule rec {
   pname = "chain-maind";
   version = "0.0.1";
   src = lib.cleanSourceWith {
@@ -28,9 +26,12 @@ in buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = sha256:0cv2hjfd4d73bmx19rwl5zrfw0ivx7l734mnbhwk71r3iwm7mn72;
+  vendorSha256 = "sha256:0cv2hjfd4d73bmx19rwl5zrfw0ivx7l734mnbhwk71r3iwm7mn72";
   runVend = true;
-  outputs = [ "out" "instrumented" ];
+  outputs = [
+    "out"
+    "instrumented"
+  ];
   buildTags = "cgo,ledger,!test_ledger_mock,!ledger_mock," +
     (if ledger_zemu then "ledger_zemu" else "!ledger_zemu");
   buildFlags = "-tags ${buildTags}";
