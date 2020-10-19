@@ -71,9 +71,20 @@ lint:
 	@echo "--> Running linter"
 	@golangci-lint run
 	@go mod verify
-
-lintpy:
 	@flake8 --show-source --count --statistics
+	@find . -name "*.nix" -type f | xargs nixpkgs-fmt --check
+
+# a trick to make all the lint commands execute, return error when at least one fails.
+# golangci-lint is run in standalone job in ci
+lint-ci:
+	@echo "--> Running linter for CI"
+	@EXIT_STATUS=0; \
+		go mod verify || EXIT_STATUS=$$?; \
+		flake8 --show-source --count --statistics \
+			--format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
+			|| EXIT_STATUS=$$?; \
+		find . -name "*.nix" -type f | xargs nixpkgs-fmt --check || EXIT_STATUS=$$?; \
+		exit $$EXIT_STATUS
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."

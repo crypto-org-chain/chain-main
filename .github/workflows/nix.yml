@@ -9,7 +9,7 @@ on:
       - '*'
 
 jobs:
-  lintpy:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -22,15 +22,15 @@ jobs:
         skipPush: true
     - name: lint python
       run: nix-shell -E "$SHELL" --run "$CMD"
+    - name: lint
+      run: nix-shell -E "$SHELL" --run "make lint-ci"
       env:
-        CMD: >
-          flake8 --show-source --count --statistics
-          --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s"
         SHELL: >
           with import <nixpkgs> {};
           mkShell {
             buildInputs = [
               (poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; })
+              nixpkgs-fmt
             ];
           }
 
