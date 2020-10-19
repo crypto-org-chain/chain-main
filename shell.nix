@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> { } }:
 with pkgs;
 mkShell {
   inputsFrom = [
@@ -12,7 +12,7 @@ mkShell {
     python3Packages.poetry
   ];
   shellHook = ''
-  # prefer local pystarport directory for development
-  export PYTHONPATH=./pystarport:$PYTHONPATH
+    # prefer local pystarport directory for development
+    export PYTHONPATH=./pystarport:$PYTHONPATH
   '';
 }
