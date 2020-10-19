@@ -1,13 +1,13 @@
 { pkgs ? import <nixpkgs> {} }:
 with pkgs;
 let
-  chain = import ../. { inherit pkgs; };
-  pystarport = import ../pystarport { inherit pkgs; };
+  chaind = import ../. { inherit pkgs; ledger_zemu = true; };
+  pystarport = import ../pystarport { inherit pkgs chaind; };
   testenv = poetry2nix.mkPoetryEnv { projectDir = ./.; };
 in
   mkShell {
     buildInputs = [
-      chain.instrumented
+      chaind.instrumented
       pystarport
       testenv
     ];

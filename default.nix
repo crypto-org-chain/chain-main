@@ -1,4 +1,7 @@
-{ pkgs ? import <nixpkgs> {}, commit ? "" }:
+{ pkgs ? import <nixpkgs> {},
+  commit ? "",
+  ledger_zemu ? false,
+}:
 with pkgs;
 let
   src_regexes = [
@@ -17,8 +20,7 @@ let
     "^go\.mod$"
     "^go\.sum$"
   ];
-in
-buildGoModule rec {
+in buildGoModule rec {
   pname = "chain-maind";
   version = "0.0.1";
   src = lib.cleanSourceWith {
@@ -26,14 +28,19 @@ buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = sha256:06r9v4yxhv6isypqbkgihcgncbfwk80qi6z03j8vk9ccvf64lmwi;
+  vendorSha256 = sha256:0cv2hjfd4d73bmx19rwl5zrfw0ivx7l734mnbhwk71r3iwm7mn72;
+  runVend = true;
   outputs = [ "out" "instrumented" ];
+  buildTags = "cgo,ledger,!test_ledger_mock,!ledger_mock," +
+    (if ledger_zemu then "ledger_zemu" else "!ledger_zemu");
+  buildFlags = "-tags ${buildTags}";
   buildFlagsArray = ''
     -ldflags=
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
     -X github.com/cosmos/cosmos-sdk/version.Version=${version}
     -X github.com/cosmos/cosmos-sdk/version.Commit=${commit}
+    -X github.com/cosmos/cosmos-sdk/version.BuildTags=${buildTags}
   '';
 
   instrumentedBinary = "chain-maind-inst";
@@ -49,5 +56,4 @@ buildGoModule rec {
   preFixup = ''
     find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
   '';
-
 }

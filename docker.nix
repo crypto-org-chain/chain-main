@@ -2,7 +2,7 @@
 
 let
   chaind = import ./. { inherit pkgs; };
-  pystarport = import ./pystarport { inherit pkgs; };
+  pystarport = import ./pystarport { inherit pkgs chaind; };
 in {
   chaindImage =
     pkgs.dockerTools.buildLayeredImage {
