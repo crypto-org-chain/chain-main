@@ -20,8 +20,6 @@ jobs:
       with:
         name: crypto-com
         skipPush: true
-    - name: lint python
-      run: nix-shell -E "$SHELL" --run "$CMD"
     - name: lint
       run: nix-shell -E "$SHELL" --run "make lint-ci"
       env:
