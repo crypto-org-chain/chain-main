@@ -1,4 +1,5 @@
 import re
+import shutil
 import socket
 import sys
 import time
@@ -92,4 +93,8 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     supervisord.wait()
 
     # collect the coverage results
-    (data / "coverage.txt").rename(f"coverage.{uuid.uuid1()}.txt")
+    shutil.move(str(data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
+
+
+def get_ledger():
+    return cluster.Ledger()

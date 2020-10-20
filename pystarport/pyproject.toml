@@ -13,6 +13,7 @@ PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
 durations = "^0.3.3"
 supervisor = "^4.2.1"
+docker = "^4.3.1"
 
 [tool.poetry.dev-dependencies]
 

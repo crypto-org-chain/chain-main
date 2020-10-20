@@ -22,7 +22,7 @@ def init(data, config, *args, **kwargs):
         f"rm -r {data}; mkdir {data}",
         ignore_error=True,
     )
-    init_cluster(data, yaml.safe_load(open(config)), *args, **kwargs)
+    return init_cluster(data, yaml.safe_load(open(config)), *args, **kwargs)
 
 
 def start(data, quiet):

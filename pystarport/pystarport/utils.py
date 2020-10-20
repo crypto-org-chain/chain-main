@@ -30,11 +30,13 @@ def write_ini(fp, cfg):
 
 def safe_cli_string(s):
     'wrap string in "", used for cli argument when contains spaces'
-    return f'"{s}"'
+    if len(f"{s}".split()) > 1:
+        return f'"{s}"'
+    return f"{s}"
 
 
 def build_cli_args_safe(*args, **kwargs):
-    args = [safe_cli_string(arg) for arg in args if arg is not None]
+    args = [safe_cli_string(arg) for arg in args if arg]
     for k, v in kwargs.items():
         if v is None:
             continue
