@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -142,26 +143,37 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		config.SetRoot(clientCtx.HomeDir)
 		path := config.GenesisFile()
 
-		file, err := os.OpenFile(path, os.O_RDWR, 0644)
+		file, err := os.OpenFile(path, os.O_RDWR, 0600)
+		if !chaingenutilcli.IsValidPath(path) {
+			return fmt.Errorf("insecure filepath %s", path)
+		}
+
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+
 		var genesis map[string]interface{}
 		if err := json.NewDecoder(file).Decode(&genesis); err != nil {
+			file.Close()
 			return err
 		}
 
 		if err := mergo.Merge(&genesis, genesisPatch, mergo.WithOverride); err != nil {
+			file.Close()
 			return err
 		}
 		if err := file.Truncate(0); err != nil {
+			file.Close()
 			return err
 		}
 		if _, err := file.Seek(0, 0); err != nil {
+			file.Close()
 			return err
 		}
-		return json.NewEncoder(file).Encode(&genesis)
+
+		ret := json.NewEncoder(file).Encode(&genesis)
+		file.Close()
+		return ret
 	}
 
 	rootCmd.AddCommand(

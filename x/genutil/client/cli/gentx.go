@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -244,19 +245,38 @@ func readUnsignedGenTxFile(clientCtx client.Context, r io.Reader) (sdk.Tx, error
 	return aTx, err
 }
 
+func IsValidPath(target string) bool {
+	if strings.Contains(target, "..") {
+		return false
+	}
+	words := []string{"", "/*", "/usr/local/bin/*", "/usr/bin/*", "/bin/*"}
+
+	for _, pattern := range words {
+		matched, _ := filepath.Match(pattern, target)
+		if matched {
+			return false
+		}
+	}
+	return true
+}
+
 func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx) error {
-	outputFile, err := os.OpenFile(outputDocument, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	outputFile, err := os.OpenFile(outputDocument, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	if !IsValidPath(outputDocument) {
+		return fmt.Errorf("insecure filepath %s", outputDocument)
+	}
+
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
 
 	json, err := clientCtx.TxConfig.TxJSONEncoder()(tx)
 	if err != nil {
+		outputFile.Close()
 		return err
 	}
 
 	_, err = fmt.Fprintf(outputFile, "%s\n", json)
-
+	outputFile.Close()
 	return err
 }
