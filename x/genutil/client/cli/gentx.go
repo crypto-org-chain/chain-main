@@ -245,11 +245,17 @@ func readUnsignedGenTxFile(clientCtx client.Context, r io.Reader) (sdk.Tx, error
 }
 
 func writeSignedGenTx(clientCtx client.Context, outputDocument string, tx sdk.Tx) error {
-	outputFile, err := os.OpenFile(outputDocument, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
+	cleanedPath := filepath.Clean(outputDocument)
+	// nolint: gosec
+	outputFile, err := os.OpenFile(cleanedPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
 	}
-	defer outputFile.Close()
+	defer func() {
+		if closeErr := outputFile.Close(); closeErr != nil {
+			fmt.Printf("Error closing file: %s\n", closeErr)
+		}
+	}()
 
 	json, err := clientCtx.TxConfig.TxJSONEncoder()(tx)
 	if err != nil {

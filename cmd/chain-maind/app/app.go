@@ -3,8 +3,10 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/crypto-com/chain-main/app/params"
@@ -142,11 +144,17 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		config.SetRoot(clientCtx.HomeDir)
 		path := config.GenesisFile()
 
-		file, err := os.OpenFile(path, os.O_RDWR, 0644)
+		cleanedPath := filepath.Clean(path)
+		// nolint: gosec
+		file, err := os.OpenFile(cleanedPath, os.O_RDWR, 0600)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil {
+				fmt.Printf("Error closing file: %s\n", closeErr)
+			}
+		}()
 		var genesis map[string]interface{}
 		if err := json.NewDecoder(file).Decode(&genesis); err != nil {
 			return err
