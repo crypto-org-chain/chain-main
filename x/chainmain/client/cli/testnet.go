@@ -527,7 +527,7 @@ func writeFile(name string, dir string, contents []byte) error {
 		return err
 	}
 
-	err = tmos.WriteFile(file, contents, 0644)
+	err = tmos.WriteFile(file, contents, 0600)
 	if err != nil {
 		return err
 	}
