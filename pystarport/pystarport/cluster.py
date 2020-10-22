@@ -687,7 +687,7 @@ class ClusterCLI:
             )
         )
 
-    def gov_propose(self, proposor, proposal, i=0):
+    def gov_propose(self, proposor, kind, proposal, i=0):
         with tempfile.NamedTemporaryFile("w") as fp:
             json.dump(proposal, fp)
             fp.flush()
@@ -696,7 +696,7 @@ class ClusterCLI:
                     "tx",
                     "gov",
                     "submit-proposal",
-                    "param-change",
+                    kind,
                     fp.name,
                     "-y",
                     from_=proposor,
@@ -752,6 +752,18 @@ class ClusterCLI:
                 count_total=limit,
                 status=status,
                 voter=voter,
+                output="json",
+                node=self.node_rpc(0),
+            )
+        )
+
+    def query_proposal(self, proposal_id):
+        return json.loads(
+            self.raw(
+                "query",
+                "gov",
+                "proposal",
+                proposal_id,
                 output="json",
                 node=self.node_rpc(0),
             )
