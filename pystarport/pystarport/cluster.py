@@ -418,6 +418,15 @@ class ClusterCLI:
             )
         )
 
+    def staking_pool(self, bonded=True):
+        return int(
+            json.loads(
+                self.raw(
+                    "query", "staking", "pool", output="json", node=self.node_rpc(0)
+                )
+            )["bonded_tokens" if bonded else "not_bonded_tokens"]
+        )
+
     def transfer(self, from_, to, coins, i=0, generate_only=False, fees=None):
         return json.loads(
             self.raw(
@@ -763,6 +772,18 @@ class ClusterCLI:
                 "query",
                 "gov",
                 "proposal",
+                proposal_id,
+                output="json",
+                node=self.node_rpc(0),
+            )
+        )
+
+    def query_tally(self, proposal_id):
+        return json.loads(
+            self.raw(
+                "query",
+                "gov",
+                "tally",
                 proposal_id,
                 output="json",
                 node=self.node_rpc(0),

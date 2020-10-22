@@ -1,6 +1,9 @@
+from datetime import timedelta
+
+from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
-from .utils import wait_for_new_blocks, wait_for_port
+from .utils import parse_events, wait_for_block_time, wait_for_port
 
 
 def test_staking_delegate(cluster):
@@ -13,8 +16,9 @@ def test_staking_delegate(cluster):
     staking_validator2 = cluster.validator(validator2_operator_address, i=1)
     assert validator2_operator_address == staking_validator2["operator_address"]
     old_amount = cluster.balance(signer1_address)
+    old_bonded = cluster.staking_pool()
     cluster.delegate_amount(validator1_operator_address, "2basecro", signer1_address)
-    wait_for_new_blocks(cluster, 2)
+    assert cluster.staking_pool() == old_bonded + 2
     new_amount = cluster.balance(signer1_address)
     assert old_amount == new_amount + 2
 
@@ -29,15 +33,26 @@ def test_staking_unbond(cluster):
     staking_validator2 = cluster.validator(validator2_operator_address, i=1)
     assert validator2_operator_address == staking_validator2["operator_address"]
     old_amount = cluster.balance(signer1_address)
+    old_bonded = cluster.staking_pool()
     cluster.delegate_amount(validator1_operator_address, "3basecro", signer1_address)
     cluster.delegate_amount(validator2_operator_address, "4basecro", signer1_address)
-    wait_for_new_blocks(cluster, 1)
-    new_amount = cluster.balance(signer1_address)
-    assert old_amount == new_amount + 7
-    cluster.unbond_amount(validator2_operator_address, "2basecro", signer1_address)
-    wait_for_new_blocks(cluster, 15)
-    new_amount_after_unbond = cluster.balance(signer1_address)
-    assert old_amount == new_amount_after_unbond + 5
+    assert cluster.staking_pool() == old_bonded + 7
+    assert cluster.balance(signer1_address) == old_amount - 7
+
+    old_unbonded = cluster.staking_pool(bonded=False)
+    rsp = cluster.unbond_amount(
+        validator2_operator_address, "2basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp
+    assert cluster.staking_pool(bonded=False) == old_unbonded + 2
+
+    wait_for_block_time(
+        cluster,
+        isoparse(parse_events(rsp["logs"])["unbond"]["completion_time"])
+        + timedelta(seconds=1),
+    )
+
+    assert cluster.balance(signer1_address) == old_amount - 5
 
 
 def test_staking_redelegate(cluster):
@@ -53,14 +68,12 @@ def test_staking_redelegate(cluster):
     cluster.delegate_amount(validator2_operator_address, "4basecro", signer1_address)
     delegation_info = cluster.get_delegated_amount(signer1_address)
     old_output = delegation_info["delegation_responses"][0]["balance"]["amount"]
-    wait_for_new_blocks(cluster, 1)
     cluster.redelegate_amount(
         validator1_operator_address,
         validator2_operator_address,
         "2basecro",
         signer1_address,
     )
-    wait_for_new_blocks(cluster, 12)
     delegation_info = cluster.get_delegated_amount(signer1_address)
     output = delegation_info["delegation_responses"][0]["balance"]["amount"]
     assert int(old_output) + 2 == int(output)
@@ -81,7 +94,6 @@ def test_join_validator(cluster):
 
     # create validator tx
     assert cluster.create_validator("1cro", i)["code"] == 0
-    wait_for_new_blocks(cluster, 2)
 
     count2 = len(cluster.validators())
     assert count2 == count1 + 1, "new validator should joined successfully"

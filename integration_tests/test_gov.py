@@ -4,14 +4,15 @@ from datetime import timedelta
 import pytest
 from dateutil.parser import isoparse
 
-from .utils import wait_for_block, wait_for_block_time
+from .utils import parse_events, wait_for_block, wait_for_block_time
 
 
 @pytest.mark.slow
-def test_param_proposal(cluster):
+@pytest.mark.parametrize("vote_option", ["yes", "no", "no_with_veto", "abstain", None])
+def test_param_proposal(cluster, vote_option):
     """
     - send proposal to change max_validators
-    - vote
+    - all validator vote same option (None means don't vote)
     - check the result
     - check deposit refunded
     """
@@ -34,14 +35,12 @@ def test_param_proposal(cluster):
             ],
         },
     )
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
-    log = {
-        attr["key"]: attr["value"] for attr in rsp["logs"][0]["events"][2]["attributes"]
-    }
-    assert log["proposal_type"] == "ParameterChange", rsp
-    proposal_id = log["proposal_id"]
+    ev = parse_events(rsp["logs"])["submit_proposal"]
+    assert ev["proposal_type"] == "ParameterChange", rsp
+    proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["content"]["changes"] == [
@@ -55,35 +54,55 @@ def test_param_proposal(cluster):
 
     amount = cluster.balance(cluster.address("ecosystem"))
     rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
 
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
-    assert rsp["code"] == 0, rsp
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
-    assert rsp["code"] == 0, rsp
+    if vote_option is not None:
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
+        assert rsp["code"] == 0, rsp["raw_log"]
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
+        assert rsp["code"] == 0, rsp["raw_log"]
 
-    wait_for_block_time(
-        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=10)
-    )
+        assert (
+            int(cluster.query_tally(proposal_id)[vote_option]) == cluster.staking_pool()
+        ), "all voted"
+    else:
+        assert cluster.query_tally(proposal_id) == {
+            "yes": "0",
+            "no": "0",
+            "abstain": "0",
+            "no_with_veto": "0",
+        }
+
+    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
 
     proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+    if vote_option == "yes":
+        assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+    else:
+        assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
 
     new_max_validators = json.loads(
         cluster.raw("q", "staking", "params", output="json", node=cluster.node_rpc(0))
     )["max_validators"]
-    assert new_max_validators == max_validators + 1
+    if vote_option == "yes":
+        assert new_max_validators == max_validators + 1
+    else:
+        assert new_max_validators == max_validators
 
-    # refunded
-    assert cluster.balance(cluster.address("ecosystem")) == amount
+    if vote_option in ("no_with_veto", None):
+        # not refunded
+        assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+    else:
+        # refunded, no matter passed or rejected
+        assert cluster.balance(cluster.address("ecosystem")) == amount
 
 
 @pytest.mark.slow
-def test_deposit_period_end(cluster):
+def test_deposit_period_expires(cluster):
     """
     - proposal and partially deposit
     - wait for deposit period end and check
@@ -107,12 +126,10 @@ def test_deposit_period_end(cluster):
             "deposit": "5000basecro",
         },
     )
-    assert rsp["code"] == 0, rsp
-    log = {
-        attr["key"]: attr["value"] for attr in rsp["logs"][0]["events"][2]["attributes"]
-    }
-    assert log["proposal_type"] == "ParameterChange", rsp
-    proposal_id = log["proposal_id"]
+    assert rsp["code"] == 0, rsp["raw_log"]
+    ev = parse_events(rsp["logs"])["submit_proposal"]
+    assert ev["proposal_type"] == "ParameterChange", rsp
+    proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "5000"}]
@@ -122,7 +139,7 @@ def test_deposit_period_end(cluster):
     amount2 = cluster.balance(cluster.address("ecosystem"))
 
     rsp = cluster.gov_deposit("ecosystem", proposal["proposal_id"], "5000basecro")
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "10000"}]
 
@@ -142,7 +159,7 @@ def test_deposit_period_end(cluster):
     assert cluster.balance(cluster.address("ecosystem")) == amount2 - 5000
 
 
-def test_community_pool_spend(cluster):
+def test_community_pool_spend_proposal(cluster):
     """
     - proposal a community pool spend
     - pass it
@@ -167,29 +184,136 @@ def test_community_pool_spend(cluster):
             "deposit": "10000001basecro",
         },
     )
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
-    log = {
-        attr["key"]: attr["value"] for attr in rsp["logs"][0]["events"][2]["attributes"]
-    }
-    assert log["proposal_type"] == "CommunityPoolSpend", rsp
-    proposal_id = log["proposal_id"]
+    ev = parse_events(rsp["logs"])["submit_proposal"]
+    assert ev["proposal_type"] == "CommunityPoolSpend", rsp
+    proposal_id = ev["proposal_id"]
 
     # vote
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
-    assert rsp["code"] == 0, rsp
+    assert rsp["code"] == 0, rsp["raw_log"]
 
     # wait for voting period end
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
-    wait_for_block_time(
-        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=10)
-    )
+    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
 
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
 
     assert cluster.balance(recipient) == old_amount + amount
+
+
+@pytest.mark.slow
+def test_change_vote(cluster):
+    """
+    - submit proposal with deposit
+    - vote yes
+    - check tally
+    - change vote
+    - check tally
+    """
+    rsp = cluster.gov_propose(
+        "community",
+        "param-change",
+        {
+            "title": "Increase number of max validators",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "staking",
+                    "key": "MaxValidators",
+                    "value": 1,
+                }
+            ],
+            "deposit": "10000000basecro",
+        },
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    voting_power = int(
+        cluster.validator(cluster.address("validator", bech="val"))["tokens"]
+    )
+
+    proposal_id = parse_events(rsp["logs"])["submit_proposal"]["proposal_id"]
+
+    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    cluster.query_tally(proposal_id) == {
+        "yes": str(voting_power),
+        "no": "0",
+        "abstain": "0",
+        "no_with_veto": "0",
+    }
+
+    # change vote to no
+    rsp = cluster.gov_vote("validator", proposal_id, "no")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    cluster.query_tally(proposal_id) == {
+        "no": str(voting_power),
+        "yes": "0",
+        "abstain": "0",
+        "no_with_veto": "0",
+    }
+
+
+@pytest.mark.slow
+def test_inherit_vote(cluster):
+    """
+    - submit proposal with deposits
+    - A delegate to V
+    - V vote Yes
+    - check tally: {yes: a + v}
+    - A vote No
+    - change tally: {yes: v, no: a}
+    """
+    rsp = cluster.gov_propose(
+        "community",
+        "param-change",
+        {
+            "title": "Increase number of max validators",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "staking",
+                    "key": "MaxValidators",
+                    "value": 1,
+                }
+            ],
+            "deposit": "10000000basecro",
+        },
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    proposal_id = parse_events(rsp["logs"])["submit_proposal"]["proposal_id"]
+
+    # non-validator voter
+    voter1 = cluster.address("community")
+    cluster.delegate_amount(
+        cluster.address("validator", bech="val"), "10basecro", voter1
+    )
+
+    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert cluster.query_tally(proposal_id) == {
+        "yes": "1000000010",
+        "no": "0",
+        "abstain": "0",
+        "no_with_veto": "0",
+    }
+
+    rsp = cluster.gov_vote(voter1, proposal_id, "no")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    assert cluster.query_tally(proposal_id) == {
+        "yes": "1000000000",
+        # FIXME why 9
+        "no": "9",
+        "abstain": "0",
+        "no_with_veto": "0",
+    }

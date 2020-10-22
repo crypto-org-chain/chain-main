@@ -98,3 +98,12 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
 
 def get_ledger():
     return cluster.Ledger()
+
+
+def parse_events(logs):
+    r = {
+        ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
+        for ev in logs[0]["events"]
+    }
+    # print(r)
+    return r
