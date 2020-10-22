@@ -53,3 +53,11 @@ def build_cli_args(*args, **kwargs):
         args.append("--" + k.strip("_").replace("_", "-"))
         args.append(v)
     return list(map(str, args))
+
+
+def format_doc_string(**kwargs):
+    def decorator(target):
+        target.__doc__ = target.__doc__.format(**kwargs)
+        return target
+
+    return decorator

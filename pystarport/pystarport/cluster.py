@@ -1,5 +1,7 @@
 import configparser
 import datetime
+import enum
+import hashlib
 import json
 import os
 import re
@@ -12,6 +14,7 @@ import time
 import uuid
 from pathlib import Path
 
+import bech32
 import docker
 import durations
 import jsonmerge
@@ -22,7 +25,7 @@ from supervisor import xmlrpc
 from supervisor.compat import xmlrpclib
 
 from . import ports
-from .utils import build_cli_args_safe, interact, write_ini
+from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
 
 CHAIN = "chain-maind"  # edit by nix-build
 ZEMU_HOST = "127.0.0.1"
@@ -41,6 +44,15 @@ COMMON_PROG_OPTIONS = {
     "startsecs": "3",
 }
 SUPERVISOR_CONFIG_FILE = "tasks.ini"
+
+
+class ModuleAccount(enum.Enum):
+    FeeCollector = "fee_collector"
+    Mint = "mint"
+    Gov = "gov"
+    Distribution = "distribution"
+    BondedPool = "bonded_tokens_pool"
+    NotBondedPool = "not_bonded_tokens_pool"
 
 
 def home_dir(data_dir, i):
@@ -391,6 +403,18 @@ class ClusterCLI:
             bech=bech,
         )
         return output.strip().decode()
+
+    @format_doc_string(
+        options=",".join(v.value for v in ModuleAccount.__members__.values())
+    )
+    def module_address(self, name):
+        """
+        get address of module accounts
+
+        :param name: name of module account, values: {options}
+        """
+        data = hashlib.sha256(ModuleAccount(name).value.encode()).digest()[:20]
+        return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
     def account(self, addr, i=0):
         return json.loads(
