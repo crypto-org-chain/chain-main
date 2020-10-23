@@ -40,12 +40,12 @@ changelog:
 snapshot:
   name_template: "{{ .Tag }}-next"
 
-# brews:
-#   - name: "chain-maind"
-#     description: "chain-main daemon"
-#     homepage: "https://github.com/crypto-com/chain-main"
-#     github:
-#       owner: "crypto-com"
-#       name: "homebrew-tap"
-#     install: |
-#       bin.install "chain-maind"
+brews:
+  - name: "chain-maind"
+    description: "chain-main daemon"
+    homepage: "https://github.com/crypto-com/chain-main"
+    github:
+      owner: "crypto-com"
+      name: "homebrew-chain-maind"
+    install: |
+      bin.install "chain-maind"
