@@ -1,7 +1,10 @@
 { system ? "x86_64-linux", pkgs ? import <nixpkgs> { inherit system; } }:
 let
   chaind = import ./. { inherit pkgs; };
-  pystarport = import ./pystarport { inherit pkgs chaind; };
+  pystarport = import ./pystarport {
+    inherit pkgs;
+    chaind = "${chaind}/bin/chain-maind";
+  };
 in
 {
   chaindImage =
