@@ -312,15 +312,14 @@ func InitTestnet(
 			genAccount = baseAccount
 		}
 
-		// nolint: govet
-		if err := genAccount.Validate(); err != nil {
+		if err = genAccount.Validate(); err != nil {
 			return fmt.Errorf("failed to validate new genesis account: %w", err)
 		}
 
 		genBalances = append(genBalances, genbalance)
 		genAccounts = append(genAccounts, genAccount)
 
-		createValMsg := stakingtypes.NewMsgCreateValidator(
+		createValMsg, err2 := stakingtypes.NewMsgCreateValidator(
 			sdk.ValAddress(addr),
 			valPubKeys[i],
 			stakingCoin,
@@ -328,6 +327,9 @@ func InitTestnet(
 			stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(2, 1), sdk.NewDecWithPrec(1, 2)),
 			sdk.OneInt(),
 		)
+		if err2 != nil {
+			return err2
+		}
 
 		txBuilder := clientCtx.TxConfig.NewTxBuilder()
 		if err = txBuilder.SetMsgs(createValMsg); err != nil {

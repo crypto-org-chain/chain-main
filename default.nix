@@ -26,7 +26,7 @@ buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = "sha256:0cv2hjfd4d73bmx19rwl5zrfw0ivx7l734mnbhwk71r3iwm7mn72";
+  vendorSha256 = "sha256:1b31s6i3d5fs7wzfwqi2lx5jma3scd7mpvxz0vlddxg8cr4lrz85";
   runVend = true;
   outputs = [
     "out"
