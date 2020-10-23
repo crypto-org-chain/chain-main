@@ -1,5 +1,5 @@
 { pkgs ? import <nixpkgs> { }
-, chaind ? import ../. { inherit pkgs; }
+, chaind ? "chain-maind"
 }:
 pkgs.poetry2nix.mkPoetryApplication {
   projectDir = ./.;
@@ -12,6 +12,6 @@ pkgs.poetry2nix.mkPoetryApplication {
     );
   });
   preBuild = ''
-    sed -i -e 's@CHAIN = "chain-maind"  # edit by nix-build@CHAIN = "${chaind}/bin/chain-maind"@' pystarport/cluster.py
+    sed -i -e 's@CHAIN = "chain-maind"  # edit by nix-build@CHAIN = "${chaind}"@' pystarport/cluster.py
   '';
 }
