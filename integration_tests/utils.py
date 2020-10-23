@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import socket
@@ -62,18 +63,19 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config, base_port)
 
-    # replace the first node with the instrumented binary
-    ini = data / cluster.SUPERVISOR_CONFIG_FILE
-    ini.write_text(
-        re.sub(
-            r"^command = (.*/)?chain-maind",
-            "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.txt",
-            ini.read_text(),
-            count=1,
-            flags=re.M,
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        # replace the first node with the instrumented binary
+        ini = data / cluster.SUPERVISOR_CONFIG_FILE
+        ini.write_text(
+            re.sub(
+                r"^command = (.*/)?chain-maind",
+                "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.txt",
+                ini.read_text(),
+                count=1,
+                flags=re.M,
+            )
         )
-    )
-    begin = time.time()
+        begin = time.time()
 
     supervisord = cluster.start_cluster(data, quiet=quiet)
     # wait for first node rpc port available before start testing
@@ -84,16 +86,18 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
 
     yield cli
 
-    duration = time.time() - begin
-    # wait for server startup complete to generate the coverage report
-    if duration < 15:
-        time.sleep(15 - duration)
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        # wait for server startup complete to generate the coverage report
+        duration = time.time() - begin
+        if duration < 15:
+            time.sleep(15 - duration)
 
     supervisord.terminate()
     supervisord.wait()
 
-    # collect the coverage results
-    shutil.move(str(data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        # collect the coverage results
+        shutil.move(str(data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
 
 
 def get_ledger():

@@ -7,8 +7,6 @@ mkShell {
   ];
   buildInputs = [
     go
-    # make default chain-maind available on PATH
-    (import ./. { inherit pkgs; })
     python3Packages.poetry
   ];
   shellHook = ''
