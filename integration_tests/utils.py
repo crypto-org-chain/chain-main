@@ -23,7 +23,7 @@ def wait_for_block(cli, height, timeout=60):
                 break
         time.sleep(0.5)
     else:
-        print(f"wait for block {height} timeout", file=sys.stderr)
+        raise TimeoutError(f"wait for block {height} timeout")
 
 
 def wait_for_new_blocks(cli, n):
@@ -57,13 +57,25 @@ def wait_for_port(port, host="127.0.0.1", timeout=40.0):
                 ) from ex
 
 
-def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
+def cluster_fixture(
+    config_path,
+    base_port,
+    tmp_path_factory,
+    quiet=False,
+    post_init=None,
+    enable_cov=None,
+):
+    if enable_cov is None:
+        enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
     config = yaml.safe_load(open(config_path))
     data = tmp_path_factory.mktemp(config["chain_id"])
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config, base_port)
 
-    if os.environ.get("GITHUB_ACTIONS") == "true":
+    if post_init:
+        post_init(config, data)
+
+    if enable_cov:
         # replace the first node with the instrumented binary
         ini = data / cluster.SUPERVISOR_CONFIG_FILE
         ini.write_text(
@@ -86,7 +98,7 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
 
     yield cli
 
-    if os.environ.get("GITHUB_ACTIONS") == "true":
+    if enable_cov:
         # wait for server startup complete to generate the coverage report
         duration = time.time() - begin
         if duration < 15:
@@ -95,7 +107,7 @@ def cluster_fixture(config_path, base_port, tmp_path_factory, quiet=False):
     supervisord.terminate()
     supervisord.wait()
 
-    if os.environ.get("GITHUB_ACTIONS") == "true":
+    if enable_cov:
         # collect the coverage results
         shutil.move(str(data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
 
@@ -105,9 +117,7 @@ def get_ledger():
 
 
 def parse_events(logs):
-    r = {
+    return {
         ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
         for ev in logs[0]["events"]
     }
-    # print(r)
-    return r

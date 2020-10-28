@@ -26,7 +26,7 @@ buildGoModule rec {
     src = lib.sourceByRegex ./. src_regexes;
   };
   subPackages = [ "cmd/chain-maind" ];
-  vendorSha256 = "sha256:1b31s6i3d5fs7wzfwqi2lx5jma3scd7mpvxz0vlddxg8cr4lrz85";
+  vendorSha256 = sha256:0p8i1pj42wlgmqgs50pv6rv84vqk4s9baipjk5zn2xkcbaxx05iz;
   runVend = true;
   outputs = [
     "out"
@@ -48,7 +48,7 @@ buildGoModule rec {
   # FIXME remove the "-w -s" ldflags, https://github.com/golang/go/issues/40974
   postBuild = ''
     echo "Build instrumented binary"
-    go test ./cmd/chain-maind --tags testbincover "${buildFlagsArray} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
+    go test ./cmd/chain-maind $buildFlags",testbincover" "''${buildFlagsArray[@]} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
   '';
   postInstall = ''
     mkdir -p $instrumented/bin
