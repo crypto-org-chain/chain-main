@@ -39,13 +39,13 @@ func (app *ChainApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	validators := staking.WriteValidators(ctx, app.StakingKeeper)
+	validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Validators:      validators,
 		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
-	}, nil
+	}, err
 }
 
 // prepare for fresh start at zero height
@@ -184,7 +184,10 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 
 	iter.Close()
 
-	_ = app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+	_, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	/* Handle slashing state. */
 

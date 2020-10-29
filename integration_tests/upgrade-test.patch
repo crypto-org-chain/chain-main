@@ -1,0 +1,14 @@
+diff --git a/app/app.go b/app/app.go
+index 41ef238..da3bd3d 100644
+--- a/app/app.go
++++ b/app/app.go
+@@ -350,6 +350,9 @@ func New(
+ 		}
+ 	}
+ 
++	app.UpgradeKeeper.SetUpgradeHandler("upgrade-test", func(_ sdk.Context, _ upgradetypes.Plan) {
++	})
++
+ 	return app
+ }
+ 

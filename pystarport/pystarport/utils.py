@@ -20,7 +20,7 @@ def interact(cmd, ignore_error=False, input=None, **kwargs):
 
 
 def write_ini(fp, cfg):
-    ini = configparser.ConfigParser()
+    ini = configparser.RawConfigParser()
     for section, items in cfg.items():
         ini.add_section(section)
         sec = ini[section]
