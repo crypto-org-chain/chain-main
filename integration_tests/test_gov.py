@@ -159,6 +159,7 @@ def test_deposit_period_expires(cluster):
     assert cluster.balance(cluster.address("ecosystem")) == amount2 - 5000
 
 
+@pytest.mark.slow
 def test_community_pool_spend_proposal(cluster):
     """
     - proposal a community pool spend

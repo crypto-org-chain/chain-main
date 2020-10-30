@@ -182,6 +182,10 @@ class ClusterCLI:
             )
         return self._supervisorctl.supervisor
 
+    def restart_supervisor(self):
+        self.supervisor.restart()
+        self._supervisorctl = None
+
     def nodes_len(self):
         "find how many 'node{i}' sub-directories"
         return len(
@@ -234,7 +238,7 @@ class ClusterCLI:
 
         # add process config into supervisor
         path = self.data_dir / SUPERVISOR_CONFIG_FILE
-        ini = configparser.ConfigParser()
+        ini = configparser.RawConfigParser()
         ini.read_file(path.open())
         section = f"program:node{i}"
         ini.add_section(section)
@@ -245,7 +249,8 @@ class ClusterCLI:
                 autostart="false",
             )
         )
-        ini.write(path.open("w"))
+        with path.open("w") as fp:
+            ini.write(fp)
         (added, _, _) = self.supervisor.reloadConfig()[0]
         assert f"node{i}" in added
         self.supervisor.addProcessGroup(f"node{i}")
@@ -440,7 +445,7 @@ class ClusterCLI:
             self.raw(
                 "query", "staking", "validators", output="json", node=self.node_rpc(i)
             )
-        )
+        )["validators"]
 
     def staking_pool(self, bonded=True):
         return int(
@@ -721,18 +726,23 @@ class ClusterCLI:
         )
 
     def gov_propose(self, proposor, kind, proposal, i=0):
-        with tempfile.NamedTemporaryFile("w") as fp:
-            json.dump(proposal, fp)
-            fp.flush()
+        if kind == "software-upgrade":
             return json.loads(
                 self.raw(
                     "tx",
                     "gov",
                     "submit-proposal",
                     kind,
-                    fp.name,
+                    proposal["name"],
                     "-y",
                     from_=proposor,
+                    # content
+                    title=proposal.get("title"),
+                    description=proposal.get("description"),
+                    upgrade_height=proposal.get("upgrade-height"),
+                    upgrade_time=proposal.get("upgrade-time"),
+                    upgrade_info=proposal.get("upgrade-info"),
+                    deposit=proposal.get("deposit"),
                     # basic
                     home=self.home(i),
                     node=self.node_rpc(0),
@@ -740,6 +750,26 @@ class ClusterCLI:
                     chain_id=self.chain_id,
                 )
             )
+        else:
+            with tempfile.NamedTemporaryFile("w") as fp:
+                json.dump(proposal, fp)
+                fp.flush()
+                return json.loads(
+                    self.raw(
+                        "tx",
+                        "gov",
+                        "submit-proposal",
+                        kind,
+                        fp.name,
+                        "-y",
+                        from_=proposor,
+                        # basic
+                        home=self.home(i),
+                        node=self.node_rpc(0),
+                        keyring_backend="test",
+                        chain_id=self.chain_id,
+                    )
+                )
 
     def gov_vote(self, voter, proposal_id, option, i=0):
         return json.loads(

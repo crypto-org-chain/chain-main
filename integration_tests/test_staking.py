@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+import pytest
 from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
@@ -23,6 +24,7 @@ def test_staking_delegate(cluster):
     assert old_amount == new_amount + 2
 
 
+@pytest.mark.slow
 def test_staking_unbond(cluster):
     signer1_address = cluster.address("signer1", i=0)
     validators = cluster.validators()
