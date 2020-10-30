@@ -11,6 +11,7 @@
 
 # Build
 build
+dist
 
 # Testing
 /coverage.*.txt

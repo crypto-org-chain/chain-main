@@ -3,17 +3,49 @@ before:
   - go mod download
 
 builds:
-  - main: ./cmd/chain-maind
-    id: "chain-maind"
+  - id: "chain-maind-darwin"
+    main: ./cmd/chain-maind
     binary: chain-maind
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
+      - CC=o64-clang
+      - CXX=o64-clang++
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    flags:
+        - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "chain-maind-linux"
+    main: ./cmd/chain-maind
+    binary: chain-maind
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+      - CXX=g++
     goos:
       - linux
-      - darwin
+    goarch:
+      - amd64
+    flags:
+      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "chain-maind-windows"
+    main: ./cmd/chain-maind
+    binary: chain-maind
+    env:
+      - CGO_ENABLED=1
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
+    goos:
       - windows
     goarch:
       - amd64
+    flags:
+      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
@@ -28,7 +60,9 @@ archives:
     - goos: windows
       format: zip
   builds:
-  - chain-maind
+  - chain-maind-darwin
+  - chain-maind-windows
+  - chain-maind-linux
 checksum:
   name_template: 'checksums.txt'
 changelog:
