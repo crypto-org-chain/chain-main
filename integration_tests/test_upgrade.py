@@ -1,4 +1,5 @@
 import configparser
+import functools
 import json
 import re
 import subprocess
@@ -34,45 +35,45 @@ def edit_chain_program(ini_path, callback):
         ini.write(fp)
 
 
-def post_init(config, data):
+def post_init(config, data, package_path):
     """
     change to use cosmovisor
     """
 
     def prepare_node(i, _):
-        # prepare cosmovisor directory
-        home = data / f"node{i}"
-        cosmovisor = home / "cosmovisor"
-        cosmovisor.mkdir()
-        subprocess.run(
-            [
-                "nix-build",
-                Path(__file__).parent / "upgrade-test.nix",
-                "-o",
-                cosmovisor / "upgrades",
-            ],
-            check=True,
-        )
-        (cosmovisor / "genesis").symlink_to("./upgrades/genesis")
         return {
-            "command": f"cosmovisor start --home %(here)s/node{i}",
-            "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
+            "command": "cosmovisor start",
+            "environment": (
+                f"DAEMON_NAME=chain-maind,DAEMON_HOME=%(here)s/node{i},"
+                f"PACKAGE_PATH={package_path}"
+            ),
         }
 
     edit_chain_program(data / SUPERVISOR_CONFIG_FILE, prepare_node)
 
 
 # use function scope to re-initialize for each test case
-@pytest.fixture(scope="function")
-def cluster(pytestconfig, tmp_path_factory):
+@pytest.fixture
+def cluster(pytestconfig, tmp_path_factory, test_package):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
         26900,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
-        post_init=post_init,
+        post_init=functools.partial(post_init, package_path=test_package),
         enable_cov=False,
+    )
+
+
+@pytest.fixture
+def test_package():
+    return Path(
+        subprocess.check_output(
+            ["nix-build", "-Q", Path(__file__).parent / "upgrade-test.nix"]
+        )
+        .strip()
+        .decode()
     )
 
 
@@ -86,7 +87,7 @@ def test_cosmovisor(cluster):
     height = cluster.block_height()
     target_height = height + 15
     print("upgrade height", target_height)
-    plan_name = "upgrade-test"
+    plan_name = "v1"
     rsp = cluster.gov_propose(
         "community",
         "software-upgrade",
@@ -120,7 +121,7 @@ def test_cosmovisor(cluster):
 
 
 @pytest.mark.slow
-def test_manual_upgrade(cluster):
+def test_manual_upgrade(cluster, test_package):
     """
     - do the upgrade test by replacing binary manually
     - check the panic do happens
@@ -129,7 +130,7 @@ def test_manual_upgrade(cluster):
     edit_chain_program(
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
-            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
+            "command": f"{test_package}/v0/bin/chain-maind start "
             f"--home %(here)s/node{i}"
         },
     )
@@ -141,7 +142,7 @@ def test_manual_upgrade(cluster):
     target_height = cluster.block_height() + 15
 
     print("upgrade height", target_height)
-    plan_name = "upgrade-test"
+    plan_name = "v1"
     rsp = cluster.gov_propose(
         "community",
         "software-upgrade",
@@ -194,8 +195,7 @@ def test_manual_upgrade(cluster):
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/upgrade-test/bin/chain-maind "
-                f"start --home %(here)s/node{i}"
+                f"{test_package}/v1/bin/chain-maind start --home %(here)s/node{i}"
             )
         },
     )

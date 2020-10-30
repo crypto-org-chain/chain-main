@@ -20,6 +20,7 @@ bech32 = "^1.2.0"
 
 [tool.poetry.scripts]
 pystarport = "pystarport.cli:main"
+cosmovisor = "pystarport.cosmovisor:main"
 
 [build-system]
 requires = ["poetry>=0.12"]

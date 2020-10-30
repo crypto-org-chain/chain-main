@@ -1,8 +1,8 @@
 { pkgs ? import <nixpkgs> { } }:
 let
-  genesis = import ../. { inherit pkgs; ledger_zemu = true; };
+  v0 = import ../. { inherit pkgs; ledger_zemu = true; };
   # pin to a revision to avoid unnessesary rebuild
-  upgrade-test = (import
+  v1 = (import
     (builtins.fetchTarball
       "https://github.com/crypto-com/chain-main/archive/de34e77ef793b0e7975eb3596844245b61b4f652.tar.gz")
     {
@@ -13,6 +13,6 @@ let
   });
 in
 pkgs.linkFarm "upgrade-test-package" [
-  { name = "genesis"; path = genesis; }
-  { name = "upgrade-test"; path = upgrade-test; }
+  { name = "v0"; path = v0; }
+  { name = "v1"; path = v1; }
 ]
