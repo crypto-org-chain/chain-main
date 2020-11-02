@@ -267,6 +267,10 @@ class ClusterCLI:
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port(i))
 
+    def ipport_grpc(self, i):
+        "grpc url of i-th node"
+        return "127.0.0.1:%d" % ports.grpc_port(self.base_port(i))
+
     def node_id(self, i):
         "get i-th node's tendermint node id"
         output = self.raw("tendermint", "show-node-id", home=self.home(i))
