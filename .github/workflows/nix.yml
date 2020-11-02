@@ -14,31 +14,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v11
-      with:
-        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz
     - uses: cachix/cachix-action@v6
       with:
         name: crypto-com
         skipPush: true
     - name: lint
-      run: nix-shell -E "$SHELL" --run "make lint-ci"
-      env:
-        SHELL: >
-          with import <nixpkgs> {};
-          mkShell {
-            buildInputs = [
-              (poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; })
-              nixpkgs-fmt
-            ];
-          }
+      run: nix-shell ./. -A lint-shell --run "make lint-ci"
 
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: cachix/install-nix-action@v11
-      with:
-        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs-channels/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz
     - uses: cachix/cachix-action@v6
       with:
         name: crypto-com

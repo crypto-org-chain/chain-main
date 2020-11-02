@@ -146,8 +146,8 @@ clean-docker-compose: localnet-stop
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network
-	nix-shell integration_tests/shell.nix --arg ci true --run "pytest -v -n 6 -m 'not ledger' --dist loadscope"
-	nix-shell integration_tests/shell.nix --arg ci true --run "pytest -v -m ledger"
+	nix-shell ./. -A ci-shell --run "pytest -v -n 7 -m 'not ledger' --dist loadscope"
+	nix-shell ./. -A ci-shell --run "pytest -v -m ledger"
 
 nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \
