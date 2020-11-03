@@ -51,4 +51,4 @@ def test_reward(cluster):
     # commission = proposerReward * proposerCommissionRate
     # communityFunding = feesCollectedDec * communityTax
     # poolReceived = feesCollectedDec - proposerReward - communityFunding
-    assert 77979.0 <= minted_value and minted_value <= 233937.0
+    assert 77000.0 <= minted_value <= 233937.0
