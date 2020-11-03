@@ -115,6 +115,8 @@ github.com/cosmos/cosmos-sdk v0.34.4-0.20201022224044-5bebf2bd39cd h1:5UiE2afJO8
 github.com/cosmos/cosmos-sdk v0.34.4-0.20201022224044-5bebf2bd39cd/go.mod h1:KvZzKUEc7KrMiiIeU0zKPMMwuxxn+R0Leo8vBSDgOeQ=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20201028155748-1b0d6540d8d5 h1:ALPZHfvrFRMyFDhGi3OTzHo7DUN+VENVNIwAnWOqHwQ=
 github.com/cosmos/cosmos-sdk v0.34.4-0.20201028155748-1b0d6540d8d5/go.mod h1:KvZzKUEc7KrMiiIeU0zKPMMwuxxn+R0Leo8vBSDgOeQ=
+github.com/cosmos/cosmos-sdk v0.40.0-rc2 h1:6OkkAZ9Qo/db7WUppxRMPVCV1r9MrI0HOYQ9COt138s=
+github.com/cosmos/cosmos-sdk v0.40.0-rc2/go.mod h1:KvZzKUEc7KrMiiIeU0zKPMMwuxxn+R0Leo8vBSDgOeQ=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d h1:49RLWk1j44Xu4fjHb6JFYmeUnDORVwHNkDxaQ0ctCVU=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/iavl v0.15.0-rc3 h1:rSm60IFfDCD9qDfvXKEmaJhcv0rB5uCbVlBDKsynxqw=
