@@ -1,21 +1,17 @@
-{ system ? "x86_64-linux", pkgs ? import <nixpkgs> { inherit system; } }:
+{ system ? "x86_64-linux", pkgs ? import ./nix { inherit system; } }:
 let
-  chaind = import ./. { inherit pkgs; };
-  pystarport = import ./pystarport {
-    inherit pkgs;
-    chaind = "${chaind}/bin/chain-maind";
-  };
+  self = import ./. { inherit pkgs; };
 in
 {
   chaindImage =
     pkgs.dockerTools.buildLayeredImage {
       name = "crypto-com/chain-maind";
-      config.Entrypoint = [ "${chaind}/bin/chain-maind" ];
+      config.Entrypoint = [ "${self.chain-maind}/bin/chain-maind" ];
     };
 
   pystarportImage =
     pkgs.dockerTools.buildLayeredImage {
       name = "crypto-com/chain-main-pystarport";
-      config.Entrypoint = [ "${pystarport}/bin/pystarport" ];
+      config.Entrypoint = [ "${self.pystarport}/bin/pystarport" ];
     };
 }

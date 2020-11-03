@@ -1,0 +1,38 @@
+{
+    "cosmos-sdk": {
+        "branch": "master",
+        "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
+        "homepage": "https://cosmos.network/",
+        "owner": "cosmos",
+        "repo": "cosmos-sdk",
+        "rev": "cdc73ac6057f0586bb86e5cca4d657c6da21e182",
+        "sha256": "0sgl5v4lwdi2xvxvk46rpawjr9p88xv77pb80ssrwf6azhs8k71m",
+        "type": "tarball",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/cdc73ac6057f0586bb86e5cca4d657c6da21e182.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "nixpkgs": {
+        "branch": "nixpkgs-unstable",
+        "description": "Nix Packages collection",
+        "homepage": "",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "84d74ae9c9cbed73274b8e4e00be14688ffc93fe",
+        "sha256": "0ww70kl08rpcsxb9xdx8m48vz41dpss4hh3vvsmswll35l158x0v",
+        "type": "tarball",
+        "url": "https://github.com/NixOS/nixpkgs/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "poetry2nix": {
+        "branch": "master",
+        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
+        "homepage": "",
+        "owner": "nix-community",
+        "repo": "poetry2nix",
+        "rev": "f0cc43e09f6adbbde8c1207d511cd124cdca28f4",
+        "sha256": "020qpwprkb52gimvmipixc7zqqmaxagxw9ddr75yf762s312byi3",
+        "type": "tarball",
+        "url": "https://github.com/nix-community/poetry2nix/archive/f0cc43e09f6adbbde8c1207d511cd124cdca28f4.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    }
+}
