@@ -313,8 +313,7 @@ def test_inherit_vote(cluster):
 
     assert cluster.query_tally(proposal_id) == {
         "yes": "1000000000",
-        # FIXME why 9
-        "no": "9",
+        "no": "10",
         "abstain": "0",
         "no_with_veto": "0",
     }

@@ -190,7 +190,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		debug.Cmd(),
 	)
 
-	server.AddCommands(rootCmd, app.DefaultNodeHome(appName), newApp, exportAppStateAndTMValidators)
+	server.AddCommands(rootCmd, app.DefaultNodeHome(appName), newApp, exportAppStateAndTMValidators, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
@@ -199,6 +199,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome(appName)),
 	)
+}
+
+func addModuleInitFlags(startCmd *cobra.Command) {
 }
 
 func queryCommand() *cobra.Command {
@@ -287,7 +290,7 @@ func newApp(logger log.Logger, db dbm.DB,
 
 func exportAppStateAndTMValidators(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailWhiteList []string,
-) (servertypes.ExportedApp, error) {
+	appOpts servertypes.AppOptions) (servertypes.ExportedApp, error) {
 	encCfg := app.MakeEncodingConfig() // Ideally, we would reuse the one created by NewRootCmd.
 	encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
 	var a *app.ChainApp
