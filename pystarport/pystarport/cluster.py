@@ -30,6 +30,7 @@ from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
 CHAIN = "chain-maind"  # edit by nix-build
 ZEMU_HOST = "127.0.0.1"
 ZEMU_BUTTON_PORT = 9997
+ZEMU_GRPC_SERVER_PORT = 3002
 # dockerfile is integration_test/hardware_wallet/Dockerfile
 ZEMU_IMAGE = "cryptocom/builder-zemu:latest"
 IMAGE = "docker.pkg.github.com/crypto-com/chain-main/chain-main-pystarport:latest"
@@ -79,11 +80,27 @@ class Ledger:
         self.containers = []
 
     def start(self):
-        for (name, cmd) in self.cmds.items():
+        host_config_ledger = self.client.api.create_host_config(
+            auto_remove=True,
+            port_bindings={
+                ZEMU_BUTTON_PORT: ZEMU_BUTTON_PORT,
+                ZEMU_GRPC_SERVER_PORT: ZEMU_GRPC_SERVER_PORT,
+            },
+        )
+        container_ledger = self.client.api.create_container(
+            ZEMU_IMAGE,
+            self.cmds[self.ledger_name],
+            name=self.ledger_name,
+            ports=[ZEMU_BUTTON_PORT, ZEMU_GRPC_SERVER_PORT],
+            host_config=host_config_ledger,
+        )
+        self.client.api.start(container_ledger["Id"])
+        self.containers.append(container_ledger)
+        for name in [self.proxy_name, self.grpc_name]:
+            cmd = self.cmds[name]
             try:
                 host_config = self.client.api.create_host_config(
-                    auto_remove=True,
-                    network_mode="host",
+                    auto_remove=True, network_mode=f"container:{self.ledger_name}"
                 )
                 container = self.client.api.create_container(
                     ZEMU_IMAGE,

@@ -17,6 +17,7 @@ dist
 /coverage.*.txt
 /data
 __pycache__
+*.pyc
 
 # Others
 frontend/node_modules
