@@ -750,6 +750,26 @@ class ClusterCLI:
                     chain_id=self.chain_id,
                 )
             )
+        elif kind == "cancel-software-upgrade":
+            return json.loads(
+                self.raw(
+                    "tx",
+                    "gov",
+                    "submit-proposal",
+                    kind,
+                    "-y",
+                    from_=proposor,
+                    # content
+                    title=proposal.get("title"),
+                    description=proposal.get("description"),
+                    deposit=proposal.get("deposit"),
+                    # basic
+                    home=self.home(i),
+                    node=self.node_rpc(0),
+                    keyring_backend="test",
+                    chain_id=self.chain_id,
+                )
+            )
         else:
             with tempfile.NamedTemporaryFile("w") as fp:
                 json.dump(proposal, fp)

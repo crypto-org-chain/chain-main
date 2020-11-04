@@ -36,8 +36,11 @@ def wait_for_new_blocks(cli, n):
 
 
 def wait_for_block_time(cli, t):
+    print("wait for block time", t)
     while True:
-        if isoparse((cli.status())["sync_info"]["latest_block_time"]) >= t:
+        now = isoparse((cli.status())["sync_info"]["latest_block_time"])
+        print("block time now:", now)
+        if now >= t:
             break
         time.sleep(0.5)
 
