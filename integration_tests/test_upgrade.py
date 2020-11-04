@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -64,7 +65,7 @@ def post_init(config, data):
 
 # use function scope to re-initialize for each test case
 @pytest.fixture(scope="function")
-def cluster(pytestconfig, tmp_path_factory):
+def cosmovisor_cluster(pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
@@ -77,12 +78,13 @@ def cluster(pytestconfig, tmp_path_factory):
 
 
 @pytest.mark.slow
-def test_cosmovisor(cluster):
+def test_cosmovisor(cosmovisor_cluster):
     """
     - propose an upgrade and pass it
     - wait for it to happen
     - it should work transparently
     """
+    cluster = cosmovisor_cluster
     height = cluster.block_height()
     target_height = height + 15
     print("upgrade height", target_height)
@@ -119,12 +121,42 @@ def test_cosmovisor(cluster):
     wait_for_block(cluster, target_height + 2)
 
 
+def propose_and_pass(cluster, kind, proposal):
+    rsp = cluster.gov_propose(
+        "community",
+        kind,
+        proposal,
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # get proposal_id
+    ev = parse_events(rsp["logs"])["submit_proposal"]
+    assert ev["proposal_type"] == kind.title().replace("-", ""), rsp
+    proposal_id = ev["proposal_id"]
+
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
+
+    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    proposal = cluster.query_proposal(proposal_id)
+    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+
+    return proposal
+
+
 @pytest.mark.slow
-def test_manual_upgrade(cluster):
+def test_manual_upgrade(cosmovisor_cluster):
     """
     - do the upgrade test by replacing binary manually
     - check the panic do happens
     """
+    cluster = cosmovisor_cluster
     # use the normal binary first
     edit_chain_program(
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
@@ -139,11 +171,11 @@ def test_manual_upgrade(cluster):
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
 
     target_height = cluster.block_height() + 15
-
     print("upgrade height", target_height)
+
     plan_name = "upgrade-test"
-    rsp = cluster.gov_propose(
-        "community",
+    propose_and_pass(
+        cluster,
         "software-upgrade",
         {
             "name": plan_name,
@@ -153,22 +185,6 @@ def test_manual_upgrade(cluster):
             "deposit": "10000000basecro",
         },
     )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "SoftwareUpgrade", rsp
-    proposal_id = ev["proposal_id"]
-
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
-    assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    proposal = cluster.query_proposal(proposal_id)
-    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
-    proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
 
     # wait for upgrade plan activated
     wait_for_block(cluster, target_height)
@@ -202,4 +218,45 @@ def test_manual_upgrade(cluster):
     cluster.restart_supervisor()
 
     # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 1)
+    wait_for_block(cluster, target_height + 2)
+
+
+@pytest.mark.slow
+def test_cancel_upgrade(cluster):
+    """
+    use default cluster
+    - propose upgrade and pass it
+    - cancel the upgrade before execution
+    """
+    plan_name = "upgrade-test"
+    # 25 = voting_period * 2 + 5
+    upgrade_time = datetime.utcnow() + timedelta(seconds=25)
+    print("propose upgrade plan")
+    print("upgrade time", upgrade_time)
+    propose_and_pass(
+        cluster,
+        "software-upgrade",
+        {
+            "name": plan_name,
+            "title": "upgrade test",
+            "description": "ditto",
+            "upgrade-time": upgrade_time.replace(tzinfo=None).isoformat("T") + "Z",
+            "deposit": "10000000basecro",
+        },
+    )
+
+    print("cancel upgrade plan")
+    propose_and_pass(
+        cluster,
+        "cancel-software-upgrade",
+        {
+            "title": "there's bug, cancel upgrade",
+            "description": "there's bug, cancel upgrade",
+            "deposit": "10000000basecro",
+        },
+    )
+
+    # wait for blocks after upgrade, should success since upgrade is canceled
+    wait_for_block_time(
+        cluster, upgrade_time.replace(tzinfo=timezone.utc) + timedelta(seconds=1)
+    )
