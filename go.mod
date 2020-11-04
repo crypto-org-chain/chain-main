@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.34.4-0.20201028155748-1b0d6540d8d5
+	github.com/cosmos/cosmos-sdk v0.40.0-rc2
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/gorilla/mux v1.8.0
