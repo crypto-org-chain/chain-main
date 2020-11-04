@@ -1,0 +1,17 @@
+# /etc/systemd/system/chain-maind.service
+[Unit]
+Description=Chain-maind
+ConditionPathExists=<CHAIN_MAIND_BINARY>
+After=network.target
+
+[Service]
+Type=simple
+User=<CHAIN_MAIND_USER>
+WorkingDirectory=<CHAIN_MAIND_BINARY_DIR>
+ExecStart=<CHAIN_MAIND_BINARY> start --home <CHAIN_MAIND_USER_HOME>/.chain-maind
+Restart=on-failure
+RestartSec=10
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target
