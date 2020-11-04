@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, commit ? "" }:
+{ pkgs ? import <nixpkgs> { }, commit ? "", network ? "mainnet" }:
 with pkgs;
 let
   src_regexes = [
@@ -28,6 +28,7 @@ buildGoModule rec {
   subPackages = [ "cmd/chain-maind" ];
   vendorSha256 = sha256:0jldi7scw1k114sxpqyh3ljc9qbrp4sax2bcg8v13bya4ji8m7qh;
   outputs = [ "out" "instrumented" ];
+  buildFlags = lib.optionalString (network == "testnet") "-tags testnet";
   buildFlagsArray = ''
     -ldflags=
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain
