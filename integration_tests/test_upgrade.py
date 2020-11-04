@@ -1,4 +1,5 @@
 import configparser
+import functools
 import json
 import re
 import subprocess
@@ -19,6 +20,10 @@ from .utils import (
     wait_for_port,
 )
 
+# change this if you want to test against different versions
+GENESIS_VERSION = "v0"
+UPGRADE_TARGET = "v1"
+
 
 def edit_chain_program(ini_path, callback):
     # edit node process config in supervisor
@@ -35,7 +40,7 @@ def edit_chain_program(ini_path, callback):
         ini.write(fp)
 
 
-def post_init(config, data):
+def post_init(config, data, package):
     """
     change to use cosmovisor
     """
@@ -45,16 +50,8 @@ def post_init(config, data):
         home = data / f"node{i}"
         cosmovisor = home / "cosmovisor"
         cosmovisor.mkdir()
-        subprocess.run(
-            [
-                "nix-build",
-                Path(__file__).parent / "upgrade-test.nix",
-                "-o",
-                cosmovisor / "upgrades",
-            ],
-            check=True,
-        )
-        (cosmovisor / "genesis").symlink_to("./upgrades/genesis")
+        (cosmovisor / "upgrades").symlink_to(package)
+        (cosmovisor / "genesis").symlink_to(f"./upgrades/{GENESIS_VERSION}")
         return {
             "command": f"cosmovisor start --home %(here)s/node{i}",
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
@@ -67,13 +64,27 @@ def post_init(config, data):
 @pytest.fixture(scope="function")
 def cosmovisor_cluster(pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
+    package = Path(
+        subprocess.check_output(
+            [
+                "nix-build",
+                Path(__file__).parent.parent / "default.nix",
+                "-A",
+                "testnet-package",
+                "-Q",
+            ],
+        )
+        .decode()
+        .strip()
+    )
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/default.yaml",
+        Path(__file__).parent / "configs/testnet.yaml",
         26900,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
-        post_init=post_init,
+        post_init=functools.partial(post_init, package=package),
         enable_cov=False,
+        cmd=package / f"{GENESIS_VERSION}/bin/chain-maind",
     )
 
 
@@ -88,16 +99,15 @@ def test_cosmovisor(cosmovisor_cluster):
     height = cluster.block_height()
     target_height = height + 15
     print("upgrade height", target_height)
-    plan_name = "upgrade-test"
     rsp = cluster.gov_propose(
         "community",
         "software-upgrade",
         {
-            "name": plan_name,
+            "name": UPGRADE_TARGET,
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-height": target_height,
-            "deposit": "10000000basecro",
+            "deposit": "10000000basetcro",
         },
     )
     assert rsp["code"] == 0, rsp
@@ -173,16 +183,15 @@ def test_manual_upgrade(cosmovisor_cluster):
     target_height = cluster.block_height() + 15
     print("upgrade height", target_height)
 
-    plan_name = "upgrade-test"
     propose_and_pass(
         cluster,
         "software-upgrade",
         {
-            "name": plan_name,
+            "name": UPGRADE_TARGET,
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-height": target_height,
-            "deposit": "10000000basecro",
+            "deposit": "10000000basetcro",
         },
     )
 
@@ -200,18 +209,18 @@ def test_manual_upgrade(cosmovisor_cluster):
         json.load((cluster.home(0) / "data/upgrade-info.json").open())
         == json.load((cluster.home(1) / "data/upgrade-info.json").open())
         == {
-            "name": plan_name,
+            "name": UPGRADE_TARGET,
             "height": target_height,
         }
     )
 
-    # use the upgrade-test binary
+    # use the target version
     edit_chain_program(
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/upgrade-test/bin/chain-maind "
-                f"start --home %(here)s/node{i}"
+                f"%(here)s/node{i}/cosmovisor/upgrades/{UPGRADE_TARGET}/bin/chain-maind"
+                f" start --home %(here)s/node{i}"
             )
         },
     )
@@ -228,7 +237,6 @@ def test_cancel_upgrade(cluster):
     - propose upgrade and pass it
     - cancel the upgrade before execution
     """
-    plan_name = "upgrade-test"
     # 25 = voting_period * 2 + 5
     upgrade_time = datetime.utcnow() + timedelta(seconds=25)
     print("propose upgrade plan")
@@ -237,11 +245,11 @@ def test_cancel_upgrade(cluster):
         cluster,
         "software-upgrade",
         {
-            "name": plan_name,
+            "name": UPGRADE_TARGET,
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-time": upgrade_time.replace(tzinfo=None).isoformat("T") + "Z",
-            "deposit": "10000000basecro",
+            "deposit": "10000000basetcro",
         },
     )
 
@@ -252,7 +260,7 @@ def test_cancel_upgrade(cluster):
         {
             "title": "there's bug, cancel upgrade",
             "description": "there's bug, cancel upgrade",
-            "deposit": "10000000basecro",
+            "deposit": "10000000basetcro",
         },
     )
 

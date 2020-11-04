@@ -67,13 +67,14 @@ def cluster_fixture(
     quiet=False,
     post_init=None,
     enable_cov=None,
+    cmd=None,
 ):
     if enable_cov is None:
         enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
     config = yaml.safe_load(open(config_path))
     data = tmp_path_factory.mktemp(config["chain_id"])
     print("init cluster at", data, ", base port:", base_port)
-    cluster.init_cluster(data, config, base_port)
+    cluster.init_cluster(data, config, base_port, cmd=cmd)
 
     if post_init:
         post_init(config, data)
@@ -98,7 +99,7 @@ def cluster_fixture(
         tailer.start()
     # wait for first node rpc port available before start testing
     wait_for_port(rpc_port(config["validators"][0]["base_port"]))
-    cli = cluster.ClusterCLI(data)
+    cli = cluster.ClusterCLI(data, cmd=cmd)
     # wait for first block generated before start testing
     wait_for_block(cli, 1)
 

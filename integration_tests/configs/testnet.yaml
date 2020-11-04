@@ -1,0 +1,27 @@
+chain_id: testnet
+validators:
+  - coins: 10tcro
+    staked: 10tcro
+  - coins: 10tcro
+    staked: 10tcro
+accounts:
+  - name: community
+    coins: 100tcro
+  - name: ecosystem
+    coins: 200tcro
+  - name: reserve
+    coins: 200tcro
+    vesting: "60s"
+genesis:
+  app_state:
+    staking:
+      params:
+        unbonding_time: "10s"
+    gov:
+      voting_params:
+        voting_period: "10s"
+      deposit_params:
+        max_deposit_period: "10s"
+        min_deposit:
+          - denom: "basetcro"
+            amount: "10000000"

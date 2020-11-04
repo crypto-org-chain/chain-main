@@ -17,9 +17,10 @@ let
     "^go.sum$"
   ];
   lib = pkgs.lib;
+  fetchSrc = ref: builtins.fetchTarball "https://github.com/crypto-com/chain-main/archive/${ref}.tar.gz";
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
     pname = "chain-maind";
-    version = "0.0.1";
+    version = "0.7.0";
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
@@ -102,4 +103,22 @@ rec {
       export PYTHONPATH=$PWD/pystarport:$PYTHONPATH
     '';
   };
+
+  testnet-package = pkgs.linkFarm "testnet-package" [
+    {
+      name = "v0";
+      path = import (fetchSrc "f08883ba9a50e96e94310f9164ecb8efd5b6ae1e") {
+        pkgs = import
+          (fetchTarball
+            "https://github.com/NixOS/nixpkgs-channels/archive/84d74ae9c9cbed73274b8e4e00be14688ffc93fe.tar.gz")
+          { };
+        network = "testnet";
+      };
+    }
+    {
+      name = "v1";
+      path = chain-maind-testnet;
+    }
+  ];
+
 }

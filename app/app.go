@@ -354,6 +354,8 @@ func New(
 		}
 	}
 
+	app.UpgradeKeeper.SetUpgradeHandler("v1", func(_ sdk.Context, _ upgradetypes.Plan) {
+	})
 	return app
 }
 
