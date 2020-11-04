@@ -16,12 +16,13 @@ let
     "^go.mod$"
     "^go.sum$"
   ];
-  build-chain-maind = ledger_zemu: pkgs.buildGoModule rec {
+  lib = pkgs.lib;
+  build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
     pname = "chain-maind";
     version = "0.0.1";
-    src = pkgs.lib.cleanSourceWith {
+    src = lib.cleanSourceWith {
       name = "src";
-      src = pkgs.lib.sourceByRegex ./. src_regexes;
+      src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
     vendorSha256 = sha256:13mw1sfdba81hk5sk5fnavpnsa6d2y2ljcrslms133v88mp221yw;
@@ -31,7 +32,8 @@ let
       "instrumented"
     ];
     buildTags = "cgo,ledger,!test_ledger_mock,!ledger_mock," +
-      (if ledger_zemu then "ledger_zemu" else "!ledger_zemu");
+      (if ledger_zemu then "ledger_zemu" else "!ledger_zemu") +
+      (lib.optionalString (network == "testnet") ",testnet");
     buildFlags = "-tags ${buildTags}";
     buildFlagsArray = ''
       -ldflags=
@@ -58,11 +60,13 @@ let
   };
 in
 rec {
-  chain-maind = build-chain-maind false;
+  chain-maind = build-chain-maind { };
   pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
 
+  chain-maind-testnet = build-chain-maind { network = "testnet"; };
+
   # for testing and dev
-  chain-maind-zemu = build-chain-maind true;
+  chain-maind-zemu = build-chain-maind { ledger_zemu = true; };
   pystarport-unbind = import ./pystarport { inherit pkgs; };
 
   lint-shell = pkgs.mkShell {
