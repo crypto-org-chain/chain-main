@@ -15,6 +15,7 @@ durations = "^0.3.3"
 supervisor = "^4.2.1"
 docker = "^4.3.1"
 bech32 = "^1.2.0"
+multitail2 = "^1.5.2"
 
 [tool.poetry.dev-dependencies]
 

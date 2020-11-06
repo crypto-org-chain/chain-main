@@ -13,11 +13,13 @@ import threading
 import time
 import uuid
 from pathlib import Path
+from typing import List
 
 import bech32
 import docker
 import durations
 import jsonmerge
+import multitail2
 import tomlkit
 import yaml
 from dateutil.parser import isoparse
@@ -37,8 +39,6 @@ IMAGE = "docker.pkg.github.com/crypto-com/chain-main/chain-main-pystarport:lates
 
 COMMON_PROG_OPTIONS = {
     # redirect to supervisord's stdout, easier to collect all logs
-    "stdout_logfile": "/dev/fd/1",
-    "stdout_logfile_maxbytes": "0",
     "autostart": "true",
     "autorestart": "true",
     "redirect_stderr": "true",
@@ -264,6 +264,7 @@ class ClusterCLI:
                 COMMON_PROG_OPTIONS,
                 command=f"{self.raw.cmd} start --home %(here)s/node{i}",
                 autostart="false",
+                stdout_logfile=f"%(here)s/node{i}.log",
             )
         )
         with path.open("w") as fp:
@@ -882,20 +883,36 @@ class ClusterCLI:
         )
 
 
-def start_cluster(data_dir, quiet=False):
+def start_cluster(data_dir):
     cmd = [
         sys.executable,
         "-msupervisor.supervisord",
         "-c",
         data_dir / SUPERVISOR_CONFIG_FILE,
     ]
-    env = dict(os.environ, PYTHONPATH=":".join(sys.path))
-    if quiet:
-        return subprocess.Popen(
-            cmd, stdout=(data_dir / "supervisord.log").open("w"), env=env
-        )
-    else:
-        return subprocess.Popen(cmd, env=env)
+    return subprocess.Popen(cmd, env=dict(os.environ, PYTHONPATH=":".join(sys.path)))
+
+
+class TailLogsThread(threading.Thread):
+    def __init__(self, pats: List[str]):
+        self.tailer = multitail2.MultiTail(pats)
+        self._stop_event = threading.Event()
+        super().__init__()
+
+    def run(self):
+        while not self.stopped:
+            for (path, _), s in self.tailer.poll():
+                print(Path(path).stem, s)
+
+            # TODO Replace this with FAM/inotify for watching filesystem events.
+            time.sleep(0.5)
+
+    def stop(self):
+        self._stop_event.set()
+
+    @property
+    def stopped(self):
+        return self._stop_event.is_set()
 
 
 def process_config(config, base_port):
@@ -1059,6 +1076,7 @@ def supervisord_ini(cmd, validators):
         ini[f"program:node{i}"] = dict(
             COMMON_PROG_OPTIONS,
             command=f"{cmd} start --home %(here)s/node{i}",
+            stdout_logfile=f"%(here)s/node{i}.log",
         )
     return ini
 
@@ -1108,4 +1126,8 @@ if __name__ == "__main__":
     data_dir = Path("data")
     init_cluster(data_dir, yaml.safe_load(open("config.yaml")), 26650)
     supervisord = start_cluster(data_dir)
+    t = TailLogsThread([str(data_dir / "node*.log")])
+    t.start()
     supervisord.wait()
+    t.stop()
+    t.join()

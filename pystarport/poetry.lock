@@ -137,6 +137,17 @@ version = "*"
 python = "<3.8"
 
 [[package]]
+name = "multitail2"
+version = "1.5.2"
+description = "Enables following multiple files for new lines at once, automatically handling file creation/deletion/rotation"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+six = "*"
+
+[[package]]
 name = "pyrsistent"
 version = "0.17.3"
 description = "Persistent/Functional/Immutable data structures"
@@ -265,7 +276,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.0"
 python-versions = "^3.7"
-content-hash = "40834016aaa9a05e2fb2f97c38ab322cf7916360e7e3192447aedd1bc3ccb75b"
+content-hash = "5b50cd888f5920a28b69ddf4fdc03ef71bba02431a9f2cd46df71db6c135a441"
 
 [metadata.files]
 attrs = [
@@ -306,6 +317,9 @@ jsonmerge = [
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
+]
+multitail2 = [
+    {file = "multitail2-1.5.2.tar.gz", hash = "sha256:7086598c1cd1901ec79ce3c1eda9420299e3778f6c18464958c1f74ffd1950c9"},
 ]
 pyrsistent = [
     {file = "pyrsistent-0.17.3.tar.gz", hash = "sha256:2e636185d9eb976a18a8a8e96efce62f2905fea90041958d8cc2a189756ebf3e"},

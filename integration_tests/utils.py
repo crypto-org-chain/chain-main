@@ -92,7 +92,10 @@ def cluster_fixture(
         )
         begin = time.time()
 
-    supervisord = cluster.start_cluster(data, quiet=quiet)
+    supervisord = cluster.start_cluster(data)
+    if not quiet:
+        tailer = cluster.TailLogsThread([str(data / "node*.log")])
+        tailer.start()
     # wait for first node rpc port available before start testing
     wait_for_port(rpc_port(config["validators"][0]["base_port"]))
     cli = cluster.ClusterCLI(data)
@@ -109,6 +112,10 @@ def cluster_fixture(
 
     supervisord.terminate()
     supervisord.wait()
+
+    if not quiet:
+        tailer.stop()
+        tailer.join()
 
     if enable_cov:
         # collect the coverage results

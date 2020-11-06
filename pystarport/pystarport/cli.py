@@ -11,6 +11,7 @@ from .cluster import (
     IMAGE,
     SUPERVISOR_CONFIG_FILE,
     ClusterCLI,
+    TailLogsThread,
     init_cluster,
     start_cluster,
 )
@@ -26,13 +27,21 @@ def init(data, config, *args, **kwargs):
 
 
 def start(data, quiet):
-    supervisord = start_cluster(data, quiet=quiet)
+    supervisord = start_cluster(data)
 
     # register signal to quit supervisord
     for signame in ("SIGINT", "SIGTERM"):
         signal.signal(getattr(signal, signame), lambda *args: supervisord.terminate())
 
+    if not quiet:
+        tailer = TailLogsThread([str(data / "node*.log")])
+        tailer.start()
+
     supervisord.wait()
+
+    if not quiet:
+        tailer.stop()
+        tailer.join()
 
 
 def serve(data, config, base_port, cmd, quiet):
