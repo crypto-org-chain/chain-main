@@ -1,3 +1,8 @@
+import time
+
+from .utils import wait_for_block
+
+
 def test_simple(cluster):
     """
     - check number of validators
@@ -54,3 +59,20 @@ def test_transfer(cluster):
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
+
+
+def test_statesync(cluster):
+    """
+    - create a new node with statesync enabled
+    - check it works
+    """
+    # wait the first snapshot to be created
+    wait_for_block(cluster, 5)
+
+    # add a statesync node
+    i = cluster.create_node(moniker="statesync", statesync=True)
+    cluster.supervisor.startProcess(f"node{i}")
+
+    # discovery_time is set to 5 seconds, add an extra second to process
+    time.sleep(5 + 1)
+    assert cluster.block_height(i=i) >= 5, "syncing"

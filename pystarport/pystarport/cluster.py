@@ -209,7 +209,9 @@ class ClusterCLI:
             [p for p in self.data_dir.iterdir() if re.match(r"^node\d+$", p.name)]
         )
 
-    def create_node(self, base_port=None, moniker=None, hostname="localhost"):
+    def create_node(
+        self, base_port=None, moniker=None, hostname="localhost", statesync=False
+    ):
         """create new node in the data directory,
         process information is written into supervisor config
         start it manually with supervisor commands
@@ -243,10 +245,26 @@ class ClusterCLI:
         (home / "config/genesis.json").symlink_to("../../genesis.json")
         # use p2p peers from node0's config
         node0 = tomlkit.parse((self.data_dir / "node0/config/config.toml").read_text())
+
+        def custom_edit_tm(doc):
+            if statesync:
+                info = self.status()["sync_info"]
+                doc["statesync"].update(
+                    {
+                        "enable": True,
+                        "rpc_servers": ",".join(self.node_rpc(i) for i in range(2)),
+                        "trust_height": int(info["earliest_block_height"]),
+                        "trust_hash": info["earliest_block_hash"],
+                        "temp_dir": str(self.data_dir),
+                        "discovery_time": "5s",
+                    }
+                )
+
         edit_tm_cfg(
             home / "config/config.toml",
             base_port,
             node0["p2p"]["persistent_peers"],
+            custom_edit=custom_edit_tm,
         )
         edit_app_cfg(home / "config/app.toml", base_port)
 
@@ -1095,7 +1113,7 @@ def docker_compose_yml(cmd, validators, data_dir, image):
     }
 
 
-def edit_tm_cfg(path, base_port, peers):
+def edit_tm_cfg(path, base_port, peers, *, custom_edit=None):
     doc = tomlkit.parse(open(path).read())
     # tendermint is start in process, not needed
     # doc['proxy_app'] = 'tcp://127.0.0.1:%d' % abci_port(base_port)
@@ -1107,6 +1125,8 @@ def edit_tm_cfg(path, base_port, peers):
     doc["p2p"]["allow_duplicate_ip"] = True
     doc["consensus"]["timeout_commit"] = "1s"
     doc["rpc"]["timeout_broadcast_tx_commit"] = "30s"
+    if custom_edit is not None:
+        custom_edit(doc)
     open(path, "w").write(tomlkit.dumps(doc))
 
 
@@ -1118,6 +1138,13 @@ def edit_app_cfg(path, base_port):
     doc["api"]["enabled-unsafe-cors"] = True
     doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port)
     doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port)
+    # take snapshot for statesync
+    doc["pruning"] = "custom"
+    doc["pruning-keep-recent"] = "3"
+    doc["pruning-keep-every"] = "5"
+    doc["pruning-interval"] = "2"
+    doc["state-sync"]["snapshot-interval"] = 5
+    doc["state-sync"]["snapshot-keep-recent"] = 10
     open(path, "w").write(tomlkit.dumps(doc))
 
 
