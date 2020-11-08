@@ -144,11 +144,13 @@ clean-docker-compose: localnet-stop
 create-systemd:
 	./networks/create-service.sh
 
+make-proto:
+	./makeproto.sh
 ###############################################################################
 ###                                Nix                                      ###
 ###############################################################################
 # nix installation: https://nixos.org/download.html
-nix-integration-test: check-network
+nix-integration-test: check-network make-proto
 	nix-shell ./. -A ci-shell --run "pytest -v -n 7 -m 'not ledger' --dist loadscope"
 	nix-shell ./. -A ci-shell --run "pytest -v -m ledger"
 
