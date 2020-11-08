@@ -303,6 +303,16 @@ class ClusterCLI:
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port(i))
 
+    # for query
+    def ipport_grpc(self, i):
+        "grpc url of i-th node"
+        return "127.0.0.1:%d" % ports.grpc_port(self.base_port(i))
+
+    # tx broadcast only
+    def ipport_grpc_tx(self, i):
+        "grpc url of i-th node"
+        return "127.0.0.1:%d" % ports.grpc_port_tx_only(self.base_port(i))
+
     def node_id(self, i):
         "get i-th node's tendermint node id"
         output = self.raw("tendermint", "show-node-id", home=self.home(i))
@@ -638,6 +648,27 @@ class ClusterCLI:
                 tx_file,
                 from_=signer_name,
                 multisig=multi_addr,
+                home=self.home(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc(0),
+            )
+        )
+
+    def encode_signed_tx(self, signed_tx):
+        return self.raw(
+            "tx",
+            "encode",
+            signed_tx,
+        )
+
+    def sign_single_tx(self, tx_file, signer_name, i=0):
+        return json.loads(
+            self.raw(
+                "tx",
+                "sign",
+                tx_file,
+                from_=signer_name,
                 home=self.home(i),
                 keyring_backend="test",
                 chain_id=self.chain_id,
@@ -1119,6 +1150,7 @@ def edit_tm_cfg(path, base_port, peers, *, custom_edit=None):
     # doc['proxy_app'] = 'tcp://127.0.0.1:%d' % abci_port(base_port)
     doc["rpc"]["laddr"] = "tcp://0.0.0.0:%d" % ports.rpc_port(base_port)
     doc["rpc"]["pprof_laddr"] = "localhost:%d" % ports.pprof_port(base_port)
+    doc["rpc"]["grpc_laddr"] = "tcp://0.0.0.0:%d" % ports.grpc_port_tx_only(base_port)
     doc["p2p"]["laddr"] = "tcp://0.0.0.0:%d" % ports.p2p_port(base_port)
     doc["p2p"]["persistent_peers"] = peers
     doc["p2p"]["addr_book_strict"] = False
