@@ -60,6 +60,7 @@ let
   };
 in
 rec {
+  proto_python = import ./pystarport/pystarport {inherit pkgs;};
   chain-maind = build-chain-maind { };
   pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
 
@@ -80,6 +81,7 @@ rec {
   ci-shell = pkgs.mkShell {
     inputsFrom = [ lint-shell ];
     buildInputs = with pkgs; [
+      proto_python
       chain-maind-zemu.instrumented
       (import ./pystarport { inherit pkgs; chaind = "${chain-maind-zemu}/bin/chain-maind"; })
       cosmovisor
@@ -91,6 +93,7 @@ rec {
   dev-shell = pkgs.mkShell {
     inputsFrom = [ lint-shell ];
     buildInputs = with pkgs; [
+      proto_python
       go
       python3Packages.poetry
       pystarport-unbind

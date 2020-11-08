@@ -1,28 +1,13 @@
-{pkgs ? import <nixpkgs> {}, commit ? ""}:                                                                           
-
-{
-	ci-shell=pkgs.mkShell {                                                                                             
-  buildInputs = [                                                                                     
+{pkgs ? import <nixpkgs> {} }:                                                                           
+with pkgs;
+pkgs.mkShell {                                                                                             
+buildInputs = [                                                                                     
         python38                                                                                      
         protobuf3_13                                                                                  
         grpc                                                                                          
         git                                                                                           
-  ];                                                                                                  
-  shellHook= ''                                                                                       
+];                                                                                                  
+shellHook= ''                                                                                       
   ./convert.sh                                                                                          '';                                                                                                 
-  };
-
-   dev-shell=pkgs.mkShell {                                                                                             
-   buildInputs = [                                                                                     
-        python38                                                                                      
-        protobuf3_13                                                                                  
-        grpc                                                                                          
-        git                                                                                           
-  ];                                                                                                  
-  shellHook= ''                                                                                       
-  ./convert.sh                                                                                          '';                                                                                                 
-};                                                                                                    
-                                                                                                     
-
 }
 
