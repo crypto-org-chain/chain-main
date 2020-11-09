@@ -1,4 +1,4 @@
-{ pkgs ? import ./nix { }, commit ? "" }:
+{ system ? builtins.currentSystem, pkgs ? import ./nix { inherit system; }, commit ? "" }:
 let
   src_regexes = [
     "^x$"
@@ -25,7 +25,7 @@ let
       src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:1sc3hy9qcnv0wawf4cbrx35mrym6l1wm8xacdavz3qrc6xyh0mji;
+    vendorSha256 = sha256:0ivzdzn1kwzaa0zafmilf1pwqc5fb4rh7km5h3hv86r83gi4vflc;
     runVend = true;
     outputs = [
       "out"
@@ -60,6 +60,8 @@ let
   };
 in
 rec {
+  inherit (pkgs) relayer cosmovisor;
+
   chain-maind = build-chain-maind { };
   pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
 
@@ -75,6 +77,10 @@ rec {
       nixpkgs-fmt
     ];
   };
+  common-env = [
+    cosmovisor
+    relayer
+  ];
 
   # test in ci-shell will build chain-maind with nix automatically
   ci-shell = pkgs.mkShell {
@@ -82,9 +88,7 @@ rec {
     buildInputs = with pkgs; [
       chain-maind-zemu.instrumented
       (import ./pystarport { inherit pkgs; chaind = "${chain-maind-zemu}/bin/chain-maind"; })
-      cosmovisor
-    ];
-
+    ] ++ common-env;
   };
 
   # test in dev-shell will use the chain-maind in PATH
@@ -94,8 +98,7 @@ rec {
       go
       python3Packages.poetry
       pystarport-unbind
-      cosmovisor
-    ];
+    ] ++ common-env;
 
     shellHook = ''
       # prefer local pystarport directory for development

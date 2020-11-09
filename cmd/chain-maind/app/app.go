@@ -136,6 +136,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 						},
 					},
 				},
+				"transfer": map[string]interface{}{
+					"params": map[string]bool{
+						"send_enabled":    false,
+						"receive_enabled": false,
+					},
+				},
 			},
 		}
 

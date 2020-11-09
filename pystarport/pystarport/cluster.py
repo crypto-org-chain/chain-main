@@ -54,6 +54,7 @@ class ModuleAccount(enum.Enum):
     Distribution = "distribution"
     BondedPool = "bonded_tokens_pool"
     NotBondedPool = "not_bonded_tokens_pool"
+    IBCTransfer = "transfer"
 
 
 def home_dir(data_dir, i):
@@ -166,15 +167,16 @@ class ClusterCLI:
 
     def __init__(
         self,
-        data_dir,
+        data,
+        chain_id,
         cmd=None,
         zemu_address=ZEMU_HOST,
         zemu_button_port=ZEMU_BUTTON_PORT,
     ):
-        self.data_dir = data_dir
-        self._genesis = json.load(open(data_dir / "genesis.json"))
-        self.config = json.load((data_dir / "config.json").open())
-        self.chain_id = self._genesis["chain_id"]
+        self.data_root = data
+        self.chain_id = chain_id
+        self.data_dir = data / chain_id
+        self.config = json.load((self.data_dir / "config.json").open())
         self.raw = ChainCommand(cmd)
         self._supervisorctl = None
         self.leger_button = LedgerButton(zemu_address, zemu_button_port)
@@ -194,14 +196,22 @@ class ClusterCLI:
                 # 'serverurl' to figure out what to attach to
                 "http://127.0.0.1",
                 transport=xmlrpc.SupervisorTransport(
-                    serverurl=f"unix://{self.data_dir}/supervisor.sock"
+                    serverurl=f"unix://{self.data_root}/supervisor.sock"
                 ),
             )
         return self._supervisorctl.supervisor
 
-    def restart_supervisor(self):
-        self.supervisor.restart()
-        self._supervisorctl = None
+    def reload_supervisor(self):
+        subprocess.run(
+            [
+                sys.executable,
+                "-msupervisor.supervisorctl",
+                "-c",
+                self.data_root / SUPERVISOR_CONFIG_FILE,
+                "update",
+            ],
+            check=True,
+        )
 
     def nodes_len(self):
         "find how many 'node{i}' sub-directories"
@@ -236,7 +246,7 @@ class ClusterCLI:
                 "moniker": moniker,
             }
         )
-        json.dump(self.config, (self.data_dir / "config.json").open("w"))
+        (self.data_dir / "config.json").write_text(json.dumps(self.config))
 
         # init home directory
         self.init(i)
@@ -275,7 +285,9 @@ class ClusterCLI:
         path = self.data_dir / SUPERVISOR_CONFIG_FILE
         ini = configparser.RawConfigParser()
         ini.read_file(path.open())
-        section = f"program:node{i}"
+        chain_id = self.config["chain_id"]
+        prgname = f"{chain_id}-node{i}"
+        section = f"program:{prgname}"
         ini.add_section(section)
         ini[section].update(
             dict(
@@ -287,9 +299,7 @@ class ClusterCLI:
         )
         with path.open("w") as fp:
             ini.write(fp)
-        (added, _, _) = self.supervisor.reloadConfig()[0]
-        assert f"node{i}" in added
-        self.supervisor.addProcessGroup(f"node{i}")
+        self.reload_supervisor()
         return i
 
     def home(self, i):
@@ -950,15 +960,16 @@ def start_cluster(data_dir):
 
 
 class TailLogsThread(threading.Thread):
-    def __init__(self, pats: List[str]):
-        self.tailer = multitail2.MultiTail(pats)
+    def __init__(self, base_dir, pats: List[str]):
+        self.base_dir = base_dir
+        self.tailer = multitail2.MultiTail([str(base_dir / pat) for pat in pats])
         self._stop_event = threading.Event()
         super().__init__()
 
     def run(self):
         while not self.stopped:
             for (path, _), s in self.tailer.poll():
-                print(Path(path).stem, s)
+                print(Path(path).relative_to(self.base_dir), s)
 
             # TODO Replace this with FAM/inotify for watching filesystem events.
             time.sleep(0.5)
@@ -984,7 +995,7 @@ def process_config(config, base_port):
             val["hostname"] = "localhost"
 
 
-def init_cluster(
+def init_devnet(
     data_dir,
     config,
     base_port,
@@ -1001,7 +1012,6 @@ def init_cluster(
             acct = cli.create_account_ledger(account["name"])
         else:
             acct = cli.create_account(account["name"])
-        print(acct)
         vesting = account.get("vesting")
         if not vesting:
             cli.add_genesis_account(acct["address"], account["coins"])
@@ -1020,7 +1030,8 @@ def init_cluster(
         return acct
 
     process_config(config, base_port)
-    json.dump(config, (data_dir / "config.json").open("w"))
+
+    (data_dir / "config.json").write_text(json.dumps(config))
 
     cmd = cmd or CHAIN
 
@@ -1043,21 +1054,20 @@ def init_cluster(
         (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
 
     # now we can create ClusterCLI
-    cli = ClusterCLI(data_dir, cmd)
+    cli = ClusterCLI(data_dir.parent, config["chain_id"], cmd)
 
     # patch the genesis file
     genesis = jsonmerge.merge(
         json.load(open(data_dir / "genesis.json")),
         config.get("genesis", {}),
     )
-    json.dump(genesis, open(data_dir / "genesis.json", "w"))
+    (data_dir / "genesis.json").write_text(json.dumps(genesis))
     cli.validate_genesis()
 
     # create accounts
     accounts = []
     for i, node in enumerate(config["validators"]):
         account = cli.create_account("validator", i)
-        print(account)
         accounts.append(account)
         cli.add_genesis_account(account["address"], node["coins"], i)
         cli.gentx("validator", node["staked"], i)
@@ -1073,9 +1083,7 @@ def init_cluster(
         accounts.append(account)
 
     # output accounts
-    (data_dir / "accounts.txt").write_text(
-        "\n".join(str(account) for account in accounts)
-    )
+    (data_dir / "accounts.json").write_text(json.dumps(accounts))
 
     # collect-gentxs
     cli.collect_gentxs(data_dir / "gentx", i)
@@ -1101,10 +1109,8 @@ def init_cluster(
         edit_app_cfg(data_dir / f"node{i}/config/app.toml", val["base_port"])
 
     # write supervisord config file
-    write_ini(
-        (data_dir / SUPERVISOR_CONFIG_FILE).open("w"),
-        supervisord_ini(cmd, config["validators"]),
-    )
+    with (data_dir / SUPERVISOR_CONFIG_FILE).open("w") as fp:
+        write_ini(fp, supervisord_ini(cmd, config["validators"], config["chain_id"]))
 
     if gen_compose_file:
         yaml.dump(
@@ -1113,8 +1119,92 @@ def init_cluster(
         )
 
 
-def supervisord_ini(cmd, validators):
-    ini = {
+def relayer_chain_config(data_dir, chain_id):
+    cfg = json.load((data_dir / chain_id / "config.json").open())
+    rpc_port = ports.rpc_port(cfg["validators"][0]["base_port"])
+    return {
+        "key": "relayer",
+        "chain-id": chain_id,
+        # rpc address of first node
+        "rpc-addr": f"http://localhost:{rpc_port}",
+        "account-prefix": "cro",
+        "gas-adjustment": 1.5,
+        "gas-prices": "0.0basecro",
+        "trusting-period": "336h",
+    }
+
+
+def init_cluster(
+    data_dir, config, base_port, image=IMAGE, cmd=None, gen_compose_file=False
+):
+    # override relayer config in config.yaml
+    rly_section = config.pop("relayer", None)
+    for chain_id, cfg in config.items():
+        cfg["chain_id"] = chain_id
+
+    chains = list(config.values())
+    for chain in chains:
+        (data_dir / chain["chain_id"]).mkdir()
+        init_devnet(
+            data_dir / chain["chain_id"], chain, base_port, image, cmd, gen_compose_file
+        )
+    with (data_dir / SUPERVISOR_CONFIG_FILE).open("w") as fp:
+        write_ini(fp, supervisord_ini_group(config.keys()))
+    if len(chains) > 1:
+        # write relayer config
+        rly_home = data_dir / "relayer"
+        rly_home.mkdir()
+        rly_cfg = rly_home / "config/config.yaml"
+        rly_cfg.parent.mkdir()
+        rly_section["chains"] = [
+            relayer_chain_config(data_dir, chain_id) for chain_id in config
+        ]
+        with rly_cfg.open("w") as fp:
+            yaml.dump(rly_section, fp)
+
+        # restore the relayer account in relayer
+        for chain in chains:
+            mnemonic = find_account(data_dir, chain["chain_id"], "relayer")["mnemonic"]
+            subprocess.run(
+                [
+                    "relayer",
+                    "--home",
+                    rly_home,
+                    "keys",
+                    "restore",
+                    chain["chain_id"],
+                    "relayer",
+                    mnemonic,
+                    "--coin-type",
+                    "394",  # mainnet cro
+                ],
+                check=True,
+            )
+
+
+def find_account(data_dir, chain_id, name):
+    accounts = json.load((data_dir / chain_id / "accounts.json").open())
+    return next(acct for acct in accounts if acct["name"] == name)
+
+
+def supervisord_ini(cmd, validators, chain_id):
+    ini = {}
+    for i, node in enumerate(validators):
+        ini[f"program:{chain_id}-node{i}"] = dict(
+            COMMON_PROG_OPTIONS,
+            command=f"{cmd} start --home %(here)s/node{i}",
+            stdout_logfile=f"%(here)s/node{i}.log",
+        )
+    return ini
+
+
+def supervisord_ini_group(chain_ids):
+    return {
+        "include": {
+            "files": " ".join(
+                f"%(here)s/{chain_id}/tasks.ini" for chain_id in chain_ids
+            )
+        },
         "supervisord": {
             "pidfile": "%(here)s/supervisord.pid",
             "nodaemon": "true",
@@ -1128,13 +1218,6 @@ def supervisord_ini(cmd, validators):
         "unix_http_server": {"file": "%(here)s/supervisor.sock"},
         "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
     }
-    for i, node in enumerate(validators):
-        ini[f"program:node{i}"] = dict(
-            COMMON_PROG_OPTIONS,
-            command=f"{cmd} start --home %(here)s/node{i}",
-            stdout_logfile=f"%(here)s/node{i}.log",
-        )
-    return ini
 
 
 def docker_compose_yml(cmd, validators, data_dir, image):
@@ -1178,10 +1261,7 @@ def edit_app_cfg(path, base_port):
     doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port)
     doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port)
     # take snapshot for statesync
-    doc["pruning"] = "custom"
-    doc["pruning-keep-recent"] = "3"
-    doc["pruning-keep-every"] = "5"
-    doc["pruning-interval"] = "2"
+    doc["pruning"] = "nothing"
     doc["state-sync"]["snapshot-interval"] = 5
     doc["state-sync"]["snapshot-keep-recent"] = 10
     open(path, "w").write(tomlkit.dumps(doc))
@@ -1192,7 +1272,7 @@ if __name__ == "__main__":
     data_dir = Path("data")
     init_cluster(data_dir, yaml.safe_load(open("config.yaml")), 26650)
     supervisord = start_cluster(data_dir)
-    t = TailLogsThread([str(data_dir / "node*.log")])
+    t = TailLogsThread(data_dir, ["*/node*.log"])
     t.start()
     supervisord.wait()
     t.stop()

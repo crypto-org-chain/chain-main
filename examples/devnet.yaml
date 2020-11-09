@@ -1,9 +1,13 @@
-chaintest:
+chainmaind:
   validators:
     - coins: 10cro
       staked: 10cro
+      moniker: awesome0  # optional, default to node{i}
+      hostname: localhost    # optional, default to localhost
+      base_port: 26650   # optional, default to BASE_PROT + i * 10
     - coins: 10cro
       staked: 10cro
+      moniker: awesome1
   accounts:
     - name: community
       coins: 100cro
@@ -11,23 +15,11 @@ chaintest:
       coins: 200cro
     - name: reserve
       coins: 200cro
-      vesting: "60s"
+      vesting: "1d"
     - name: launch
       coins: 100cro
-    - name: signer1
-      coins: 10000cro
-    - name: signer2
-      coins: 2000cro
   genesis:
     app_state:
       staking:
         params:
           unbonding_time: "10s"
-      gov:
-        voting_params:
-          voting_period: "10s"
-        deposit_params:
-          max_deposit_period: "10s"
-          min_deposit:
-            - denom: "basecro"
-              amount: "10000000"

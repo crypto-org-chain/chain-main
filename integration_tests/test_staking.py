@@ -89,7 +89,7 @@ def test_join_validator(cluster):
     assert cluster.balance(addr) == 10 ** 8
 
     # start the node
-    cluster.supervisor.startProcess(f"node{i}")
+    cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
     wait_for_port(rpc_port(cluster.base_port(i)))
 
     count1 = len(cluster.validators())

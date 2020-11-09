@@ -1,0 +1,58 @@
+ibc-0:
+  validators:
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26650
+    - coins: 10cro
+      staked: 10cro
+  accounts:
+    - name: relayer
+      coins: 100cro
+  genesis:
+    app_state:
+      transfer:
+        params:
+          receive_enabled: true
+          send_enabled: true
+ibc-1:
+  validators:
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26750
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26760
+  accounts:
+    - name: relayer
+      coins: 100cro
+  genesis:
+    app_state:
+      transfer:
+        params:
+          receive_enabled: true
+          send_enabled: true
+relayer:
+  global:
+    timeout: 10s
+    light-cache-size: 20
+  # chains field will be populated automatically
+  paths:
+    demo:
+      src:
+        chain-id: ibc-0
+        client-id: demo0client
+        connection-id: demo0connection
+        channel-id: demo0channel
+        port-id: transfer
+        order: unordered
+        version: ics20-1
+      dst:
+        chain-id: ibc-1
+        client-id: demo1client
+        connection-id: demo1connection
+        channel-id: demo1channel
+        port-id: transfer
+        order: unordered
+        version: ics20-1
+      strategy:
+        type: naive

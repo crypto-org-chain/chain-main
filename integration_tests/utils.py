@@ -16,7 +16,7 @@ def wait_for_block(cli, height, timeout=60):
     for i in range(timeout * 2):
         try:
             status = cli.status()
-        except BaseException as e:
+        except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
             if int(status["sync_info"]["latest_block_height"]) >= height:
@@ -68,41 +68,60 @@ def cluster_fixture(
     post_init=None,
     enable_cov=None,
 ):
+    """
+    init a single devnet
+    """
     if enable_cov is None:
         enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
     config = yaml.safe_load(open(config_path))
-    data = tmp_path_factory.mktemp(config["chain_id"])
+    data = tmp_path_factory.mktemp("data")
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config, base_port)
 
-    if post_init:
-        post_init(config, data)
+    clis = {}
+    for key in config:
+        if key == "relayer":
+            continue
 
-    if enable_cov:
-        # replace the first node with the instrumented binary
-        ini = data / cluster.SUPERVISOR_CONFIG_FILE
-        ini.write_text(
-            re.sub(
-                r"^command = (.*/)?chain-maind",
-                "command = chain-maind-inst -test.coverprofile=%(here)s/coverage.txt",
-                ini.read_text(),
-                count=1,
-                flags=re.M,
+        chain_id = key
+        chain_config = config[chain_id]
+        chain_data = data / chain_id
+
+        if post_init:
+            post_init(chain_config, chain_data)
+
+        if enable_cov:
+            # replace the first node with the instrumented binary
+            ini = chain_data / cluster.SUPERVISOR_CONFIG_FILE
+            ini.write_text(
+                re.sub(
+                    r"^command = (.*/)?chain-maind",
+                    "command = chain-maind-inst "
+                    "-test.coverprofile=%(here)s/coverage.txt",
+                    ini.read_text(),
+                    count=1,
+                    flags=re.M,
+                )
             )
-        )
-        begin = time.time()
+        clis[chain_id] = cluster.ClusterCLI(data, chain_id)
 
     supervisord = cluster.start_cluster(data)
-    if not quiet:
-        tailer = cluster.TailLogsThread([str(data / "node*.log")])
-        tailer.start()
-    # wait for first node rpc port available before start testing
-    wait_for_port(rpc_port(config["validators"][0]["base_port"]))
-    cli = cluster.ClusterCLI(data)
-    # wait for first block generated before start testing
-    wait_for_block(cli, 1)
 
-    yield cli
+    if not quiet:
+        tailer = cluster.TailLogsThread(data, ["*/node*.log"])
+        tailer.start()
+
+    begin = time.time()
+    for cli in clis.values():
+        # wait for first node rpc port available before start testing
+        wait_for_port(rpc_port(chain_config["validators"][0]["base_port"]))
+        # wait for the first block generated before start testing
+        wait_for_block(cli, 1)
+
+    if len(clis) == 1:
+        yield list(clis.values())[0]
+    else:
+        yield clis
 
     if enable_cov:
         # wait for server startup complete to generate the coverage report
@@ -119,7 +138,7 @@ def cluster_fixture(
 
     if enable_cov:
         # collect the coverage results
-        shutil.move(str(data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
+        shutil.move(str(chain_data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
 
 
 def get_ledger():
