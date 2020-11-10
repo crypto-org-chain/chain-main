@@ -40,6 +40,7 @@ linters:
     # - gocognit
 
 linters-settings:
+  exclude: ./pystarport/pystarport/*
   govet:
     check-shadowing: true
   errcheck:
