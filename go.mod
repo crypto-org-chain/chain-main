@@ -7,8 +7,9 @@ require (
 	github.com/cosmos/cosmos-sdk v0.40.0-rc2
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.1
+	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/mux v1.8.0
-	github.com/grpc-ecosystem/grpc-gateway v1.15.2
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imdario/mergo v0.3.11
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
@@ -19,6 +20,8 @@ require (
 	github.com/tendermint/tendermint v0.34.0-rc5
 	github.com/tendermint/tm-db v0.6.2
 	github.com/zondax/ledger-go v0.12.1 // indirect
+	google.golang.org/genproto v0.0.0-20201014134559-03b6142f0dc9
+	google.golang.org/grpc v1.33.1
 
 )
 

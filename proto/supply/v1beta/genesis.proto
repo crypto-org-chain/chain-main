@@ -1,0 +1,18 @@
+syntax = "proto3";
+package chainmain.supply.v1beta1;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-com/chain-main/x/supply/types";
+
+// VestingAccounts stored in keeper
+message VestingAccounts {
+    // addresses defines addresses of all the vesting accounts at genesis
+    repeated string addresses = 1;
+}
+
+// GenesisState defines the capability module's genesis state.
+message GenesisState {
+    // params defines all the paramaters of the module.
+    VestingAccounts vesting_accounts = 1 [(gogoproto.nullable) = false];
+}

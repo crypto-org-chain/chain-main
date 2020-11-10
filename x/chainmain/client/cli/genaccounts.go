@@ -21,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
+	supplytypes "github.com/crypto-com/chain-main/x/supply/types"
 )
 
 const (
@@ -110,8 +111,10 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 			balances := banktypes.Balance{Address: addr.String(), Coins: coins.Sort()}
 			baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
+			var vestingAddress string
 
 			if !vestingAmt.IsZero() {
+				vestingAddress = addr.String()
 				baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingAmt.Sort(), vestingEnd)
 
 				if (balances.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
@@ -186,6 +189,19 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			}
 
 			appState[banktypes.ModuleName] = bankGenStateBz
+
+			if vestingAddress != "" {
+				supplyGenState := supplytypes.GetGenesisStateFromAppState(depCdc, appState)
+				supplyGenState.VestingAccounts.Addresses = append(supplyGenState.VestingAccounts.Addresses, vestingAddress)
+
+				// nolint: govet
+				supplyGenStateBz, err := cdc.MarshalJSON(supplyGenState)
+				if err != nil {
+					return fmt.Errorf("failed to marshal supply genesis state: %w", err)
+				}
+
+				appState[supplytypes.ModuleName] = supplyGenStateBz
+			}
 
 			// nolint: govet
 			appStateJSON, err := json.Marshal(appState)
