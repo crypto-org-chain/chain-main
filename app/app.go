@@ -74,6 +74,9 @@ import (
 	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
 	chaingov "github.com/crypto-com/chain-main/x/gov"
 	chainstaking "github.com/crypto-com/chain-main/x/staking"
+	supply "github.com/crypto-com/chain-main/x/supply"
+	supplykeeper "github.com/crypto-com/chain-main/x/supply/keeper"
+	supplytypes "github.com/crypto-com/chain-main/x/supply/types"
 
 	appconfig "github.com/crypto-com/chain-main/config"
 
@@ -110,6 +113,7 @@ var (
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		vesting.AppModuleBasic{},
+		supply.AppModuleBasic{},
 		chainmain.NewAppModuleBasicWithCoinParser(DefaultCoinParser),
 	)
 
@@ -165,6 +169,7 @@ type ChainApp struct {
 	EvidenceKeeper  evidencekeeper.Keeper
 	ParamsKeeper    paramskeeper.Keeper
 	chainmainKeeper chainmainkeeper.Keeper
+	SupplyKeeper    supplykeeper.Keeper
 
 	// the module manager
 	mm *module.Manager
@@ -194,7 +199,7 @@ func New(
 		authtypes.StoreKey, banktypes.StoreKey, paramstypes.StoreKey,
 		stakingtypes.StoreKey, minttypes.StoreKey,
 		distrtypes.StoreKey, slashingtypes.StoreKey, govtypes.StoreKey,
-		upgradetypes.StoreKey, evidencetypes.StoreKey, chainmaintypes.StoreKey,
+		upgradetypes.StoreKey, evidencetypes.StoreKey, chainmaintypes.StoreKey, supplytypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 
@@ -248,6 +253,8 @@ func New(
 		appCodec, keys[chainmaintypes.StoreKey], keys[chainmaintypes.MemStoreKey],
 	)
 
+	app.SupplyKeeper = supplykeeper.NewKeeper(appCodec, keys[supplytypes.StoreKey], app.BankKeeper, app.AccountKeeper)
+
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper)).
@@ -285,6 +292,7 @@ func New(
 		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		params.NewAppModule(app.ParamsKeeper),
 		chainmain.NewAppModule(appCodec, app.chainmainKeeper, DefaultCoinParser),
+		supply.NewAppModule(appCodec, app.SupplyKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -306,7 +314,7 @@ func New(
 		authtypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName, banktypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		genutiltypes.ModuleName, evidencetypes.ModuleName,
-		chainmaintypes.ModuleName,
+		chainmaintypes.ModuleName, supplytypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
