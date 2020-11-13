@@ -61,6 +61,16 @@ def test_transfer(cluster):
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
 
 
+def test_liquid_supply(cluster):
+    """
+    Checks the total liquid supply in the system
+    """
+
+    liquid_supply = cluster.supply("liquid")["supply"]
+    assert liquid_supply[0]["denom"] == "basecro"
+    assert liquid_supply[0]["amount"] == "1240000000000"
+
+
 def test_statesync(cluster):
     """
     - create a new node with statesync enabled

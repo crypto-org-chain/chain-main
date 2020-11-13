@@ -1,0 +1,16 @@
+package rest
+
+import (
+	"github.com/cosmos/cosmos-sdk/client/rest"
+	"github.com/gorilla/mux"
+
+	"github.com/cosmos/cosmos-sdk/client"
+)
+
+// RegisterHandlers registers all x/bank transaction and query HTTP REST handlers
+// on the provided mux router.
+func RegisterHandlers(clientCtx client.Context, rtr *mux.Router) {
+	r := rest.WithHTTPDeprecationHeaders(rtr)
+	r.HandleFunc("/supply/total", TotalSupplyHandlerFn(clientCtx)).Methods("GET")
+	r.HandleFunc("/supply/liquid", LiquidSupplyHandlerFn(clientCtx)).Methods("GET")
+}

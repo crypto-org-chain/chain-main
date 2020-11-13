@@ -474,6 +474,13 @@ class ClusterCLI:
             )
         )
 
+    def supply(self, supply_type):
+        return json.loads(
+            self.raw(
+                "query", "supply", supply_type, output="json", node=self.node_rpc(0)
+            )
+        )
+
     def validator(self, addr, i=0):
         return json.loads(
             self.raw(
