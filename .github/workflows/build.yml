@@ -68,7 +68,7 @@ jobs:
           SET_ENV_NAME_LINES: 1
       - name: Set GOBIN
         run: |
-          echo "::add-path::$(go env GOPATH)/bin"
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: build
         run: make build
         if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"

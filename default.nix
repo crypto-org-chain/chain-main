@@ -69,12 +69,28 @@ rec {
 
   # for testing and dev
   chain-maind-zemu = build-chain-maind { ledger_zemu = true; };
+  # one can set binary with environment variable CHAIN_MAIND, or it'll find chain-maind in PATH
   pystarport-unbind = import ./pystarport { inherit pkgs; };
 
-  lint-shell = pkgs.mkShell {
-    buildInputs = with pkgs; [
-      (poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; })
+  # python env for python linter tools and pytest
+  test-pyenv = pkgs.poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; };
+
+  # lint tools
+  lint-env = pkgs.buildEnv {
+    name = "lint-env";
+    pathsToLink = [ "/bin" "/share" ];
+    paths = with pkgs; [
+      test-pyenv
       nixpkgs-fmt
+      (pkgs.writeShellScriptBin "lint-ci" ''
+        EXIT_STATUS=0
+        go mod verify || EXIT_STATUS=$?
+        flake8 --show-source --count --statistics \
+          --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
+          || EXIT_STATUS=$?
+        find . -name "*.nix" -type f | xargs nixpkgs-fmt --check || EXIT_STATUS=$?
+        exit $EXIT_STATUS
+      '')
     ];
   };
   common-env = [
@@ -82,19 +98,52 @@ rec {
     relayer
   ];
 
-  # test in ci-shell will build chain-maind with nix automatically
-  ci-shell = pkgs.mkShell {
-    inputsFrom = [ lint-shell ];
-    buildInputs = with pkgs; [
+  # sources for integration tests
+  tests = pkgs.runCommandLocal "tests"
+    {
+      src = lib.sourceByRegex ./. [
+        "^integration_tests$"
+        "^integration_tests/.*\\.py$"
+        "^integration_tests/configs$"
+        "^integration_tests/configs/.*"
+      ];
+    } ''
+    mkdir -p $out/share
+    ln -s $src/integration_tests $out/share/
+  '';
+
+  # an env which can run integration tests
+  ci-env-inner = pkgs.buildEnv {
+    name = "ci-env-inner";
+    pathsToLink = [ "/bin" "/share" ];
+    paths = with pkgs; [
+      lint-env
+      chain-maind-zemu
       chain-maind-zemu.instrumented
-      (import ./pystarport { inherit pkgs; chaind = "${chain-maind-zemu}/bin/chain-maind"; })
+      tests
     ] ++ common-env;
+  };
+
+  # main entrypoint script to run integration tests
+  run-integration-tests = pkgs.writeShellScriptBin "run-integration-tests" ''
+    export PATH=${ci-env-inner}/bin:$PATH
+    export TESTS=${ci-env-inner}/share/integration_tests
+    pytest -v -n 7 -m 'not ledger' --dist loadscope $TESTS
+    pytest -v -m ledger $TESTS
+  '';
+
+  ci-env = pkgs.symlinkJoin {
+    name = "ci-env";
+    paths = [
+      ci-env-inner
+      run-integration-tests
+    ];
   };
 
   # test in dev-shell will use the chain-maind in PATH
   dev-shell = pkgs.mkShell {
-    inputsFrom = [ lint-shell ];
     buildInputs = with pkgs; [
+      lint-env
       go
       python3Packages.poetry
       pystarport-unbind
