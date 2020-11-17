@@ -15,6 +15,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "apply-defaults"
+version = "0.1.4"
+description = "Apply values to optional params"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "atomicwrites"
 version = "1.4.0"
 description = "Atomic file writes."
@@ -303,6 +311,32 @@ python-versions = "*"
 jsonschema = "*"
 
 [[package]]
+name = "jsonrpcclient"
+version = "3.3.6"
+description = "Send JSON-RPC requests"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+aiohttp = ["aiohttp (>=3)"]
+requests = ["requests"]
+requests_security = ["requests"]
+tornado = ["tornado"]
+unittest = ["mock", "pytest", "responses", "testfixtures", "requests", "pyzmq", "pytest-asyncio", "aiohttp", "tornado", "websockets"]
+websockets = ["websockets"]
+zmq = ["pyzmq"]
+
+[package.dependencies]
+apply_defaults = "<1"
+click = "<8"
+jsonschema = "<4"
+
+[package.dependencies.requests]
+version = "*"
+optional = true
+
+[[package]]
 name = "jsonschema"
 version = "3.2.0"
 description = "An implementation of JSON Schema validation for Python"
@@ -475,6 +509,10 @@ python-dateutil = "^2.8.1"
 PyYAML = "^5.3.1"
 supervisor = "^4.2.1"
 tomlkit = "^0.7.0"
+
+[package.dependencies.jsonrpcclient]
+version = "^3.3.6"
+extras = ["requests"]
 
 [package.source]
 type = "directory"
@@ -713,6 +751,9 @@ appdirs = [
     {file = "appdirs-1.4.4-py2.py3-none-any.whl", hash = "sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128"},
     {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
+apply-defaults = [
+    {file = "apply_defaults-0.1.4.tar.gz", hash = "sha256:1ce26326a61d8773d38a9726a345c6525a91a6120d7333af79ad792dacb6246c"},
+]
 atomicwrites = [
     {file = "atomicwrites-1.4.0-py2.py3-none-any.whl", hash = "sha256:6d1784dea7c0c8d4a5172b6c620f40b6e4cbfdf96d783691f2e1302a7b88e197"},
     {file = "atomicwrites-1.4.0.tar.gz", hash = "sha256:ae70396ad1a434f9c7046fd2dd196fc04b12f9e91ffb859164193be8b6168a7a"},
@@ -838,6 +879,9 @@ isort = [
 ]
 jsonmerge = [
     {file = "jsonmerge-1.7.0.tar.gz", hash = "sha256:2004a421890311176136fb911c339c4bab45984808814feaed6a328c6e211ba2"},
+]
+jsonrpcclient = [
+    {file = "jsonrpcclient-3.3.6.tar.gz", hash = "sha256:2f2d218de00ff7532f69efed2e2515d30c90f873e5cb91bf00de996dfb782f8a"},
 ]
 jsonschema = [
     {file = "jsonschema-3.2.0-py2.py3-none-any.whl", hash = "sha256:4e5b3cf8216f577bee9ce139cbe72eca3ea4f292ec60928ff24758ce626cd163"},

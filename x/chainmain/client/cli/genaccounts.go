@@ -21,7 +21,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	chainsdk "github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 const (
@@ -31,7 +30,7 @@ const (
 )
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
-func AddGenesisAccountCmd(defaultNodeHome string, coinParser chainsdk.CoinParser) *cobra.Command {
+func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add-genesis-account [address_or_key_name] [coin][,[coin]]",
 		Short: "Add a genesis account to genesis.json",
@@ -74,7 +73,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				addr = info.GetAddress()
 			}
 
-			coins, err := coinParser.ParseCoins(args[1])
+			coins, err := sdk.ParseCoinsNormalized(args[1])
 			if err != nil {
 				return fmt.Errorf("failed to parse coins: %w", err)
 			}
@@ -107,7 +106,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			if erramt != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", erramt)
 			}
-			vestingAmt, err := coinParser.ParseCoins(vestingAmtStr)
+			vestingAmt, err := sdk.ParseCoinsNormalized(vestingAmtStr)
 			if err != nil {
 				return fmt.Errorf("failed to parse vesting amount: %w", err)
 			}
@@ -207,9 +206,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
-	// nolint: lll
 	cmd.Flags().String(flagVestingStart, "0", "schedule start time (RFC-3339 format or unix timestamp) for vesting accounts")
-	// nolint: lll
 	cmd.Flags().String(flagVestingEnd, "0", "schedule end time (RFC-3339 format or unix timestamp) for vesting accounts")
 	flags.AddQueryFlagsToCmd(cmd)
 
