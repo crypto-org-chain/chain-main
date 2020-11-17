@@ -97,7 +97,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' || github.event_name == 'issue_comment'
     steps:
-      - uses: actions/setup-go@v2.1.2
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.15.5
       - name: install runsim
@@ -136,7 +136,7 @@ jobs:
         run: |
           echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
-      - uses: actions/setup-go@v2.1.2
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.15.5
       - name: Checkout Comment PR Branch
@@ -195,7 +195,7 @@ jobs:
         run: |
           echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
-      - uses: actions/setup-go@v2.1.2
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.15.5
       - name: Checkout Comment PR Branch
@@ -254,7 +254,7 @@ jobs:
         run: |
           echo "::set-output name=branch::${{ fromJson(steps.request.outputs.data).head.ref }}"
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
-      - uses: actions/setup-go@v2.1.2
+      - uses: actions/setup-go@v2
         with:
           go-version: 1.15.5
       - name: Checkout Comment PR Branch
