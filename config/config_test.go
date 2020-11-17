@@ -18,7 +18,6 @@ func TestMnemonic(t *testing.T) {
 	kb := keys.NewInMemory()
 	account, err := kb.NewAccount(
 		"croTest",
-		//nolint:lll
 		"point shiver hurt flight fun online hub antenna engine pave chef fantasy front interest poem accident catch load frequent praise elite pet remove used",
 		"",
 		config.FundraiserPath,

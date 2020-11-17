@@ -33,20 +33,11 @@ var (
 // AppModuleBasic implements the AppModuleBasic interface for the capability module.
 type AppModuleBasic struct {
 	cdc codec.Marshaler
-
-	coinParser types.CoinParser
 }
 
-func NewAppModuleBasic(cdc codec.Marshaler, coinParser types.CoinParser) AppModuleBasic {
+func NewAppModuleBasic(cdc codec.Marshaler) AppModuleBasic {
 	return AppModuleBasic{
 		cdc,
-		coinParser,
-	}
-}
-
-func NewAppModuleBasicWithCoinParser(coinParser types.CoinParser) AppModuleBasic {
-	return AppModuleBasic{
-		coinParser: coinParser,
 	}
 }
 
@@ -93,7 +84,7 @@ func (a AppModuleBasic) GetTxCmd() *cobra.Command { return nil }
 
 // GetQueryCmd returns the capability module's root query command.
 func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
-	return cli.GetQueryCmd(a.coinParser)
+	return cli.GetQueryCmd()
 }
 
 // ----------------------------------------------------------------------------
@@ -107,9 +98,9 @@ type AppModule struct {
 	keeper keeper.Keeper
 }
 
-func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper, coinParser types.CoinParser) AppModule {
+func NewAppModule(cdc codec.Marshaler, keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc, coinParser),
+		AppModuleBasic: NewAppModuleBasic(cdc),
 		keeper:         keeper,
 	}
 }

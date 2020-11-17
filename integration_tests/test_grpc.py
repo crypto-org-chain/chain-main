@@ -1,11 +1,15 @@
 import json
 
-from pystarport.proto_python.grpc_util import GrpcUtil, GrpcUtilTxBroadcast
+import pytest
 
 from .utils import wait_for_new_blocks
 
+pytestmark = pytest.mark.grpc
+
 
 def test_query_validators(cluster):
+    from pystarport.proto_python.grpc_util import GrpcUtil
+
     wait_for_new_blocks(cluster, 5)
     grpc_ip_port = cluster.ipport_grpc(0)
     grpc = GrpcUtil(grpc_ip_port)
@@ -22,6 +26,8 @@ def test_query_validators(cluster):
 
 
 def test_tx_broadcast(cluster, tmp_path):
+    from pystarport.proto_python.grpc_util import GrpcUtilTxBroadcast
+
     tx_txt = tmp_path / "tx.txt"
     sign_txt = tmp_path / "sign.txt"
     encode_txt = tmp_path / "encode.txt"

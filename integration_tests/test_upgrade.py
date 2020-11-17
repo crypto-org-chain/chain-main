@@ -97,7 +97,7 @@ def test_cosmovisor(cosmovisor_cluster):
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-height": target_height,
-            "deposit": "10000000basecro",
+            "deposit": "0.1cro",
         },
     )
     assert rsp["code"] == 0, rsp
@@ -184,7 +184,7 @@ def test_manual_upgrade(cosmovisor_cluster):
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-height": target_height,
-            "deposit": "10000000basecro",
+            "deposit": "0.1cro",
         },
     )
 
@@ -250,7 +250,7 @@ def test_cancel_upgrade(cluster):
             "title": "upgrade test",
             "description": "ditto",
             "upgrade-time": upgrade_time.replace(tzinfo=None).isoformat("T") + "Z",
-            "deposit": "10000000basecro",
+            "deposit": "0.1cro",
         },
     )
 
@@ -261,7 +261,7 @@ def test_cancel_upgrade(cluster):
         {
             "title": "there's bug, cancel upgrade",
             "description": "there's bug, cancel upgrade",
-            "deposit": "10000000basecro",
+            "deposit": "0.1cro",
         },
     )
 

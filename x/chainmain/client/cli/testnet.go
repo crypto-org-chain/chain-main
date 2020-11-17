@@ -36,8 +36,6 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/crypto-com/chain-main/x/chainmain/types"
 )
 
 var (
@@ -55,7 +53,6 @@ var (
 func AddTestnetCmd(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
-	coinParser types.CoinParser,
 ) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
@@ -118,7 +115,7 @@ Example:
 			}
 
 			return InitTestnet(
-				clientCtx, coinParser, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
+				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, numValidators,
 			)
 		},
@@ -158,7 +155,6 @@ var (
 // Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
-	coinParser types.CoinParser,
 	cmd *cobra.Command,
 	nodeConfig *tmconfig.Config,
 	mbm module.BasicManager,
@@ -186,12 +182,12 @@ func InitTestnet(
 	chainmainConfig.Telemetry.EnableHostnameLabel = false
 	chainmainConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
 
-	coins, err := coinParser.ParseCoins(amount)
+	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
 		return fmt.Errorf("failed to parse coins: %w", err)
 	}
 
-	stakingCoin, err := parseStakingCoin(coins, stakingAmount, coinParser)
+	stakingCoin, err := parseStakingCoin(coins, stakingAmount)
 	if err != nil {
 		return err
 	}
@@ -208,7 +204,7 @@ func InitTestnet(
 	if erramt != nil {
 		return fmt.Errorf("failed to parse vesting amount: %w", erramt)
 	}
-	vestingCoins, err := coinParser.ParseCoins(vestingAmtStr)
+	vestingCoins, err := sdk.ParseCoinsNormalized(vestingAmtStr)
 	if err != nil {
 		return fmt.Errorf("failed to parse vesting amount: %w", err)
 	}
@@ -362,7 +358,7 @@ func InitTestnet(
 	}
 
 	if err = initGenFiles(
-		clientCtx, coinParser, mbm, chainID, genAccounts, genBalances,
+		clientCtx, mbm, chainID, genAccounts, genBalances,
 		genFiles, numValidators, unbondingTime); err != nil {
 		return err
 	}
@@ -380,7 +376,7 @@ func InitTestnet(
 }
 
 func initGenFiles(
-	clientCtx client.Context, coinParser types.CoinParser, mbm module.BasicManager, chainID string,
+	clientCtx client.Context, mbm module.BasicManager, chainID string,
 	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
 	genFiles []string, numValidators int,
 	unbondingTime time.Duration,
@@ -391,7 +387,11 @@ func initGenFiles(
 
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
-	stakingGenState.Params.BondDenom = coinParser.GetBaseUnit()
+	baseDenom, err := sdk.GetBaseDenom()
+	if err != nil {
+		return err
+	}
+	stakingGenState.Params.BondDenom = baseDenom
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
 	appGenState[stakingtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&stakingGenState)
@@ -399,14 +399,14 @@ func initGenFiles(
 	// set gov min_deposit in the genesis state
 	var govGenState govtypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
-	govGenState.DepositParams.MinDeposit[0].Denom = coinParser.GetBaseUnit()
+	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom
 	govGenState.DepositParams.MinDeposit[0].Amount = govtypes.DefaultMinDepositTokens
 	appGenState[govtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
 	var mintGenState minttypes.GenesisState
 	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[minttypes.ModuleName], &mintGenState)
-	mintGenState.Params.MintDenom = coinParser.GetBaseUnit()
+	mintGenState.Params.MintDenom = baseDenom
 	appGenState[minttypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&mintGenState)
 
 	// set the accounts in the genesis state
@@ -537,15 +537,19 @@ func writeFile(name string, dir string, contents []byte) error {
 	return nil
 }
 
-func parseStakingCoin(coins sdk.Coins, stakingAmount string, coinParser types.CoinParser) (sdk.Coin, error) {
+func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
+	baseDenom, err := sdk.GetBaseDenom()
+	if err != nil {
+		return sdk.Coin{}, nil
+	}
 	stakingCoin := sdk.Coin{
-		Denom:  coinParser.GetBaseUnit(),
+		Denom:  baseDenom,
 		Amount: sdk.ZeroInt(),
 	}
 	if stakingAmount == "" {
 		stakingCoin.Amount = halfCoins(coins)
 	} else {
-		coins, err := coinParser.ParseCoins(stakingAmount)
+		coins, err := sdk.ParseCoinsNormalized(stakingAmount)
 		if err != nil {
 			return stakingCoin, fmt.Errorf("failed to parse staking coin: %w", err)
 		}

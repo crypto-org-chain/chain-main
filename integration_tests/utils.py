@@ -105,34 +105,33 @@ def cluster_fixture(
         clis[chain_id] = cluster.ClusterCLI(data, chain_id)
 
     supervisord = cluster.start_cluster(data)
-
     if not quiet:
         tailer = cluster.start_tail_logs_thread(data)
 
-    begin = time.time()
-    for cli in clis.values():
-        # wait for first node rpc port available before start testing
-        wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
-        # wait for the first block generated before start testing
-        wait_for_block(cli, 1)
+    try:
+        begin = time.time()
+        for cli in clis.values():
+            # wait for first node rpc port available before start testing
+            wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
+            # wait for the first block generated before start testing
+            wait_for_block(cli, 1)
 
-    if len(clis) == 1:
-        yield list(clis.values())[0]
-    else:
-        yield clis
+        if len(clis) == 1:
+            yield list(clis.values())[0]
+        else:
+            yield clis
 
-    if enable_cov:
-        # wait for server startup complete to generate the coverage report
-        duration = time.time() - begin
-        if duration < 15:
-            time.sleep(15 - duration)
-
-    supervisord.terminate()
-    supervisord.wait()
-
-    if not quiet:
-        tailer.stop()
-        tailer.join()
+        if enable_cov:
+            # wait for server startup complete to generate the coverage report
+            duration = time.time() - begin
+            if duration < 15:
+                time.sleep(15 - duration)
+    finally:
+        supervisord.terminate()
+        supervisord.wait()
+        if not quiet:
+            tailer.stop()
+            tailer.join()
 
     if enable_cov:
         # collect the coverage results
