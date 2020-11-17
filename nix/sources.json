@@ -34,5 +34,17 @@
         "type": "tarball",
         "url": "https://github.com/nix-community/poetry2nix/archive/f0cc43e09f6adbbde8c1207d511cd124cdca28f4.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "relayer": {
+        "branch": "custom-coin-type",
+        "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
+        "homepage": null,
+        "owner": "yihuang",
+        "repo": "relayer",
+        "rev": "5e9fd91198e206fe85be6214da68f4250b557063",
+        "sha256": "14067sm24d6y479c835vbg527lxmrjznc0zgd2ywnslyz052kdis",
+        "type": "tarball",
+        "url": "https://github.com/yihuang/relayer/archive/5e9fd91198e206fe85be6214da68f4250b557063.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

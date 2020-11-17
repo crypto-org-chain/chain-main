@@ -20,11 +20,11 @@ from .utils import (
 )
 
 
-def edit_chain_program(ini_path, callback):
+def edit_chain_program(chain_id, ini_path, callback):
     # edit node process config in supervisor
     ini = configparser.RawConfigParser()
     ini.read_file(ini_path.open())
-    reg = re.compile(r"^program:node(\d+)")
+    reg = re.compile(fr"^program:{chain_id}-node(\d+)")
     for section in ini.sections():
         m = reg.match(section)
         if m:
@@ -60,7 +60,7 @@ def post_init(config, data):
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
         }
 
-    edit_chain_program(data / SUPERVISOR_CONFIG_FILE, prepare_node)
+    edit_chain_program(config["chain_id"], data / SUPERVISOR_CONFIG_FILE, prepare_node)
 
 
 # use function scope to re-initialize for each test case
@@ -159,14 +159,14 @@ def test_manual_upgrade(cosmovisor_cluster):
     cluster = cosmovisor_cluster
     # use the normal binary first
     edit_chain_program(
+        cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
             f"--home %(here)s/node{i}"
         },
     )
-    cluster.supervisor.stopAllProcesses()
-    cluster.restart_supervisor()
+    cluster.reload_supervisor()
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
 
@@ -192,8 +192,14 @@ def test_manual_upgrade(cosmovisor_cluster):
     time.sleep(0.5)
 
     # check nodes are all stopped
-    assert cluster.supervisor.getProcessInfo("node0")["state"] != "RUNNING"
-    assert cluster.supervisor.getProcessInfo("node1")["state"] != "RUNNING"
+    assert (
+        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
+        != "RUNNING"
+    )
+    assert (
+        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")["state"]
+        != "RUNNING"
+    )
 
     # check upgrade-info.json file is written
     assert (
@@ -207,6 +213,7 @@ def test_manual_upgrade(cosmovisor_cluster):
 
     # use the upgrade-test binary
     edit_chain_program(
+        cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": (
@@ -215,7 +222,7 @@ def test_manual_upgrade(cosmovisor_cluster):
             )
         },
     )
-    cluster.restart_supervisor()
+    cluster.reload_supervisor()
 
     # wait for it to generate new blocks
     wait_for_block(cluster, target_height + 2)

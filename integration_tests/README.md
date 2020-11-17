@@ -1,6 +1,6 @@
 ## Pytest
 
-To run integration tests, just run `pytest` in root directory of repo, We use [pytest](https://docs.pytest.org/) to run
+To run integration tests, just run `pytest` in root directory of repo, We use [pytest](https://docs.pytest.org/) to run
 integration tests. pytest discover test cases
 [automatically](https://docs.pytest.org/en/3.0.6/goodpractices.html#conventions-for-python-test-discovery). notably the
 python source files whose name starts with `test_` is treated as test modules, and the functions in them whose name
@@ -49,9 +49,9 @@ xmlrpc service([api](http://supervisord.org/api.html)). for example:
 
 ```python
 # stop the chain-maind process of node2
-cluster.supervisor.stopProcess('node2')
+cluster.supervisor.stopProcess('chainmaind-node2')
 # start the chain-maind process of node2
-cluster.supervisor.startProcess('node2')
+cluster.supervisor.startProcess('chainmaind-node2')
 
 # get address of specified account of node0
 cluster.address('community')

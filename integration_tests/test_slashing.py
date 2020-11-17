@@ -32,9 +32,9 @@ def test_slashing(cluster):
 
     print("tokens before slashing", tokens1)
     print("stop and wait for 10 blocks")
-    cluster.supervisor.stopProcess("node2")
+    cluster.supervisor.stopProcess(f"{cluster.chain_id}-node2")
     wait_for_new_blocks(cluster, 10)
-    cluster.supervisor.startProcess("node2")
+    cluster.supervisor.startProcess(f"{cluster.chain_id}-node2")
 
     val = cluster.validator(val_addr)
     tokens2 = int(val["tokens"])

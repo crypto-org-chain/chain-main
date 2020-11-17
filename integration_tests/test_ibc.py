@@ -1,0 +1,188 @@
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from .utils import cluster_fixture, wait_for_block
+
+
+@pytest.fixture(scope="module")
+def cluster(pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/ibc.yaml",
+        27000,
+        tmp_path_factory,
+        quiet=pytestconfig.getoption("supervisord-quiet"),
+    )
+
+
+def test_ibc(cluster):
+    for cli in cluster.values():
+        # wait for at least 3 blocks, because
+        # "proof queries at height <= 2 are not supported"
+        wait_for_block(cli, 3)
+    # all clusters share the same root data directory
+    data_root = next(iter(cluster.values())).data_root
+    # call chain-maind directly
+    raw = next(iter(cluster.values())).raw
+    relayer = ["relayer", "--home", data_root / "relayer"]
+    # init light clients
+    for chain_id in cluster:
+        subprocess.run(
+            relayer
+            + [
+                "light",
+                "init",
+                chain_id,
+                "-f",
+            ],
+            check=True,
+        )
+
+    # setup path
+    subprocess.run(
+        relayer
+        + [
+            "tx",
+            "link",
+            "demo",
+            "-d",
+            "-o",
+            "3s",
+        ],
+        check=True,
+    )
+
+    # check status
+    rsp = json.loads(subprocess.check_output(relayer + ["chains", "list", "--json"]))
+    assert rsp == [
+        {
+            "key": "relayer",
+            "chain-id": "ibc-0",
+            "rpc-addr": "http://localhost:26657",
+            "account-prefix": "cro",
+            "gas-adjustment": 1.5,
+            "gas-prices": "0.0basecro",
+            "trusting-period": "336h",
+        },
+        {
+            "key": "relayer",
+            "chain-id": "ibc-1",
+            "rpc-addr": "http://localhost:26757",
+            "account-prefix": "cro",
+            "gas-adjustment": 1.5,
+            "gas-prices": "0.0basecro",
+            "trusting-period": "336h",
+        },
+    ]
+    rsp = json.loads(subprocess.check_output(relayer + ["paths", "list", "--json"]))
+    assert rsp == {
+        "demo": {
+            "src": {
+                "chain-id": "ibc-0",
+                "client-id": "demo0client",
+                "connection-id": "demo0connection",
+                "channel-id": "demo0channel",
+                "port-id": "transfer",
+                "order": "unordered",
+                "version": "ics20-1",
+            },
+            "dst": {
+                "chain-id": "ibc-1",
+                "client-id": "demo1client",
+                "connection-id": "demo1connection",
+                "channel-id": "demo1channel",
+                "port-id": "transfer",
+                "order": "unordered",
+                "version": "ics20-1",
+            },
+            "strategy": {
+                "type": "naive",
+            },
+        }
+    }
+    # query balance of relayer account
+    for chain_id in cluster:
+        assert (
+            subprocess.check_output(relayer + ["query", "balance", chain_id])
+            .strip()
+            .decode()
+        ) == "10000000000basecro"
+
+    # do a transfer from ibc-0 to ibc-1
+    recipient = cluster["ibc-1"].address("relayer")
+    subprocess.run(
+        relayer + ["tx", "transfer", "ibc-0", "ibc-1", "10000basecro", recipient],
+        check=True,
+    )
+    # sender balance decreased
+    assert cluster["ibc-0"].balance(cluster["ibc-0"].address("relayer")) == 9999990000
+
+    subprocess.run(relayer + ["tx", "relay", "demo", "-d"], check=True)
+
+    denom_hash = hashlib.sha256(b"transfer/demo1channel/basecro").hexdigest().upper()
+    assert (
+        json.loads(
+            raw(
+                "query",
+                "ibc-transfer",
+                "denom-trace",
+                denom_hash,
+                node=cluster["ibc-1"].node_rpc(0),
+                output="json",
+            )
+        )
+        == {"denom_trace": {"path": "transfer/demo1channel", "base_denom": "basecro"}}
+    )
+    # recipient get the coins
+    assert json.loads(
+        raw(
+            "query",
+            "bank",
+            "balances",
+            recipient,
+            output="json",
+            node=cluster["ibc-1"].node_rpc(0),
+        )
+    )["balances"] == [
+        {"denom": "basecro", "amount": "10000000000"},
+        {
+            "denom": f"ibc/{denom_hash}",
+            "amount": "10000",
+        },
+    ]
+
+    # transfer back
+    recipient = cluster["ibc-0"].address("relayer")
+    subprocess.run(
+        relayer
+        + [
+            "tx",
+            "transfer",
+            "ibc-1",
+            "ibc-0",
+            "10000transfer/demo1channel/basecro",
+            recipient,
+        ],
+        check=True,
+    )
+    subprocess.run(relayer + ["tx", "relay", "demo", "-d"], check=True)
+
+    # both accounts return to normal
+    for i, cli in enumerate(cluster.values()):
+        balances = json.loads(
+            raw(
+                "query",
+                "bank",
+                "balances",
+                cli.address("relayer"),
+                output="json",
+                node=cli.node_rpc(0),
+            )
+        )["balances"]
+        assert [bal for bal in balances if int(bal["amount"]) > 0] == [
+            {"amount": "10000000000", "denom": "basecro"},
+        ]

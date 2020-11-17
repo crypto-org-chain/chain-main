@@ -34,7 +34,7 @@ def start(data, quiet):
         signal.signal(getattr(signal, signame), lambda *args: supervisord.terminate())
 
     if not quiet:
-        tailer = TailLogsThread([str(data / "node*.log")])
+        tailer = TailLogsThread(data, ["*/node*.log"])
         tailer.start()
 
     supervisord.wait()
@@ -77,7 +77,7 @@ class CLI:
         start the prepared devnet
 
         :param data: path to the root data directory
-        :param quiet: redirect supervisord stdout to supervisord.log if True
+        :param quiet: don't print logs of subprocesses
         """
         start(Path(data), quiet)
 
@@ -107,7 +107,7 @@ class CLI:
         :param base_port: the base port to use, the service ports of different nodes
         are calculated based on this
         :param cmd: the chain binary to use
-        :param quiet: redirect supervisord stdout to supervisord.log if True
+        :param quiet: don't print logs of subprocesses
         """
         serve(Path(data), config, base_port, cmd, quiet)
 
@@ -116,8 +116,8 @@ class CLI:
 
         main(("-c", Path(data) / SUPERVISOR_CONFIG_FILE, *args))
 
-    def cli(self, *args, data: str = "./data", cmd: str = CHAIN):
-        return ClusterCLI(Path(data), cmd)
+    def cli(self, *args, data: str = "./data", cmd: str = CHAIN, chain="chainmaind"):
+        return ClusterCLI(Path(data), chain, cmd)
 
     def bot(
         self,

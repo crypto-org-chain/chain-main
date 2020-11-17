@@ -77,11 +77,11 @@ def test_statesync(cluster):
     - check it works
     """
     # wait the first snapshot to be created
-    wait_for_block(cluster, 5)
+    wait_for_block(cluster, 10)
 
     # add a statesync node
     i = cluster.create_node(moniker="statesync", statesync=True)
-    cluster.supervisor.startProcess(f"node{i}")
+    cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
 
     # discovery_time is set to 5 seconds, add an extra second to process
     time.sleep(5 + 1)
