@@ -16,6 +16,9 @@ pep8-naming = "^0.11.1"
 pytest-github-actions-annotate-failures = "^0.1.1"
 protobuf = "^3.13.0"
 grpcio = "^1.33.2"
+PyYAML = "^5.3.1"
+python-dateutil = "^2.8.1"
+pystarport = {path = "../pystarport"}
 
 [tool.poetry.dev-dependencies]
 

@@ -81,13 +81,7 @@ lint:
 # golangci-lint is run in standalone job in ci
 lint-ci:
 	@echo "--> Running linter for CI"
-	@EXIT_STATUS=0; \
-		go mod verify || EXIT_STATUS=$$?; \
-		flake8 --show-source --count --statistics \
-			--format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
-			|| EXIT_STATUS=$$?; \
-		find . -name "*.nix" -type f | xargs nixpkgs-fmt --check || EXIT_STATUS=$$?; \
-		exit $$EXIT_STATUS
+	@nix run -f ./. lint-env -c lint-ci
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
@@ -151,8 +145,7 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix-shell ./. -A ci-shell --run "pytest -v -n 7 -m 'not ledger' --dist loadscope"
-	nix-shell ./. -A ci-shell --run "pytest -v -m ledger"
+	nix run -f ./. ci-env -c run-integration-tests
 
 nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \

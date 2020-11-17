@@ -29,7 +29,9 @@ from supervisor.compat import xmlrpclib
 from . import ports
 from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
 
-CHAIN = "chain-maind"  # edit by nix-build
+CHAIN = ""  # edit by nix-build
+if not CHAIN:
+    CHAIN = os.environ.get("CHAIN_MAIND", "chain-maind")
 ZEMU_HOST = "127.0.0.1"
 ZEMU_BUTTON_PORT = 9997
 ZEMU_GRPC_SERVER_PORT = 3002
