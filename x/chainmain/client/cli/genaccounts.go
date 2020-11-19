@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -82,18 +83,24 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			if errstart != nil {
 				return fmt.Errorf("failed to parse vesting start: %w", errstart)
 			}
-			vestingStart, errstart := ParseTime(vestingStartStr)
+			vestingStart, errstart := strconv.ParseInt(vestingStartStr, 10, 64)
 			if errstart != nil {
-				return fmt.Errorf("failed to parse vesting start: %w", errstart)
+				vestingStart, errstart = ParseTime(vestingStartStr)
+				if errstart != nil {
+					return fmt.Errorf("failed to parse vesting start: %w", errstart)
+				}
 			}
 
 			vestingEndStr, errend := cmd.Flags().GetString(flagVestingEnd)
 			if errend != nil {
 				return fmt.Errorf("failed to parse vesting end: %w", errend)
 			}
-			vestingEnd, errend := ParseTime(vestingEndStr)
+			vestingEnd, errend := strconv.ParseInt(vestingEndStr, 10, 64)
 			if errend != nil {
-				return fmt.Errorf("failed to parse vesting end: %w", errend)
+				vestingEnd, errend = ParseTime(vestingEndStr)
+				if errend != nil {
+					return fmt.Errorf("failed to parse vesting end: %w", errend)
+				}
 			}
 
 			vestingAmtStr, erramt := cmd.Flags().GetString(flagVestingAmt)
@@ -201,9 +208,9 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
 	// nolint: lll
-	cmd.Flags().String(flagVestingStart, "1970-01-01T00:00:00Z", "schedule start time (RFC-3339 format) for vesting accounts")
+	cmd.Flags().String(flagVestingStart, "0", "schedule start time (RFC-3339 format or unix timestamp) for vesting accounts")
 	// nolint: lll
-	cmd.Flags().String(flagVestingEnd, "1970-01-01T00:00:00Z", "schedule end time (RFC-3339 format) for vesting accounts")
+	cmd.Flags().String(flagVestingEnd, "0", "schedule end time (RFC-3339 format or unix timestamp) for vesting accounts")
 	flags.AddQueryFlagsToCmd(cmd)
 
 	return cmd

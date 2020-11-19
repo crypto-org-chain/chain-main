@@ -1022,7 +1022,7 @@ def init_devnet(
             end_time = genesis_time + datetime.timedelta(
                 seconds=durations.Duration(vesting).to_seconds()
             )
-            vend = end_time.replace(tzinfo=None).isoformat("T") + "Z"
+            vend = int(end_time.timestamp())
             cli.add_genesis_account(
                 acct["address"],
                 account["coins"],
