@@ -1,12 +1,11 @@
 import base64
 
-import grpc
-
 import cosmos.bank.v1beta1.tx_pb2
 import cosmos.bank.v1beta1.tx_pb2_grpc
 import cosmos.crypto.ed25519.keys_pb2
 import cosmos.staking.v1beta1.query_pb2
 import cosmos.staking.v1beta1.query_pb2_grpc
+import grpc
 import tendermint.rpc.grpc.types_pb2_grpc
 
 

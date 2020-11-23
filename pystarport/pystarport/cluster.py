@@ -413,7 +413,10 @@ class ClusterCLI:
             self.raw(
                 "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
             )
-        )["balances"][0]
+        )["balances"]
+        if len(coin) == 0:
+            return 0
+        coin = coin[0]
         assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
