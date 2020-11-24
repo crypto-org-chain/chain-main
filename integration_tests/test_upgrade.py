@@ -35,7 +35,7 @@ def edit_chain_program(chain_id, ini_path, callback):
         ini.write(fp)
 
 
-def post_init(config, data):
+def post_init(chain_id, data):
     """
     change to use cosmovisor
     """
@@ -60,7 +60,7 @@ def post_init(config, data):
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
         }
 
-    edit_chain_program(config["chain_id"], data / SUPERVISOR_CONFIG_FILE, prepare_node)
+    edit_chain_program(chain_id, data / SUPERVISOR_CONFIG_FILE, prepare_node)
 
 
 # use function scope to re-initialize for each test case
@@ -143,7 +143,9 @@ def propose_and_pass(cluster, kind, proposal):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
-    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=1)
+    )
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
 

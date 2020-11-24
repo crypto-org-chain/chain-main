@@ -3,7 +3,6 @@ import signal
 from pathlib import Path
 
 import fire
-import yaml
 
 from .bot import BotCLI
 from .cluster import (
@@ -23,7 +22,7 @@ def init(data, config, *args, **kwargs):
         f"rm -r {data}; mkdir {data}",
         ignore_error=True,
     )
-    return init_cluster(data, yaml.safe_load(open(config)), *args, **kwargs)
+    return init_cluster(data, config, *args, **kwargs)
 
 
 def start(data, quiet):

@@ -151,7 +151,7 @@ rec {
 
     shellHook = ''
       # prefer local pystarport directory for development
-      export PYTHONPATH=$PWD/pystarport:$PYTHONPATH
+      export PYTHONPATH=./pystarport:$PYTHONPATH
     '';
   };
 }
