@@ -1,3 +1,4 @@
+import base64
 import configparser
 import datetime
 import enum
@@ -158,10 +159,10 @@ class ChainCommand:
     def __init__(self, cmd=None):
         self.cmd = cmd or CHAIN
 
-    def __call__(self, cmd, *args, **kwargs):
+    def __call__(self, cmd, *args, stdin=None, **kwargs):
         "execute chain-maind"
         args = " ".join(build_cli_args_safe(cmd, *args, **kwargs))
-        return interact(f"{self.cmd} {args}")
+        return interact(f"{self.cmd} {args}", input=stdin)
 
 
 class ClusterCLI:
@@ -330,16 +331,28 @@ class ClusterCLI:
         output = self.raw("tendermint", "show-node-id", home=self.home(i))
         return output.decode().strip()
 
-    def create_account(self, name, i=0):
+    def create_account(self, name, i=0, mnemonic=None):
         "create new keypair in i-th node's keyring"
-        output = self.raw(
-            "keys",
-            "add",
-            name,
-            home=self.home(i),
-            output="json",
-            keyring_backend="test",
-        )
+        if mnemonic is None:
+            output = self.raw(
+                "keys",
+                "add",
+                name,
+                home=self.home(i),
+                output="json",
+                keyring_backend="test",
+            )
+        else:
+            output = self.raw(
+                "keys",
+                "add",
+                name,
+                "--recover",
+                home=self.home(i),
+                output="json",
+                keyring_backend="test",
+                stdin=mnemonic.encode() + b"\n",
+            )
         return json.loads(output)
 
     def create_account_ledger(self, name, i=0):
@@ -384,7 +397,14 @@ class ClusterCLI:
         return self.raw("validate-genesis", home=self.home(i))
 
     def add_genesis_account(self, addr, coins, i=0, **kwargs):
-        return self.raw("add-genesis-account", addr, coins, home=self.home(i), **kwargs)
+        return self.raw(
+            "add-genesis-account",
+            addr,
+            coins,
+            home=self.home(i),
+            output="json",
+            **kwargs,
+        )
 
     def gentx(self, name, coins, i):
         return self.raw(
@@ -1048,8 +1068,37 @@ def init_devnet(
             chain_id=config["chain_id"],
             home=home_dir(data_dir, i),
         )
-    os.rename(data_dir / "node0/config/genesis.json", data_dir / "genesis.json")
-    os.mkdir(data_dir / "gentx")
+        if "consensus_key" in val:
+            # restore consensus private key
+            with (home_dir(data_dir, i) / "config/priv_validator_key.json").open(
+                "w"
+            ) as fp:
+                json.dump(
+                    {
+                        "address": hashlib.sha256(
+                            base64.b64decode(val["consensus_key"]["pub"])
+                        )
+                        .hexdigest()[:40]
+                        .upper(),
+                        "pub_key": {
+                            "type": "tendermint/PubKeyEd25519",
+                            "value": val["consensus_key"]["pub"],
+                        },
+                        "priv_key": {
+                            "type": "tendermint/PrivKeyEd25519",
+                            "value": val["consensus_key"]["priv"],
+                        },
+                    },
+                    fp,
+                )
+    if "genesis_file" in config:
+        genesis_bytes = open(
+            config["genesis_file"] % {"here": Path(config["path"]).parent}, "rb"
+        ).read()
+    else:
+        genesis_bytes = (data_dir / "node0/config/genesis.json").read_bytes()
+    (data_dir / "genesis.json").write_bytes(genesis_bytes)
+    (data_dir / "gentx").mkdir()
     for i in range(len(config["validators"])):
         try:
             (data_dir / f"node{i}/config/genesis.json").unlink()
@@ -1072,13 +1121,16 @@ def init_devnet(
     # create accounts
     accounts = []
     for i, node in enumerate(config["validators"]):
-        account = cli.create_account("validator", i)
+        mnemonic = node.get("mnemonic")
+        account = cli.create_account("validator", i, mnemonic=mnemonic)
         accounts.append(account)
-        cli.add_genesis_account(account["address"], node["coins"], i)
-        cli.gentx("validator", node["staked"], i)
+        if "coins" in node:
+            cli.add_genesis_account(account["address"], node["coins"], i)
+        if "staked" in node:
+            cli.gentx("validator", node["staked"], i)
 
     # create accounts
-    for account in config["accounts"]:
+    for account in config.get("accounts", []):
         account = create_account(cli, account)
         accounts.append(account)
 
@@ -1090,8 +1142,9 @@ def init_devnet(
     # output accounts
     (data_dir / "accounts.json").write_text(json.dumps(accounts))
 
-    # collect-gentxs
-    cli.collect_gentxs(data_dir / "gentx", i)
+    # collect-gentxs if directory not empty
+    if next((data_dir / "gentx").iterdir(), None) is not None:
+        cli.collect_gentxs(data_dir / "gentx", 0)
 
     # realise the symbolic links, so the node directories can be used independently
     genesis_bytes = (data_dir / "genesis.json").read_bytes()
@@ -1102,7 +1155,7 @@ def init_devnet(
         tmp.write_bytes(genesis_bytes)
 
     # write tendermint config
-    peers = ",".join(
+    peers = config.get("peers") or ",".join(
         [
             "tcp://%s@%s:%d"
             % (cli.node_id(i), val["hostname"], ports.p2p_port(val["base_port"]))
@@ -1140,11 +1193,14 @@ def relayer_chain_config(data_dir, chain_id):
 
 
 def init_cluster(
-    data_dir, config, base_port, image=IMAGE, cmd=None, gen_compose_file=False
+    data_dir, config_path, base_port, image=IMAGE, cmd=None, gen_compose_file=False
 ):
+    config = yaml.safe_load(open(config_path))
+
     # override relayer config in config.yaml
     rly_section = config.pop("relayer", None)
     for chain_id, cfg in config.items():
+        cfg["path"] = str(config_path)
         cfg["chain_id"] = chain_id
 
     chains = list(config.values())
@@ -1275,7 +1331,7 @@ def edit_app_cfg(path, base_port):
 if __name__ == "__main__":
     interact("rm -r data; mkdir data", ignore_error=True)
     data_dir = Path("data")
-    init_cluster(data_dir, yaml.safe_load(open("config.yaml")), 26650)
+    init_cluster(data_dir, "config.yaml", 26650)
     supervisord = start_cluster(data_dir)
     t = TailLogsThread(data_dir, ["*/node*.log"])
     t.start()

@@ -73,22 +73,21 @@ def cluster_fixture(
     """
     if enable_cov is None:
         enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
-    config = yaml.safe_load(open(config_path))
     data = tmp_path_factory.mktemp("data")
     print("init cluster at", data, ", base port:", base_port)
-    cluster.init_cluster(data, config, base_port)
+    cluster.init_cluster(data, config_path, base_port)
 
+    config = yaml.safe_load(open(config_path))
     clis = {}
     for key in config:
         if key == "relayer":
             continue
 
         chain_id = key
-        chain_config = config[chain_id]
         chain_data = data / chain_id
 
         if post_init:
-            post_init(chain_config, chain_data)
+            post_init(chain_id, chain_data)
 
         if enable_cov:
             # replace the first node with the instrumented binary
@@ -114,7 +113,7 @@ def cluster_fixture(
     begin = time.time()
     for cli in clis.values():
         # wait for first node rpc port available before start testing
-        wait_for_port(rpc_port(chain_config["validators"][0]["base_port"]))
+        wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
         # wait for the first block generated before start testing
         wait_for_block(cli, 1)
 

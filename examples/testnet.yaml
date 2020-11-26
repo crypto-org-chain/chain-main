@@ -1,0 +1,11 @@
+testnet-croeseid-1:
+  validators:
+    - name: debug
+      # optional, recover wallet from mnemonic
+      # mnemonic:
+      # optional, recover from existing consensus key, base64 encoded
+      # consensus_key:
+      #   priv:
+      #   pub:
+  genesis_file: "%(here)s/testnet_genesis.json"
+  peers: "66a557b8feef403805eb68e6e3249f3148d1a3f2@54.169.58.229:26656,3246d15d34802ca6ade7f51f5a26785c923fb385@54.179.111.207:26656,69c2fbab6b4f58b6cf1f79f8b1f670c7805e3f43@18.141.107.57:26656"
