@@ -107,8 +107,7 @@ def cluster_fixture(
     supervisord = cluster.start_cluster(data)
 
     if not quiet:
-        tailer = cluster.TailLogsThread(data, ["*/node*.log"])
-        tailer.start()
+        tailer = cluster.start_tail_logs_thread(data)
 
     begin = time.time()
     for cli in clis.values():

@@ -1,6 +1,7 @@
 import hashlib
 import json
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -42,20 +43,6 @@ def test_ibc(cluster):
             check=True,
         )
 
-    # setup path
-    subprocess.run(
-        relayer
-        + [
-            "tx",
-            "link",
-            "demo",
-            "-d",
-            "-o",
-            "3s",
-        ],
-        check=True,
-    )
-
     # check status
     rsp = json.loads(subprocess.check_output(relayer + ["chains", "list", "--json"]))
     assert rsp == [
@@ -78,6 +65,7 @@ def test_ibc(cluster):
             "trusting-period": "336h",
         },
     ]
+
     rsp = json.loads(subprocess.check_output(relayer + ["paths", "list", "--json"]))
     assert rsp == {
         "demo": {
@@ -104,6 +92,44 @@ def test_ibc(cluster):
             },
         }
     }
+
+    # wait for channel to be setup
+    for i in range(60):
+        channels = json.loads(
+            raw(
+                "query",
+                "ibc",
+                "channel",
+                "channels",
+                node=cluster["ibc-0"].node_rpc(0),
+                output="json",
+            )
+        )["channels"]
+        print("channels", channels)
+        if channels and channels[0]["state"] == "STATE_OPEN":
+            break
+        time.sleep(1)
+    else:
+        raise TimeoutError("src channel still not setup")
+
+    for i in range(60):
+        channels = json.loads(
+            raw(
+                "query",
+                "ibc",
+                "channel",
+                "channels",
+                node=cluster["ibc-1"].node_rpc(0),
+                output="json",
+            )
+        )["channels"]
+        print("channels", channels)
+        if channels and channels[0]["state"] == "STATE_OPEN":
+            break
+        time.sleep(1)
+    else:
+        raise TimeoutError("dst channel still not setup")
+
     # query balance of relayer account
     for chain_id in cluster:
         assert (
@@ -114,14 +140,16 @@ def test_ibc(cluster):
 
     # do a transfer from ibc-0 to ibc-1
     recipient = cluster["ibc-1"].address("relayer")
-    subprocess.run(
-        relayer + ["tx", "transfer", "ibc-0", "ibc-1", "10000basecro", recipient],
-        check=True,
+    rsp = cluster["ibc-0"].ibc_transfer(
+        "relayer", recipient, "10000basecro", "demo0channel", 1
     )
+    assert rsp["code"] == 0, rsp["raw_log"]
     # sender balance decreased
     assert cluster["ibc-0"].balance(cluster["ibc-0"].address("relayer")) == 9999990000
+    print("ibc transfer")
 
-    subprocess.run(relayer + ["tx", "relay", "demo", "-d"], check=True)
+    # FIXME more stable way to wait for relaying
+    time.sleep(10)
 
     denom_hash = hashlib.sha256(b"transfer/demo1channel/basecro").hexdigest().upper()
     assert (
@@ -157,19 +185,14 @@ def test_ibc(cluster):
 
     # transfer back
     recipient = cluster["ibc-0"].address("relayer")
-    subprocess.run(
-        relayer
-        + [
-            "tx",
-            "transfer",
-            "ibc-1",
-            "ibc-0",
-            "10000transfer/demo1channel/basecro",
-            recipient,
-        ],
-        check=True,
+    rsp = cluster["ibc-1"].ibc_transfer(
+        "relayer", recipient, f"10000ibc/{denom_hash}", "demo1channel", 0
     )
-    subprocess.run(relayer + ["tx", "relay", "demo", "-d"], check=True)
+    print("ibc transfer back")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # FIXME more stable way to wait for relaying
+    time.sleep(10)
 
     # both accounts return to normal
     for i, cli in enumerate(cluster.values()):

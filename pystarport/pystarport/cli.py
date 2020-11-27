@@ -10,9 +10,9 @@ from .cluster import (
     IMAGE,
     SUPERVISOR_CONFIG_FILE,
     ClusterCLI,
-    TailLogsThread,
     init_cluster,
     start_cluster,
+    start_tail_logs_thread,
 )
 from .utils import build_cli_args, interact
 
@@ -33,8 +33,7 @@ def start(data, quiet):
         signal.signal(getattr(signal, signame), lambda *args: supervisord.terminate())
 
     if not quiet:
-        tailer = TailLogsThread(data, ["*/node*.log"])
-        tailer.start()
+        tailer = start_tail_logs_thread(data)
 
     supervisord.wait()
 
