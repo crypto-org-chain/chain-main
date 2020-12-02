@@ -36,15 +36,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "relayer": {
-        "branch": "custom-coin-type",
+        "branch": "cryptocom",
         "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
         "homepage": null,
         "owner": "yihuang",
         "repo": "relayer",
-        "rev": "5e9fd91198e206fe85be6214da68f4250b557063",
-        "sha256": "14067sm24d6y479c835vbg527lxmrjznc0zgd2ywnslyz052kdis",
+        "rev": "bdb89886db510626bbd1a9d836fd530dea7d1409",
+        "sha256": "03d8y8skhj3vi645cs407x37vn2wykqhkvqk2k56v7sm8g6dyq7j",
         "type": "tarball",
-        "url": "https://github.com/yihuang/relayer/archive/5e9fd91198e206fe85be6214da68f4250b557063.tar.gz",
+        "url": "https://github.com/yihuang/relayer/archive/bdb89886db510626bbd1a9d836fd530dea7d1409.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

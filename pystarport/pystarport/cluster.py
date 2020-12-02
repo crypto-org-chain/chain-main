@@ -973,6 +973,37 @@ class ClusterCLI:
             )
         )
 
+    def ibc_transfer(
+        self,
+        from_,
+        to,
+        amount,
+        channel,  # src channel
+        target_version,  # chain version number of target chain
+        i=0,
+    ):
+        return json.loads(
+            self.raw(
+                "tx",
+                "ibc-transfer",
+                "transfer",
+                "transfer",  # src port
+                channel,
+                to,
+                amount,
+                "-y",
+                # FIXME https://github.com/cosmos/cosmos-sdk/issues/8059
+                "--absolute-timeouts",
+                from_=from_,
+                home=self.home(i),
+                node=self.node_rpc(i),
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                packet_timeout_height=f"{target_version}-10000000000",
+                packet_timeout_timestamp=0,
+            )
+        )
+
 
 def start_cluster(data_dir):
     cmd = [
@@ -1005,6 +1036,12 @@ class TailLogsThread(threading.Thread):
     @property
     def stopped(self):
         return self._stop_event.is_set()
+
+
+def start_tail_logs_thread(data_dir):
+    t = TailLogsThread(data_dir, ["*/node*.log", "relayer-*.log"])
+    t.start()
+    return t
 
 
 def process_config(config, base_port):
@@ -1189,6 +1226,7 @@ def relayer_chain_config(data_dir, chain_id):
         "gas-adjustment": 1.5,
         "gas-prices": "0.0basecro",
         "trusting-period": "336h",
+        "debug": True,
     }
 
 
@@ -1198,7 +1236,7 @@ def init_cluster(
     config = yaml.safe_load(open(config_path))
 
     # override relayer config in config.yaml
-    rly_section = config.pop("relayer", None)
+    rly_section = config.pop("relayer", {})
     for chain_id, cfg in config.items():
         cfg["path"] = str(config_path)
         cfg["chain_id"] = chain_id
@@ -1210,7 +1248,12 @@ def init_cluster(
             data_dir / chain["chain_id"], chain, base_port, image, cmd, gen_compose_file
         )
     with (data_dir / SUPERVISOR_CONFIG_FILE).open("w") as fp:
-        write_ini(fp, supervisord_ini_group(config.keys()))
+        write_ini(
+            fp,
+            supervisord_ini_group(
+                config.keys(), list(rly_section.get("paths", {}).keys())
+            ),
+        )
     if len(chains) > 1:
         # write relayer config
         rly_home = data_dir / "relayer"
@@ -1259,8 +1302,8 @@ def supervisord_ini(cmd, validators, chain_id):
     return ini
 
 
-def supervisord_ini_group(chain_ids):
-    return {
+def supervisord_ini_group(chain_ids, paths):
+    cfg = {
         "include": {
             "files": " ".join(
                 f"%(here)s/{chain_id}/tasks.ini" for chain_id in chain_ids
@@ -1279,6 +1322,13 @@ def supervisord_ini_group(chain_ids):
         "unix_http_server": {"file": "%(here)s/supervisor.sock"},
         "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
     }
+    for path in paths:
+        cfg[f"program:relayer-{path}"] = dict(
+            COMMON_PROG_OPTIONS,
+            command=f"relayer --home %(here)s/relayer tx link-then-start {path}",
+            stdout_logfile=f"%(here)s/relayer-{path}.log",
+        )
+    return cfg
 
 
 def docker_compose_yml(cmd, validators, data_dir, image):
@@ -1333,8 +1383,7 @@ if __name__ == "__main__":
     data_dir = Path("data")
     init_cluster(data_dir, "config.yaml", 26650)
     supervisord = start_cluster(data_dir)
-    t = TailLogsThread(data_dir, ["*/node*.log"])
-    t.start()
+    t = start_tail_logs_thread(data_dir)
     supervisord.wait()
     t.stop()
     t.join()
