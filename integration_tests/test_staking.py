@@ -4,7 +4,7 @@ import pytest
 from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
-from .utils import parse_events, wait_for_block_time, wait_for_port
+from .utils import parse_events, wait_for_block, wait_for_block_time, wait_for_port
 
 
 def test_staking_delegate(cluster):
@@ -116,3 +116,28 @@ def test_join_validator(cluster):
     ), "commission cannot be changed more than once in 24h"
     assert cluster.edit_validator(i, moniker="awesome node")["code"] == 0
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
+
+
+def test_min_self_delegation(cluster):
+    """
+    - validator unbond min_self_delegation
+    - check not in validator set anymore
+    """
+    wait_for_block(cluster, 3)
+
+    valset = cluster.validators()
+    oper_addr = valset[2]["operator_address"]
+    acct_addr = cluster.address("validator", i=2)
+
+    print(oper_addr, acct_addr)
+    rsp = cluster.unbond_amount(oper_addr, "90000000basecro", acct_addr, i=2)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert (
+        cluster.validators()[2]["status"] == "BOND_STATUS_BONDED"
+    ), "validator set not changed yet"
+
+    rsp = cluster.unbond_amount(oper_addr, "1basecro", acct_addr, i=2)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert (
+        cluster.validators()[2]["status"] == "BOND_STATUS_UNBONDING"
+    ), "validator get removed"

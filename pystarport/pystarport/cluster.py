@@ -406,11 +406,12 @@ class ClusterCLI:
             **kwargs,
         )
 
-    def gentx(self, name, coins, i):
+    def gentx(self, name, coins, i, min_self_delegation=1):
         return self.raw(
             "gentx",
             name,
             amount=coins,
+            min_self_delegation=str(min_self_delegation),
             home=self.home(i),
             chain_id=self.chain_id,
             keyring_backend="test",
@@ -1164,7 +1165,12 @@ def init_devnet(
         if "coins" in node:
             cli.add_genesis_account(account["address"], node["coins"], i)
         if "staked" in node:
-            cli.gentx("validator", node["staked"], i)
+            cli.gentx(
+                "validator",
+                node["staked"],
+                i,
+                min_self_delegation=node.get("min_self_delegation", 1),
+            )
 
     # create accounts
     for account in config.get("accounts", []):
