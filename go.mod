@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.40.0-rc3.0.20201125180210-512b533242d3
+	github.com/cosmos/cosmos-sdk v0.40.0-rc5
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.3
@@ -15,8 +15,8 @@ require (
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
-	github.com/tendermint/tendermint v0.34.0-rc6
-	github.com/tendermint/tm-db v0.6.2
+	github.com/tendermint/tendermint v0.34.0
+	github.com/tendermint/tm-db v0.6.3
 	google.golang.org/genproto v0.0.0-20201111145450-ac7456db90a6
 	google.golang.org/grpc v1.33.2
 
@@ -25,5 +25,3 @@ require (
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.2-alpha.regen.4
 
 replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
-
-replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.34.4-0.20201127033259-ec3c80ebc151

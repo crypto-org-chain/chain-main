@@ -49,8 +49,7 @@ Example:
 		),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx := client.GetClientContextFromCmd(cmd)
-			clientCtx, queryErr := client.ReadQueryCommandFlags(clientCtx, cmd.Flags())
+			clientCtx, queryErr := client.GetClientQueryContext(cmd)
 			clientCtx = clientCtx.WithNodeURI("http://localhost:26657")
 			if queryErr != nil {
 				return queryErr
