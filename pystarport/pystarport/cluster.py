@@ -1103,6 +1103,7 @@ def init_devnet(
         ChainCommand(cmd)(
             "init",
             val["moniker"],
+            log_level="info",
             chain_id=config["chain_id"],
             home=home_dir(data_dir, i),
         )
@@ -1355,6 +1356,7 @@ def edit_tm_cfg(path, base_port, peers, *, custom_edit=None):
     doc = tomlkit.parse(open(path).read())
     # tendermint is start in process, not needed
     # doc['proxy_app'] = 'tcp://127.0.0.1:%d' % abci_port(base_port)
+    doc["log_level"] = "info"
     doc["rpc"]["laddr"] = "tcp://0.0.0.0:%d" % ports.rpc_port(base_port)
     doc["rpc"]["pprof_laddr"] = "localhost:%d" % ports.pprof_port(base_port)
     doc["rpc"]["grpc_laddr"] = "tcp://0.0.0.0:%d" % ports.grpc_port_tx_only(base_port)
