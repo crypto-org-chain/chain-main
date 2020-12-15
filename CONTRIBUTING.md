@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for your interest in contributing to Chain! Good places to start are this document and [the official documentation](https://github.com/crypto-com/chain-docs). If you have any questions, feel free to ask on [Gitter](https://gitter.im/crypto-com/community?utm_source=share-link&utm_medium=link&utm_campaign=share-link).
+Thank you for your interest in contributing to Chain! Good places to start are this document and [the official documentation](https://github.com/crypto-com/chain-docs). If you have any questions, feel free to ask on [Discord](https://discord.gg/pahqHz26q4).
 
 
 ## Code of Conduct
