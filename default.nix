@@ -119,6 +119,7 @@ rec {
 
   # main entrypoint script to run integration tests
   run-integration-tests = pkgs.writeShellScriptBin "run-integration-tests" ''
+    set -e
     export PATH=${ci-env}/bin:$PATH
     export TESTS=${tests_src}/integration_tests
     pytest -v -n 7 -m 'not ledger' --dist loadscope $TESTS
