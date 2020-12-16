@@ -65,7 +65,7 @@ def test_param_proposal(cluster, vote_option):
         assert rsp["code"] == 0, rsp["raw_log"]
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
-        # TODO: all tests were off by 1, so I assume it's because of the additional 
+        # TODO: all tests were off by 1, so I assume it's because of the additional
         # node that was added in min_self_delegation change which wasn't caught
         # as perhaps GH Actions didn't report errors?
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=2)
@@ -120,13 +120,7 @@ def test_deposit_period_expires(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
             "deposit": "5000basecro",
         },
     )
@@ -228,13 +222,7 @@ def test_change_vote(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
             "deposit": "10000000basecro",
         },
     )
@@ -284,13 +272,7 @@ def test_inherit_vote(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
             "deposit": "10000000basecro",
         },
     )

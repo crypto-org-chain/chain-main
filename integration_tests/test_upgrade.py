@@ -78,7 +78,9 @@ def cosmovisor_cluster(pytestconfig, tmp_path_factory):
 
 
 @pytest.mark.slow
-@pytest.mark.skip(reason="FIXME -- needs more work / possible incompatible external components with rc5")
+@pytest.mark.skip(
+    reason="FIXME -- needs more work / possible incompatible external components with rc5"
+)
 def test_cosmovisor(cosmovisor_cluster):
     """
     - propose an upgrade and pass it
@@ -123,11 +125,7 @@ def test_cosmovisor(cosmovisor_cluster):
 
 
 def propose_and_pass(cluster, kind, proposal):
-    rsp = cluster.gov_propose(
-        "community",
-        kind,
-        proposal,
-    )
+    rsp = cluster.gov_propose("community", kind, proposal,)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
@@ -154,7 +152,9 @@ def propose_and_pass(cluster, kind, proposal):
 
 
 @pytest.mark.slow
-@pytest.mark.skip(reason="FIXME -- needs more work / possible incompatible external components with rc5")
+@pytest.mark.skip(
+    reason="FIXME -- needs more work / possible incompatible external components with rc5"
+)
 def test_manual_upgrade(cosmovisor_cluster):
     """
     - do the upgrade test by replacing binary manually
@@ -209,10 +209,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     assert (
         json.load((cluster.home(0) / "data/upgrade-info.json").open())
         == json.load((cluster.home(1) / "data/upgrade-info.json").open())
-        == {
-            "name": plan_name,
-            "height": target_height,
-        }
+        == {"name": plan_name, "height": target_height,}
     )
 
     # use the upgrade-test binary

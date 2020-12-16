@@ -20,7 +20,9 @@ def cluster(pytestconfig, tmp_path_factory):
     )
 
 
-@pytest.mark.skip(reason="FIXME -- needs more work / possible incompatible external components with rc5")
+@pytest.mark.skip(
+    reason="FIXME -- needs more work / possible incompatible external components with rc5"
+)
 def test_ibc(cluster):
     for cli in cluster.values():
         # wait for at least 3 blocks, because
@@ -34,14 +36,7 @@ def test_ibc(cluster):
     # init light clients
     for chain_id in cluster:
         subprocess.run(
-            relayer
-            + [
-                "light",
-                "init",
-                chain_id,
-                "-f",
-            ],
-            check=True,
+            relayer + ["light", "init", chain_id, "-f",], check=True,
         )
 
     # check status
@@ -88,9 +83,7 @@ def test_ibc(cluster):
                 "order": "unordered",
                 "version": "ics20-1",
             },
-            "strategy": {
-                "type": "naive",
-            },
+            "strategy": {"type": "naive",},
         }
     }
 
@@ -153,19 +146,16 @@ def test_ibc(cluster):
     time.sleep(10)
 
     denom_hash = hashlib.sha256(b"transfer/demo1channel/basecro").hexdigest().upper()
-    assert (
-        json.loads(
-            raw(
-                "query",
-                "ibc-transfer",
-                "denom-trace",
-                denom_hash,
-                node=cluster["ibc-1"].node_rpc(0),
-                output="json",
-            )
+    assert json.loads(
+        raw(
+            "query",
+            "ibc-transfer",
+            "denom-trace",
+            denom_hash,
+            node=cluster["ibc-1"].node_rpc(0),
+            output="json",
         )
-        == {"denom_trace": {"path": "transfer/demo1channel", "base_denom": "basecro"}}
-    )
+    ) == {"denom_trace": {"path": "transfer/demo1channel", "base_denom": "basecro"}}
     # recipient get the coins
     assert json.loads(
         raw(
@@ -178,10 +168,7 @@ def test_ibc(cluster):
         )
     )["balances"] == [
         {"denom": "basecro", "amount": "10000000000"},
-        {
-            "denom": f"ibc/{denom_hash}",
-            "amount": "10000",
-        },
+        {"denom": f"ibc/{denom_hash}", "amount": "10000",},
     ]
 
     # transfer back
