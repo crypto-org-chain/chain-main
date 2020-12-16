@@ -65,7 +65,11 @@ def test_param_proposal(cluster, vote_option):
         assert rsp["code"] == 0, rsp["raw_log"]
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
-
+        # TODO: all tests were off by 1, so I assume it's because of the additional 
+        # node that was added in min_self_delegation change which wasn't caught
+        # as perhaps GH Actions didn't report errors?
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=2)
+        assert rsp["code"] == 0, rsp["raw_log"]
         assert (
             int(cluster.query_tally(proposal_id)[vote_option]) == cluster.staking_pool()
         ), "all voted"
