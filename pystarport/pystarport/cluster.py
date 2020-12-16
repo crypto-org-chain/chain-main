@@ -261,7 +261,7 @@ class ClusterCLI:
 
         def custom_edit_tm(doc):
             if statesync:
-                info = self.status()["sync_info"]
+                info = self.status()["SyncInfo"]
                 doc["statesync"].update(
                     {
                         "enable": True,
@@ -424,10 +424,10 @@ class ClusterCLI:
         return json.loads(self.raw("status", node=self.node_rpc(i)))
 
     def block_height(self, i=0):
-        return int(self.status(i)["sync_info"]["latest_block_height"])
+        return int(self.status(i)["SyncInfo"]["latest_block_height"])
 
     def block_time(self, i=0):
-        return isoparse(self.status(i)["sync_info"]["latest_block_time"])
+        return isoparse(self.status(i)["SyncInfo"]["latest_block_time"])
 
     def balance(self, addr, i=0):
         coin = json.loads(

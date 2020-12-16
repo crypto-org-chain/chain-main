@@ -19,7 +19,7 @@ def wait_for_block(cli, height, timeout=60):
         except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
-            if int(status["sync_info"]["latest_block_height"]) >= height:
+            if int(status["SyncInfo"]["latest_block_height"]) >= height:
                 break
         time.sleep(0.5)
     else:
@@ -27,10 +27,10 @@ def wait_for_block(cli, height, timeout=60):
 
 
 def wait_for_new_blocks(cli, n):
-    begin_height = int((cli.status())["sync_info"]["latest_block_height"])
+    begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
     while True:
         time.sleep(0.5)
-        cur_height = int((cli.status())["sync_info"]["latest_block_height"])
+        cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
         if cur_height - begin_height >= n:
             break
 
@@ -38,7 +38,7 @@ def wait_for_new_blocks(cli, n):
 def wait_for_block_time(cli, t):
     print("wait for block time", t)
     while True:
-        now = isoparse((cli.status())["sync_info"]["latest_block_time"])
+        now = isoparse((cli.status())["SyncInfo"]["latest_block_time"])
         print("block time now:", now)
         if now >= t:
             break
