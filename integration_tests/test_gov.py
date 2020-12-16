@@ -120,7 +120,7 @@ def test_deposit_period_expires(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1, }],
             "deposit": "5000basecro",
         },
     )
@@ -222,7 +222,7 @@ def test_change_vote(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1, }],
             "deposit": "10000000basecro",
         },
     )
@@ -272,7 +272,7 @@ def test_inherit_vote(cluster):
         {
             "title": "Increase number of max validators",
             "description": "ditto",
-            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1,}],
+            "changes": [{"subspace": "staking", "key": "MaxValidators", "value": 1, }],
             "deposit": "10000000basecro",
         },
     )

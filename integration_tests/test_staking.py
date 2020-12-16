@@ -118,9 +118,7 @@ def test_join_validator(cluster):
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
 
 
-@pytest.mark.skip(
-    reason="FIXME -- not sure if this test worked in the first place? AssertionError: failed to execute message; message index: 0: no delegation for (address, validator) tuple"
-)
+@pytest.mark.skip(reason="FIXME -- not sure if this test worked in the first place?")
 def test_min_self_delegation(cluster):
     """
     - validator unbond min_self_delegation
@@ -133,6 +131,7 @@ def test_min_self_delegation(cluster):
     acct_addr = cluster.address("validator", i=2)
 
     print(oper_addr, acct_addr)
+    # fails  AssertionError: failed to execute message; message index: 0: no delegation for (address, validator) tuple
     rsp = cluster.unbond_amount(oper_addr, "90000000basecro", acct_addr, i=2)
     assert rsp["code"] == 0, rsp["raw_log"]
     assert (

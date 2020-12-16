@@ -21,7 +21,7 @@ def cluster(pytestconfig, tmp_path_factory):
 
 
 @pytest.mark.skip(
-    reason="FIXME -- needs more work / possible incompatible external components with rc5"
+    reason="FIXME: needs more work / possible incompatible external components with rc5"
 )
 def test_ibc(cluster):
     for cli in cluster.values():
@@ -36,7 +36,7 @@ def test_ibc(cluster):
     # init light clients
     for chain_id in cluster:
         subprocess.run(
-            relayer + ["light", "init", chain_id, "-f",], check=True,
+            relayer + ["light", "init", chain_id, "-f", ], check=True,
         )
 
     # check status
@@ -83,7 +83,7 @@ def test_ibc(cluster):
                 "order": "unordered",
                 "version": "ics20-1",
             },
-            "strategy": {"type": "naive",},
+            "strategy": {"type": "naive", },
         }
     }
 
@@ -168,7 +168,7 @@ def test_ibc(cluster):
         )
     )["balances"] == [
         {"denom": "basecro", "amount": "10000000000"},
-        {"denom": f"ibc/{denom_hash}", "amount": "10000",},
+        {"denom": f"ibc/{denom_hash}", "amount": "10000", },
     ]
 
     # transfer back
