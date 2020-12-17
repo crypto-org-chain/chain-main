@@ -20,6 +20,9 @@ def cluster(pytestconfig, tmp_path_factory):
     )
 
 
+@pytest.mark.skip(
+    reason="FIXME: needs more work / possible incompatible external components with rc5"
+)
 def test_ibc(cluster):
     for cli in cluster.values():
         # wait for at least 3 blocks, because

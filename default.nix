@@ -25,7 +25,7 @@ let
       src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:0ivzdzn1kwzaa0zafmilf1pwqc5fb4rh7km5h3hv86r83gi4vflc;
+    vendorSha256 = sha256:1xyxxs6rs1yvfxkry6hbnl5gw8hw1r494vz0w3ss3bd6dfi8rrgn;
     runVend = true;
     outputs = [
       "out"
@@ -99,45 +99,41 @@ rec {
   ];
 
   # sources for integration tests
-  tests = pkgs.runCommandLocal "tests"
-    {
-      src = lib.sourceByRegex ./. [
-        "^integration_tests$"
-        "^integration_tests/.*\\.py$"
-        "^integration_tests/configs$"
-        "^integration_tests/configs/.*"
-      ];
-    } ''
-    mkdir -p $out/share
-    ln -s $src/integration_tests $out/share/
-  '';
+  tests_src = lib.sourceByRegex ./. [
+    "^integration_tests$"
+    "^integration_tests/.*\\.py$"
+    "^integration_tests/configs$"
+    "^integration_tests/configs/.*"
+  ];
 
   # an env which can run integration tests
-  ci-env-inner = pkgs.buildEnv {
-    name = "ci-env-inner";
+  ci-env = pkgs.buildEnv {
+    name = "ci-env";
     pathsToLink = [ "/bin" "/share" ];
     paths = with pkgs; [
       lint-env
       chain-maind-zemu
       chain-maind-zemu.instrumented
-      tests
     ] ++ common-env;
   };
 
   # main entrypoint script to run integration tests
   run-integration-tests = pkgs.writeShellScriptBin "run-integration-tests" ''
-    export PATH=${ci-env-inner}/bin:$PATH
-    export TESTS=${ci-env-inner}/share/integration_tests
+    set -e
+    export PATH=${ci-env}/bin:$PATH
+    export TESTS=${tests_src}/integration_tests
     pytest -v -n 7 -m 'not ledger' --dist loadscope $TESTS
     pytest -v -m ledger $TESTS
   '';
 
-  ci-env = pkgs.symlinkJoin {
-    name = "ci-env";
-    paths = [
-      ci-env-inner
+  ci-shell = pkgs.mkShell {
+    buildInputs = [
+      ci-env
       run-integration-tests
     ];
+    shellHook = ''
+      export TESTS=${tests_src}/integration_tests
+    '';
   };
 
   # test in dev-shell will use the chain-maind in PATH
@@ -152,6 +148,8 @@ rec {
     shellHook = ''
       # prefer local pystarport directory for development
       export PYTHONPATH=./pystarport:$PYTHONPATH
+      # convinience for working with remote shell
+      export SRC=${chain-maind.src}
     '';
   };
 }

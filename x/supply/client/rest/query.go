@@ -25,7 +25,6 @@ func TotalSupplyHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		// nolint: lll
 		res, height, err := clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryTotalSupply), bz)
 
 		if rest.CheckInternalServerError(w, err) {
@@ -53,7 +52,6 @@ func LiquidSupplyHandlerFn(clientCtx client.Context) http.HandlerFunc {
 			return
 		}
 
-		// nolint: lll
 		res, height, err := clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryLiquidSupply), bz)
 
 		if rest.CheckInternalServerError(w, err) {

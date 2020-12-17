@@ -8,11 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"github.com/crypto-com/chain-main/app/params"
 	"github.com/imdario/mergo"
-
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	tmcli "github.com/tendermint/tendermint/libs/cli"
@@ -25,24 +21,25 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/crypto-com/chain-main/app"
+	"github.com/crypto-com/chain-main/app/params"
 	"github.com/crypto-com/chain-main/config"
 	chainmaincli "github.com/crypto-com/chain-main/x/chainmain/client/cli"
-	chaingenutilcli "github.com/crypto-com/chain-main/x/genutil/client/cli"
 )
-
-const appName = "chain-maind"
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
 // main function.
@@ -57,10 +54,10 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		WithInput(os.Stdin).
 		WithAccountRetriever(types.AccountRetriever{}).
 		WithBroadcastMode(flags.BroadcastBlock).
-		WithHomeDir(app.DefaultNodeHome(appName))
+		WithHomeDir(app.DefaultNodeHome)
 
 	rootCmd := &cobra.Command{
-		Use:   appName,
+		Use:   "chain-maind",
 		Short: "Crypto.com Chain app",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
@@ -84,18 +81,21 @@ func Execute(rootCmd *cobra.Command) error {
 	// and a Tendermint RPC. This requires the use of a pointer reference when
 	// getting and setting the client.Context. Ideally, we utilize
 	// https://github.com/spf13/cobra/pull/1118.
+	srvCtx := server.NewDefaultContext()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, client.ClientContextKey, &client.Context{})
-	ctx = context.WithValue(ctx, server.ServerContextKey, server.NewDefaultContext())
+	ctx = context.WithValue(ctx, server.ServerContextKey, srvCtx)
 
-	executor := tmcli.PrepareBaseCmd(rootCmd, "", app.DefaultNodeHome(appName))
+	rootCmd.PersistentFlags().String("log-level", srvCtx.Config.LogLevel, "The logging level in the format of trace|debug|info|warn|error|fatal|panic")
+
+	executor := tmcli.PrepareBaseCmd(rootCmd, "", app.DefaultNodeHome)
 	return executor.ExecuteContext(ctx)
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler
 
-	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome(appName))
+	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome)
 	initCmd.PostRunE = func(cmd *cobra.Command, args []string) error {
 		genesisPatch := map[string]interface{}{
 			"app_state": map[string]interface{}{
@@ -181,30 +181,24 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 
 	rootCmd.AddCommand(
 		initCmd,
-		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome(appName)),
+		genutilcli.CollectGenTxsCmd(banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
 		genutilcli.MigrateGenesisCmd(),
-		chaingenutilcli.GenTxCmd(
-			app.ModuleBasics,
-			encodingConfig.TxConfig,
-			banktypes.GenesisBalancesIterator{},
-			app.DefaultNodeHome(appName),
-			app.DefaultCoinParser,
-		),
-		genutilcli.ValidateGenesisCmd(app.ModuleBasics, encodingConfig.TxConfig),
-		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome(appName), app.DefaultCoinParser),
+		genutilcli.GenTxCmd(app.ModuleBasics, encodingConfig.TxConfig, banktypes.GenesisBalancesIterator{}, app.DefaultNodeHome),
+		genutilcli.ValidateGenesisCmd(app.ModuleBasics),
+		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		chainmaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}, app.DefaultCoinParser),
+		chainmaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 	)
 
-	server.AddCommands(rootCmd, app.DefaultNodeHome(appName), newApp, exportAppStateAndTMValidators, addModuleInitFlags)
+	server.AddCommands(rootCmd, app.DefaultNodeHome, newApp, exportAppStateAndTMValidators, addModuleInitFlags)
 
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		rpc.StatusCommand(),
 		queryCommand(),
 		txCommand(),
-		keys.Commands(app.DefaultNodeHome(appName)),
+		keys.Commands(app.DefaultNodeHome),
 	)
 }
 
@@ -254,6 +248,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
 		flags.LineBreak,
+		vestingcli.GetTxCmd(),
 	)
 
 	app.ModuleBasics.AddTxCommands(cmd)
@@ -262,8 +257,8 @@ func txCommand() *cobra.Command {
 	return cmd
 }
 
-func newApp(logger log.Logger, db dbm.DB,
-	traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+// newApp is an AppCreator
+func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
 	var cache sdk.MultiStorePersistentCache
 
 	if cast.ToBool(appOpts.Get(server.FlagInterBlockCache)) {
@@ -291,14 +286,16 @@ func newApp(logger log.Logger, db dbm.DB,
 	}
 
 	return app.New(
-		appName, logger, db, traceStore, true, skipUpgradeHeights,
+		logger, db, traceStore, true, skipUpgradeHeights,
 		cast.ToString(appOpts.Get(flags.FlagHome)),
 		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
 		app.MakeEncodingConfig(), // Ideally, we would reuse the one created by NewRootCmd.
+		appOpts,
 		baseapp.SetPruning(pruningOpts),
 		baseapp.SetMinGasPrices(cast.ToString(appOpts.Get(server.FlagMinGasPrices))),
 		baseapp.SetHaltHeight(cast.ToUint64(appOpts.Get(server.FlagHaltHeight))),
 		baseapp.SetHaltTime(cast.ToUint64(appOpts.Get(server.FlagHaltTime))),
+		baseapp.SetMinRetainBlocks(cast.ToUint64(appOpts.Get(server.FlagMinRetainBlocks))),
 		baseapp.SetInterBlockCache(cache),
 		baseapp.SetTrace(cast.ToBool(appOpts.Get(server.FlagTrace))),
 		baseapp.SetIndexEvents(cast.ToStringSlice(appOpts.Get(server.FlagIndexEvents))),
@@ -308,21 +305,24 @@ func newApp(logger log.Logger, db dbm.DB,
 	)
 }
 
+// exportAppStateAndTMValidators creates a new chain app (optionally at a given height)
+// and exports state.
 func exportAppStateAndTMValidators(
-	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailWhiteList []string,
+	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions) (servertypes.ExportedApp, error) {
+
 	encCfg := app.MakeEncodingConfig() // Ideally, we would reuse the one created by NewRootCmd.
 	encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
 	var a *app.ChainApp
 	if height != -1 {
-		a = app.New(appName, logger, db, traceStore, false, map[int64]bool{}, "", uint(1), encCfg)
+		a = app.New(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), encCfg, appOpts)
 
 		if err := a.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		a = app.New(appName, logger, db, traceStore, true, map[int64]bool{}, "", uint(1), encCfg)
+		a = app.New(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), encCfg, appOpts)
 	}
 
-	return a.ExportAppStateAndValidators(forZeroHeight, jailWhiteList)
+	return a.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs)
 }

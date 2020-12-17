@@ -65,7 +65,6 @@ def test_param_proposal(cluster, vote_option):
         assert rsp["code"] == 0, rsp["raw_log"]
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
-
         assert (
             int(cluster.query_tally(proposal_id)[vote_option]) == cluster.staking_pool()
         ), "all voted"

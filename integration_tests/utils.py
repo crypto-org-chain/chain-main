@@ -19,7 +19,7 @@ def wait_for_block(cli, height, timeout=60):
         except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
-            if int(status["sync_info"]["latest_block_height"]) >= height:
+            if int(status["SyncInfo"]["latest_block_height"]) >= height:
                 break
         time.sleep(0.5)
     else:
@@ -27,10 +27,10 @@ def wait_for_block(cli, height, timeout=60):
 
 
 def wait_for_new_blocks(cli, n):
-    begin_height = int((cli.status())["sync_info"]["latest_block_height"])
+    begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
     while True:
         time.sleep(0.5)
-        cur_height = int((cli.status())["sync_info"]["latest_block_height"])
+        cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
         if cur_height - begin_height >= n:
             break
 
@@ -38,7 +38,7 @@ def wait_for_new_blocks(cli, n):
 def wait_for_block_time(cli, t):
     print("wait for block time", t)
     while True:
-        now = isoparse((cli.status())["sync_info"]["latest_block_time"])
+        now = isoparse((cli.status())["SyncInfo"]["latest_block_time"])
         print("block time now:", now)
         if now >= t:
             break
@@ -105,34 +105,33 @@ def cluster_fixture(
         clis[chain_id] = cluster.ClusterCLI(data, chain_id)
 
     supervisord = cluster.start_cluster(data)
-
     if not quiet:
         tailer = cluster.start_tail_logs_thread(data)
 
-    begin = time.time()
-    for cli in clis.values():
-        # wait for first node rpc port available before start testing
-        wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
-        # wait for the first block generated before start testing
-        wait_for_block(cli, 1)
+    try:
+        begin = time.time()
+        for cli in clis.values():
+            # wait for first node rpc port available before start testing
+            wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
+            # wait for the first block generated before start testing
+            wait_for_block(cli, 1)
 
-    if len(clis) == 1:
-        yield list(clis.values())[0]
-    else:
-        yield clis
+        if len(clis) == 1:
+            yield list(clis.values())[0]
+        else:
+            yield clis
 
-    if enable_cov:
-        # wait for server startup complete to generate the coverage report
-        duration = time.time() - begin
-        if duration < 15:
-            time.sleep(15 - duration)
-
-    supervisord.terminate()
-    supervisord.wait()
-
-    if not quiet:
-        tailer.stop()
-        tailer.join()
+        if enable_cov:
+            # wait for server startup complete to generate the coverage report
+            duration = time.time() - begin
+            if duration < 15:
+                time.sleep(15 - duration)
+    finally:
+        supervisord.terminate()
+        supervisord.wait()
+        if not quiet:
+            tailer.stop()
+            tailer.join()
 
     if enable_cov:
         # collect the coverage results
