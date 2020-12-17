@@ -1,6 +1,6 @@
 # Changelog
 
-*December 15, 2020*
+*December 17, 2020*
 ## v0.8.0-rc0 
 A version based on rc5 of Cosmos SDK 0.40 release candidate.
 ### Breaking changes
