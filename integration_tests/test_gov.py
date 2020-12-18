@@ -200,7 +200,9 @@ def test_community_pool_spend_proposal(cluster):
     # wait for voting period end
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
-    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=1)
+    )
 
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal

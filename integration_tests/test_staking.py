@@ -1,10 +1,17 @@
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
 from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
-from .utils import parse_events, wait_for_block, wait_for_block_time, wait_for_port
+from .utils import (
+    cluster_fixture,
+    parse_events,
+    wait_for_block,
+    wait_for_block_time,
+    wait_for_port,
+)
 
 
 def test_staking_delegate(cluster):
@@ -118,29 +125,47 @@ def test_join_validator(cluster):
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
 
 
-@pytest.mark.skip(reason="FIXME: not sure if this test worked in the first place?")
-def test_min_self_delegation(cluster):
+@pytest.fixture(scope="module")
+def staking_cluster(pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/staking.yaml",
+        27000,
+        tmp_path_factory,
+        quiet=pytestconfig.getoption("supervisord-quiet"),
+    )
+
+
+def test_min_self_delegation(staking_cluster):
     """
     - validator unbond min_self_delegation
     - check not in validator set anymore
     """
-    wait_for_block(cluster, 3)
+    cluster = staking_cluster
+    wait_for_block(cluster, 2)
 
-    valset = cluster.validators()
-    oper_addr = valset[2]["operator_address"]
+    assert len(cluster.validators()) == 3, "wrong validator set"
+
+    oper_addr = cluster.address("validator", i=2, bech="val")
     acct_addr = cluster.address("validator", i=2)
-
-    print(oper_addr, acct_addr)
-    # fails  AssertionError: failed to execute message;
-    # message index: 0: no delegation for (address, validator) tuple
     rsp = cluster.unbond_amount(oper_addr, "90000000basecro", acct_addr, i=2)
     assert rsp["code"] == 0, rsp["raw_log"]
+
+    def find_validator():
+        return next(
+            iter(
+                val
+                for val in cluster.validators()
+                if val["operator_address"] == oper_addr
+            )
+        )
+
     assert (
-        cluster.validators()[2]["status"] == "BOND_STATUS_BONDED"
+        find_validator()["status"] == "BOND_STATUS_BONDED"
     ), "validator set not changed yet"
 
     rsp = cluster.unbond_amount(oper_addr, "1basecro", acct_addr, i=2)
     assert rsp["code"] == 0, rsp["raw_log"]
     assert (
-        cluster.validators()[2]["status"] == "BOND_STATUS_UNBONDING"
+        find_validator()["status"] == "BOND_STATUS_UNBONDING"
     ), "validator get removed"
