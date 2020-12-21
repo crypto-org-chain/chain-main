@@ -7,12 +7,14 @@ import (
 
 	"github.com/confluentinc/bincover"
 	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/crypto-com/chain-main/cmd/chain-maind/app"
+	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
+	"github.com/crypto-com/chain-main/app"
+	cmd "github.com/crypto-com/chain-main/cmd/chain-maind/app"
 )
 
 func test_main() {
-	rootCmd, _ := app.NewRootCmd()
-	if err := app.Execute(rootCmd); err != nil {
+	rootCmd, _ := cmd.NewRootCmd()
+	if err := svrcmd.Execute(rootCmd, app.DefaultNodeHome); err != nil {
 		switch e := err.(type) {
 		case server.ErrorCode:
 			bincover.ExitCode = e.Code
