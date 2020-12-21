@@ -3,8 +3,14 @@ from pathlib import Path
 
 import pytest
 from dateutil.parser import isoparse
+from pystarport.ports import rpc_port
 
-from .utils import cluster_fixture, wait_for_block_time, wait_for_new_blocks
+from .utils import (
+    cluster_fixture,
+    wait_for_block_time,
+    wait_for_new_blocks,
+    wait_for_port,
+)
 
 """
 slashing testing
@@ -35,6 +41,7 @@ def test_slashing(cluster):
     cluster.supervisor.stopProcess(f"{cluster.chain_id}-node2")
     wait_for_new_blocks(cluster, 10)
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node2")
+    wait_for_port(rpc_port(cluster.base_port(2)))
 
     val = cluster.validator(val_addr)
     tokens2 = int(val["tokens"])
