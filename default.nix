@@ -152,4 +152,8 @@ rec {
       export SRC=${chain-maind.src}
     '';
   };
+
+  chain-utils-testnet = import ./scripts/chain-utils.nix {
+    inherit pkgs; network = "testnet";
+  };
 }

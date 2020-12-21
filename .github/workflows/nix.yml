@@ -33,6 +33,8 @@ jobs:
         skipPush: ${{github.event_name == 'pull_request'}}
     - name: Run integration tests
       run: make nix-integration-test
+    - name: Build chain utils
+      run: nix-build -A chain-utils-testnet
     - name: Upload coverage report
       uses: codecov/codecov-action@v1
       with:
