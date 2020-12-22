@@ -99,12 +99,18 @@ rec {
   ];
 
   # sources for integration tests
-  tests_src = lib.sourceByRegex ./. [
+  # it needs the chain source code to build patched binaries on the fly
+  tests_src = lib.sourceByRegex ./. ([
     "^integration_tests$"
     "^integration_tests/.*\\.py$"
     "^integration_tests/configs$"
     "^integration_tests/configs/.*"
-  ];
+    "^integration_tests/upgrade-test.nix$"
+    "^integration_tests/upgrade-test.patch$"
+    "^nix$"
+    "^nix/.*"
+    "^default.nix$"
+  ] ++ src_regexes);
 
   # an env which can run integration tests
   ci-env = pkgs.buildEnv {
