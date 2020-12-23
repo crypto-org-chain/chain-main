@@ -16,7 +16,9 @@ def test_reward(cluster):
     # wait for initial reward processed, so that distribution values can be read
     wait_for_block(cluster, 2)
     old_commission_amount = cluster.distribution_commission(validator1_operator_address)
-    old_commission_amount2 = cluster.distribution_commission(validator2_operator_address)
+    old_commission_amount2 = cluster.distribution_commission(
+        validator2_operator_address,
+    )
     old_community_amount = cluster.distribution_community()
     old_reward_amount = cluster.distribution_reward(validator1_address)
     old_reward_amount2 = cluster.distribution_reward(validator2_address)

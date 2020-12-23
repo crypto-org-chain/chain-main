@@ -1,19 +1,16 @@
 import enum
 import hashlib
 import json
-import os
-import socket
 import tempfile
 import threading
 import time
-import uuid
 
 import bech32
-import docker
 from dateutil.parser import isoparse
+
 from .app import CHAIN
-from .ledger import ZEMU_HOST, ZEMU_BUTTON_PORT, LedgerButton
-from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
+from .ledger import ZEMU_BUTTON_PORT, ZEMU_HOST, LedgerButton
+from .utils import build_cli_args_safe, format_doc_string, interact
 
 
 class ModuleAccount(enum.Enum):
@@ -24,6 +21,7 @@ class ModuleAccount(enum.Enum):
     BondedPool = "bonded_tokens_pool"
     NotBondedPool = "not_bonded_tokens_pool"
     IBCTransfer = "transfer"
+
 
 @format_doc_string(
     options=",".join(v.value for v in ModuleAccount.__members__.values())
@@ -238,7 +236,6 @@ class CosmosCLI:
         )
         return output.strip().decode()
 
-
     def account(self, addr):
         return json.loads(
             self.raw(
@@ -248,9 +245,7 @@ class CosmosCLI:
 
     def supply(self, supply_type):
         return json.loads(
-            self.raw(
-                "query", "supply", supply_type, output="json", node=self.node_rpc
-            )
+            self.raw("query", "supply", supply_type, output="json", node=self.node_rpc)
         )
 
     def validator(self, addr):
@@ -275,9 +270,7 @@ class CosmosCLI:
     def staking_pool(self, bonded=True):
         return int(
             json.loads(
-                self.raw(
-                    "query", "staking", "pool", output="json", node=self.node_rpc
-                )
+                self.raw("query", "staking", "pool", output="json", node=self.node_rpc)
             )["bonded_tokens" if bonded else "not_bonded_tokens"]
         )
 
@@ -300,9 +293,7 @@ class CosmosCLI:
             )
         )
 
-    def transfer_from_ledger(
-        self, from_, to, coins, generate_only=False, fees=None
-    ):
+    def transfer_from_ledger(self, from_, to, coins, generate_only=False, fees=None):
         def send_request():
             try:
                 self.output = self.raw(
@@ -406,7 +397,7 @@ class CosmosCLI:
                 node=self.node_rpc,
             )
         )
-    
+
     # from_delegator can be account name or address
     def withdraw_all_rewards(self, from_delegator):
         return json.loads(
@@ -522,7 +513,13 @@ class CosmosCLI:
         """MsgCreateValidator
         create the node with create_node before call this"""
         pubkey = (
-            self.raw("tendermint", "show-validator", home=self.data_dir).strip().decode()
+            self.raw(
+                "tendermint",
+                "show-validator",
+                home=self.data_dir,
+            )
+            .strip()
+            .decode()
         )
         return json.loads(
             self.raw(
@@ -620,7 +617,7 @@ class CosmosCLI:
                     "submit-proposal",
                     kind,
                     "-y",
-                    from_=re,
+                    from_=proposer,
                     # content
                     title=proposal.get("title"),
                     description=proposal.get("description"),
@@ -644,7 +641,7 @@ class CosmosCLI:
                         kind,
                         fp.name,
                         "-y",
-                        from_=re,
+                        from_=proposer,
                         # basic
                         home=self.data_dir,
                         node=self.node_rpc,

@@ -1,8 +1,8 @@
 import socket
 import time
+import uuid
 
 import docker
-import uuid
 
 ZEMU_HOST = "127.0.0.1"
 ZEMU_BUTTON_PORT = 9997

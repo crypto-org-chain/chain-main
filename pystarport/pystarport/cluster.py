@@ -1,7 +1,6 @@
 import base64
 import configparser
 import datetime
-import enum
 import hashlib
 import json
 import os
@@ -25,8 +24,8 @@ from supervisor.compat import xmlrpclib
 from . import ports
 from .app import CHAIN, IMAGE, SUPERVISOR_CONFIG_FILE
 from .cosmoscli import ChainCommand, CosmosCLI
-from .ledger import ZEMU_HOST, ZEMU_BUTTON_PORT
-from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
+from .ledger import ZEMU_BUTTON_PORT, ZEMU_HOST
+from .utils import interact, write_ini
 
 COMMON_PROG_OPTIONS = {
     # redirect to supervisord's stdout, easier to collect all logs
@@ -63,7 +62,7 @@ class ClusterCLI:
         self._supervisorctl = None
         self.output = None
         self.error = None
-    
+
     def cosmos_cli(self, i=0):
         return CosmosCLI(
             self.home(i),
@@ -203,11 +202,11 @@ class ClusterCLI:
     def node_rpc(self, i):
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port(i))
-    
+
     def chain_id(self):
         "chain id of the cluster"
         return self._chain_id
-    
+
     def cmd(self):
         "path to the chain binary used by the cluster CLI"
         return self._cmd
@@ -295,7 +294,13 @@ class ClusterCLI:
     def transfer_from_ledger(
         self, from_, to, coins, i=0, generate_only=False, fees=None
     ):
-        return self.cosmos_cli(i).transfer_from_ledger(from_, to, coins, generate_only, fees)
+        return self.cosmos_cli(i).transfer_from_ledger(
+            from_,
+            to,
+            coins,
+            generate_only,
+            fees,
+        )
 
     def get_delegated_amount(self, which_addr, i=0):
         return self.cosmos_cli(i).get_delegated_amount(which_addr)
@@ -311,9 +316,14 @@ class ClusterCLI:
     def redelegate_amount(
         self, to_validator_addr, from_validator_addr, amount, from_addr, i=0
     ):
-        return self.cosmos_cli(i).redelegate_amount(to_validator_addr, from_validator_addr, amount, from_addr)
+        return self.cosmos_cli(i).redelegate_amount(
+            to_validator_addr,
+            from_validator_addr,
+            amount,
+            from_addr,
+        )
 
-    def withdraw_all_rewards(self, from_delegator):
+    def withdraw_all_rewards(self, from_delegator, i=0):
         return self.cosmos_cli(i).withdraw_all_rewards(from_delegator)
 
     def make_multisig(self, name, signer1, signer2, i=0):
@@ -329,7 +339,12 @@ class ClusterCLI:
         return self.cosmos_cli(i).sign_single_tx(tx_file, signer_name)
 
     def combine_multisig_tx(self, tx_file, multi_name, signer1_file, signer2_file, i=0):
-        return self.cosmos_cli(i).combine_multisig_tx(tx_file, multi_name, signer1_file, signer2_file)
+        return self.cosmos_cli(i).combine_multisig_tx(
+            tx_file,
+            multi_name,
+            signer1_file,
+            signer2_file,
+        )
 
     def broadcast_tx(self, tx_file, i=0):
         return self.cosmos_cli(i).broadcast_tx(tx_file)
@@ -413,7 +428,13 @@ class ClusterCLI:
         target_version,  # chain version number of target chain
         i=0,
     ):
-        return self.cosmos_cli(i).ibc_transfer(from_, to, amount, channel, target_version)
+        return self.cosmos_cli(i).ibc_transfer(
+            from_,
+            to,
+            amount,
+            channel,
+            target_version,
+        )
 
 
 def start_cluster(data_dir):

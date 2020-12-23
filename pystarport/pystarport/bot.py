@@ -5,9 +5,9 @@ import time
 
 import yaml
 
-from .app import CHAIN
 from .cluster import ClusterCLI
 from .cosmoscli import CosmosCLI
+
 
 class TxJobThread(threading.Thread):
     def __init__(self, label, job, cosmos_cli: CosmosCLI):
@@ -58,16 +58,16 @@ class TxJobThread(threading.Thread):
 
     def withdraw_all_rewards_job(self):
         from_address = self.cosmos_cli.address(self.job["from_account"])
-        print(
-            "[%s] Withdraw all rewards from %s"
-            % (self.label, from_address)
-        )
+        print("[%s] Withdraw all rewards from %s" % (self.label, from_address))
         result = self.cosmos_cli.withdraw_all_rewards(from_address)
         print(result)
 
     def next_interval(self):
         if "random_interval" in self.job:
-            return random.randint(self.job["random_interval"][0], self.job["random_interval"][1])
+            return random.randint(
+                self.job["random_interval"][0],
+                self.job["random_interval"][1],
+            )
         return self.job["interval"]
 
     def run(self):
@@ -96,8 +96,10 @@ class TxJobThread(threading.Thread):
                 print("Next %s in %ds ...\n" % (job_type, sleep))
                 time.sleep(sleep)
 
+
 def random_amount(min, max, denom):
     return "%d%s" % (random.randint(min, max), denom)
+
 
 class BotClusterCLI:
     "transaction bot Cluster CLI"

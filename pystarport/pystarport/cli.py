@@ -1,4 +1,3 @@
-import json
 import os
 import signal
 from pathlib import Path
@@ -6,14 +5,9 @@ from pathlib import Path
 import fire
 
 from .app import CHAIN, IMAGE, SUPERVISOR_CONFIG_FILE
-from .bot import BotClusterCLI, BotCLI
+from .bot import BotCLI, BotClusterCLI
+from .cluster import ClusterCLI, init_cluster, start_cluster, start_tail_logs_thread
 from .cosmoscli import CosmosCLI
-from .cluster import (
-    ClusterCLI,
-    init_cluster,
-    start_cluster,
-    start_tail_logs_thread,
-)
 from .utils import build_cli_args, interact
 
 
@@ -144,12 +138,12 @@ class CLI:
         """
         transaction bot CLI
 
-        :param data: path to the root data directory if connecting to pystarport cluster. Path to
-        the home directory if connecting to a node
+        :param data: path to the root data directory if connecting to pystarport
+        cluster. Path to the home directory if connecting to a node
         :param config: path to the bot configuration file
         (copy bot.yaml.example for reference)
         :param chain_id: chain id of the cluster
-        :param node_rpc: custom Tendermint RPC endpoint to the node 
+        :param node_rpc: custom Tendermint RPC endpoint to the node
         """
         data_path = Path(data)
         config_path = Path(config)
