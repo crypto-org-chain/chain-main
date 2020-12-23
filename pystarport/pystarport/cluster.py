@@ -285,6 +285,9 @@ class ClusterCLI:
     def validators(self, i=0):
         return self.cosmos_cli(i).validators()
 
+    def staking_params(self, i=0):
+        return self.cosmos_cli(i).staking_params()
+
     def staking_pool(self, bonded=True, i=0):
         return self.cosmos_cli(i).staking_pool(bonded)
 

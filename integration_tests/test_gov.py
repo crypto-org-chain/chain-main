@@ -16,9 +16,7 @@ def test_param_proposal(cluster, vote_option):
     - check the result
     - check deposit refunded
     """
-    max_validators = json.loads(
-        cluster.raw("q", "staking", "params", output="json", node=cluster.node_rpc(0))
-    )["max_validators"]
+    max_validators = cluster.staking_params()["max_validators"]
 
     rsp = cluster.gov_propose(
         "community",
@@ -86,9 +84,7 @@ def test_param_proposal(cluster, vote_option):
     else:
         assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
 
-    new_max_validators = json.loads(
-        cluster.raw("q", "staking", "params", output="json", node=cluster.node_rpc(0))
-    )["max_validators"]
+    new_max_validators = cluster.staking_params()["max_validators"]
     if vote_option == "yes":
         assert new_max_validators == max_validators + 1
     else:
