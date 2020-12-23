@@ -15,8 +15,8 @@ def test_reward(cluster):
     fees = 3_000_000_000
     # wait for initial reward processed, so that distribution values can be read
     wait_for_block(cluster, 2)
-    old_commission_amount = cluster.distribution_commision(validator1_operator_address)
-    old_commission_amount2 = cluster.distribution_commision(validator2_operator_address)
+    old_commission_amount = cluster.distribution_commission(validator1_operator_address)
+    old_commission_amount2 = cluster.distribution_commission(validator2_operator_address)
     old_community_amount = cluster.distribution_community()
     old_reward_amount = cluster.distribution_reward(validator1_address)
     old_reward_amount2 = cluster.distribution_reward(validator2_address)
@@ -31,8 +31,8 @@ def test_reward(cluster):
     wait_for_new_blocks(cluster, 2)
     signer1_balance = cluster.balance(signer1_address)
     assert signer1_balance + fees + amount_to_send == signer1_old_balance
-    commission_amount = cluster.distribution_commision(validator1_operator_address)
-    commission_amount2 = cluster.distribution_commision(validator2_operator_address)
+    commission_amount = cluster.distribution_commission(validator1_operator_address)
+    commission_amount2 = cluster.distribution_commission(validator2_operator_address)
     commission_amount_diff = (commission_amount - old_commission_amount) + (
         commission_amount2 - old_commission_amount2
     )

@@ -104,7 +104,7 @@ def cluster_fixture(
                     flags=re.M,
                 )
             )
-        clis[chain_id] = cluster.ClusterCLI(data, chain_id)
+        clis[chain_id] = cluster.ClusterCLI(data, chain_id=chain_id)
 
     supervisord = cluster.start_cluster(data)
     if not quiet:
