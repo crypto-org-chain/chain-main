@@ -52,11 +52,11 @@ class ClusterCLI:
         zemu_button_port=ZEMU_BUTTON_PORT,
     ):
         self.data_root = data
-        self._cmd = cmd
+        self.cmd = cmd
         self.zemu_address = zemu_address
         self.zemu_button_port = zemu_button_port
-        self._chain_id = chain_id
-        self.data_dir = data / self._chain_id
+        self.chain_id = chain_id
+        self.data_dir = data / self.chain_id
         self.config = json.load((self.data_dir / "config.json").open())
 
         self._supervisorctl = None
@@ -67,8 +67,8 @@ class ClusterCLI:
         return CosmosCLI(
             self.home(i),
             self.node_rpc(i),
-            chain_id=self.chain_id(),
-            cmd=self.cmd(),
+            chain_id=self.chain_id,
+            cmd=self.cmd,
             zemu_address=self.zemu_address,
             zemu_button_port=self.zemu_button_port,
         )
@@ -182,7 +182,7 @@ class ClusterCLI:
         ini[section].update(
             dict(
                 COMMON_PROG_OPTIONS,
-                command=f"{self.cmd()} start --home %(here)s/node{i}",
+                command=f"{self.cmd} start --home %(here)s/node{i}",
                 autostart="false",
                 stdout_logfile=f"%(here)s/node{i}.log",
             )
@@ -202,14 +202,6 @@ class ClusterCLI:
     def node_rpc(self, i):
         "rpc url of i-th node"
         return "tcp://127.0.0.1:%d" % ports.rpc_port(self.base_port(i))
-
-    def chain_id(self):
-        "chain id of the cluster"
-        return self._chain_id
-
-    def cmd(self):
-        "path to the chain binary used by the cluster CLI"
-        return self._cmd
 
     # for query
     def ipport_grpc(self, i):
@@ -243,7 +235,7 @@ class ClusterCLI:
     def add_genesis_account(self, addr, coins, i=0, **kwargs):
         return self.cosmos_cli(i).add_genesis_account(addr, coins, **kwargs)
 
-    def gentx(self, name, coins, i, min_self_delegation=1):
+    def gentx(self, name, coins, i=0, min_self_delegation=1):
         return self.cosmos_cli(i).gentx(name, coins, min_self_delegation)
 
     def collect_gentxs(self, gentx_dir, i=0):
@@ -602,7 +594,7 @@ def init_devnet(
             cli.gentx(
                 "validator",
                 node["staked"],
-                i,
+                i=i,
                 min_self_delegation=node.get("min_self_delegation", 1),
             )
 

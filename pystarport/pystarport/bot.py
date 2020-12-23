@@ -118,8 +118,8 @@ class BotClusterCLI:
             cli = CosmosCLI(
                 self.cluster_cli.home(node_i),
                 self.cluster_cli.node_rpc(node_i),
-                chain_id=self.cluster_cli.chain_id(),
-                cmd=self.cluster_cli.cmd(),
+                chain_id=self.cluster_cli.chain_id,
+                cmd=self.cluster_cli.cmd,
             )
             thread = TxJobThread(job.get("label", i), job, cli)
 

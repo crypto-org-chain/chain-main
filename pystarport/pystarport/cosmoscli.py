@@ -186,7 +186,7 @@ class CosmosCLI:
         assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
-    def distribution_commision(self, addr):
+    def distribution_commission(self, addr):
         coin = json.loads(
             self.raw(
                 "query",
@@ -504,7 +504,6 @@ class CosmosCLI:
     def create_validator(
         self,
         amount,
-        i,
         moniker=None,
         commission_max_change_rate="0.01",
         commission_rate="0.1",
@@ -556,7 +555,6 @@ class CosmosCLI:
 
     def edit_validator(
         self,
-        i,
         commission_rate=None,
         moniker=None,
         identity=None,
