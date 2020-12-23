@@ -47,7 +47,7 @@ class ClusterCLI:
     def __init__(
         self,
         data,
-        chain_id=None,
+        chain_id="chainmaind",
         cmd=CHAIN,
         zemu_address=ZEMU_HOST,
         zemu_button_port=ZEMU_BUTTON_PORT,
@@ -56,11 +56,7 @@ class ClusterCLI:
         self._cmd = cmd
         self.zemu_address = zemu_address
         self.zemu_button_port = zemu_button_port
-        if chain_id is None:
-            self._genesis = json.load(open(home_dir(self.data_root, 0) / "config" / "genesis.json"))
-            self._chain_id = self._genesis["chain_id"]
-        else:
-            self._chain_id = chain_id
+        self._chain_id = chain_id
         self.data_dir = data / self._chain_id
         self.config = json.load((self.data_dir / "config.json").open())
 

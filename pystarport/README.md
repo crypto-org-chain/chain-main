@@ -121,6 +121,24 @@ $ pystarport cli - --help
 ...
 ```
 
+## Transaction Bot
+
+A simple transaction bot that works for cluster created by pystarport as well as a local node
+
+Copy and modify `bot.yaml.sample` to `bot.yaml` with your desired bot configurations.
+
+### If you are running on a pystarport crated cluster:
+1. Make sure you have provide the `node` for each job in the `bot.yaml`
+2. Run the command
+```
+$ pystarport bot --chain-id=[cluster_chain_id] - start
+```
+
+### If you are running on a local node
+```
+$ pstarport bot --node_rpc=tcp://127.0.0.1:26657 --data=/path/to/your/local/node/home/ - start
+```
+
 ## docker-compose
 
 When used with `docker-compose` or multiple machines, you need to config hostnames, and you probabely want to use a same

@@ -124,14 +124,21 @@ class CLI:
 
         main(("-c", Path(data) / SUPERVISOR_CONFIG_FILE, *args))
 
-    def cli(self, *args, data: str = "./data"):
-        return ClusterCLI(Path(data), cmd=self.cmd)
+    def cli(self, *args, data: str = "./data", chain_id: str = "chainmaind"):
+        """
+        pystarport CLI
+
+        :param data: path to the root data directory
+        :param chain_id: chain id of the cluster
+        """
+        return ClusterCLI(Path(data), chain_id=chain_id, cmd=self.cmd)
 
     def bot(
         self,
         *args,
         data: str = "./data",
         config: str = "./bot.yaml",
+        chain_id: str = "chainmaind",
         node_rpc: str = None,
     ):
         """
@@ -141,13 +148,13 @@ class CLI:
         the home directory if connecting to a node
         :param config: path to the bot configuration file
         (copy bot.yaml.example for reference)
+        :param chain_id: chain id of the cluster
         :param node_rpc: custom Tendermint RPC endpoint to the node 
-        :param cmd_path: custom path to chain binary
         """
         data_path = Path(data)
         config_path = Path(config)
         if node_rpc is None:
-            cluster_cli = ClusterCLI(data_path, cmd=self.cmd)
+            cluster_cli = ClusterCLI(data_path, chain_id=chain_id, cmd=self.cmd)
             return BotClusterCLI(config_path, cluster_cli)
         else:
             cosmos_cli = CosmosCLI(data_path, node_rpc, cmd=self.cmd)

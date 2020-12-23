@@ -12,7 +12,7 @@ jobs:
     node: 0
     from_account: launch
     to_validator_address: cro19zyg34kkrllfqvtumsu3jacg9lgf6lw22xsqye
-    amount: 1cro
+    random_amount: [1, 2, "cro"]    # random amount
     random_interval: [60, 120]      # random job interval in second
   - label: Withdraw All Rewards Test
     type: withdraw_all_rewards
