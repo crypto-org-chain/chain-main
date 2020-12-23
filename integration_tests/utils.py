@@ -19,8 +19,10 @@ def wait_for_block(cli, height, timeout=60):
         except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
-            if int(status["SyncInfo"]["latest_block_height"]) >= height:
+            current_height = int(status["SyncInfo"]["latest_block_height"])
+            if current_height >= height:
                 break
+            print("current block height", current_height)
         time.sleep(0.5)
     else:
         raise TimeoutError(f"wait for block {height} timeout")

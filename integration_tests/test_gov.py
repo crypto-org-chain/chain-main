@@ -76,7 +76,9 @@ def test_param_proposal(cluster, vote_option):
             "no_with_veto": "0",
         }
 
-    wait_for_block_time(cluster, isoparse(proposal["voting_end_time"]))
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
+    )
 
     proposal = cluster.query_proposal(proposal_id)
     if vote_option == "yes":
