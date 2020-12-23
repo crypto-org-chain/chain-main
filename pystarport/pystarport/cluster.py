@@ -406,7 +406,10 @@ class ClusterCLI:
             **kwargs,
         )
 
-    def gentx(self, name, coins, i, min_self_delegation=1):
+    def gentx(self, name, coins, i, min_self_delegation=1, pubkey=None):
+        options = dict(
+            pubkey=pubkey,
+        )
         return self.raw(
             "gentx",
             name,
@@ -415,6 +418,7 @@ class ClusterCLI:
             home=self.home(i),
             chain_id=self.chain_id,
             keyring_backend="test",
+            **{k: v for k, v in options.items() if v is not None},
         )
 
     def collect_gentxs(self, gentx_dir, i=0):
@@ -1106,6 +1110,7 @@ def init_devnet(
             chain_id=config["chain_id"],
             home=home_dir(data_dir, i),
         )
+
         if "consensus_key" in val:
             # restore consensus private key
             with (home_dir(data_dir, i) / "config/priv_validator_key.json").open(
@@ -1170,6 +1175,7 @@ def init_devnet(
                 node["staked"],
                 i,
                 min_self_delegation=node.get("min_self_delegation", 1),
+                pubkey=node.get("pubkey"),
             )
 
     # create accounts
