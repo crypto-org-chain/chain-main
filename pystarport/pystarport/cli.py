@@ -80,7 +80,7 @@ class CLI:
         :param gen_compose_file: generate a docker-compose.yml
         :param cmd: path to chain binary
         """
-        init(Path(data), config, base_port, image, cmd, gen_compose_file)
+        init(Path(data), config, base_port, image, self.cmd, gen_compose_file)
 
     def start(self, data: str = "./data", quiet: bool = False):
         """
