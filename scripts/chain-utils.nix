@@ -1,22 +1,19 @@
 { pkgs, network }:
 let
   fetch-src = ref: builtins.fetchTarball "https://github.com/crypto-com/chain-main/archive/${ref}.tar.gz";
-  chain-maind-testnet-rc2 = import (fetch-src "v0.7.0-rc2") {
-    inherit pkgs;
-    network = "testnet";
-  };
+  chain-maind-testnet = (import (fetch-src "v0.8.0-rc1") { }).chain-maind-testnet;
 
   cfg =
     if network == "testnet" then {
-      chaind = chain-maind-testnet-rc2;
-      chain-id = "testnet-croeseid-1";
+      chaind = chain-maind-testnet;
+      chain-id = "testnet-croeseid-2";
       genesis = pkgs.fetchurl {
-        url = "https://raw.githubusercontent.com/crypto-com/chain-docs/master/docs/getting-started/assets/genesis_file/testnet-croeseid-1/genesis.json";
-        sha256 = "55de3738cf6a429d19e234e59e81141af2f0dfa24906d22b949728023c1af382";
+        url = "https://raw.githubusercontent.com/crypto-com/testnets/main/testnet-croeseid-2/genesis.json";
+        sha256 = sha256:af7c9828806da4945b1b41d434711ca233c89aedb5030cf8d9ce2d7cd46a948e;
       };
       seeds =
-        "66a557b8feef403805eb68e6e3249f3148d1a3f2@54.169.58.229:26656,3246d15d34802ca6ade7f51f5a26785c923fb385@54.179.111.207:26656,69c2fbab6b4f58b6cf1f79f8b1f670c7805e3f43@18.141.107.57:26656";
-      rpc_servers = "https://testnet-croeseid-1.crypto.com:26657,https://testnet-croeseid-1.crypto.com:26657";
+        "b2c6657096aa30c5fafa5bd8ced48ea8dbd2b003@52.76.189.200:26656,ef472367307808b242a0d3f662d802431ed23063@175.41.186.255:26656,d3d2139a61c2a841545e78ff0e0cd03094a5197d@18.136.230.70:26656";
+      rpc_server = "https://testnet-croeseid.crypto.com";
       minimum-gas-prices = "0.025basetcro";
     } else { };
 
@@ -31,12 +28,11 @@ let
     ln -sf ${cfg.genesis} $CHAINHOME/config/genesis.json
     sed -i.bak -E 's#^(minimum-gas-prices[[:space:]]+=[[:space:]]+)""$#\1"${cfg.minimum-gas-prices}"#' $CHAINHOME/config/app.toml
     sed -i.bak -E 's#^(seeds[[:space:]]+=[[:space:]]+).*$#\1"${cfg.seeds}"# ; s#^(create_empty_blocks_interval[[:space:]]+=[[:space:]]+).*$#\1"5s"#' $CHAINHOME/config/config.toml
-    RPCSERVER="$(echo "${cfg.rpc_servers}" | cut -d ',' -f 1)"
-    LASTEST_HEIGHT=$(curl -s $RPCSERVER/block | jq -r .result.block.header.height)
+    LASTEST_HEIGHT=$(curl -s ${cfg.rpc_server}/block | jq -r .result.block.header.height)
     BLOCK_HEIGHT=$((LASTEST_HEIGHT - 1000))
-    TRUST_HASH=$(curl -s "$RPCSERVER/block?height=$BLOCK_HEIGHT" | jq -r .result.block_id.hash)
+    TRUST_HASH=$(curl -s "${cfg.rpc_server}/block?height=$BLOCK_HEIGHT" | jq -r .result.block_id.hash)
     sed -i.bak -E "s|^(enable[[:space:]]+=[[:space:]]+).*$|\1true| ; \
-    s|^(rpc_servers[[:space:]]+=[[:space:]]+).*$|\1\"${cfg.rpc_servers}\"| ; \
+    s|^(rpc_servers[[:space:]]+=[[:space:]]+).*$|\1\"${cfg.rpc_server},${cfg.rpc_server}\"| ; \
     s|^(trust_height[[:space:]]+=[[:space:]]+).*$|\1$BLOCK_HEIGHT| ; \
     s|^(trust_hash[[:space:]]+=[[:space:]]+).*$|\1\"$TRUST_HASH\"|" $CHAINHOME/config/config.toml
   '';
