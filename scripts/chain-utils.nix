@@ -13,7 +13,7 @@ let
       };
       seeds =
         "b2c6657096aa30c5fafa5bd8ced48ea8dbd2b003@52.76.189.200:26656,ef472367307808b242a0d3f662d802431ed23063@175.41.186.255:26656,d3d2139a61c2a841545e78ff0e0cd03094a5197d@18.136.230.70:26656";
-      rpc_server = "https://testnet-croeseid.crypto.com";
+      rpc_server = "https://testnet-croeseid.crypto.com:26657";
       minimum-gas-prices = "0.025basetcro";
     } else { };
 
