@@ -11,5 +11,6 @@ func DefaultGenesis() *GenesisState {
 // Validate performs basic genesis state validation returning an error upon any
 // failure.
 func (gs GenesisState) Validate() error {
+	// Since the genesis state for chainmain module is empty, we don't have any validations to perform.
 	return nil
 }
