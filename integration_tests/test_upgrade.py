@@ -118,7 +118,7 @@ def test_cosmovisor(cosmovisor_cluster):
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
 
     # block should just pass the target height
-    wait_for_block(cluster, target_height + 2, timeout=120)
+    wait_for_block(cluster, target_height + 2)
 
 
 def propose_and_pass(cluster, kind, proposal):

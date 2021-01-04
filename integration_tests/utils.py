@@ -12,7 +12,7 @@ from pystarport import cluster
 from pystarport.ports import rpc_port
 
 
-def wait_for_block(cli, height, timeout=60):
+def wait_for_block(cli, height, timeout=120):
     for i in range(timeout * 2):
         try:
             status = cli.status()
@@ -116,7 +116,7 @@ def cluster_fixture(
             # wait for first node rpc port available before start testing
             wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
             # wait for the first block generated before start testing
-            wait_for_block(cli, 1)
+            wait_for_block(cli, 2)
 
         if len(clis) == 1:
             yield list(clis.values())[0]

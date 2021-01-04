@@ -83,6 +83,6 @@ def test_statesync(cluster):
     i = cluster.create_node(moniker="statesync", statesync=True)
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
 
-    # discovery_time is set to 5 seconds, add an extra second to process
-    time.sleep(5 + 1)
+    # discovery_time is set to 5 seconds, add extra seconds for processing
+    time.sleep(5 + 3)
     assert cluster.block_height(i=i) >= 5, "syncing"
