@@ -37,5 +37,4 @@ def test_multi_signature(cluster, tmp_path):
     multi_balance = cluster.balance(multi_addr)
     assert 125 == multi_balance
     # check singer2 balance
-    signer2_balance = cluster.balance(signer2_addr)
-    assert 200000000080 == signer2_balance
+    assert cluster.balance(signer2_addr) == signer2_balance + 80

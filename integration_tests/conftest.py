@@ -10,6 +10,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks tests as slow")
     config.addinivalue_line("markers", "ledger: marks tests as ledger hardware test")
     config.addinivalue_line("markers", "grpc: marks grpc tests")
+    config.addinivalue_line("markers", "upgrade: marks upgrade tests")
 
 
 def pytest_addoption(parser):
@@ -23,14 +24,17 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def cluster(worker_id, pytestconfig, tmp_path_factory):
-    "default cluster fixture"
+def worker_index(worker_id):
     match = re.search(r"\d+", worker_id)
-    worker_id = int(match[0]) if match is not None else 0
-    base_port = (100 + worker_id) * 100
+    return int(match[0]) if match is not None else 0
+
+
+@pytest.fixture(scope="session")
+def cluster(worker_index, pytestconfig, tmp_path_factory):
+    "default cluster fixture"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
-        base_port,
+        worker_index,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
     )
