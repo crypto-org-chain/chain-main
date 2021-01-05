@@ -16,6 +16,7 @@ from .utils import (
     parse_events,
     wait_for_block,
     wait_for_block_time,
+    wait_for_new_blocks,
     wait_for_port,
 )
 
@@ -171,7 +172,8 @@ def test_manual_upgrade(cosmovisor_cluster):
     cluster.reload_supervisor()
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
-
+    # wait for a new block to make sure chain started up
+    wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
     print("upgrade height", target_height)
 

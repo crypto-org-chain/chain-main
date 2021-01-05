@@ -410,6 +410,7 @@ class ClusterCLI:
         return self.raw(
             "gentx",
             name,
+            coins,
             amount=coins,
             min_self_delegation=str(min_self_delegation),
             home=self.home(i),
