@@ -8,7 +8,7 @@ import uuid
 
 import yaml
 from dateutil.parser import isoparse
-from pystarport import cluster
+from pystarport import cluster, ledger
 from pystarport.ports import rpc_port
 
 
@@ -141,7 +141,7 @@ def cluster_fixture(
 
 
 def get_ledger():
-    return cluster.Ledger()
+    return ledger.Ledger()
 
 
 def parse_events(logs):

@@ -23,9 +23,9 @@ from supervisor.compat import xmlrpclib
 
 from . import ports
 from .app import CHAIN, IMAGE, SUPERVISOR_CONFIG_FILE
-from .cosmoscli import ChainCommand, CosmosCLI
+from .cosmoscli import ChainCommand, CosmosCLI, ModuleAccount, module_address
 from .ledger import ZEMU_BUTTON_PORT, ZEMU_HOST
-from .utils import interact, write_ini
+from .utils import format_doc_string, interact, write_ini
 
 COMMON_PROG_OPTIONS = {
     # redirect to supervisord's stdout, easier to collect all logs
@@ -265,6 +265,17 @@ class ClusterCLI:
     def address(self, name, i=0, bech="acc"):
         return self.cosmos_cli(i).address(name, bech)
 
+    @format_doc_string(
+        options=",".join(v.value for v in ModuleAccount.__members__.values())
+    )
+    def module_address(self, name):
+        """
+        get address of module accounts
+
+        :param name: name of module account, values: {options}
+        """
+        return module_address(name)
+
     def account(self, addr, i=0):
         return self.cosmos_cli(i).account(addr)
 
@@ -365,7 +376,7 @@ class ClusterCLI:
         create the node with create_node before call this"""
         return self.cosmos_cli(i).create_validator(
             amount,
-            moniker,
+            moniker or self.config["validators"][i]["moniker"],
             commission_max_change_rate,
             commission_rate,
             commission_max_rate,

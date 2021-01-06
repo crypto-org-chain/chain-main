@@ -26,7 +26,7 @@ class ModuleAccount(enum.Enum):
 @format_doc_string(
     options=",".join(v.value for v in ModuleAccount.__members__.values())
 )
-def module_address(self, name):
+def module_address(name):
     """
     get address of module accounts
 
@@ -654,6 +654,9 @@ class CosmosCLI:
                 )
 
     def gov_vote(self, voter, proposal_id, option):
+        print(voter)
+        print(proposal_id)
+        print(option)
         return json.loads(
             self.raw(
                 "tx",

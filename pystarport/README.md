@@ -127,7 +127,7 @@ A simple transaction bot that works for cluster created by pystarport as well as
 
 Copy and modify `bot.yaml.sample` to `bot.yaml` with your desired bot configurations.
 
-### If you are running on a pystarport crated cluster:
+### If you are running on a pystarport created cluster:
 1. Make sure you have provide the `node` for each job in the `bot.yaml`
 2. Run the command
 ```
