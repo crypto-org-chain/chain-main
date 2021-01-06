@@ -722,7 +722,7 @@ class CosmosCLI:
                 "tally",
                 proposal_id,
                 output="json",
-                node=self.node_rpc(0),
+                node=self.node_rpc,
             )
         )
 
