@@ -10,19 +10,16 @@ from .utils import cluster_fixture, wait_for_block
 
 
 @pytest.fixture(scope="module")
-def cluster(pytestconfig, tmp_path_factory):
+def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/ibc.yaml",
-        27000,
+        worker_index,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
     )
 
 
-@pytest.mark.skip(
-    reason="FIXME: needs more work / possible incompatible external components with rc5"
-)
 def test_ibc(cluster):
     for cli in cluster.values():
         # wait for at least 3 blocks, because
@@ -69,33 +66,6 @@ def test_ibc(cluster):
         },
     ]
 
-    rsp = json.loads(subprocess.check_output(relayer + ["paths", "list", "--json"]))
-    assert rsp == {
-        "demo": {
-            "src": {
-                "chain-id": "ibc-0",
-                "client-id": "demo0client",
-                "connection-id": "demo0connection",
-                "channel-id": "demo0channel",
-                "port-id": "transfer",
-                "order": "unordered",
-                "version": "ics20-1",
-            },
-            "dst": {
-                "chain-id": "ibc-1",
-                "client-id": "demo1client",
-                "connection-id": "demo1connection",
-                "channel-id": "demo1channel",
-                "port-id": "transfer",
-                "order": "unordered",
-                "version": "ics20-1",
-            },
-            "strategy": {
-                "type": "naive",
-            },
-        }
-    }
-
     # wait for channel to be setup
     for i in range(60):
         channels = json.loads(
@@ -114,6 +84,31 @@ def test_ibc(cluster):
         time.sleep(1)
     else:
         raise TimeoutError("src channel still not setup")
+
+    rsp = json.loads(subprocess.check_output(relayer + ["paths", "list", "--json"]))
+    assert rsp == {
+        "demo": {
+            "src": {
+                "chain-id": "ibc-0",
+                "client-id": "07-tendermint-0",
+                "connection-id": "connection-0",
+                "port-id": "transfer",
+                "order": "unordered",
+                "version": "ics20-1",
+            },
+            "dst": {
+                "chain-id": "ibc-1",
+                "client-id": "07-tendermint-0",
+                "connection-id": "connection-0",
+                "port-id": "transfer",
+                "order": "unordered",
+                "version": "ics20-1",
+            },
+            "strategy": {
+                "type": "naive",
+            },
+        }
+    }
 
     for i in range(60):
         channels = json.loads(
@@ -144,7 +139,7 @@ def test_ibc(cluster):
     # do a transfer from ibc-0 to ibc-1
     recipient = cluster["ibc-1"].address("relayer")
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", recipient, "10000basecro", "demo0channel", 1
+        "relayer", recipient, "10000basecro", channels[0]["channel_id"], 1
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     # sender balance decreased
@@ -154,7 +149,10 @@ def test_ibc(cluster):
     # FIXME more stable way to wait for relaying
     time.sleep(10)
 
-    denom_hash = hashlib.sha256(b"transfer/demo1channel/basecro").hexdigest().upper()
+    dst_channel = channels[0]["counterparty"]["channel_id"]
+    denom_hash = (
+        hashlib.sha256(f"transfer/{dst_channel}/basecro".encode()).hexdigest().upper()
+    )
     assert (
         json.loads(
             raw(
@@ -166,7 +164,7 @@ def test_ibc(cluster):
                 output="json",
             )
         )
-        == {"denom_trace": {"path": "transfer/demo1channel", "base_denom": "basecro"}}
+        == {"denom_trace": {"path": f"transfer/{dst_channel}", "base_denom": "basecro"}}
     )
     # recipient get the coins
     assert json.loads(
@@ -189,13 +187,13 @@ def test_ibc(cluster):
     # transfer back
     recipient = cluster["ibc-0"].address("relayer")
     rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", recipient, f"10000ibc/{denom_hash}", "demo1channel", 0
+        "relayer", recipient, f"10000ibc/{denom_hash}", dst_channel, 0
     )
     print("ibc transfer back")
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
-    time.sleep(10)
+    time.sleep(40)
 
     # both accounts return to normal
     for i, cli in enumerate(cluster.values()):

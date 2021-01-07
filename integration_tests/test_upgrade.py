@@ -20,6 +20,8 @@ from .utils import (
     wait_for_port,
 )
 
+pytestmark = pytest.mark.upgrade
+
 
 def edit_chain_program(chain_id, ini_path, callback):
     # edit node process config in supervisor
@@ -66,11 +68,11 @@ def post_init(chain_id, data):
 
 # use function scope to re-initialize for each test case
 @pytest.fixture(scope="function")
-def cosmovisor_cluster(pytestconfig, tmp_path_factory):
+def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
-        26900,
+        worker_index,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
         post_init=post_init,

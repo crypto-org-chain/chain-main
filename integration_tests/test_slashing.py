@@ -19,11 +19,11 @@ slashing testing
 
 # use custom cluster, use an unique base port
 @pytest.fixture(scope="module")
-def cluster(pytestconfig, tmp_path_factory):
+def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
         Path(__file__).parent / "configs/slashing.yaml",
-        26700,
+        worker_index,
         tmp_path_factory,
         quiet=pytestconfig.getoption("supervisord-quiet"),
     )

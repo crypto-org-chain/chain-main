@@ -12,7 +12,7 @@ from pystarport import cluster, ledger
 from pystarport.ports import rpc_port
 
 
-def wait_for_block(cli, height, timeout=120):
+def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
         try:
             status = cli.status()
@@ -64,7 +64,7 @@ def wait_for_port(port, host="127.0.0.1", timeout=40.0):
 
 def cluster_fixture(
     config_path,
-    base_port,
+    worker_index,
     tmp_path_factory,
     quiet=False,
     post_init=None,
@@ -76,6 +76,7 @@ def cluster_fixture(
     if enable_cov is None:
         enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
     data = tmp_path_factory.mktemp("data")
+    base_port = gen_base_port(worker_index)
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config_path, base_port)
 
@@ -149,3 +150,13 @@ def parse_events(logs):
         ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
         for ev in logs[0]["events"]
     }
+
+
+_next_unique = 0
+
+
+def gen_base_port(worker_index):
+    global _next_unique
+    base_port = 10000 + (worker_index * 10 + _next_unique) * 100
+    _next_unique += 1
+    return base_port
