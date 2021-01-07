@@ -40,17 +40,11 @@ relayer:
     demo:
       src:
         chain-id: ibc-0
-        client-id: demo0client
-        connection-id: demo0connection
-        channel-id: demo0channel
         port-id: transfer
         order: unordered
         version: ics20-1
       dst:
         chain-id: ibc-1
-        client-id: demo1client
-        connection-id: demo1connection
-        channel-id: demo1channel
         port-id: transfer
         order: unordered
         version: ics20-1

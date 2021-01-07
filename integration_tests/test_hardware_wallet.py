@@ -8,14 +8,14 @@ pytestmark = pytest.mark.ledger
 
 
 @pytest.fixture(scope="module")
-def cluster(pytestconfig, tmp_path_factory):
+def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     ledger = get_ledger()
     ledger.start()
     try:
         yield from cluster_fixture(
             Path(__file__).parent / "configs/ledger.yaml",
-            26800,
+            worker_index,
             tmp_path_factory,
             quiet=pytestconfig.getoption("supervisord-quiet"),
         )

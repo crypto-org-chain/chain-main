@@ -5,13 +5,18 @@ import pytest
 from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
-from .utils import (
-    cluster_fixture,
-    parse_events,
-    wait_for_block,
-    wait_for_block_time,
-    wait_for_port,
-)
+from .utils import cluster_fixture, parse_events, wait_for_block_time, wait_for_port
+
+
+@pytest.fixture(scope="module")
+def cluster(worker_index, pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/staking.yaml",
+        worker_index,
+        tmp_path_factory,
+        quiet=pytestconfig.getoption("supervisord-quiet"),
+    )
 
 
 def test_staking_delegate(cluster):
@@ -25,7 +30,10 @@ def test_staking_delegate(cluster):
     assert validator2_operator_address == staking_validator2["operator_address"]
     old_amount = cluster.balance(signer1_address)
     old_bonded = cluster.staking_pool()
-    cluster.delegate_amount(validator1_operator_address, "2basecro", signer1_address)
+    rsp = cluster.delegate_amount(
+        validator1_operator_address, "2basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2
     new_amount = cluster.balance(signer1_address)
     assert old_amount == new_amount + 2
@@ -43,8 +51,14 @@ def test_staking_unbond(cluster):
     assert validator2_operator_address == staking_validator2["operator_address"]
     old_amount = cluster.balance(signer1_address)
     old_bonded = cluster.staking_pool()
-    cluster.delegate_amount(validator1_operator_address, "3basecro", signer1_address)
-    cluster.delegate_amount(validator2_operator_address, "4basecro", signer1_address)
+    rsp = cluster.delegate_amount(
+        validator1_operator_address, "3basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = cluster.delegate_amount(
+        validator2_operator_address, "4basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 7
     assert cluster.balance(signer1_address) == old_amount - 7
 
@@ -73,8 +87,14 @@ def test_staking_redelegate(cluster):
     assert validator1_operator_address == staking_validator1["operator_address"]
     staking_validator2 = cluster.validator(validator2_operator_address, i=1)
     assert validator2_operator_address == staking_validator2["operator_address"]
-    cluster.delegate_amount(validator1_operator_address, "3basecro", signer1_address)
-    cluster.delegate_amount(validator2_operator_address, "4basecro", signer1_address)
+    rsp = cluster.delegate_amount(
+        validator1_operator_address, "3basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = cluster.delegate_amount(
+        validator2_operator_address, "4basecro", signer1_address
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
     old_output = delegation_info["delegation_responses"][0]["balance"]["amount"]
     cluster.redelegate_amount(
@@ -125,26 +145,12 @@ def test_join_validator(cluster):
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
 
 
-@pytest.fixture(scope="module")
-def staking_cluster(pytestconfig, tmp_path_factory):
-    "override cluster fixture for this test module"
-    yield from cluster_fixture(
-        Path(__file__).parent / "configs/staking.yaml",
-        27000,
-        tmp_path_factory,
-        quiet=pytestconfig.getoption("supervisord-quiet"),
-    )
-
-
-def test_min_self_delegation(staking_cluster):
+def test_min_self_delegation(cluster):
     """
     - validator unbond min_self_delegation
     - check not in validator set anymore
     """
-    cluster = staking_cluster
-    wait_for_block(cluster, 2)
-
-    assert len(cluster.validators()) == 3, "wrong validator set"
+    assert len(cluster.validators()) == 4, "wrong validator set"
 
     oper_addr = cluster.address("validator", i=2, bech="val")
     acct_addr = cluster.address("validator", i=2)
