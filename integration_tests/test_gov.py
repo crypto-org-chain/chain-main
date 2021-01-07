@@ -58,14 +58,10 @@ def test_param_proposal(cluster, vote_option):
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
     if vote_option is not None:
-        print("vote_option")
-        print(vote_option)
         rsp = cluster.gov_vote("validator", proposal_id, vote_option)
         assert rsp["code"] == 0, rsp["raw_log"]
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
-        print("query_tally")
-        print(cluster.query_tally(proposal_id))
         assert (
             int(cluster.query_tally(proposal_id)[vote_option]) == cluster.staking_pool()
         ), "all voted"
@@ -82,8 +78,6 @@ def test_param_proposal(cluster, vote_option):
     )
 
     proposal = cluster.query_proposal(proposal_id)
-    print("proposal_status")
-    print(proposal["status"])
     if vote_option == "yes":
         assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
     else:
