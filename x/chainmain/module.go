@@ -47,9 +47,7 @@ func (AppModuleBasic) Name() string {
 }
 
 // RegisterLegacyAminoCodec does nothing. IBC does not support amino.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	types.RegisterLegacyAminoCodec(cdc)
-}
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
 func (a AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
