@@ -97,7 +97,7 @@ Example:
 			if startingIPAddressErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flagStartingIPAddress, startingIPAddressErr)
 			}
-			numValidators, numValidatorsErr := cmd.Flags().GetInt(flagNumValidators)
+			numValidators, numValidatorsErr := cmd.Flags().GetUint(flagNumValidators)
 			if numValidatorsErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flagNumValidators, numValidatorsErr)
 			}
@@ -116,12 +116,12 @@ Example:
 
 			return InitTestnet(
 				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
-				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, numValidators,
+				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, int(numValidators),
 			)
 		},
 	}
 
-	cmd.Flags().Int(flagNumValidators, 4, "Number of validators to initialize the testnet with")
+	cmd.Flags().Uint(flagNumValidators, 4, "Number of validators to initialize the testnet with")
 	cmd.Flags().StringP(flagOutputDir, "o", "./mytestnet", "Directory to store initialization data for the testnet")
 	cmd.Flags().String(flagNodeDirPrefix,
 		"node", "Prefix the directory name for each node with (node results in node0, node1, ...)")
@@ -137,8 +137,8 @@ Example:
 	cmd.Flags().String(flagAmount, "20000000000000000basecro", "amount of coins for accounts")
 	cmd.Flags().String(flagStakingAmount, "", "amount of coins for staking (default half of account amount)")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
-	cmd.Flags().Int64(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
-	cmd.Flags().Int64(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
+	cmd.Flags().Uint32(flagVestingStart, 0, "schedule start time (unix epoch) for vesting accounts")
+	cmd.Flags().Uint32(flagVestingEnd, 0, "schedule end time (unix epoch) for vesting accounts")
 	cmd.Flags().String(flagUnbondingTime, "1814400s", "unbonding time")
 
 	return cmd
@@ -192,11 +192,11 @@ func InitTestnet(
 		return err
 	}
 
-	vestingStart, errstart := cmd.Flags().GetInt64(flagVestingStart)
+	vestingStart, errstart := cmd.Flags().GetUint32(flagVestingStart)
 	if errstart != nil {
 		return fmt.Errorf("failed to parse vesting start: %w", errstart)
 	}
-	vestingEnd, errend := cmd.Flags().GetInt64(flagVestingEnd)
+	vestingEnd, errend := cmd.Flags().GetUint32(flagVestingEnd)
 	if errend != nil {
 		return fmt.Errorf("failed to parse vesting end: %w", errend)
 	}
@@ -287,7 +287,7 @@ func InitTestnet(
 		baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
 
 		if !vestingCoins.IsZero() {
-			baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingCoins.Sort(), vestingEnd)
+			baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingCoins.Sort(), int64(vestingEnd))
 
 			if (genbalance.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
 				baseVestingAccount.OriginalVesting.IsAnyGT(genbalance.Coins) {
@@ -296,7 +296,7 @@ func InitTestnet(
 
 			switch {
 			case vestingStart != 0 && vestingEnd != 0:
-				genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, vestingStart)
+				genAccount = authvesting.NewContinuousVestingAccountRaw(baseVestingAccount, int64(vestingStart))
 
 			case vestingEnd != 0:
 				genAccount = authvesting.NewDelayedVestingAccountRaw(baseVestingAccount)
