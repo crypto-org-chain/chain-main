@@ -155,7 +155,6 @@ class CosmosCLI:
             "gentx",
             name,
             coins,
-            amount=coins,
             min_self_delegation=str(min_self_delegation),
             home=self.data_dir,
             chain_id=self.chain_id,
