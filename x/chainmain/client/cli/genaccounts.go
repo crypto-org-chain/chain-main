@@ -82,24 +82,30 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 			if errstart != nil {
 				return fmt.Errorf("failed to parse vesting start: %w", errstart)
 			}
-			vestingStart, errstart := strconv.ParseInt(vestingStartStr, 10, 64)
+			vestingStartUint, errstart := strconv.ParseUint(vestingStartStr, 10, 32)
+			var vestingStart int64
 			if errstart != nil {
 				vestingStart, errstart = ParseTime(vestingStartStr)
 				if errstart != nil {
 					return fmt.Errorf("failed to parse vesting start: %w", errstart)
 				}
+			} else {
+				vestingStart = int64(vestingStartUint)
 			}
 
 			vestingEndStr, errend := cmd.Flags().GetString(flagVestingEnd)
 			if errend != nil {
 				return fmt.Errorf("failed to parse vesting end: %w", errend)
 			}
-			vestingEnd, errend := strconv.ParseInt(vestingEndStr, 10, 64)
+			vestingEndUint, errend := strconv.ParseUint(vestingEndStr, 10, 32)
+			var vestingEnd int64
 			if errend != nil {
 				vestingEnd, errend = ParseTime(vestingEndStr)
 				if errend != nil {
 					return fmt.Errorf("failed to parse vesting end: %w", errend)
 				}
+			} else {
+				vestingEnd = int64(vestingEndUint)
 			}
 
 			vestingAmtStr, erramt := cmd.Flags().GetString(flagVestingAmt)
@@ -205,7 +211,7 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 	}
 
 	cmd.Flags().String(flags.FlagHome, defaultNodeHome, "The application home directory")
-	cmd.Flags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test)")
+	cmd.Flags().String(flags.FlagKeyringBackend, flags.DefaultKeyringBackend, "Select keyring's backend (os|file|kwallet|pass|test|memory)")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
 	cmd.Flags().String(flagVestingStart, "0", "schedule start time (RFC-3339 format or unix timestamp) for vesting accounts")
 	cmd.Flags().String(flagVestingEnd, "0", "schedule end time (RFC-3339 format or unix timestamp) for vesting accounts")
