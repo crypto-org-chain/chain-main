@@ -5,10 +5,10 @@
         "homepage": "https://cosmos.network/",
         "owner": "cosmos",
         "repo": "cosmos-sdk",
-        "rev": "7fd3d00459bb5d69d64c6648f1ed7eb6a47e7c85",
-        "sha256": "1cv7dh77pk4gdw7b75myb4q3ccn4idzv89ach5zcclfpby1f1nll",
+        "rev": "a334a59df02fe1f227fbf2a9a1ae153323eb6f8b",
+        "sha256": "14qq450fmx41mhn0lvf3vplry4r74r8k302227sxn03gm9ji9rpk",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/7fd3d00459bb5d69d64c6648f1ed7eb6a47e7c85.tar.gz",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/a334a59df02fe1f227fbf2a9a1ae153323eb6f8b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
