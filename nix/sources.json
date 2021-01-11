@@ -6,7 +6,7 @@
         "owner": "cosmos",
         "repo": "cosmos-sdk",
         "rev": "a334a59df02fe1f227fbf2a9a1ae153323eb6f8b",
-        "sha256": "14qq450fmx41mhn0lvf3vplry4r74r8k302227sxn03gm9ji9rpk",
+        "sha256": "0cjjm8ghk6illv3mgi1xpfkdcjs8gri8z477rs0dk050qgwdq5vp",
         "type": "tarball",
         "url": "https://github.com/cosmos/cosmos-sdk/archive/a334a59df02fe1f227fbf2a9a1ae153323eb6f8b.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
