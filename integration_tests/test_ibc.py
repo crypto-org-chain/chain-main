@@ -28,7 +28,7 @@ def test_ibc(cluster):
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
     # call chain-maind directly
-    raw = next(iter(cluster.values())).raw
+    raw = next(iter(cluster.values())).cosmos_cli().raw
     relayer = ["relayer", "--home", data_root / "relayer"]
     # init light clients
     for chain_id in cluster:
