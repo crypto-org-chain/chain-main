@@ -1,4 +1,4 @@
-// +build !testnet,!crossfire
+// +build !testnet,crossfire
 
 package config
 
@@ -14,7 +14,7 @@ var (
 	ValidatorPubKeyPrefix  = "crocnclpub"
 	ConsNodeAddressPrefix  = "crocnclcons"
 	ConsNodePubKeyPrefix   = "crocnclconspub"
-	HumanCoinUnit          = "cro"
-	BaseCoinUnit           = "basecro" // 10^-8 AKA "carson"
+	HumanCoinUnit          = "tcro"
+	BaseCoinUnit           = "basetcro" // 10^-8 AKA "carson"
 	CroExponent            = 8
 )
