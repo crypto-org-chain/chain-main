@@ -15,7 +15,7 @@ import sources.nixpkgs {
         name = "relayer";
         src = pkgs.sources.relayer;
         subPackages = [ "." ];
-        vendorSha256 = sha256:0422zjarm6fk2ca7jfvzf3yz1n7i4zlk65blk34cmqr3m3dmfqw5;
+        vendorSha256 = sha256:0sb50nl9nmdy4xlly3cmrb8iiyasdkm2y36s8zr9qw4prjm0ngi0;
         doCheck = false;
       };
     })
