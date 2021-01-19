@@ -235,8 +235,8 @@ class ClusterCLI:
     def add_genesis_account(self, addr, coins, i=0, **kwargs):
         return self.cosmos_cli(i).add_genesis_account(addr, coins, **kwargs)
 
-    def gentx(self, name, coins, i=0, min_self_delegation=1):
-        return self.cosmos_cli(i).gentx(name, coins, min_self_delegation)
+    def gentx(self, name, coins, i=0, min_self_delegation=1, pubkey=None):
+        return self.cosmos_cli(i).gentx(name, coins, min_self_delegation, pubkey)
 
     def collect_gentxs(self, gentx_dir, i=0):
         return self.cosmos_cli(i).collect_gentxs(gentx_dir)
@@ -607,6 +607,7 @@ def init_devnet(
                 node["staked"],
                 i=i,
                 min_self_delegation=node.get("min_self_delegation", 1),
+                pubkey=node.get("pubkey"),
             )
 
     # create accounts
