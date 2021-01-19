@@ -97,7 +97,7 @@ def test_cosmovisor(cosmovisor_cluster):
     height = cluster.block_height()
     target_height = height + 15
     print("upgrade height", target_height)
-    plan_name = "upgrade-test"
+    plan_name = "v2.0.0"
     rsp = cluster.gov_propose(
         "community",
         "software-upgrade",
@@ -185,7 +185,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     target_height = cluster.block_height() + 15
     print("upgrade height", target_height)
 
-    plan_name = "upgrade-test"
+    plan_name = "v2.0.0"
     propose_and_pass(
         cluster,
         "software-upgrade",

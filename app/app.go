@@ -86,6 +86,9 @@ import (
 	"github.com/crypto-org-chain/chain-main/v1/x/chainmain"
 	chainmainkeeper "github.com/crypto-org-chain/chain-main/v1/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-org-chain/chain-main/v1/x/chainmain/types"
+	subscription "github.com/crypto-org-chain/chain-main/v1/x/subscription"
+	subscriptionkeeper "github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
+	subscriptiontypes "github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
 	supply "github.com/crypto-org-chain/chain-main/v1/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v1/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v1/x/supply/types"
@@ -122,6 +125,7 @@ var (
 		transfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		supply.AppModuleBasic{},
+		subscription.AppModuleBasic{},
 		chainmain.AppModuleBasic{},
 	)
 
@@ -159,21 +163,22 @@ type ChainApp struct {
 	memKeys map[string]*sdk.MemoryStoreKey
 
 	// keepers
-	AccountKeeper    authkeeper.AccountKeeper
-	BankKeeper       bankkeeper.Keeper
-	CapabilityKeeper *capabilitykeeper.Keeper
-	StakingKeeper    stakingkeeper.Keeper
-	SlashingKeeper   slashingkeeper.Keeper
-	MintKeeper       mintkeeper.Keeper
-	DistrKeeper      distrkeeper.Keeper
-	GovKeeper        govkeeper.Keeper
-	UpgradeKeeper    upgradekeeper.Keeper
-	ParamsKeeper     paramskeeper.Keeper
-	IBCKeeper        *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	EvidenceKeeper   evidencekeeper.Keeper
-	TransferKeeper   ibctransferkeeper.Keeper
-	chainmainKeeper  chainmainkeeper.Keeper
-	SupplyKeeper     supplykeeper.Keeper
+	AccountKeeper      authkeeper.AccountKeeper
+	BankKeeper         bankkeeper.Keeper
+	CapabilityKeeper   *capabilitykeeper.Keeper
+	StakingKeeper      stakingkeeper.Keeper
+	SlashingKeeper     slashingkeeper.Keeper
+	MintKeeper         mintkeeper.Keeper
+	DistrKeeper        distrkeeper.Keeper
+	GovKeeper          govkeeper.Keeper
+	UpgradeKeeper      upgradekeeper.Keeper
+	ParamsKeeper       paramskeeper.Keeper
+	IBCKeeper          *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	EvidenceKeeper     evidencekeeper.Keeper
+	TransferKeeper     ibctransferkeeper.Keeper
+	chainmainKeeper    chainmainkeeper.Keeper
+	SupplyKeeper       supplykeeper.Keeper
+	SubscriptionKeeper subscriptionkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -217,7 +222,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		chainmaintypes.StoreKey, supplytypes.StoreKey,
+		chainmaintypes.StoreKey, supplytypes.StoreKey, subscriptiontypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -277,6 +282,7 @@ func New(
 	)
 
 	app.SupplyKeeper = supplykeeper.NewKeeper(appCodec, keys[supplytypes.StoreKey], app.BankKeeper, app.AccountKeeper)
+	app.SubscriptionKeeper = subscriptionkeeper.NewKeeper(appCodec, keys[subscriptiontypes.StoreKey], app.GetSubspace(subscriptiontypes.ModuleName), app.BankKeeper)
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -338,6 +344,7 @@ func New(
 		transferModule,
 		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
 		supply.NewAppModule(appCodec, app.SupplyKeeper),
+		subscription.NewAppModule(appCodec, app.SubscriptionKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -346,7 +353,7 @@ func New(
 	// NOTE: staking module is required if HistoricalEntries param > 0
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName, minttypes.ModuleName, distrtypes.ModuleName, slashingtypes.ModuleName,
-		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
+		evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName, subscriptiontypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(govtypes.ModuleName, stakingtypes.ModuleName)
 
@@ -359,7 +366,7 @@ func New(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
-		chainmaintypes.ModuleName, supplytypes.ModuleName,
+		chainmaintypes.ModuleName, supplytypes.ModuleName, subscriptiontypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -423,6 +430,10 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
+
+	app.UpgradeKeeper.SetUpgradeHandler("v2.0.0", func(ctx sdk.Context, _ upgradetypes.Plan) {
+		subscription.InitGenesis(ctx, app.SubscriptionKeeper, *subscriptiontypes.DefaultGenesis())
+	})
 
 	return app
 }
@@ -584,6 +595,7 @@ func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyA
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypes.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
+	paramsKeeper.Subspace(subscriptiontypes.ModuleName)
 
 	return paramsKeeper
 }

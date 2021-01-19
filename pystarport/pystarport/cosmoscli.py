@@ -764,3 +764,70 @@ class CosmosCLI:
 
     def unsaferesetall(self):
         return self.raw("unsafe-reset-all")
+
+    def create_plan(self, owner, title, description, price, cron_spec, duration_secs):
+        return json.loads(
+            self.raw(
+                "tx",
+                "subscription",
+                "create-plan",
+                "-y",
+                from_=owner,
+                title=title,
+                description=description,
+                price=price,
+                cron_spec=cron_spec,
+                duration_secs=duration_secs,
+                chain_id=self.chain_id,
+                home=self.data_dir,
+                keyring_backend="test",
+                node=self.node_rpc,
+            )
+        )
+
+    def query_plans(self):
+        return json.loads(
+            self.raw(
+                "query", "subscription", "plans", output="json", node=self.node_rpc
+            )
+        )["plans"]
+
+    def query_plan(self, plan_id):
+        return json.loads(
+            self.raw(
+                "query",
+                "subscription",
+                "plan",
+                plan_id,
+                output="json",
+                node=self.node_rpc,
+            )
+        )
+
+    def create_subscription(self, plan_id, subscriber):
+        return json.loads(
+            self.raw(
+                "tx",
+                "subscription",
+                "subscribe",
+                "-y",
+                plan_id=plan_id,
+                from_=subscriber,
+                chain_id=self.chain_id,
+                home=self.data_dir,
+                keyring_backend="test",
+                node=self.node_rpc,
+            )
+        )
+
+    def query_subscription(self, subscription_id):
+        return json.loads(
+            self.raw(
+                "query",
+                "subscription",
+                "subscription",
+                subscription_id,
+                output="json",
+                node=self.node_rpc,
+            )
+        )

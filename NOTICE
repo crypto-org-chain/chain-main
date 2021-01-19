@@ -14,3 +14,7 @@ This project contains portions of code derived from the following libraries:
  * License: Apache License 2.0
  * Repository: https://github.com/cosmos/cosmos-sdk
 
+* bitset
+ * Copyright (c) 2014 Will Fitzgerald.
+ * License: BSD 3-Clause "New" or "Revised" License
+ * Repository: https://github.com/willf/bitset
