@@ -1,7 +1,11 @@
 # Changelog
 
+*January 20, 2021*
+## v0.8.1
+A version based on the patched release of Cosmos SDK 0.40.1 that includes security fixes in Tendermint 0.40.3.
+
 *January 11, 2021*
-## v0.8.0-crossfire 
+## v0.8.0
 A version based on the final release of Cosmos SDK 0.40.
 ### Improvements
 * [347](https://github.com/crypto-com/chain-main/pull/347) keyring options help extended
