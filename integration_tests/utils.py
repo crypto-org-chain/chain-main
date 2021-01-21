@@ -8,7 +8,7 @@ import uuid
 
 import yaml
 from dateutil.parser import isoparse
-from pystarport import cluster
+from pystarport import cluster, ledger
 from pystarport.ports import rpc_port
 
 
@@ -105,7 +105,7 @@ def cluster_fixture(
                     flags=re.M,
                 )
             )
-        clis[chain_id] = cluster.ClusterCLI(data, chain_id)
+        clis[chain_id] = cluster.ClusterCLI(data, chain_id=chain_id)
 
     supervisord = cluster.start_cluster(data)
     if not quiet:
@@ -142,7 +142,7 @@ def cluster_fixture(
 
 
 def get_ledger():
-    return cluster.Ledger()
+    return ledger.Ledger()
 
 
 def parse_events(logs):

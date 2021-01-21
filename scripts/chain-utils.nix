@@ -1,7 +1,7 @@
 { pkgs, network }:
 let
   fetch-src = ref: builtins.fetchTarball "https://github.com/crypto-com/chain-main/archive/${ref}.tar.gz";
-  chain-maind-testnet = (import (fetch-src "v0.8.0-rc1") { }).chain-maind-testnet;
+  chain-maind-testnet = (import (fetch-src "v0.8.0-croeseid") { }).chain-maind-testnet;
 
   cfg =
     if network == "testnet" then {

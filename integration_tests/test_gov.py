@@ -1,4 +1,3 @@
-import json
 from datetime import timedelta
 
 import pytest
@@ -16,9 +15,7 @@ def test_param_proposal(cluster, vote_option):
     - check the result
     - check deposit refunded
     """
-    max_validators = json.loads(
-        cluster.raw("q", "staking", "params", output="json", node=cluster.node_rpc(0))
-    )["max_validators"]
+    max_validators = cluster.staking_params()["max_validators"]
 
     rsp = cluster.gov_propose(
         "community",
@@ -66,7 +63,8 @@ def test_param_proposal(cluster, vote_option):
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
         assert (
-            int(cluster.query_tally(proposal_id)[vote_option]) == cluster.staking_pool()
+            int(cluster.query_tally(proposal_id, i=1)[vote_option])
+            == cluster.staking_pool()
         ), "all voted"
     else:
         assert cluster.query_tally(proposal_id) == {
@@ -86,9 +84,7 @@ def test_param_proposal(cluster, vote_option):
     else:
         assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
 
-    new_max_validators = json.loads(
-        cluster.raw("q", "staking", "params", output="json", node=cluster.node_rpc(0))
-    )["max_validators"]
+    new_max_validators = cluster.staking_params()["max_validators"]
     if vote_option == "yes":
         assert new_max_validators == max_validators + 1
     else:

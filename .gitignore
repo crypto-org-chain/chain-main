@@ -26,4 +26,5 @@ frontend/.cache
 
 # Pystarport
 /bot.yaml
+/bot.*.yaml
 /config.yaml

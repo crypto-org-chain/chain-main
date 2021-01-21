@@ -1,23 +1,17 @@
 import base64
 import configparser
 import datetime
-import enum
 import hashlib
 import json
 import os
 import re
-import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
-import uuid
 from pathlib import Path
 from typing import List
 
-import bech32
-import docker
 import durations
 import jsonmerge
 import multitail2
@@ -28,17 +22,10 @@ from supervisor import xmlrpc
 from supervisor.compat import xmlrpclib
 
 from . import ports
-from .utils import build_cli_args_safe, format_doc_string, interact, write_ini
-
-CHAIN = ""  # edit by nix-build
-if not CHAIN:
-    CHAIN = os.environ.get("CHAIN_MAIND", "chain-maind")
-ZEMU_HOST = "127.0.0.1"
-ZEMU_BUTTON_PORT = 9997
-ZEMU_GRPC_SERVER_PORT = 3002
-# dockerfile is integration_test/hardware_wallet/Dockerfile
-ZEMU_IMAGE = "cryptocom/builder-zemu:latest"
-IMAGE = "docker.pkg.github.com/crypto-com/chain-main/chain-main-pystarport:latest"
+from .app import CHAIN, IMAGE, SUPERVISOR_CONFIG_FILE
+from .cosmoscli import ChainCommand, CosmosCLI, ModuleAccount, module_address
+from .ledger import ZEMU_BUTTON_PORT, ZEMU_HOST
+from .utils import format_doc_string, interact, write_ini
 
 COMMON_PROG_OPTIONS = {
     # redirect to supervisord's stdout, easier to collect all logs
@@ -47,122 +34,10 @@ COMMON_PROG_OPTIONS = {
     "redirect_stderr": "true",
     "startsecs": "3",
 }
-SUPERVISOR_CONFIG_FILE = "tasks.ini"
-
-
-class ModuleAccount(enum.Enum):
-    FeeCollector = "fee_collector"
-    Mint = "mint"
-    Gov = "gov"
-    Distribution = "distribution"
-    BondedPool = "bonded_tokens_pool"
-    NotBondedPool = "not_bonded_tokens_pool"
-    IBCTransfer = "transfer"
 
 
 def home_dir(data_dir, i):
     return data_dir / f"node{i}"
-
-
-class Ledger:
-    def __init__(self):
-        self.ledger_name = f"ledger_simulator_{uuid.uuid4().time_mid}"
-        self.proxy_name = f"ledger_proxy_{uuid.uuid4().time_mid}"
-        self.grpc_name = f"ledger_grpc_server_{uuid.uuid4().time_mid}"
-        self.cmds = {
-            self.ledger_name: [
-                "./speculos/speculos.py",
-                "--display=headless",
-                f"--button-port={ZEMU_BUTTON_PORT}",
-                "./speculos/apps/crypto.elf",
-            ],
-            self.proxy_name: ["./speculos/tools/ledger-live-http-proxy.py", "-v"],
-            self.grpc_name: ["bash", "-c", "RUST_LOG=debug zemu-grpc-server"],
-        }
-        self.client = docker.from_env()
-        self.client.images.pull(ZEMU_IMAGE)
-        self.containers = []
-
-    def start(self):
-        host_config_ledger = self.client.api.create_host_config(
-            auto_remove=True,
-            port_bindings={
-                ZEMU_BUTTON_PORT: ZEMU_BUTTON_PORT,
-                ZEMU_GRPC_SERVER_PORT: ZEMU_GRPC_SERVER_PORT,
-            },
-        )
-        container_ledger = self.client.api.create_container(
-            ZEMU_IMAGE,
-            self.cmds[self.ledger_name],
-            name=self.ledger_name,
-            ports=[ZEMU_BUTTON_PORT, ZEMU_GRPC_SERVER_PORT],
-            host_config=host_config_ledger,
-        )
-        self.client.api.start(container_ledger["Id"])
-        self.containers.append(container_ledger)
-        for name in [self.proxy_name, self.grpc_name]:
-            cmd = self.cmds[name]
-            try:
-                host_config = self.client.api.create_host_config(
-                    auto_remove=True, network_mode=f"container:{self.ledger_name}"
-                )
-                container = self.client.api.create_container(
-                    ZEMU_IMAGE,
-                    cmd,
-                    name=name,
-                    host_config=host_config,
-                )
-                self.client.api.start(container["Id"])
-                self.containers.append(container)
-                time.sleep(2)
-            except Exception as e:
-                print(e)
-
-    def stop(self):
-        for container in self.containers:
-            try:
-                self.client.api.remove_container(container["Id"], force=True)
-                print("stop docker {}".format(container["Name"]))
-            except Exception as e:
-                print(e)
-
-
-class LedgerButton:
-    def __init__(self, zemu_address, zemu_button_port):
-        self._client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.zemu_address = zemu_address
-        self.zemu_button_port = zemu_button_port
-        self.connected = False
-
-    @property
-    def client(self):
-        if not self.connected:
-            time.sleep(5)
-            self._client.connect((self.zemu_address, self.zemu_button_port))
-            self.connected = True
-        return self._client
-
-    def press_left(self):
-        data = "Ll"
-        self.client.send(data.encode())
-
-    def press_right(self):
-        data = "Rr"
-        self.client.send(data.encode())
-
-    def press_both(self):
-        data = "LRlr"
-        self.client.send(data.encode())
-
-
-class ChainCommand:
-    def __init__(self, cmd=None):
-        self.cmd = cmd or CHAIN
-
-    def __call__(self, cmd, *args, stdin=None, **kwargs):
-        "execute chain-maind"
-        args = " ".join(build_cli_args_safe(cmd, *args, **kwargs))
-        return interact(f"{self.cmd} {args}", input=stdin)
 
 
 class ClusterCLI:
@@ -171,20 +46,32 @@ class ClusterCLI:
     def __init__(
         self,
         data,
-        chain_id,
-        cmd=None,
+        chain_id="chainmaind",
+        cmd=CHAIN,
         zemu_address=ZEMU_HOST,
         zemu_button_port=ZEMU_BUTTON_PORT,
     ):
         self.data_root = data
+        self.cmd = cmd
+        self.zemu_address = zemu_address
+        self.zemu_button_port = zemu_button_port
         self.chain_id = chain_id
-        self.data_dir = data / chain_id
+        self.data_dir = data / self.chain_id
         self.config = json.load((self.data_dir / "config.json").open())
-        self.raw = ChainCommand(cmd)
+
         self._supervisorctl = None
-        self.leger_button = LedgerButton(zemu_address, zemu_button_port)
         self.output = None
         self.error = None
+
+    def cosmos_cli(self, i=0):
+        return CosmosCLI(
+            self.home(i),
+            self.node_rpc(i),
+            chain_id=self.chain_id,
+            cmd=self.cmd,
+            zemu_address=self.zemu_address,
+            zemu_button_port=self.zemu_button_port,
+        )
 
     @property
     def supervisor(self):
@@ -295,7 +182,7 @@ class ClusterCLI:
         ini[section].update(
             dict(
                 COMMON_PROG_OPTIONS,
-                command=f"{self.raw.cmd} start --home %(here)s/node{i}",
+                command=f"{self.cmd} start --home %(here)s/node{i}",
                 autostart="false",
                 stdout_logfile=f"%(here)s/node{i}.log",
             )
@@ -328,169 +215,55 @@ class ClusterCLI:
 
     def node_id(self, i):
         "get i-th node's tendermint node id"
-        output = self.raw("tendermint", "show-node-id", home=self.home(i))
-        return output.decode().strip()
+        return self.cosmos_cli(i).node_id()
 
     def create_account(self, name, i=0, mnemonic=None):
         "create new keypair in i-th node's keyring"
-        if mnemonic is None:
-            output = self.raw(
-                "keys",
-                "add",
-                name,
-                home=self.home(i),
-                output="json",
-                keyring_backend="test",
-            )
-        else:
-            output = self.raw(
-                "keys",
-                "add",
-                name,
-                "--recover",
-                home=self.home(i),
-                output="json",
-                keyring_backend="test",
-                stdin=mnemonic.encode() + b"\n",
-            )
-        return json.loads(output)
+        return self.cosmos_cli(i).create_account(name, mnemonic)
 
     def create_account_ledger(self, name, i=0):
         "create new ledger keypair"
-
-        def send_request():
-            try:
-                self.output = self.raw(
-                    "keys",
-                    "add",
-                    name,
-                    "--ledger",
-                    home=self.home(i),
-                    output="json",
-                    keyring_backend="test",
-                )
-            except Exception as e:
-                self.error = e
-
-        t = threading.Thread(target=send_request)
-        t.start()
-        time.sleep(3)
-        for _ in range(0, 3):
-            self.leger_button.press_right()
-            time.sleep(0.2)
-        self.leger_button.press_both()
-        t.join()
-        if self.error:
-            raise self.error
-        return json.loads(self.output)
+        return self.cosmos_cli(i).create_account_ledger(name)
 
     def init(self, i):
         "the i-th node's config is already added"
-        return self.raw(
-            "init",
-            self.config["validators"][i]["moniker"],
-            chain_id=self.chain_id,
-            home=self.home(i),
-        )
+        return self.cosmos_cli(i).init(self.config["validators"][i]["moniker"])
 
     def validate_genesis(self, i=0):
-        return self.raw("validate-genesis", home=self.home(i))
+        return self.cosmos_cli(i).validate_genesis()
 
     def add_genesis_account(self, addr, coins, i=0, **kwargs):
-        return self.raw(
-            "add-genesis-account",
-            addr,
-            coins,
-            home=self.home(i),
-            output="json",
-            **kwargs,
-        )
+        return self.cosmos_cli(i).add_genesis_account(addr, coins, **kwargs)
 
-    def gentx(self, name, coins, i, min_self_delegation=1):
-        return self.raw(
-            "gentx",
-            name,
-            coins,
-            amount=coins,
-            min_self_delegation=str(min_self_delegation),
-            home=self.home(i),
-            chain_id=self.chain_id,
-            keyring_backend="test",
-        )
+    def gentx(self, name, coins, i=0, min_self_delegation=1, pubkey=None):
+        return self.cosmos_cli(i).gentx(name, coins, min_self_delegation, pubkey)
 
     def collect_gentxs(self, gentx_dir, i=0):
-        return self.raw("collect-gentxs", gentx_dir, home=self.home(i))
+        return self.cosmos_cli(i).collect_gentxs(gentx_dir)
 
     def status(self, i=0):
-        return json.loads(self.raw("status", node=self.node_rpc(i)))
+        return self.cosmos_cli(i).status()
 
     def block_height(self, i=0):
-        return int(self.status(i)["SyncInfo"]["latest_block_height"])
+        return self.cosmos_cli(i).block_height()
 
     def block_time(self, i=0):
-        return isoparse(self.status(i)["SyncInfo"]["latest_block_time"])
+        return self.cosmos_cli(i).block_time()
 
     def balance(self, addr, i=0):
-        coin = json.loads(
-            self.raw(
-                "query", "bank", "balances", addr, output="json", node=self.node_rpc(i)
-            )
-        )["balances"]
-        if len(coin) == 0:
-            return 0
-        coin = coin[0]
-        assert coin["denom"] == "basecro"
-        return int(coin["amount"])
+        return self.cosmos_cli(i).balance(addr)
 
-    def distribution_commision(self, addr, i=0):
-        coin = json.loads(
-            self.raw(
-                "query",
-                "distribution",
-                "commission",
-                addr,
-                output="json",
-                node=self.node_rpc(i),
-            )
-        )["commission"][0]
-        return float(coin["amount"])
+    def distribution_commission(self, addr, i=0):
+        return self.cosmos_cli(i).distribution_commission(addr)
 
     def distribution_community(self, i=0):
-        coin = json.loads(
-            self.raw(
-                "query",
-                "distribution",
-                "community-pool",
-                output="json",
-                node=self.node_rpc(i),
-            )
-        )["pool"][0]
-        return float(coin["amount"])
+        return self.cosmos_cli(i).distribution_community()
 
     def distribution_reward(self, delegator_addr, i=0):
-        coin = json.loads(
-            self.raw(
-                "query",
-                "distribution",
-                "rewards",
-                delegator_addr,
-                output="json",
-                node=self.node_rpc(i),
-            )
-        )["total"][0]
-        return float(coin["amount"])
+        return self.cosmos_cli(i).distribution_reward(delegator_addr)
 
     def address(self, name, i=0, bech="acc"):
-        output = self.raw(
-            "keys",
-            "show",
-            name,
-            "-a",
-            home=self.home(i),
-            keyring_backend="test",
-            bech=bech,
-        )
-        return output.strip().decode()
+        return self.cosmos_cli(i).address(name, bech)
 
     @format_doc_string(
         options=",".join(v.value for v in ModuleAccount.__members__.values())
@@ -501,258 +274,89 @@ class ClusterCLI:
 
         :param name: name of module account, values: {options}
         """
-        data = hashlib.sha256(ModuleAccount(name).value.encode()).digest()[:20]
-        return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
+        return module_address(name)
 
     def account(self, addr, i=0):
-        return json.loads(
-            self.raw(
-                "query", "auth", "account", addr, output="json", node=self.node_rpc(i)
-            )
-        )
+        return self.cosmos_cli(i).account(addr)
 
-    def supply(self, supply_type):
-        return json.loads(
-            self.raw(
-                "query", "supply", supply_type, output="json", node=self.node_rpc(0)
-            )
-        )
+    def supply(self, supply_type, i=0):
+        return self.cosmos_cli(i).supply(supply_type)
 
     def validator(self, addr, i=0):
-        return json.loads(
-            self.raw(
-                "query",
-                "staking",
-                "validator",
-                addr,
-                output="json",
-                node=self.node_rpc(i),
-            )
-        )
+        return self.cosmos_cli(i).validator(addr)
 
     def validators(self, i=0):
-        return json.loads(
-            self.raw(
-                "query", "staking", "validators", output="json", node=self.node_rpc(i)
-            )
-        )["validators"]
+        return self.cosmos_cli(i).validators()
 
-    def staking_pool(self, bonded=True):
-        return int(
-            json.loads(
-                self.raw(
-                    "query", "staking", "pool", output="json", node=self.node_rpc(0)
-                )
-            )["bonded_tokens" if bonded else "not_bonded_tokens"]
-        )
+    def staking_params(self, i=0):
+        return self.cosmos_cli(i).staking_params()
+
+    def staking_pool(self, bonded=True, i=0):
+        return self.cosmos_cli(i).staking_pool(bonded)
 
     def transfer(self, from_, to, coins, i=0, generate_only=False, fees=None):
-        return json.loads(
-            self.raw(
-                "tx",
-                "bank",
-                "send",
-                from_,
-                to,
-                coins,
-                "-y",
-                "--generate-only" if generate_only else None,
-                home=self.home(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-                fees=fees,
-            )
-        )
+        return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, fees)
 
     def transfer_from_ledger(
         self, from_, to, coins, i=0, generate_only=False, fees=None
     ):
-        def send_request():
-            try:
-                self.output = self.raw(
-                    "tx",
-                    "bank",
-                    "send",
-                    from_,
-                    to,
-                    coins,
-                    "-y",
-                    "--generate-only" if generate_only else "",
-                    "--ledger",
-                    home=self.home(i),
-                    keyring_backend="test",
-                    chain_id=self.chain_id,
-                    node=self.node_rpc(0),
-                    fees=fees,
-                    sign_mode="amino-json",
-                )
-            except Exception as e:
-                self.error = e
-
-        t = threading.Thread(target=send_request)
-        t.start()
-        time.sleep(3)
-        for _ in range(0, 11):
-            self.leger_button.press_right()
-            time.sleep(0.4)
-        self.leger_button.press_both()
-        t.join()
-        if self.error:
-            raise self.error
-        return json.loads(self.output)
+        return self.cosmos_cli(i).transfer_from_ledger(
+            from_,
+            to,
+            coins,
+            generate_only,
+            fees,
+        )
 
     def get_delegated_amount(self, which_addr, i=0):
-        return json.loads(
-            self.raw(
-                "query",
-                "staking",
-                "delegations",
-                which_addr,
-                home=self.home(i),
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-                output="json",
-            )
-        )
+        return self.cosmos_cli(i).get_delegated_amount(which_addr)
 
     def delegate_amount(self, to_addr, amount, from_addr, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "staking",
-                "delegate",
-                to_addr,
-                amount,
-                "-y",
-                home=self.home(i),
-                from_=from_addr,
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
-        )
+        return self.cosmos_cli(i).delegate_amount(to_addr, amount, from_addr)
 
     # to_addr: croclcl1...  , from_addr: cro1...
     def unbond_amount(self, to_addr, amount, from_addr, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "staking",
-                "unbond",
-                to_addr,
-                amount,
-                "-y",
-                home=self.home(i),
-                from_=from_addr,
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
-        )
+        return self.cosmos_cli(i).unbond_amount(to_addr, amount, from_addr)
 
     # to_validator_addr: crocncl1...  ,  from_from_validator_addraddr: crocl1...
     def redelegate_amount(
         self, to_validator_addr, from_validator_addr, amount, from_addr, i=0
     ):
-        return json.loads(
-            self.raw(
-                "tx",
-                "staking",
-                "redelegate",
-                from_validator_addr,
-                to_validator_addr,
-                amount,
-                "-y",
-                home=self.home(i),
-                from_=from_addr,
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
+        return self.cosmos_cli(i).redelegate_amount(
+            to_validator_addr,
+            from_validator_addr,
+            amount,
+            from_addr,
         )
+
+    def withdraw_all_rewards(self, from_delegator, i=0):
+        return self.cosmos_cli(i).withdraw_all_rewards(from_delegator)
 
     def make_multisig(self, name, signer1, signer2, i=0):
-        self.raw(
-            "keys",
-            "add",
-            name,
-            multisig=f"{signer1},{signer2}",
-            multisig_threshold="2",
-            home=self.home(i),
-            keyring_backend="test",
-            output="json",
-        )
+        return self.cosmos_cli(i).make_multisig(name, signer1, signer2)
 
     def sign_multisig_tx(self, tx_file, multi_addr, signer_name, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "sign",
-                tx_file,
-                from_=signer_name,
-                multisig=multi_addr,
-                home=self.home(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
-        )
+        return self.cosmos_cli(i).sign_multisig_tx(tx_file, multi_addr, signer_name)
 
-    def encode_signed_tx(self, signed_tx):
-        return self.raw(
-            "tx",
-            "encode",
-            signed_tx,
-        )
+    def encode_signed_tx(self, signed_tx, i=0):
+        return self.cosmos_cli(i).encode_signed_tx(signed_tx)
 
     def sign_single_tx(self, tx_file, signer_name, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "sign",
-                tx_file,
-                from_=signer_name,
-                home=self.home(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
-        )
+        return self.cosmos_cli(i).sign_single_tx(tx_file, signer_name)
 
     def combine_multisig_tx(self, tx_file, multi_name, signer1_file, signer2_file, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "multisign",
-                tx_file,
-                multi_name,
-                signer1_file,
-                signer2_file,
-                home=self.home(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc(0),
-            )
+        return self.cosmos_cli(i).combine_multisig_tx(
+            tx_file,
+            multi_name,
+            signer1_file,
+            signer2_file,
         )
 
     def broadcast_tx(self, tx_file, i=0):
-        return json.loads(self.raw("tx", "broadcast", tx_file, node=self.node_rpc(i)))
+        return self.cosmos_cli(i).broadcast_tx(tx_file)
 
     def unjail(self, addr, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "slashing",
-                "unjail",
-                "-y",
-                from_=addr,
-                home=self.home(i),
-                node=self.node_rpc(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-            )
-        )
+        return self.cosmos_cli(i).unjail(addr)
 
     def create_validator(
         self,
@@ -770,35 +374,17 @@ class ClusterCLI:
     ):
         """MsgCreateValidator
         create the node with create_node before call this"""
-        pubkey = (
-            self.raw("tendermint", "show-validator", home=self.home(i)).strip().decode()
-        )
-        return json.loads(
-            self.raw(
-                "tx",
-                "staking",
-                "create-validator",
-                "-y",
-                from_=self.address("validator", i),
-                amount=amount,
-                pubkey=pubkey,
-                min_self_delegation=min_self_delegation,
-                # commision
-                commission_rate=commission_rate,
-                commission_max_rate=commission_max_rate,
-                commission_max_change_rate=commission_max_change_rate,
-                # description
-                moniker=moniker or self.config["validators"][i]["moniker"],
-                identity=identity,
-                website=website,
-                security_contact=security_contact,
-                details=details,
-                # basic
-                home=self.home(i),
-                node=self.node_rpc(0),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-            )
+        return self.cosmos_cli(i).create_validator(
+            amount,
+            moniker or self.config["validators"][i]["moniker"],
+            commission_max_change_rate,
+            commission_rate,
+            commission_max_rate,
+            min_self_delegation,
+            identity,
+            website,
+            security_contact,
+            details,
         )
 
     def edit_validator(
@@ -812,168 +398,32 @@ class ClusterCLI:
         details=None,
     ):
         """MsgEditValidator"""
-        options = dict(
-            commission_rate=commission_rate,
-            # description
-            moniker=moniker,
-            identity=identity,
-            website=website,
-            security_contact=security_contact,
-            details=details,
-        )
-        return json.loads(
-            self.raw(
-                "tx",
-                "staking",
-                "edit-validator",
-                "-y",
-                from_=self.address("validator", i),
-                home=self.home(i),
-                node=self.node_rpc(0),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                **{k: v for k, v in options.items() if v is not None},
-            )
+        return self.cosmos_cli(i).edit_validator(
+            commission_rate,
+            moniker,
+            identity,
+            website,
+            security_contact,
+            details,
         )
 
-    def gov_propose(self, proposor, kind, proposal, i=0):
-        if kind == "software-upgrade":
-            return json.loads(
-                self.raw(
-                    "tx",
-                    "gov",
-                    "submit-proposal",
-                    kind,
-                    proposal["name"],
-                    "-y",
-                    from_=proposor,
-                    # content
-                    title=proposal.get("title"),
-                    description=proposal.get("description"),
-                    upgrade_height=proposal.get("upgrade-height"),
-                    upgrade_time=proposal.get("upgrade-time"),
-                    upgrade_info=proposal.get("upgrade-info"),
-                    deposit=proposal.get("deposit"),
-                    # basic
-                    home=self.home(i),
-                    node=self.node_rpc(0),
-                    keyring_backend="test",
-                    chain_id=self.chain_id,
-                )
-            )
-        elif kind == "cancel-software-upgrade":
-            return json.loads(
-                self.raw(
-                    "tx",
-                    "gov",
-                    "submit-proposal",
-                    kind,
-                    "-y",
-                    from_=proposor,
-                    # content
-                    title=proposal.get("title"),
-                    description=proposal.get("description"),
-                    deposit=proposal.get("deposit"),
-                    # basic
-                    home=self.home(i),
-                    node=self.node_rpc(0),
-                    keyring_backend="test",
-                    chain_id=self.chain_id,
-                )
-            )
-        else:
-            with tempfile.NamedTemporaryFile("w") as fp:
-                json.dump(proposal, fp)
-                fp.flush()
-                return json.loads(
-                    self.raw(
-                        "tx",
-                        "gov",
-                        "submit-proposal",
-                        kind,
-                        fp.name,
-                        "-y",
-                        from_=proposor,
-                        # basic
-                        home=self.home(i),
-                        node=self.node_rpc(0),
-                        keyring_backend="test",
-                        chain_id=self.chain_id,
-                    )
-                )
+    def gov_propose(self, proposer, kind, proposal, i=0):
+        return self.cosmos_cli(i).gov_propose(proposer, kind, proposal)
 
     def gov_vote(self, voter, proposal_id, option, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "gov",
-                "vote",
-                proposal_id,
-                option,
-                "-y",
-                from_=voter,
-                home=self.home(i),
-                node=self.node_rpc(0),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-            )
-        )
+        return self.cosmos_cli(i).gov_vote(voter, proposal_id, option)
 
     def gov_deposit(self, depositor, proposal_id, amount, i=0):
-        return json.loads(
-            self.raw(
-                "tx",
-                "gov",
-                "deposit",
-                proposal_id,
-                amount,
-                "-y",
-                from_=depositor,
-                home=self.home(i),
-                node=self.node_rpc(0),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-            )
-        )
+        return self.cosmos_cli(i).gov_deposit(depositor, proposal_id, amount)
 
-    def query_proposals(self, depositor=None, limit=None, status=None, voter=None):
-        return json.loads(
-            self.raw(
-                "query",
-                "gov",
-                "proposals",
-                depositor=depositor,
-                count_total=limit,
-                status=status,
-                voter=voter,
-                output="json",
-                node=self.node_rpc(0),
-            )
-        )
+    def query_proposals(self, depositor=None, limit=None, status=None, voter=None, i=0):
+        return self.cosmos_cli(i).query_proposals(depositor, limit, status, voter)
 
-    def query_proposal(self, proposal_id):
-        return json.loads(
-            self.raw(
-                "query",
-                "gov",
-                "proposal",
-                proposal_id,
-                output="json",
-                node=self.node_rpc(0),
-            )
-        )
+    def query_proposal(self, proposal_id, i=0):
+        return self.cosmos_cli(i).query_proposal(proposal_id)
 
-    def query_tally(self, proposal_id):
-        return json.loads(
-            self.raw(
-                "query",
-                "gov",
-                "tally",
-                proposal_id,
-                output="json",
-                node=self.node_rpc(0),
-            )
-        )
+    def query_tally(self, proposal_id, i=0):
+        return self.cosmos_cli(i).query_tally(proposal_id)
 
     def ibc_transfer(
         self,
@@ -984,26 +434,12 @@ class ClusterCLI:
         target_version,  # chain version number of target chain
         i=0,
     ):
-        return json.loads(
-            self.raw(
-                "tx",
-                "ibc-transfer",
-                "transfer",
-                "transfer",  # src port
-                channel,
-                to,
-                amount,
-                "-y",
-                # FIXME https://github.com/cosmos/cosmos-sdk/issues/8059
-                "--absolute-timeouts",
-                from_=from_,
-                home=self.home(i),
-                node=self.node_rpc(i),
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                packet_timeout_height=f"{target_version}-10000000000",
-                packet_timeout_timestamp=0,
-            )
+        return self.cosmos_cli(i).ibc_transfer(
+            from_,
+            to,
+            amount,
+            channel,
+            target_version,
         )
 
 
@@ -1147,7 +583,7 @@ def init_devnet(
         (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
 
     # now we can create ClusterCLI
-    cli = ClusterCLI(data_dir.parent, config["chain_id"], cmd)
+    cli = ClusterCLI(data_dir.parent, chain_id=config["chain_id"], cmd=cmd)
 
     # patch the genesis file
     genesis = jsonmerge.merge(
@@ -1169,8 +605,9 @@ def init_devnet(
             cli.gentx(
                 "validator",
                 node["staked"],
-                i,
+                i=i,
                 min_self_delegation=node.get("min_self_delegation", 1),
+                pubkey=node.get("pubkey"),
             )
 
     # create accounts

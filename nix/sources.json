@@ -1,15 +1,16 @@
 {
     "cosmos-sdk": {
-        "branch": "master",
+        "branch": "release/v0.40.x",
         "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
         "homepage": "https://cosmos.network/",
         "owner": "cosmos",
         "repo": "cosmos-sdk",
-        "rev": "f4ce6860d23a95e063f8b5f0bc340b2408a8604c",
-        "sha256": "1qpn32n6l5bxjqdx3xj5760ih1fjxpkxrvjwfbimx3n3aqphwpma",
+        "rev": "7cb7a3ab92cdab3dfb260fef7aca665daea2c558",
+        "sha256": "063ci81v7jfmi6gparxgq3kk6h8grcgz1s8svrmckbyjb0x9h6dk",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/f4ce6860d23a95e063f8b5f0bc340b2408a8604c.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/7cb7a3ab92cdab3dfb260fef7aca665daea2c558.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
+        "version": "v0.40.1"
     },
     "nixpkgs": {
         "branch": "master",
@@ -36,15 +37,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "relayer": {
-        "branch": "cryptocom-rc6",
+        "branch": "master",
         "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
         "homepage": null,
-        "owner": "yihuang",
+        "owner": "cosmos",
         "repo": "relayer",
-        "rev": "e13898f22bb1dacdb1b947f6d1c4ade73197629b",
-        "sha256": "0kj58s48vf0r1dpzn3y9c32mir8hzzm1ydh7fxpmc31injlcdil2",
+        "rev": "1daec66da1700c9fcd8900dbf06c70f2fd838cdf",
+        "sha256": "0q1jk35cci8kyi9rbmr0yski4977pmzmmrxbrxzif2kp8ghviila",
         "type": "tarball",
-        "url": "https://github.com/yihuang/relayer/archive/e13898f22bb1dacdb1b947f6d1c4ade73197629b.tar.gz",
+        "url": "https://github.com/cosmos/relayer/archive/1daec66da1700c9fcd8900dbf06c70f2fd838cdf.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

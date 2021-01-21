@@ -1,4 +1,4 @@
-// +build testnet
+// +build testnet,!crossfire
 
 package config
 
@@ -17,7 +17,4 @@ var (
 	HumanCoinUnit          = "tcro"
 	BaseCoinUnit           = "basetcro" // 10^-8 AKA "carson"
 	CroExponent            = 8
-	CoinToBaseUnitMuls     = map[string]uint64{
-		"tcro": 1_0000_0000,
-	}
 )

@@ -15,6 +15,11 @@ parent:
 2. **[State](02_state.md)**
 3. **[Messages](03_messages.md)**
 4. **[Events](04_events.md)**
+<<<<<<< HEAD
+=======
+5. **[Params](05_params.md)**
+6. **[BeginBlock](06_begin_block.md)**
+>>>>>>> eb2ff2349109aef578f4961c65e1dcf1ad89fdad
 
 ## Abstract
 
