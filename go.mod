@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.40.1
+	github.com/cosmos/cosmos-sdk v0.41.0
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.4.3
@@ -21,6 +21,9 @@ require (
 	google.golang.org/grpc v1.35.0
 
 )
+
+// TODO: https://github.com/cosmos/cosmos-sdk/pull/8388/files#r560319528
+replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
