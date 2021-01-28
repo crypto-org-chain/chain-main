@@ -429,8 +429,8 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
-	// TODO: crossfire may not be long-running, so the special config + this may need to be removed later
-	app.UpgradeKeeper.SetUpgradeHandler("crossfire-upgrade-test", func(_ sdk.Context, _ upgradetypes.Plan) {})
+	// TODO: remove later?
+	app.UpgradeKeeper.SetUpgradeHandler("sdk-v0.41-upgrade", func(_ sdk.Context, _ upgradetypes.Plan) {})
 
 	return app
 }
