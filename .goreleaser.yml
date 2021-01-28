@@ -15,7 +15,7 @@ builds:
     goarch:
       - amd64
     flags:
-        - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+        - -tags=testnet,cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-linux"
@@ -30,7 +30,7 @@ builds:
     goarch:
       - amd64
     flags:
-      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+      - -tags=testnet,cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-windows"
@@ -45,7 +45,8 @@ builds:
     goarch:
       - amd64
     flags:
-      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+      - -tags=testnet,cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+      - -buildmode=exe
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
