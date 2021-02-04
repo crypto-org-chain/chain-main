@@ -1,16 +1,16 @@
 {
     "cosmos-sdk": {
-        "branch": "release/v0.41.x",
+        "branch": "release/v0.41.x-patched",
         "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
         "homepage": "https://cosmos.network/",
-        "owner": "cosmos",
+        "owner": "crypto-com",
         "repo": "cosmos-sdk",
-        "rev": "f8a6987347611bb9c88065389613cbb0946ab609",
-        "sha256": "0jrki4a110hd5rhkhqrkqkhlsbf5kn4jpqdapl3ifjb19hvm2r1r",
+        "rev": "1dea5569bc98701c07680ac8883a0cf3843d66ef",
+        "sha256": "0kk5ygrdikqiix2pylxbpd5z6wwl570aq62avdxfy353g7w4gn3j",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/f8a6987347611bb9c88065389613cbb0946ab609.tar.gz",
+        "url": "https://github.com/crypto-com/cosmos-sdk/archive/1dea5569bc98701c07680ac8883a0cf3843d66ef.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
-        "version": "v0.41.0"
+        "version": "v0.41.0-patched"
     },
     "nixpkgs": {
         "branch": "master",
