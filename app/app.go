@@ -430,7 +430,7 @@ func New(
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	// TODO: remove later?
-	app.UpgradeKeeper.SetUpgradeHandler("sdk-v0.41-upgrade", func(_ sdk.Context, _ upgradetypes.Plan) {})
+	app.UpgradeKeeper.SetUpgradeHandler("Crossfire_v0.9.0_Upgrade", func(_ sdk.Context, _ upgradetypes.Plan) {})
 
 	return app
 }
