@@ -5,12 +5,12 @@
         "homepage": "https://cosmos.network/",
         "owner": "crypto-com",
         "repo": "cosmos-sdk",
-        "rev": "1dea5569bc98701c07680ac8883a0cf3843d66ef",
-        "sha256": "0kk5ygrdikqiix2pylxbpd5z6wwl570aq62avdxfy353g7w4gn3j",
+        "rev": "abc3f5df08f96dffb81837a6adf79ac153509ed9",
+        "sha256": "1ppnf25z1ifw9rsa60rn937w6nvn0hwic45v470ahnr3w0s1ih7n",
         "type": "tarball",
-        "url": "https://github.com/crypto-com/cosmos-sdk/archive/1dea5569bc98701c07680ac8883a0cf3843d66ef.tar.gz",
+        "url": "https://github.com/crypto-com/cosmos-sdk/archive/abc3f5df08f96dffb81837a6adf79ac153509ed9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz",
-        "version": "v0.41.0-patched"
+        "version": "v0.41.0-patched-tm"
     },
     "nixpkgs": {
         "branch": "master",
