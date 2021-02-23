@@ -120,7 +120,7 @@ There are different tests that can be executed in the following ways:
 
 ## 9. Useful links
 
-- [Project Website](http://chain.crypto.com/)
+- [Project Website](http://crypto.org/)
 - [Technical Documentation](http://chain.crypto.com/)
 - Community chatrooms (non-technical): [Discord](https://discord.gg/nsp9JTC) [Telegram](https://t.me/CryptoComOfficial)
 - Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
