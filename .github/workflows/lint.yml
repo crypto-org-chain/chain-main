@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: true
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
