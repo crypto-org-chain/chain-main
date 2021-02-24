@@ -14,6 +14,6 @@ Once we receive a vulnerability report, Crypto.org will take these steps to addr
 4. Crypto.org will publicly release the security patch for the vulnerability, and acknowledge the security fix in the release notes once the issue has been resolved. Public release notes can reference to the person or people who reported the vulnerability, unless they wish to stay anonymous.
 
 ## Contact Us
-If you find a security issue, you can report it on the [Crypto.org HackerOne Bug Bounty Program](https://hackerone.com/crypto) or you can contact our team directly at [chain-security@crypto.com](mailto:chain-security@crypto.com).
+If you find a security issue, you can report it on the [Crypto.com HackerOne Bug Bounty Program](https://hackerone.com/crypto) or you can contact our team directly at [chain-security@crypto.com](mailto:chain-security@crypto.com).
 To communicate sensitive information, you can use the latest key in the 
 [cryptocom's Keybase account](https://keybase.io/cryptocom/pgp_keys.asc) or use its [chat functionality](https://keybase.io/cryptocom/chat).
