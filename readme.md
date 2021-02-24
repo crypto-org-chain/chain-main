@@ -1,13 +1,13 @@
 <br />
 <p align="center">
-  <img src="https://raw.githubusercontent.com/crypto-com/chain/master/assets/logo.svg" alt="Crypto.com Chain" width="400">
+  <img src="assets/logo.svg" alt="Crypto.org Chain" width="400">
 </p>
 <br />
 
 <p align="center">
   <a href="https://github.com/crypto-com/chain-main/workflows"><img label="Build Status" src="https://github.com/crypto-com/chain-main/workflows/Build/badge.svg" /></a>
   <a href="https://codecov.io/gh/crypto-com/chain-main"><img label="Code Coverage" src="https://codecov.io/gh/crypto-com/chain-main/branch/master/graph/badge.svg" /></a>
-  <a href="https://discord.gg/pahqHz26q4"><img label="Discord" src="https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.com-Chain&logo=discord&style=flat-square" /></a>
+  <a href="https://discord.gg/pahqHz26q4"><img label="Discord" src="https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square" /></a>
 </p>
 
 ## Table of Contents
@@ -27,8 +27,8 @@
 
 ## 1. Description
 
-**Crypto.com Chain** is a blockchain application built using Cosmos SDK and Tendermint,
-intended as a backbone for some of the existing and future Crypto.com ecosystem.
+**Crypto.org Chain** is a blockchain application built using Cosmos SDK and Tendermint,
+intended as a backbone for some of the existing and future Crypto.org ecosystem.
 
 <a id="contributing" />
 
@@ -47,7 +47,7 @@ and the [contributing guidelines](CONTRIBUTING.md) when submitting code.
 
 ## 4. Documentation
 
-Technical documentation can be found in this [Github repository](https://github.com/crypto-com/chain-docs) (you can read it in [this hosted version](https://chain.crypto.com/docs)).
+Technical documentation can be found in this [Github repository](https://github.com/crypto-com/chain-docs) (you can read it in [this hosted version](https://crypto.org/docs)).
 
 <a id="build" />
 
@@ -120,10 +120,10 @@ There are different tests that can be executed in the following ways:
 
 ## 9. Useful links
 
-- [Project Website](http://chain.crypto.com/)
-- [Technical Documentation](http://chain.crypto.com/)
+- [Project Website](http://crypto.org/)
+- [Technical Documentation](http://crypto.org/docs)
 - Community chatrooms (non-technical): [Discord](https://discord.gg/nsp9JTC) [Telegram](https://t.me/CryptoComOfficial)
-- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.com-Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
+- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
 
 - [Cosmos SDK documentation](https://docs.cosmos.network)
 - [Cosmos Discord](https://discord.gg/W8trcGV)

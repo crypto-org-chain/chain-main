@@ -17,7 +17,7 @@ jobs:
     if: >-
       github.event_name == 'push' || github.event_name == 'pull_request' || 
       (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || 
-      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' || github.actor == 'foreseaz' || 
+      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' || 
       github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' 
       || github.actor == 'cdc-Hitesh'))
     steps:
@@ -300,7 +300,7 @@ jobs:
     needs: [test-sim-nondeterminism, test-sim-import-export, test-sim-after-import]
     if: >-
       always() && (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || 
-      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' || github.actor == 'foreseaz' || 
+      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' ||
       github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' 
       || github.actor == 'cdc-Hitesh'))
     steps: 

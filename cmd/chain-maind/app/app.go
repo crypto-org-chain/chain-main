@@ -57,7 +57,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   "chain-maind",
-		Short: "Crypto.com Chain app",
+		Short: "Crypto.org Chain app",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
@@ -97,7 +97,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
-							"description": "The native token of Crypto.com app.",
+							"description": "The native token of Crypto.org app.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
 									"denom":    config.BaseCoinUnit,
