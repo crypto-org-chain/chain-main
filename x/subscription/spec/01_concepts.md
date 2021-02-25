@@ -23,4 +23,20 @@ Intervals are specified using [crontab syntax](https://crontab.guru/), for examp
 
 Convenient shortcuts:
 
-- `@monthly`: `0 0 * * *`
+- `@yearly`: `0 0 1 1 *`
+- `@monthly`: `0 0 1 * *`
+- `@weekly`: `0 0 * * 1`
+- `@daily`: `0 0 * * *`
+- `@hourly`: `0 * * * *`
+
+### Invalid intervals
+
+There are some crontab specifications which don't have any matches, they are forbidden, for example:
+
+- `0 0 30 2 *` Invalid, there's no 30days in February.
+- `0 0 31 2,4,6,9,11 *` Invalid, all the valid monthes don't have 31 days.
+- `0 0 29 2 *` Valid, it happens in leap years only.
+
+When specify month days and week days together, the result is the intersection of both rules:
+
+- `0 0 29 2 1` Valid, it happens when 29.2 also happens to be Monday.
