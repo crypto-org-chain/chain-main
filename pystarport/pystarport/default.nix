@@ -3,8 +3,8 @@ with pkgs;
 pkgs.mkShell {
   buildInputs = [
     python38
-    protobuf3_13
-    grpc
+    python38Packages.grpcio
+    python38Packages.grpcio-tools
     git
   ];
   shellHook = ''                                                                                       

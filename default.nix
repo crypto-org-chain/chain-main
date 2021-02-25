@@ -15,6 +15,9 @@ let
     "^test/.*"
     "^go.mod$"
     "^go.sum$"
+    "^third_party$"
+    "^third_party/cosmos-sdk$"
+    "^third_party/cosmos-sdk/.*"
   ];
   lib = pkgs.lib;
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
@@ -25,7 +28,7 @@ let
       src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:138n1y7bsiy7zss3kpk6nmwg8vkwanhif8mjsd8v25m1cg73d4dc;
+    vendorSha256 = sha256:10yyfldw702yb53kac68ldk1vwyf2l7sdgbv9358k5yk5cx3aai7;
     runVend = true;
     outputs = [
       "out"

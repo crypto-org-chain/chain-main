@@ -5,9 +5,8 @@ import sources.nixpkgs {
     (_: pkgs: {
       cosmovisor = pkgs.buildGoModule rec {
         name = "cosmovisor";
-        src = pkgs.sources.cosmos-sdk;
+        src = ../third_party/cosmos-sdk/cosmovisor;
         subPackages = [ "./cmd/cosmovisor" ];
-        sourceRoot = "cosmos-sdk-src/cosmovisor";
         vendorSha256 = sha256:1mv0id290b4h8wrzq5z5n1bsq5im8glhlb8c5j7lrky30mikzwik;
         doCheck = false;
       };
