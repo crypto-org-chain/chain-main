@@ -52,11 +52,14 @@ jobs:
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
         with:
+          submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.branch }}
       - name: Normal check out code
         uses: actions/checkout@v2
+        with:
+          submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - uses: technote-space/get-diff-action@v3
         with:
@@ -143,14 +146,18 @@ jobs:
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
         with:
+          submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.branch }}
       - name: Normal check out code
         uses: actions/checkout@v2
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
+        with:
+          submodules: true
       - uses: technote-space/get-diff-action@v3
         with:
+          submodules: true
           SUFFIX_FILTER: |
             .go
             .mod
@@ -202,12 +209,15 @@ jobs:
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
         with:
+          submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.branch }}
       - name: Normal check out code
         uses: actions/checkout@v2
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
+        with:
+          submodules: true
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
@@ -261,12 +271,15 @@ jobs:
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
         with:
+          submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.branch }}
       - name: Normal check out code
         uses: actions/checkout@v2
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
+        with:
+          submodules: true
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
