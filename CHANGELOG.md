@@ -1,5 +1,17 @@
 # Changelog
 
+*unreleased*
+## v1.0.0?
+A version based on a patched fork of Cosmos SDK 0.41.3.
+
+*February 4, 2021*
+## v0.9.1
+A version based on a patched fork of Cosmos SDK 0.41.0.
+
+*January 28, 2021*
+## v0.9.0
+A version based on the release of Cosmos SDK 0.41.0.
+
 *January 20, 2021*
 ## v0.8.1
 A version based on the patched release of Cosmos SDK 0.40.1 that includes security fixes in Tendermint 0.40.3.
