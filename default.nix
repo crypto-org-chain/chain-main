@@ -22,7 +22,7 @@ let
   lib = pkgs.lib;
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
     pname = "chain-maind";
-    version = "0.0.1";
+    version = "1.0.0";
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
@@ -40,7 +40,7 @@ let
     buildFlags = "-tags ${buildTags}";
     buildFlagsArray = ''
       -ldflags=
-      -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain
+      -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain
       -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
       -X github.com/cosmos/cosmos-sdk/version.Version=${version}
       -X github.com/cosmos/cosmos-sdk/version.Commit=${commit}

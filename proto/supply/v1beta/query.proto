@@ -5,7 +5,7 @@ import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 
-option go_package = "github.com/crypto-com/chain-main/x/supply/types";
+option go_package = "github.com/crypto-org-chain/chain-main/x/supply/types";
 
 // Query defines the gRPC querier service.
 service Query {

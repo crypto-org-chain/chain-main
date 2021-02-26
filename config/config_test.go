@@ -11,7 +11,7 @@ import (
 	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-com/chain-main/config"
+	"github.com/crypto-org-chain/chain-main/config"
 )
 
 func TestMnemonic(t *testing.T) {

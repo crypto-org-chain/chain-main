@@ -1,5 +1,5 @@
 PACKAGES=$(shell go list ./... | grep -v '/simulation')
-PACKAGE_NAME:=github.com/crypto-com/chain-main
+PACKAGE_NAME:=github.com/crypto-org-chain/chain-main
 GOLANG_CROSS_VERSION  = v1.15.3
 
 
@@ -10,7 +10,7 @@ COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain \
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
@@ -33,7 +33,7 @@ ifeq ($(NETWORK),testnet)
 	TEST_TAGS := "--tags=testnet"
 endif
 
-SIMAPP = github.com/crypto-com/chain-main/app
+SIMAPP = github.com/crypto-org-chain/chain-main/app
 BINDIR ?= ~/go/bin
 
 OS := $(shell uname)

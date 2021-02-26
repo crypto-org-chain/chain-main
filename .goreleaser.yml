@@ -17,7 +17,7 @@ builds:
     flags:
         - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-linux"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -32,7 +32,7 @@ builds:
     flags:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-windows"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -48,7 +48,7 @@ builds:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
       - -buildmode=exe
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-com-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
 - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
@@ -78,9 +78,9 @@ snapshot:
 # brews:
 #   - name: "chain-maind"
 #     description: "chain-main daemon"
-#     homepage: "https://github.com/crypto-com/chain-main"
+#     homepage: "https://github.com/crypto-org/chain-main"
 #     github:
-#       owner: "crypto-com"
+#       owner: "crypto-org-chain"
 #       name: "homebrew-chain-maind"
 #     install: |
 #       bin.install "chain-maind"

@@ -1,4 +1,4 @@
-// +build testnet,!crossfire
+// +build testnet
 
 package config
 

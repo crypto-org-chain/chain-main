@@ -5,13 +5,13 @@ in
 {
   chaindImage =
     pkgs.dockerTools.buildLayeredImage {
-      name = "crypto-com/chain-maind";
+      name = "crypto-org-chain/chain-maind";
       config.Entrypoint = [ "${self.chain-maind}/bin/chain-maind" ];
     };
 
   pystarportImage =
     pkgs.dockerTools.buildLayeredImage {
-      name = "crypto-com/chain-main-pystarport";
+      name = "crypto-org-chain/chain-main-pystarport";
       config.Entrypoint = [ "${self.pystarport}/bin/pystarport" ];
     };
 }

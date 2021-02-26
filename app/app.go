@@ -82,13 +82,13 @@ import (
 	upgradeclient "github.com/cosmos/cosmos-sdk/x/upgrade/client"
 	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
-	appparams "github.com/crypto-com/chain-main/app/params"
-	"github.com/crypto-com/chain-main/x/chainmain"
-	chainmainkeeper "github.com/crypto-com/chain-main/x/chainmain/keeper"
-	chainmaintypes "github.com/crypto-com/chain-main/x/chainmain/types"
-	supply "github.com/crypto-com/chain-main/x/supply"
-	supplykeeper "github.com/crypto-com/chain-main/x/supply/keeper"
-	supplytypes "github.com/crypto-com/chain-main/x/supply/types"
+	appparams "github.com/crypto-org-chain/chain-main/app/params"
+	"github.com/crypto-org-chain/chain-main/x/chainmain"
+	chainmainkeeper "github.com/crypto-org-chain/chain-main/x/chainmain/keeper"
+	chainmaintypes "github.com/crypto-org-chain/chain-main/x/chainmain/types"
+	supply "github.com/crypto-org-chain/chain-main/x/supply"
+	supplykeeper "github.com/crypto-org-chain/chain-main/x/supply/keeper"
+	supplytypes "github.com/crypto-org-chain/chain-main/x/supply/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
@@ -428,9 +428,6 @@ func New(
 
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
-
-	// TODO: remove later?
-	app.UpgradeKeeper.SetUpgradeHandler("Crossfire_v0.9.0_Upgrade", func(_ sdk.Context, _ upgradetypes.Plan) {})
 
 	return app
 }

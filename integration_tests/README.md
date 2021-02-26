@@ -13,7 +13,7 @@ session scoped fixture for default cluster, we can override it with a module sco
 special testnet setup.
 
 To use a custom cluster for your test case, just create module scoped fixture in your test module [like
-this](https://github.com/crypto-com/chain-main/blob/cb0005fd64250e08e4f758138db6a11fcec71d03/integration_tests/test_slashing.py#L17).
+this](https://github.com/crypto-org-chain/chain-main/blob/cb0005fd64250e08e4f758138db6a11fcec71d03/integration_tests/test_slashing.py#L17).
 you can put the custom cluster config file into the `integration_tests/configs` directory.
 
 To write test case which depend on the default cluster, one only need to create a test function which accept the
@@ -43,7 +43,7 @@ can skip the slow test cases, useful for development.
 ### Cluster api
 
 `cluster` is an instance of
-[`ClusterCLI`](https://github.com/crypto-com/chain-main/blob/master/pystarport/pystarport/cluster.py#L21), which is used
+[`ClusterCLI`](https://github.com/crypto-org-chain/chain-main/blob/master/pystarport/pystarport/cluster.py#L21), which is used
 to interact with the chain. `cluster.supervisor` is used to access the embedded [supervisord](http://supervisord.org/)'s
 xmlrpc service([api](http://supervisord.org/api.html)). for example:
 
