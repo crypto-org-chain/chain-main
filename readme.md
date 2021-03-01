@@ -5,8 +5,8 @@
 <br />
 
 <p align="center">
-  <a href="https://github.com/crypto-com/chain-main/workflows"><img label="Build Status" src="https://github.com/crypto-com/chain-main/workflows/Build/badge.svg" /></a>
-  <a href="https://codecov.io/gh/crypto-com/chain-main"><img label="Code Coverage" src="https://codecov.io/gh/crypto-com/chain-main/branch/master/graph/badge.svg" /></a>
+  <a href="https://github.com/crypto-org-chain/chain-main/workflows"><img label="Build Status" src="https://github.com/crypto-org-chain/chain-main/workflows/Build/badge.svg" /></a>
+  <a href="https://codecov.io/gh/crypto-org-chain/chain-main"><img label="Code Coverage" src="https://codecov.io/gh/crypto-org-chain/chain-main/branch/master/graph/badge.svg" /></a>
   <a href="https://discord.gg/pahqHz26q4"><img label="Discord" src="https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square" /></a>
 </p>
 
@@ -47,7 +47,7 @@ and the [contributing guidelines](CONTRIBUTING.md) when submitting code.
 
 ## 4. Documentation
 
-Technical documentation can be found in this [Github repository](https://github.com/crypto-com/chain-docs) (you can read it in [this hosted version](https://crypto.org/docs)).
+Technical documentation can be found in this [Github repository](https://github.com/crypto-org-chain/chain-docs) (you can read it in [this hosted version](https://crypto.org/docs)).
 
 <a id="build" />
 
@@ -88,7 +88,7 @@ Optionally, you can also use a binary cache to speed up the build process:
 
 ```
 $ nix-env -iA cachix -f https://cachix.org/api/v1/install
-$ cachix use crypto-com
+$ cachix use crypto-org-chain
 ```
 
 <a id="start-local-full-node" />

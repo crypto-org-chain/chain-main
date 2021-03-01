@@ -7,7 +7,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-com/chain-main/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/x/chainmain/types"
 )
 
 type (

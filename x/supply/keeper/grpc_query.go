@@ -4,7 +4,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-com/chain-main/x/supply/types"
+	"github.com/crypto-org-chain/chain-main/x/supply/types"
 )
 
 // TotalSupply implements the Query/TotalSupply gRPC method

@@ -11,7 +11,7 @@ ARG NETWORK=testnet
 ENV PACKAGES curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
 # Set working directory for the build
-WORKDIR /go/src/github.com/crypto-com/chain-main
+WORKDIR /go/src/github.com/crypto-org-chain/chain-main
 
 # Add source files
 COPY . .

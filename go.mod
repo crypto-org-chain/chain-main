@@ -1,4 +1,4 @@
-module github.com/crypto-com/chain-main
+module github.com/crypto-org-chain/chain-main
 
 go 1.15
 
