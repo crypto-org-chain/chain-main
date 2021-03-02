@@ -7,7 +7,7 @@ import sources.nixpkgs {
         name = "cosmovisor";
         src = ../third_party/cosmos-sdk/cosmovisor;
         subPackages = [ "./cmd/cosmovisor" ];
-        vendorSha256 = sha256:1mv0id290b4h8wrzq5z5n1bsq5im8glhlb8c5j7lrky30mikzwik;
+        vendorSha256 = sha256:1hb9yxxm41yg21hm6qbjv53i7dr7qgdpis7y93hdibjs1apxc19q;
         doCheck = false;
       };
       relayer = pkgs.buildGoModule rec {
