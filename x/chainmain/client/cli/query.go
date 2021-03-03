@@ -13,8 +13,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
-	"github.com/crypto-org-chain/chain-main/config"
-	"github.com/crypto-org-chain/chain-main/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v1/config"
+	"github.com/crypto-org-chain/chain-main/v1/x/chainmain/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

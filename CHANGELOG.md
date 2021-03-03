@@ -1,8 +1,12 @@
 # Changelog
 
-*unreleased*
-## v1.0.0?
-A version based on a patched fork of Cosmos SDK 0.41.3.
+*March 4, 2021*
+## v1.0.0
+A final initial released version based on a patched fork of Cosmos SDK 0.41.4
+(the patch is identical to the 0.8.1 to 0.9.1 releases, i.e. it fixes the bech32 address lookup issue in v0.40/v0.41 SDK releases).
+
+### Breaking changes
+* initial modules and custom protobuf were named with "v1"
 
 *February 4, 2021*
 ## v0.9.1

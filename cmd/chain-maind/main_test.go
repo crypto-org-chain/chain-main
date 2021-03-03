@@ -8,8 +8,8 @@ import (
 	"github.com/confluentinc/bincover"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/crypto-org-chain/chain-main/app"
-	cmd "github.com/crypto-org-chain/chain-main/cmd/chain-maind/app"
+	"github.com/crypto-org-chain/chain-main/v1/app"
+	cmd "github.com/crypto-org-chain/chain-main/v1/cmd/chain-maind/app"
 )
 
 func test_main() {

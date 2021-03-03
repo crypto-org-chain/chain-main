@@ -6,7 +6,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/types/rest"
-	"github.com/crypto-org-chain/chain-main/x/supply/types"
+	"github.com/crypto-org-chain/chain-main/v1/x/supply/types"
 )
 
 // TotalSupplyHandlerFn returns HTTP request handler to query the total supply of coins
