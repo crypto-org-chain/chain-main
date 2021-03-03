@@ -1,5 +1,5 @@
 syntax = "proto3";
-package chainmain.supply.v1beta1;
+package chainmain.supply.v1;
 
 import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
@@ -11,12 +11,12 @@ option go_package = "github.com/crypto-org-chain/chain-main/x/supply/types";
 service Query {
     // TotalSupply queries the total supply of all coins.
     rpc TotalSupply(SupplyRequest) returns (SupplyResponse) {
-        option (google.api.http).get = "/cosmos/supply/v1beta1/total";
+        option (google.api.http).get = "/chainmain/supply/v1/total";
     }
 
     // LiquidSupply queries the liquid supply of all coins.
     rpc LiquidSupply(SupplyRequest) returns (SupplyResponse) {
-        option (google.api.http).get = "/cosmos/supply/v1beta1/liquid";
+        option (google.api.http).get = "/chainmain/supply/v1/liquid";
     }
 }
 
