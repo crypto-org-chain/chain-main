@@ -18,6 +18,7 @@ COPY . .
 
 # Install minimum necessary dependencies, build Cosmos SDK, remove packages
 RUN apk add --no-cache $PACKAGES && \
+  git submodule update --init --recursive && \
   NETWORK=${NETWORK} make install
 
 # Final image
