@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This is a location to record all high-level architecture decisions in the Crypto.org Chain mplementation.
+This is a location to record all high-level architecture decisions in the Crypto.org Chain implementation.
 
 You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
@@ -27,4 +27,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 | ADR \# | Description | Status |
 | ------ | ----------- | ------ |
-| [000](./adr-template.md) | N/A | N/A |
+| [001](./adr-001.md) | Add CosmWasm Module | Accepted |
