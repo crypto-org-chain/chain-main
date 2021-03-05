@@ -28,7 +28,7 @@ let
       src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:0pzq4fawihvmdd2zf5ckydqcddf11pydpwyr0qswszag329vrhc3;
+    vendorSha256 = sha256:0labqj4phlwzvjdq1hz3qb5xl95xc6ql3mgnnssc68mglqg53g1l;
     runVend = true;
     outputs = [
       "out"
