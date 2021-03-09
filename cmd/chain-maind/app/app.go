@@ -38,7 +38,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v1/app/params"
 	"github.com/crypto-org-chain/chain-main/v1/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v1/x/chainmain/client/cli"
-	"github.com/google/renameio"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -144,20 +143,20 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			}
 		}()
 		var genesis map[string]interface{}
-		if decodeErr := json.NewDecoder(file).Decode(&genesis); decodeErr != nil {
-			return decodeErr
-		}
-
-		if mergeErr := mergo.Merge(&genesis, genesisPatch, mergo.WithOverride); mergeErr != nil {
-			return mergeErr
-		}
-
-		bz, err := json.MarshalIndent(genesis, "", "  ")
-		if err != nil {
+		if err := json.NewDecoder(file).Decode(&genesis); err != nil {
 			return err
 		}
 
-		return renameio.WriteFile(cleanedPath, bz, 0600)
+		if err := mergo.Merge(&genesis, genesisPatch, mergo.WithOverride); err != nil {
+			return err
+		}
+		if err := file.Truncate(0); err != nil {
+			return err
+		}
+		if _, err := file.Seek(0, 0); err != nil {
+			return err
+		}
+		return json.NewEncoder(file).Encode(&genesis)
 	}
 
 	rootCmd.AddCommand(
