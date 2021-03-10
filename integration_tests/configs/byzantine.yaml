@@ -1,0 +1,26 @@
+chain_id_1:
+  validators:
+    - coins: 8000cro
+      staked: 8000cro
+      base_port: 26650
+    - coins: 2000cro
+      staked: 2000cro
+      mnemonic: wage frame tank harvest item cool oven other excite expand permit rescue card together absurd vapor water pole drip tomorrow clog illegal off column
+    - coins: 1000cro
+      staked: 1000cro
+  accounts:
+    - name: wallet-1
+      coins: 20000cro
+  genesis:
+    app_state:
+      staking:
+        params:
+          unbonding_time: "10s"
+      gov:
+        voting_params:
+          voting_period: "10s"
+        deposit_params:
+          max_deposit_period: "10s"
+          min_deposit:
+            - denom: "basecro"
+              amount: "10000000"
