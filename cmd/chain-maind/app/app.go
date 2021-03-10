@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -38,7 +39,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v1/app/params"
 	"github.com/crypto-org-chain/chain-main/v1/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v1/x/chainmain/client/cli"
-	"github.com/google/renameio"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -157,7 +157,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			return err
 		}
 
-		return renameio.WriteFile(cleanedPath, bz, 0600)
+		return ioutil.WriteFile(cleanedPath, bz, 0600)
 	}
 
 	rootCmd.AddCommand(
