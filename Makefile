@@ -45,6 +45,11 @@ install: check-network go.sum
 
 build: check-network go.sum
 		go build -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
+
+buildwindows: check-network go.sum
+		go build -buildmode=exe -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
+
+
 .PHONY: build
 
 build-linux: go.sum
