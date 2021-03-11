@@ -1,6 +1,6 @@
 PACKAGES=$(shell go list ./... | grep -v '/simulation')
 PACKAGE_NAME:=github.com/crypto-org-chain/chain-main
-GOLANG_CROSS_VERSION  = v1.15.3
+GOLANG_CROSS_VERSION  = v1.16.1
 
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
