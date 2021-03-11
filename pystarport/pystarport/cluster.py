@@ -110,40 +110,49 @@ class ClusterCLI:
         )
 
     def copy_validator_key(self, from_node=1, to_node=2):
-        '''
-        Copy the validtor file in from_node to to_node
-        '''
-        from_key_file = "{}/node{}/config/priv_validator_key.json"\
-            .format(self.data_dir, from_node)
-        to_key_file = "{}/node{}/config/priv_validator_key.json"\
-            .format(self.data_dir, to_node)
+        "Copy the validtor file in from_node to to_node"
+        from_key_file = "{}/node{}/config/priv_validator_key.json".format(
+            self.data_dir, from_node
+        )
+        to_key_file = "{}/node{}/config/priv_validator_key.json".format(
+            self.data_dir, to_node
+        )
         with open(from_key_file, "r") as f:
             key = f.read()
         with open(to_key_file, "w") as f:
             f.write(key)
 
     def stop_node(self, i):
-        subprocess.run([
-            sys.executable,
-            "-msupervisor.supervisorctl",
-            "-c",
-            self.data_root / SUPERVISOR_CONFIG_FILE,
-            "stop",
-            "{}-node{}".format(self.chain_id, i)
-        ])
+        subprocess.run(
+            [
+                sys.executable,
+                "-msupervisor.supervisorctl",
+                "-c",
+                self.data_root / SUPERVISOR_CONFIG_FILE,
+                "stop",
+                "{}-node{}".format(self.chain_id, i),
+            ]
+        )
 
     def start_node(self, i):
-        subprocess.run([
-            sys.executable,
-            "-msupervisor.supervisorctl",
-            "-c",
-            self.data_root / SUPERVISOR_CONFIG_FILE,
-            "start",
-            "{}-node{}".format(self.chain_id, i)
-            ])
+        subprocess.run(
+            [
+                sys.executable,
+                "-msupervisor.supervisorctl",
+                "-c",
+                self.data_root / SUPERVISOR_CONFIG_FILE,
+                "start",
+                "{}-node{}".format(self.chain_id, i),
+            ]
+        )
 
     def create_node(
-        self, base_port=None, moniker=None, hostname="localhost", statesync=False, mnemonic=None
+        self,
+        base_port=None,
+        moniker=None,
+        hostname="localhost",
+        statesync=False,
+        mnemonic=None,
     ):
         """create new node in the data directory,
         process information is written into supervisor config
