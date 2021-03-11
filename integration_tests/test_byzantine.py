@@ -32,6 +32,10 @@ def test_byzantine(cluster):
     assert len(cluster.validators()) == 3
     from_node = 1
     to_node = 2
+    val_addr_byzantine = cluster.address("validator", i=from_node, bech="val")
+    tokens_byzantine_before = int((cluster.validator(val_addr_byzantine))["tokens"])
+    val_addr_slash = cluster.address("validator", i=to_node, bech="val")
+    tokens_slash_before = int((cluster.validator(val_addr_slash))["tokens"])
     cluster.stop_node(to_node)
     cluster.copy_validator_key(from_node, to_node)
     cluster.start_node(to_node)
@@ -65,3 +69,8 @@ def test_byzantine(cluster):
     assert val_2["jailed"]
     assert val_2["status"] == "BOND_STATUS_UNBONDING"
     print("\n{}s waiting for node 2 jailed".format(i))
+
+    tokens_byzantine_after = int((cluster.validator(val_addr_byzantine))["tokens"])
+    tokens_slash_after = int((cluster.validator(val_addr_slash))["tokens"])
+    assert tokens_byzantine_before * 0.95 == tokens_byzantine_after
+    assert tokens_slash_before * 0.99 == tokens_slash_after
