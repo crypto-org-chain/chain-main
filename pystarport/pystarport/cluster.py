@@ -442,6 +442,10 @@ class ClusterCLI:
             target_version,
         )
 
+    def overrideGenesisTime(self, i=0):
+        genesis = json.load(open(self.home(i) / "config/genesis.json"))
+        genesis["genesis_time"] = self.config.get("genesis-time")
+        (self.home(i) / "config/genesis.json").write_text(json.dumps(genesis))
 
 def start_cluster(data_dir):
     cmd = [
