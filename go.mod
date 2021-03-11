@@ -1,6 +1,6 @@
 module github.com/crypto-org-chain/chain-main/v1
 
-go 1.15
+go 1.16
 
 require (
 	github.com/confluentinc/bincover v0.1.0
