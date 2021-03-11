@@ -22,13 +22,13 @@ let
   lib = pkgs.lib;
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
     pname = "chain-maind";
-    version = "1.0.0";
+    version = "1.1.0";
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
     };
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:0rrl0slpz5z98ii6yl170jaz3n1i2ijbgc5z7wkpk3yyb3fpzb2h;
+    vendorSha256 = sha256:1xbgfn2mdc4kib2qz1lgm49zjnc4r588r3yaivmsa59yhy3xb5nx;
     runVend = true;
     outputs = [
       "out"

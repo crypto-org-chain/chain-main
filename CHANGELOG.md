@@ -1,11 +1,15 @@
 # Changelog
 
+*March 11, 2021*
+## v1.1.0
+A version based on the upstream release of Cosmos SDK 0.42.1.
+### Bug Fixes
+* [411](https://github.com/crypto-com/chain-main/pull/411) bank keeper correctly initialized
+
 *March 9, 2021*
 ## v1.0.1
 A version based on the upstream release of Cosmos SDK 0.42.0.
 (Note that the SDK 0.42.0 release is nearly identical to the patched SDK fork 0.41.4 that was used in 1.0.0.)
-### Improvements
-* [399](https://github.com/crypto-com/chain-main/pull/399) atomic updates to genesis file
 
 *March 4, 2021*
 ## v1.0.0
