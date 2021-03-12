@@ -740,7 +740,7 @@ def init_cluster(
                 config.keys(), list(rly_section.get("paths", {}).keys())
             ),
         )
-    if config.get("relayer"):
+    if len(chains) > 1:
         # write relayer config
         rly_home = data_dir / "relayer"
         rly_home.mkdir()

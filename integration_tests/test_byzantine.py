@@ -6,6 +6,8 @@ import pytest
 
 from .utils import cluster_fixture
 
+MAX_SLEEP_SEC = 300
+
 
 @pytest.fixture(scope="module")
 def cluster(worker_index, pytestconfig, tmp_path_factory):
@@ -42,32 +44,32 @@ def test_byzantine(cluster):
 
     # it may take 30s to finish the loop
     i = 0
-    while i < 300:
+    while i < MAX_SLEEP_SEC:
         time.sleep(1)
         sys.stdout.write(".")
         sys.stdout.flush()
         i += 1
         val_addr = cluster.address("validator", from_node, bech="val")
-        val_1 = cluster.validator(val_addr)
-        if val_1["jailed"]:
+        val1 = cluster.validator(val_addr)
+        if val1["jailed"]:
             break
-    assert val_1["jailed"]
-    assert val_1["status"] == "BOND_STATUS_UNBONDING"
+    assert val1["jailed"]
+    assert val1["status"] == "BOND_STATUS_UNBONDING"
     print("\n{}s waiting for node 1 jailed".format(i))
 
     i = 0
     # it may take 2min to finish the loop
-    while i < 300:
+    while i < MAX_SLEEP_SEC:
         time.sleep(1)
         i += 1
         sys.stdout.write(".")
         sys.stdout.flush()
         val_addr = cluster.address("validator", to_node, bech="val")
-        val_2 = cluster.validator(val_addr)
-        if val_2["jailed"]:
+        val2 = cluster.validator(val_addr)
+        if val2["jailed"]:
             break
-    assert val_2["jailed"]
-    assert val_2["status"] == "BOND_STATUS_UNBONDING"
+    assert val2["jailed"]
+    assert val2["status"] == "BOND_STATUS_UNBONDING"
     print("\n{}s waiting for node 2 jailed".format(i))
 
     tokens_byzantine_after = int((cluster.validator(val_addr_byzantine))["tokens"])
