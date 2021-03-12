@@ -66,6 +66,12 @@ def post_init(chain_id, data):
     edit_chain_program(chain_id, data / SUPERVISOR_CONFIG_FILE, prepare_node)
 
 
+def override_genesis_time(cluster, i=0):
+    genesis = json.load(open(cluster.home(i) / "config/genesis.json"))
+    genesis["genesis_time"] = cluster.config.get("genesis-time")
+    (cluster.home(i) / "config/genesis.json").write_text(json.dumps(genesis))
+
+
 # use function scope to re-initialize for each test case
 @pytest.fixture(scope="function")
 def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
@@ -273,3 +279,54 @@ def test_cancel_upgrade(cluster):
     wait_for_block_time(
         cluster, upgrade_time.replace(tzinfo=timezone.utc) + timedelta(seconds=1)
     )
+
+
+@pytest.mark.slow
+def test_manual_export(cosmovisor_cluster):
+    """
+    - do chain state export, override the genesis time to the genesis file
+    - ,and reset the data set
+    - see https://github.com/crypto-org-chain/chain-main/issues/289
+    """
+
+    cluster = cosmovisor_cluster
+    edit_chain_program(
+        cluster.chain_id,
+        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
+        lambda i, _: {
+            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
+            f"--home %(here)s/node{i}"
+        },
+    )
+
+    cluster.reload_supervisor()
+    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
+    # wait for a new block to make sure chain started up
+    wait_for_new_blocks(cluster, 1)
+    cluster.supervisor.stopAllProcesses()
+
+    # check the state of all nodes should be stopped
+    for info in cluster.supervisor.getAllProcessInfo():
+        assert info["statename"] == "STOPPED"
+
+    # export the state
+    cluster.cosmos_cli(0).export()
+
+    # update the genesis time = current time + 5 secs
+    newtime = datetime.utcnow() + timedelta(seconds=5)
+    cluster.config["genesis-time"] = newtime.replace(tzinfo=None).isoformat("T") + "Z"
+
+    for i in range(cluster.nodes_len()):
+        override_genesis_time(cluster, i)
+        cluster.validate_genesis(i)
+        cluster.cosmos_cli(i).unsaferesetall()
+
+    cluster.supervisor.startAllProcesses()
+
+    wait_for_new_blocks(cluster, 1)
+
+    cluster.supervisor.stopAllProcesses()
+
+    # check the state of all nodes should be stopped
+    for info in cluster.supervisor.getAllProcessInfo():
+        assert info["statename"] == "STOPPED"

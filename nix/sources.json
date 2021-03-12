@@ -11,18 +11,6 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/fde0082ca4b830b1d9d69b4f4189322512f067d7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "poetry2nix": {
-        "branch": "master",
-        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
-        "homepage": "",
-        "owner": "nix-community",
-        "repo": "poetry2nix",
-        "rev": "f0cc43e09f6adbbde8c1207d511cd124cdca28f4",
-        "sha256": "020qpwprkb52gimvmipixc7zqqmaxagxw9ddr75yf762s312byi3",
-        "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/f0cc43e09f6adbbde8c1207d511cd124cdca28f4.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
     "relayer": {
         "branch": "master",
         "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
