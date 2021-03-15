@@ -8,6 +8,8 @@ builds:
     binary: bin/chain-maind
     env:
       - CGO_ENABLED=1
+      - SDKROOT=/Applications/Xcode_12.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk 
+      - MACOSX_DEPLOYMENT_TARGET=11.0
     goos:
       - darwin
     goarch:
