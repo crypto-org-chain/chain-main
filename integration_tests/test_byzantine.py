@@ -35,8 +35,8 @@ def test_byzantine(cluster):
     from_node = 1
     to_node = 2
     val_addr_byzantine = cluster.address("validator", i=from_node, bech="val")
-    tokens_byzantine_before = int((cluster.validator(val_addr_byzantine))["tokens"])
     val_addr_slash = cluster.address("validator", i=to_node, bech="val")
+    tokens_byzantine_before = int((cluster.validator(val_addr_byzantine))["tokens"])
     tokens_slash_before = int((cluster.validator(val_addr_slash))["tokens"])
     cluster.stop_node(to_node)
     cluster.copy_validator_key(from_node, to_node)
@@ -49,8 +49,7 @@ def test_byzantine(cluster):
         sys.stdout.write(".")
         sys.stdout.flush()
         i += 1
-        val_addr = cluster.address("validator", from_node, bech="val")
-        val1 = cluster.validator(val_addr)
+        val1 = cluster.validator(val_addr_byzantine)
         if val1["jailed"]:
             break
     assert val1["jailed"]
@@ -64,8 +63,7 @@ def test_byzantine(cluster):
         i += 1
         sys.stdout.write(".")
         sys.stdout.flush()
-        val_addr = cluster.address("validator", to_node, bech="val")
-        val2 = cluster.validator(val_addr)
+        val2 = cluster.validator(val_addr_slash)
         if val2["jailed"]:
             break
     assert val2["jailed"]

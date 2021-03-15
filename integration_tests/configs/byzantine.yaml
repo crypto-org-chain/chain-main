@@ -2,10 +2,8 @@ chain_id_1:
   validators:
     - coins: 8000cro
       staked: 8000cro
-      base_port: 26650
     - coins: 2000cro
       staked: 2000cro
-      mnemonic: wage frame tank harvest item cool oven other excite expand permit rescue card together absurd vapor water pole drip tomorrow clog illegal off column
     - coins: 1000cro
       staked: 1000cro
   accounts:
