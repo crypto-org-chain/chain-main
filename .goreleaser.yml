@@ -48,6 +48,21 @@ builds:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "chain-maind-linux-arm64"
+    main: ./cmd/chain-maind
+    binary: bin/chain-maind
+    env:
+      - CGO_ENABLED=1
+      - CC=gcc
+      - CXX=g++
+    goos:
+      - linux
+    goarch:
+      - arm64
+    flags:
+      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-windows"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -79,6 +94,8 @@ archives:
   - chain-maind-darwin
   - chain-maind-windows
   - chain-maind-linux
+  - chain-maind-linux-arm64
+  
 checksum:
   name_template: 'checksums.txt'
 changelog:
