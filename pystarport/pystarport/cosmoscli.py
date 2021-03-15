@@ -183,7 +183,6 @@ class CosmosCLI:
         if len(coin) == 0:
             return 0
         coin = coin[0]
-        assert coin["denom"] == "basecro"
         return int(coin["amount"])
 
     def distribution_commission(self, addr):
