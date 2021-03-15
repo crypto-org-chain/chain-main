@@ -759,3 +759,9 @@ class CosmosCLI:
                 packet_timeout_timestamp=0,
             )
         )
+
+    def export(self):
+        return self.raw("export", home=self.data_dir)
+
+    def unsaferesetall(self):
+        return self.raw("unsafe-reset-all")
