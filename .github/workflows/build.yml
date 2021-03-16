@@ -16,7 +16,7 @@ jobs:
     
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
 
     timeout-minutes: 5
     if: >-
@@ -80,11 +80,6 @@ jobs:
       - name: build
         if: | 
           startsWith(matrix.os, 'ubuntu') &&
-          (env.GIT_DIFF != '' || github.event_name == 'issue_comment')
-        run: make build
-      - name: buildmac
-        if: |
-          startsWith(matrix.os, 'mac') &&
           (env.GIT_DIFF != '' || github.event_name == 'issue_comment')
         run: make build
       - name: buildwindows
