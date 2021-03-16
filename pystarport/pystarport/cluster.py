@@ -575,7 +575,7 @@ def init_devnet(
 
     (data_dir / "config.json").write_text(json.dumps(config))
 
-    cmd = cmd or CHAIN
+    cmd = config.get("cmd") or cmd or CHAIN
 
     # init home directories
     for i, val in enumerate(config["validators"]):
@@ -700,17 +700,17 @@ def init_devnet(
         )
 
 
-def relayer_chain_config(data_dir, chain_id):
-    cfg = json.load((data_dir / chain_id / "config.json").open())
+def relayer_chain_config(data_dir, chain):
+    cfg = json.load((data_dir / chain["chain_id"] / "config.json").open())
     rpc_port = ports.rpc_port(cfg["validators"][0]["base_port"])
     return {
         "key": "relayer",
-        "chain-id": chain_id,
+        "chain-id": chain["chain_id"],
         # rpc address of first node
         "rpc-addr": f"http://localhost:{rpc_port}",
-        "account-prefix": "cro",
+        "account-prefix": chain.get("account-prefix", "cro"),
         "gas-adjustment": 1.5,
-        "gas-prices": "0.0basecro",
+        "gas-prices": chain.get("gas-prices", "0.0basecro"),
         "trusting-period": "336h",
         "debug": True,
     }
@@ -747,7 +747,7 @@ def init_cluster(
         rly_cfg = rly_home / "config/config.yaml"
         rly_cfg.parent.mkdir()
         rly_section["chains"] = [
-            relayer_chain_config(data_dir, chain_id) for chain_id in config
+            relayer_chain_config(data_dir, chain) for chain in chains
         ]
         with rly_cfg.open("w") as fp:
             yaml.dump(rly_section, fp)
@@ -766,7 +766,7 @@ def init_cluster(
                     "relayer",
                     mnemonic,
                     "--coin-type",
-                    "394",  # mainnet cro
+                    str(chain.get("coin-type", 394)),
                 ],
                 check=True,
             )
