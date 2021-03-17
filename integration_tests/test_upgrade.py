@@ -66,9 +66,20 @@ def post_init(chain_id, data):
     edit_chain_program(chain_id, data / SUPERVISOR_CONFIG_FILE, prepare_node)
 
 
-def override_genesis_time(cluster, i=0):
+def migrate_genesis_time(cluster, i=0):
     genesis = json.load(open(cluster.home(i) / "config/genesis.json"))
     genesis["genesis_time"] = cluster.config.get("genesis-time")
+    genesis["app_state"]["subscription"] = {
+        "starting_plan_id": 1,
+        "starting_subscription_id": 1,
+        "params": {
+            "subscription_enabled": True,
+            "gas_per_collection": 1000,
+            "failure_tolerance": 30,
+        },
+        "plans": [],
+        "subscriptions": [],
+    }
     (cluster.home(i) / "config/genesis.json").write_text(json.dumps(genesis))
 
 
@@ -229,7 +240,7 @@ def test_manual_upgrade(cosmovisor_cluster):
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/upgrade-test/bin/chain-maind "
+                f"%(here)s/node{i}/cosmovisor/upgrades/v2.0.0/bin/chain-maind "
                 f"start --home %(here)s/node{i}"
             )
         },
@@ -310,6 +321,11 @@ def test_manual_export(cosmovisor_cluster):
         assert info["statename"] == "STOPPED"
 
     # export the state
+    cluster.cmd = (
+        cluster.data_root
+        / cluster.chain_id
+        / "node0/cosmovisor/genesis/bin/chain-maind"
+    )
     cluster.cosmos_cli(0).export()
 
     # update the genesis time = current time + 5 secs
@@ -317,7 +333,7 @@ def test_manual_export(cosmovisor_cluster):
     cluster.config["genesis-time"] = newtime.replace(tzinfo=None).isoformat("T") + "Z"
 
     for i in range(cluster.nodes_len()):
-        override_genesis_time(cluster, i)
+        migrate_genesis_time(cluster, i)
         cluster.validate_genesis(i)
         cluster.cosmos_cli(i).unsaferesetall()
 
