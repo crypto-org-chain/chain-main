@@ -12,7 +12,12 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
     timeout-minutes: 5
     if: >-
       github.event_name == 'push' || github.event_name == 'pull_request' || 
@@ -73,8 +78,15 @@ jobs:
         run: |
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: build
+        if: | 
+          startsWith(matrix.os, 'ubuntu') &&
+          (env.GIT_DIFF != '' || github.event_name == 'issue_comment')
         run: make build
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+      - name: buildwindows
+        if: |
+          startsWith(matrix.os, 'windows') &&
+          (env.GIT_DIFF != '' || github.event_name == 'issue_comment')
+        run: make buildwindows  
       - name: test
         run: make test
         if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
