@@ -259,6 +259,10 @@ class ClusterCLI:
         "get i-th node's tendermint node id"
         return self.cosmos_cli(i).node_id()
 
+    def delete_account(self, name, i=0):
+        "delete account in i-th node's keyring"
+        return self.cosmos_cli(i).delete_account(name)
+
     def create_account(self, name, i=0, mnemonic=None):
         "create new keypair in i-th node's keyring"
         return self.cosmos_cli(i).create_account(name, mnemonic)

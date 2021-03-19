@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import pytest
@@ -63,3 +64,31 @@ def test_ledger_transfer(cluster):
 
     assert cluster.balance(hw_addr) == hw_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
+
+
+def test_wallet_name_for_ledger(cluster):
+    def check_account(name):
+        cluster.create_account_ledger(name, 0)
+        address = cluster.address(name)
+        assert len(address) > 0
+        cluster.delete_account(name)
+        time.sleep(1)
+
+    cluster.delete_account("hw")
+    names = [
+        "normalwallet",
+        "abc 1",
+        # there should be a `\` before `&` and `)` or the terminal will
+        # trade them as one part of command
+        r"\&a\)bcd*^",
+        "钱對중ガジÑá",
+        # a very long name
+        "this_is_a_very_long_long_long_long_long_long_\
+long_long_long_long_long_long_long_long_name",
+        # a very complex name
+        "1 abc &abcd*^ 钱對중ガジÑá  long_long_long_long_long_\
+long_long_long_long_long_long_long_name",
+    ]
+    for name in names:
+        print("name: ", name)
+        check_account(name)

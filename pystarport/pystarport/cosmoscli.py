@@ -75,6 +75,19 @@ class CosmosCLI:
         output = self.raw("tendermint", "show-node-id", home=self.data_dir)
         return output.decode().strip()
 
+    def delete_account(self, name):
+        "delete wallet account in node's keyring"
+        return self.raw(
+            "keys",
+            "delete",
+            name,
+            "-y",
+            "--force",
+            home=self.data_dir,
+            output="json",
+            keyring_backend="test",
+        )
+
     def create_account(self, name, mnemonic=None):
         "create new keypair in node's keyring"
         if mnemonic is None:
