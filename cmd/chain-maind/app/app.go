@@ -38,6 +38,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v1/app/params"
 	"github.com/crypto-org-chain/chain-main/v1/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v1/x/chainmain/client/cli"
+	subscriptioncli "github.com/crypto-org-chain/chain-main/v1/x/subscription/client/cli"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -229,6 +230,7 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 		flags.LineBreak,
 		vestingcli.GetTxCmd(),
+		subscriptioncli.NewTxCmd(),
 	)
 
 	app.ModuleBasics.AddTxCommands(cmd)

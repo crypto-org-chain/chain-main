@@ -1,11 +1,9 @@
 let
   pkgs = import ../nix { };
-  genesis = (import ../. { inherit pkgs; }).chain-maind-zemu;
-  upgrade-test = genesis.overrideAttrs (old: {
-    patches = [ ./upgrade-test.patch ];
-  });
+  released = (import (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v1.1.0.tar.gz") { }).chain-maind;
+  current = (import ../. { inherit pkgs; }).chain-maind;
 in
 pkgs.linkFarm "upgrade-test-package" [
-  { name = "genesis"; path = genesis; }
-  { name = "upgrade-test"; path = upgrade-test; }
+  { name = "genesis"; path = released; }
+  { name = "v2.0.0"; path = current; }
 ]

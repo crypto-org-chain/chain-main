@@ -1,6 +1,15 @@
 # Changelog
 
+*unreleased*
+
+## v2.0.0
+
+### Breaking changes
+
+- [381](https://github.com/crypto-org-chain/chain-main/pull/381) Add subscription module
+
 *March 11, 2021*
+
 ## v1.1.0
 A version based on the upstream release of Cosmos SDK 0.42.1.
 ### Bug Fixes
