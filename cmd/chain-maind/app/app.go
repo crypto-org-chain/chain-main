@@ -29,7 +29,6 @@ import (
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -38,7 +37,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v1/app/params"
 	"github.com/crypto-org-chain/chain-main/v1/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v1/x/chainmain/client/cli"
-	subscriptioncli "github.com/crypto-org-chain/chain-main/v1/x/subscription/client/cli"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -228,9 +226,6 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
-		flags.LineBreak,
-		vestingcli.GetTxCmd(),
-		subscriptioncli.NewTxCmd(),
 	)
 
 	app.ModuleBasics.AddTxCommands(cmd)
