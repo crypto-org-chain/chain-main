@@ -200,6 +200,7 @@ func queryCommand() *cobra.Command {
 		rpc.BlockCommand(),
 		authcmd.QueryTxsByEventsCmd(),
 		authcmd.QueryTxCmd(),
+		chainmaincli.QueryAllTxCmd(),
 	)
 
 	app.ModuleBasics.AddQueryCommands(cmd)
