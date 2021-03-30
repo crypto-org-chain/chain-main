@@ -68,7 +68,7 @@ def test_liquid_supply(cluster):
 
     liquid_supply = cluster.supply("liquid")["supply"]
     assert liquid_supply[0]["denom"] == "basecro"
-    assert liquid_supply[0]["amount"] == "1240000000000"
+    assert liquid_supply[0]["amount"] == "1640000000000"
 
 
 def test_statesync(cluster):

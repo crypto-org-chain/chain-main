@@ -21,6 +21,10 @@ chaintest:
       coins: 10000cro
     - name: signer2
       coins: 2000cro
+    - name: msigner1
+      coins: 2000cro
+    - name: msigner2
+      coins: 2000cro
   genesis:
     app_state:
       staking:
