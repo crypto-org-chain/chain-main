@@ -6,6 +6,13 @@ integration tests. pytest discover test cases
 python source files whose name starts with `test_` is treated as test modules, and the functions in them whose name
 starts with `test_` will be executed as test cases.
 
+### Pytest in macOS
+
+To run `pytest` successfully in macOS, you need to run it under the `nix-shell` environment. There are two ways to run it in the `nix-shell`:
+- run `nix-shell` directly, you will need to assign the chain-maind binary build path (should be the `PROJECT_ROOT/build`) into the `PATH` env of the nix-shell, execute the `make build`, and then execute `pytest`.
+- run `nix-shell ./. -A ci-shell`, let the ci shell tobuild the binary automatically, and then execute `pytest`.
+- Also, set environment variable `TMPDIR=/tmp` in the user profile, to avoid the long path issue with the unix socket.
+
 ### Fixture
 
 We use [pytest.fixture]() to setup/teardown testnet cluster, fixture can be defined at different scopes, we use a
