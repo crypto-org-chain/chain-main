@@ -166,4 +166,7 @@ rec {
   chain-utils-testnet = import ./scripts/chain-utils.nix {
     inherit pkgs; network = "testnet";
   };
+  chain-utils-mainnet = import ./scripts/chain-utils.nix {
+    inherit pkgs; network = "mainnet";
+  };
 }
