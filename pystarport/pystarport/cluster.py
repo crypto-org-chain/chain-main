@@ -340,6 +340,9 @@ class ClusterCLI:
     def staking_pool(self, bonded=True, i=0):
         return self.cosmos_cli(i).staking_pool(bonded)
 
+    def transfer_offline(self, from_, to, coins, sequence, i=0, fees=None):
+        return self.cosmos_cli(i).transfer_offline(from_, to, coins, sequence, fees)
+
     def transfer(self, from_, to, coins, i=0, generate_only=False, fees=None):
         return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, fees)
 
@@ -384,6 +387,13 @@ class ClusterCLI:
     def sign_multisig_tx(self, tx_file, multi_addr, signer_name, i=0):
         return self.cosmos_cli(i).sign_multisig_tx(tx_file, multi_addr, signer_name)
 
+    def sign_batch_multisig_tx(
+        self, tx_file, multi_addr, signer_name, account_num, sequence, i=0
+    ):
+        return self.cosmos_cli(i).sign_batch_multisig_tx(
+            tx_file, multi_addr, signer_name, account_num, sequence
+        )
+
     def encode_signed_tx(self, signed_tx, i=0):
         return self.cosmos_cli(i).encode_signed_tx(signed_tx)
 
@@ -392,6 +402,16 @@ class ClusterCLI:
 
     def combine_multisig_tx(self, tx_file, multi_name, signer1_file, signer2_file, i=0):
         return self.cosmos_cli(i).combine_multisig_tx(
+            tx_file,
+            multi_name,
+            signer1_file,
+            signer2_file,
+        )
+
+    def combine_batch_multisig_tx(
+        self, tx_file, multi_name, signer1_file, signer2_file, i=0
+    ):
+        return self.cosmos_cli(i).combine_batch_multisig_tx(
             tx_file,
             multi_name,
             signer1_file,
