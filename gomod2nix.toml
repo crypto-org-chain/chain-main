@@ -60,12 +60,13 @@
     sha256 = "1isd03hgiwcf2ld1rlp0plrnfz7r4i7c5q4kb6hkcd22axnmrv0z"
 
 ["github.com/99designs/keyring"]
-  sumVersion = "v1.1.6"
+  sumVersion = "v1.1.6-gnome"
+  vendorPath = "github.com/crypto-org-chain/keyring"
   ["github.com/99designs/keyring".fetch]
     type = "git"
-    url = "https://github.com/99designs/keyring"
-    rev = "68286ee5140ad1c5cce93fcc054e6cc90015b0ea"
-    sha256 = "08rcdqpxaa9n348q10fw40q4gxpjajkyrighykk71i7mxzwkcgwn"
+    url = "https://github.com/crypto-org-chain/keyring"
+    rev = "0cfb890bbc9a5787491322a75c76b906165cb816"
+    sha256 = "1di3g22jihr25i6l7svc8r0mfvilck79rk3i88df627pihj64gsf"
 
 ["github.com/BurntSushi/toml"]
   sumVersion = "v0.3.1"
@@ -616,12 +617,12 @@
     sha256 = "1v29j6b0r87pf5dwsxi3rxa8yavkl3h79i63rbddfd42p2jyssyg"
 
 ["github.com/dgrijalva/jwt-go"]
-  sumVersion = "v3.2.0+incompatible"
+  sumVersion = "v4.0.0-preview1"
   ["github.com/dgrijalva/jwt-go".fetch]
     type = "git"
     url = "https://github.com/dgrijalva/jwt-go"
-    rev = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
-    sha256 = "08m27vlms74pfy5z79w67f9lk9zkx6a9jd68k3c4msxy75ry36mp"
+    rev = "a58974ee87a68abcf6cfb2315224e89135cf3311"
+    sha256 = "1mza2zrvx4blss8qaffa46122rf4phxivjm0d4vlk334bhs37vdb"
 
 ["github.com/dgryski/go-farm"]
   sumVersion = "v0.0.0-20200201041132-a6ae2369ad13"
