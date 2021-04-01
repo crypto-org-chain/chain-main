@@ -55,7 +55,7 @@ func QueryAllTxCmd() *cobra.Command {
 			}
 
 			var tmEvents []string
-			events := [...]string{"message.sender", "transfer.recipient", "withdraw_rewards.validator", "ibc_transfer.receiver"}
+			events := [...]string{"message.sender", "transfer.recipient", "withdraw_rewards.validator", "ibc_transfer.receiver", "ibc_transfer.sender"}
 			for _, event := range events {
 				eventPair := fmt.Sprintf("%s='%s'", event, addrStr)
 				tmEvents = append(tmEvents, eventPair)
