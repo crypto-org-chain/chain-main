@@ -75,6 +75,7 @@ On Linux and macOS, you can [install it as follows](https://nixos.org/download.h
 ```
 $ curl -L https://nixos.org/nix/install | sh
 ```
+If you're using a recent Mac with a [T2 chip](https://support.apple.com/en-us/HT208862), you might need to check [nix macos installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) when the command above is not working in your environment.
 
 You can then run:
 

@@ -458,6 +458,25 @@ class CosmosCLI:
             )
         )
 
+    def sign_batch_multisig_tx(
+        self, tx_file, multi_addr, signer_name, account_number, sequence_number
+    ):
+        r = self.raw(
+            "tx",
+            "sign-batch",
+            "--offline",
+            tx_file,
+            account_number=account_number,
+            sequence=sequence_number,
+            from_=signer_name,
+            multisig=multi_addr,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+        )
+        return r.decode("utf-8")
+
     def encode_signed_tx(self, signed_tx):
         return self.raw(
             "tx",
@@ -494,6 +513,23 @@ class CosmosCLI:
                 node=self.node_rpc,
             )
         )
+
+    def combine_batch_multisig_tx(
+        self, tx_file, multi_name, signer1_file, signer2_file
+    ):
+        r = self.raw(
+            "tx",
+            "multisign-batch",
+            tx_file,
+            multi_name,
+            signer1_file,
+            signer2_file,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+        )
+        return r.decode("utf-8")
 
     def broadcast_tx(self, tx_file):
         return json.loads(self.raw("tx", "broadcast", tx_file, node=self.node_rpc))
