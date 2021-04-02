@@ -59,6 +59,10 @@ def test_transfer(cluster):
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
+    query_txs_1 = cluster.query_all_txs(community_addr)
+    assert len(query_txs_1["txs"]) == 1
+    query_txs_2 = cluster.query_all_txs(reserve_addr)
+    assert len(query_txs_2["txs"]) == 1
 
 
 def test_liquid_supply(cluster):
