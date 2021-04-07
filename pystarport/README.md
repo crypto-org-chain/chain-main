@@ -1,5 +1,5 @@
 pystarport is like a [cosmos starport](https://github.com/tendermint/starport)
-without the scaffolding feature. it's mainly used for development and testing. It's developed for cryptocom's chain, but
+without the scaffolding feature. it's mainly used for development and testing. It's developed for the Crypto.org Chain, but
 it can also be used for any cosmos-sdk based projects.
 
 ## Configuration

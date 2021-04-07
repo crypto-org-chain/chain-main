@@ -97,13 +97,13 @@ $ cachix use crypto-org-chain
 ## 6. Start a local Development Network and Node
 
 
-Please follow this [documentation](https://chain.crypto.com/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
+Please follow this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
 
 <a id="send-first-transaction" />
 
 ## 7. Send Your First Transaction
 
-After setting the local devnet, you may interact with the your local blockchain by following this [documentation](https://chain.crypto.com/docs/getting-started/local-devnet.html#interact-with-the-chain). 
+After setting the local devnet, you may interact with the your local blockchain by following this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#interact-with-the-chain).
 
 <a id="testing" />
 

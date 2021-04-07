@@ -109,7 +109,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 [[package]]
 name = "cryptopy"
 version = "1.0.0"
-description = "Tools for Crypto.com wallet management and offline transaction signing"
+description = "Tools for the Crypto.org Chain wallet management and offline transaction signing"
 category = "main"
 optional = false
 python-versions = "^3.6"
