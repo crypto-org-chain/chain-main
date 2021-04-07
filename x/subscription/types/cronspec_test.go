@@ -36,9 +36,12 @@ func TestCronSpecSimpleCases(t *testing.T) {
 			spec: "0 0 29 2 *", // At 00:00 on day-of-month 29
 			roundUps: map[int64]int64{
 				0: types.TimeStruct{
-					Year:  1972,
-					Month: 2,
-					Mday:  29,
+					Year: 1972, Month: 2, Mday: 29,
+				}.Timestamp(),
+				types.TimeStruct{
+					Year: 2000, Mday: 1, Month: 3,
+				}.Timestamp(): types.TimeStruct{
+					Year: 2004, Mday: 29, Month: 2,
 				}.Timestamp(),
 			},
 		},
@@ -47,25 +50,15 @@ func TestCronSpecSimpleCases(t *testing.T) {
 			spec: "0 0 29,31 3,4 *", // At 00:00 on day-of-month 29 and 31 in March and April
 			roundUps: map[int64]int64{
 				types.TimeStruct{
-					Year:   1999,
-					Mday:   29,
-					Month:  3,
-					Second: 1,
+					Year: 1999, Mday: 29, Month: 3, Second: 1,
 				}.Timestamp(): types.TimeStruct{
-					Year:  1999,
-					Mday:  31,
-					Month: 3,
+					Year: 1999, Mday: 31, Month: 3,
 				}.Timestamp(),
 				// should skip 31.04
 				types.TimeStruct{
-					Year:   1999,
-					Mday:   29,
-					Month:  4,
-					Second: 1,
+					Year: 1999, Mday: 29, Month: 4, Second: 1,
 				}.Timestamp(): types.TimeStruct{
-					Year:  2000,
-					Mday:  29,
-					Month: 3,
+					Year: 2000, Mday: 29, Month: 3,
 				}.Timestamp(),
 			},
 		},
@@ -73,13 +66,22 @@ func TestCronSpecSimpleCases(t *testing.T) {
 			spec: "0 0 1 * 1", // At 00:00 on day-of-month 1 and on Monday
 			roundUps: map[int64]int64{
 				types.TimeStruct{
-					Year:  1999,
-					Mday:  1,
-					Month: 4,
+					Year: 1999, Mday: 1, Month: 4,
 				}.Timestamp(): types.TimeStruct{
-					Year:  1999,
-					Mday:  1,
-					Month: 11,
+					Year: 1999, Mday: 1, Month: 11,
+				}.Timestamp(),
+			},
+		},
+		{
+			spec: "0 0 1 1 1", // At 00:00 on day-of-month 1 and on Monday
+			roundUps: map[int64]int64{
+				0: types.TimeStruct{
+					Year: 1973, Mday: 1, Month: 1,
+				}.Timestamp(),
+				types.TimeStruct{
+					Year: 1973, Mday: 1, Month: 1, Second: 1,
+				}.Timestamp(): types.TimeStruct{
+					Year: 1979, Mday: 1, Month: 1,
 				}.Timestamp(),
 			},
 		},
