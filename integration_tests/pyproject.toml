@@ -19,7 +19,7 @@ grpcio = "^1.33.2"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
 pystarport = {path = "../pystarport"}
-chainlibpy = {git="https://github.com/crypto-org-chain/chainlibpy.git", rev = "fe444873294ed47de505596e307c4311c1489beb"}
+chainlibpy = "^1.0.1"
 
 [tool.poetry.dev-dependencies]
 
