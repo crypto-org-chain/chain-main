@@ -198,6 +198,18 @@ class CosmosCLI:
         coin = coin[0]
         return int(coin["amount"])
 
+    def query_all_txs(self, addr):
+        txs = self.raw(
+            "query",
+            "txs-all",
+            addr,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+        )
+        return json.loads(txs)
+
     def distribution_commission(self, addr):
         coin = json.loads(
             self.raw(
