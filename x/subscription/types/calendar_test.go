@@ -84,7 +84,7 @@ func TestTimezone(t *testing.T) {
 	}, tm)
 }
 
-func TestRoundstrip(t *testing.T) {
+func TestRoundTrip(t *testing.T) {
 	time.Local = time.UTC
 	f := func(ts int64, tzoffset int32) bool {
 		if ts+int64(tzoffset) < -62135596800 {
