@@ -293,13 +293,13 @@ func (k Keeper) UpdateCollectionTime(ctx sdk.Context, subscription *types.Subscr
 	}
 }
 
-func (k Keeper) SubscriptonExpirationIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) SubscriptionExpirationIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return store.Iterator(types.SubscriptionExpirationKeyPrefix, sdk.PrefixEndBytes(types.SubscriptionExpirationKey(math.MaxUint64, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionByExpirationTime(ctx sdk.Context, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonExpirationIterator(ctx)
+	iterator := k.SubscriptionExpirationIterator(ctx)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
