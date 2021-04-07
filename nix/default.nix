@@ -18,6 +18,7 @@ import sources.nixpkgs {
         doCheck = false;
       };
     })
+    (import (sources.gomod2nix + "/overlay.nix"))
   ];
   config = { };
   inherit system;
