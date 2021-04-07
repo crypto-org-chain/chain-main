@@ -299,6 +299,9 @@ class ClusterCLI:
     def balance(self, addr, i=0):
         return self.cosmos_cli(i).balance(addr)
 
+    def query_all_txs(self, addr, i=0):
+        return self.cosmos_cli(i).query_all_txs(addr)
+
     def distribution_commission(self, addr, i=0):
         return self.cosmos_cli(i).distribution_commission(addr)
 
