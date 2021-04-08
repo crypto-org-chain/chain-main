@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 

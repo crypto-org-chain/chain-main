@@ -2,8 +2,8 @@ package subscription
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/keeper"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

@@ -17,9 +17,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/client/cli"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/client/cli"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/keeper"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 var (

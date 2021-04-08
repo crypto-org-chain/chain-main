@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/keeper"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 // BeginBlocker remove expired subscription and collect payments
