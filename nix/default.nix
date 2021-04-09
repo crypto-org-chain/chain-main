@@ -18,9 +18,7 @@ import sources.nixpkgs {
         doCheck = false;
       };
     })
-    (_: pkgs: {
-      poetry2nix = import pkgs.sources.poetry2nix { inherit (pkgs) pkgs poetry; };
-    })
+    (import (sources.gomod2nix + "/overlay.nix"))
   ];
   config = { };
   inherit system;

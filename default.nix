@@ -18,18 +18,20 @@ let
     "^third_party$"
     "^third_party/cosmos-sdk$"
     "^third_party/cosmos-sdk/.*"
+    "^gomod2nix.toml$"
   ];
   lib = pkgs.lib;
-  build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoModule rec {
+  build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoApplication rec {
     pname = "chain-maind";
     version = "1.2.0";
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
     };
+    modules = ./gomod2nix.toml;
+    pwd = src; # needed to support replace
     subPackages = [ "cmd/chain-maind" ];
-    vendorSha256 = sha256:0fyik7c9r7cicqrlzf5vln59wjm3rawvvbiyd9z9ca062g9d1453;
-    runVend = true;
+    CGO_ENABLED = "1";
     outputs = [
       "out"
       "instrumented"
