@@ -8,6 +8,11 @@
 
 - [381](https://github.com/crypto-org-chain/chain-main/pull/381) Add subscription module
 
+*April 9, 2021*
+
+## v1.2.1
+A version based on the upstream release of Cosmos SDK 0.42.4.
+
 *March 26, 2021*
 
 ## v1.2.0
