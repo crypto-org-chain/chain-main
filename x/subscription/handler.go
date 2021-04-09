@@ -3,8 +3,8 @@ package subscription
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/keeper"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 // NewHandler creates an sdk.Handler for all the subscription type messages
