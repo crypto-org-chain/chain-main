@@ -12,27 +12,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "master",
+        "branch": "nixpkgs-unstable",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "1491bab2b1113e745f107a36c7b81f89aed8cf1c",
-        "sha256": "0b4rhk42aw1gp3p6ajcklag3kwin14bqy6v2haq914sgx2nkw8bn",
+        "rev": "fde0082ca4b830b1d9d69b4f4189322512f067d7",
+        "sha256": "05ll6c4a2xg1wglpdszjjxbri89q521hb65s16i84qn6igzi316c",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/1491bab2b1113e745f107a36c7b81f89aed8cf1c.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "poetry2nix": {
-        "branch": "master",
-        "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
-        "homepage": "",
-        "owner": "nix-community",
-        "repo": "poetry2nix",
-        "rev": "f0cc43e09f6adbbde8c1207d511cd124cdca28f4",
-        "sha256": "020qpwprkb52gimvmipixc7zqqmaxagxw9ddr75yf762s312byi3",
-        "type": "tarball",
-        "url": "https://github.com/nix-community/poetry2nix/archive/f0cc43e09f6adbbde8c1207d511cd124cdca28f4.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/fde0082ca4b830b1d9d69b4f4189322512f067d7.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "relayer": {
@@ -41,10 +29,10 @@
         "homepage": null,
         "owner": "cosmos",
         "repo": "relayer",
-        "rev": "1daec66da1700c9fcd8900dbf06c70f2fd838cdf",
-        "sha256": "0q1jk35cci8kyi9rbmr0yski4977pmzmmrxbrxzif2kp8ghviila",
+        "rev": "82d0fe787cbf2c69b961dff45c85b33c75ca0ad9",
+        "sha256": "0d7s4ckdamivr94kq6wdjl5s9iicdpg4whbicqqiqx0yrn8smxld",
         "type": "tarball",
-        "url": "https://github.com/cosmos/relayer/archive/1daec66da1700c9fcd8900dbf06c70f2fd838cdf.tar.gz",
+        "url": "https://github.com/cosmos/relayer/archive/82d0fe787cbf2c69b961dff45c85b33c75ca0ad9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
