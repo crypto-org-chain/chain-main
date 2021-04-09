@@ -33,7 +33,7 @@ ifeq ($(NETWORK),testnet)
 	TEST_TAGS := "--tags=testnet"
 endif
 
-SIMAPP = github.com/crypto-org-chain/chain-main/v1/app
+SIMAPP = github.com/crypto-org-chain/chain-main/v2/app
 BINDIR ?= ~/go/bin
 
 OS := $(shell uname)

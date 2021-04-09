@@ -68,12 +68,12 @@ func (b *BitSet) Clear(i uint) error {
 }
 
 // Test whether bit i is set.
-// if i >= 64, return false
-func (b *BitSet) Test(i uint) bool {
+// if i >= 64, return error
+func (b *BitSet) Test(i uint) (bool, error) {
 	if i >= wordSize {
-		return false
+		return false, errorOutOfBound
 	}
-	return b.set&(1<<i) != 0
+	return b.set&(1<<i) != 0, nil
 }
 
 // NextSet returns the next bit set from the specified index,

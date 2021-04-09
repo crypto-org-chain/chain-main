@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	sdkErrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // CompiledCronSpec store bitset form of cron spec
@@ -57,7 +59,7 @@ func (item *CompiledCronItem) Set(value uint32) error {
 	return nil
 }
 
-func (item CompiledCronItem) Test(value uint32) bool {
+func (item CompiledCronItem) Test(value uint32) (bool, error) {
 	return item.set.Test(uint(value))
 }
 
@@ -384,7 +386,13 @@ func (spec CompiledCronSpec) RoundUp(ts int64, tzoffset int32) int64 {
 
 	Success:
 		// Check weekday
-		if !spec.Wday.Test(uint32(Weekday(tm.Year, tm.Month, tm.Mday))) {
+		result, error := spec.Wday.Test(uint32(Weekday(tm.Year, tm.Month, tm.Mday)))
+		if error != nil {
+			// that shouldn't happen, we need to crash the app
+			err := sdkErrors.Wrap(error, "Wday.Test did panic with OutOfBound error")
+			panic(err)
+		}
+		if !result {
 			tm.Mday++
 			tm.Hour = int(spec.Hour.Min)
 			tm.Minute = int(spec.Minute.Min)

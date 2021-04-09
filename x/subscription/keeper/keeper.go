@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 type (
@@ -314,13 +314,13 @@ func (k Keeper) IterateSubscriptionByExpirationTime(ctx sdk.Context, cb func(sub
 	}
 }
 
-func (k Keeper) SubscriptonCollectionTimeIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) SubscriptionCollectionTimeIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return store.Iterator(types.SubscriptionCollectionTimeKeyPrefix, sdk.PrefixEndBytes(types.SubscriptionCollectionTimeKey(math.MaxUint64, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionByCollectionTime(ctx sdk.Context, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonCollectionTimeIterator(ctx)
+	iterator := k.SubscriptionCollectionTimeIterator(ctx)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -335,14 +335,14 @@ func (k Keeper) IterateSubscriptionByCollectionTime(ctx sdk.Context, cb func(sub
 	}
 }
 
-func (k Keeper) SubscriptonPlanIterator(ctx sdk.Context, planID uint64) sdk.Iterator {
+func (k Keeper) SubscriptionPlanIterator(ctx sdk.Context, planID uint64) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.SubscriptionKeyPrefixForPlan(planID)
 	return store.Iterator(prefix, sdk.PrefixEndBytes(types.SubscriptionPlanKey(planID, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionsOfPlan(ctx sdk.Context, planID uint64, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonPlanIterator(ctx, planID)
+	iterator := k.SubscriptionPlanIterator(ctx, planID)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -380,7 +380,7 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 		return false
 	}
 	var failureTolerance uint32
-	k.paramSpace.Get(ctx, types.KeyFailureTolorance, &failureTolerance)
+	k.paramSpace.Get(ctx, types.KeyFailureTolerance, &failureTolerance)
 	subscriber, err := sdk.AccAddressFromBech32(subscription.Subscriber)
 	if err != nil {
 		return false

@@ -3,20 +3,24 @@ package types_test
 import (
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBitSetBasic(t *testing.T) {
 	v := types.NewBitSet()
-	require.False(t, v.Test(0))
+	r, err := v.Test(0)
+	require.False(t, r)
+	require.NoError(t, err)
 
 	// error cases
-	err := v.Set(64)
+	err = v.Set(64)
 	require.Error(t, err)
 	err = v.Clear(64)
 	require.Error(t, err)
-	require.False(t, v.Test(64))
+	r, err = v.Test(64)
+	require.False(t, r)
+	require.Error(t, err)
 
 	err = v.Set(0)
 	require.NoError(t, err)
@@ -24,20 +28,30 @@ func TestBitSetBasic(t *testing.T) {
 	require.NoError(t, err)
 	err = v.Set(63)
 	require.NoError(t, err)
-	require.True(t, v.Test(0))
-	require.True(t, v.Test(20))
-	require.True(t, v.Test(63))
+	r, err = v.Test(0)
+	require.True(t, r)
+	require.NoError(t, err)
+	r, err = v.Test(20)
+	require.True(t, r)
+	require.NoError(t, err)
+	r, err = v.Test(63)
+	require.NoError(t, err)
+	require.True(t, r)
 	require.Equal(t, uint(3), v.Len())
 	err = v.Clear(20)
 	require.NoError(t, err)
-	require.False(t, v.Test(20))
+	r, err = v.Test(20)
+	require.False(t, r)
+	require.NoError(t, err)
 	require.Equal(t, uint(2), v.Len())
 }
 
 func TestBitSetIterate(t *testing.T) {
 	v := types.NewBitSet()
-	require.False(t, v.Test(0))
-	err := v.Set(0)
+	r, err := v.Test(0)
+	require.False(t, r)
+	require.NoError(t, err)
+	err = v.Set(0)
 	require.NoError(t, err)
 	err = v.Set(20)
 	require.NoError(t, err)
