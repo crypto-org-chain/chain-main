@@ -714,7 +714,11 @@ def init_devnet(
     )
     for i, val in enumerate(config["validators"]):
         edit_tm_cfg(data_dir / f"node{i}/config/config.toml", val["base_port"], peers)
-        edit_app_cfg(data_dir / f"node{i}/config/app.toml", val["base_port"])
+        edit_app_cfg(
+            data_dir / f"node{i}/config/app.toml",
+            val["base_port"],
+            val.get("minimum-gas-prices", ""),
+        )
 
     # write supervisord config file
     with (data_dir / SUPERVISOR_CONFIG_FILE).open("w") as fp:
@@ -876,7 +880,7 @@ def edit_tm_cfg(path, base_port, peers, *, custom_edit=None):
     open(path, "w").write(tomlkit.dumps(doc))
 
 
-def edit_app_cfg(path, base_port):
+def edit_app_cfg(path, base_port, minimum_gas_prices=""):
     doc = tomlkit.parse(open(path).read())
     # enable api server
     doc["api"]["enable"] = True
@@ -888,6 +892,7 @@ def edit_app_cfg(path, base_port):
     doc["pruning"] = "nothing"
     doc["state-sync"]["snapshot-interval"] = 5
     doc["state-sync"]["snapshot-keep-recent"] = 10
+    doc["minimum-gas-prices"] = minimum_gas_prices
     open(path, "w").write(tomlkit.dumps(doc))
 
 
