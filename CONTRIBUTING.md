@@ -16,7 +16,7 @@ Requests involving no code changes (e.g. conventions, processes or network param
 
 ## Feature requests and bug reports
 
-Feature requests and bug reports should be posted as [Github issues](issues/new).
+Feature requests and bug reports should be posted as [Github issues](https://github.com/crypto-org-chain/chain-main/issues/new/choose).
 In an issue, please describe what you did, what you expected, and what happened instead.
 
 If you think that you have identified an issue with Chain that might compromise
