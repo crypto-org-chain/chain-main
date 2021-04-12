@@ -34,7 +34,7 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper) 
 		// try to collect payment from subscription
 		blockTime := uint64(ctx.BlockTime().Unix())
 		if blockTime >= subscription.NextCollectionTime {
-			k.TryCollect(ctx, subscription)
+			k.TryCollect(ctx, subscription, params.FailureTolerance)
 			return false
 		}
 		return true

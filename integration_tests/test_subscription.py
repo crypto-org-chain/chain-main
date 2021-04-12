@@ -28,14 +28,15 @@ def test_subscription(cluster):
         "10000000basecro",
         "* * * * *",
         120,
-        fees="5000basecro",
+        fees="1693basecro",
+        gas=67707,
     )
     assert rsp["code"] == 0, f"create plan failed: {rsp['raw_log']}"
     plan_id = int(rsp["logs"][0]["events"][0]["attributes"][0]["value"])
     print("plan id", plan_id)
     plan = cli.query_plan(plan_id)
     print("plan created", plan)
-    rsp = cli.create_subscription(plan_id, subscriber, fees="5000basecro")
+    rsp = cli.create_subscription(plan_id, subscriber, fees="3420basecro", gas="136778")
     assert rsp["code"] == 0, f"create subscription failed: {rsp['raw_log']}"
     subscription_id = int(rsp["logs"][0]["events"][0]["attributes"][0]["value"])
     print("subscription id", subscription_id)
