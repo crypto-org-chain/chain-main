@@ -826,7 +826,9 @@ class CosmosCLI:
     def unsaferesetall(self):
         return self.raw("unsafe-reset-all")
 
-    def create_plan(self, owner, title, description, price, cron_spec, duration_secs):
+    def create_plan(
+        self, owner, title, description, price, cron_spec, duration_secs, **kwargs
+    ):
         return json.loads(
             self.raw(
                 "tx",
@@ -843,6 +845,7 @@ class CosmosCLI:
                 home=self.data_dir,
                 keyring_backend="test",
                 node=self.node_rpc,
+                **kwargs,
             )
         )
 
@@ -865,7 +868,7 @@ class CosmosCLI:
             )
         )
 
-    def create_subscription(self, plan_id, subscriber):
+    def create_subscription(self, plan_id, subscriber, **kwargs):
         return json.loads(
             self.raw(
                 "tx",
@@ -878,6 +881,7 @@ class CosmosCLI:
                 home=self.data_dir,
                 keyring_backend="test",
                 node=self.node_rpc,
+                **kwargs,
             )
         )
 
