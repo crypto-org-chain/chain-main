@@ -1,6 +1,20 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
-from .utils import wait_for_block_time
+import pytest
+
+from .utils import cluster_fixture, wait_for_block_time
+
+
+@pytest.fixture(scope="module")
+def cluster(worker_index, pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/subscription.yaml",
+        worker_index,
+        tmp_path_factory,
+        quiet=pytestconfig.getoption("supervisord-quiet"),
+    )
 
 
 def test_subscription(cluster):
@@ -14,14 +28,15 @@ def test_subscription(cluster):
         "10000000basecro",
         "* * * * *",
         120,
+        fees="5000basecro",
     )
     assert rsp["code"] == 0, f"create plan failed: {rsp['raw_log']}"
     plan_id = int(rsp["logs"][0]["events"][0]["attributes"][0]["value"])
     print("plan id", plan_id)
     plan = cli.query_plan(plan_id)
     print("plan created", plan)
-    rsp = cli.create_subscription(plan_id, subscriber)
-    assert rsp["code"] == 0, f"create plan failed: {rsp['raw_log']}"
+    rsp = cli.create_subscription(plan_id, subscriber, fees="5000basecro")
+    assert rsp["code"] == 0, f"create subscription failed: {rsp['raw_log']}"
     subscription_id = int(rsp["logs"][0]["events"][0]["attributes"][0]["value"])
     print("subscription id", subscription_id)
     subscription = cli.query_subscription(subscription_id)
