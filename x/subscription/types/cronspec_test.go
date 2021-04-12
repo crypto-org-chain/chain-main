@@ -163,5 +163,5 @@ func TestCountPeriods(t *testing.T) {
 	require.NoError(t, err)
 	beginTime := int64(0)        // 1970.1.1
 	endTime := int64(1577836800) // 2020.1.1
-	require.Equal(t, uint64(49), spec.Compile().CountPeriods(beginTime, endTime, 0))
+	require.Equal(t, uint64(49), spec.Compile().CountPeriods(beginTime, endTime, 0, func() {}))
 }
