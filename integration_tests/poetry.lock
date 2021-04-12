@@ -107,9 +107,9 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
-name = "cryptopy"
+name = "chainlibpy"
 version = "1.0.0"
-description = "Tools for Crypto.com wallet management and offline transaction signing"
+description = "Tools for Crypto.org Chain wallet management and offline transaction signing"
 category = "main"
 optional = false
 python-versions = "^3.6"
@@ -123,7 +123,7 @@ mnemonic = ">=0.19, <0.20"
 
 [package.source]
 type = "git"
-url = "https://github.com/crypto-com/cryptopy.git"
+url = "https://github.com/crypto-org-chain/chainlibpy.git"
 reference = "fe444873294ed47de505596e307c4311c1489beb"
 resolved_reference = "fe444873294ed47de505596e307c4311c1489beb"
 
@@ -785,7 +785,7 @@ colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
-cryptopy = []
+chainlibpy = []
 docker = [
     {file = "docker-4.3.1-py2.py3-none-any.whl", hash = "sha256:13966471e8bc23b36bfb3a6fb4ab75043a5ef1dac86516274777576bed3b9828"},
     {file = "docker-4.3.1.tar.gz", hash = "sha256:bad94b8dd001a8a4af19ce4becc17f41b09f228173ffe6a4e0355389eef142f2"},
