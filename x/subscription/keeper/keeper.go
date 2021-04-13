@@ -192,10 +192,13 @@ func (k Keeper) CreateSubscription(ctx sdk.Context, msg types.MsgCreateSubscript
 
 	var gasPerCollection uint32
 	k.paramSpace.Get(ctx, types.KeyGasPerCollection, &gasPerCollection)
-	ctx.GasMeter().ConsumeGas(
-		sdk.Gas(gasPerCollection)*plan.CronSpec.Compile().CountPeriods(
-			int64(subscription.CreateTime), int64(subscription.ExpirationTime), plan.Tzoffset,
-		), "create subscription")
+	plan.CronSpec.Compile().CountPeriods(
+		int64(subscription.CreateTime),
+		int64(subscription.ExpirationTime),
+		plan.Tzoffset,
+		func() {
+			ctx.GasMeter().ConsumeGas(sdk.Gas(gasPerCollection), "create subscription")
+		})
 	return subscription, nil
 }
 
