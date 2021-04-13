@@ -373,7 +373,7 @@ func (k Keeper) IteratePlans(ctx sdk.Context, cb func(plan types.Plan) (stop boo
 	}
 }
 
-func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) bool {
+func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription, failureTolerance uint32) bool {
 	blockTime := ctx.BlockTime().Unix()
 	if uint64(blockTime) < subscription.NextCollectionTime {
 		return false
@@ -382,8 +382,7 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 	if !exists {
 		return false
 	}
-	var failureTolerance uint32
-	k.paramSpace.Get(ctx, types.KeyFailureTolerance, &failureTolerance)
+
 	subscriber, err := sdk.AccAddressFromBech32(subscription.Subscriber)
 	if err != nil {
 		return false
@@ -398,6 +397,8 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 		subscription.PaymentFailures++
 		if subscription.PaymentFailures > failureTolerance {
 			k.RemoveSubscription(ctx, subscription)
+		} else {
+			ctx.KVStore(k.storeKey).Set(types.SubscriptionKey(subscription.SubscriptionId), k.MustMarshalSubscription(subscription))
 		}
 	} else {
 		k.Logger(ctx).Info("payment success", "subscription", subscription.SubscriptionId, "blockTime", blockTime)
@@ -412,6 +413,5 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 		})
 		k.UpdateCollectionTime(ctx, &subscription, uint64(plan.CronSpec.Compile().RoundUp(blockTime+1, plan.Tzoffset)))
 	}
-	ctx.KVStore(k.storeKey).Set(types.SubscriptionKey(subscription.SubscriptionId), k.MustMarshalSubscription(subscription))
 	return subscription.PaymentFailures == 0
 }

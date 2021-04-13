@@ -15,9 +15,9 @@ var (
 
 // Default parameter values
 const (
-	DefaultGasPerCollection    uint32 = 1000
+	DefaultGasPerCollection    uint32 = 31288
 	DefaultSubscriptionEnabled bool   = true
-	DefaultFailureTolerance    uint32 = 30
+	DefaultFailureTolerance    uint32 = 3
 )
 
 // Implements params.ParamSet
