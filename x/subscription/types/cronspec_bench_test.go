@@ -100,6 +100,6 @@ func BenchmarkCountPeriods(b *testing.B) {
 	compiled := spec.Compile()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		compiled.CountPeriods(0, 31536000, 0) // period of a year
+		compiled.CountPeriods(0, 31536000, 0, func() {}) // period of a year
 	}
 }

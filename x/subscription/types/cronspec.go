@@ -415,13 +415,14 @@ func roundUpItem(spec CompiledCronItem, v uint32) uint32 {
 
 // CountPeriods counts how many datetimes between beginTime expirationTime matches the cron spec.
 // beginTime is not inclusive.
-func (spec CompiledCronSpec) CountPeriods(beginTime, expirationTime int64, tzoffset int32) (count uint64) {
+func (spec CompiledCronSpec) CountPeriods(beginTime, expirationTime int64, tzoffset int32, callback func()) (count uint64) {
 	count = 0
 	for {
 		beginTime = spec.RoundUp(beginTime+1, tzoffset)
 		if beginTime >= expirationTime {
 			break
 		}
+		callback()
 		count++
 	}
 	return
