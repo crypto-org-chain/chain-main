@@ -28,4 +28,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | ADR \# | Description | Status |
 | ------ | ----------- | ------ |
 | [001](./adr-001.md) | Add CosmWasm Module | Accepted |
-| [002](./adr-002.md) | Subscriptions in CosmWasm | Proposed |
+| [002](./adr-002.md) | Subscriptions in CosmWasm | Accepted |
