@@ -10,14 +10,14 @@ import (
 var (
 	KeyGasPerCollection    = []byte("GasPerCollection")
 	KeySubscriptionEnabled = []byte("SubscriptionEnabled")
-	KeyFailureTolorance    = []byte("FailureTolorance")
+	KeyFailureTolerance    = []byte("FailureTolerance")
 )
 
 // Default parameter values
 const (
-	DefaultGasPerCollection    uint32 = 1000
+	DefaultGasPerCollection    uint32 = 31288
 	DefaultSubscriptionEnabled bool   = true
-	DefaultFailureTolorance    uint32 = 30
+	DefaultFailureTolerance    uint32 = 3
 )
 
 // Implements params.ParamSet
@@ -25,7 +25,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 	return paramtypes.ParamSetPairs{
 		paramtypes.NewParamSetPair(KeyGasPerCollection, &p.GasPerCollection, validateIsInt),
 		paramtypes.NewParamSetPair(KeySubscriptionEnabled, &p.SubscriptionEnabled, validateIsBool),
-		paramtypes.NewParamSetPair(KeyFailureTolorance, &p.FailureTolerance, validateIsInt),
+		paramtypes.NewParamSetPair(KeyFailureTolerance, &p.FailureTolerance, validateIsInt),
 	}
 }
 
@@ -55,6 +55,6 @@ func DefaultParams() Params {
 	return Params{
 		GasPerCollection:    DefaultGasPerCollection,
 		SubscriptionEnabled: DefaultSubscriptionEnabled,
-		FailureTolerance:    DefaultFailureTolorance,
+		FailureTolerance:    DefaultFailureTolerance,
 	}
 }

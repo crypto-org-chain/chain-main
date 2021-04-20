@@ -1,4 +1,4 @@
-from cryptopy import Transaction, Wallet
+from chainlibpy import Transaction, Wallet
 from pystarport import ports
 from pystarport.proto_python.api_util import ApiUtil
 

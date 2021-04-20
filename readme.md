@@ -5,7 +5,7 @@
 <br />
 
 <p align="center">
-  <a href="https://github.com/crypto-org-chain/chain-main/workflows"><img label="Build Status" src="https://github.com/crypto-org-chain/chain-main/workflows/Build/badge.svg" /></a>
+  <a href="https://github.com/crypto-org-chain/chain-main/actions/workflows/build.yml"><img label="Build Status" src="https://github.com/crypto-org-chain/chain-main/actions/workflows/build.yml/badge.svg" /></a>
   <a href="https://codecov.io/gh/crypto-org-chain/chain-main"><img label="Code Coverage" src="https://codecov.io/gh/crypto-org-chain/chain-main/branch/master/graph/badge.svg" /></a>
   <a href="https://discord.gg/pahqHz26q4"><img label="Discord" src="https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square" /></a>
 </p>
@@ -97,13 +97,13 @@ $ cachix use crypto-org-chain
 ## 6. Start a local Development Network and Node
 
 
-Please follow this [documentation](https://chain.crypto.com/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
+Please follow this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
 
 <a id="send-first-transaction" />
 
 ## 7. Send Your First Transaction
 
-After setting the local devnet, you may interact with the your local blockchain by following this [documentation](https://chain.crypto.com/docs/getting-started/local-devnet.html#interact-with-the-chain). 
+After setting the local devnet, you may interact with the your local blockchain by following this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#interact-with-the-chain).
 
 <a id="testing" />
 

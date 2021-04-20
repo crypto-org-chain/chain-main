@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 var _ types.QueryServer = Keeper{}

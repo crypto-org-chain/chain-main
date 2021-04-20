@@ -198,6 +198,18 @@ class CosmosCLI:
         coin = coin[0]
         return int(coin["amount"])
 
+    def query_all_txs(self, addr):
+        txs = self.raw(
+            "query",
+            "txs-all",
+            addr,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+        )
+        return json.loads(txs)
+
     def distribution_commission(self, addr):
         coin = json.loads(
             self.raw(
@@ -814,7 +826,9 @@ class CosmosCLI:
     def unsaferesetall(self):
         return self.raw("unsafe-reset-all")
 
-    def create_plan(self, owner, title, description, price, cron_spec, duration_secs):
+    def create_plan(
+        self, owner, title, description, price, cron_spec, duration_secs, **kwargs
+    ):
         return json.loads(
             self.raw(
                 "tx",
@@ -831,6 +845,7 @@ class CosmosCLI:
                 home=self.data_dir,
                 keyring_backend="test",
                 node=self.node_rpc,
+                **kwargs,
             )
         )
 
@@ -853,7 +868,7 @@ class CosmosCLI:
             )
         )
 
-    def create_subscription(self, plan_id, subscriber):
+    def create_subscription(self, plan_id, subscriber, **kwargs):
         return json.loads(
             self.raw(
                 "tx",
@@ -866,6 +881,7 @@ class CosmosCLI:
                 home=self.data_dir,
                 keyring_backend="test",
                 node=self.node_rpc,
+                **kwargs,
             )
         )
 

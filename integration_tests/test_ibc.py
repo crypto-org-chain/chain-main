@@ -112,6 +112,8 @@ def test_ibc(cluster):
         }
     }
 
+    addr_0 = cluster["ibc-0"].address("relayer")
+    addr_1 = cluster["ibc-1"].address("relayer")
     for i in range(60):
         channels = json.loads(
             raw(
@@ -147,9 +149,14 @@ def test_ibc(cluster):
     # sender balance decreased
     assert cluster["ibc-0"].balance(cluster["ibc-0"].address("relayer")) == 9999990000
     print("ibc transfer")
-
     # FIXME more stable way to wait for relaying
     time.sleep(10)
+    query_txs_0 = cluster["ibc-0"].query_all_txs(addr_0)
+    assert len(query_txs_0["txs"]) == 1
+    query_txs_1 = cluster["ibc-0"].query_all_txs(addr_1)
+    assert len(query_txs_1["txs"]) == 1
+    query_txs_2 = cluster["ibc-1"].query_all_txs(addr_1)
+    assert len(query_txs_2["txs"]) == 1
 
     dst_channel = channels[0]["counterparty"]["channel_id"]
     denom_hash = (
@@ -196,6 +203,12 @@ def test_ibc(cluster):
 
     # FIXME more stable way to wait for relaying
     time.sleep(40)
+    query_txs_0 = cluster["ibc-0"].query_all_txs(addr_0)
+    assert len(query_txs_0["txs"]) == 2
+    query_txs_1 = cluster["ibc-1"].query_all_txs(addr_0)
+    assert len(query_txs_1["txs"]) == 1
+    query_txs_2 = cluster["ibc-1"].query_all_txs(addr_1)
+    assert len(query_txs_2["txs"]) == 2
 
     # both accounts return to normal
     for i, cli in enumerate(cluster.values()):

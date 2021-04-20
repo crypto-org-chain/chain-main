@@ -8,8 +8,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/keeper"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/keeper"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 // BeginBlocker remove expired subscription and collect payments
@@ -34,7 +34,7 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, k keeper.Keeper) 
 		// try to collect payment from subscription
 		blockTime := uint64(ctx.BlockTime().Unix())
 		if blockTime >= subscription.NextCollectionTime {
-			k.TryCollect(ctx, subscription)
+			k.TryCollect(ctx, subscription, params.FailureTolerance)
 			return false
 		}
 		return true

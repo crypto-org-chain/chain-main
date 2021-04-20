@@ -59,6 +59,10 @@ def test_transfer(cluster):
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
+    query_txs_1 = cluster.query_all_txs(community_addr)
+    assert len(query_txs_1["txs"]) == 1
+    query_txs_2 = cluster.query_all_txs(reserve_addr)
+    assert len(query_txs_2["txs"]) == 1
 
 
 def test_liquid_supply(cluster):
@@ -84,5 +88,5 @@ def test_statesync(cluster):
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
 
     # discovery_time is set to 5 seconds, add extra seconds for processing
-    time.sleep(5 + 3)
+    time.sleep(5 + 5)
     assert cluster.block_height(i=i) >= 5, "syncing"

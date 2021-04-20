@@ -1,5 +1,5 @@
 FROM rust:latest as BUILDER
-LABEL maintainer="chain@crypto.com"
+LABEL maintainer="chain@crypto.org"
 
 RUN apt-get update && \
     apt-get -y install protobuf-compiler && \

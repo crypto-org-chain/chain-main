@@ -14,9 +14,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-
-	"github.com/crypto-org-chain/chain-main/v1/config"
-	"github.com/crypto-org-chain/chain-main/v1/x/chainmain/types"
+	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	ibctypes "github.com/cosmos/cosmos-sdk/x/ibc/applications/transfer/types"
+	"github.com/crypto-org-chain/chain-main/v2/config"
+	"github.com/crypto-org-chain/chain-main/v2/x/chainmain/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module
@@ -49,16 +50,23 @@ func QueryAllTxCmd() *cobra.Command {
 				return queryErr
 			}
 			addrStr := args[0]
-			_, addressErr := sdk.AccAddressFromBech32(addrStr)
-			if addressErr != nil {
-				return addressErr
-			}
-
-			var tmEvents []string
-			events := [...]string{"message.sender", "transfer.recipient", "withdraw_rewards.validator", "ibc_transfer.receiver", "ibc_transfer.sender"}
-			for _, event := range events {
-				eventPair := fmt.Sprintf("%s='%s'", event, addrStr)
-				tmEvents = append(tmEvents, eventPair)
+			events := []string{
+				// sender/receiver in send.go
+				fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeySender, addrStr),
+				fmt.Sprintf("%s.%s='%s'", banktypes.EventTypeTransfer, sdk.AttributeKeySender, addrStr),
+				fmt.Sprintf("%s.%s='%s'", banktypes.EventTypeTransfer, banktypes.AttributeKeyRecipient, addrStr),
+				// ibc transfer
+				fmt.Sprintf("%s.%s='%s'", ibctypes.EventTypeTransfer, sdk.AttributeKeySender, addrStr),
+				fmt.Sprintf("%s.%s='%s'", ibctypes.EventTypeTransfer, ibctypes.AttributeKeyReceiver, addrStr),
+				// in SetWithdrawAddress
+				fmt.Sprintf("%s.%s='%s'", disttypes.EventTypeSetWithdrawAddress, disttypes.AttributeKeyWithdrawAddress, addrStr),
+				// in WithdrawDelegationRewards
+				fmt.Sprintf("%s.%s='%s'", disttypes.EventTypeWithdrawRewards, disttypes.AttributeKeyValidator, addrStr),
+				// in AllocateTokens
+				fmt.Sprintf("%s.%s='%s'", disttypes.EventTypeProposerReward, disttypes.AttributeKeyValidator, addrStr),
+				// in AllocateTokensToValidator
+				fmt.Sprintf("%s.%s='%s'", disttypes.EventTypeCommission, disttypes.AttributeKeyValidator, addrStr),
+				fmt.Sprintf("%s.%s='%s'", disttypes.EventTypeRewards, disttypes.AttributeKeyValidator, addrStr),
 			}
 
 			page, pageErr := cmd.Flags().GetInt(flags.FlagPage)
@@ -69,11 +77,26 @@ func QueryAllTxCmd() *cobra.Command {
 			if limitErr != nil {
 				return limitErr
 			}
-			txs, err := authclient.QueryTxsByEvents(clientCtx, tmEvents, page, limit, "")
-			if err != nil {
-				return err
+			txsResult := sdk.SearchTxsResult{}
+			txsMap := map[string]*sdk.TxResponse{}
+			for _, event := range events {
+				txs, err := authclient.QueryTxsByEvents(clientCtx, []string{event}, page, limit, "")
+				if err != nil {
+					return nil
+				}
+				for _, tx := range txs.Txs {
+					txsMap[tx.TxHash] = tx
+				}
+				txsResult.PageTotal = txs.PageTotal
+				txsResult.PageNumber = txs.PageNumber
+				txsResult.Limit = txs.Limit
 			}
-			return clientCtx.PrintProto(txs)
+			for _, tx := range txsMap {
+				txsResult.Txs = append(txsResult.Txs, tx)
+			}
+			txsResult.TotalCount = uint64(len(txsResult.Txs))
+			txsResult.Count = txsResult.TotalCount
+			return clientCtx.PrintProto(&txsResult)
 		},
 	}
 	cmd.Flags().StringP(flags.FlagNode, "n", "tcp://localhost:26657", "Node to connect to")

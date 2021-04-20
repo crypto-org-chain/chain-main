@@ -12,7 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 )
 
 type (
@@ -192,10 +192,13 @@ func (k Keeper) CreateSubscription(ctx sdk.Context, msg types.MsgCreateSubscript
 
 	var gasPerCollection uint32
 	k.paramSpace.Get(ctx, types.KeyGasPerCollection, &gasPerCollection)
-	ctx.GasMeter().ConsumeGas(
-		sdk.Gas(gasPerCollection)*plan.CronSpec.Compile().CountPeriods(
-			int64(subscription.CreateTime), int64(subscription.ExpirationTime), plan.Tzoffset,
-		), "create subscription")
+	plan.CronSpec.Compile().CountPeriods(
+		int64(subscription.CreateTime),
+		int64(subscription.ExpirationTime),
+		plan.Tzoffset,
+		func() {
+			ctx.GasMeter().ConsumeGas(sdk.Gas(gasPerCollection), "create subscription")
+		})
 	return subscription, nil
 }
 
@@ -293,13 +296,13 @@ func (k Keeper) UpdateCollectionTime(ctx sdk.Context, subscription *types.Subscr
 	}
 }
 
-func (k Keeper) SubscriptonExpirationIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) SubscriptionExpirationIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return store.Iterator(types.SubscriptionExpirationKeyPrefix, sdk.PrefixEndBytes(types.SubscriptionExpirationKey(math.MaxUint64, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionByExpirationTime(ctx sdk.Context, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonExpirationIterator(ctx)
+	iterator := k.SubscriptionExpirationIterator(ctx)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -314,13 +317,13 @@ func (k Keeper) IterateSubscriptionByExpirationTime(ctx sdk.Context, cb func(sub
 	}
 }
 
-func (k Keeper) SubscriptonCollectionTimeIterator(ctx sdk.Context) sdk.Iterator {
+func (k Keeper) SubscriptionCollectionTimeIterator(ctx sdk.Context) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	return store.Iterator(types.SubscriptionCollectionTimeKeyPrefix, sdk.PrefixEndBytes(types.SubscriptionCollectionTimeKey(math.MaxUint64, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionByCollectionTime(ctx sdk.Context, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonCollectionTimeIterator(ctx)
+	iterator := k.SubscriptionCollectionTimeIterator(ctx)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -335,14 +338,14 @@ func (k Keeper) IterateSubscriptionByCollectionTime(ctx sdk.Context, cb func(sub
 	}
 }
 
-func (k Keeper) SubscriptonPlanIterator(ctx sdk.Context, planID uint64) sdk.Iterator {
+func (k Keeper) SubscriptionPlanIterator(ctx sdk.Context, planID uint64) sdk.Iterator {
 	store := ctx.KVStore(k.storeKey)
 	prefix := types.SubscriptionKeyPrefixForPlan(planID)
 	return store.Iterator(prefix, sdk.PrefixEndBytes(types.SubscriptionPlanKey(planID, math.MaxUint64)))
 }
 
 func (k Keeper) IterateSubscriptionsOfPlan(ctx sdk.Context, planID uint64, cb func(subscription types.Subscription) (stop bool)) {
-	iterator := k.SubscriptonPlanIterator(ctx, planID)
+	iterator := k.SubscriptionPlanIterator(ctx, planID)
 
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -370,7 +373,7 @@ func (k Keeper) IteratePlans(ctx sdk.Context, cb func(plan types.Plan) (stop boo
 	}
 }
 
-func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) bool {
+func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription, failureTolerance uint32) bool {
 	blockTime := ctx.BlockTime().Unix()
 	if uint64(blockTime) < subscription.NextCollectionTime {
 		return false
@@ -379,8 +382,7 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 	if !exists {
 		return false
 	}
-	var failureTolerance uint32
-	k.paramSpace.Get(ctx, types.KeyFailureTolorance, &failureTolerance)
+
 	subscriber, err := sdk.AccAddressFromBech32(subscription.Subscriber)
 	if err != nil {
 		return false
@@ -395,6 +397,8 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 		subscription.PaymentFailures++
 		if subscription.PaymentFailures > failureTolerance {
 			k.RemoveSubscription(ctx, subscription)
+		} else {
+			ctx.KVStore(k.storeKey).Set(types.SubscriptionKey(subscription.SubscriptionId), k.MustMarshalSubscription(subscription))
 		}
 	} else {
 		k.Logger(ctx).Info("payment success", "subscription", subscription.SubscriptionId, "blockTime", blockTime)
@@ -409,6 +413,5 @@ func (k Keeper) TryCollect(ctx sdk.Context, subscription types.Subscription) boo
 		})
 		k.UpdateCollectionTime(ctx, &subscription, uint64(plan.CronSpec.Compile().RoundUp(blockTime+1, plan.Tzoffset)))
 	}
-	ctx.KVStore(k.storeKey).Set(types.SubscriptionKey(subscription.SubscriptionId), k.MustMarshalSubscription(subscription))
 	return subscription.PaymentFailures == 0
 }

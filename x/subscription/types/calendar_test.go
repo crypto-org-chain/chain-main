@@ -6,7 +6,7 @@ import (
 	"testing/quick"
 	"time"
 
-	"github.com/crypto-org-chain/chain-main/v1/x/subscription/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/subscription/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func TestTimezone(t *testing.T) {
 	}, tm)
 }
 
-func TestRoundstrip(t *testing.T) {
+func TestRoundTrip(t *testing.T) {
 	time.Local = time.UTC
 	f := func(ts int64, tzoffset int32) bool {
 		if ts+int64(tzoffset) < -62135596800 {
