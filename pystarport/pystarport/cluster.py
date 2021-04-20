@@ -122,7 +122,13 @@ class ClusterCLI:
         with open(to_key_file, "w") as f:
             f.write(key)
 
-    def stop_node(self, i):
+    def update_genesis(self, i, genesis_data):
+        home = self.home(i)
+        genesis_file = home / "config/genesis.json"
+        with open(genesis_file, "w") as f:
+            f.write(json.dumps(genesis_data, indent=4))
+
+    def stop_node(self, i=0):
         subprocess.run(
             [
                 sys.executable,
@@ -131,6 +137,30 @@ class ClusterCLI:
                 self.data_root / SUPERVISOR_CONFIG_FILE,
                 "stop",
                 "{}-node{}".format(self.chain_id, i),
+            ]
+        )
+
+    def stop_relayer(self, path):
+        subprocess.run(
+            [
+                sys.executable,
+                "-msupervisor.supervisorctl",
+                "-c",
+                self.data_root / SUPERVISOR_CONFIG_FILE,
+                "stop",
+                "program:relayer-{}".format(path),
+            ]
+        )
+
+    def restart_relayer(self, path):
+        subprocess.run(
+            [
+                sys.executable,
+                "-msupervisor.supervisorctl",
+                "-c",
+                self.data_root / SUPERVISOR_CONFIG_FILE,
+                "restart",
+                "program:relayer-{}".format(path),
             ]
         )
 
@@ -274,6 +304,9 @@ class ClusterCLI:
     def init(self, i):
         "the i-th node's config is already added"
         return self.cosmos_cli(i).init(self.config["validators"][i]["moniker"])
+
+    def export(self, i=0):
+        return self.cosmos_cli(i).export()
 
     def validate_genesis(self, i=0):
         return self.cosmos_cli(i).validate_genesis()
