@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/**
+jobs:
+  build:
+    name: Build For Windows
+    runs-on: windows-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.1
+      - name: Normal check out code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set GOBIN
+        run: |
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+      - name: Build For Windows
+        shell: pwsh
+        run: |
+          echo "Working Folder $Env:GITHUB_WORKSPACE"
+          & "$env:GITHUB_WORKSPACE/makewin.bat"
