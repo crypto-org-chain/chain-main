@@ -8,7 +8,7 @@ on:
       - release/**
 jobs:
   build:
-    name: Build For Windowss
+    name: Build For Windows
     runs-on: windows-latest
     steps:
       - name: Set up Go
