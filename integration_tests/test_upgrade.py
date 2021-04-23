@@ -69,17 +69,6 @@ def post_init(chain_id, data):
 def migrate_genesis_time(cluster, i=0):
     genesis = json.load(open(cluster.home(i) / "config/genesis.json"))
     genesis["genesis_time"] = cluster.config.get("genesis-time")
-    genesis["app_state"]["subscription"] = {
-        "starting_plan_id": 1,
-        "starting_subscription_id": 1,
-        "params": {
-            "subscription_enabled": True,
-            "gas_per_collection": 1000,
-            "failure_tolerance": 30,
-        },
-        "plans": [],
-        "subscriptions": [],
-    }
     (cluster.home(i) / "config/genesis.json").write_text(json.dumps(genesis))
 
 
