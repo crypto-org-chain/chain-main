@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/imdario/mergo"
 	"github.com/spf13/cast"
@@ -75,6 +76,10 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	authclient.Codec = encodingConfig.Marshaler
 
 	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome)
+	initCmd.PreRun = func(cmd *cobra.Command, args []string) {
+		serverCtx := server.GetServerContextFromCmd(cmd)
+		serverCtx.Config.Consensus.TimeoutCommit = 3 * time.Second
+	}
 	initCmd.PostRunE = func(cmd *cobra.Command, args []string) error {
 		genesisPatch := map[string]interface{}{
 			"app_state": map[string]interface{}{
