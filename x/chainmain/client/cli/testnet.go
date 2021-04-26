@@ -261,7 +261,7 @@ func InitTestnet(
 		}
 
 		keyInfo, secret, saveErr := kb.NewMnemonic(nodeDirName,
-			keyring.English, sdk.GetConfig().GetFullFundraiserPath(), algo)
+			keyring.English, sdk.GetConfig().GetFullBIP44Path(), keyring.DefaultBIP39Passphrase, algo)
 		if saveErr != nil {
 			_ = os.RemoveAll(outputDir)
 			return saveErr
