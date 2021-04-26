@@ -460,10 +460,9 @@ func New(
 	app.ScopedIBCKeeper = scopedIBCKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
+	// app.UpgradeKeeper.SetUpgradeHandler("v2.0.0", func(ctx sdk.Context, _ upgradetypes.Plan) {
 	// TODO
-	//app.UpgradeKeeper.SetUpgradeHandler("v2.0.0", func(ctx sdk.Context, _ upgradetypes.Plan) {
-	// TODO
-	//})
+	// })
 
 	return app
 }

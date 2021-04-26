@@ -213,7 +213,9 @@ func createRandomAccounts(accNum int) []sdk.AccAddress {
 
 // createIncrementalAccounts is a strategy used by addTestAddrs() in order to generated addresses in ascending order.
 func createIncrementalAccounts(accNum int) []sdk.AccAddress {
+	// nolint: prealloc
 	var addresses []sdk.AccAddress
+	// nolint: prealloc
 	var buffer bytes.Buffer
 
 	// start at 100 so we can make up to 999 test addresses with valid test addresses
@@ -222,8 +224,10 @@ func createIncrementalAccounts(accNum int) []sdk.AccAddress {
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
 		buffer.WriteString(numString) // adding on final two digits to make addresses unique
+		// nolint: errcheck
 		res, _ := sdk.AccAddressFromHex(buffer.String())
 		bech := res.String()
+		// nolint: errcheck
 		addr, _ := TestAddr(buffer.String(), bech)
 
 		addresses = append(addresses, addr)
@@ -402,6 +406,7 @@ func incrementAllSequenceNumbers(initSeqNums []uint64) {
 
 // CreateTestPubKeys returns a total of numPubKeys public keys in ascending order.
 func CreateTestPubKeys(numPubKeys int) []cryptotypes.PubKey {
+	// nolint: prealloc
 	var publicKeys []cryptotypes.PubKey
 	var buffer bytes.Buffer
 

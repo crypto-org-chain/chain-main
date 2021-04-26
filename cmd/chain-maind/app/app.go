@@ -61,9 +61,8 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
-
 			initClientCtx = client.ReadHomeFlag(initClientCtx, cmd)
-
+			// nolint: govet
 			initClientCtx, err := cosmosconfig.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return err
