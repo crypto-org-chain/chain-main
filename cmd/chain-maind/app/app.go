@@ -111,7 +111,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
-							"description": "The native token of Crypto.org app.",
+							"name":        "Crypto.org Chain",
+							"symbol":      "CRO",
+							"description": "The native token of Crypto.org Chain.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
 									"denom":    config.BaseCoinUnit,

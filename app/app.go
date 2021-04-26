@@ -123,6 +123,7 @@ var (
 		),
 		params.AppModuleBasic{},
 		slashing.AppModuleBasic{},
+		feegrant.AppModuleBasic{},
 		ibc.AppModuleBasic{},
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
