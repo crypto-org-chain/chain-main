@@ -418,6 +418,7 @@ class CosmosCLI:
                 tx_file,
                 from_=signer_name,
                 multisig=multi_addr,
+                chain_id=self.chain_id,
             )
         )
 
@@ -433,6 +434,7 @@ class CosmosCLI:
             sequence=sequence_number,
             from_=signer_name,
             multisig=multi_addr,
+            chain_id=self.chain_id,
         )
         return r.decode("utf-8")
 
