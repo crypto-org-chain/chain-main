@@ -29,11 +29,14 @@ def wait_for_block(cli, height, timeout=240):
 
 
 def wait_for_new_blocks(cli, n):
+    print("wait for new blocks", n)
     begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
     while True:
         time.sleep(0.5)
         cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
-        if cur_height - begin_height >= n:
+        blocks = cur_height - begin_height
+        print("blocks", blocks)
+        if blocks >= n:
             break
 
 

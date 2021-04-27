@@ -215,6 +215,18 @@ class ClusterCLI:
         home = self.home(i)
         (home / "config/genesis.json").unlink()
         (home / "config/genesis.json").symlink_to("../../genesis.json")
+        (home / "config/client.toml").write_text(
+            tomlkit.dumps(
+                {
+                    "chain-id": self.chain_id,
+                    "keyring-backend": "test",
+                    "output": "json",
+                    "node": self.node_rpc(i),
+                    "broadcast-mode": "block",
+                }
+            )
+        )
+
         # use p2p peers from node0's config
         node0 = tomlkit.parse((self.data_dir / "node0/config/config.toml").read_text())
 
@@ -247,7 +259,7 @@ class ClusterCLI:
         path = self.data_dir / SUPERVISOR_CONFIG_FILE
         ini = configparser.RawConfigParser()
         ini.read_file(path.open())
-        chain_id = self.config["chain_id"]
+        chain_id = self.chain_id
         prgname = f"{chain_id}-node{i}"
         section = f"program:{prgname}"
         ini.add_section(section)
@@ -400,8 +412,8 @@ class ClusterCLI:
         return self.cosmos_cli(i).delegate_amount(to_addr, amount, from_addr)
 
     # to_addr: croclcl1...  , from_addr: cro1...
-    def unbond_amount(self, to_addr, amount, from_addr, i=0):
-        return self.cosmos_cli(i).unbond_amount(to_addr, amount, from_addr)
+    def unbond_amount(self, to_addr, amount, from_addr, i=0, **kwargs):
+        return self.cosmos_cli(i).unbond_amount(to_addr, amount, from_addr, **kwargs)
 
     # to_validator_addr: crocncl1...  ,  from_from_validator_addraddr: crocl1...
     def redelegate_amount(
@@ -639,11 +651,10 @@ def init_devnet(
 
     # init home directories
     for i, val in enumerate(config["validators"]):
-        ChainCommand(cmd)(
+        ChainCommand(cmd, home_dir(data_dir, i))(
             "init",
             val["moniker"],
             chain_id=config["chain_id"],
-            home=home_dir(data_dir, i),
         )
         if "consensus_key" in val:
             # restore consensus private key
@@ -676,13 +687,27 @@ def init_devnet(
         genesis_bytes = (data_dir / "node0/config/genesis.json").read_bytes()
     (data_dir / "genesis.json").write_bytes(genesis_bytes)
     (data_dir / "gentx").mkdir()
-    for i in range(len(config["validators"])):
+    for i, val in enumerate(config["validators"]):
         try:
             (data_dir / f"node{i}/config/genesis.json").unlink()
         except OSError:
             pass
         (data_dir / f"node{i}/config/genesis.json").symlink_to("../../genesis.json")
         (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
+
+        # write client config
+        rpc_port = ports.rpc_port(val["base_port"])
+        (data_dir / f"node{i}/config/client.toml").write_text(
+            tomlkit.dumps(
+                {
+                    "chain-id": config["chain_id"],
+                    "keyring-backend": "test",
+                    "output": "json",
+                    "node": f"tcp://{val['hostname']}:{rpc_port}",
+                    "broadcast-mode": "block",
+                }
+            )
+        )
 
     # now we can create ClusterCLI
     cli = ClusterCLI(data_dir.parent, chain_id=config["chain_id"], cmd=cmd)
@@ -921,6 +946,7 @@ def edit_app_cfg(path, base_port, minimum_gas_prices=""):
     doc["api"]["enabled-unsafe-cors"] = True
     doc["api"]["address"] = "tcp://0.0.0.0:%d" % ports.api_port(base_port)
     doc["grpc"]["address"] = "0.0.0.0:%d" % ports.grpc_port(base_port)
+    doc["grpc-web"]["address"] = "0.0.0.0:%d" % ports.grpc_web_port(base_port)
     # take snapshot for statesync
     doc["pruning"] = "nothing"
     doc["state-sync"]["snapshot-interval"] = 5

@@ -77,7 +77,6 @@ def test_ibc(cluster):
                 "channel",
                 "channels",
                 node=cluster["ibc-0"].node_rpc(0),
-                output="json",
             )
         )["channels"]
         print("channels", channels)
@@ -122,7 +121,6 @@ def test_ibc(cluster):
                 "channel",
                 "channels",
                 node=cluster["ibc-1"].node_rpc(0),
-                output="json",
             )
         )["channels"]
         print("channels", channels)
@@ -170,7 +168,6 @@ def test_ibc(cluster):
                 "denom-trace",
                 denom_hash,
                 node=cluster["ibc-1"].node_rpc(0),
-                output="json",
             )
         )
         == {"denom_trace": {"path": f"transfer/{dst_channel}", "base_denom": "basecro"}}
@@ -182,7 +179,6 @@ def test_ibc(cluster):
             "bank",
             "balances",
             recipient,
-            output="json",
             node=cluster["ibc-1"].node_rpc(0),
         )
     )["balances"] == [
@@ -218,7 +214,6 @@ def test_ibc(cluster):
                 "bank",
                 "balances",
                 cli.address("relayer"),
-                output="json",
                 node=cli.node_rpc(0),
             )
         )["balances"]
@@ -240,7 +235,6 @@ def test_update_chain_id(cluster):
             "channel",
             "channels",
             node=cluster["ibc-1"].node_rpc(0),
-            output="json",
         )
     )["channels"]
     dst_channel = channels[0]["counterparty"]["channel_id"]
@@ -311,7 +305,6 @@ def test_update_chain_id(cluster):
             "bank",
             "balances",
             recipient,
-            output="json",
             node=cluster["ibc-1"].node_rpc(0),
         )
     )["balances"]

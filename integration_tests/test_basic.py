@@ -1,7 +1,7 @@
-import json
 import time
-import json
+
 from .utils import wait_for_block
+
 
 def test_simple(cluster):
     """
@@ -26,49 +26,51 @@ def test_transfer(cluster):
     """
     community_addr = cluster.address("community")
     reserve_addr = cluster.address("reserve")
+
     community_balance = cluster.balance(community_addr)
     reserve_balance = cluster.balance(reserve_addr)
+
     tx = cluster.transfer(community_addr, reserve_addr, "1cro")
-    assert json.dumps(tx["logs"]) == json.dumps(
-        [
-            {
-                "events": [
-                    {
-                        "attributes": [
-                            {"key": "receiver", "value": reserve_addr},
-                            {"key": "amount", "value": "100000000basecro"},
-                        ],
-                        "type": "coin_received",
-                    },
-                    {
-                        "attributes": [
-                            {"key": "spender", "value": community_addr},
-                            {"key": "amount", "value": "100000000basecro"},
-                        ],
-                        "type": "coin_spent",
-                    },
-                    {
-                        "attributes": [
-                            {"key": "action", "value": "/cosmos.bank.v1beta1.Msg/Send"},
-                            {"key": "sender", "value": community_addr},
-                            {"key": "module", "value": "bank"},
-                        ],
-                        "type": "message",
-                    },
-                    {
-                        "attributes": [
-                            {"key": "recipient", "value": reserve_addr},
-                            {"key": "sender", "value": community_addr},
-                            {"key": "amount", "value": "100000000basecro"},
-                        ],
-                        "type": "transfer",
-                    },
-                ],
-                "log": "",
-                "msg_index": 0,
-            }
-        ]
-    )
+    print("transfer tx", tx["txhash"])
+    assert tx["logs"] == [
+        {
+            "events": [
+                {
+                    "attributes": [
+                        {"key": "receiver", "value": reserve_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                    "type": "coin_received",
+                },
+                {
+                    "attributes": [
+                        {"key": "spender", "value": community_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                    "type": "coin_spent",
+                },
+                {
+                    "attributes": [
+                        {"key": "action", "value": "/cosmos.bank.v1beta1.Msg/Send"},
+                        {"key": "sender", "value": community_addr},
+                        {"key": "module", "value": "bank"},
+                    ],
+                    "type": "message",
+                },
+                {
+                    "attributes": [
+                        {"key": "recipient", "value": reserve_addr},
+                        {"key": "sender", "value": community_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                    "type": "transfer",
+                },
+            ],
+            "log": "",
+            "msg_index": 0,
+        }
+    ]
+
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
     query_txs_1 = cluster.query_all_txs(community_addr)

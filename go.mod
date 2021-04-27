@@ -38,3 +38,5 @@ replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
 replace nhooyr.io/websocket => nhooyr.io/websocket v1.8.7
+
+replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.34.4-0.20210427141753-1f298e2759a4
