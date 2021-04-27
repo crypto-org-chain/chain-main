@@ -4,8 +4,10 @@ import json
 import tempfile
 import threading
 import time
+import yaml
 
 import bech32
+import yaml
 from dateutil.parser import isoparse
 
 from .app import CHAIN
@@ -44,6 +46,7 @@ class ChainCommand:
         "execute chain-maind"
         args = " ".join(build_cli_args_safe(cmd, *args, **kwargs))
         return interact(f"{self.cmd} {args}", input=stdin)
+        
 
 
 class CosmosCLI:
@@ -110,7 +113,7 @@ class CosmosCLI:
                 keyring_backend="test",
                 stdin=mnemonic.encode() + b"\n",
             )
-        return json.loads(output)
+        return yaml.load(output)
 
     def create_account_ledger(self, name):
         "create new ledger keypair"
@@ -139,7 +142,7 @@ class CosmosCLI:
         t.join()
         if self.error:
             raise self.error
-        return json.loads(self.output)
+        return yaml.load(self.output)
 
     def init(self, moniker):
         "the node's config is already added"
@@ -179,16 +182,17 @@ class CosmosCLI:
         return self.raw("collect-gentxs", gentx_dir, home=self.data_dir)
 
     def status(self):
-        return json.loads(self.raw("status", node=self.node_rpc))
+        return yaml.load(self.raw("status", node=self.node_rpc))
 
     def block_height(self):
-        return int(self.status()["SyncInfo"]["latest_block_height"])
+        current_status = self.status()
+        return int(current_status["SyncInfo"]["latest_block_height"])
 
     def block_time(self):
         return isoparse(self.status()["SyncInfo"]["latest_block_time"])
 
     def balance(self, addr):
-        coin = json.loads(
+        coin = yaml.load(
             self.raw(
                 "query", "bank", "balances", addr, output="json", node=self.node_rpc
             )
@@ -208,10 +212,10 @@ class CosmosCLI:
             chain_id=self.chain_id,
             node=self.node_rpc,
         )
-        return json.loads(txs)
+        return yaml.load(txs)
 
     def distribution_commission(self, addr):
-        coin = json.loads(
+        coin = yaml.load(
             self.raw(
                 "query",
                 "distribution",
@@ -224,7 +228,7 @@ class CosmosCLI:
         return float(coin["amount"])
 
     def distribution_community(self):
-        coin = json.loads(
+        coin = yaml.load(
             self.raw(
                 "query",
                 "distribution",
@@ -236,7 +240,7 @@ class CosmosCLI:
         return float(coin["amount"])
 
     def distribution_reward(self, delegator_addr):
-        coin = json.loads(
+        coin = yaml.load(
             self.raw(
                 "query",
                 "distribution",
@@ -261,19 +265,19 @@ class CosmosCLI:
         return output.strip().decode()
 
     def account(self, addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query", "auth", "account", addr, output="json", node=self.node_rpc
             )
         )
 
     def supply(self, supply_type):
-        return json.loads(
+        return yaml.load(
             self.raw("query", "supply", supply_type, output="json", node=self.node_rpc)
         )
 
     def validator(self, addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query",
                 "staking",
@@ -285,42 +289,43 @@ class CosmosCLI:
         )
 
     def validators(self):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query", "staking", "validators", output="json", node=self.node_rpc
             )
         )["validators"]
 
     def staking_params(self):
-        return json.loads(
+        return yaml.load(
             self.raw("query", "staking", "params", output="json", node=self.node_rpc)
         )
 
     def staking_pool(self, bonded=True):
         return int(
-            json.loads(
+            yaml.load(
                 self.raw("query", "staking", "pool", output="json", node=self.node_rpc)
             )["bonded_tokens" if bonded else "not_bonded_tokens"]
         )
 
     def transfer(self, from_, to, coins, generate_only=False, fees=None):
-        return json.loads(
-            self.raw(
-                "tx",
-                "bank",
-                "send",
-                from_,
-                to,
-                coins,
-                "-y",
-                "--generate-only" if generate_only else None,
-                home=self.data_dir,
-                keyring_backend="test",
-                chain_id=self.chain_id,
-                node=self.node_rpc,
-                fees=fees,
-            )
+        yaml_text = self.raw(
+            "tx",
+            "bank",
+            "send",
+            from_,
+            to,
+            coins,
+            "-y",
+            "--generate-only" if generate_only else None,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+            fees=fees,
+            broadcast_mode="block",
         )
+        json_text = yaml.load(yaml_text)
+        return json_text
 
     def transfer_from_ledger(self, from_, to, coins, generate_only=False, fees=None):
         def send_request():
@@ -341,6 +346,7 @@ class CosmosCLI:
                     node=self.node_rpc,
                     fees=fees,
                     sign_mode="amino-json",
+                    broadcast_mode="block",
                 )
             except Exception as e:
                 self.error = e
@@ -355,10 +361,10 @@ class CosmosCLI:
         t.join()
         if self.error:
             raise self.error
-        return json.loads(self.output)
+        return yaml.load(self.output)
 
     def get_delegated_amount(self, which_addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query",
                 "staking",
@@ -372,7 +378,7 @@ class CosmosCLI:
         )
 
     def delegate_amount(self, to_addr, amount, from_addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "staking",
@@ -385,12 +391,13 @@ class CosmosCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc,
+                broadcast_mode="block",
             )
         )
 
     # to_addr: croclcl1...  , from_addr: cro1...
     def unbond_amount(self, to_addr, amount, from_addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "staking",
@@ -403,6 +410,7 @@ class CosmosCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc,
+                broadcast_mode="block",
             )
         )
 
@@ -410,7 +418,7 @@ class CosmosCLI:
     def redelegate_amount(
         self, to_validator_addr, from_validator_addr, amount, from_addr
     ):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "staking",
@@ -424,12 +432,13 @@ class CosmosCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc,
+                broadcast_mode="block",
             )
         )
 
     # from_delegator can be account name or address
     def withdraw_all_rewards(self, from_delegator):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "distribution",
@@ -440,6 +449,7 @@ class CosmosCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc,
+                broadcast_mode="block",
             )
         )
 
@@ -456,7 +466,7 @@ class CosmosCLI:
         )
 
     def sign_multisig_tx(self, tx_file, multi_addr, signer_name):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "sign",
@@ -467,6 +477,7 @@ class CosmosCLI:
                 keyring_backend="test",
                 chain_id=self.chain_id,
                 node=self.node_rpc,
+                broadcast_mode="block",
             )
         )
 
@@ -486,6 +497,7 @@ class CosmosCLI:
             keyring_backend="test",
             chain_id=self.chain_id,
             node=self.node_rpc,
+            broadcast_mode="block",
         )
         return r.decode("utf-8")
 
@@ -497,7 +509,7 @@ class CosmosCLI:
         )
 
     def sign_single_tx(self, tx_file, signer_name):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "sign",
@@ -511,7 +523,7 @@ class CosmosCLI:
         )
 
     def combine_multisig_tx(self, tx_file, multi_name, signer1_file, signer2_file):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "multisign",
@@ -544,10 +556,10 @@ class CosmosCLI:
         return r.decode("utf-8")
 
     def broadcast_tx(self, tx_file):
-        return json.loads(self.raw("tx", "broadcast", tx_file, node=self.node_rpc))
+        return yaml.load(self.raw("tx", "broadcast", tx_file, node=self.node_rpc, broadcast_mode="block"))
 
     def unjail(self, addr):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "slashing",
@@ -558,6 +570,7 @@ class CosmosCLI:
                 node=self.node_rpc,
                 keyring_backend="test",
                 chain_id=self.chain_id,
+                broadcast_mode="block",
             )
         )
 
@@ -585,7 +598,7 @@ class CosmosCLI:
             .strip()
             .decode()
         )
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "staking",
@@ -593,7 +606,7 @@ class CosmosCLI:
                 "-y",
                 from_=self.address("validator"),
                 amount=amount,
-                pubkey=pubkey,
+                pubkey=f'\'{pubkey}\'',
                 min_self_delegation=min_self_delegation,
                 # commision
                 commission_rate=commission_rate,
@@ -610,6 +623,7 @@ class CosmosCLI:
                 node=self.node_rpc,
                 keyring_backend="test",
                 chain_id=self.chain_id,
+                broadcast_mode="block",
             )
         )
 
@@ -632,7 +646,7 @@ class CosmosCLI:
             security_contact=security_contact,
             details=details,
         )
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "staking",
@@ -643,13 +657,14 @@ class CosmosCLI:
                 node=self.node_rpc,
                 keyring_backend="test",
                 chain_id=self.chain_id,
+                broadcast_mode="block",
                 **{k: v for k, v in options.items() if v is not None},
             )
         )
 
     def gov_propose(self, proposer, kind, proposal):
         if kind == "software-upgrade":
-            return json.loads(
+            return yaml.load(
                 self.raw(
                     "tx",
                     "gov",
@@ -673,7 +688,7 @@ class CosmosCLI:
                 )
             )
         elif kind == "cancel-software-upgrade":
-            return json.loads(
+            return yaml.load(
                 self.raw(
                     "tx",
                     "gov",
@@ -690,13 +705,14 @@ class CosmosCLI:
                     node=self.node_rpc,
                     keyring_backend="test",
                     chain_id=self.chain_id,
+                    broadcast_mode="block",
                 )
             )
         else:
             with tempfile.NamedTemporaryFile("w") as fp:
                 json.dump(proposal, fp)
                 fp.flush()
-                return json.loads(
+                return yaml.load(
                     self.raw(
                         "tx",
                         "gov",
@@ -710,6 +726,7 @@ class CosmosCLI:
                         node=self.node_rpc,
                         keyring_backend="test",
                         chain_id=self.chain_id,
+                        broadcast_mode="block",
                     )
                 )
 
@@ -717,7 +734,7 @@ class CosmosCLI:
         print(voter)
         print(proposal_id)
         print(option)
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "gov",
@@ -730,11 +747,12 @@ class CosmosCLI:
                 node=self.node_rpc,
                 keyring_backend="test",
                 chain_id=self.chain_id,
+                broadcast_mode="block",
             )
         )
 
     def gov_deposit(self, depositor, proposal_id, amount):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "gov",
@@ -747,11 +765,12 @@ class CosmosCLI:
                 node=self.node_rpc,
                 keyring_backend="test",
                 chain_id=self.chain_id,
+                broadcast_mode="block",
             )
         )
 
     def query_proposals(self, depositor=None, limit=None, status=None, voter=None):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query",
                 "gov",
@@ -766,7 +785,7 @@ class CosmosCLI:
         )
 
     def query_proposal(self, proposal_id):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query",
                 "gov",
@@ -778,7 +797,7 @@ class CosmosCLI:
         )
 
     def query_tally(self, proposal_id):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "query",
                 "gov",
@@ -798,7 +817,7 @@ class CosmosCLI:
         target_version,  # chain version number of target chain
         i=0,
     ):
-        return json.loads(
+        return yaml.load(
             self.raw(
                 "tx",
                 "ibc-transfer",
