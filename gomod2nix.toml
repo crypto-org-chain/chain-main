@@ -331,12 +331,12 @@
     sha256 = "1j6fdr1sg36qy4n4xjl7brq739fpm5npq98cmvklzjc9qrx98nk9"
 
 ["github.com/armon/go-metrics"]
-  sumVersion = "v0.3.6"
+  sumVersion = "v0.3.7"
   ["github.com/armon/go-metrics".fetch]
     type = "git"
     url = "https://github.com/armon/go-metrics"
-    rev = "8ca742bd545671bedae063d0672cb3c8da7d4437"
-    sha256 = "06840krwz2qip0xplixza59s7a1ibvjy04iwcnk5mw2w1kmli9yn"
+    rev = "111a475ec99417b342b2cee6dc077b21968f14fc"
+    sha256 = "1cwm90nji09jyqcs775z5dr69w8n01p3sxb3a0lin1a0vj51vzcf"
 
 ["github.com/armon/go-radix"]
   sumVersion = "v0.0.0-20180808171621-7fddfc383310"
@@ -645,12 +645,13 @@
     sha256 = "0nxbn0m7lr4dg0yrwnvlkfiyg3ndv8vdpssjx7b714nivpc6ar0y"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.43.0-alpha1"
+  sumVersion = "v0.34.4-0.20210427141753-1f298e2759a4"
+  vendorPath = "github.com/yihuang/cosmos-sdk"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
-    url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "e28271b8e6ea414ca8936d0ae63ecf6faa153af8"
-    sha256 = "1ia4msjmb95a8rlf5ipybm7nx59fk6575rlkw3jgbs12xwghmnd0"
+    url = "https://github.com/yihuang/cosmos-sdk"
+    rev = "1f298e2759a491f235b5001ca5a69937ff1d36ac"
+    sha256 = "1bjgalldgz6i79wyxwxlqgrckvmcmv5i5iy75877n6bp5kpn2lvn"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -1338,12 +1339,12 @@
     sha256 = "12vbls1kvn3lfgj86y4r258x6papgcj3h4pcg4xbdi5l2cy1idmy"
 
 ["github.com/grpc-ecosystem/go-grpc-middleware"]
-  sumVersion = "v1.2.2"
+  sumVersion = "v1.3.0"
   ["github.com/grpc-ecosystem/go-grpc-middleware".fetch]
     type = "git"
     url = "https://github.com/grpc-ecosystem/go-grpc-middleware"
-    rev = "46f2eb369b917e60df91057c4d37847d17e5a9a4"
-    sha256 = "089cbns0s1l6j4a6x793z1llllqqk628w11zv3lrfizbk075rn3n"
+    rev = "df0f91b29bbbdfc3a686a7a8edbe2b9de2072fdd"
+    sha256 = "1c9chw2nwj46ayx6cbq1sq21gmfmm3fx1gg579hn7srwywq0xsw0"
 
 ["github.com/grpc-ecosystem/go-grpc-prometheus"]
   sumVersion = "v1.2.0"
