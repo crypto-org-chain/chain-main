@@ -1,3 +1,4 @@
+import time
 from datetime import timedelta
 from pathlib import Path
 
@@ -123,6 +124,7 @@ def test_join_validator(cluster):
 
     # create validator tx
     assert cluster.create_validator("1cro", i)["code"] == 0
+    time.sleep(2)
 
     count2 = len(cluster.validators())
     assert count2 == count1 + 1, "new validator should joined successfully"
