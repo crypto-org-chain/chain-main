@@ -452,6 +452,7 @@ class CosmosCLI:
                 "sign",
                 tx_file,
                 from_=signer_name,
+                chain_id=self.chain_id,
             )
         )
 
