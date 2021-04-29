@@ -234,6 +234,7 @@ func GetCmdTransferNFT() *cobra.Command {
 				return err
 			}
 
+			// nolint: govet
 			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
 				return err
 			}

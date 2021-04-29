@@ -54,6 +54,7 @@ func querySupply(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 			return
 		}
 
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
@@ -94,6 +95,7 @@ func queryOwner(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 			return
 		}
 
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
@@ -126,6 +128,7 @@ func queryCollection(cliCtx client.Context, queryRoute string) http.HandlerFunc 
 			return
 		}
 
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
@@ -146,6 +149,7 @@ func queryCollection(cliCtx client.Context, queryRoute string) http.HandlerFunc 
 
 func queryDenom(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
@@ -178,6 +182,7 @@ func queryDenom(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 
 func queryDenoms(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return
@@ -217,6 +222,7 @@ func queryNFT(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 			return
 		}
 
+		// nolint: govet
 		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
 		if !ok {
 			return

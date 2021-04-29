@@ -32,7 +32,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 
 	cfg := network.DefaultConfig()
-	cfg.AppConstructor = app.AppConstructor
+	cfg.AppConstructor = app.Constructor
 	cfg.NumValidators = 2
 
 	s.cfg = cfg
@@ -61,7 +61,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	tokenURI := "uri"
 	tokenData := "data"
 	tokenID := "kitty"
-	//owner     := "owner"
+	// owner     := "owner"
 	denomName := "name"
 	denom := "denom"
 	schema := "schema"

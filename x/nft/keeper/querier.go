@@ -64,7 +64,12 @@ func queryOwner(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
-	owner := k.GetOwner(ctx, params.Owner, params.Denom)
+	owner, err := k.GetOwner(ctx, params.Owner, params.Denom)
+
+	if err != nil {
+		return nil, err
+	}
+
 	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, owner)
 	if err != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
@@ -101,7 +106,11 @@ func queryDenom(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
 	}
 
-	denom, _ := k.GetDenom(ctx, params.ID)
+	denom, err := k.GetDenom(ctx, params.ID)
+
+	if err != nil {
+		return nil, err
+	}
 
 	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, denom)
 	if err != nil {

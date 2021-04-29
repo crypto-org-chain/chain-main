@@ -11,28 +11,30 @@ import (
 
 // nolint: deadcode unused
 var (
-	denomID   = "denom"
-	denom     = "denom"
-	id        = "id1"
-	nftName   = "report"
-	address   = CreateTestAddrs(1)[0]
-	address2  = CreateTestAddrs(2)[1]
-	tokenURI  = "https://google.com/token-1.json"
+	denomID  = "denom"
+	denom    = "denom"
+	id       = "id1"
+	nftName  = "report"
+	address  = CreateTestAddrs(1)[0]
+	address2 = CreateTestAddrs(2)[1]
+	// nolint: gosec
+	tokenURI = "https://google.com/token-1.json"
+	// nolint: gosec
 	tokenData = "https://google.com/token-1.json"
 )
 
 // CreateTestAddrs creates test addresses
 func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
-	var addresses []sdk.AccAddress
+	var addresses []sdk.AccAddress // nolint: prealloc
 	var buffer bytes.Buffer
 
 	// start at 100 so we can make up to 999 test addresses with valid test addresses
 	for i := 100; i < (numAddrs + 100); i++ {
 		numString := strconv.Itoa(i)
-		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") //base address string
+		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString) //adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHex(buffer.String())
+		buffer.WriteString(numString)                    // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHex(buffer.String()) // nolint: errcheck
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()

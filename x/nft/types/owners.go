@@ -61,12 +61,6 @@ func (idcs IDCollections) String() string {
 	return buf.String()
 }
 
-// Owner of non fungible tokens
-//type Owner struct {
-//	Address       sdk.AccAddress `json:"address" yaml:"address"`
-//	IDCollections IDCollections  `json:"id_collections" yaml:"id_collections"`
-//}
-
 // NewOwner creates a new Owner
 func NewOwner(owner sdk.AccAddress, idCollections ...IDCollection) Owner {
 	return Owner{

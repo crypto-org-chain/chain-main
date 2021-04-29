@@ -7,6 +7,7 @@ import (
 )
 
 // NewDenom return a new denom
+// nolint: interfacer
 func NewDenom(id, name, schema string, creator sdk.AccAddress) Denom {
 	return Denom{
 		Id:      id,

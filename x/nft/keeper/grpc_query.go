@@ -54,7 +54,11 @@ func (k Keeper) Owner(c context.Context, request *types.QueryOwnerRequest) (*typ
 		denomID := request.DenomId
 		tokenID := string(key)
 		if len(request.DenomId) == 0 {
-			denomID, tokenID, _ = types.SplitKeyDenom(key)
+			denomID, tokenID, err = types.SplitKeyDenom(key)
+
+			if err != nil {
+				return err
+			}
 		}
 		if ids, ok := idsMap[denomID]; ok {
 			idsMap[denomID] = append(ids, tokenID)
@@ -67,6 +71,11 @@ func (k Keeper) Owner(c context.Context, request *types.QueryOwnerRequest) (*typ
 		}
 		return nil
 	})
+
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+	}
+
 	for i := 0; i < len(owner.IDCollections); i++ {
 		owner.IDCollections[i].TokenIds = idsMap[owner.IDCollections[i].DenomId]
 	}

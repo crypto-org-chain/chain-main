@@ -37,7 +37,7 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 	},
 }
 
-func AppConstructor(val network.Validator) servertypes.Application {
+func Constructor(val network.Validator) servertypes.Application {
 	return New(
 		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool),
 		val.Ctx.Config.RootDir, 0, MakeEncodingConfig(), emptyAppOptions{},

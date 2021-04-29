@@ -307,7 +307,7 @@ func SimulateMsgBurnNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 }
 
 func getRandomNFTFromOwner(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (address sdk.AccAddress, denomID, tokenID string) {
-	owners := k.GetOwners(ctx)
+	owners, _ := k.GetOwners(ctx) // nolint: errcheck
 
 	ownersLen := len(owners)
 	if ownersLen == 0 {
@@ -337,7 +337,7 @@ func getRandomNFTFromOwner(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (addr
 	i = r.Intn(idsLen)
 	tokenID = idCollection.TokenIds[i]
 
-	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address)
+	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) // nolint: errcheck
 	return ownerAddress, denomID, tokenID
 }
 

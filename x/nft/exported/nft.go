@@ -10,7 +10,7 @@ import (
 type NFT interface {
 	GetID() string
 	GetName() string
-	GetOwner() sdk.AccAddress
+	GetOwner() (sdk.AccAddress, error)
 	GetURI() string
 	GetData() string
 }

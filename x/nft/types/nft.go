@@ -11,6 +11,7 @@ import (
 var _ exported.NFT = BaseNFT{}
 
 // NewBaseNFT creates a new NFT instance
+// nolint: interfacer
 func NewBaseNFT(id, name string, owner sdk.AccAddress, uri, data string) BaseNFT {
 	return BaseNFT{
 		Id:    id,
@@ -32,9 +33,8 @@ func (bnft BaseNFT) GetName() string {
 }
 
 // GetOwner return the owner of BaseNFT
-func (bnft BaseNFT) GetOwner() sdk.AccAddress {
-	owner, _ := sdk.AccAddressFromBech32(bnft.Owner)
-	return owner
+func (bnft BaseNFT) GetOwner() (sdk.AccAddress, error) {
+	return sdk.AccAddressFromBech32(bnft.Owner)
 }
 
 // GetURI return the URI of BaseNFT

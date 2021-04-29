@@ -39,9 +39,9 @@ var (
 	address   = CreateTestAddrs(1)[0]
 	address2  = CreateTestAddrs(2)[1]
 	address3  = CreateTestAddrs(3)[2]
-	tokenURI  = "https://google.com/token-1.json"
-	tokenURI2 = "https://google.com/token-2.json"
-	tokenData = "{a:a,b:b}"
+	tokenURI  = "https://google.com/token-1.json" // nolint: gosec
+	tokenURI2 = "https://google.com/token-2.json" // nolint: gosec
+	tokenData = "{a:a,b:b}"                       // nolint: gosec
 
 	isCheckTx = false
 )
@@ -130,11 +130,11 @@ func (suite *KeeperSuite) TestTransferOwner() {
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	//invalid owner
+	// invalid owner
 	err = suite.keeper.TransferOwner(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address2, address3)
 	suite.Error(err)
 
-	//right
+	// right
 	err = suite.keeper.TransferOwner(suite.ctx, denomID, tokenID, tokenNm2, tokenURI2, tokenData, address, address2)
 	suite.NoError(err)
 
@@ -162,16 +162,16 @@ func (suite *KeeperSuite) TestBurnNFT() {
 
 // CreateTestAddrs creates test addresses
 func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
-	var addresses []sdk.AccAddress
+	var addresses []sdk.AccAddress // nolint: prealloc
 	var buffer bytes.Buffer
 
 	// start at 100 so we can make up to 999 test addresses with valid test addresses
 	for i := 100; i < (numAddrs + 100); i++ {
 		numString := strconv.Itoa(i)
-		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") //base address string
+		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString) //adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHex(buffer.String())
+		buffer.WriteString(numString)                    // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHex(buffer.String()) // nolint: errcheck
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()

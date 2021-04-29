@@ -51,6 +51,7 @@ func (m msgServer) IssueDenom(goCtx context.Context, msg *types.MsgIssueDenom) (
 	return &types.MsgIssueDenomResponse{}, nil
 }
 
+// nolint: dupl
 func (m msgServer) MintNFT(goCtx context.Context, msg *types.MsgMintNFT) (*types.MsgMintNFTResponse, error) {
 	recipient, err := sdk.AccAddressFromBech32(msg.Recipient)
 	if err != nil {
@@ -85,6 +86,7 @@ func (m msgServer) MintNFT(goCtx context.Context, msg *types.MsgMintNFT) (*types
 	return &types.MsgMintNFTResponse{}, nil
 }
 
+//nolint:dupl
 func (m msgServer) EditNFT(goCtx context.Context, msg *types.MsgEditNFT) (*types.MsgEditNFTResponse, error) {
 	sender, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {

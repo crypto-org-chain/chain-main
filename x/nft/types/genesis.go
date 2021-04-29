@@ -22,7 +22,13 @@ func ValidateGenesis(data GenesisState) error {
 		}
 
 		for _, nft := range c.NFTs {
-			if nft.GetOwner().Empty() {
+			owner, err := nft.GetOwner()
+
+			if err != nil {
+				return err
+			}
+
+			if owner.Empty() {
 				return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "missing owner")
 			}
 

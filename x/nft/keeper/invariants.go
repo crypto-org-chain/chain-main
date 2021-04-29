@@ -31,7 +31,13 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 		var msg string
 		count := 0
 
-		for _, owner := range k.GetOwners(ctx) {
+		owners, err := k.GetOwners(ctx)
+
+		if err != nil {
+			return sdk.FormatInvariant(types.ModuleName, "supply", "unable to fetch owners"), true
+		}
+
+		for _, owner := range owners {
 			for _, idCollection := range owner.IDCollections {
 				ownersCollectionsSupply[idCollection.DenomId] += uint64(idCollection.Supply())
 			}

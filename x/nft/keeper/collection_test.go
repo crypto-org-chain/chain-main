@@ -90,7 +90,7 @@ func (suite *KeeperSuite) TestGetSupply() {
 	supply = suite.keeper.GetTotalSupply(suite.ctx, denomID2)
 	suite.Equal(uint64(1), supply)
 
-	//burn nft
+	// burn nft
 	err = suite.keeper.BurnNFT(suite.ctx, denomID, tokenID, address)
 	suite.NoError(err)
 
@@ -100,7 +100,7 @@ func (suite *KeeperSuite) TestGetSupply() {
 	supply = suite.keeper.GetTotalSupply(suite.ctx, denomID)
 	suite.Equal(uint64(1), supply)
 
-	//burn nft
+	// burn nft
 	err = suite.keeper.BurnNFT(suite.ctx, denomID, tokenID2, address2)
 	suite.NoError(err)
 

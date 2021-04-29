@@ -17,7 +17,8 @@ func (suite *KeeperSuite) TestGetOwners() {
 	err = suite.keeper.MintNFT(suite.ctx, denomID, tokenID3, tokenNm3, tokenURI, tokenData, address3)
 	suite.NoError(err)
 
-	owners := suite.keeper.GetOwners(suite.ctx)
+	owners, err := suite.keeper.GetOwners(suite.ctx)
+	suite.NoError(err)
 	suite.Equal(3, len(owners))
 
 	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address)
@@ -29,7 +30,8 @@ func (suite *KeeperSuite) TestGetOwners() {
 	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID3, tokenNm3, tokenURI, tokenData, address3)
 	suite.NoError(err)
 
-	owners = suite.keeper.GetOwners(suite.ctx)
+	owners, err = suite.keeper.GetOwners(suite.ctx)
+	suite.NoError(err)
 	suite.Equal(3, len(owners))
 
 	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)
