@@ -15,7 +15,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
 )
 
-// SetCollection saves all NFTs and returns an error if there already exists
+// SetCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32 account
+// address is invalid
 func (k Keeper) SetCollection(ctx sdk.Context, collection types.Collection) error {
 	for _, nft := range collection.NFTs {
 		owner, err := nft.GetOwner()
