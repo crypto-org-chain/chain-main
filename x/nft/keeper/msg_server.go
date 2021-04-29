@@ -51,6 +51,7 @@ func (m msgServer) IssueDenom(goCtx context.Context, msg *types.MsgIssueDenom) (
 	return &types.MsgIssueDenomResponse{}, nil
 }
 
+// TODO: remove duplicate code in `MintNFT` and `EditNFT`
 // nolint: dupl
 func (m msgServer) MintNFT(goCtx context.Context, msg *types.MsgMintNFT) (*types.MsgMintNFTResponse, error) {
 	recipient, err := sdk.AccAddressFromBech32(msg.Recipient)
