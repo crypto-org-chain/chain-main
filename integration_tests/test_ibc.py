@@ -53,10 +53,10 @@ def start_and_wait_relayer(cluster, init_relayer=True):
         cluster["ibc-0"].supervisor.startProcess("relayer-demo")
 
     rsp = json.loads(subprocess.check_output(relayer + ["query", "channels", "ibc-0"]))
-    src_channel = rsp["result"][0]
+    src_channel = rsp["result"][0]["channel_id"]
 
     rsp = json.loads(subprocess.check_output(relayer + ["query", "channels", "ibc-1"]))
-    dst_channel = rsp["result"][0]
+    dst_channel = rsp["result"][0]["channel_id"]
 
     return src_channel, dst_channel
 
