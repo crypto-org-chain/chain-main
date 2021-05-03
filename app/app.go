@@ -86,6 +86,9 @@ import (
 	"github.com/crypto-org-chain/chain-main/v2/x/chainmain"
 	chainmainkeeper "github.com/crypto-org-chain/chain-main/v2/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-org-chain/chain-main/v2/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v2/x/nft"
+	nftkeeper "github.com/crypto-org-chain/chain-main/v2/x/nft/keeper"
+	nfttypes "github.com/crypto-org-chain/chain-main/v2/x/nft/types"
 	supply "github.com/crypto-org-chain/chain-main/v2/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v2/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v2/x/supply/types"
@@ -123,6 +126,7 @@ var (
 		vesting.AppModuleBasic{},
 		supply.AppModuleBasic{},
 		chainmain.AppModuleBasic{},
+		nft.AppModuleBasic{},
 	)
 
 	// module account permissions
@@ -174,6 +178,7 @@ type ChainApp struct {
 	TransferKeeper   ibctransferkeeper.Keeper
 	chainmainKeeper  chainmainkeeper.Keeper
 	SupplyKeeper     supplykeeper.Keeper
+	NFTKeeper        nftkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -217,7 +222,7 @@ func New(
 		minttypes.StoreKey, distrtypes.StoreKey, slashingtypes.StoreKey,
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
-		chainmaintypes.StoreKey, supplytypes.StoreKey,
+		chainmaintypes.StoreKey, supplytypes.StoreKey, nfttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -277,6 +282,8 @@ func New(
 	)
 
 	app.SupplyKeeper = supplykeeper.NewKeeper(appCodec, keys[supplytypes.StoreKey], app.BankKeeper, app.AccountKeeper)
+
+	app.NFTKeeper = nftkeeper.NewKeeper(appCodec, keys[nfttypes.StoreKey])
 
 	// Create IBC Keeper
 	app.IBCKeeper = ibckeeper.NewKeeper(
@@ -338,6 +345,7 @@ func New(
 		transferModule,
 		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
 		supply.NewAppModule(appCodec, app.SupplyKeeper),
+		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -359,7 +367,7 @@ func New(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName, stakingtypes.ModuleName,
 		slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, ibctransfertypes.ModuleName,
-		chainmaintypes.ModuleName, supplytypes.ModuleName,
+		chainmaintypes.ModuleName, supplytypes.ModuleName, nfttypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -385,6 +393,7 @@ func New(
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		transferModule,
+		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
 	app.sm.RegisterStoreDecoders()

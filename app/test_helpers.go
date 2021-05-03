@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
+	bam "github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -31,6 +35,15 @@ var DefaultConsensusParams = &abci.ConsensusParams{
 			tmtypes.ABCIPubKeyTypeEd25519,
 		},
 	},
+}
+
+func Constructor(val network.Validator) servertypes.Application {
+	return New(
+		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool),
+		val.Ctx.Config.RootDir, 0, MakeEncodingConfig(), emptyAppOptions{},
+		bam.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
+		bam.SetMinGasPrices(val.AppConfig.MinGasPrices),
+	)
 }
 
 func setup(withGenesis bool, invCheckPeriod uint) (*ChainApp, GenesisState) {
