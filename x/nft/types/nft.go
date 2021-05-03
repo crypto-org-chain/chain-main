@@ -3,6 +3,8 @@
 package types
 
 import (
+	fmt "fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-org-chain/chain-main/v2/x/nft/exported"
@@ -33,8 +35,14 @@ func (bnft BaseNFT) GetName() string {
 }
 
 // GetOwner return the owner of BaseNFT
-func (bnft BaseNFT) GetOwner() (sdk.AccAddress, error) {
-	return sdk.AccAddressFromBech32(bnft.Owner)
+func (bnft BaseNFT) GetOwner() sdk.AccAddress {
+	owner, err := sdk.AccAddressFromBech32(bnft.Owner)
+
+	if err != nil {
+		panic(fmt.Errorf("couldn't convert %q to account address: %v", bnft.Owner, err))
+	}
+
+	return owner
 }
 
 // GetURI return the URI of BaseNFT

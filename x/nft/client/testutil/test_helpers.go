@@ -15,7 +15,6 @@ import (
 	nftcli "github.com/crypto-org-chain/chain-main/v2/x/nft/client/cli"
 )
 
-// MsgRedelegateExec creates a redelegate message.
 func IssueDenomExec(clientCtx client.Context, from string, denom string, extraArgs ...string) (testutil.BufferWriter, error) {
 	args := []string{
 		denom,

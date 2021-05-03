@@ -16,9 +16,7 @@ func (suite *KeeperSuite) TestGetNFT() {
 	suite.NoError(err)
 	suite.Equal(receivedNFT.GetID(), tokenID)
 
-	owner, err := receivedNFT.GetOwner()
-	suite.NoError(err)
-	suite.True(owner.Equals(address))
+	suite.True(receivedNFT.GetOwner().Equals(address))
 	suite.Equal(receivedNFT.GetURI(), tokenURI)
 
 	// MintNFT shouldn't fail when collection exists
@@ -30,9 +28,7 @@ func (suite *KeeperSuite) TestGetNFT() {
 	suite.NoError(err)
 	suite.Equal(receivedNFT2.GetID(), tokenID2)
 
-	owner2, err := receivedNFT2.GetOwner()
-	suite.NoError(err)
-	suite.True(owner2.Equals(address))
+	suite.True(receivedNFT2.GetOwner().Equals(address))
 	suite.Equal(receivedNFT2.GetURI(), tokenURI)
 
 	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)

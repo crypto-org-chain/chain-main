@@ -48,13 +48,7 @@ func (k Keeper) Authorize(ctx sdk.Context, denomID, tokenID string, owner sdk.Ac
 		return types.BaseNFT{}, err
 	}
 
-	nftOwner, err := nft.GetOwner()
-
-	if err != nil {
-		return types.BaseNFT{}, err
-	}
-
-	if !owner.Equals(nftOwner) {
+	if !owner.Equals(nft.GetOwner()) {
 		return types.BaseNFT{}, sdkerrors.Wrap(types.ErrUnauthorized, owner.String())
 	}
 

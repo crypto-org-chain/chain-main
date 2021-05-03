@@ -8,7 +8,7 @@ import "gogoproto/gogo.proto";
 option go_package = "github.com/crypto-org-chain/chain-main/x/nft/types";
 option (gogoproto.goproto_getters_all) = false;
 
-// Msg defines the htlc Msg service.
+// Msg defines the NFT Msg service.
 service Msg {
     // IssueDenom defines a method for issue a denom.
     rpc IssueDenom(MsgIssueDenom) returns (MsgIssueDenomResponse);
@@ -16,7 +16,7 @@ service Msg {
     // MintNFT defines a method for mint a new nft
     rpc MintNFT(MsgMintNFT) returns (MsgMintNFTResponse);
 
-    // RefundHTLC defines a method for editing a nft.
+    // EditNFT defines a method for editing a nft.
     rpc EditNFT(MsgEditNFT) returns (MsgEditNFTResponse);
 
     // TransferNFT defines a method for transferring a nft.

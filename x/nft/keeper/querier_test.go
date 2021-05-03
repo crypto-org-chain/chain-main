@@ -185,11 +185,7 @@ func (suite *KeeperSuite) TestQueryNFT() {
 
 	suite.Equal(out.GetID(), tokenID)
 	suite.Equal(out.GetURI(), tokenURI)
-
-	owner, err := out.GetOwner()
-
-	suite.NoError(err)
-	suite.Equal(owner, address)
+	suite.Equal(out.GetOwner(), address)
 }
 
 func (suite *KeeperSuite) TestQueryDenoms() {
