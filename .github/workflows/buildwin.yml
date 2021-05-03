@@ -1,4 +1,4 @@
-name: Build
+name: BuildWin
 
 on:
   pull_request:
