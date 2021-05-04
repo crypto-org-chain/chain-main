@@ -6,7 +6,13 @@ import pytest
 from dateutil.parser import isoparse
 from pystarport.ports import rpc_port
 
-from .utils import cluster_fixture, parse_events, wait_for_block_time, wait_for_port
+from .utils import (
+    cluster_fixture,
+    parse_events,
+    wait_for_block,
+    wait_for_block_time,
+    wait_for_port,
+)
 
 
 @pytest.fixture(scope="module")
@@ -122,6 +128,8 @@ def test_join_validator(cluster):
 
     count1 = len(cluster.validators())
 
+    # wait for the new node to sync
+    wait_for_block(cluster.cosmos_cli(i), cluster.block_height(0))
     # create validator tx
     assert cluster.create_validator("1cro", i)["code"] == 0
     time.sleep(2)
