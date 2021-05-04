@@ -107,7 +107,8 @@ type MsgMintNFT struct {
 
 ### MsgBurnNFT
 
-This message type is used for burning non-fungible tokens which destroys and deletes them. `Sender` of this message
+This message type is used for burning non-fungible tokens which destroys and deletes them. `Sender` of this message should be the `Owner` of the NFT and
+`Creator` of the denomination corresponding to `DenomId`.
 should be the `Owner` of the NFT.
 
 | **Field** | **Type** | **Description**                                    |
