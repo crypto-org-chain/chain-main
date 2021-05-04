@@ -7,8 +7,9 @@ from pathlib import Path
 
 import pytest
 import yaml
+from pystarport import ports
 
-from .utils import cluster_fixture, wait_for_block
+from .utils import cluster_fixture, wait_for_block, wait_for_port
 
 
 @pytest.fixture(scope="module")
@@ -23,6 +24,10 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 
 def start_and_wait_relayer(cluster, init_relayer=True):
+    for cli in cluster.values():
+        for i in range(cli.nodes_len()):
+            wait_for_port(ports.grpc_port(cli.base_port(i)))
+
     for cli in cluster.values():
         # wait for at least 3 blocks, because
         # "proof queries at height <= 2 are not supported"
