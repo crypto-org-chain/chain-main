@@ -9,7 +9,7 @@ NFT defines the tokenData of non-fungible tokens, mainly including ID, owner, an
 through `MsgTransferNFT`, or you can edit `tokenURI` information through `MsgEditNFT` transaction. The name of the
 collection and the id of nft identify the unique assets in the system. The `NFT` Interface inherits the BaseNFT struct
 and includes getter functions for the asset data. It also includes a Stringer function in order to print the struct.
-The interface may change if tokenData is moved to it’s own module as it might no longer be necessary for the flexibility
+The interface may change if tokenData is moved to its own module as it might no longer be necessary for the flexibility
 of an interface.
 
 ```go
