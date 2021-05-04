@@ -17,10 +17,10 @@
         "homepage": "",
         "owner": "informalsystems",
         "repo": "ibc-rs",
-        "rev": "228806a3c8b26526e8fe06f905b078ebd26931d7",
-        "sha256": "1wimv6q00p3b09j7pl1rwqjw22yhb5fzxsyz9ji3vk5vavjjnw99",
+        "rev": "24650a33692d169d7d196c0ee5c7c565f1564b27",
+        "sha256": "1y8klm276b7wgxdprh2a4q5cqy7325n9c5aw3wlyqn3d1wgqci8i",
         "type": "tarball",
-        "url": "https://github.com/informalsystems/ibc-rs/archive/228806a3c8b26526e8fe06f905b078ebd26931d7.tar.gz",
+        "url": "https://github.com/informalsystems/ibc-rs/archive/24650a33692d169d7d196c0ee5c7c565f1564b27.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {

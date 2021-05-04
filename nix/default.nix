@@ -15,7 +15,7 @@ import sources.nixpkgs {
       hermes = pkgs.rustPlatform.buildRustPackage rec {
         name = "hermes";
         src = sources.ibc-rs;
-        cargoSha256 = sha256:1k1lndriaxbr7rbg8ka89kb88n71wzj7yzhw0vrk763hwmylrzyk;
+        cargoSha256 = sha256:0qrdjbjaz0p1dxrhvki8blnrmp354gdp417033aany53j2bh9sfp;
         cargoBuildFlags = "-p ibc-relayer-cli";
         buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
           pkgs.darwin.apple_sdk.frameworks.Security
