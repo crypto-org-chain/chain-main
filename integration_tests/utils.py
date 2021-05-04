@@ -65,20 +65,20 @@ def wait_for_port(port, host="127.0.0.1", timeout=40.0):
 def cluster_fixture(
     config_path,
     worker_index,
-    tmp_path_factory,
+    data,
     quiet=False,
     post_init=None,
     enable_cov=None,
+    cmd=None,
 ):
     """
     init a single devnet
     """
     if enable_cov is None:
         enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
-    data = tmp_path_factory.mktemp("data")
     base_port = gen_base_port(worker_index)
     print("init cluster at", data, ", base port:", base_port)
-    cluster.init_cluster(data, config_path, base_port)
+    cluster.init_cluster(data, config_path, base_port, cmd=cmd)
 
     config = yaml.safe_load(open(config_path))
     clis = {}
