@@ -38,26 +38,33 @@ def edit_chain_program(chain_id, ini_path, callback):
         ini.write(fp)
 
 
+def init_cosmovisor(data):
+    """
+    build and setup cosmovisor directory structure in devnet's data directory
+    """
+    cosmovisor = data / "cosmovisor"
+    cosmovisor.mkdir()
+    subprocess.run(
+        [
+            "nix-build",
+            Path(__file__).parent / "upgrade-test.nix",
+            "-o",
+            cosmovisor / "upgrades",
+        ],
+        check=True,
+    )
+    (cosmovisor / "genesis").symlink_to("./upgrades/genesis")
+
+
 def post_init(chain_id, data):
     """
     change to use cosmovisor
     """
 
     def prepare_node(i, _):
-        # prepare cosmovisor directory
+        # link cosmovisor directory for each node
         home = data / f"node{i}"
-        cosmovisor = home / "cosmovisor"
-        cosmovisor.mkdir()
-        subprocess.run(
-            [
-                "nix-build",
-                Path(__file__).parent / "upgrade-test.nix",
-                "-o",
-                cosmovisor / "upgrades",
-            ],
-            check=True,
-        )
-        (cosmovisor / "genesis").symlink_to("./upgrades/genesis")
+        (home / "cosmovisor").symlink_to("../../cosmovisor")
         return {
             "command": f"cosmovisor start --home %(here)s/node{i}",
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
@@ -76,13 +83,16 @@ def migrate_genesis_time(cluster, i=0):
 @pytest.fixture(scope="function")
 def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
+    data = tmp_path_factory.mktemp("data")
+    init_cosmovisor(data)
     yield from cluster_fixture(
         Path(__file__).parent / "configs/default.yaml",
         worker_index,
-        tmp_path_factory,
+        data,
         quiet=pytestconfig.getoption("supervisord-quiet"),
         post_init=post_init,
         enable_cov=False,
+        cmd=(data / "cosmovisor/genesis/bin/chain-maind"),
     )
 
 
