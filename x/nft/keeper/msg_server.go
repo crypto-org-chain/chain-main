@@ -135,9 +135,6 @@ func (m msgServer) TransferNFT(goCtx context.Context, msg *types.MsgTransferNFT)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := m.Keeper.TransferOwner(ctx, msg.DenomId, msg.Id,
-		msg.Name,
-		msg.URI,
-		msg.Data,
 		sender,
 		recipient,
 	); err != nil {

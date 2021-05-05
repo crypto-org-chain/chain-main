@@ -52,14 +52,14 @@ func (suite *KeeperSuite) TestGetNFTs() {
 	suite.Len(nfts, 3)
 }
 
-func (suite *KeeperSuite) TestAuthorize() {
+func (suite *KeeperSuite) TestIsOwner() {
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	_, err = suite.keeper.Authorize(suite.ctx, denomID, tokenID, address2)
+	_, err = suite.keeper.IsOwner(suite.ctx, denomID, tokenID, address2)
 	suite.Error(err)
 
-	_, err = suite.keeper.Authorize(suite.ctx, denomID, tokenID, address)
+	_, err = suite.keeper.IsOwner(suite.ctx, denomID, tokenID, address)
 	suite.NoError(err)
 }
 

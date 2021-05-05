@@ -98,11 +98,8 @@ func SimulateMsgTransferNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.Ba
 		msg := types.NewMsgTransferNFT(
 			nftID,
 			denom,
-			"",
-			"",
-			simtypes.RandStringOfLength(r, 10), // tokenData
-			ownerAddr.String(),                 // sender
-			recipientAccount.Address.String(),  // recipient
+			ownerAddr.String(),                // sender
+			recipientAccount.Address.String(), // recipient
 		)
 		account := ak.GetAccount(ctx, ownerAddr)
 

@@ -45,11 +45,8 @@ message MsgTransferNFT {
 
     string id = 1;
     string denom_id = 2 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
-    string name = 3;
-    string uri = 4 [ (gogoproto.customname) = "URI" ];
-    string data = 5;
-    string sender = 6;
-    string recipient = 7;
+    string sender = 3;
+    string recipient = 4;
 }
 
 // MsgTransferNFTResponse defines the Msg/TransferNFT response type.

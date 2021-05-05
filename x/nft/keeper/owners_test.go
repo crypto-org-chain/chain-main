@@ -11,10 +11,16 @@ func (suite *KeeperSuite) TestGetOwners() {
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID, tokenID2, tokenNm2, tokenURI, tokenData, address2)
+	err = suite.keeper.MintNFT(suite.ctx, denomID, tokenID2, tokenNm2, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID, tokenID3, tokenNm3, tokenURI, tokenData, address3)
+	err = suite.keeper.MintNFT(suite.ctx, denomID, tokenID3, tokenNm3, tokenURI, tokenData, address)
+	suite.NoError(err)
+
+	err = suite.keeper.TransferOwner(suite.ctx, denomID, tokenID2, address, address2)
+	suite.NoError(err)
+
+	err = suite.keeper.TransferOwner(suite.ctx, denomID, tokenID3, address, address3)
 	suite.NoError(err)
 
 	owners, err := suite.keeper.GetOwners(suite.ctx)
@@ -24,10 +30,16 @@ func (suite *KeeperSuite) TestGetOwners() {
 	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID2, tokenNm2, tokenURI, tokenData, address2)
+	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID2, tokenNm2, tokenURI, tokenData, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID3, tokenNm3, tokenURI, tokenData, address3)
+	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID3, tokenNm3, tokenURI, tokenData, address)
+	suite.NoError(err)
+
+	err = suite.keeper.TransferOwner(suite.ctx, denomID2, tokenID2, address, address2)
+	suite.NoError(err)
+
+	err = suite.keeper.TransferOwner(suite.ctx, denomID2, tokenID3, address, address3)
 	suite.NoError(err)
 
 	owners, err = suite.keeper.GetOwners(suite.ctx)
