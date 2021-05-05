@@ -24,7 +24,7 @@ func (suite *KeeperSuite) TestNewQuerier() {
 
 func (suite *KeeperSuite) TestQuerySupply() {
 	// MintNFT shouldn't fail when collection does not exist
-	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
+	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
 	querier := keep.NewQuerier(suite.keeper, suite.legacyAmino)
@@ -65,7 +65,7 @@ func (suite *KeeperSuite) TestQuerySupply() {
 
 func (suite *KeeperSuite) TestQueryCollection() {
 	// MintNFT shouldn't fail when collection does not exist
-	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
+	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
 	querier := keep.NewQuerier(suite.keeper, suite.legacyAmino)
@@ -106,10 +106,10 @@ func (suite *KeeperSuite) TestQueryCollection() {
 
 func (suite *KeeperSuite) TestQueryOwner() {
 	// MintNFT shouldn't fail when collection does not exist
-	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
+	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address)
+	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
 	querier := keep.NewQuerier(suite.keeper, suite.legacyAmino)
@@ -145,7 +145,7 @@ func (suite *KeeperSuite) TestQueryOwner() {
 
 func (suite *KeeperSuite) TestQueryNFT() {
 	// MintNFT shouldn't fail when collection does not exist
-	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
+	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
 	querier := keep.NewQuerier(suite.keeper, suite.legacyAmino)
@@ -190,10 +190,10 @@ func (suite *KeeperSuite) TestQueryNFT() {
 
 func (suite *KeeperSuite) TestQueryDenoms() {
 	// MintNFT shouldn't fail when collection does not exist
-	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address)
+	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
-	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address)
+	err = suite.keeper.MintNFT(suite.ctx, denomID2, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
 	querier := keep.NewQuerier(suite.keeper, suite.legacyAmino)

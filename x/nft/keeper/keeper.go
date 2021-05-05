@@ -40,22 +40,15 @@ func (k Keeper) IssueDenom(ctx sdk.Context,
 	return k.SetDenom(ctx, types.NewDenom(id, name, schema, creator))
 }
 
-// MintNFT mints an NFT and manages the NFT's existence within Collections and Owners
-func (k Keeper) MintNFT(
-	ctx sdk.Context, denomID, tokenID, tokenNm,
-	tokenURI, tokenData string, owner sdk.AccAddress,
-) error {
+// MintNFTUnverified mints an NFT without verifying if the owner is the creator of denom
+// Needed during genesis initialization
+func (k Keeper) MintNFTUnverified(ctx sdk.Context, denomID, tokenID, tokenNm, tokenURI, tokenData string, owner sdk.AccAddress) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
 
 	if k.HasNFT(ctx, denomID, tokenID) {
 		return sdkerrors.Wrapf(types.ErrNFTAlreadyExists, "NFT %s already exists in collection %s", tokenID, denomID)
-	}
-
-	_, err := k.IsDenomCreator(ctx, denomID, owner)
-	if err != nil {
-		return err
 	}
 
 	k.setNFT(
@@ -72,6 +65,19 @@ func (k Keeper) MintNFT(
 	k.increaseSupply(ctx, denomID)
 
 	return nil
+}
+
+// MintNFT mints an NFT and manages the NFT's existence within Collections and Owners
+func (k Keeper) MintNFT(
+	ctx sdk.Context, denomID, tokenID, tokenNm,
+	tokenURI, tokenData string, sender, owner sdk.AccAddress,
+) error {
+	_, err := k.IsDenomCreator(ctx, denomID, sender)
+	if err != nil {
+		return err
+	}
+
+	return k.MintNFTUnverified(ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, owner)
 }
 
 // EditNFT updates an already existing NFT
