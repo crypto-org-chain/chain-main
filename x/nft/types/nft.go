@@ -13,7 +13,6 @@ import (
 var _ exported.NFT = BaseNFT{}
 
 // NewBaseNFT creates a new NFT instance
-// nolint: interfacer
 func NewBaseNFT(id, name string, owner sdk.AccAddress, uri, data string) BaseNFT {
 	return BaseNFT{
 		Id:    id,

@@ -9,7 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// nolint: deadcode unused
+// nolint: deadcode,unused
 var (
 	denomID  = "denom"
 	denom    = "denom"
