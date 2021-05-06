@@ -65,7 +65,6 @@ func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
 }
 
 // KeyOwner gets the key of a collection owned by an account address
-// nolint: interfacer
 func KeyOwner(address sdk.AccAddress, denomID, tokenID string) []byte {
 	key := append(PrefixOwners, delimiter...)
 	if address != nil {

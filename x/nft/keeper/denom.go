@@ -67,7 +67,6 @@ func (k Keeper) GetDenoms(ctx sdk.Context) (denoms []types.Denom) {
 
 // IsDenomCreator checks if address is the creator of Denom
 // Return the Denom if true, an error otherwise
-// nolint: interfacer
 func (k Keeper) IsDenomCreator(ctx sdk.Context, denomID string, address sdk.AccAddress) (types.Denom, error) {
 	denom, err := k.GetDenom(ctx, denomID)
 	if err != nil {

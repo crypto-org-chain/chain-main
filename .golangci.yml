@@ -6,6 +6,7 @@ linters:
     - dogsled
     - dupl
     - errcheck
+    - exportloopref
     # - funlen
     # - gochecknoglobals
     # - gochecknoinits
@@ -20,12 +21,12 @@ linters:
     - gosimple
     - govet
     - ineffassign
-    - interfacer
+    # - interfacer
     - misspell
     # - maligned
     - nakedret
     - prealloc
-    - scopelint
+    # - scopelint
     - staticcheck
     - structcheck
     - stylecheck
