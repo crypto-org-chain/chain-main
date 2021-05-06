@@ -40,10 +40,6 @@ func init() {
 	FsEditNFT.String(FlagTokenData, "[do-not-modify]", "The token data of the nft")
 	FsEditNFT.String(FlagTokenName, "[do-not-modify]", "The name of the nft")
 
-	FsTransferNFT.String(FlagTokenURI, "[do-not-modify]", "URI for the supplemental off-chain token data (should return a JSON object)")
-	FsTransferNFT.String(FlagTokenData, "[do-not-modify]", "The token data of the nft")
-	FsTransferNFT.String(FlagTokenName, "[do-not-modify]", "The name of the nft")
-
 	FsQuerySupply.String(FlagOwner, "", "The owner of the nft")
 
 	FsQueryOwner.String(FlagDenomID, "", "The name of the collection")

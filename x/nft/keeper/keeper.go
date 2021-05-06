@@ -40,11 +40,9 @@ func (k Keeper) IssueDenom(ctx sdk.Context,
 	return k.SetDenom(ctx, types.NewDenom(id, name, schema, creator))
 }
 
-// MintNFT mints an NFT and manages the NFT's existence within Collections and Owners
-func (k Keeper) MintNFT(
-	ctx sdk.Context, denomID, tokenID, tokenNm,
-	tokenURI, tokenData string, owner sdk.AccAddress,
-) error {
+// MintNFTUnverified mints an NFT without verifying if the owner is the creator of denom
+// Needed during genesis initialization
+func (k Keeper) MintNFTUnverified(ctx sdk.Context, denomID, tokenID, tokenNm, tokenURI, tokenData string, owner sdk.AccAddress) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
@@ -69,6 +67,19 @@ func (k Keeper) MintNFT(
 	return nil
 }
 
+// MintNFT mints an NFT and manages the NFT's existence within Collections and Owners
+func (k Keeper) MintNFT(
+	ctx sdk.Context, denomID, tokenID, tokenNm,
+	tokenURI, tokenData string, sender, owner sdk.AccAddress,
+) error {
+	_, err := k.IsDenomCreator(ctx, denomID, sender)
+	if err != nil {
+		return err
+	}
+
+	return k.MintNFTUnverified(ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, owner)
+}
+
 // EditNFT updates an already existing NFT
 func (k Keeper) EditNFT(
 	ctx sdk.Context, denomID, tokenID, tokenNm,
@@ -78,7 +89,12 @@ func (k Keeper) EditNFT(
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
 
-	nft, err := k.Authorize(ctx, denomID, tokenID, owner)
+	nft, err := k.IsOwner(ctx, denomID, tokenID, owner)
+	if err != nil {
+		return err
+	}
+
+	_, err = k.IsDenomCreator(ctx, denomID, owner)
 	if err != nil {
 		return err
 	}
@@ -102,31 +118,18 @@ func (k Keeper) EditNFT(
 
 // TransferOwner transfers the ownership of the given NFT to the new owner
 func (k Keeper) TransferOwner(
-	ctx sdk.Context, denomID, tokenID, tokenNm, tokenURI,
-	tokenData string, srcOwner, dstOwner sdk.AccAddress,
+	ctx sdk.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress,
 ) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
 
-	nft, err := k.Authorize(ctx, denomID, tokenID, srcOwner)
+	nft, err := k.IsOwner(ctx, denomID, tokenID, srcOwner)
 	if err != nil {
 		return err
 	}
 
 	nft.Owner = dstOwner.String()
-
-	if types.Modified(tokenNm) {
-		nft.Name = tokenNm
-	}
-
-	if types.Modified(tokenURI) {
-		nft.URI = tokenURI
-	}
-
-	if types.Modified(tokenData) {
-		nft.Data = tokenData
-	}
 
 	k.setNFT(ctx, denomID, nft)
 	k.swapOwner(ctx, denomID, tokenID, srcOwner, dstOwner)
@@ -139,7 +142,12 @@ func (k Keeper) BurnNFT(ctx sdk.Context, denomID, tokenID string, owner sdk.AccA
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
 
-	nft, err := k.Authorize(ctx, denomID, tokenID, owner)
+	nft, err := k.IsOwner(ctx, denomID, tokenID, owner)
+	if err != nil {
+		return err
+	}
+
+	_, err = k.IsDenomCreator(ctx, denomID, owner)
 	if err != nil {
 		return err
 	}

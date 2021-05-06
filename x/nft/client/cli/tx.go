@@ -239,24 +239,9 @@ func GetCmdTransferNFT() *cobra.Command {
 				return err
 			}
 
-			tokenName, err := cmd.Flags().GetString(FlagTokenName)
-			if err != nil {
-				return err
-			}
-			tokenURI, err := cmd.Flags().GetString(FlagTokenURI)
-			if err != nil {
-				return err
-			}
-			tokenData, err := cmd.Flags().GetString(FlagTokenData)
-			if err != nil {
-				return err
-			}
 			msg := types.NewMsgTransferNFT(
 				args[2],
 				args[1],
-				tokenName,
-				tokenURI,
-				tokenData,
 				clientCtx.GetFromAddress().String(),
 				args[0],
 			)
