@@ -215,3 +215,40 @@ release:
 		-w /go/src/$(PACKAGE_NAME) \
 		troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist --skip-validate
+
+###############################################################################
+###                              Documentation                              ###
+###############################################################################
+
+include third_party/cosmos-sdk/contrib/devtools/Makefile
+
+containerProtoVer=v0.2
+containerProtoImage=tendermintdev/sdk-proto-gen:$(containerProtoVer)
+
+proto-swagger-gen:
+	@echo "Generating Protobuf Swagger"
+	@docker run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) sh ./scripts/protoc-swagger-gen.sh
+
+proto-gen:
+	@echo "Generating Protobuf files"
+	@docker run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) sh ./scripts/protocgen
+
+proto-format:
+	@echo "Formatting Protobuf files"
+	find ./ -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
+
+proto-lint:
+	@docker run --rm -v $(CURDIR):/workspace --workdir /workspace bufbuild/buf lint --error-format=json
+
+proto-all: proto-format proto-lint proto-gen
+
+update-swagger-docs: statik
+	$(BINDIR)/statik -src=app/docs/swagger-ui -dest=app/docs -f -m
+	@if [ -n "$(git status --porcelain)" ]; then \
+        echo "\033[91mSwagger docs are out of sync!!!\033[0m";\
+        exit 1;\
+    else \
+        echo "\033[92mSwagger docs are in sync\033[0m";\
+    fi
+
+.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint update-swagger-docs

@@ -94,7 +94,7 @@ import (
 	supplytypes "github.com/crypto-org-chain/chain-main/v2/x/supply/types"
 
 	// unnamed import of statik for swagger UI support
-	_ "github.com/cosmos/cosmos-sdk/client/docs/statik"
+	_ "github.com/crypto-org-chain/chain-main/v2/app/docs/statik"
 )
 
 const appName = "chain-maind"
