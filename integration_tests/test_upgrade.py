@@ -209,7 +209,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     )
 
     # wait for upgrade plan activated
-    wait_for_block(cluster, target_height)
+    wait_for_block(cluster, target_height, 600)
     # wait a little bit
     time.sleep(0.5)
 
@@ -247,7 +247,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     cluster.reload_supervisor()
 
     # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2)
+    wait_for_block(cluster, target_height + 2, 600)
 
 
 @pytest.mark.slow
