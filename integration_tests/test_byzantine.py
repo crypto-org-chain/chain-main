@@ -6,7 +6,7 @@ import pytest
 
 from .utils import cluster_fixture
 
-MAX_SLEEP_SEC = 300
+MAX_SLEEP_SEC = 600
 
 
 @pytest.fixture(scope="module")
