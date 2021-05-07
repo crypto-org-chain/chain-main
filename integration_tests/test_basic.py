@@ -1,5 +1,3 @@
-import time
-
 from .utils import wait_for_block
 
 
@@ -88,5 +86,5 @@ def test_statesync(cluster):
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
 
     # discovery_time is set to 5 seconds, add extra seconds for processing
-    time.sleep(5 + 5)
-    assert cluster.block_height(i=i) >= 5, "syncing"
+    wait_for_block(cluster.cosmos_cli(i), 5)
+    print("succesfully syncing")
