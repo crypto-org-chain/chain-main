@@ -30,7 +30,7 @@ tags:
     description: Query app version
 schemes:
   - https
-host: api.cosmos.network
+host: mainnet.crypto.org
 securityDefinitions:
   kms:
     type: basic
@@ -258,8 +258,8 @@ paths:
         - in: query
           name: message.sender
           type: string
-          description: "transaction tags with sender: 'GET /txs?message.action=send&message.sender=cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv'"
-          x-example: "cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv"
+          description: "transaction tags with sender: 'GET /txs?message.action=send&message.sender=cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv'"
+          x-example: "cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv"
         - in: query
           name: page
           description: Page number
@@ -397,7 +397,7 @@ paths:
           description: Account address in bech32 format
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         200:
           description: Account balances
@@ -423,7 +423,7 @@ paths:
           description: Account address in bech32 format
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
         - in: body
           name: account
           description: The sender and tx information
@@ -499,7 +499,7 @@ paths:
           description: Account address
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         200:
           description: Account information on the blockchain
@@ -532,7 +532,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Get all delegations from a delegator
@@ -592,13 +592,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query the current delegation between a delegator and a validator
@@ -622,7 +622,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Get all unbonding delegations from a delegator
@@ -682,13 +682,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query all unbonding delegations between a delegator and a validator
@@ -745,7 +745,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     post:
       deprecated: true
       summary: Submit a redelegation
@@ -789,7 +789,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Query all validators that a delegator is bonded to
@@ -815,13 +815,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 ValAddress of Delegator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query a validator that a delegator is bonded to
@@ -878,7 +878,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query the information from a single validator
@@ -902,7 +902,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Get all delegations from a validator
@@ -928,7 +928,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Get all unbonding delegations from a validator
@@ -1020,7 +1020,7 @@ paths:
   #          name: validatorPubKey
   #          required: true
   #          in: path
-  #          x-example: cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+  #          x-example: crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
   #      responses:
   #        200:
   #          description: OK
@@ -1080,7 +1080,7 @@ paths:
           name: validatorAddr
           required: true
           in: path
-          x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+          x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
         - description: ""
           name: UnjailBody
           in: body
@@ -1391,7 +1391,7 @@ paths:
           name: depositor
           required: true
           in: path
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         200:
           description: OK
@@ -1493,7 +1493,7 @@ paths:
           name: voter
           required: true
           in: path
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         200:
           description: OK
@@ -1617,7 +1617,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos167w96tdvmazakdwkw2u57227eduula2cy572lf
+        x-example: cro167w96tdvmazakdwkw2u57227eduula2cy572lf
     get:
       deprecated: true
       summary: Get the total rewards balance from all delegations
@@ -1670,13 +1670,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query a delegation reward
@@ -1731,7 +1731,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos167w96tdvmazakdwkw2u57227eduula2cy572lf
+        x-example: cro167w96tdvmazakdwkw2u57227eduula2cy572lf
     get:
       deprecated: true
       summary: Get the rewards withdrawal address
@@ -1786,7 +1786,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Validator distribution information
@@ -1811,7 +1811,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Fee distribution outstanding rewards of a single validator
@@ -1835,7 +1835,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Commission and self-delegation rewards of a single validator
@@ -2060,11 +2060,11 @@ definitions:
   Address:
     type: string
     description: bech32 encoded address
-    example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+    example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
   ValidatorAddress:
     type: string
     description: bech32 encoded address
-    example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+    example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
   Coin:
     type: object
     properties:
@@ -2182,7 +2182,7 @@ definitions:
     properties:
       chain_id:
         type: string
-        example: cosmoshub-2
+        example: crohub-2
       height:
         type: number
         example: 1
@@ -2306,14 +2306,14 @@ definitions:
     properties:
       from:
         type: string
-        example: "cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc"
+        example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
         description: Sender address or Keybase name to generate a transaction
       memo:
         type: string
         example: "Sent via Cosmos Voyager 🚀"
       chain_id:
         type: string
-        example: "Cosmos-Hub"
+        example: "crypto-org-chain-mainnet"
       account_number:
         type: string
         example: "0"
@@ -2341,7 +2341,7 @@ definitions:
         $ref: "#/definitions/ValidatorAddress"
       pub_key:
         type: string
-        example: cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+        example: crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
       voting_power:
         type: string
         example: "1000"
@@ -2420,7 +2420,7 @@ definitions:
         $ref: "#/definitions/ValidatorAddress"
       consensus_pubkey:
         type: string
-        example: cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+        example: crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
       jailed:
         type: boolean
       status:

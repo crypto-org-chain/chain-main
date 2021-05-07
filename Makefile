@@ -228,6 +228,11 @@ containerProtoImage=tendermintdev/sdk-proto-gen:$(containerProtoVer)
 proto-swagger-gen:
 	@echo "Generating Protobuf Swagger"
 	@docker run --rm -v $(CURDIR):/workspace --workdir /workspace $(containerProtoImage) sh ./scripts/protoc-swagger-gen.sh
+	@echo "Patch swagger documentations"
+	@sed -i"" "s/cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l/crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l/" app/docs/swagger-ui/swagger.yaml
+	@sed -i"" "s/cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv/cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv/" app/docs/swagger-ui/swagger.yaml
+	@sed -i"" "s/cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf/crocnclconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf/" app/docs/swagger-ui/swagger.yaml
+	@sed -i"" "s/example: Cosmos-Hub/example: crypto-org-chain-mainnet/" app/docs/swagger-ui/swagger.yaml
 
 proto-gen:
 	@echo "Generating Protobuf files"

@@ -115,7 +115,7 @@ paths:
                     properties:
                       chain_id:
                         type: string
-                        example: cosmoshub-2
+                        example: crohub-2
                       height:
                         type: number
                         example: 1
@@ -170,7 +170,7 @@ paths:
                       proposer_address:
                         type: string
                         description: bech32 encoded address
-                        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
                       version:
                         type: object
                         properties:
@@ -203,7 +203,7 @@ paths:
                     properties:
                       chain_id:
                         type: string
-                        example: cosmoshub-2
+                        example: crohub-2
                       height:
                         type: number
                         example: 1
@@ -258,7 +258,7 @@ paths:
                       proposer_address:
                         type: string
                         description: bech32 encoded address
-                        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
                       version:
                         type: object
                         properties:
@@ -365,7 +365,7 @@ paths:
                     properties:
                       chain_id:
                         type: string
-                        example: cosmoshub-2
+                        example: crohub-2
                       height:
                         type: number
                         example: 1
@@ -420,7 +420,7 @@ paths:
                       proposer_address:
                         type: string
                         description: bech32 encoded address
-                        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
                       version:
                         type: object
                         properties:
@@ -453,7 +453,7 @@ paths:
                     properties:
                       chain_id:
                         type: string
-                        example: cosmoshub-2
+                        example: crohub-2
                       height:
                         type: number
                         example: 1
@@ -508,7 +508,7 @@ paths:
                       proposer_address:
                         type: string
                         description: bech32 encoded address
-                        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
                       version:
                         type: object
                         properties:
@@ -614,11 +614,11 @@ paths:
                     address:
                       type: string
                       description: bech32 encoded address
-                      example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                      example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
                     pub_key:
                       type: string
                       example: >-
-                        cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                        crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
                     voting_power:
                       type: string
                       example: '1000'
@@ -657,11 +657,11 @@ paths:
                     address:
                       type: string
                       description: bech32 encoded address
-                      example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                      example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
                     pub_key:
                       type: string
                       example: >-
-                        cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                        crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
                     voting_power:
                       type: string
                       example: '1000'
@@ -796,8 +796,8 @@ paths:
           type: string
           description: >-
             transaction tags with sender: 'GET
-            /txs?message.action=send&message.sender=cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv'
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+            /txs?message.action=send&message.sender=cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv'
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
         - in: query
           name: page
           description: Page number
@@ -1247,7 +1247,7 @@ paths:
           description: Account address in bech32 format
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         '200':
           description: Account balances
@@ -1280,7 +1280,7 @@ paths:
           description: Account address in bech32 format
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
         - in: body
           name: account
           description: The sender and tx information
@@ -1293,14 +1293,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -1460,7 +1460,7 @@ paths:
           description: Account address
           required: true
           type: string
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         '200':
           description: Account information on the blockchain
@@ -1505,7 +1505,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Get all delegations from a delegator
@@ -1554,14 +1554,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -1594,11 +1594,11 @@ paths:
               delegator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               validator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               amount:
                 type: object
                 properties:
@@ -1677,13 +1677,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query the current delegation between a delegator and a validator
@@ -1723,7 +1723,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Get all unbonding delegations from a delegator
@@ -1769,14 +1769,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -1809,11 +1809,11 @@ paths:
               delegator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               validator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               amount:
                 type: object
                 properties:
@@ -1892,13 +1892,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query all unbonding delegations between a delegator and a validator
@@ -1973,7 +1973,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     post:
       deprecated: true
       summary: Submit a redelegation
@@ -1989,14 +1989,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -2029,15 +2029,15 @@ paths:
               delegator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               validator_src_addressess:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               validator_dst_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               shares:
                 type: string
                 example: '100'
@@ -2108,7 +2108,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
     get:
       deprecated: true
       summary: Query all validators that a delegator is bonded to
@@ -2127,11 +2127,11 @@ paths:
                 operator_address:
                   type: string
                   description: bech32 encoded address
-                  example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                  example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
                 consensus_pubkey:
                   type: string
                   example: >-
-                    cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                    crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
                 jailed:
                   type: boolean
                 status:
@@ -2191,13 +2191,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 ValAddress of Delegator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query a validator that a delegator is bonded to
@@ -2214,11 +2214,11 @@ paths:
               operator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               consensus_pubkey:
                 type: string
                 example: >-
-                  cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                  crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
               jailed:
                 type: boolean
               status:
@@ -2310,11 +2310,11 @@ paths:
                 operator_address:
                   type: string
                   description: bech32 encoded address
-                  example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                  example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
                 consensus_pubkey:
                   type: string
                   example: >-
-                    cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                    crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
                 jailed:
                   type: boolean
                 status:
@@ -2372,7 +2372,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query the information from a single validator
@@ -2389,11 +2389,11 @@ paths:
               operator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               consensus_pubkey:
                 type: string
                 example: >-
-                  cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+                  crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
               jailed:
                 type: boolean
               status:
@@ -2453,7 +2453,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Get all delegations from a validator
@@ -2495,7 +2495,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Get all unbonding delegations from a validator
@@ -2644,7 +2644,7 @@ paths:
           name: validatorAddr
           required: true
           in: path
-          x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+          x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
         - description: ''
           name: UnjailBody
           in: body
@@ -2809,14 +2809,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -2856,7 +2856,7 @@ paths:
               proposer:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               initial_deposit:
                 type: array
                 items:
@@ -3026,14 +3026,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -3072,7 +3072,7 @@ paths:
               proposer:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               deposit:
                 type: array
                 items:
@@ -3287,7 +3287,7 @@ paths:
                 depositor:
                   type: string
                   description: bech32 encoded address
-                  example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                  example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
         '400':
           description: Invalid proposal id
         '500':
@@ -3321,14 +3321,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -3361,7 +3361,7 @@ paths:
               depositor:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               amount:
                 type: array
                 items:
@@ -3450,7 +3450,7 @@ paths:
           name: depositor
           required: true
           in: path
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         '200':
           description: OK
@@ -3473,7 +3473,7 @@ paths:
               depositor:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
         '400':
           description: Invalid proposal id or depositor address
         '404':
@@ -3545,14 +3545,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -3585,7 +3585,7 @@ paths:
               voter:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               option:
                 type: string
                 example: 'yes'
@@ -3666,7 +3666,7 @@ paths:
           name: voter
           required: true
           in: path
-          x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+          x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       responses:
         '200':
           description: OK
@@ -3824,7 +3824,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos167w96tdvmazakdwkw2u57227eduula2cy572lf
+        x-example: cro167w96tdvmazakdwkw2u57227eduula2cy572lf
     get:
       deprecated: true
       summary: Get the total rewards balance from all delegations
@@ -3849,7 +3849,7 @@ paths:
                     validator_address:
                       type: string
                       description: bech32 encoded address
-                      example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                      example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
                     reward:
                       type: array
                       items:
@@ -3896,14 +3896,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -3996,13 +3996,13 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
+        x-example: cro16xyempempp92x9hyzz9wrgf94r6j9h5f06pxxv
       - in: path
         name: validatorAddr
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Query a delegation reward
@@ -4049,14 +4049,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -4149,7 +4149,7 @@ paths:
         description: Bech32 AccAddress of Delegator
         required: true
         type: string
-        x-example: cosmos167w96tdvmazakdwkw2u57227eduula2cy572lf
+        x-example: cro167w96tdvmazakdwkw2u57227eduula2cy572lf
     get:
       deprecated: true
       summary: Get the rewards withdrawal address
@@ -4166,7 +4166,7 @@ paths:
           schema:
             type: string
             description: bech32 encoded address
-            example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+            example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
         '400':
           description: Invalid delegator address
         '500':
@@ -4191,14 +4191,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -4231,7 +4231,7 @@ paths:
               withdraw_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
       responses:
         '200':
           description: OK
@@ -4295,7 +4295,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Validator distribution information
@@ -4313,7 +4313,7 @@ paths:
               operator_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+                example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
               self_bond_rewards:
                 type: array
                 items:
@@ -4347,7 +4347,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Fee distribution outstanding rewards of a single validator
@@ -4378,7 +4378,7 @@ paths:
         description: Bech32 OperatorAddress of validator
         required: true
         type: string
-        x-example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        x-example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
     get:
       deprecated: true
       summary: Commission and self-delegation rewards of a single validator
@@ -4425,14 +4425,14 @@ paths:
                 properties:
                   from:
                     type: string
-                    example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+                    example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
                     description: Sender address or Keybase name to generate a transaction
                   memo:
                     type: string
                     example: "Sent via Cosmos Voyager \U0001F680"
                   chain_id:
                     type: string
-                    example: Cosmos-Hub
+                    example: crypto-org-chain-mainnet
                   account_number:
                     type: string
                     example: '0'
@@ -21990,11 +21990,11 @@ definitions:
   Address:
     type: string
     description: bech32 encoded address
-    example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+    example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
   ValidatorAddress:
     type: string
     description: bech32 encoded address
-    example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+    example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
   Coin:
     type: object
     properties:
@@ -22246,7 +22246,7 @@ definitions:
     properties:
       chain_id:
         type: string
-        example: cosmoshub-2
+        example: crohub-2
       height:
         type: number
         example: 1
@@ -22301,7 +22301,7 @@ definitions:
       proposer_address:
         type: string
         description: bech32 encoded address
-        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
       version:
         type: object
         properties:
@@ -22319,7 +22319,7 @@ definitions:
         properties:
           chain_id:
             type: string
-            example: cosmoshub-2
+            example: crohub-2
           height:
             type: number
             example: 1
@@ -22374,7 +22374,7 @@ definitions:
           proposer_address:
             type: string
             description: bech32 encoded address
-            example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+            example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
           version:
             type: object
             properties:
@@ -22462,7 +22462,7 @@ definitions:
             properties:
               chain_id:
                 type: string
-                example: cosmoshub-2
+                example: crohub-2
               height:
                 type: number
                 example: 1
@@ -22517,7 +22517,7 @@ definitions:
               proposer_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               version:
                 type: object
                 properties:
@@ -22550,7 +22550,7 @@ definitions:
             properties:
               chain_id:
                 type: string
-                example: cosmoshub-2
+                example: crohub-2
               height:
                 type: number
                 example: 1
@@ -22605,7 +22605,7 @@ definitions:
               proposer_address:
                 type: string
                 description: bech32 encoded address
-                example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+                example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
               version:
                 type: object
                 properties:
@@ -22688,7 +22688,7 @@ definitions:
       validator_address:
         type: string
         description: bech32 encoded address
-        example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
       reward:
         type: array
         items:
@@ -22711,7 +22711,7 @@ definitions:
             validator_address:
               type: string
               description: bech32 encoded address
-              example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+              example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
             reward:
               type: array
               items:
@@ -22739,14 +22739,14 @@ definitions:
     properties:
       from:
         type: string
-        example: cosmos1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
+        example: cro1g9ahr6xhht5rmqven628nklxluzyv8z9jqjcmc
         description: Sender address or Keybase name to generate a transaction
       memo:
         type: string
         example: "Sent via Cosmos Voyager \U0001F680"
       chain_id:
         type: string
-        example: Cosmos-Hub
+        example: crypto-org-chain-mainnet
       account_number:
         type: string
         example: '0'
@@ -22782,11 +22782,11 @@ definitions:
       address:
         type: string
         description: bech32 encoded address
-        example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
       pub_key:
         type: string
         example: >-
-          cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+          crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
       voting_power:
         type: string
         example: '1000'
@@ -22862,7 +22862,7 @@ definitions:
       depositor:
         type: string
         description: bech32 encoded address
-        example: cosmos1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
+        example: cro1depk54cuajgkzea6zpgkq36tnjwdzv4afc3d27
   TallyResult:
     type: object
     properties:
@@ -22893,11 +22893,11 @@ definitions:
       operator_address:
         type: string
         description: bech32 encoded address
-        example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
       consensus_pubkey:
         type: string
         example: >-
-          cosmosvalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
+          crovalconspub1zcjduepq0vu2zgkgk49efa0nqwzndanq5m4c7pa3u4apz4g2r9gspqg6g9cs3k9cuf
       jailed:
         type: boolean
       status:
@@ -23042,7 +23042,7 @@ definitions:
       operator_address:
         type: string
         description: bech32 encoded address
-        example: cosmosvaloper16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
+        example: crocncl16xyempempp92x9hyzz9wrgf94r6j9h5f2w4n2l
       self_bond_rewards:
         type: array
         items:
