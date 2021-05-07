@@ -1,12 +1,22 @@
 # Changelog
 
-*unreleased*
+*May 10, 2021*
 
-## v2.0.0
+## v2.0.0-croeseid
+This pre-release version contains the scope of [ADR-003](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md) for the Croeseid testnet upgrade. It also upgrades to the latest version of Tendermint (0.34.10).
+*WARNING*: DO NOT UPGRADE to this binary yet; the upgrade instructions are to be provided later.
 
 ### Breaking changes
-
-- [381](https://github.com/crypto-org-chain/chain-main/pull/381) Add subscription module
+- [516](https://github.com/crypto-org-chain/chain-main/pull/516) NFT module added
+### Features
+- [445](https://github.com/crypto-org-chain/chain-main/pull/445) aggregated tx history query command
+- [438](https://github.com/crypto-org-chain/chain-main/pull/438) multi-sign batch command exposed
+### Improvements
+- [536](https://github.com/crypto-org-chain/chain-main/pull/536) support for Arm64 (Linux and macOS)
+- [494](https://github.com/crypto-org-chain/chain-main/pull/494) default timeout_commit adjusted
+- [533](https://github.com/crypto-org-chain/chain-main/pull/533) Swagger UI contains chain-main API
+### Bug Fixes
+- [441](https://github.com/crypto-org-chain/chain-main/pull/441) fix for keyring on Linux
 
 *April 9, 2021*
 
