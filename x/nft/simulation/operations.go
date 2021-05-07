@@ -98,11 +98,8 @@ func SimulateMsgTransferNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.Ba
 		msg := types.NewMsgTransferNFT(
 			nftID,
 			denom,
-			"",
-			"",
-			simtypes.RandStringOfLength(r, 10), // tokenData
-			ownerAddr.String(),                 // sender
-			recipientAccount.Address.String(),  // recipient
+			ownerAddr.String(),                // sender
+			recipientAccount.Address.String(), // recipient
 		)
 		account := ak.GetAccount(ctx, ownerAddr)
 
@@ -148,10 +145,13 @@ func SimulateMsgEditNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 	) (
 		opMsg simtypes.OperationMsg, fOps []simtypes.FutureOperation, err error,
 	) {
-		ownerAddr, denom, nftID := getRandomNFTFromOwner(ctx, k, r)
-		if ownerAddr.Empty() {
-			err = fmt.Errorf("account invalid")
+		ownerAddr, denom, nftID, err := getRandomNFTFromOwnerAndCreator(ctx, k, r)
+		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeEditNFT, err.Error()), nil, err
+		}
+
+		if ownerAddr.Empty() {
+			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeEditNFT, "denom creator does not own any NFTs"), nil, nil
 		}
 
 		msg := types.NewMsgEditNFT(
@@ -206,27 +206,32 @@ func SimulateMsgMintNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 	) (
 		opMsg simtypes.OperationMsg, fOps []simtypes.FutureOperation, err error,
 	) {
-		randomSender, _ := simtypes.RandomAcc(r, accs)
+		denom, err := k.GetDenom(ctx, getRandomDenom(ctx, k, r))
+		if err != nil {
+			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeMintNFT, err.Error()), nil, err
+		}
+
+		randomSenderAddress, _ := sdk.AccAddressFromBech32(denom.Creator) // nolint: errcheck
 		randomRecipient, _ := simtypes.RandomAcc(r, accs)
 
 		msg := types.NewMsgMintNFT(
 			RandnNFTID(r, types.MinDenomLen, types.MaxDenomLen), // nft ID
-			getRandomDenom(ctx, k, r),                           // denom
+			denom.Id, // denom
 			"",
 			simtypes.RandStringOfLength(r, 45), // tokenURI
 			simtypes.RandStringOfLength(r, 10), // tokenData
-			randomSender.Address.String(),      // sender
+			randomSenderAddress.String(),       // sender
 			randomRecipient.Address.String(),   // recipient
 		)
 
-		account := ak.GetAccount(ctx, randomSender.Address)
+		account := ak.GetAccount(ctx, randomSenderAddress)
 		spendable := bk.SpendableCoins(ctx, account.GetAddress())
 		fees, err := simtypes.RandomFees(r, ctx, spendable)
 		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeMintNFT, err.Error()), nil, err
 		}
 
-		simAccount, found := simtypes.FindAccount(accs, randomSender.Address)
+		simAccount, found := simtypes.FindAccount(accs, randomSenderAddress)
 		if !found {
 			err = fmt.Errorf("account %s not found", msg.Sender)
 			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeMintNFT, err.Error()), nil, err
@@ -262,10 +267,13 @@ func SimulateMsgBurnNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 	) (
 		opMsg simtypes.OperationMsg, fOps []simtypes.FutureOperation, err error,
 	) {
-		ownerAddr, denom, nftID := getRandomNFTFromOwner(ctx, k, r)
-		if ownerAddr.Empty() {
-			err = fmt.Errorf("invalid account")
+		ownerAddr, denom, nftID, err := getRandomNFTFromOwnerAndCreator(ctx, k, r)
+		if err != nil {
 			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeBurnNFT, err.Error()), nil, err
+		}
+
+		if ownerAddr.Empty() {
+			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeBurnNFT, "denom creator does not own any NFTs"), nil, nil
 		}
 
 		msg := types.NewMsgBurnNFT(ownerAddr.String(), nftID, denom)
@@ -339,6 +347,42 @@ func getRandomNFTFromOwner(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (addr
 
 	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) // nolint: errcheck
 	return ownerAddress, denomID, tokenID
+}
+
+func getRandomNFTFromOwnerAndCreator(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (address sdk.AccAddress, denomID, tokenID string, err error) {
+	denom, err := k.GetDenom(ctx, getRandomDenom(ctx, k, r))
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	creator, _ := sdk.AccAddressFromBech32(denom.Creator) // nolint: errcheck
+
+	owner, err := k.GetOwner(ctx, creator, denom.Id)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	idCollectionsLen := len(owner.IDCollections)
+	if idCollectionsLen == 0 {
+		return nil, "", "", nil
+	}
+
+	// get random collection from owner's balance
+	i := r.Intn(idCollectionsLen)
+	idCollection := owner.IDCollections[i] // nfts IDs
+	denomID = idCollection.DenomId
+
+	idsLen := len(idCollection.TokenIds)
+	if idsLen == 0 {
+		return nil, "", "", nil
+	}
+
+	// get random nft from collection
+	i = r.Intn(idsLen)
+	tokenID = idCollection.TokenIds[i]
+
+	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) // nolint: errcheck
+	return ownerAddress, denomID, tokenID, nil
 }
 
 func getRandomDenom(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) string {

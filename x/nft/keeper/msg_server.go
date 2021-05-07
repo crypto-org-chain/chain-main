@@ -59,11 +59,17 @@ func (m msgServer) MintNFT(goCtx context.Context, msg *types.MsgMintNFT) (*types
 		return nil, err
 	}
 
+	sender, err := sdk.AccAddressFromBech32(msg.Sender)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := m.Keeper.MintNFT(ctx, msg.DenomId, msg.Id,
 		msg.Name,
 		msg.URI,
 		msg.Data,
+		sender,
 		recipient,
 	); err != nil {
 		return nil, err
@@ -135,9 +141,6 @@ func (m msgServer) TransferNFT(goCtx context.Context, msg *types.MsgTransferNFT)
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if err := m.Keeper.TransferOwner(ctx, msg.DenomId, msg.Id,
-		msg.Name,
-		msg.URI,
-		msg.Data,
 		sender,
 		recipient,
 	); err != nil {

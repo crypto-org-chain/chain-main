@@ -40,16 +40,16 @@ func (k Keeper) GetNFTs(ctx sdk.Context, denom string) (nfts []exported.NFT) {
 	return nfts
 }
 
-// Authorize checks if the sender is the owner of the given NFT
+// IsOwner checks if the sender is the owner of the given NFT
 // Return the NFT if true, an error otherwise
-func (k Keeper) Authorize(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) (types.BaseNFT, error) {
+func (k Keeper) IsOwner(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) (types.BaseNFT, error) {
 	nft, err := k.GetNFT(ctx, denomID, tokenID)
 	if err != nil {
 		return types.BaseNFT{}, err
 	}
 
 	if !owner.Equals(nft.GetOwner()) {
-		return types.BaseNFT{}, sdkerrors.Wrap(types.ErrUnauthorized, owner.String())
+		return types.BaseNFT{}, sdkerrors.Wrapf(types.ErrUnauthorized, "%s is not the owner of %s/%s", owner.String(), denomID, tokenID)
 	}
 
 	return nft.(types.BaseNFT), nil

@@ -17,7 +17,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         yield from cluster_fixture(
             Path(__file__).parent / "configs/ledger.yaml",
             worker_index,
-            tmp_path_factory,
+            tmp_path_factory.mktemp("data"),
             quiet=pytestconfig.getoption("supervisord-quiet"),
         )
     finally:

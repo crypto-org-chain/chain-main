@@ -767,16 +767,20 @@ def init_devnet(
 def relayer_chain_config(data_dir, chain):
     cfg = json.load((data_dir / chain["chain_id"] / "config.json").open())
     rpc_port = ports.rpc_port(cfg["validators"][0]["base_port"])
+    grpc_port = ports.grpc_port(cfg["validators"][0]["base_port"])
     return {
-        "key": "relayer",
-        "chain-id": chain["chain_id"],
-        # rpc address of first node
-        "rpc-addr": f"http://localhost:{rpc_port}",
-        "account-prefix": chain.get("account-prefix", "cro"),
-        "gas-adjustment": 1.5,
-        "gas-prices": chain.get("gas-prices", "0.0basecro"),
-        "trusting-period": "336h",
-        "debug": True,
+        "key_name": "relayer",
+        "id": chain["chain_id"],
+        "rpc_addr": f"http://localhost:{rpc_port}",
+        "grpc_addr": f"http://localhost:{grpc_port}",
+        "websocket_addr": f"ws://localhost:{rpc_port}/websocket",
+        "rpc_timeout": "10s",
+        "account_prefix": chain.get("account-prefix", "cro"),
+        "store_prefix": "ibc",
+        "gas": 300000,
+        "fee_denom": "basecro",
+        "fee_amount": 0,
+        "trusting_period": "336h",
     }
 
 
@@ -797,37 +801,54 @@ def init_cluster(
         init_devnet(
             data_dir / chain["chain_id"], chain, base_port, image, cmd, gen_compose_file
         )
+    paths = rly_section.get("paths", {})
     with (data_dir / SUPERVISOR_CONFIG_FILE).open("w") as fp:
         write_ini(
             fp,
-            supervisord_ini_group(
-                config.keys(), list(rly_section.get("paths", {}).keys())
-            ),
+            supervisord_ini_group(config.keys(), paths),
         )
     if len(chains) > 1:
+        relayer_config = data_dir / "relayer.toml"
         # write relayer config
-        rly_home = data_dir / "relayer"
-        rly_home.mkdir()
-        rly_cfg = rly_home / "config/config.yaml"
-        rly_cfg.parent.mkdir()
-        rly_section["chains"] = [
-            relayer_chain_config(data_dir, chain) for chain in chains
-        ]
-        with rly_cfg.open("w") as fp:
-            yaml.dump(rly_section, fp)
+        relayer_config.write_text(
+            tomlkit.dumps(
+                {
+                    "global": {
+                        "strategy": "naive",
+                        "log_level": "info",
+                    },
+                    "chains": [
+                        relayer_chain_config(data_dir, chain) for chain in chains
+                    ],
+                    "connections": [
+                        {
+                            "a_chain": path["src"]["chain-id"],
+                            "b_chain": path["dst"]["chain-id"],
+                            "paths": [
+                                {
+                                    "a_port": path["src"]["port-id"],
+                                    "b_port": path["dst"]["port-id"],
+                                }
+                            ],
+                        }
+                        for path in paths.values()
+                    ],
+                }
+            )
+        )
 
         # restore the relayer account in relayer
         for chain in chains:
             mnemonic = find_account(data_dir, chain["chain_id"], "relayer")["mnemonic"]
             subprocess.run(
                 [
-                    "relayer",
-                    "--home",
-                    rly_home,
+                    "hermes",
+                    "-c",
+                    relayer_config,
                     "keys",
                     "restore",
                     chain["chain_id"],
-                    "relayer",
+                    "--mnemonic",
                     mnemonic,
                     "--coin-type",
                     str(chain.get("coin-type", 394)),
@@ -872,11 +893,17 @@ def supervisord_ini_group(chain_ids, paths):
         "unix_http_server": {"file": "%(here)s/supervisor.sock"},
         "supervisorctl": {"serverurl": "unix://%(here)s/supervisor.sock"},
     }
-    for path in paths:
+    for path, path_cfg in paths.items():
+        src = path_cfg["src"]["chain-id"]
+        dst = path_cfg["dst"]["chain-id"]
         cfg[f"program:relayer-{path}"] = dict(
             COMMON_PROG_OPTIONS,
-            command=f"relayer --home %(here)s/relayer tx link-then-start {path}",
+            command=(
+                f"hermes -c %(here)s/relayer.toml start {src} {dst} "
+                "-p transfer -c channel-0"
+            ),
             stdout_logfile=f"%(here)s/relayer-{path}.log",
+            autostart="false",
         )
     return cfg
 

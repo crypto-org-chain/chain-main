@@ -11,16 +11,28 @@
         "url": "https://github.com/yihuang/gomod2nix/archive/af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
+    "ibc-rs": {
+        "branch": "master",
+        "description": "IBC modules and relayer - Formal specifications and Rust implementation",
+        "homepage": "",
+        "owner": "informalsystems",
+        "repo": "ibc-rs",
+        "rev": "24650a33692d169d7d196c0ee5c7c565f1564b27",
+        "sha256": "1y8klm276b7wgxdprh2a4q5cqy7325n9c5aw3wlyqn3d1wgqci8i",
+        "type": "tarball",
+        "url": "https://github.com/informalsystems/ibc-rs/archive/24650a33692d169d7d196c0ee5c7c565f1564b27.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs": {
         "branch": "nixpkgs-unstable",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "fde0082ca4b830b1d9d69b4f4189322512f067d7",
-        "sha256": "05ll6c4a2xg1wglpdszjjxbri89q521hb65s16i84qn6igzi316c",
+        "rev": "282473158cf8fafb736ed2a09f328be8b7ed2efa",
+        "sha256": "1nz2h6dmb6s5zcilb39l116y4dmp1c6w9n110g4dilm6v01linj2",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/fde0082ca4b830b1d9d69b4f4189322512f067d7.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/282473158cf8fafb736ed2a09f328be8b7ed2efa.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "relayer": {

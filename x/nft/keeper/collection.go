@@ -15,9 +15,28 @@ import (
 	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
 )
 
+// SetGenesisCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32
+// account address is invalid
+func (k Keeper) SetGenesisCollection(ctx sdk.Context, collection types.Collection) error {
+	for _, nft := range collection.NFTs {
+		if err := k.MintNFTUnverified(
+			ctx,
+			collection.Denom.Id,
+			nft.GetID(),
+			nft.GetName(),
+			nft.GetURI(),
+			nft.GetData(),
+			nft.GetOwner(),
+		); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // SetCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32 account
-// address is invalid
-func (k Keeper) SetCollection(ctx sdk.Context, collection types.Collection) error {
+// address is invalid or any NFT's owner is not the creator of denomination
+func (k Keeper) SetCollection(ctx sdk.Context, collection types.Collection, sender sdk.AccAddress) error {
 	for _, nft := range collection.NFTs {
 		if err := k.MintNFT(
 			ctx,
@@ -26,6 +45,7 @@ func (k Keeper) SetCollection(ctx sdk.Context, collection types.Collection) erro
 			nft.GetName(),
 			nft.GetURI(),
 			nft.GetData(),
+			sender,
 			nft.GetOwner(),
 		); err != nil {
 			return err

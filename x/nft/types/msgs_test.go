@@ -13,32 +13,32 @@ import (
 // ---------------------------------------- Msgs --------------------------------------------------
 
 func TestMsgTransferNFTValidateBasicMethod(t *testing.T) {
-	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, "", id, tokenURI, tokenData, address.String(), address2.String())
+	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, "", address.String(), address2.String())
 	err := newMsgTransferNFT.ValidateBasic()
 	require.Error(t, err)
 
-	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, "", tokenURI, tokenData, "", address2.String())
+	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, "", address2.String())
 	err = newMsgTransferNFT.ValidateBasic()
 	require.Error(t, err)
 
-	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, "", tokenURI, tokenData, address.String(), "")
+	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, address.String(), "")
 	err = newMsgTransferNFT.ValidateBasic()
 	require.Error(t, err)
 
-	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, id, tokenURI, tokenData, address.String(), address2.String())
+	newMsgTransferNFT = types.NewMsgTransferNFT(denomID, denom, address.String(), address2.String())
 	err = newMsgTransferNFT.ValidateBasic()
 	require.NoError(t, err)
 }
 
 func TestMsgTransferNFTGetSignBytesMethod(t *testing.T) {
-	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, denom, id, tokenURI, tokenData, address.String(), address2.String())
+	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, denom, address.String(), address2.String())
 	sortedBytes := newMsgTransferNFT.GetSignBytes()
-	expected := `{"type":"chainmain/nft/MsgTransferNFT","value":{"data":"https://google.com/token-1.json","denom_id":"denom","id":"denom","name":"id1","recipient":"cosmos15ky9du8a2wlstz6fpx3p4mqpjyrm5cgp0ctjdj","sender":"cosmos15ky9du8a2wlstz6fpx3p4mqpjyrm5cgqjwl8sq","uri":"https://google.com/token-1.json"}}`
+	expected := `{"type":"chainmain/nft/MsgTransferNFT","value":{"denom_id":"denom","id":"denom","recipient":"cosmos15ky9du8a2wlstz6fpx3p4mqpjyrm5cgp0ctjdj","sender":"cosmos15ky9du8a2wlstz6fpx3p4mqpjyrm5cgqjwl8sq"}}`
 	require.Equal(t, expected, string(sortedBytes))
 }
 
 func TestMsgTransferNFTGetSignersMethod(t *testing.T) {
-	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, denom, id, tokenURI, tokenData, address.String(), address2.String())
+	newMsgTransferNFT := types.NewMsgTransferNFT(denomID, denom, address.String(), address2.String())
 	signers := newMsgTransferNFT.GetSigners()
 	require.Equal(t, 1, len(signers))
 	require.Equal(t, address.String(), signers[0].String())

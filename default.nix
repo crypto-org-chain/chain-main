@@ -65,7 +65,7 @@ let
   };
 in
 rec {
-  inherit (pkgs) relayer cosmovisor;
+  inherit (pkgs) hermes cosmovisor;
 
   chain-maind = build-chain-maind { };
   pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
@@ -100,7 +100,7 @@ rec {
   };
   common-env = [
     cosmovisor
-    relayer
+    hermes
   ];
 
   # sources for integration tests
