@@ -17,11 +17,11 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/tendermint v0.34.9
+	github.com/tendermint/tendermint v0.34.10
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tidwall/gjson v1.7.5
 	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f
-	google.golang.org/grpc v1.35.0
+	google.golang.org/grpc v1.37.0
 
 )
 
@@ -38,3 +38,5 @@ replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
 replace github.com/golang/snappy => github.com/golang/snappy v0.0.3
+
+replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.10

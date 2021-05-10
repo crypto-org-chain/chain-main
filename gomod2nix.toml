@@ -899,12 +899,12 @@
     sha256 = "1kf1d7xmyjvy0z6j5czp6nqyvj9zrk6liv6znif08927xqfrzyln"
 
 ["github.com/golang/snappy"]
-  sumVersion = "v0.0.2"
+  sumVersion = "v0.0.3"
   ["github.com/golang/snappy".fetch]
     type = "git"
     url = "https://github.com/golang/snappy"
-    rev = "196ae77b8a26000fa30caa8b2b541e09674dbc43"
-    sha256 = "0mxjak9nxzknxrc8qh3hj0q57a2x8r9h7bm39yc1pw8xfbygmzww"
+    rev = "674baa8c7fc30da5df3074a459494a7e6b427dff"
+    sha256 = "1dc8sdca0nrqb8wri91mi2xcjm16wyawm4y0fwc5gp24ahjbrg7g"
 
 ["github.com/google/btree"]
   sumVersion = "v1.0.0"
@@ -1638,14 +1638,6 @@
     rev = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94"
     sha256 = "11zbhg4kds5idsya04bwz4plj0mmiigypzppzih731ppbk2ms1zg"
 
-["github.com/niemeyer/pretty"]
-  sumVersion = "v0.0.0-20200227124842-a10e7caefd8e"
-  ["github.com/niemeyer/pretty".fetch]
-    type = "git"
-    url = "https://github.com/niemeyer/pretty"
-    rev = "a10e7caefd8e0d600cea437f5c3613aeb1553d56"
-    sha256 = "1jmazh4xzaa3v6g46hz60q2z7nmqs9l9cxdzmmscn3kbcs2znq4v"
-
 ["github.com/nxadm/tail"]
   sumVersion = "v1.4.4"
   ["github.com/nxadm/tail".fetch]
@@ -2215,12 +2207,12 @@
     sha256 = "1zcms3l5fihzg8nf4vhdk18qpn1jkbm3rpkjfpskfcrgzlxk6vi5"
 
 ["github.com/tendermint/tendermint"]
-  sumVersion = "v0.34.9"
+  sumVersion = "v0.34.10"
   ["github.com/tendermint/tendermint".fetch]
     type = "git"
     url = "https://github.com/tendermint/tendermint"
-    rev = "e54fdb62046abe5606026e1fd79c293c4f5888d0"
-    sha256 = "04xq0p5yw0lfdqdj3rb5b0f2j8rzy5h1ibx2x790v52izcph1xfm"
+    rev = "68eceda0b57ec1d2db6bf9254355bb092a8dcb85"
+    sha256 = "124xiqxa2f4pnhsz173wr40wk31wf4xl3r9ixqa6d0myff86l64v"
 
 ["github.com/tendermint/tm-db"]
   sumVersion = "v0.6.4"
@@ -2229,6 +2221,30 @@
     url = "https://github.com/tendermint/tm-db"
     rev = "6f9a08cd4522fb13d8df69b1694587d5015114fc"
     sha256 = "1sgjf2vaq554ybc0cwkzn17cz2ibzph2rq0dgaw21c2hym09437x"
+
+["github.com/tidwall/gjson"]
+  sumVersion = "v1.7.5"
+  ["github.com/tidwall/gjson".fetch]
+    type = "git"
+    url = "https://github.com/tidwall/gjson"
+    rev = "d9710733f0d72d6d4ae982364577eec743ccf96c"
+    sha256 = "0nngpb6fj2cwsxfnjbmqm3af4nl48zjdsb5dlwc45mvdqwkksxg5"
+
+["github.com/tidwall/match"]
+  sumVersion = "v1.0.3"
+  ["github.com/tidwall/match".fetch]
+    type = "git"
+    url = "https://github.com/tidwall/match"
+    rev = "c2f534168b739a7ec1821a33839fb2f029f26bbc"
+    sha256 = "1haa5p7hsjqx0ijxbypgc9c31v128mykm1g0lyymvkk3qdajvcyr"
+
+["github.com/tidwall/pretty"]
+  sumVersion = "v1.1.0"
+  ["github.com/tidwall/pretty".fetch]
+    type = "git"
+    url = "https://github.com/tidwall/pretty"
+    rev = "b87289d70a916a208a3e43f79e4a033337f114cf"
+    sha256 = "1ndk84i58zzlb818r0nw608mgmz6hns677zy1x4jx2vcsmxn0izg"
 
 ["github.com/tmc/grpc-websocket-proxy"]
   sumVersion = "v0.0.0-20190109142713-0ad062ec5ee5"
@@ -2245,14 +2261,6 @@
     url = "https://github.com/tv42/httpunix"
     rev = "b75d8614f926c077e48d85f1f8f7885b758c6225"
     sha256 = "1sd9nnyyjm7n96fa18l0shlnapld4m0yj5ij2ba0l9yaaa2byqm9"
-
-["github.com/ugorji/go"]
-  sumVersion = "v1.1.4"
-  ["github.com/ugorji/go".fetch]
-    type = "git"
-    url = "https://github.com/ugorji/go"
-    rev = "2adff0894ba3bc2eeb9f9aea45fefd49802e1a13"
-    sha256 = "0ma2qvn5wqvjidpdz74x832a813qnr1cxbx6n6n125ak9b3wbn5w"
 
 ["github.com/ugorji/go/codec"]
   sumVersion = "v0.0.0-20181204163529-d75b2dcb6bc8"
@@ -2536,12 +2544,12 @@
     sha256 = "0mndnv3hdngr3bxp7yxfd47cas4prv98sqw534mx7vp38gd88n5r"
 
 ["gopkg.in/check.v1"]
-  sumVersion = "v1.0.0-20200902074654-038fdea0a05b"
+  sumVersion = "v1.0.0-20190902080502-41f04d3bba15"
   ["gopkg.in/check.v1".fetch]
     type = "git"
     url = "https://gopkg.in/check.v1"
-    rev = "038fdea0a05bc030b0bfda479dc2e08d2220ec74"
-    sha256 = "060kpz01bfglrd7przzgq8a1fqf1x0hlkmdj6isindzwx3kfhnm4"
+    rev = "41f04d3bba152ddec2103e299fed053415705330"
+    sha256 = "0vfk9czmlxmp6wndq8k17rhnjxal764mxfhrccza7nwlia760pjy"
 
 ["gopkg.in/cheggaaa/pb.v1"]
   sumVersion = "v1.0.25"
