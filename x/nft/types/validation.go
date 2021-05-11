@@ -50,7 +50,7 @@ func ValidateTokenID(tokenID string) error {
 		return sdkerrors.Wrapf(ErrInvalidTokenID, "the length of nft id(%s) only accepts value [%d, %d]", tokenID, MinDenomLen, MaxDenomLen)
 	}
 	if !IsBeginWithAlpha(tokenID) || !IsAlphaNumeric(tokenID) {
-		return sdkerrors.Wrapf(ErrInvalidTokenID, "nft id(%s) only accepts lowecase alphanumeric characters, and begin with an english letter", tokenID)
+		return sdkerrors.Wrapf(ErrInvalidTokenID, "nft id(%s) only accepts lowercase alphanumeric characters, and begin with an english letter", tokenID)
 	}
 	return nil
 }
