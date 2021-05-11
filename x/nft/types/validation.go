@@ -30,7 +30,7 @@ func ValidateDenomID(denomID string) error {
 		return sdkerrors.Wrapf(ErrInvalidDenom, "the length of denom(%s) only accepts value [%d, %d]", denomID, MinDenomLen, MaxDenomLen)
 	}
 	if !IsBeginWithAlpha(denomID) || !IsAlphaNumeric(denomID) {
-		return sdkerrors.Wrapf(ErrInvalidDenom, "the denom(%s) only accepts alphanumeric characters, and begin with an english letter", denomID)
+		return sdkerrors.Wrapf(ErrInvalidDenom, "the denom(%s) only accepts lowercase alphanumeric characters, and begin with an english letter", denomID)
 	}
 	return nil
 }
@@ -50,7 +50,7 @@ func ValidateTokenID(tokenID string) error {
 		return sdkerrors.Wrapf(ErrInvalidTokenID, "the length of nft id(%s) only accepts value [%d, %d]", tokenID, MinDenomLen, MaxDenomLen)
 	}
 	if !IsBeginWithAlpha(tokenID) || !IsAlphaNumeric(tokenID) {
-		return sdkerrors.Wrapf(ErrInvalidTokenID, "nft id(%s) only accepts alphanumeric characters, and begin with an english letter", tokenID)
+		return sdkerrors.Wrapf(ErrInvalidTokenID, "nft id(%s) only accepts lowercase alphanumeric characters, and begin with an english letter", tokenID)
 	}
 	return nil
 }
