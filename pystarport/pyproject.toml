@@ -1,12 +1,20 @@
 [tool.poetry]
 name = "pystarport"
-version = "0.1.0"
-description = "python version of cosmos starport"
-authors = ["yihuang <yi.codeplayer@gmail.com>"]
+version = "0.1.1"
+description = "Spawn local devnets for cosmos-sdk chains"
+authors = ["huangyi <huang@crypto.com>"]
+license = "Apache"
+keywords = ["CRO", "blockchain", "crypto.com", "cosmos"]
+readme = "README.md"
+homepage = "https://github.com/crypto-org-chain/chain-main/tree/master/pystarport"
+repository = "https://github.com/crypto-org-chain/chain-main"
+include = [
+    "LICENSE",
+]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-fire = {git = "https://github.com/google/python-fire.git"}
+fire = "^0.4.0"
 tomlkit = "^0.7.0"
 jsonmerge = "^1.7.0"
 PyYAML = "^5.3.1"

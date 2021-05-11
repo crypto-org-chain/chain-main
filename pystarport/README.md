@@ -4,30 +4,31 @@ it can also be used for any cosmos-sdk based projects.
 
 ## Configuration
 
-a typical configuration for devnet is like this:
+a typical configuration for a devnet is like this:
 
 ```
-chain_id: chainmaind
-validators:
-  - coins: 10cro
-    staked: 10cro
-  - coins: 10cro
-    staked: 10cro
-accounts:
-  - name: community
-    coins: 100cro
-  - name: ecosystem
-    coins: 200cro
-  - name: reserve
-    coins: 200cro
-    vesting: "1d"
-  - name: launch
-    coins: 100cro
-genesis:
- app_state:
-   staking:
-     params:
-       unbonding_time: "10s"
+chainmaind:
+  cmd: chain-maind  # chain binary to use, optional
+  validators:  # genesis validators
+    - coins: 10cro
+      staked: 10cro
+    - coins: 10cro
+      staked: 10cro
+  accounts:  # genesis accounts
+    - name: community
+      coins: 100cro
+    - name: ecosystem
+      coins: 200cro
+    - name: reserve
+      coins: 200cro
+      vesting: "1d"
+    - name: launch
+      coins: 100cro
+  genesis:  # patch genesis states
+   app_state:
+     staking:
+       params:
+         unbonding_time: "10s"
 ```
 
 The `validators` section defines how many nodes to run, for each node, a home directory is initialized in
@@ -156,4 +157,74 @@ validators:
     hostname: node1
 ```
 
-`pystarport init --gen_compose_file` will also generate a `docker-compose.yml` file for you.
+`pystarport init --gen_compose_file` will also generate a `docker-compose.yml` file for you.
+
+## IBC
+
+It can setup multiple devnets at once, and connect them with ibc relayer.
+
+```
+ibc-0:
+  validators:
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26650
+    - coins: 10cro
+      staked: 10cro
+  accounts:
+    - name: relayer
+      coins: 100cro
+  genesis:
+    app_state:
+      transfer:
+        params:
+          receive_enabled: true
+          send_enabled: true
+ibc-1:
+  validators:
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26750
+    - coins: 10cro
+      staked: 10cro
+      base_port: 26760
+  accounts:
+    - name: relayer
+      coins: 100cro
+  genesis:
+    app_state:
+      transfer:
+        params:
+          receive_enabled: true
+          send_enabled: true
+relayer:
+  global:
+    timeout: 10s
+    light-cache-size: 20
+  paths:
+    demo:
+      src:
+        chain-id: ibc-0
+        port-id: transfer
+        order: unordered
+        version: ics20-1
+      dst:
+        chain-id: ibc-1
+        port-id: transfer
+        order: unordered
+        version: ics20-1
+      strategy:
+        type: naive
+```
+
+With following commands to setup ibc, you are ready to play with ibc functionalities:
+
+```
+# spawn the devnets
+pystarport serve --config ibc.yaml
+# setup ibc channel
+hermes -c data/relayer.toml create channel ibc-0 ibc-1 --port-a transfer --port-b transfer
+# start relayer process
+supervisorctl -c data/tasks.ini relayer-demo
+```
+
