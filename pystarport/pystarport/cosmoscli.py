@@ -825,3 +825,124 @@ class CosmosCLI:
 
     def unsaferesetall(self):
         return self.raw("unsafe-reset-all")
+
+    def create_nft(self, from_addr, denomid, denomname, schema, fees):
+        return json.loads(
+            self.raw(
+                "tx",
+                "nft",
+                "issue",
+                denomid,
+                "-y",
+                fees=fees,
+                name=denomname,
+                schema=schema,
+                home=self.data_dir,
+                from_=from_addr,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def query_nft(self, denomid):
+        return json.loads(
+            self.raw(
+                "query",
+                "nft",
+                "denom",
+                denomid,
+                output="json",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def create_nft_token(self, from_addr, to_addr, denomid, tokenid, uri, fees):
+        return json.loads(
+            self.raw(
+                "tx",
+                "nft",
+                "mint",
+                denomid,
+                tokenid,
+                "-y",
+                uri=uri,
+                recipient=to_addr,
+                home=self.data_dir,
+                from_=from_addr,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def query_nft_token(self, denomid, tokenid):
+        return json.loads(
+            self.raw(
+                "query",
+                "nft",
+                "token",
+                denomid,
+                tokenid,
+                output="json",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def burn_nft_token(self, from_addr, denomid, tokenid):
+        return json.loads(
+            self.raw(
+                "tx",
+                "nft",
+                "burn",
+                denomid,
+                tokenid,
+                "-y",
+                from_=from_addr,
+                keyring_backend="test",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def edit_nft_token(self, from_addr, denomid, tokenid, newuri, newname):
+        return json.loads(
+            self.raw(
+                "tx",
+                "nft",
+                "edit",
+                denomid,
+                tokenid,
+                "-y",
+                from_=from_addr,
+                uri=newuri,
+                name=newname,
+                keyring_backend="test",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def transfer_nft_token(self, from_addr, to_addr, denomid, tokenid):
+        return json.loads(
+            self.raw(
+                "tx",
+                "nft",
+                "transfer",
+                to_addr,
+                denomid,
+                tokenid,
+                "-y",
+                from_=from_addr,
+                keyring_backend="test",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )

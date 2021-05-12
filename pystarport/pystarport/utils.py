@@ -31,7 +31,7 @@ def write_ini(fp, cfg):
 def safe_cli_string(s):
     'wrap string in "", used for cli argument when contains spaces'
     if len(f"{s}".split()) > 1:
-        return f'"{s}"'
+        return f"'{s}'"
     return f"{s}"
 
 

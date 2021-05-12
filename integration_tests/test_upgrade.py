@@ -279,8 +279,8 @@ def test_cancel_upgrade(cluster):
         cluster,
         "cancel-software-upgrade",
         {
-            "title": "there's bug, cancel upgrade",
-            "description": "there's bug, cancel upgrade",
+            "title": "there is bug, cancel upgrade",
+            "description": "there is bug, cancel upgrade",
             "deposit": "0.1cro",
         },
     )
