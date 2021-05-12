@@ -544,6 +544,66 @@ class ClusterCLI:
             target_version,
         )
 
+    def create_nft(
+        self,
+        from_addr,
+        denomid="mydenomid",
+        denomname="mydenomname",
+        schema='{"title":"Asset Metadata","type":"object",'
+        '"properties":{"name":{"type":"string",'
+        '"description":"testidentity"},"description":'
+        '{"type":"string","description":"testdescription"},'
+        '"image":{"type":"string","description":"testdescription"}}}',
+        fees=None,
+        i=0,
+    ):
+        return self.cosmos_cli(i).create_nft(
+            from_addr, denomid, denomname, schema, fees
+        )
+
+    def query_nft(self, denomid="mydenomid", i=0):
+        return self.cosmos_cli(i).query_nft(denomid)
+
+    def create_nft_token(
+        self,
+        from_addr,
+        to_addr,
+        denomid="mydenomid",
+        tokenid="mytokenid",
+        uri="myuri",
+        fees=None,
+        i=0,
+    ):
+        return self.cosmos_cli(i).create_nft_token(
+            from_addr, to_addr, denomid, tokenid, uri, fees
+        )
+
+    def query_nft_token(self, denomid="mydenomid", tokenid="mytokenid", i=0):
+        return self.cosmos_cli(i).query_nft_token(denomid, tokenid)
+
+    def burn_nft_token(self, from_addr, denomid="mydenomid", tokenid="mytokenid", i=0):
+        return self.cosmos_cli(i).burn_nft_token(from_addr, denomid, tokenid)
+
+    def edit_nft_token(
+        self,
+        from_addr,
+        denomid="mydenomid",
+        tokenid="mytokenid",
+        newuri="newuri",
+        newname="newname",
+        i=0,
+    ):
+        return self.cosmos_cli(i).edit_nft_token(
+            from_addr, denomid, tokenid, newuri, newname
+        )
+
+    def transfer_nft_token(
+        self, from_addr, to_addr, denomid="mydenomid", tokenid="mytokenid", i=0
+    ):
+        return self.cosmos_cli(i).transfer_nft_token(
+            from_addr, to_addr, denomid, tokenid
+        )
+
 
 def start_cluster(data_dir):
     cmd = [
