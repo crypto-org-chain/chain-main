@@ -92,6 +92,7 @@ archives:
       format: zip
   builds:
   - chain-maind-darwin
+  - chain-maind-darwin-arm64
   - chain-maind-windows
   - chain-maind-linux
   - chain-maind-linux-arm64
