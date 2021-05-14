@@ -434,7 +434,7 @@ func New(
 	app.ScopedTransferKeeper = scopedTransferKeeper
 
 	app.UpgradeKeeper.SetUpgradeHandler("v2.0.0", func(ctx sdk.Context, _ upgradetypes.Plan) {
-		// TODO
+		// https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md
 	})
 
 	return app

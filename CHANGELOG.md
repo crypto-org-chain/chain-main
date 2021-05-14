@@ -1,9 +1,9 @@
 # Changelog
 
-*May 10, 2021*
+*May 14, 2021*
 
-## v2.0.0-croeseid
-This pre-release version contains the scope of [ADR-003](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md) for the Croeseid testnet upgrade. It also upgrades to the latest version of Tendermint (0.34.10).
+## v2.0.0
+This pre-release version contains the scope of [ADR-003](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md) for the mainnet upgrade. It also upgrades to the latest version of Tendermint (0.34.10).
 *WARNING*: DO NOT UPGRADE to this binary yet; the upgrade instructions are to be provided later.
 
 ### Breaking changes
