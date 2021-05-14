@@ -18,6 +18,21 @@ builds:
         - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+  - id: "chain-maind-darwin-arm64"
+    main: ./cmd/chain-maind
+    binary: bin/chain-maind
+    env:
+      - CGO_ENABLED=1
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    flags:
+      - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
+    ldflags:
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-linux"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -77,6 +92,7 @@ archives:
       format: zip
   builds:
   - chain-maind-darwin
+  - chain-maind-darwin-arm64
   - chain-maind-windows
   - chain-maind-linux
   - chain-maind-linux-arm64
