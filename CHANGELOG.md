@@ -1,5 +1,15 @@
 # Changelog
 
+*May 18, 2021*
+
+## v2.0.1
+This pre-release version is the same as v2.0.0, but contains an upgrade-critical fix.
+NOTE that the upgrade plan name is still expected to be "v2.0.0".
+*WARNING*: DO NOT UPGRADE to this binary yet; the upgrade instructions are to be provided later.
+
+### Bug Fixes
+- [552](https://github.com/crypto-org-chain/chain-main/pull/552) nft module store initialized after upgrade
+
 *May 14, 2021*
 
 ## v2.0.0
