@@ -249,7 +249,7 @@ class ClusterCLI:
             node0["p2p"]["persistent_peers"],
             custom_edit=custom_edit_tm,
         )
-        edit_app_cfg(home / "config/app.toml", base_port)
+        edit_app_cfg(home / "config/app.toml", base_port, {})
 
         # create validator account
         self.create_account("validator", i, mnemonic)
@@ -838,7 +838,7 @@ def init_devnet(
         edit_app_cfg(
             data_dir / f"node{i}/config/app.toml",
             val["base_port"],
-            val.get("minimum-gas-prices", ""),
+            val.get("app-config", {}),
         )
 
     # write supervisord config file
@@ -1028,10 +1028,32 @@ def edit_tm_cfg(path, base_port, peers, *, custom_edit=None):
     open(path, "w").write(tomlkit.dumps(doc))
 
 
-def edit_app_cfg(path, base_port, minimum_gas_prices=""):
+def patch_toml_doc(doc, patch):
+    for k, v in patch.items():
+        if isinstance(v, dict):
+            patch_toml_doc(doc[k], v)
+        else:
+            doc[k] = v
+
+
+def edit_app_cfg(path, base_port, app_config):
+    default_patch = {
+        "api": {
+            "enable": True,
+            "swagger": True,
+            "enable-unsafe-cors": True,
+            "address": "tcp://0.0.0.0:%d" % ports.api_port(base_port),
+        },
+        "grpc": {
+            "address": "0.0.0.0:%d" % ports.grpc_port(base_port),
+        },
+        "pruning": "nothing",
+        "state-sync": {
+            "snapshot-interval": 5,
+            "snapshot-keep-recent": 10,
+        },
+    }
     doc = tomlkit.parse(open(path).read())
-    doc["grpc-web"] = {}
-    doc["grpc-web"]["address"] = "0.0.0.0:%d" % ports.grpc_web_port(base_port)
     patch_toml_doc(doc, jsonmerge.merge(default_patch, app_config))
     open(path, "w").write(tomlkit.dumps(doc))
 
