@@ -37,4 +37,4 @@ replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
-replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.34.4-0.20210521094949-997f9aa47623
+replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.34.4-0.20210521101647-650f25c89658
