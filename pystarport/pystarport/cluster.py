@@ -215,6 +215,17 @@ class ClusterCLI:
         home = self.home(i)
         (home / "config/genesis.json").unlink()
         (home / "config/genesis.json").symlink_to("../../genesis.json")
+        (home / "config/client.toml").write_text(
+            tomlkit.dumps(
+                {
+                    "chain-id": self.chain_id,
+                    "keyring-backend": "test",
+                    "output": "json",
+                    "node": self.node_rpc(i),
+                    "broadcast-mode": "block",
+                }
+            )
+        )
         # use p2p peers from node0's config
         node0 = tomlkit.parse((self.data_dir / "node0/config/config.toml").read_text())
 
@@ -247,7 +258,7 @@ class ClusterCLI:
         path = self.data_dir / SUPERVISOR_CONFIG_FILE
         ini = configparser.RawConfigParser()
         ini.read_file(path.open())
-        chain_id = self.config["chain_id"]
+        chain_id = self.chain_id
         prgname = f"{chain_id}-node{i}"
         section = f"program:{prgname}"
         ini.add_section(section)
@@ -744,6 +755,20 @@ def init_devnet(
         (data_dir / f"node{i}/config/genesis.json").symlink_to("../../genesis.json")
         (data_dir / f"node{i}/config/gentx").symlink_to("../../gentx")
 
+        # write client config
+        rpc_port = ports.rpc_port(val["base_port"])
+        (data_dir / f"node{i}/config/client.toml").write_text(
+            tomlkit.dumps(
+                {
+                    "chain-id": config["chain_id"],
+                    "keyring-backend": "test",
+                    "output": "json",
+                    "node": f"tcp://{val['hostname']}:{rpc_port}",
+                    "broadcast-mode": "block",
+                }
+            )
+        )
+
     # now we can create ClusterCLI
     cli = ClusterCLI(data_dir.parent, chain_id=config["chain_id"], cmd=cmd)
 
@@ -1026,6 +1051,8 @@ def edit_app_cfg(path, base_port, app_config):
         },
     }
     doc = tomlkit.parse(open(path).read())
+    doc["grpc-web"] = {}
+    doc["grpc-web"]["address"] = "0.0.0.0:%d" % ports.grpc_web_port(base_port)
     patch_toml_doc(doc, jsonmerge.merge(default_patch, app_config))
     open(path, "w").write(tomlkit.dumps(doc))
 

@@ -20,3 +20,7 @@ def pprof_port(base_port):
 
 def grpc_port_tx_only(base_port):
     return base_port + 6
+
+
+def grpc_web_port(base_port):
+    return base_port + 8
