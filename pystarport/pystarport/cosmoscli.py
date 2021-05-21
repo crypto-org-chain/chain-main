@@ -452,7 +452,6 @@ class CosmosCLI:
             multisig_threshold="2",
             home=self.data_dir,
             keyring_backend="test",
-            output="json",
         )
 
     def sign_multisig_tx(self, tx_file, multi_addr, signer_name):
@@ -544,7 +543,10 @@ class CosmosCLI:
         return r.decode("utf-8")
 
     def broadcast_tx(self, tx_file):
-        return json.loads(self.raw("tx", "broadcast", tx_file, node=self.node_rpc))
+        r = self.raw(
+            "tx", "broadcast", tx_file, node=self.node_rpc, broadcast_mode="block"
+        )
+        return r.decode("utf-8")
 
     def unjail(self, addr):
         return json.loads(
