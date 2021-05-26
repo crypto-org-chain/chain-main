@@ -10,12 +10,13 @@ import (
 
 // query endpoints supported by the NFT Querier
 const (
-	QuerySupply     = "supply"
-	QueryOwner      = "owner"
-	QueryCollection = "collection"
-	QueryDenoms     = "denoms"
-	QueryDenom      = "denom"
-	QueryNFT        = "nft"
+	QuerySupply      = "supply"
+	QueryOwner       = "owner"
+	QueryCollection  = "collection"
+	QueryDenoms      = "denoms"
+	QueryDenom       = "denom"
+	QueryDenomByName = "denom-by-name"
+	QueryNFT         = "nft"
 )
 
 // QuerySupplyParams defines the params for queries:
@@ -72,6 +73,18 @@ type QueryDenomParams struct {
 func NewQueryDenomParams(id string) QueryDenomParams {
 	return QueryDenomParams{
 		ID: id,
+	}
+}
+
+// QueryDenomByNameParams defines the params for querying a denom by name
+type QueryDenomByNameParams struct {
+	Name string
+}
+
+// NewQueryDenomByNameParams creates a new instance of QueryDenomByNameParams
+func NewQueryDenomByNameParams(name string) QueryDenomByNameParams {
+	return QueryDenomByNameParams{
+		Name: name,
 	}
 }
 

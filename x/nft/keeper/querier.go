@@ -26,6 +26,8 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 			return queryCollection(ctx, req, k, legacyQuerierCdc)
 		case types.QueryDenom:
 			return queryDenom(ctx, req, k, legacyQuerierCdc)
+		case types.QueryDenomByName:
+			return queryDenomByName(ctx, req, k, legacyQuerierCdc)
 		case types.QueryDenoms:
 			return queryDenoms(ctx, req, k, legacyQuerierCdc)
 		case types.QueryNFT:
@@ -107,6 +109,27 @@ func queryDenom(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 	}
 
 	denom, err := k.GetDenom(ctx, params.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, denom)
+	if err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err.Error())
+	}
+
+	return bz, nil
+}
+
+func queryDenomByName(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
+	var params types.QueryDenomByNameParams
+
+	if err := legacyQuerierCdc.UnmarshalJSON(req.Data, &params); err != nil {
+		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONUnmarshal, err.Error())
+	}
+
+	denom, err := k.GetDenomByName(ctx, params.Name)
 
 	if err != nil {
 		return nil, err

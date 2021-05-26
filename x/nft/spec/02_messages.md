@@ -5,7 +5,8 @@
 
 ## MsgIssueDenom
 
-This message defines a type of non-fungible tokens, there can be multiple non-fungible tokens of the same type.
+This message defines a type of non-fungible tokens, there can be multiple non-fungible tokens of the same type. Note
+that both, `Id` and `Name`, are required to be unique globally.
 
 | **Field** | **Type** | **Description**                                                                                                 |
 | :-------- | :------- | :-------------------------------------------------------------------------------------------------------------- |
