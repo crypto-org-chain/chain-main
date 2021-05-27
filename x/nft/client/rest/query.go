@@ -27,6 +27,8 @@ func registerQueryRoutes(cliCtx client.Context, r *mux.Router, queryRoute string
 	r.HandleFunc(fmt.Sprintf("/%s/denoms", types.ModuleName), queryDenoms(cliCtx, queryRoute)).Methods("GET")
 	// Query the denom
 	r.HandleFunc(fmt.Sprintf("/%s/denoms/{%s}", types.ModuleName, RestParamDenomID), queryDenom(cliCtx, queryRoute)).Methods("GET")
+	// Query the denom by name
+	r.HandleFunc(fmt.Sprintf("/%s/denoms/name/{%s}", types.ModuleName, RestParamDenomName), queryDenomByName(cliCtx, queryRoute)).Methods("GET")
 	// Query a single NFT
 	r.HandleFunc(fmt.Sprintf("/%s/nfts/{%s}/{%s}", types.ModuleName, RestParamDenomID, RestParamTokenID), queryNFT(cliCtx, queryRoute)).Methods("GET")
 }
@@ -147,6 +149,7 @@ func queryCollection(cliCtx client.Context, queryRoute string) http.HandlerFunc 
 	}
 }
 
+// nolint: dupl
 func queryDenom(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// nolint: govet
@@ -169,6 +172,40 @@ func queryDenom(cliCtx client.Context, queryRoute string) http.HandlerFunc {
 
 		res, height, err := cliCtx.QueryWithData(
 			fmt.Sprintf("custom/%s/%s", queryRoute, types.QueryDenom), bz,
+		)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		cliCtx = cliCtx.WithHeight(height)
+		rest.PostProcessResponse(w, cliCtx, res)
+	}
+}
+
+// nolint: dupl
+func queryDenomByName(cliCtx client.Context, queryRoute string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// nolint: govet
+		cliCtx, ok := rest.ParseQueryHeightOrReturnBadRequest(w, cliCtx, r)
+		if !ok {
+			return
+		}
+
+		denomName := mux.Vars(r)[RestParamDenomName]
+		if err := types.ValidateDenomName(denomName); err != nil {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+		}
+
+		params := types.NewQueryDenomByNameParams(denomName)
+		bz, err := cliCtx.LegacyAmino.MarshalJSON(params)
+		if err != nil {
+			rest.WriteErrorResponse(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		res, height, err := cliCtx.QueryWithData(
+			fmt.Sprintf("custom/%s/%s", queryRoute, types.QueryDenomByName), bz,
 		)
 		if err != nil {
 			rest.WriteErrorResponse(w, http.StatusInternalServerError, err.Error())

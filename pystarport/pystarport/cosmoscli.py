@@ -861,6 +861,20 @@ class CosmosCLI:
             )
         )
 
+    def query_denom_by_name(self, denomname):
+        return json.loads(
+            self.raw(
+                "query",
+                "nft",
+                "denom-by-name",
+                denomname,
+                output="json",
+                home=self.data_dir,
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
     def create_nft_token(self, from_addr, to_addr, denomid, tokenid, uri, fees):
         return json.loads(
             self.raw(

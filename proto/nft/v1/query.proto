@@ -32,6 +32,11 @@ service Query {
         option (google.api.http).get = "/chainmain/nft/denoms/{denom_id}";
     }
 
+    // DenomByName queries the definition of a given denom by name
+    rpc DenomByName(QueryDenomByNameRequest) returns (QueryDenomByNameResponse) {
+        option (google.api.http).get = "/chainmain/nft/denoms/name/{denom_name}";
+    }
+
     // Denoms queries all the denoms
     rpc Denoms(QueryDenomsRequest) returns (QueryDenomsResponse) {
         option (google.api.http).get = "/chainmain/nft/denoms";
@@ -88,6 +93,16 @@ message QueryDenomRequest {
 
 // QueryDenomResponse is the response type for the Query/Denom RPC method
 message QueryDenomResponse {
+    Denom denom = 1;
+}
+
+// QueryDenomByNameRequest is the request type for the Query/DenomByName RPC method
+message QueryDenomByNameRequest {
+    string denom_name = 1 [ (gogoproto.moretags) = "yaml:\"denom_name\"" ];
+}
+
+// QueryDenomByNameResponse is the response type for the Query/DenomByName RPC method
+message QueryDenomByNameResponse {
     Denom denom = 1;
 }
 
