@@ -8,6 +8,8 @@ ibc-0:
   accounts:
     - name: relayer
       coins: 100cro
+    - name: signer
+      coins: 200cro
   genesis:
     app_state:
       transfer:
@@ -25,6 +27,8 @@ ibc-1:
   accounts:
     - name: relayer
       coins: 100cro
+    - name: signer
+      coins: 200cro
   genesis:
     app_state:
       transfer:
