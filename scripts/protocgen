@@ -7,7 +7,10 @@
 set -eo pipefail
 
 proto_dirs=$(find ./proto -path -prune -o -name '*.proto' -print0 | xargs -0 -n1 dirname | sort | uniq)
+echo "Generate protobuf files from ./proto to ./x"
 for dir in $proto_dirs; do
+  echo "processing "${dir}
+# buf is enhanced protobuf generator
   buf protoc \
   -I "proto" \
   -I "third_party/cosmos-sdk/proto" \

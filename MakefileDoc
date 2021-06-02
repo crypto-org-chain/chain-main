@@ -28,10 +28,7 @@ proto-format:
 	@echo "Formatting Protobuf files"
 	find ./ -not -path "./third_party/*" -name *.proto -exec clang-format -i {} \;
 
-proto-lint:
-	@docker run --rm -v $(CURDIR):/workspace --workdir /workspace bufbuild/buf lint --error-format=json
-
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-format proto-gen
 
 update-swagger-docs: statik
 	$(BINDIR)/statik -src=app/docs/swagger-ui -dest=app/docs -f -m
