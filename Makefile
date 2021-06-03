@@ -223,5 +223,11 @@ release:
 ###                              Documentation                              ###
 ###############################################################################
 
+# generate api swagger document
 document:
 	make all -f MakefileDoc
+
+# generate protobuf files
+# ./proto -> ./x
+proto-all:
+	make proto-all -f MakefileDoc
