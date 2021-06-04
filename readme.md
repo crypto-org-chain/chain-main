@@ -12,16 +12,24 @@
 
 ## Table of Contents
 
-1. [Description](#description)
-2. [Contributing](#contributing)
-3. [License](#license)
-4. [Documentation](#documentation)
-5. [Build](#build)
-   1. [Nix](#nix)
-6. [Start a Local Full Node](#start-local-full-node)
-7. [Send your First Transaction](#send-first-transaction)
-8. [Testing](#testing)
-9. [Useful Links](#useful-links)
+- [Table of Contents](#table-of-contents)
+- [1. Description](#1-description)
+- [2. Contributing](#2-contributing)
+- [3. License](#3-license)
+- [4. Documentation](#4-documentation)
+- [5. Build full node](#5-build-full-node)
+    - [1. Nix](#1-nix)
+- [6. Start a local Development Network and Node](#6-start-a-local-development-network-and-node)
+- [7. Send Your First Transaction](#7-send-your-first-transaction)
+- [8. Testing](#8-testing)
+- [9. Pystarport Quick Start](#9-pystarport-quick-start)
+  - [install latest python (for linux)](#install-latest-python-for-linux)
+  - [set path (for linux or for mac)](#set-path-for-linux-or-for-mac)
+  - [install pystarport](#install-pystarport)
+  - [quitck start](#quitck-start)
+  - [get status](#get-status)
+  - [stop all](#stop-all)
+- [10. Useful links](#10-useful-links)
 
 <a id="description" />
 
@@ -75,6 +83,7 @@ On Linux and macOS, you can [install it as follows](https://nixos.org/download.h
 ```
 $ curl -L https://nixos.org/nix/install | sh
 ```
+
 If you're using a recent Mac with a [T2 chip](https://support.apple.com/en-us/HT208862), you might need to check [nix macos installation](https://nixos.org/manual/nix/stable/#sect-macos-installation) when the command above is not working in your environment.
 
 You can then run:
@@ -96,7 +105,6 @@ $ cachix use crypto-org-chain
 
 ## 6. Start a local Development Network and Node
 
-
 Please follow this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
 
 <a id="send-first-transaction" />
@@ -115,16 +123,71 @@ There are different tests that can be executed in the following ways:
 - simulations: `make test-sim-*` (e.g. `make test-sim-nondeterminism`)
 - integrations tests: `make nix-integration-test` (see more details in [their documentation](integration_tests/README.md))
 
+<a id="pystarport" />
+
+## 9. Pystarport Quick Start
+
+you can install pystarport to manage nodes for development.
+
+### install latest python (for linux)
+
+python version should be 3.8 or above.
+you can install python like this.
+
+```
+git clone git@github.com:python/cpython.git
+cd cpython
+git checkout tags/v3.9.5
+./configure
+make
+sudo make install
+```
+
+### set path (for linux or for mac)
+in some cases, if there are multiple python versions, pystarport cannot be found.  
+then adjust python path.  
+also `$HOME/.local/bin` should be included to the PATH.
+
+
+
+```
+export PATH=/usr/local/bin:$HOME/.local/bin:$PATH
+```
+
+### install pystarport
+
+python3 -m pip install pystarport
+
+### quitck start
+
+run two nodes devnet
+
+```
+pystarport serve --data=./data --config=./integration_tests/configs/default.yaml
+```
+
+### get status
+
+```
+pystarport supervisorctl status
+```
+
+### stop all
+
+```
+pystarport supervisorctl stop all
+```
+
 ---
 
 <a id="useful-links" />
 
-## 9. Useful links
+## 10. Useful links
 
 - [Project Website](http://crypto.org/)
 - [Technical Documentation](http://crypto.org/docs)
 - Community chatrooms (non-technical): [Discord](https://discord.gg/nsp9JTC) [Telegram](https://t.me/CryptoComOfficial)
-- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org&nbsp;Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
+- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org Chain =discord =flat-square)](https://discord.gg/pahqHz26q4)
 
 - [Cosmos SDK documentation](https://docs.cosmos.network)
 - [Cosmos Discord](https://discord.gg/W8trcGV)
