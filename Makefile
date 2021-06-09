@@ -153,7 +153,26 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix run -f ./. run-integration-tests -c run-integration-tests
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m normal"
+
+nix-integration-test-upgrade: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m upgrade"	
+
+nix-integration-test-ledger: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m ledger"		
+
+nix-integration-test-slow: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m slow"
+
+nix-integration-test-ibc: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m ibc"
+
+nix-integration-test-byzantine: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m byzantine"
+
+nix-integration-test-gov: check-network make-proto
+	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m gov"
+
 
 nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \

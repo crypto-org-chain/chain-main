@@ -14,6 +14,8 @@ from .utils import (
     wait_for_port,
 )
 
+pytestmark = pytest.mark.normal
+
 
 @pytest.fixture(scope="module")
 def cluster(worker_index, pytestconfig, tmp_path_factory):

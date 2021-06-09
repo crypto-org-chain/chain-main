@@ -133,9 +133,7 @@ rec {
     set -e
     export PATH=${ci-env}/bin:$PATH
     export TESTS=${tests_src}/integration_tests
-    pytest -v -n 3 -m 'not ledger and not upgrade' --dist loadscope $TESTS
-    pytest -v -m upgrade $TESTS
-    pytest -v -m ledger $TESTS
+    $1 $TESTS
   '';
 
   ci-shell = pkgs.mkShell {

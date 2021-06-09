@@ -1,5 +1,9 @@
 import json
 
+import pytest
+
+pytestmark = pytest.mark.normal
+
 
 def test_create_nft(cluster):
     """
