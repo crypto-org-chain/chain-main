@@ -14,6 +14,8 @@ from .utils import (
     wait_for_port,
 )
 
+pytestmark = pytest.mark.normal
+
 
 @pytest.fixture(scope="module")
 def cluster(worker_index, pytestconfig, tmp_path_factory):
@@ -46,7 +48,6 @@ def test_staking_delegate(cluster):
     assert old_amount == new_amount + 2
 
 
-@pytest.mark.slow
 def test_staking_unbond(cluster):
     signer1_address = cluster.address("signer1", i=0)
     validators = cluster.validators()

@@ -20,7 +20,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-@pytest.mark.slow
+@pytest.mark.byzantine
 def test_byzantine(cluster):
     """
     - 3 nodes

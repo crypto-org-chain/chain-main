@@ -133,9 +133,13 @@ rec {
     set -e
     export PATH=${ci-env}/bin:$PATH
     export TESTS=${tests_src}/integration_tests
-    pytest -v -n 3 -m 'not ledger and not upgrade' --dist loadscope $TESTS
-    pytest -v -m upgrade $TESTS
-    pytest -v -m ledger $TESTS
+    # check argument exists, then use it, otherwise use default
+    if [ -z $1 ]
+    then 
+      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc' $TESTS
+    else 
+      $1 $TESTS
+    fi
   '';
 
   ci-shell = pkgs.mkShell {

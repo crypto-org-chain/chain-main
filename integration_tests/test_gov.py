@@ -5,8 +5,9 @@ from dateutil.parser import isoparse
 
 from .utils import parse_events, wait_for_block, wait_for_block_time
 
+pytestmark = pytest.mark.gov
 
-@pytest.mark.slow
+
 @pytest.mark.parametrize("vote_option", ["yes", "no", "no_with_veto", "abstain", None])
 def test_param_proposal(cluster, vote_option):
     """
@@ -98,7 +99,6 @@ def test_param_proposal(cluster, vote_option):
         assert cluster.balance(cluster.address("ecosystem")) == amount
 
 
-@pytest.mark.slow
 def test_deposit_period_expires(cluster):
     """
     - proposal and partially deposit
@@ -156,7 +156,6 @@ def test_deposit_period_expires(cluster):
     assert cluster.balance(cluster.address("ecosystem")) == amount2 - 5000
 
 
-@pytest.mark.slow
 def test_community_pool_spend_proposal(cluster):
     """
     - proposal a community pool spend
@@ -208,7 +207,6 @@ def test_community_pool_spend_proposal(cluster):
     assert cluster.balance(recipient) == old_amount + amount
 
 
-@pytest.mark.slow
 def test_change_vote(cluster):
     """
     - submit proposal with deposit
@@ -263,7 +261,6 @@ def test_change_vote(cluster):
     }
 
 
-@pytest.mark.slow
 def test_inherit_vote(cluster):
     """
     - submit proposal with deposits

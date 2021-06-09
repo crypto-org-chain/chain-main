@@ -6,58 +6,149 @@ on:
       - master
       - release/**
     tags:
-      - '*'
+      - "*"
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
+      - uses: actions/checkout@v2
+        with:
           submodules: true
-    - uses: cachix/install-nix-action@v12
-    - uses: cachix/cachix-action@v8
-      with:
-        name: crypto-com
-        skipPush: true
-    - name: lint
-      run: make lint-ci
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+          skipPush: true
+      - name: lint
+        run: make lint-ci
 
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
+      - uses: actions/checkout@v2
+        with:
           submodules: true
-    - uses: cachix/install-nix-action@v12
-    - uses: cachix/cachix-action@v8
-      with:
-        name: crypto-com
-        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-        skipPush: ${{github.event_name == 'pull_request'}}
-    - name: Run integration tests
-      run: make nix-integration-test
-    - name: Build chain utils
-      run: nix-build -A chain-utils-testnet
-    - name: Upload coverage report
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage.*.txt
-        flags: integration_tests
-    - name: Publish docker image
-      if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
-      run: |
-        nix-build -A pystarportImage docker.nix
-        IMAGE=$(docker load < result)
-        IMAGE=${IMAGE#Loaded image: }
-        if [[ "$GITHUB_REF" = "refs/tags/"* ]]; then
-          TAG=${GITHUB_REF#refs/tags/}
-        else
-          TAG="latest"
-        fi
-        TARGET="docker.pkg.github.com/${{ github.repository }}/chain-main-pystarport:$TAG"
-        docker tag $IMAGE $TARGET
-        docker login -u "$GITHUB_ACTOR" -p "${{ github.token }}" docker.pkg.github.com
-        docker push $TARGET
-        echo "pushed: $TARGET"
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+          skipPush: ${{github.event_name == 'pull_request'}}
+      - name: Run integration tests
+        run: make nix-integration-test
+      - name: Build chain utils
+        run: nix-build -A chain-utils-testnet
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.*.txt
+          flags: integration_tests
+      - name: Publish docker image
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          nix-build -A pystarportImage docker.nix
+          IMAGE=$(docker load < result)
+          IMAGE=${IMAGE#Loaded image: }
+          if [[ "$GITHUB_REF" = "refs/tags/"* ]]; then
+            TAG=${GITHUB_REF#refs/tags/}
+          else
+            TAG="latest"
+          fi
+          TARGET="docker.pkg.github.com/${{ github.repository }}/chain-main-pystarport:$TAG"
+          docker tag $IMAGE $TARGET
+          docker login -u "$GITHUB_ACTOR" -p "${{ github.token }}" docker.pkg.github.com
+          docker push $TARGET
+          echo "pushed: $TARGET"
+
+  test-upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-upgrade
+
+  test-ledger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-ledger
+
+  test-slow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-slow
+
+  test-ibc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-ibc
+
+  test-byzantine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-byzantine
+
+  test-gov:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-gov
+
+  test-grpc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v12
+      - uses: cachix/cachix-action@v8
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-grpc

@@ -96,7 +96,6 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-@pytest.mark.slow
 @pytest.mark.skip(
     reason="CI fail: https://github.com/crypto-org-chain/chain-main/issues/560"
 )
@@ -174,7 +173,6 @@ def propose_and_pass(cluster, kind, proposal):
     return proposal
 
 
-@pytest.mark.slow
 def test_manual_upgrade(cosmovisor_cluster):
     """
     - do the upgrade test by replacing binary manually
@@ -253,7 +251,6 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 600)
 
 
-@pytest.mark.slow
 def test_cancel_upgrade(cluster):
     """
     use default cluster
@@ -294,7 +291,6 @@ def test_cancel_upgrade(cluster):
     )
 
 
-@pytest.mark.slow
 def test_manual_export(cosmovisor_cluster):
     """
     - do chain state export, override the genesis time to the genesis file

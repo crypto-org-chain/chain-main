@@ -1,9 +1,12 @@
 import json
 
+import pytest
 from pystarport import ports
 from pystarport.proto_python.api_util import ApiUtil
 
 from .utils import wait_for_new_blocks
+
+pytestmark = pytest.mark.normal
 
 
 def test_multi_signature(cluster, tmp_path):
