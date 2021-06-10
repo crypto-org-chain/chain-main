@@ -1,4 +1,8 @@
+import pytest
+
 from .utils import wait_for_block, wait_for_new_blocks
+
+pytestmark = pytest.mark.normal
 
 
 def test_reward(cluster):

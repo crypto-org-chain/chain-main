@@ -9,6 +9,8 @@ from pystarport import ports
 
 from .utils import cluster_fixture, wait_for_block, wait_for_port
 
+pytestmark = pytest.mark.ibc
+
 
 @pytest.fixture(scope="module")
 def cluster(worker_index, pytestconfig, tmp_path_factory):
