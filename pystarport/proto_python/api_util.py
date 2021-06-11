@@ -27,7 +27,8 @@ class ApiUtil:
         response = requests.post(url, json=signed_tx)
         if not response.ok:
             raise Exception(
-                f"response code: {response.status_code}, {response.reason}, {response.json()}"
+                f"response code: {response.status_code}, "
+                + f"{response.reason}, {response.json()}"
             )
         result = response.json()
         if result.get("code"):

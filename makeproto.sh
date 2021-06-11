@@ -1,3 +1,2 @@
 #!/bin/bash
-cd ./pystarport/pystarport
-nix-shell . --run ""
+nix-shell proto.nix --run ""

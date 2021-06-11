@@ -68,6 +68,7 @@ rec {
   inherit (pkgs) hermes cosmovisor;
 
   chain-maind = build-chain-maind { };
+
   pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
 
   chain-maind-testnet = build-chain-maind { network = "testnet"; };
@@ -133,6 +134,8 @@ rec {
     set -e
     export PATH=${ci-env}/bin:$PATH
     export TESTS=${tests_src}/integration_tests
+    export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
+    export CHAIN_MAIND="${chain-maind}/bin/chain-maind"
     # check argument exists, then use it, otherwise use default
     if [ -z $1 ]
     then 
@@ -141,6 +144,24 @@ rec {
       $1 $TESTS
     fi
   '';
+
+  run-integration-tests-zemu = pkgs.writeShellScriptBin "run-integration-tests" ''
+    set -e
+    export PATH=${ci-env}/bin:$PATH
+    export TESTS=${tests_src}/integration_tests
+    export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
+    export CHAIN_MAIND="${chain-maind-zemu}/bin/chain-maind"
+    echo "CHAIN_MAIND="$CHAIN_MAIND
+    # check argument exists, then use it, otherwise use default
+    if [ -z $1 ]
+    then 
+      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc' $TESTS
+    else 
+      $1 $TESTS
+    fi
+  '';
+
+
 
   ci-shell = pkgs.mkShell {
     buildInputs = [
