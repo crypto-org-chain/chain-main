@@ -80,6 +80,16 @@ func QueryDenomExec(clientCtx client.Context, denomID string, extraArgs ...strin
 	return clitestutil.ExecTestCLICmd(clientCtx, nftcli.GetCmdQueryDenom(), args)
 }
 
+func QueryDenomByNameExec(clientCtx client.Context, denomName string, extraArgs ...string) (testutil.BufferWriter, error) {
+	args := []string{
+		denomName,
+		fmt.Sprintf("--%s=json", cli.OutputFlag),
+	}
+	args = append(args, extraArgs...)
+
+	return clitestutil.ExecTestCLICmd(clientCtx, nftcli.GetCmdQueryDenomByName(), args)
+}
+
 func QueryCollectionExec(clientCtx client.Context, denomID string, extraArgs ...string) (testutil.BufferWriter, error) {
 	args := []string{
 		denomID,

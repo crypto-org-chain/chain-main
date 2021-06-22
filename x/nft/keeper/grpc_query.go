@@ -103,6 +103,17 @@ func (k Keeper) Denom(c context.Context, request *types.QueryDenomRequest) (*typ
 	return &types.QueryDenomResponse{Denom: &denomObject}, nil
 }
 
+func (k Keeper) DenomByName(c context.Context, request *types.QueryDenomByNameRequest) (*types.QueryDenomByNameResponse, error) {
+	ctx := sdk.UnwrapSDKContext(c)
+
+	denomObject, err := k.GetDenomByName(ctx, request.DenomName)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryDenomByNameResponse{Denom: &denomObject}, nil
+}
+
 func (k Keeper) Denoms(c context.Context, req *types.QueryDenomsRequest) (*types.QueryDenomsResponse, error) {
 	ctx := sdk.UnwrapSDKContext(c)
 

@@ -51,6 +51,16 @@ func (k Keeper) GetDenom(ctx sdk.Context, id string) (denom types.Denom, err err
 	return denom, nil
 }
 
+// GetDenom returns the denom by name
+func (k Keeper) GetDenomByName(ctx sdk.Context, name string) (denom types.Denom, err error) {
+	store := ctx.KVStore(k.storeKey)
+
+	bz := store.Get(types.KeyDenomName(name))
+	denomID := string(bz)
+
+	return k.GetDenom(ctx, denomID)
+}
+
 // GetDenoms returns all the denoms
 func (k Keeper) GetDenoms(ctx sdk.Context) (denoms []types.Denom) {
 	store := ctx.KVStore(k.storeKey)

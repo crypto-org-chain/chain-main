@@ -99,6 +99,16 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().Equal(denomName, denomItem.Name)
 	s.Require().Equal(schema, denomItem.Schema)
 
+	//------test GetCmdQueryDenomByName()-------------
+	respType = proto.Message(&nfttypes.Denom{})
+	bz, err = nfttestutil.QueryDenomByNameExec(val.ClientCtx, denomName)
+	s.Require().NoError(err)
+	s.Require().NoError(val.ClientCtx.JSONMarshaler.UnmarshalJSON(bz.Bytes(), respType))
+	denomItem = respType.(*nfttypes.Denom)
+	s.Require().Equal(denomName, denomItem.Name)
+	s.Require().Equal(denomID, denomItem.Id)
+	s.Require().Equal(schema, denomItem.Schema)
+
 	//------test GetCmdQueryDenoms()-------------
 	respType = proto.Message(&nfttypes.QueryDenomsResponse{})
 	bz, err = nfttestutil.QueryDenomsExec(val.ClientCtx)

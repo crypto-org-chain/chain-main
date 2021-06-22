@@ -575,6 +575,9 @@ class ClusterCLI:
     def query_nft(self, denomid="mydenomid", i=0):
         return self.cosmos_cli(i).query_nft(denomid)
 
+    def query_denom_by_name(self, denomname="mydenomname", i=0):
+        return self.cosmos_cli(i).query_denom_by_name(denomname)
+
     def create_nft_token(
         self,
         from_addr,

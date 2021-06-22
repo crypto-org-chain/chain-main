@@ -9,7 +9,7 @@ def test_create_nft(cluster):
     assert len(cluster.validators()) == 2
     singer1_addr = cluster.address("signer1")
     denomid = "testdenomid"
-    denomname = "testdenopmname"
+    denomname = "testdenomname"
     response = cluster.create_nft(singer1_addr, denomid, denomname)
     raw_log = json.loads(response["raw_log"])
     assert raw_log[0]["events"][0]["type"] == "issue_denom"
@@ -20,6 +20,14 @@ def test_query_nft(cluster):
     singer1_addr = cluster.address("signer1")
     response = cluster.query_nft(denomid)
     assert response["id"] == denomid
+    assert response["creator"] == singer1_addr
+
+
+def test_query_denom_by_name(cluster):
+    denomname = "testdenomname"
+    singer1_addr = cluster.address("signer1")
+    response = cluster.query_denom_by_name(denomname)
+    assert response["name"] == denomname
     assert response["creator"] == singer1_addr
 
 
