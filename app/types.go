@@ -10,6 +10,8 @@ import (
 
 // App implements the common methods for a Cosmos SDK-based application
 // specific blockchain.
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 type App interface {
 	// The assigned name of the app.
 	Name() string

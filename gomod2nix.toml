@@ -511,12 +511,12 @@
     sha256 = "0nxbn0m7lr4dg0yrwnvlkfiyg3ndv8vdpssjx7b714nivpc6ar0y"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.42.5"
+  sumVersion = "v0.42.6"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "842b06003f97d31e4ec83847e9fe8185d51a1fc7"
-    sha256 = "1wrkqmngdjdxaxz5hrcdihj5clvmf62pqjl0gq648nbfwbmwbzi5"
+    rev = "a7e19ad4588bcceeeeab522f5807b9ff22e91a8c"
+    sha256 = "1ysk7bqivhg5d3dcgksl91jmcc3nakvfkgfiry408v66vk8hbpx6"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -2215,12 +2215,12 @@
     sha256 = "1zcms3l5fihzg8nf4vhdk18qpn1jkbm3rpkjfpskfcrgzlxk6vi5"
 
 ["github.com/tendermint/tendermint"]
-  sumVersion = "v0.34.10"
+  sumVersion = "v0.34.11"
   ["github.com/tendermint/tendermint".fetch]
     type = "git"
     url = "https://github.com/tendermint/tendermint"
-    rev = "68eceda0b57ec1d2db6bf9254355bb092a8dcb85"
-    sha256 = "124xiqxa2f4pnhsz173wr40wk31wf4xl3r9ixqa6d0myff86l64v"
+    rev = "c2908ef785bb5ca6e015910368e4b7a32821b9ff"
+    sha256 = "0x9hf09qqdjf77fwk8sdc1dzr7akndwbpylnhi6aaihg4an0aqvp"
 
 ["github.com/tendermint/tm-db"]
   sumVersion = "v0.6.4"
