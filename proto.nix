@@ -1,4 +1,4 @@
-{ pkgs ? import ../../nix { }, commit ? "" }:
+{ pkgs ? import ./nix { }, commit ? "" }:
 with pkgs;
 pkgs.mkShell {
   buildInputs = [
@@ -8,5 +8,6 @@ pkgs.mkShell {
     git
   ];
   shellHook = ''                                                                                       
+  cd ./pystarport
   ./convert.sh                                                                                          '';
 }

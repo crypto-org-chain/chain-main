@@ -1,6 +1,6 @@
 #!/bin/bash
 OUTPUT=./proto_python
-COSMOS=../../third_party/cosmos-sdk
+COSMOS=../third_party/cosmos-sdk
 TENDERMINT=./tendermint
 TMP=$(whereis grpc_python_plugin)
 PLUGIN="$(cut -d' ' -f2 <<<"$TMP")"

@@ -18,7 +18,7 @@ protobuf = "^3.13.0"
 grpcio = "^1.33.2"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
-pystarport = {path = "../pystarport"}
+pystarport = "^0.2.1"
 chainlibpy = "^1.0.0"
 
 [tool.poetry.dev-dependencies]

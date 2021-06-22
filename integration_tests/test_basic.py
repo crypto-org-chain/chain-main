@@ -90,5 +90,5 @@ def test_statesync(cluster):
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
 
     # discovery_time is set to 5 seconds, add extra seconds for processing
-    wait_for_block(cluster.cosmos_cli(i), 5)
+    wait_for_block(cluster.cosmos_cli(i), 10)
     print("succesfully syncing")

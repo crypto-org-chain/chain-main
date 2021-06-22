@@ -159,7 +159,7 @@ nix-integration-test-upgrade: check-network
 	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m upgrade"	
 
 nix-integration-test-ledger: check-network 
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m ledger"		
+	nix run -f ./default.nix run-integration-tests-zemu -c run-integration-tests "pytest -v -m ledger"		
 
 nix-integration-test-slow: check-network 
 	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m slow"
