@@ -47,6 +47,8 @@ var (
 	isCheckTx = false
 )
 
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 type KeeperSuite struct {
 	suite.Suite
 

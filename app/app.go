@@ -150,6 +150,8 @@ var (
 // ChainApp extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 type ChainApp struct {
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
@@ -499,6 +501,8 @@ func (app *ChainApp) ModuleAccountAddrs() map[string]bool {
 //
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 func (app *ChainApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
@@ -603,6 +607,8 @@ func GetMaccPerms() map[string][]string {
 }
 
 // initParamsKeeper init params keeper and its subspaces
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 func initParamsKeeper(appCodec codec.BinaryMarshaler, legacyAmino *codec.LegacyAmino, key, tkey sdk.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 
