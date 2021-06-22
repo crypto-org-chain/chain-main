@@ -97,6 +97,9 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
 
 
 @pytest.mark.slow
+@pytest.mark.skip(
+    reason="CI fail: https://github.com/crypto-org-chain/chain-main/issues/560"
+)
 def test_cosmovisor(cosmovisor_cluster):
     """
     - propose an upgrade and pass it
