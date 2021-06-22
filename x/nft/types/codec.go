@@ -28,6 +28,8 @@ func init() {
 }
 
 // RegisterLegacyAminoCodec concrete types on codec
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&MsgIssueDenom{}, "chainmain/nft/MsgIssueDenom", nil)
 	cdc.RegisterConcrete(&MsgTransferNFT{}, "chainmain/nft/MsgTransferNFT", nil)

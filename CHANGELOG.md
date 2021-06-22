@@ -1,20 +1,28 @@
 # Changelog
 
+*June 22, 2021*
+
+## v2.1.0
+This version is based on Cosmos SDK 0.42.6 and Tendermint 0.34.11 which, among other changes, contain state sync-related fixes.
+
+### Features
+- [565](https://github.com/crypto-org-chain/chain-main/pull/565) NFT module query denom by name
+
 *May 18, 2021*
 
 ## v2.0.1
-This pre-release version is the same as v2.0.0, but contains an upgrade-critical fix.
+This released version is the same as v2.0.0, but contains an upgrade-critical fix.
 NOTE that the upgrade plan name is still expected to be "v2.0.0".
-*WARNING*: DO NOT UPGRADE to this binary yet; the upgrade instructions are to be provided later.
+*WARNING*: please follow the upgrade instructions described here: https://crypto.org/docs/getting-started/upgrade_guide.html#the-canis-major-upgrade-guide-v1-to-v2-0-0
 
 ### Bug Fixes
-- [552](https://github.com/crypto-org-chain/chain-main/pull/552) nft module store initialized after upgrade
+- [552](https://github.com/crypto-org-chain/chain-main/pull/552) NFT module store initialized after upgrade
 
 *May 14, 2021*
 
 ## v2.0.0
 This pre-release version contains the scope of [ADR-003](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md) for the mainnet upgrade. It also upgrades to the latest version of Tendermint (0.34.10).
-*WARNING*: DO NOT UPGRADE to this binary yet; the upgrade instructions are to be provided later.
+*WARNING*: please follow the upgrade instructions described here: https://crypto.org/docs/getting-started/upgrade_guide.html#the-canis-major-upgrade-guide-v1-to-v2-0-0
 
 ### Breaking changes
 - [516](https://github.com/crypto-org-chain/chain-main/pull/516) NFT module added

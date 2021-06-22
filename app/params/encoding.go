@@ -8,6 +8,8 @@ import (
 
 // EncodingConfig specifies the concrete encoding types to use for a given app.
 // This is provided for compatibility between protobuf and amino implementations.
+// (Amino is still needed for Ledger at the moment)
+// nolint: staticcheck
 type EncodingConfig struct {
 	InterfaceRegistry types.InterfaceRegistry
 	Marshaler         codec.Marshaler
