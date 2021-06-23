@@ -69,14 +69,12 @@ rec {
 
   chain-maind = build-chain-maind { };
 
-  pystarport = import ./pystarport { inherit pkgs; chaind = "${chain-maind}/bin/chain-maind"; };
+  pystarport = import ./pystarport { inherit pkgs; };
 
   chain-maind-testnet = build-chain-maind { network = "testnet"; };
 
   # for testing and dev
   chain-maind-zemu = build-chain-maind { ledger_zemu = true; };
-  # one can set binary with environment variable CHAIN_MAIND, or it'll find chain-maind in PATH
-  pystarport-unbind = import ./pystarport { inherit pkgs; };
 
   # python env for python linter tools and pytest
   test-pyenv = pkgs.poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; };
@@ -179,7 +177,7 @@ rec {
       lint-env
       go
       python3Packages.poetry
-      pystarport-unbind
+      pystarport
     ] ++ common-env;
 
     shellHook = ''
