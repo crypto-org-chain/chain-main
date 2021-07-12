@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.42.6
+	github.com/cosmos/cosmos-sdk v0.42.7
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
@@ -33,6 +33,8 @@ replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alp
 replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
 
 // TODO: fix keyring upstream
-replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-gnome
+replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
+
+replace github.com/cosmos/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1

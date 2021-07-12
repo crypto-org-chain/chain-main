@@ -59,15 +59,6 @@
     rev = "666a987793e9432fbb48592aa2f3bf3463685dfa"
     sha256 = "1isd03hgiwcf2ld1rlp0plrnfz7r4i7c5q4kb6hkcd22axnmrv0z"
 
-["github.com/99designs/keyring"]
-  sumVersion = "v1.1.6-gnome"
-  vendorPath = "github.com/crypto-org-chain/keyring"
-  ["github.com/99designs/keyring".fetch]
-    type = "git"
-    url = "https://github.com/crypto-org-chain/keyring"
-    rev = "0cfb890bbc9a5787491322a75c76b906165cb816"
-    sha256 = "1di3g22jihr25i6l7svc8r0mfvilck79rk3i88df627pihj64gsf"
-
 ["github.com/BurntSushi/toml"]
   sumVersion = "v0.3.1"
   ["github.com/BurntSushi/toml".fetch]
@@ -511,12 +502,12 @@
     sha256 = "0nxbn0m7lr4dg0yrwnvlkfiyg3ndv8vdpssjx7b714nivpc6ar0y"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.42.6"
+  sumVersion = "v0.42.7"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "a7e19ad4588bcceeeeab522f5807b9ff22e91a8c"
-    sha256 = "1ysk7bqivhg5d3dcgksl91jmcc3nakvfkgfiry408v66vk8hbpx6"
+    rev = "84c33215658131d87daf3c629e909e12ed9370fa"
+    sha256 = "1pqb3m3bsmxs6j0cx4d48jnsxkx9hpki30w13q7wckz21pljwi3q"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -533,6 +524,15 @@
     url = "https://github.com/cosmos/iavl"
     rev = "db56af10fd129f80dda8abb1889d5d37d31e5ac5"
     sha256 = "0cvgzjfbxhrada3h6lmcc9pvjjsbi3hz84cxj4xfjglddsm7virj"
+
+["github.com/cosmos/keyring"]
+  sumVersion = "v1.1.6-fixes"
+  vendorPath = "github.com/crypto-org-chain/keyring"
+  ["github.com/cosmos/keyring".fetch]
+    type = "git"
+    url = "https://github.com/crypto-org-chain/keyring"
+    rev = "4fc1291852fc269b98e8466bfa8f0ce9b8e665ad"
+    sha256 = "1c55z0hhvk8w1mfwc587yd88hiyi6bnpnbd3p9dckj9sx8pw4rvi"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
