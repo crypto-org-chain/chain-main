@@ -35,6 +35,4 @@ replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmo
 // TODO: fix keyring upstream
 replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
-replace github.com/cosmos/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
-
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
