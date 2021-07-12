@@ -1,5 +1,10 @@
 # Changelog
 
+*July 12, 2021*
+
+## v2.1.1
+This version is based on Cosmos SDK 0.42.7 which, among other changes, contains additional state sync-related fixes.
+
 *June 22, 2021*
 
 ## v2.1.0
