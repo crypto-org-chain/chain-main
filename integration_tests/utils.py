@@ -5,6 +5,7 @@ import socket
 import sys
 import time
 import uuid
+import json
 
 import yaml
 from dateutil.parser import isoparse
@@ -160,3 +161,19 @@ def gen_base_port(worker_index):
     base_port = 10000 + (worker_index * 10 + _next_unique) * 100
     _next_unique += 1
     return base_port
+
+
+def sign_single_tx_with_options(cli, tx_file, singer_name, **options):
+    return json.loads(
+        cli.cosmos_cli(0).raw(
+            "tx",
+            "sign",
+            tx_file,
+            from_=singer_name,
+            home=cli.cosmos_cli(0).data_dir,
+            keyring_backend="test",
+            chain_id=cli.cosmos_cli(0).chain_id,
+            node=cli.cosmos_cli(0).node_rpc,
+            **options,
+        )
+    )
