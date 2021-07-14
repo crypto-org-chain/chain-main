@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import shutil
@@ -5,7 +6,6 @@ import socket
 import sys
 import time
 import uuid
-import json
 
 import yaml
 from dateutil.parser import isoparse

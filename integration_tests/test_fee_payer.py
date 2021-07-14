@@ -1,5 +1,6 @@
-import pytest
 import json
+
+import pytest
 
 from .utils import sign_single_tx_with_options
 
@@ -30,17 +31,19 @@ def test_different_fee_payer(cluster, tmp_path):
         fees="%sbasecro" % fee_coins,
     )
 
-    json.dump(unsigned_tx_msg, unsigned_tx_txt.open("w"))
     unsigned_tx_msg["auth_info"]["fee"]["payer"] = fee_payer_addr
-    json.dump(unsigned_tx_msg, unsigned_tx_txt.open("w"))
+    with open(unsigned_tx_txt, "w") as opened_file:
+        json.dump(unsigned_tx_msg, opened_file)
     partial_sign_tx_msg = sign_single_tx_with_options(
         cluster, unsigned_tx_txt, "signer1", sign_mode="amino-json"
     )
-    json.dump(partial_sign_tx_msg, partial_sign_txt.open("w"))
+    with open(partial_sign_txt, "w") as opened_file:
+        json.dump(partial_sign_tx_msg, opened_file)
     signed_tx_msg = sign_single_tx_with_options(
         cluster, partial_sign_txt, "signer2", sign_mode="amino-json"
     )
-    json.dump(signed_tx_msg, signed_txt.open("w"))
+    with open(signed_txt, "w") as opened_file:
+        json.dump(signed_tx_msg, opened_file)
     cluster.broadcast_tx(signed_txt)
 
     assert cluster.balance(receiver_addr) == receiver_balance + transaction_coins
