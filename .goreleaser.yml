@@ -17,7 +17,7 @@ builds:
     flags:
         - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-darwin-arm64"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -32,7 +32,7 @@ builds:
     flags:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-linux"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -47,7 +47,7 @@ builds:
     flags:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-linux-arm64"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -62,7 +62,7 @@ builds:
     flags:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
   - id: "chain-maind-windows"
     main: ./cmd/chain-maind
     binary: bin/chain-maind
@@ -78,7 +78,7 @@ builds:
       - -tags=cgo,ledger,!test_ledger_mock,!ledger_mock,!ledger_zemu
       - -buildmode=exe
     ldflags:
-      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind -X github.com/cosmos/cosmos-sdk/version.ClientName=chain-maincli -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
 - name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
