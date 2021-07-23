@@ -194,7 +194,7 @@ def test_update_chain_id(cluster):
     with open(relayer_config, "w") as f:
         f.write(yaml.dump(config))
     yaml.dump(config, relayer_config.open("w"))
-    cluster["ibc-1"].restart_relayer("demo")
+    cluster["ibc-1"].restart_relayer()
 
     # update chain-id
     cluster["ibc-1"].stop_node()
