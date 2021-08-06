@@ -1,5 +1,11 @@
 # Changelog
 
+*August 6, 2021*
+
+## v2.1.2
+This version is based on Cosmos SDK 0.42.9 which, among other changes, contains a fix for the non-deterministic app hash mismatch
+issues after node restarts or state sync.
+
 *July 12, 2021*
 
 ## v2.1.1
