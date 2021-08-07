@@ -93,7 +93,7 @@ ibc-1:
       base_port: 26760
   accounts:
     - name: relayer
-      coins: 100cro
+      coins: 100cro,100ibc/6411AE2ADA1E73DB59DB151A8988F9B7D5E7E233D8414DB6817F8F1A01611F86
     - name: signer
       coins: 200cro
   genesis:

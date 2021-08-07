@@ -177,3 +177,11 @@ def sign_single_tx_with_options(cli, tx_file, singer_name, **options):
             **options,
         )
     )
+
+
+def find_balance(balances, denom):
+    "find a denom in the coin list, return the amount, if not exists, return 0"
+    for balance in balances:
+        if balance["denom"] == denom:
+            return int(balance["amount"])
+    return 0
