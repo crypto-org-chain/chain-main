@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from pystarport import ports
 
-from .utils import cluster_fixture, wait_for_block, wait_for_port
+from .utils import cluster_fixture, find_balance, wait_for_block, wait_for_port
 
 pytestmark = pytest.mark.ibc
 
@@ -56,7 +56,7 @@ def test_ibc_genesis_channel(cluster):
     cluster["ibc-0"].supervisor.startProcess("relayer-demo")
 
     raw = cluster["ibc-0"].cosmos_cli().raw
-    transfer_amount = "10000"
+    transfer_amount = 10000
 
     addr_0 = cluster["ibc-0"].address("relayer")
     addr_1 = cluster["ibc-1"].address("relayer")
@@ -66,7 +66,7 @@ def test_ibc_genesis_channel(cluster):
 
     # # do a transfer from ibc-0 to ibc-1
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", addr_1, "%sbasecro" % transfer_amount, "channel-0", 1
+        "relayer", addr_1, "%dbasecro" % transfer_amount, "channel-0", 1
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     # sender balance decreased
@@ -110,13 +110,17 @@ def test_ibc_genesis_channel(cluster):
         {"denom": "basecro", "amount": "10000000000"},
         {
             "denom": "ibc/%s" % denom_hash,
-            "amount": "%s" % transfer_amount,
+            "amount": "%d" % (transfer_amount + 100),  # 100 is allocated in genesis
         },
     ]
 
     # transfer back
     rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", addr_0, "%sibc/%s" % (transfer_amount, denom_hash), "channel-0", 0
+        "relayer",
+        addr_0,
+        "%dibc/%s" % (transfer_amount, denom_hash),
+        "channel-0",
+        0,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -141,6 +145,4 @@ def test_ibc_genesis_channel(cluster):
                 node=cli.node_rpc(0),
             )
         )["balances"]
-        assert [bal for bal in balances if int(bal["amount"]) > 0] == [
-            {"amount": "10000000000", "denom": "basecro"},
-        ]
+        assert find_balance(balances, "basecro") == 10000000000
