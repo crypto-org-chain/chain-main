@@ -11,17 +11,17 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	storeKey sdk.StoreKey // Unexposed key to access store from sdk.Context
-	cdc      codec.Marshaler
+	cdc      codec.Codec
 }
 
 // NewKeeper creates a new instance of the NFT Keeper
-func NewKeeper(cdc codec.Marshaler, storeKey sdk.StoreKey) Keeper {
+func NewKeeper(cdc codec.Codec, storeKey sdk.StoreKey) Keeper {
 	return Keeper{
 		storeKey: storeKey,
 		cdc:      cdc,

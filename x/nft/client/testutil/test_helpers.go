@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 
-	nftcli "github.com/crypto-org-chain/chain-main/v2/x/nft/client/cli"
+	nftcli "github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
 )
 
 func IssueDenomExec(clientCtx client.Context, from string, denom string, extraArgs ...string) (testutil.BufferWriter, error) {

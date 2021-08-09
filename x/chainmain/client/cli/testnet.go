@@ -261,7 +261,7 @@ func InitTestnet(
 		}
 
 		keyInfo, secret, saveErr := kb.NewMnemonic(nodeDirName,
-			keyring.English, sdk.GetConfig().GetFullFundraiserPath(), algo)
+			keyring.English, sdk.GetConfig().GetFullBIP44Path(), keyring.DefaultBIP39Passphrase, algo)
 		if saveErr != nil {
 			_ = os.RemoveAll(outputDir)
 			return saveErr
@@ -381,12 +381,12 @@ func initGenFiles(
 	genFiles []string, numValidators int,
 	unbondingTime time.Duration,
 ) error {
-	appGenState := mbm.DefaultGenesis(clientCtx.JSONMarshaler)
+	appGenState := mbm.DefaultGenesis(clientCtx.Codec)
 
 	// set staking param in the genesis state
 
 	var stakingGenState stakingtypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
 	baseDenom, err := sdk.GetBaseDenom()
 	if err != nil {
 		return err
@@ -394,24 +394,24 @@ func initGenFiles(
 	stakingGenState.Params.BondDenom = baseDenom
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
-	appGenState[stakingtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&stakingGenState)
+	appGenState[stakingtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenState)
 
 	// set gov min_deposit in the genesis state
 	var govGenState govtypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom
 	govGenState.DepositParams.MinDeposit[0].Amount = govtypes.DefaultMinDepositTokens
-	appGenState[govtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&govGenState)
+	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
 	var mintGenState minttypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[minttypes.ModuleName], &mintGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[minttypes.ModuleName], &mintGenState)
 	mintGenState.Params.MintDenom = baseDenom
-	appGenState[minttypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&mintGenState)
+	appGenState[minttypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&mintGenState)
 
 	// set the accounts in the genesis state
 	var authGenState authtypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[authtypes.ModuleName], &authGenState)
 
 	accounts, err := authtypes.PackAccounts(genAccounts)
 	if err != nil {
@@ -419,14 +419,14 @@ func initGenFiles(
 	}
 
 	authGenState.Accounts = accounts
-	appGenState[authtypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&authGenState)
+	appGenState[authtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
 
 	// set the balances in the genesis state
 	var bankGenState banktypes.GenesisState
-	clientCtx.JSONMarshaler.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
+	clientCtx.Codec.MustUnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState)
 
 	bankGenState.Balances = genBalances
-	appGenState[banktypes.ModuleName] = clientCtx.JSONMarshaler.MustMarshalJSON(&bankGenState)
+	appGenState[banktypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
 
 	appGenStateJSON, err := json.MarshalIndent(appGenState, "", "  ")
 	if err != nil {
@@ -474,7 +474,7 @@ func collectGenFiles(
 		}
 
 		nodeAppState, err := genutil.GenAppStateFromConfig(
-			clientCtx.JSONMarshaler, clientCtx.TxConfig,
+			clientCtx.Codec, clientCtx.TxConfig,
 			nodeConfig, initCfg, *genDoc, genBalIterator)
 		if err != nil {
 			return err

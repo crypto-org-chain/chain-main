@@ -46,7 +46,10 @@ def test_create_nft_token(cluster):
         singer1_addr, singer2_addr, denomid, tokenid, uri
     )
     raw_log = json.loads(response["raw_log"])
-    assert raw_log[0]["events"][0]["attributes"][0]["value"] == "mint_nft"
+    assert (
+        raw_log[0]["events"][0]["attributes"][0]["value"]
+        == "/chainmain.nft.v1.MsgMintNFT"
+    )
 
 
 def test_query_nft_token(cluster):
@@ -65,7 +68,10 @@ def test_transfer_nft_token(cluster):
     singer2_addr = cluster.address("signer2")
     response = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
     raw_log = json.loads(response["raw_log"])
-    assert raw_log[0]["events"][0]["attributes"][0]["value"] == "transfer_nft"
+    assert (
+        raw_log[0]["events"][0]["attributes"][0]["value"]
+        == "/chainmain.nft.v1.MsgTransferNFT"
+    )
 
 
 def test_query_nft_token_again(cluster):

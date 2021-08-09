@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import re
@@ -139,7 +140,23 @@ def cluster_fixture(
 
     if enable_cov:
         # collect the coverage results
-        shutil.move(str(chain_data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt")
+        try:
+            shutil.move(
+                str(chain_data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt"
+            )
+        except FileNotFoundError:
+            ts = time.time()
+            st = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
+            print(st + " FAILED TO FIND COVERAGE")
+            print(os.listdir(chain_data))
+            data = [
+                (int(p), c)
+                for p, c in [
+                    x.rstrip("\n").split(" ", 1)
+                    for x in os.popen("ps h -eo pid:1,command")
+                ]
+            ]
+            print(data)
 
 
 def get_ledger():

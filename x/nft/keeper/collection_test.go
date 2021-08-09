@@ -3,8 +3,8 @@
 package keeper_test
 
 import (
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 func (suite *KeeperSuite) TestSetCollection() {

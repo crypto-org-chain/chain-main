@@ -7,7 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 type msgServer struct {

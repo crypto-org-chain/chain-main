@@ -13,7 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/exported"
 )
 
 var (
@@ -58,27 +58,27 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 }
 
 // return supply protobuf code
-func MustMarshalSupply(cdc codec.Marshaler, supply uint64) []byte {
+func MustMarshalSupply(cdc codec.Codec, supply uint64) []byte {
 	supplyWrap := gogotypes.UInt64Value{Value: supply}
-	return cdc.MustMarshalBinaryBare(&supplyWrap)
+	return cdc.MustMarshal(&supplyWrap)
 }
 
 // return th supply
-func MustUnMarshalSupply(cdc codec.Marshaler, value []byte) uint64 {
+func MustUnMarshalSupply(cdc codec.Codec, value []byte) uint64 {
 	var supplyWrap gogotypes.UInt64Value
-	cdc.MustUnmarshalBinaryBare(value, &supplyWrap)
+	cdc.MustUnmarshal(value, &supplyWrap)
 	return supplyWrap.Value
 }
 
 // return the tokenID protobuf code
-func MustMarshalTokenID(cdc codec.Marshaler, tokenID string) []byte {
+func MustMarshalTokenID(cdc codec.Codec, tokenID string) []byte {
 	tokenIDWrap := gogotypes.StringValue{Value: tokenID}
-	return cdc.MustMarshalBinaryBare(&tokenIDWrap)
+	return cdc.MustMarshal(&tokenIDWrap)
 }
 
 // return th tokenID
-func MustUnMarshalTokenID(cdc codec.Marshaler, value []byte) string {
+func MustUnMarshalTokenID(cdc codec.Codec, value []byte) string {
 	var tokenIDWrap gogotypes.StringValue
-	cdc.MustUnmarshalBinaryBare(value, &tokenIDWrap)
+	cdc.MustUnmarshal(value, &tokenIDWrap)
 	return tokenIDWrap.Value
 }

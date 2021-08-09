@@ -120,8 +120,8 @@ def test_ibc(cluster):
             "bank",
             "balances",
             addr_1,
-            output="json",
             node=cluster["ibc-1"].node_rpc(0),
+            output="json",
         )
     )["balances"] == [
         {"denom": "basecro", "amount": "10000000000"},
@@ -155,8 +155,8 @@ def test_ibc(cluster):
                 "bank",
                 "balances",
                 cli.address("relayer"),
-                output="json",
                 node=cli.node_rpc(0),
+                output="json",
             )
         )["balances"]
         assert [bal for bal in balances if int(bal["amount"]) > 0] == [
@@ -178,7 +178,6 @@ def test_update_chain_id(cluster):
             "channel",
             "channels",
             node=cluster["ibc-1"].node_rpc(0),
-            output="json",
         )
     )["channels"]
     dst_channel = channels[0]["counterparty"]["channel_id"]
@@ -249,7 +248,6 @@ def test_update_chain_id(cluster):
             "bank",
             "balances",
             recipient,
-            output="json",
             node=cluster["ibc-1"].node_rpc(0),
         )
     )["balances"]
