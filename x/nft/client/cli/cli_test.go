@@ -16,16 +16,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v3/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/client/testutil"
 	nfttestutil "github.com/crypto-org-chain/chain-main/v3/x/nft/client/testutil"
 	nfttypes "github.com/crypto-org-chain/chain-main/v3/x/nft/types"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
-	dbm "github.com/tendermint/tm-db"
 )
 
 type IntegrationTestSuite struct {
@@ -35,21 +29,11 @@ type IntegrationTestSuite struct {
 	network *network.Network
 }
 
-func GetApp(val network.Validator) servertypes.Application {
-	return app.New(
-		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
-		app.MakeEncodingConfig(),
-		simapp.EmptyAppOptions{},
-		baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
-		baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
-	)
-}
-
 func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 
 	cfg := network.DefaultConfig()
-	cfg.AppConstructor = GetApp
+	cfg.AppConstructor = testutil.GetApp
 	cfg.NumValidators = 2
 
 	s.cfg = cfg
