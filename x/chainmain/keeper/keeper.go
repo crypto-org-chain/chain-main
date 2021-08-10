@@ -7,20 +7,20 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v2/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/types"
 )
 
 type (
 	// Keeper of the chainmain store
 	Keeper struct {
-		cdc      codec.BinaryMarshaler
+		cdc      codec.BinaryCodec
 		storeKey sdk.StoreKey
 		memKey   sdk.StoreKey
 	}
 )
 
 // NewKeeper creates a chainmain keeper
-func NewKeeper(cdc codec.BinaryMarshaler, storeKey, memKey sdk.StoreKey) *Keeper {
+func NewKeeper(cdc codec.BinaryCodec, storeKey, memKey sdk.StoreKey) *Keeper {
 	return &Keeper{
 		cdc:      cdc,
 		storeKey: storeKey,

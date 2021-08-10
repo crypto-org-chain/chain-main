@@ -14,7 +14,7 @@ stakingtest:
       coins: 200cro
     - name: reserve
       coins: 200cro
-      vesting: "60s"
+      vesting: "3600s"
     - name: launch
       coins: 100cro
     - name: signer1

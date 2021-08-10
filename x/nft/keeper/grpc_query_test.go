@@ -5,7 +5,7 @@ package keeper_test
 import (
 	gocontext "context"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 func (suite *KeeperSuite) TestSupply() {

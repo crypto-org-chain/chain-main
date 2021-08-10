@@ -15,7 +15,6 @@ func SetConfig() {
 	config.SetBech32PrefixForConsensusNode(ConsNodeAddressPrefix, ConsNodePubKeyPrefix)
 
 	config.SetCoinType(CoinType)
-	config.SetFullFundraiserPath(FundraiserPath)
 
 	croUnit := sdk.OneDec()
 	err := sdk.RegisterDenom(HumanCoinUnit, croUnit)

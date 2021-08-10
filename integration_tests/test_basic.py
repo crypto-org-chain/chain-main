@@ -39,7 +39,21 @@ def test_transfer(cluster):
             "events": [
                 {
                     "attributes": [
-                        {"key": "action", "value": "send"},
+                        {"key": "receiver", "value": reserve_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                    "type": "coin_received",
+                },
+                {
+                    "attributes": [
+                        {"key": "spender", "value": community_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                    "type": "coin_spent",
+                },
+                {
+                    "attributes": [
+                        {"key": "action", "value": "/cosmos.bank.v1beta1.MsgSend"},
                         {"key": "sender", "value": community_addr},
                         {"key": "module", "value": "bank"},
                     ],

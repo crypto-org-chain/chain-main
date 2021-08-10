@@ -29,16 +29,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	nfttypes "github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
-
-// EmptyAppOptions is a stub implementing AppOptions
-type EmptyAppOptions struct{}
-
-// Get implements AppOptions
-func (ao EmptyAppOptions) Get(o string) interface{} {
-	return nil
-}
 
 // Get flags every time the simulator is run
 func init() {

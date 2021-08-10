@@ -23,7 +23,7 @@ let
   lib = pkgs.lib;
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoApplication rec {
     pname = "chain-maind";
-    version = "2.0.0";
+    version = "3.0.0";
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;

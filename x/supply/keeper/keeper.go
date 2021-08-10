@@ -4,7 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/crypto-org-chain/chain-main/v2/x/supply/types"
+	"github.com/crypto-org-chain/chain-main/v3/config"
+	"github.com/crypto-org-chain/chain-main/v3/x/supply/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestexported "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
@@ -28,7 +29,7 @@ var (
 
 // Keeper for supply module
 type Keeper struct {
-	cdc           codec.BinaryMarshaler
+	cdc           codec.BinaryCodec
 	storeKey      sdk.StoreKey
 	bankKeeper    types.BankKeeper
 	accountKeeper types.AccountKeeper
@@ -36,7 +37,7 @@ type Keeper struct {
 
 // NewKeeper returns a new keeper
 func NewKeeper(
-	cdc codec.BinaryMarshaler,
+	cdc codec.BinaryCodec,
 	storeKey sdk.StoreKey,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
@@ -69,7 +70,7 @@ func (k Keeper) FetchVestingAccounts(ctx sdk.Context) types.VestingAccounts {
 // SetVestingAccounts persists given vesting accounts
 func (k Keeper) SetVestingAccounts(ctx sdk.Context, vestingAccounts types.VestingAccounts) {
 	store := ctx.KVStore(k.storeKey)
-	b := k.cdc.MustMarshalBinaryBare(&vestingAccounts)
+	b := k.cdc.MustMarshal(&vestingAccounts)
 	store.Set(types.VestingAccountsKey, b)
 }
 
@@ -85,14 +86,13 @@ func (k Keeper) GetVestingAccounts(ctx sdk.Context) types.VestingAccounts {
 	}
 
 	var vestingAccounts types.VestingAccounts
-	k.cdc.MustUnmarshalBinaryBare(b, &vestingAccounts)
+	k.cdc.MustUnmarshal(b, &vestingAccounts)
 	return vestingAccounts
 }
 
 // GetTotalSupply returns the current total supply in the system
 func (k Keeper) GetTotalSupply(ctx sdk.Context) sdk.Coins {
-	supply := k.bankKeeper.GetSupply(ctx)
-	return supply.GetTotal()
+	return sdk.NewCoins(k.bankKeeper.GetSupply(ctx, config.BaseCoinUnit))
 }
 
 // GetUnvestedSupply returns total unvested supply

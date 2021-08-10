@@ -13,7 +13,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -122,7 +122,7 @@ func (k Keeper) Denoms(c context.Context, req *types.QueryDenomsRequest) (*types
 	denomStore := prefix.NewStore(store, types.KeyDenomID(""))
 	pageRes, err := query.Paginate(denomStore, req.Pagination, func(key []byte, value []byte) error {
 		var denom types.Denom
-		k.cdc.MustUnmarshalBinaryBare(value, &denom)
+		k.cdc.MustUnmarshal(value, &denom)
 		denoms = append(denoms, denom)
 		return nil
 	})

@@ -9,17 +9,17 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/kv"
 
-	"github.com/crypto-org-chain/chain-main/v2/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
 )
 
 // DecodeStore unmarshals the KVPair's Value to the corresponding gov type
-func NewDecodeStore(cdc codec.Marshaler) func(kvA, kvB kv.Pair) string {
+func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 	return func(kvA, kvB kv.Pair) string {
 		switch {
 		case bytes.Equal(kvA.Key[:1], types.PrefixNFT):
 			var nftA, nftB types.BaseNFT
-			cdc.MustUnmarshalBinaryBare(kvA.Value, &nftA)
-			cdc.MustUnmarshalBinaryBare(kvB.Value, &nftB)
+			cdc.MustUnmarshal(kvA.Value, &nftA)
+			cdc.MustUnmarshal(kvB.Value, &nftB)
 			return fmt.Sprintf("%v\n%v", nftA, nftB)
 		case bytes.Equal(kvA.Key[:1], types.PrefixOwners):
 			idA := types.MustUnMarshalTokenID(cdc, kvA.Value)
@@ -31,8 +31,8 @@ func NewDecodeStore(cdc codec.Marshaler) func(kvA, kvB kv.Pair) string {
 			return fmt.Sprintf("%d\n%d", supplyA, supplyB)
 		case bytes.Equal(kvA.Key[:1], types.PrefixDenom):
 			var denomA, denomB types.Denom
-			cdc.MustUnmarshalBinaryBare(kvA.Value, &denomA)
-			cdc.MustUnmarshalBinaryBare(kvB.Value, &denomB)
+			cdc.MustUnmarshal(kvA.Value, &denomA)
+			cdc.MustUnmarshal(kvB.Value, &denomB)
 			return fmt.Sprintf("%v\n%v", denomA, denomB)
 
 		default:

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	conf "github.com/cosmos/cosmos-sdk/client/config"
+
 	"github.com/imdario/mergo"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
@@ -28,17 +29,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authclient "github.com/cosmos/cosmos-sdk/x/auth/client"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	"github.com/crypto-org-chain/chain-main/v2/app"
-	"github.com/crypto-org-chain/chain-main/v2/app/params"
-	"github.com/crypto-org-chain/chain-main/v2/config"
-	chainmaincli "github.com/crypto-org-chain/chain-main/v2/x/chainmain/client/cli"
+	"github.com/crypto-org-chain/chain-main/v3/app"
+	"github.com/crypto-org-chain/chain-main/v3/app/params"
+	"github.com/crypto-org-chain/chain-main/v3/config"
+	chainmaincli "github.com/crypto-org-chain/chain-main/v3/x/chainmain/client/cli"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the
@@ -47,7 +47,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	config.SetConfig()
 	encodingConfig := app.MakeEncodingConfig()
 	initClientCtx := client.Context{}.
-		WithJSONMarshaler(encodingConfig.Marshaler).
+		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
 		WithTxConfig(encodingConfig.TxConfig).
 		WithLegacyAmino(encodingConfig.Amino).
@@ -74,7 +74,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd)
+			return server.InterceptConfigsPreRunHandler(cmd, "", nil)
 		},
 	}
 
@@ -84,7 +84,9 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
-	authclient.Codec = encodingConfig.Marshaler
+	// authclient.Codec = encodingConfig.Marshaler
+	cfg := sdk.GetConfig()
+	cfg.Seal()
 
 	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome)
 	initCmd.PreRun = func(cmd *cobra.Command, args []string) {
@@ -112,6 +114,8 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
+							"name":        "Crypto.org Chain",
+							"symbol":      "CRO",
 							"description": "The native token of Crypto.org Chain.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
@@ -196,6 +200,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		txCommand(),
 		keys.Commands(app.DefaultNodeHome),
 	)
+
+	// add rosetta
+	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {

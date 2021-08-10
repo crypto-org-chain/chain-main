@@ -7,13 +7,31 @@ import (
 
 	"github.com/tendermint/tendermint/libs/cli"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
+	"github.com/cosmos/cosmos-sdk/testutil/network"
 
-	nftcli "github.com/crypto-org-chain/chain-main/v2/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v3/app"
+	nftcli "github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
+
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
+	dbm "github.com/tendermint/tm-db"
 )
+
+func GetApp(val network.Validator) servertypes.Application {
+	return app.New(
+		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
+		app.MakeEncodingConfig(),
+		simapp.EmptyAppOptions{},
+		baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
+		baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
+	)
+}
 
 func IssueDenomExec(clientCtx client.Context, from string, denom string, extraArgs ...string) (testutil.BufferWriter, error) {
 	args := []string{

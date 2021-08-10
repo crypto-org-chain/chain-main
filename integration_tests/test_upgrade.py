@@ -3,7 +3,7 @@ import json
 import re
 import subprocess
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -251,17 +251,44 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 600)
 
 
-def test_cancel_upgrade(cluster):
-    """
-    use default cluster
-    - propose upgrade and pass it
-    - cancel the upgrade before execution
-    """
-    plan_name = "upgrade-test"
-    # 25 = voting_period * 2 + 5
-    upgrade_time = datetime.utcnow() + timedelta(seconds=25)
-    print("propose upgrade plan")
-    print("upgrade time", upgrade_time)
+def test_manual_upgrade_all(cosmovisor_cluster):
+    test_manual_upgrade(cosmovisor_cluster)
+    cluster = cosmovisor_cluster
+
+    community_addr = cluster.address("community")
+    reserve_addr = cluster.address("reserve")
+    # for the fee payment
+    cluster.transfer(community_addr, reserve_addr, "10000basecro")
+
+    signer1_address = cluster.address("reserve", i=0)
+    validators = cluster.validators()
+    validator1_operator_address = validators[0]["operator_address"]
+    validator2_operator_address = validators[1]["operator_address"]
+    staking_validator1 = cluster.validator(validator1_operator_address, i=0)
+    assert validator1_operator_address == staking_validator1["operator_address"]
+    staking_validator2 = cluster.validator(validator2_operator_address, i=1)
+    assert validator2_operator_address == staking_validator2["operator_address"]
+    old_bonded = cluster.staking_pool()
+    rsp = cluster.delegate_amount(
+        validator1_operator_address,
+        "2009999498basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert cluster.staking_pool() == old_bonded + 2009999498
+    rsp = cluster.delegate_amount(
+        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+    )
+    # vesting bug
+    assert rsp["code"] != 0, rsp["raw_log"]
+    assert cluster.staking_pool() == old_bonded + 2009999498
+
+    target_height = cluster.block_height() + 15
+    print("upgrade height", target_height)
+
+    plan_name = "v3.0.0"
     propose_and_pass(
         cluster,
         "software-upgrade",
@@ -269,7 +296,80 @@ def test_cancel_upgrade(cluster):
             "name": plan_name,
             "title": "upgrade test",
             "description": "ditto",
-            "upgrade-time": upgrade_time.replace(tzinfo=None).isoformat("T") + "Z",
+            "upgrade-height": target_height,
+            "deposit": "0.1cro",
+        },
+    )
+
+    # wait for upgrade plan activated
+    wait_for_block(cluster, target_height, 600)
+    # wait a little bit
+    time.sleep(0.5)
+
+    # check nodes are all stopped
+    assert (
+        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
+        != "RUNNING"
+    )
+    assert (
+        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")["state"]
+        != "RUNNING"
+    )
+
+    # check upgrade-info.json file is written
+    assert (
+        json.load((cluster.home(0) / "data/upgrade-info.json").open())
+        == json.load((cluster.home(1) / "data/upgrade-info.json").open())
+        == {
+            "name": plan_name,
+            "height": target_height,
+        }
+    )
+
+    # use the upgrade-test binary
+    edit_chain_program(
+        cluster.chain_id,
+        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
+        lambda i, _: {
+            "command": (
+                f"%(here)s/node{i}/cosmovisor/upgrades/v3.0.0/bin/chain-maind "
+                f"start --home %(here)s/node{i}"
+            )
+        },
+    )
+    cluster.reload_supervisor()
+
+    # wait for it to generate new blocks
+    wait_for_block(cluster, target_height + 2, 600)
+
+    rsp = cluster.delegate_amount(
+        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+    )
+    # vesting bug fixed
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert cluster.staking_pool() == old_bonded + 2009999499
+
+
+def test_cancel_upgrade(cluster):
+    """
+    use default cluster
+    - propose upgrade and pass it
+    - cancel the upgrade before execution
+    """
+    plan_name = "upgrade-test"
+    time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
+    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
+    upgrade_height = cluster.block_height() + 30
+    print("propose upgrade plan")
+    print("upgrade height", upgrade_height)
+    propose_and_pass(
+        cluster,
+        "software-upgrade",
+        {
+            "name": plan_name,
+            "title": "upgrade test",
+            "description": "ditto",
+            "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
     )
@@ -286,9 +386,7 @@ def test_cancel_upgrade(cluster):
     )
 
     # wait for blocks after upgrade, should success since upgrade is canceled
-    wait_for_block_time(
-        cluster, upgrade_time.replace(tzinfo=timezone.utc) + timedelta(seconds=1)
-    )
+    wait_for_block(cluster, upgrade_height + 2)
 
 
 def test_manual_export(cosmovisor_cluster):
