@@ -685,12 +685,12 @@
     sha256 = "0nxbn0m7lr4dg0yrwnvlkfiyg3ndv8vdpssjx7b714nivpc6ar0y"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.43.0-rc3"
+  sumVersion = "v0.43.0"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "0054c40ef699cd8d6dd937e77d81c05352ab7534"
-    sha256 = "07sydsm0ffswppzi3n55cqlkzx5l92c7y9ms1z6a3mv77bbzkfp4"
+    rev = "3f8596c1955e40ef30e4abcd06f2237d132db3a9"
+    sha256 = "1fgi8xq4k7bislfchl8hz18iwf37ppkp5w471v5h4axq4xynpsmy"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -709,12 +709,12 @@
     sha256 = "0cvgzjfbxhrada3h6lmcc9pvjjsbi3hz84cxj4xfjglddsm7virj"
 
 ["github.com/cosmos/ibc-go"]
-  sumVersion = "v1.0.0-rc4"
+  sumVersion = "v1.0.0"
   ["github.com/cosmos/ibc-go".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "160f010e48a6ce3182769beffacdf4ddefcce518"
-    sha256 = "182ywiwqbc5wivr7hxk2yyb34nlqdxam2yxv27v1jvj1bqv45h5d"
+    rev = "e9f1dc2a4f8631749c72e48957848cab3eb10762"
+    sha256 = "1n0n5wvsqf9zy5dq7sgi96s8invvicdc14dkj90gri2a1djdcdai"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
