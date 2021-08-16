@@ -13,6 +13,15 @@ from dateutil.parser import isoparse
 from pystarport import cluster, ledger
 from pystarport.ports import rpc_port
 
+#################
+# CONSTANTS
+# Reponse code
+SUCCESS_CODE = 0
+
+# Denomination
+CRO_DENOM = "cro"
+BASECRO_DENOM = "basecro"
+
 
 def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
@@ -202,3 +211,61 @@ def find_balance(balances, denom):
         if balance["denom"] == denom:
             return int(balance["amount"])
     return 0
+
+
+def transfer(cli, from_, to, coins, i=0, *k_options, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "bank",
+            "send",
+            from_,
+            to,
+            coins,
+            "-y",
+            home=cli.cosmos_cli(i).data_dir,
+            keyring_backend="test",
+            chain_id=cli.cosmos_cli(i).chain_id,
+            node=cli.cosmos_cli(i).node_rpc,
+            *k_options,
+            **kv_options,
+        )
+    )
+
+
+def grant_fee_allowance(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "feegrant",
+            "grant",
+            granter_address,
+            grantee,
+            "-y",
+            home=cli.cosmos_cli(i).data_dir,
+            keyring_backend="test",
+            chain_id=cli.cosmos_cli(i).chain_id,
+            node=cli.cosmos_cli(i).node_rpc,
+            *k_options,
+            **kv_options,
+        )
+    )
+
+
+def revoke_fee_grant(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "feegrant",
+            "revoke",
+            granter_address,
+            grantee,
+            "-y",
+            home=cli.cosmos_cli(i).data_dir,
+            keyring_backend="test",
+            chain_id=cli.cosmos_cli(i).chain_id,
+            node=cli.cosmos_cli(i).node_rpc,
+            *k_options,
+            **kv_options,
+        )
+    )
