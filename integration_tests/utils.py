@@ -189,18 +189,21 @@ def gen_base_port(worker_index):
     return base_port
 
 
-def sign_single_tx_with_options(cli, tx_file, singer_name, **options):
+def sign_single_tx_with_options(
+    cli, tx_file, singer_name, *k_options, i=0, **kv_options
+):
     return json.loads(
-        cli.cosmos_cli(0).raw(
+        cli.cosmos_cli(i).raw(
             "tx",
             "sign",
             tx_file,
+            *k_options,
             from_=singer_name,
-            home=cli.cosmos_cli(0).data_dir,
+            home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
-            chain_id=cli.cosmos_cli(0).chain_id,
-            node=cli.cosmos_cli(0).node_rpc,
-            **options,
+            chain_id=cli.cosmos_cli(i).chain_id,
+            node=cli.cosmos_cli(i).node_rpc,
+            **kv_options,
         )
     )
 
@@ -213,7 +216,7 @@ def find_balance(balances, denom):
     return 0
 
 
-def transfer(cli, from_, to, coins, i=0, *k_options, **kv_options):
+def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -223,17 +226,17 @@ def transfer(cli, from_, to, coins, i=0, *k_options, **kv_options):
             to,
             coins,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
-            *k_options,
             **kv_options,
         )
     )
 
 
-def grant_fee_allowance(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -242,17 +245,17 @@ def grant_fee_allowance(cli, granter_address, grantee, i=0, *k_options, **kv_opt
             granter_address,
             grantee,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
-            *k_options,
             **kv_options,
         )
     )
 
 
-def revoke_fee_grant(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -261,11 +264,11 @@ def revoke_fee_grant(cli, granter_address, grantee, i=0, *k_options, **kv_option
             granter_address,
             grantee,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
-            *k_options,
             **kv_options,
         )
     )
