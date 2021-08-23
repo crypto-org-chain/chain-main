@@ -1,6 +1,6 @@
 import pytest
 
-from .utils import wait_for_block
+from .utils import BASECRO_DENOM, query_command, wait_for_block
 
 pytestmark = pytest.mark.normal
 
@@ -28,9 +28,10 @@ def test_transfer(cluster):
     """
     community_addr = cluster.address("community")
     reserve_addr = cluster.address("reserve")
-
     community_balance = cluster.balance(community_addr)
     reserve_balance = cluster.balance(reserve_addr)
+    initial_community_addr_tx_count = len(cluster.query_all_txs(community_addr)["txs"])
+    initial_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
 
     tx = cluster.transfer(community_addr, reserve_addr, "1cro")
     print("transfer tx", tx["txhash"])
@@ -75,10 +76,10 @@ def test_transfer(cluster):
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
-    query_txs_1 = cluster.query_all_txs(community_addr)
-    assert len(query_txs_1["txs"]) == 1
-    query_txs_2 = cluster.query_all_txs(reserve_addr)
-    assert len(query_txs_2["txs"]) == 1
+    updated_community_addr_tx_count = len(cluster.query_all_txs(community_addr)["txs"])
+    assert updated_community_addr_tx_count == initial_community_addr_tx_count + 1
+    updated_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
+    assert updated_reserve_addr_tx_count == initial_reserve_addr_tx_count + 1
 
 
 def test_liquid_supply(cluster):
@@ -86,9 +87,30 @@ def test_liquid_supply(cluster):
     Checks the total liquid supply in the system
     """
 
-    liquid_supply = cluster.supply("liquid")["supply"]
-    assert liquid_supply[0]["denom"] == "basecro"
-    assert liquid_supply[0]["amount"] == "1640000000000"
+    # sum of all coins except the one with vesting time under accounts in config yaml
+    liquid_supply_exclude_staking = 1640000000000
+    # sum of all coins under validators in config yaml
+    staking_pool_gentx = 2000000000
+    staking_pool = 0
+    validators = cluster.validators()
+    for v in validators:
+        delegations_to = query_command(
+            cluster, "staking", "delegations-to", v["operator_address"]
+        )
+        staking_pool += sum(
+            [
+                int(i["balance"]["amount"])
+                for i in delegations_to["delegation_responses"]
+            ]
+        )
+
+    assert cluster.supply("liquid")["supply"][0] == {
+        "denom": BASECRO_DENOM,
+        # minus delegation amount in gentx from calculated staking pool
+        "amount": str(
+            liquid_supply_exclude_staking - (staking_pool - staking_pool_gentx)
+        ),
+    }
 
 
 def test_statesync(cluster):

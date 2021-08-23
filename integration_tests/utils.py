@@ -297,7 +297,6 @@ def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_option
 def throw_error_for_non_success_code(func):
     def wrapper(*args, **kwargs):
         data = func(*args, **kwargs)
-        print(data)
         # commands with --generate-only flag do not return response with code
         if "code" in data and data["code"] != SUCCESS_CODE:
             raise Exception(data)
