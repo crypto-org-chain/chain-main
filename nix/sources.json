@@ -12,15 +12,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
-        "branch": "adi/ibc-go-1-proto",
+        "branch": "master",
         "description": "IBC modules and relayer - Formal specifications and Rust implementation",
         "homepage": "",
         "owner": "informalsystems",
         "repo": "ibc-rs",
-        "rev": "b9123478151aed717b0e7f21d27fd2a592d7eaaf",
-        "sha256": "0728cbq1bcnyglskikf978h9vpw00dahgvgk2vx6pzwc5ndgjdsd",
+        "rev": "c518e15a073a5187d64cd00d1a62b2c9360a9408",
+        "sha256": "1b3sa9slm6m8ilba9zs67v817m5niljdqxr9lzmfkk553vlr25rm",
         "type": "tarball",
-        "url": "https://github.com/informalsystems/ibc-rs/archive/b9123478151aed717b0e7f21d27fd2a592d7eaaf.tar.gz",
+        "url": "https://github.com/informalsystems/ibc-rs/archive/c518e15a073a5187d64cd00d1a62b2c9360a9408.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
