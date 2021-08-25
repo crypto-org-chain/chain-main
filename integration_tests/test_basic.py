@@ -1,6 +1,6 @@
 import pytest
 
-from .utils import BASECRO_DENOM, query_command, wait_for_block
+from .utils import wait_for_block
 
 pytestmark = pytest.mark.normal
 
@@ -87,30 +87,10 @@ def test_liquid_supply(cluster):
     Checks the total liquid supply in the system
     """
 
-    # sum of all coins except the one with vesting time under accounts in config yaml
-    liquid_supply_exclude_staking = 1640000000000
-    # sum of all coins under validators in config yaml
-    staking_pool_gentx = 2000000000
-    staking_pool = 0
-    validators = cluster.validators()
-    for v in validators:
-        delegations_to = query_command(
-            cluster, "staking", "delegations-to", v["operator_address"]
-        )
-        staking_pool += sum(
-            [
-                int(i["balance"]["amount"])
-                for i in delegations_to["delegation_responses"]
-            ]
-        )
-
-    assert cluster.supply("liquid")["supply"][0] == {
-        "denom": BASECRO_DENOM,
-        # minus delegation amount in gentx from calculated staking pool
-        "amount": str(
-            liquid_supply_exclude_staking - (staking_pool - staking_pool_gentx)
-        ),
-    }
+    liquid_supply = cluster.supply("liquid")["supply"]
+    assert liquid_supply[0]["denom"] == "basecro"
+    # # sum of all coins except the one with vesting time under accounts in config yaml
+    assert liquid_supply[0]["amount"] == "1640000000000"
 
 
 def test_statesync(cluster):

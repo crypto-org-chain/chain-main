@@ -31,16 +31,37 @@ AUTHORIZATION_GENERIC = "generic"
 AUTHORIZATION_DELEGATE = "delegate"
 AUTHORIZATION_UNBOND = "unbond"
 AUTHORIZATION_REDELEGATE = "redelegate"
-#  authorization_type="send"|"generic"|"delegate"|"unbond"|"redelegate
+
+# tx broadcasting mode
+# Wait for the tx to pass/fail CheckTx
+SYNC_BROADCASTING = "sync"
+# (the default) Don't wait for pass/fail CheckTx; send and return tx immediately
+ASYNC_BROADCASTING = "async"
+# Wait for the tx to pass/fail CheckTx, DeliverTx, and be committed in a block
+BLOCK_BROADCASTING = "block"
 
 # Msg Type URL
 SEND_MSG_TYPE_URL = "/cosmos.bank.v1beta1.MsgSend"
+DELEGATE_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgDelegate"
+UNBOND_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgUndelegate"
+REDELEGATE_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgBeginRedelegate"
+WITHDRAW_DELEGATOR_REWARD_TYPE_URL = (
+    "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward"
+)
 
 # Module
 STAKING = "staking"
+AUTHZ = "authz"
 
 # Querying commands for staking module
 DELEGATION = "delegation"
+DISTRIBUTION = "distribution"
+
+# Querying commands for authz module
+GRANTS = "grants"
+
+# QUerying commands for distribution module
+REWARDS = "rewards"
 
 
 def wait_for_block(cli, height, timeout=240):
@@ -317,9 +338,6 @@ def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
             *k_options,
             from_=grantee,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -340,9 +358,6 @@ def grant_authorization(
             *k_options,
             from_=granter,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -363,9 +378,6 @@ def revoke_authorization(
             *k_options,
             from_=granter,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -377,8 +389,6 @@ def query_command(cli, *k_options, i=0, **kv_options):
             "query",
             *k_options,
             home=cli.cosmos_cli(i).data_dir,
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             output="json",
             *kv_options,
         )
@@ -400,9 +410,6 @@ def delegate_amount(
             *k_options,
             from_=from_,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -421,9 +428,6 @@ def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_o
             *k_options,
             from_=from_,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -445,9 +449,6 @@ def redelegate_amount(
             *k_options,
             from_=from_,
             home=cli.cosmos_cli(i).data_dir,
-            keyring_backend="test",
-            chain_id=cli.cosmos_cli(i).chain_id,
-            node=cli.cosmos_cli(i).node_rpc,
             **kv_options,
         )
     )
@@ -462,3 +463,39 @@ def query_delegation_amount(cluster, delegator_address, validator_address):
         return {"denom": BASECRO_DENOM, "amount": "0"}
 
     return delegation_amount["balance"]
+
+
+def query_total_reward_amount(cluster, delegator_address, validator_address=""):
+    try:
+        rewards = query_command(
+            cluster, DISTRIBUTION, REWARDS, delegator_address, validator_address
+        )
+    except AssertionError:
+        return 0
+
+    if validator_address:
+        total_reward = sum(float(r["amount"]) for r in rewards["rewards"])
+    else:
+        total_reward = (
+            sum([float(r["amount"]) for r in rewards["total"]])
+            if rewards["total"]
+            else 0
+        )
+
+    return total_reward
+
+
+@throw_error_for_non_success_code
+def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "distribution",
+            "withdraw-all-rewards",
+            "-y",
+            *k_options,
+            from_=from_delegator,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
