@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/tendermint v0.34.11
+	github.com/tendermint/tendermint v0.34.12
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tidwall/gjson v1.7.5
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
@@ -37,3 +37,5 @@ replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmo
 replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
+
+replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.12
