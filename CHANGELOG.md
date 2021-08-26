@@ -1,5 +1,11 @@
 # Changelog
 
+*August 26, 2021*
+
+## v3.0.1-croeseid
+This version is identical to the v3.0.0-croeseid, but updated the IBC dependency to 1.0.1 which contains a security patch
+and Tendermint was upgraded to 0.34.12.
+
 *August 13, 2021*
 
 ## v3.0.0-croeseid
@@ -7,8 +13,6 @@ This version is meant for the future testnet. It is based on IBC 1.0 and Cosmos 
 contain several new features (such as the feegrant and authz modules), bug fixes (such as the vesting account bug fix)
 and breaking changes. For more details, please see the [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/releases/tag/v0.43.0)
 and [ibc-go](https://github.com/cosmos/ibc-go/releases/tag/v1.0.0) release notes.
-*WARNING*: DO NOT upgrade to this binary on the existing testnets yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/.
 
 *August 6, 2021*
 
