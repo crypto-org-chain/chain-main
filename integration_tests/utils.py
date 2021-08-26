@@ -22,6 +22,47 @@ SUCCESS_CODE = 0
 CRO_DENOM = "cro"
 BASECRO_DENOM = "basecro"
 
+# Command Line Options
+GENERATE_ONLY = "--generate-only"
+
+# Authorization Type
+AUTHORIZATION_SEND = "send"
+AUTHORIZATION_GENERIC = "generic"
+AUTHORIZATION_DELEGATE = "delegate"
+AUTHORIZATION_UNBOND = "unbond"
+AUTHORIZATION_REDELEGATE = "redelegate"
+
+# tx broadcasting mode
+# Wait for the tx to pass/fail CheckTx
+SYNC_BROADCASTING = "sync"
+# (the default) Don't wait for pass/fail CheckTx; send and return tx immediately
+ASYNC_BROADCASTING = "async"
+# Wait for the tx to pass/fail CheckTx, DeliverTx, and be committed in a block
+BLOCK_BROADCASTING = "block"
+
+# Msg Type URL
+SEND_MSG_TYPE_URL = "/cosmos.bank.v1beta1.MsgSend"
+DELEGATE_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgDelegate"
+UNBOND_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgUndelegate"
+REDELEGATE_MSG_TYPE_URL = "/cosmos.staking.v1beta1.MsgBeginRedelegate"
+WITHDRAW_DELEGATOR_REWARD_TYPE_URL = (
+    "/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward"
+)
+
+# Module
+STAKING = "staking"
+AUTHZ = "authz"
+
+# Querying commands for staking module
+DELEGATION = "delegation"
+DISTRIBUTION = "distribution"
+
+# Querying commands for authz module
+GRANTS = "grants"
+
+# QUerying commands for distribution module
+REWARDS = "rewards"
+
 
 def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
@@ -189,18 +230,21 @@ def gen_base_port(worker_index):
     return base_port
 
 
-def sign_single_tx_with_options(cli, tx_file, singer_name, **options):
+def sign_single_tx_with_options(
+    cli, tx_file, singer_name, *k_options, i=0, **kv_options
+):
     return json.loads(
-        cli.cosmos_cli(0).raw(
+        cli.cosmos_cli(i).raw(
             "tx",
             "sign",
             tx_file,
+            *k_options,
             from_=singer_name,
-            home=cli.cosmos_cli(0).data_dir,
+            home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
-            chain_id=cli.cosmos_cli(0).chain_id,
-            node=cli.cosmos_cli(0).node_rpc,
-            **options,
+            chain_id=cli.cosmos_cli(i).chain_id,
+            node=cli.cosmos_cli(i).node_rpc,
+            **kv_options,
         )
     )
 
@@ -213,7 +257,7 @@ def find_balance(balances, denom):
     return 0
 
 
-def transfer(cli, from_, to, coins, i=0, *k_options, **kv_options):
+def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -223,17 +267,17 @@ def transfer(cli, from_, to, coins, i=0, *k_options, **kv_options):
             to,
             coins,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
-            *k_options,
             **kv_options,
         )
     )
 
 
-def grant_fee_allowance(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -242,17 +286,17 @@ def grant_fee_allowance(cli, granter_address, grantee, i=0, *k_options, **kv_opt
             granter_address,
             grantee,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
-            *k_options,
             **kv_options,
         )
     )
 
 
-def revoke_fee_grant(cli, granter_address, grantee, i=0, *k_options, **kv_options):
+def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_options):
     return json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
@@ -261,11 +305,197 @@ def revoke_fee_grant(cli, granter_address, grantee, i=0, *k_options, **kv_option
             granter_address,
             grantee,
             "-y",
+            *k_options,
             home=cli.cosmos_cli(i).data_dir,
             keyring_backend="test",
             chain_id=cli.cosmos_cli(i).chain_id,
             node=cli.cosmos_cli(i).node_rpc,
+            **kv_options,
+        )
+    )
+
+
+def throw_error_for_non_success_code(func):
+    def wrapper(*args, **kwargs):
+        data = func(*args, **kwargs)
+        # commands with --generate-only flag do not return response with code
+        if "code" in data and data["code"] != SUCCESS_CODE:
+            raise Exception(data)
+        return data
+
+    return wrapper
+
+
+@throw_error_for_non_success_code
+def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "authz",
+            "exec",
+            tx_file,
+            "-y",
             *k_options,
+            from_=grantee,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+@throw_error_for_non_success_code
+def grant_authorization(
+    cli, grantee, authorization_type, granter, *k_options, i=0, **kv_options
+):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "authz",
+            "grant",
+            grantee,
+            authorization_type,
+            "-y",
+            *k_options,
+            from_=granter,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+@throw_error_for_non_success_code
+def revoke_authorization(
+    cli, grantee, msg_type, granter, *k_options, i=0, **kv_options
+):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "authz",
+            "revoke",
+            grantee,
+            msg_type,
+            "-y",
+            *k_options,
+            from_=granter,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+def query_command(cli, *k_options, i=0, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "query",
+            *k_options,
+            home=cli.cosmos_cli(i).data_dir,
+            output="json",
+            *kv_options,
+        )
+    )
+
+
+@throw_error_for_non_success_code
+def delegate_amount(
+    cli, validator_address, amount, from_, *k_options, i=0, **kv_options
+):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "staking",
+            "delegate",
+            validator_address,
+            amount,
+            "-y",
+            *k_options,
+            from_=from_,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+@throw_error_for_non_success_code
+def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "staking",
+            "unbond",
+            validator_address,
+            amount,
+            "-y",
+            *k_options,
+            from_=from_,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+@throw_error_for_non_success_code
+def redelegate_amount(
+    cli, src_validator, dst_validator, amount, from_, *k_options, i=0, **kv_options
+):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "staking",
+            "redelegate",
+            src_validator,
+            dst_validator,
+            amount,
+            "-y",
+            *k_options,
+            from_=from_,
+            home=cli.cosmos_cli(i).data_dir,
+            **kv_options,
+        )
+    )
+
+
+def query_delegation_amount(cluster, delegator_address, validator_address):
+    try:
+        delegation_amount = query_command(
+            cluster, STAKING, DELEGATION, delegator_address, validator_address
+        )
+    except AssertionError:
+        return {"denom": BASECRO_DENOM, "amount": "0"}
+
+    return delegation_amount["balance"]
+
+
+def query_total_reward_amount(cluster, delegator_address, validator_address=""):
+    try:
+        rewards = query_command(
+            cluster, DISTRIBUTION, REWARDS, delegator_address, validator_address
+        )
+    except AssertionError:
+        return 0
+
+    if validator_address:
+        total_reward = sum(float(r["amount"]) for r in rewards["rewards"])
+    else:
+        total_reward = (
+            sum([float(r["amount"]) for r in rewards["total"]])
+            if rewards["total"]
+            else 0
+        )
+
+    return total_reward
+
+
+@throw_error_for_non_success_code
+def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "tx",
+            "distribution",
+            "withdraw-all-rewards",
+            "-y",
+            *k_options,
+            from_=from_delegator,
+            home=cli.cosmos_cli(i).data_dir,
             **kv_options,
         )
     )
