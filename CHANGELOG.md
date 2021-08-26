@@ -1,5 +1,12 @@
 # Changelog
 
+*August 26, 2021*
+
+## v3.0.1
+This version is identical to the v3.0.0, but updated the IBC dependency to 1.0.1 which contains a security patch.
+*WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
+on https://crypto.org/docs/getting-started/upgrade_guide.html .
+
 *August 23, 2021*
 
 ## v3.0.0
