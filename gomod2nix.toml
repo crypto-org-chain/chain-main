@@ -2172,14 +2172,6 @@
     rev = "1b5ee5ba6837fe62f5c9f2275033db8ec84de004"
     sha256 = "0jk0ws9cxdiicfd4w7mpvfgsx4fabgpjhyl8jwbqnzpq2w0pgk6p"
 
-["github.com/niemeyer/pretty"]
-  sumVersion = "v0.0.0-20200227124842-a10e7caefd8e"
-  ["github.com/niemeyer/pretty".fetch]
-    type = "git"
-    url = "https://github.com/niemeyer/pretty"
-    rev = "a10e7caefd8e0d600cea437f5c3613aeb1553d56"
-    sha256 = "1jmazh4xzaa3v6g46hz60q2z7nmqs9l9cxdzmmscn3kbcs2znq4v"
-
 ["github.com/nishanths/predeclared"]
   sumVersion = "v0.0.0-20200524104333-86fad755b4d3"
   ["github.com/nishanths/predeclared".fetch]
@@ -2821,12 +2813,12 @@
     sha256 = "1zcms3l5fihzg8nf4vhdk18qpn1jkbm3rpkjfpskfcrgzlxk6vi5"
 
 ["github.com/tendermint/tendermint"]
-  sumVersion = "v0.34.11"
+  sumVersion = "v0.34.12"
   ["github.com/tendermint/tendermint".fetch]
     type = "git"
     url = "https://github.com/tendermint/tendermint"
-    rev = "c2908ef785bb5ca6e015910368e4b7a32821b9ff"
-    sha256 = "0x9hf09qqdjf77fwk8sdc1dzr7akndwbpylnhi6aaihg4an0aqvp"
+    rev = "d030cddca01c0c3ff0ce41e051e123cdc9872a4e"
+    sha256 = "01nm9s3r00aav5j44adam3aif9mfr8fhvg4075yz4sf8n4938488"
 
 ["github.com/tendermint/tm-db"]
   sumVersion = "v0.6.4"
@@ -3241,12 +3233,12 @@
     sha256 = "0mndnv3hdngr3bxp7yxfd47cas4prv98sqw534mx7vp38gd88n5r"
 
 ["gopkg.in/check.v1"]
-  sumVersion = "v1.0.0-20200902074654-038fdea0a05b"
+  sumVersion = "v1.0.0-20190902080502-41f04d3bba15"
   ["gopkg.in/check.v1".fetch]
     type = "git"
     url = "https://gopkg.in/check.v1"
-    rev = "038fdea0a05bc030b0bfda479dc2e08d2220ec74"
-    sha256 = "060kpz01bfglrd7przzgq8a1fqf1x0hlkmdj6isindzwx3kfhnm4"
+    rev = "41f04d3bba152ddec2103e299fed053415705330"
+    sha256 = "0vfk9czmlxmp6wndq8k17rhnjxal764mxfhrccza7nwlia760pjy"
 
 ["gopkg.in/cheggaaa/pb.v1"]
   sumVersion = "v1.0.25"
