@@ -28,9 +28,10 @@ def test_transfer(cluster):
     """
     community_addr = cluster.address("community")
     reserve_addr = cluster.address("reserve")
-
     community_balance = cluster.balance(community_addr)
     reserve_balance = cluster.balance(reserve_addr)
+    initial_community_addr_tx_count = len(cluster.query_all_txs(community_addr)["txs"])
+    initial_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
 
     tx = cluster.transfer(community_addr, reserve_addr, "1cro")
     print("transfer tx", tx["txhash"])
@@ -75,10 +76,10 @@ def test_transfer(cluster):
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000
-    query_txs_1 = cluster.query_all_txs(community_addr)
-    assert len(query_txs_1["txs"]) == 1
-    query_txs_2 = cluster.query_all_txs(reserve_addr)
-    assert len(query_txs_2["txs"]) == 1
+    updated_community_addr_tx_count = len(cluster.query_all_txs(community_addr)["txs"])
+    assert updated_community_addr_tx_count == initial_community_addr_tx_count + 1
+    updated_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
+    assert updated_reserve_addr_tx_count == initial_reserve_addr_tx_count + 1
 
 
 def test_liquid_supply(cluster):
@@ -88,6 +89,7 @@ def test_liquid_supply(cluster):
 
     liquid_supply = cluster.supply("liquid")["supply"]
     assert liquid_supply[0]["denom"] == "basecro"
+    # # sum of all coins except the one with vesting time under accounts in config yaml
     assert liquid_supply[0]["amount"] == "1640000000000"
 
 
