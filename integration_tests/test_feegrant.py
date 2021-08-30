@@ -5,7 +5,6 @@ from dateutil.parser import isoparse
 
 from .utils import (
     BASECRO_DENOM,
-    BLOCK_BROADCASTING,
     SUCCESS_CODE,
     grant_fee_allowance,
     query_block_info,
@@ -164,7 +163,6 @@ def test_periodic_fee_allowance(cluster):
             "%s%s" % (transaction_coins, BASECRO_DENOM),
             fees="%s%s" % (fee_coins, BASECRO_DENOM),
             fee_account=fee_granter_address,
-            broadcast_mode=BLOCK_BROADCASTING,
         )
         wait_for_block(cluster, int(tx["height"]))
         block_info = query_block_info(cluster, tx["height"])
@@ -222,7 +220,6 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
         fee_account=fee_granter_address,
-        broadcast_mode=BLOCK_BROADCASTING,
     )
 
     failed_tx = transfer(
