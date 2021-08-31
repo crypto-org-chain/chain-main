@@ -1,14 +1,17 @@
 import datetime
-from time import sleep
 
 import pytest
+from dateutil.parser import isoparse
 
 from .utils import (
     BASECRO_DENOM,
     SUCCESS_CODE,
     grant_fee_allowance,
+    query_block_info,
     revoke_fee_grant,
     transfer,
+    wait_for_block,
+    wait_for_block_time,
 )
 
 pytestmark = pytest.mark.normal
@@ -153,7 +156,7 @@ def test_periodic_fee_allowance(cluster):
     )
 
     for _ in range(number_of_periods):
-        transfer(
+        tx = transfer(
             cluster,
             fee_grantee_address,
             receiver_address,
@@ -161,7 +164,13 @@ def test_periodic_fee_allowance(cluster):
             fees="%s%s" % (fee_coins, BASECRO_DENOM),
             fee_account=fee_granter_address,
         )
-        sleep(period)
+        wait_for_block(cluster, int(tx["height"]))
+        block_info = query_block_info(cluster, tx["height"])
+        wait_for_block_time(
+            cluster,
+            isoparse(block_info["block"]["header"]["time"])
+            + datetime.timedelta(seconds=period),
+        )
 
     assert (
         cluster.balance(fee_granter_address)
@@ -204,7 +213,7 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         period=period,
     )
 
-    transfer(
+    tx = transfer(
         cluster,
         fee_grantee_address,
         receiver_address,
@@ -222,7 +231,14 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         fee_account=fee_granter_address,
     )
     assert failed_tx["code"] != SUCCESS_CODE, "should fail as fee exceeds period limit"
-    sleep(period)
+
+    wait_for_block(cluster, int(tx["height"]))
+    block_info = query_block_info(cluster, tx["height"])
+    wait_for_block_time(
+        cluster,
+        isoparse(block_info["block"]["header"]["time"])
+        + datetime.timedelta(seconds=period),
+    )
 
     transfer(
         cluster,

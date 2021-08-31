@@ -395,6 +395,17 @@ def query_command(cli, *k_options, i=0, **kv_options):
     )
 
 
+def query_block_info(cli, height, i=0):
+    return json.loads(
+        cli.cosmos_cli(i).raw(
+            "query",
+            "block",
+            height,
+            home=cli.cosmos_cli(i).data_dir,
+        )
+    )
+
+
 @throw_error_for_non_success_code
 def delegate_amount(
     cli, validator_address, amount, from_, *k_options, i=0, **kv_options
