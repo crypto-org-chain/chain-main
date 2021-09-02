@@ -1,5 +1,12 @@
 # Changelog
 
+*Septeber 2, 2021*
+
+## v3.1.0
+This version is identical to the v3.0.1, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch.
+*WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
+on https://crypto.org/docs/getting-started/upgrade_guide.html .
+
 *August 26, 2021*
 
 ## v3.0.1
