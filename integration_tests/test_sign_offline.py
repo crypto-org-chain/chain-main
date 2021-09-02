@@ -8,6 +8,7 @@ from .utils import wait_for_new_blocks
 pytestmark = pytest.mark.normal
 
 
+@pytest.mark.skip(reason="/txs API removed in 0.44")
 def test_sign_offline(cluster):
     """
     check simple transfer tx success
