@@ -1,11 +1,11 @@
 # Changelog
 
-*Septeber 2, 2021*
+*Septeber 3, 2021*
 
-## v3.1.0
-This version is identical to the v3.0.1, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch.
-*WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+## v3.1.0-croeseid
+This version is identical to the v3.0.1-croeseid, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch. It contains the upgrade handler for the plan "croeseid-0.44" which is meant to signal an upgrade on the "testnet-croeseid-4" public testnet. 
+*WARNING*: DO NOT run this binary from "testnet-croeseid-4" genesis; you can upgrade to it after the upgrade block height has passed
+as per instructions on https://crypto.org/docs/getting-started/croeseid-testnet.html .
 
 *August 26, 2021*
 

@@ -173,6 +173,7 @@ def propose_and_pass(cluster, kind, proposal):
     return proposal
 
 
+@pytest.mark.skip(reason="croeseid-4 started off 0.43")
 def test_manual_upgrade(cosmovisor_cluster):
     """
     - do the upgrade test by replacing binary manually
@@ -251,6 +252,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 600)
 
 
+@pytest.mark.skip(reason="croeseid-4 started off 0.43")
 def test_manual_upgrade_all(cosmovisor_cluster):
     test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
