@@ -89,7 +89,6 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
         Path(__file__).parent / "configs/default.yaml",
         worker_index,
         data,
-        quiet=pytestconfig.getoption("supervisord-quiet"),
         post_init=post_init,
         enable_cov=False,
         cmd=(data / "cosmovisor/genesis/bin/chain-maind"),

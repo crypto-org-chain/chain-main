@@ -16,7 +16,6 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         Path(__file__).parent / "configs/byzantine.yaml",
         worker_index,
         tmp_path_factory.mktemp("data"),
-        quiet=pytestconfig.getoption("supervisord-quiet"),
     )
 
 
