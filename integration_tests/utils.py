@@ -118,7 +118,6 @@ def cluster_fixture(
     config_path,
     worker_index,
     data,
-    quiet=False,
     post_init=None,
     enable_cov=None,
     cmd=None,
@@ -160,8 +159,6 @@ def cluster_fixture(
         clis[chain_id] = cluster.ClusterCLI(data, chain_id=chain_id)
 
     supervisord = cluster.start_cluster(data)
-    if not quiet:
-        tailer = cluster.start_tail_logs_thread(data)
 
     try:
         begin = time.time()
@@ -184,9 +181,6 @@ def cluster_fixture(
     finally:
         supervisord.terminate()
         supervisord.wait()
-        if not quiet:
-            tailer.stop()
-            tailer.join()
 
     if enable_cov:
         # collect the coverage results

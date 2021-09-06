@@ -61,6 +61,15 @@ jobs:
           docker login -u "$GITHUB_ACTOR" -p "${{ github.token }}" docker.pkg.github.com
           docker push $TARGET
           echo "pushed: $TARGET"
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files
+          path: debug_files.tar.gz
+          if-no-files-found: ignore
 
   test-upgrade:
     runs-on: ubuntu-latest
@@ -74,6 +83,15 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-upgrade
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_upgrade.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_upgrade
+          path: debug_files_upgrade.tar.gz
+          if-no-files-found: ignore
 
   test-ledger:
     runs-on: ubuntu-latest
@@ -87,6 +105,15 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-ledger
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_ledger.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_ledger
+          path: debug_files_ledger.tar.gz
+          if-no-files-found: ignore
 
   test-slow:
     runs-on: ubuntu-latest
@@ -100,6 +127,15 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-slow
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_slow.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_slow
+          path: debug_files_slow.tar.gz
+          if-no-files-found: ignore
 
   test-ibc:
     runs-on: ubuntu-latest
@@ -113,6 +149,15 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-ibc
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_ibc.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_ibc
+          path: debug_files_ibc.tar.gz
+          if-no-files-found: ignore
 
   test-byzantine:
     runs-on: ubuntu-latest
@@ -126,6 +171,15 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-byzantine
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_byzantine.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_byzantine
+          path: debug_files_byzantine.tar.gz
+          if-no-files-found: ignore
 
   test-gov:
     runs-on: ubuntu-latest
@@ -139,6 +193,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-gov
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_gov.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_gov
+          path: debug_files_gov.tar.gz
+          if-no-files-found: ignore
+
 
   test-grpc:
     runs-on: ubuntu-latest
@@ -152,3 +216,12 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-grpc
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_grpc.tar.gz -C /tmp/pytest-of-runner .
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: debug_files_grpc
+          path: debug_files_grpc.tar.gz
+          if-no-files-found: ignore

@@ -17,16 +17,6 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "gov: marks gov tests")
 
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--supervisord-quiet",
-        dest="supervisord-quiet",
-        action="store_true",
-        default=False,
-        help="redirect supervisord's stdout to file",
-    )
-
-
 @pytest.fixture(scope="session")
 def worker_index(worker_id):
     match = re.search(r"\d+", worker_id)
@@ -40,7 +30,6 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         Path(__file__).parent / "configs/default.yaml",
         worker_index,
         tmp_path_factory.mktemp("data"),
-        quiet=pytestconfig.getoption("supervisord-quiet"),
     )
 
 
