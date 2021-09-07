@@ -1,5 +1,13 @@
 # Changelog
 
+*Septeber 7, 2021*
+
+## v3.1.1
+This version is identical to the v3.1.0, but updated the ibc-go dependency to 1.1.0.
+*WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
+on https://crypto.org/docs/getting-started/upgrade_guide.html .
+
+
 *Septeber 2, 2021*
 
 ## v3.1.0
