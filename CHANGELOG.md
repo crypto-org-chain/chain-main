@@ -1,6 +1,14 @@
 # Changelog
 
-*Septeber 3, 2021*
+*September 7, 2021*
+
+## v3.1.1-croeseid
+This version is identical to the v3.1.0-croeseid, but updated the ibc-go dependency to 1.1.0.
+*WARNING*: DO NOT run this binary from "testnet-croeseid-4" genesis; you can upgrade to it after the upgrade block height has passed
+as per instructions on https://crypto.org/docs/getting-started/croeseid-testnet.html .
+
+
+*September 3, 2021*
 
 ## v3.1.0-croeseid
 This version is identical to the v3.0.1-croeseid, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch. It contains the upgrade handler for the plan "croeseid-0.44" which is meant to signal an upgrade on the "testnet-croeseid-4" public testnet. 

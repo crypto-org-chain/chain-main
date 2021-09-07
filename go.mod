@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/confluentinc/bincover v0.1.0
 	github.com/cosmos/cosmos-sdk v0.44.0
-	github.com/cosmos/ibc-go v1.0.1
+	github.com/cosmos/ibc-go v1.1.0
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
@@ -37,8 +37,3 @@ replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmo
 replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-
-// forcing versions in transitive deps
-replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.12
-
-replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.0
