@@ -709,12 +709,12 @@
     sha256 = "0cvgzjfbxhrada3h6lmcc9pvjjsbi3hz84cxj4xfjglddsm7virj"
 
 ["github.com/cosmos/ibc-go"]
-  sumVersion = "v1.0.1"
+  sumVersion = "v1.1.0"
   ["github.com/cosmos/ibc-go".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "446797b77958996bf1f1d15205cb75a4dbe1f3fa"
-    sha256 = "1vyjk79c0hjigpjamc2xibgjlmrljrd1wpx2lj52j5biff46z5hk"
+    rev = "1e0a7f074726bc199a3b39c5863d9f7b1a946402"
+    sha256 = "0b63mkk67glawm8xfm1j4gk9i062x7cndqdfx3nbpa7vq2aqbznr"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
@@ -2172,6 +2172,14 @@
     rev = "1b5ee5ba6837fe62f5c9f2275033db8ec84de004"
     sha256 = "0jk0ws9cxdiicfd4w7mpvfgsx4fabgpjhyl8jwbqnzpq2w0pgk6p"
 
+["github.com/niemeyer/pretty"]
+  sumVersion = "v0.0.0-20200227124842-a10e7caefd8e"
+  ["github.com/niemeyer/pretty".fetch]
+    type = "git"
+    url = "https://github.com/niemeyer/pretty"
+    rev = "a10e7caefd8e0d600cea437f5c3613aeb1553d56"
+    sha256 = "1jmazh4xzaa3v6g46hz60q2z7nmqs9l9cxdzmmscn3kbcs2znq4v"
+
 ["github.com/nishanths/predeclared"]
   sumVersion = "v0.0.0-20200524104333-86fad755b4d3"
   ["github.com/nishanths/predeclared".fetch]
@@ -3233,12 +3241,12 @@
     sha256 = "0mndnv3hdngr3bxp7yxfd47cas4prv98sqw534mx7vp38gd88n5r"
 
 ["gopkg.in/check.v1"]
-  sumVersion = "v1.0.0-20190902080502-41f04d3bba15"
+  sumVersion = "v1.0.0-20200902074654-038fdea0a05b"
   ["gopkg.in/check.v1".fetch]
     type = "git"
     url = "https://gopkg.in/check.v1"
-    rev = "41f04d3bba152ddec2103e299fed053415705330"
-    sha256 = "0vfk9czmlxmp6wndq8k17rhnjxal764mxfhrccza7nwlia760pjy"
+    rev = "038fdea0a05bc030b0bfda479dc2e08d2220ec74"
+    sha256 = "060kpz01bfglrd7przzgq8a1fqf1x0hlkmdj6isindzwx3kfhnm4"
 
 ["gopkg.in/cheggaaa/pb.v1"]
   sumVersion = "v1.0.25"
