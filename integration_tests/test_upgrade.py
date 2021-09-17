@@ -172,6 +172,7 @@ def propose_and_pass(cluster, kind, proposal):
     return proposal
 
 
+@pytest.mark.skip(reason="tested in test_manual_upgrade_all")
 def test_manual_upgrade(cosmovisor_cluster):
     """
     - do the upgrade test by replacing binary manually
