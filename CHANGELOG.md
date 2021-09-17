@@ -1,6 +1,20 @@
 # Changelog
 
-*Septeber 7, 2021*
+*September 17, 2021*
+
+## v3.2.0-rc0
+This version is identical to the v3.1.1, but did the following dependency upgrades:
+- ibc-go was upgraded to 1.2.0
+- tendermint was upgraded to v0.34.13
+- Cosmos SDK was patched with a custom fork based off the upstream 0.44.x release branch: https://github.com/crypto-org-chain/cosmos-sdk/tree/0.44.x-patched .
+
+The upstream 0.44.x release branch contains several bug fixes from the 0.44.0.
+The custom patch mitigates potential sources of non-determinism in the Cosmos SDK's upgrade module: https://github.com/crypto-org-chain/cosmos-sdk/commit/00ffa3d5a00b83d52072397e348e36b8398f0b7b
+
+*WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
+on https://crypto.org/docs/getting-started/upgrade_guide.html .
+
+*September 7, 2021*
 
 ## v3.1.1
 This version is identical to the v3.1.0, but updated the ibc-go dependency to 1.1.0.
@@ -8,7 +22,7 @@ This version is identical to the v3.1.0, but updated the ibc-go dependency to 1.
 on https://crypto.org/docs/getting-started/upgrade_guide.html .
 
 
-*Septeber 2, 2021*
+*September 2, 2021*
 
 ## v3.1.0
 This version is identical to the v3.0.1, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch.
