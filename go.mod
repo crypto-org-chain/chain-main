@@ -39,4 +39,4 @@ replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
 // FIXME: back to upstream release once upgrade non-determinism is gone
-replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.0-upgradefix2
+replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.0-upgradefix3

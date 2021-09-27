@@ -918,13 +918,13 @@
     sha256 = "0nxbn0m7lr4dg0yrwnvlkfiyg3ndv8vdpssjx7b714nivpc6ar0y"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.44.0-upgradefix2"
+  sumVersion = "v0.44.0-upgradefix3"
   vendorPath = "github.com/crypto-org-chain/cosmos-sdk"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/crypto-org-chain/cosmos-sdk"
-    rev = "2df6584e8ac9ace8516356d36bc7ad535ead6d17"
-    sha256 = "1dimvpj7qzik4cf6ddgqr84n1cl7q1b68gjy9mf0w4sr5alx5hgp"
+    rev = "782b5e4a108f6f92a11a7034336428c8acb4f0ff"
+    sha256 = "01jh8dn860kn963js26zfa33nycjxzrv7aw2f5mkgj5k4yc71ncv"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
