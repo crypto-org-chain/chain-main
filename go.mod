@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.44.0
+	github.com/cosmos/cosmos-sdk v0.44.1
 	github.com/cosmos/ibc-go v1.2.0
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.3
@@ -38,5 +38,4 @@ replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
-// FIXME: back to upstream release once upgrade non-determinism is gone
-replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.0-upgradefix
+replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.1
