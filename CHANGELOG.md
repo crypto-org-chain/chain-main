@@ -1,5 +1,10 @@
 # Changelog
 
+*Unreleased*
+
+## v3.3.0
+This version is identical to v3.2.0, but ibc-go was upgraded to 2.0.0.
+
 *September 30, 2021*
 
 ## v3.2.0

@@ -941,13 +941,13 @@
     rev = "8e24bc87fc0702f0994ac3b2b55386235c3dd3cf"
     sha256 = "1q5fbk4afkxxlgyj82xfxfmwzcpsaa4hwm431xl8b34xhpdglkdp"
 
-["github.com/cosmos/ibc-go"]
-  sumVersion = "v1.2.0"
-  ["github.com/cosmos/ibc-go".fetch]
+["github.com/cosmos/ibc-go/v2"]
+  sumVersion = "v2.0.0-rc0"
+  ["github.com/cosmos/ibc-go/v2".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "d0599131441f29c22f789672667fc527da295b37"
-    sha256 = "0ryz6v3178k3w039v9hcw2dj6kr1wj2a32d6llq4d1pcxamnshab"
+    rev = "4e9752d10cecb9c39067b156e14b3797d0523afe"
+    sha256 = "1xxy3ppm8snac9gxxbbz1846s7hbwn27lck0aq5jc2ybbsmhdlhb"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
@@ -3821,12 +3821,12 @@
     sha256 = "0yi8p0yxiidpcg4cagxg2iyqcaapsng89rak4qyxmgails2fqg37"
 
 ["github.com/spf13/cast"]
-  sumVersion = "v1.3.1"
+  sumVersion = "v1.4.1"
   ["github.com/spf13/cast".fetch]
     type = "git"
     url = "https://github.com/spf13/cast"
-    rev = "1ffadf551085444af981432dd0f6d1160c11ec64"
-    sha256 = "0lb84788glr0qzrq2ifi36rgvp96qrgywvxrr3ggq5hrbr38hgn1"
+    rev = "88075729b052bca4b8b6c31bf198db2fe6c9da93"
+    sha256 = "06qsfpvcbgkf2pvcvf9l46fj55kmbhp2yz382fkj5gll2bykx9ld"
 
 ["github.com/spf13/cobra"]
   sumVersion = "v1.2.1"
