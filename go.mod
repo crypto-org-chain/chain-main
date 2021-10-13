@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-sdk v0.44.1
+	github.com/cosmos/cosmos-sdk v0.44.3
 	github.com/cosmos/ibc-go/v2 v2.0.0-rc0
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/gogo/protobuf v1.3.3
@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/tendermint v0.34.13
+	github.com/tendermint/tendermint v0.34.14
 	github.com/tendermint/tm-db v0.6.4
 	github.com/tidwall/gjson v1.7.5
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
@@ -37,3 +37,8 @@ replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmo
 replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
+
+// TODO: remove when ibc-go upgrades cosmos-sdk
+replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.3
+
+replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.14
