@@ -73,7 +73,7 @@ paths:
                         example: 'on'
                       rpc_address:
                         type: string
-                        example: 'tcp://127.0.0.0:26657'
+                        example: 'tcp://127.0.0.1:26657'
         '500':
           description: Failed to query node status
   /syncing:
