@@ -9,6 +9,7 @@ import (
 	"time"
 
 	conf "github.com/cosmos/cosmos-sdk/client/config"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
 	"github.com/imdario/mergo"
 	"github.com/spf13/cast"
@@ -74,13 +75,38 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 				return err
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd, "", nil)
+			customAppTemplate, customAppConfig := initAppConfig()
+
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig)
 		},
 	}
 
 	initRootCmd(rootCmd, encodingConfig)
 
 	return rootCmd, encodingConfig
+}
+
+// initAppConfig helps to override default appConfig template and configs.
+// return "", nil if no custom configuration is required for the application.
+func initAppConfig() (string, interface{}) {
+	// The following code snippet is just for reference.
+
+	type CustomAppConfig struct {
+		serverconfig.Config
+	}
+
+	// Optionally allow the chain developer to overwrite the SDK's default
+	// server config.
+	srvCfg := serverconfig.DefaultConfig()
+	srvCfg.GRPC.Address = "127.0.0.1:9090"
+	srvCfg.GRPCWeb.Address = "127.0.0.1:9091"
+
+
+	customAppConfig := CustomAppConfig{
+		Config: *srvCfg,
+	}
+
+	return serverconfig.DefaultConfigTemplate, customAppConfig
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
