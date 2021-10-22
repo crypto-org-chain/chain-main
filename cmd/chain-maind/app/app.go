@@ -101,7 +101,6 @@ func initAppConfig() (string, interface{}) {
 	srvCfg.GRPC.Address = "127.0.0.1:9090"
 	srvCfg.GRPCWeb.Address = "127.0.0.1:9091"
 
-
 	customAppConfig := CustomAppConfig{
 		Config: *srvCfg,
 	}
