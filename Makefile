@@ -11,7 +11,7 @@ BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
 
 ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
-	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
+	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
 
