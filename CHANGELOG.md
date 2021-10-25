@@ -3,7 +3,11 @@
 *Unreleased*
 
 ## v3.3.0
-This version is identical to v3.2.0, but ibc-go was upgraded to 2.0.0.
+This version is identical to v3.2.0, but ibc-go was upgraded to 2.0.0, Cosmos SDK to 0.44.3,
+and Tendermint was upgraded to v0.34.14.
+
+### Improvements
+- [665](https://github.com/crypto-org-chain/chain-main/pull/665) default gRPC config listening on 127.0.0.1
 
 *September 30, 2021*
 
