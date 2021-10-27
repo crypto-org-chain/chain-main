@@ -3046,28 +3046,28 @@
     sha256 = "1sgjf2vaq554ybc0cwkzn17cz2ibzph2rq0dgaw21c2hym09437x"
 
 ["github.com/tidwall/gjson"]
-  sumVersion = "v1.7.5"
+  sumVersion = "v1.9.3"
   ["github.com/tidwall/gjson".fetch]
     type = "git"
     url = "https://github.com/tidwall/gjson"
-    rev = "d9710733f0d72d6d4ae982364577eec743ccf96c"
-    sha256 = "0nngpb6fj2cwsxfnjbmqm3af4nl48zjdsb5dlwc45mvdqwkksxg5"
+    rev = "77a57fda87dca6d0d7d4627d512a630f89a91c96"
+    sha256 = "07c2r5wp63ffcxk88c4zz485nkwrlkr65clj34mnacqk618rcihi"
 
 ["github.com/tidwall/match"]
-  sumVersion = "v1.0.3"
+  sumVersion = "v1.1.1"
   ["github.com/tidwall/match".fetch]
     type = "git"
     url = "https://github.com/tidwall/match"
-    rev = "c2f534168b739a7ec1821a33839fb2f029f26bbc"
-    sha256 = "1haa5p7hsjqx0ijxbypgc9c31v128mykm1g0lyymvkk3qdajvcyr"
+    rev = "4c9fc61b493b7aa0a3d347e9190aa78c5bec09cf"
+    sha256 = "1n25md63xr5m66r6zc77n6fgcpv2ljrlk92ivp9hvp8xya22as9k"
 
 ["github.com/tidwall/pretty"]
-  sumVersion = "v1.1.0"
+  sumVersion = "v1.2.0"
   ["github.com/tidwall/pretty".fetch]
     type = "git"
     url = "https://github.com/tidwall/pretty"
-    rev = "b87289d70a916a208a3e43f79e4a033337f114cf"
-    sha256 = "1ndk84i58zzlb818r0nw608mgmz6hns677zy1x4jx2vcsmxn0izg"
+    rev = "aaa765e7476acb0028a854b85675801362cbdaa2"
+    sha256 = "11zi5hxb75yapgxq67r4lmv8n910iqmw7994ig1fy4gnr4d51i3s"
 
 ["github.com/tidwall/sjson"]
   sumVersion = "v1.1.4"
