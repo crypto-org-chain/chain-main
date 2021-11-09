@@ -1,6 +1,6 @@
 # Changelog
 
-*Unreleased*
+*November 10, 2021*
 
 ## v3.3.0
 This version is identical to v3.2.0, but ibc-go was upgraded to 2.0.0, Cosmos SDK to 0.44.3,
