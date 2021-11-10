@@ -89,7 +89,7 @@ lint:
 # golangci-lint is run in standalone job in ci
 lint-ci:
 	@echo "--> Running linter for CI"
-	@nix run -f ./. lint-env -c lint-ci
+	@nix shell -f ./. lint-env --extra-experimental-features nix-command --command lint-ci
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
@@ -153,31 +153,31 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests
 
 nix-integration-test-upgrade: check-network
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m upgrade"	
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m upgrade"	
 
 nix-integration-test-ledger: check-network 
-	nix run -f ./default.nix run-integration-tests-zemu -c run-integration-tests "pytest -v -m ledger"		
+	nix shell -f ./default.nix run-integration-tests-zemu --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m ledger"		
 
 nix-integration-test-slow: check-network 
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m slow"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m slow"
 
 nix-integration-test-ibc: check-network 
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m ibc"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m ibc"
 
 nix-integration-test-byzantine: check-network
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m byzantine"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m byzantine"
 
 nix-integration-test-gov: check-network 
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m gov"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m gov"
 
 nix-integration-test-grpc: check-network make-proto
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v -m grpc"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m grpc"
 
 nix-integration-test-all: check-network make-proto
-	nix run -f ./default.nix run-integration-tests -c run-integration-tests "pytest -v"
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v"
 
 
 nix-build-%: check-network check-os

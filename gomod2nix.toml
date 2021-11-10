@@ -781,12 +781,12 @@
     sha256 = "1q5fbk4afkxxlgyj82xfxfmwzcpsaa4hwm431xl8b34xhpdglkdp"
 
 ["github.com/cosmos/ibc-go/v2"]
-  sumVersion = "v2.0.0-rc0"
+  sumVersion = "v2.0.0"
   ["github.com/cosmos/ibc-go/v2".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "4e9752d10cecb9c39067b156e14b3797d0523afe"
-    sha256 = "1xxy3ppm8snac9gxxbbz1846s7hbwn27lck0aq5jc2ybbsmhdlhb"
+    rev = "dc416084694b6ed1d45baf50cc408b747daa90aa"
+    sha256 = "0wbw73pv7mnbaawfcjwyvpnxxkj4iz7cy8cg3d5cad3p1fmqzmx1"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
@@ -1127,12 +1127,12 @@
     sha256 = "0d5njmwkfq2809vlimnlvy8ir6kln0c4cgdwr680fwsclpbr43qs"
 
 ["github.com/fsnotify/fsnotify"]
-  sumVersion = "v1.4.9"
+  sumVersion = "v1.5.1"
   ["github.com/fsnotify/fsnotify".fetch]
     type = "git"
     url = "https://github.com/fsnotify/fsnotify"
-    rev = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
-    sha256 = "1i1r72knpbfwwql9frn9bqc3nhfc2ai5m6qllcyr6wban62lr40x"
+    rev = "466b39d216616549a37ee93c7c47775f6a010790"
+    sha256 = "0xpdprvab4zgn5igymc5468hk5s429cqyxml9xjsk0cn53rikj87"
 
 ["github.com/gballet/go-libpcsclite"]
   sumVersion = "v0.0.0-20190607065134-2772fd86a8ff"
@@ -1159,12 +1159,12 @@
     sha256 = "072nq91a65n5xvwslqjyvydfd0mfpnvb3vwjyfvmzm1ym96wr1nd"
 
 ["github.com/gin-gonic/gin"]
-  sumVersion = "v1.6.3"
+  sumVersion = "v1.7.0"
   ["github.com/gin-gonic/gin".fetch]
     type = "git"
     url = "https://github.com/gin-gonic/gin"
-    rev = "6a8b8b6651a228590bbc42145483ff864f4f6e89"
-    sha256 = "18k0ydx88xh100xp1ff0zpjk2n233rv7qxijbsrrsgqrq9z83w3l"
+    rev = "d496f64540b6707602de50ab57aeea8ff4080b74"
+    sha256 = "0zjygwmd6718rar3rwi947b6gh53jp0mv115m336i4b1bknmajcq"
 
 ["github.com/go-gl/glfw"]
   sumVersion = "v0.0.0-20190409004039-e6da0acd62b1"
@@ -1240,12 +1240,12 @@
     sha256 = "1zdiaisb32iv4x93cpbqrgx8ll7sxh4hcd2iibpswy4bwvjbjlz6"
 
 ["github.com/go-playground/validator/v10"]
-  sumVersion = "v10.2.0"
+  sumVersion = "v10.4.1"
   ["github.com/go-playground/validator/v10".fetch]
     type = "git"
     url = "https://github.com/go-playground/validator"
-    rev = "c68441b7f4748b48ad9a0c9a79d346019730e207"
-    sha256 = "0pfbn06n7ll7slp36vvv94gf8ylm6mynp332r5q7j78nca1bjb5b"
+    rev = "456221b630452990f72c0f13179e5f2ae728a723"
+    sha256 = "0p4gs2wqa0wzdblhykk0pxrxmvl347hnjd5ws4nfh7bzn4kdnp11"
 
 ["github.com/go-sourcemap/sourcemap"]
   sumVersion = "v2.1.2+incompatible"
@@ -1369,7 +1369,7 @@
     sha256 = "1mh5fyim42dn821nsd3afnmgscrzzhn3h8rag635d2jnr23r1zhk"
 
 ["github.com/golang/snappy"]
-  sumVersion = "v0.0.3-0.20201103224600-674baa8c7fc3"
+  sumVersion = "v0.0.3"
   ["github.com/golang/snappy".fetch]
     type = "git"
     url = "https://github.com/golang/snappy"
@@ -2197,12 +2197,12 @@
     sha256 = "058n9bbf536f2nw3pbs7pysrg9cqvgkb28z2zf5wjyrzrknyk53g"
 
 ["github.com/mitchellh/mapstructure"]
-  sumVersion = "v1.4.1"
+  sumVersion = "v1.4.2"
   ["github.com/mitchellh/mapstructure".fetch]
     type = "git"
     url = "https://github.com/mitchellh/mapstructure"
-    rev = "8ebf2d61a8b4adcce25fc9fc9b76e8452a00672f"
-    sha256 = "1m98wiadb6kdnzv21m8p7nk1jb30zpjh47fkb1dg251r3m7bj47v"
+    rev = "5ac1f6aa4011ece0c4df24a4fe8020a9cc21e393"
+    sha256 = "0akjnwsng42vak978pny84d946fbaj2kgp7fzvx30zpc6fzrmli7"
 
 ["github.com/moby/sys/mountinfo"]
   sumVersion = "v0.4.1"
@@ -2534,12 +2534,12 @@
     sha256 = "0f146yjqwx2mr110kl8scjhqd08hys7vr5z0d0a3lskb6yy22gfg"
 
 ["github.com/pelletier/go-toml"]
-  sumVersion = "v1.9.3"
+  sumVersion = "v1.9.4"
   ["github.com/pelletier/go-toml".fetch]
     type = "git"
     url = "https://github.com/pelletier/go-toml"
-    rev = "8e44986c28d58aefff6125e52814ed1eb7eb0a6a"
-    sha256 = "0cqwnvlgs1wgdgjxlwv8j52f7d6syniadr51sjh2fya99m5wzvsn"
+    rev = "b8ba995eaaba4be30c8a8090bdfb4aa61af52054"
+    sha256 = "0f2d9m19dadl18i2baf57xygvn9vprm6wb8chvpx8kipx94nchyl"
 
 ["github.com/performancecopilot/speed"]
   sumVersion = "v3.0.0+incompatible"
@@ -3298,12 +3298,12 @@
     sha256 = "14mr66h7vxirpvb12106372apw1w3ppymbf89lprxkkg03srkfy8"
 
 ["golang.org/x/crypto"]
-  sumVersion = "v0.0.0-20210513164829-c07d793c2f9a"
+  sumVersion = "v0.0.0-20210817164053-32db794688a5"
   ["golang.org/x/crypto".fetch]
     type = "git"
     url = "https://go.googlesource.com/crypto"
-    rev = "c07d793c2f9aacf728fe68cbd7acd73adbd04159"
-    sha256 = "06aw3whifx4jrzvpaip6hsvgd6wjykhcamaqjm8h25wpl9zsbsb5"
+    rev = "32db794688a5a24a23a43f2a984cecd5b3d8da58"
+    sha256 = "0arh5rhahrjzmlifmbgswwc0kjkgmhps6g4hzia0i6ismsk74n48"
 
 ["golang.org/x/exp"]
   sumVersion = "v0.0.0-20200331195152-e8c3332aa8e5"
@@ -3506,12 +3506,12 @@
     sha256 = "165f9wincwnkblp8x6m1f4ch4m8k4gvy5v4x4gqdpmf59kqv5y7s"
 
 ["gopkg.in/ini.v1"]
-  sumVersion = "v1.62.0"
+  sumVersion = "v1.63.2"
   ["gopkg.in/ini.v1".fetch]
     type = "git"
     url = "https://gopkg.in/ini.v1"
-    rev = "5e97220809ffaa826f787728501264e9114cb834"
-    sha256 = "1dm9ydqyflasp5li22kb0w73s6kp2swii8naqfhnz64v171gmm5v"
+    rev = "14e9811b1643cf01ea36277e44dffef4f119fa31"
+    sha256 = "0s35274ibybg1nidwb65jyc3gkkbs91s7rv5jdg73x6sbd73q6wr"
 
 ["gopkg.in/natefinch/npipe.v2"]
   sumVersion = "v2.0.0-20160621034901-c1b8fa8bdcce"
