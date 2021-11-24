@@ -23,3 +23,8 @@ This project contains portions of code derived from the following libraries:
  * Copyright (c) 2016-2021 Shanghai Bianjie AI Technology Inc.
  * License: Apache License 2.0
  * Repository: https://github.com/irisnet/irismod
+
+* swagger-ui
+ * Copyright (c) 2020-2021 SmartBear Software Inc.
+ * License: Apache License 2.0
+ * Repository: https://github.com/swagger-api/swagger-ui
