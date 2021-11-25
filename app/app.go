@@ -459,36 +459,31 @@ func New(
 	app.SetAnteHandler(anteHandler)
 	app.SetEndBlocker(app.EndBlocker)
 
-	// FIXME: upgrade plan to v0.43 https://github.com/cosmos/cosmos-sdk/pull/9567/files
 	planName := "v3.0.0"
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx sdk.Context, plan upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
 		// a new param in 1.0.0 -- set to roundup(5x 7secs) as a safe choice
 		app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.NewParams(uint64(40*time.Second)))
-		// 1st-time running in-store migrations, using 1 as fromVersion to
-		// avoid running InitGenesis.
-		fromVM := map[string]uint64{
-			"auth":         1,
-			"bank":         1,
-			"capability":   1,
-			"crisis":       1,
-			"distribution": 1,
-			"evidence":     1,
-			"gov":          1,
-			"mint":         1,
-			"params":       1,
-			"slashing":     1,
-			"staking":      1,
-			"upgrade":      1,
-			"vesting":      1,
-			"ibc":          1,
-			"genutil":      1,
-			"transfer":     1,
-			"chainmain":    1,
-			"nft":          1,
-			"supply":       1,
+		fromVM := make(map[string]uint64)
+		for moduleName := range app.mm.Modules {
+			fromVM[moduleName] = 1
 		}
+		// delete new modules from the map, for _new_ modules as to not skip InitGenesis
+		delete(fromVM, authz.ModuleName)
+		delete(fromVM, feegrant.ModuleName)
 
-		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		// make fromVM[authtypes.ModuleName] = 2 to skip the first RunMigrations for auth (because from version 2 to migration version 2 will not migrate)
+		fromVM[authtypes.ModuleName] = 2
+
+		// the first RunMigrations, which will migrate all the old modules except auth module
+		newVM, errM := app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		if errM != nil {
+			return nil, errM
+		}
+		// now update auth version back to 1, to make the second RunMigrations includes only auth
+		newVM[authtypes.ModuleName] = 1
+
+		// RunMigrations twice is just a way to make auth module's migrates after staking
+		return app.mm.RunMigrations(ctx, app.configurator, newVM)
 	})
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()

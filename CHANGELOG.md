@@ -1,5 +1,19 @@
 # Changelog
 
+*November 25, 2021*
+
+## v3.3.1
+This version is identical to v3.3.0, but its bundled swagger-ui was updated to a newer version
+(the previous version contained a potential reflective XSS vulnerability) and a workaround
+for vesting account migrations was added in the upgrade handler.
+
+### Bug Fixes
+- [679](https://github.com/crypto-org-chain/chain-main/pull/679) workaround for vesting account migrations in the upgrade handler
+
+### Improvements
+- [678](https://github.com/crypto-org-chain/chain-main/pull/678) swagger ui updated to 4.1.0
+
+
 *November 10, 2021*
 
 ## v3.3.0
