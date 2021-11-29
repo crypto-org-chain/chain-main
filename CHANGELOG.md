@@ -1,5 +1,12 @@
 # Changelog
 
+*November 29, 2021*
+
+## v3.3.2
+This version is identical to v3.3.1, but it's compiled with Go 1.17 and the Cosmos SDK was updated to 0.44.4
+which contains a fix for the vesting account migrations (the workaround was removed).
+
+
 *November 25, 2021*
 
 ## v3.3.1
