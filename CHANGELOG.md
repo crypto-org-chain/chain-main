@@ -1,5 +1,13 @@
 # Changelog
 
+*December 6, 2021*
+
+## v3.3.3
+This version is identical to v3.3.2, but 
+Cosmos SDK was upgraded to 0.44.5 and Tendermint was upgraded to v0.34.15
+(the previous versions contain potential concurrency-related bugs).
+
+
 *November 29, 2021*
 
 ## v3.3.2
