@@ -17,8 +17,8 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.7.0
-	github.com/tendermint/tendermint v0.34.14
-	github.com/tendermint/tm-db v0.6.6
+	github.com/tendermint/tendermint v0.34.15
+	github.com/tendermint/tm-db v0.6.7-0.20211203155021-4fa83b55a0b5
 	github.com/tidwall/gjson v1.9.3
 	google.golang.org/genproto v0.0.0-20210917145530-b395a37504d4
 	google.golang.org/grpc v1.42.0
@@ -144,5 +144,7 @@ replace github.com/opencontainers/image-spec => github.com/opencontainers/image-
 replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.5
 
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.15
+
+replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v0.0.0-20211202124722-2c356d6d98e4
 
 replace github.com/cosmos/iavl => github.com/cosmos/iavl v0.17.3
