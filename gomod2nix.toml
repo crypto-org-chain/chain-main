@@ -854,12 +854,12 @@
     sha256 = "115964xzwlr8j0l8f5x0v31f5hnxhd0rh5cvgy560l0dd77i735k"
 
 ["github.com/cosmos/ibc-go/v2"]
-  sumVersion = "v2.0.1"
+  sumVersion = "v2.0.2"
   ["github.com/cosmos/ibc-go/v2".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "637038c5b22a2eb23e984e554e2d2d95a22ca182"
-    sha256 = "1paxigb8qvsxfaz3la2i0cyfprxa07brgbmphr0bzi8kxb8dgmms"
+    rev = "e1ac41a95915d21f6ae95053c74c5b7ec7e7139e"
+    sha256 = "1d3g4y0lnk8418rjfxkqlylrzzmxy5h3yf18vr83w8nsax7hd31q"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
@@ -2553,12 +2553,12 @@
     sha256 = "1wcw1z39wjx338406ga86a41f5ird0yc4ab3c70nfhkpkvjjzhkm"
 
 ["github.com/opencontainers/runc"]
-  sumVersion = "v1.0.2"
+  sumVersion = "v1.0.3"
   ["github.com/opencontainers/runc".fetch]
     type = "git"
     url = "https://github.com/opencontainers/runc"
-    rev = "52b36a2dd837e8462de8e01458bf02cf9eea47dd"
-    sha256 = "1bpckghjah0rczciw1a1ab8z718lb2d3k4mjm4zb45lpm3njmrcp"
+    rev = "f46b6ba2c9314cfc8caae24a32ec5fe9ef1059fe"
+    sha256 = "1hiiwm37dh0g68yp9pg89kkiw6wkjlv3zq1r1a2qysi9n8lwjpsf"
 
 ["github.com/opencontainers/runtime-spec"]
   sumVersion = "v1.0.3-0.20210326190908-1c3f411f0417"
