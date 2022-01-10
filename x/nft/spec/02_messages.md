@@ -91,7 +91,7 @@ added to existing `Owner`'s `IDCollection`.
 | URI       | `string` | The URI pointing to a JSON object that contains subsequent tokenData information off-chain |
 | Data      | `string` | The data of the NFT.                                                                       |
 | Sender    | `string` | The sender of the Message                                                                  |
-| Recipient | `string` | The recipiet of the new NFT                                                                |
+| Recipient | `string` | The recipient of the new NFT                                                                |
 
 ```go
 // MsgMintNFT defines an SDK message for creating a new NFT.
