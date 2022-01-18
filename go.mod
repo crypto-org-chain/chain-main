@@ -28,3 +28,9 @@ replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
+
+replace github.com/golang/snappy => github.com/golang/snappy v0.0.3
+
+// Note: gorocksdb bindings for OptimisticTransactionDB are not merged upstream, so we use a fork
+// See https://github.com/tecbot/gorocksdb/pull/216
+replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v1.1.1
