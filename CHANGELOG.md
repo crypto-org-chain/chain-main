@@ -2,6 +2,17 @@
 
 *unreleased*
 
+## v1.2.2
+A version based on the upstream release of Cosmos SDK 0.42.11.
+
+### Improvements
+* support release for Arm64 (Linux and macOS)
+* support rocksdb in makefile
+### Bug Fixes
+* resolve go module name v1 issue
+
+*Jan 19, 2022*
+
 ## v2.0.0
 
 ### Breaking changes
