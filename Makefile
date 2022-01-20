@@ -81,7 +81,7 @@ lint:
 # golangci-lint is run in standalone job in ci
 lint-ci:
 	@echo "--> Running linter for CI"
-	@nix run -f ./. lint-env -c lint-ci
+	@nix shell -f ./. lint-env -c lint-ci
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
@@ -145,7 +145,7 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix run -f ./. run-integration-tests -c run-integration-tests
+	nix shell -f ./. run-integration-tests -c run-integration-tests
 
 nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \
