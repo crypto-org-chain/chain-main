@@ -15,8 +15,8 @@ jobs:
     - uses: actions/checkout@v2
       with:
           submodules: true
-    - uses: cachix/install-nix-action@v12
-    - uses: cachix/cachix-action@v8
+    - uses: cachix/install-nix-action@v15
+    - uses: cachix/cachix-action@v10
       with:
         name: crypto-com
         skipPush: true
@@ -29,8 +29,8 @@ jobs:
     - uses: actions/checkout@v2
       with:
           submodules: true
-    - uses: cachix/install-nix-action@v12
-    - uses: cachix/cachix-action@v8
+    - uses: cachix/install-nix-action@v15
+    - uses: cachix/cachix-action@v10
       with:
         name: crypto-com
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
