@@ -124,7 +124,7 @@ mnemonic = ">=0.19, <0.20"
 [package.source]
 type = "git"
 url = "https://github.com/crypto-com/cryptopy.git"
-reference = "fe444873294ed47de505596e307c4311c1489beb"
+reference = "v2.1.0"
 resolved_reference = "fe444873294ed47de505596e307c4311c1489beb"
 
 [[package]]
