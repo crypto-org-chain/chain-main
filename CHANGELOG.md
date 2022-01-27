@@ -2,6 +2,18 @@
 
 *unreleased*
 
+*January 27, 2022*
+
+## v1.2.2
+  This release is identical to v1.1.1, but is built with Go 1.17 and supports Arm64 binaries as well as a RocksDB database backend.
+### Improvements
+* support release for Arm64 (Linux and macOS)
+* support rocksdb in makefile
+### Bug Fixes
+* resolve go module name v1 issue
+
+*Jan 19, 2022*
+
 ## v2.0.0
 
 ### Breaking changes

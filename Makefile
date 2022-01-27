@@ -1,6 +1,6 @@
 PACKAGES=$(shell go list ./... | grep -v '/simulation')
 PACKAGE_NAME:=github.com/crypto-org-chain/chain-main
-GOLANG_CROSS_VERSION  = v1.15.3
+GOLANG_CROSS_VERSION  = v1.17.3
 
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
@@ -10,7 +10,31 @@ COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
+# DB backend selection
+ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
+endif
+ifeq (badgerdb,$(findstring badgerdb,$(COSMOS_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=badgerdb
+  BUILD_TAGS := $(BUILD_TAGS),badgerdb
+endif
+# handle rocksdb
+ifeq (rocksdb,$(findstring rocksdb,$(COSMOS_BUILD_OPTIONS)))
+  $(info ################################################################)
+  $(info To use rocksdb, you need to install rocksdb first)
+  $(info Please follow this guide https://github.com/rockset/rocksdb-cloud/blob/master/INSTALL.md)
+  $(info ################################################################)
+  CGO_ENABLED=1
+  BUILD_TAGS := $(BUILD_TAGS),rocksdb
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
+endif
+# handle boltdb
+ifeq (boltdb,$(findstring boltdb,$(COSMOS_BUILD_OPTIONS)))
+  BUILD_TAGS := $(BUILD_TAGS),boltdb
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=boltdb
+endif
+
+ldflags += -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.ServerName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
@@ -20,7 +44,7 @@ TESTNET_FLAGS ?=
 
 ledger ?= HID
 ifeq ($(LEDGER_ENABLED),true)
-	BUILD_TAGS := -tags cgo,ledger,!test_ledger_mock,!ledger_mock
+	BUILD_TAGS := -tags $(BUILD_TAGS),cgo,ledger,!test_ledger_mock,!ledger_mock
 	ifeq ($(ledger), ZEMU)
 		BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
 	else
@@ -33,7 +57,7 @@ ifeq ($(NETWORK),testnet)
 	TEST_TAGS := "--tags=testnet"
 endif
 
-SIMAPP = github.com/crypto-org-chain/chain-main/v1/app
+SIMAPP = github.com/crypto-org-chain/chain-main/app
 BINDIR ?= ~/go/bin
 
 OS := $(shell uname)
@@ -191,7 +215,7 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-v ${GOPATH}/pkg:/go/pkg \
 		-w /go/src/$(PACKAGE_NAME) \
-		troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish
 
 .PHONY: release
@@ -208,5 +232,5 @@ release:
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
-		troian/golang-cross:${GOLANG_CROSS_VERSION} \
+		ghcr.io/troian/golang-cross:${GOLANG_CROSS_VERSION} \
 		release --rm-dist --skip-validate
