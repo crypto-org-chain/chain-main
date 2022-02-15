@@ -629,7 +629,7 @@ func (app *ChainApp) RegisterTendermintService(clientCtx client.Context) {
 
 // RegisterSwaggerAPI registers swagger route with API Server
 func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
-	statikFS, err := fs.New()
+	statikFS, err := fs.NewWithNamespace("chainmain")
 	if err != nil {
 		panic(err)
 	}
