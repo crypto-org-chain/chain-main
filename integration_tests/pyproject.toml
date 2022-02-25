@@ -14,12 +14,12 @@ flake8-black = "^0.2.1"
 flake8-isort = "^4.0.0"
 pep8-naming = "^0.11.1"
 pytest-github-actions-annotate-failures = "^0.1.1"
-protobuf = "^3.13.0"
-grpcio = "^1.33.2"
 PyYAML = "^5.3.1"
+protobuf = "3.19.4"
 python-dateutil = "^2.8.1"
-pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
-chainlibpy = "^1.0.0"
+pystarport = "0.2.4"
+# TODO: Fix to a version after chainlibpy released the new gRPC changes
+chainlibpy = { git = "https://github.com/crypto-org-chain/chainlibpy.git", branch = "master" }
 
 [tool.poetry.dev-dependencies]
 
