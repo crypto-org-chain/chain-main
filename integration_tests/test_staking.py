@@ -1,3 +1,4 @@
+import json
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -105,12 +106,26 @@ def test_staking_redelegate(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
     old_output = delegation_info["delegation_responses"][0]["balance"]["amount"]
-    cluster.redelegate_amount(
-        validator1_operator_address,
-        validator2_operator_address,
-        "2basecro",
-        signer1_address,
+    cli = cluster.cosmos_cli()
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "staking",
+            "redelegate",
+            validator2_operator_address,
+            validator1_operator_address,
+            "2basecro",
+            "-y",
+            "--gas",
+            "300000",
+            home=cli.data_dir,
+            from_=signer1_address,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            node=cli.node_rpc,
+        )
     )
+    assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
     output = delegation_info["delegation_responses"][0]["balance"]["amount"]
     assert int(old_output) + 2 == int(output)

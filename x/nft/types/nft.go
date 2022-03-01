@@ -7,7 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 )
 
 var _ exported.NFT = BaseNFT{}

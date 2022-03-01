@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // NewHandler routes the messages to the handlers

@@ -5,8 +5,8 @@ package nft
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // InitGenesis stores the NFT genesis.

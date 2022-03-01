@@ -21,11 +21,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/client/rest"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/simulation"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/rest"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/simulation"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 var (

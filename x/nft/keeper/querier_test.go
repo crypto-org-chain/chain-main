@@ -7,9 +7,9 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/exported"
-	keep "github.com/crypto-org-chain/chain-main/v3/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
+	keep "github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 func (suite *KeeperSuite) TestNewQuerier() {

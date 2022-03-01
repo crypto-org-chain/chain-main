@@ -15,9 +15,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/rest"
 
-	nftcli "github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
-	nfttestutil "github.com/crypto-org-chain/chain-main/v3/x/nft/client/testutil"
-	nfttypes "github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
+	nfttestutil "github.com/crypto-org-chain/chain-main/v4/x/nft/client/testutil"
+	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 type IntegrationTestSuite struct {

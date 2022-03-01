@@ -329,6 +329,8 @@ def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
             "exec",
             tx_file,
             "-y",
+            "--gas",
+            "300000",
             *k_options,
             from_=grantee,
             home=cli.cosmos_cli(i).data_dir,

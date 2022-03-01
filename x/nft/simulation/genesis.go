@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 const (
