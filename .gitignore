@@ -29,3 +29,10 @@ frontend/.cache
 /bot.yaml
 /bot.*.yaml
 /config.yaml
+pystarport/tendermint
+pystarport/proto_python/confio
+pystarport/proto_python/cosmos
+pystarport/proto_python/cosmos_proto
+pystarport/proto_python/gogoproto
+pystarport/proto_python/google
+pystarport/proto_python/tendermint
