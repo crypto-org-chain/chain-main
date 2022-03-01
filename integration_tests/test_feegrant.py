@@ -164,7 +164,7 @@ def test_periodic_fee_allowance(cluster):
             fees="%s%s" % (fee_coins, BASECRO_DENOM),
             fee_account=fee_granter_address,
         )
-        wait_for_block(cluster, int(tx["height"]))
+        wait_for_block(cluster, int(tx["height"]) + 1)  # wait for next block
         block_info = query_block_info(cluster, tx["height"])
         wait_for_block_time(
             cluster,

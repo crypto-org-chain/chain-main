@@ -5,7 +5,7 @@ TENDERMINT=./tendermint
 TMP=$(whereis grpc_python_plugin)
 PLUGIN="$(cut -d' ' -f2 <<<"$TMP")"
 mkdir $OUTPUT
-git clone --branch v0.34.10 https://github.com/tendermint/tendermint.git
+git clone --branch v0.34.16 https://github.com/tendermint/tendermint.git
 # cosmos
 python -m grpc.tools.protoc --proto_path=$COSMOS/proto --proto_path=$COSMOS/third_party/proto --python_out=$OUTPUT $(find $COSMOS/proto/cosmos -iname "*.proto") --grpc_python_out=$OUTPUT  --plugin=protoc-gen-grpc_python=$PLUGIN
 # cosmos third-party
