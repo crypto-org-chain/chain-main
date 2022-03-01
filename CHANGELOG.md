@@ -1,5 +1,14 @@
 # Changelog
 
+*March 1, 2022*
+
+## v3.3.4
+
+This version is identical to v3.3.3, but 
+
+- Bump `cosmos-sdk`, `ibc-go` and `tendermint` to latest minor versions. #711
+- Upgrade Swagger UI version for security fixes. #704
+
 *December 6, 2021*
 
 ## v3.3.3
