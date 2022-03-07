@@ -147,3 +147,5 @@ replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.6
 
 // TODO: remove when cosmos sdk upgrades tendermint
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.16
+
+replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v1.2.0

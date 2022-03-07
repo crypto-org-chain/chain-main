@@ -62,6 +62,7 @@ Technical documentation can be found in this [Github repository](https://github.
 ## 5. Build full node
 
 ```bash
+# COSMOS_BUILD_OPTIONS=rocksdb make build
 make build
 ```
 

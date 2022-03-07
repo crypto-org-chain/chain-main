@@ -1129,12 +1129,12 @@
     sha256 = "1gilb29gcjw8x3s9krbq9cf6kzvq5cvkad4wc20g91a3i2hd7daf"
 
 ["github.com/facebookgo/ensure"]
-  sumVersion = "v0.0.0-20160127193407-b4ab57deab51"
+  sumVersion = "v0.0.0-20200202191622-63f1cf65ac4c"
   ["github.com/facebookgo/ensure".fetch]
     type = "git"
     url = "https://github.com/facebookgo/ensure"
-    rev = "b4ab57deab51ee655ae4bd85281f0715a068016d"
-    sha256 = "19icavc3sg0mdz8151q3vp2vn3ipq53mnb9h9n57w32amyyszl4d"
+    rev = "63f1cf65ac4cf1f4bd7e93292149a456001b0e0b"
+    sha256 = "05vi49g2967i5awcb1z69i2n5b5hwn06682kw90x81hbxlr0px36"
 
 ["github.com/facebookgo/stack"]
   sumVersion = "v0.0.0-20160209184415-751773369052"
@@ -1145,12 +1145,12 @@
     sha256 = "07yr05mz7h007ldpij90zjflwgixp148sbyrdlh1fj5bikr4p8m3"
 
 ["github.com/facebookgo/subset"]
-  sumVersion = "v0.0.0-20150612182917-8dac2c3c4870"
+  sumVersion = "v0.0.0-20200203212716-c811ad88dec4"
   ["github.com/facebookgo/subset".fetch]
     type = "git"
     url = "https://github.com/facebookgo/subset"
-    rev = "8dac2c3c48703541e481feddf22975953d4ff842"
-    sha256 = "0kyc2m5wxjzj4fwspybgn1mgjzhbdfnadpwy9mrw1s05bh21rgai"
+    rev = "c811ad88dec4edb3d7af0a88b34e6865d7460ba2"
+    sha256 = "1sjczgmq26mgqvh7267saypnn4sfdjx467wsm1pgdhyss77mc650"
 
 ["github.com/fatih/color"]
   sumVersion = "v1.13.0"
@@ -3202,12 +3202,13 @@
     sha256 = "0wsqybzip0khzgk4cl23ilm30jnf4yd674dkbq4c26ivak9qkmz7"
 
 ["github.com/tecbot/gorocksdb"]
-  sumVersion = "v0.0.0-20191217155057-f0fad39f321c"
+  sumVersion = "v1.2.0"
+  vendorPath = "github.com/cosmos/gorocksdb"
   ["github.com/tecbot/gorocksdb".fetch]
     type = "git"
-    url = "https://github.com/tecbot/gorocksdb"
-    rev = "f0fad39f321c61bf05fcb4a01fe259606235e712"
-    sha256 = "0brf99da00jf91hf7w0qqk6yj61zcya9ci7pm8d60q6zl40i87c5"
+    url = "https://github.com/cosmos/gorocksdb"
+    rev = "37ba422d5c751e427bef06cd17fb6d3e69818240"
+    sha256 = "14ih61qlzvw8wqc2dd8zhqgmqcfrja7vb0fk8ni317c9ibryqxzc"
 
 ["github.com/tendermint/btcd"]
   sumVersion = "v0.1.1"
