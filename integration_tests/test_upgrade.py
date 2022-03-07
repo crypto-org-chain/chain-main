@@ -172,31 +172,9 @@ def propose_and_pass(cluster, kind, proposal):
     return proposal
 
 
-@pytest.mark.skip(reason="tested in test_manual_upgrade_all")
-def test_manual_upgrade(cosmovisor_cluster):
-    """
-    - do the upgrade test by replacing binary manually
-    - check the panic do happens
-    """
-    cluster = cosmovisor_cluster
-    # use the normal binary first
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
-            f"--home %(here)s/node{i}"
-        },
-    )
-    cluster.reload_supervisor()
-    time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
-    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
-    # wait for a new block to make sure chain started up
-    wait_for_new_blocks(cluster, 1)
-    target_height = cluster.block_height() + 15
+def upgrade(cluster, plan_name, target_height):
     print("upgrade height", target_height)
 
-    plan_name = "v2.0.0"
     propose_and_pass(
         cluster,
         "software-upgrade",
@@ -240,7 +218,7 @@ def test_manual_upgrade(cosmovisor_cluster):
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         lambda i, _: {
             "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/v2.0.0/bin/chain-maind "
+                f"%(here)s/node{i}/cosmovisor/upgrades/{plan_name}/bin/chain-maind "
                 f"start --home %(here)s/node{i}"
             )
         },
@@ -249,6 +227,32 @@ def test_manual_upgrade(cosmovisor_cluster):
 
     # wait for it to generate new blocks
     wait_for_block(cluster, target_height + 2, 600)
+
+
+@pytest.mark.skip(reason="tested in test_manual_upgrade_all")
+def test_manual_upgrade(cosmovisor_cluster):
+    """
+    - do the upgrade test by replacing binary manually
+    - check the panic do happens
+    """
+    cluster = cosmovisor_cluster
+    # use the normal binary first
+    edit_chain_program(
+        cluster.chain_id,
+        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
+        lambda i, _: {
+            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
+            f"--home %(here)s/node{i}"
+        },
+    )
+    cluster.reload_supervisor()
+    time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
+    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
+    # wait for a new block to make sure chain started up
+    wait_for_new_blocks(cluster, 1)
+    target_height = cluster.block_height() + 15
+
+    upgrade(cluster, "v2.0.0", target_height)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
@@ -286,61 +290,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert cluster.staking_pool() == old_bonded + 2009999498
 
     target_height = cluster.block_height() + 30
-    print("upgrade height", target_height)
 
-    plan_name = "v3.0.0"
-    propose_and_pass(
-        cluster,
-        "software-upgrade",
-        {
-            "name": plan_name,
-            "title": "upgrade test",
-            "description": "ditto",
-            "upgrade-height": target_height,
-            "deposit": "0.1cro",
-        },
-    )
-
-    # wait for upgrade plan activated
-    wait_for_block(cluster, target_height, 600)
-    # wait a little bit
-    time.sleep(0.5)
-
-    # check nodes are all stopped
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
-        != "RUNNING"
-    )
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")["state"]
-        != "RUNNING"
-    )
-
-    # check upgrade-info.json file is written
-    assert (
-        json.load((cluster.home(0) / "data/upgrade-info.json").open())
-        == json.load((cluster.home(1) / "data/upgrade-info.json").open())
-        == {
-            "name": plan_name,
-            "height": target_height,
-        }
-    )
-
-    # use the upgrade-test binary
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/v3.0.0/bin/chain-maind "
-                f"start --home %(here)s/node{i}"
-            )
-        },
-    )
-    cluster.reload_supervisor()
-
-    # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2, 600)
+    upgrade(cluster, "v3.0.0", target_height)
 
     rsp = cluster.delegate_amount(
         validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
