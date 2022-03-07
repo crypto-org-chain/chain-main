@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
@@ -64,7 +63,6 @@ import (
 	ibcclient "github.com/cosmos/ibc-go/v3/modules/core/02-client"
 	ibcclientclient "github.com/cosmos/ibc-go/v3/modules/core/02-client/client"
 	ibcclienttypes "github.com/cosmos/ibc-go/v3/modules/core/02-client/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v3/modules/core/03-connection/types"
 	porttypes "github.com/cosmos/ibc-go/v3/modules/core/05-port/types"
 	ibchost "github.com/cosmos/ibc-go/v3/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v3/modules/core/keeper"
@@ -469,9 +467,6 @@ func New(
 
 	planName := "v4.0.0"
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		// a new param in 1.0.0 -- set to roundup(5x 7secs) as a safe choice
-		app.IBCKeeper.ConnectionKeeper.SetParams(ctx, ibcconnectiontypes.NewParams(uint64(40*time.Second)))
-
 		ctx.Logger().Info("start to run module migrations...")
 
 		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
