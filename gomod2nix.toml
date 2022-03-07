@@ -750,13 +750,13 @@
     sha256 = "0ndrqrvq2mczfx9v9dj2jy6nn8ryjn4clfi1zrh2hf1j4h67c89m"
 
 ["github.com/confio/ics23/go"]
-  sumVersion = "v0.6.6"
+  sumVersion = "v0.7.0"
   relPath = "go"
   ["github.com/confio/ics23/go".fetch]
     type = "git"
     url = "https://github.com/confio/ics23"
-    rev = "53a3a58ab8d224eef792845a65c7e8fc66712b7d"
-    sha256 = "05132gdwapsc5cx4sgbpicwyzwgwhjhm8nmjljddpyiswql0mv8q"
+    rev = "87a967f735daf436878e57942838cb54c3142660"
+    sha256 = "0npvmlsvjjd9s4ra4h3s9i3ib2gswjvh8jl0d6c94dahrmdp6hip"
 
 ["github.com/confluentinc/bincover"]
   sumVersion = "v0.1.0"
@@ -871,12 +871,12 @@
     sha256 = "115964xzwlr8j0l8f5x0v31f5hnxhd0rh5cvgy560l0dd77i735k"
 
 ["github.com/cosmos/ibc-go/v3"]
-  sumVersion = "v3.0.0-rc0"
+  sumVersion = "v3.0.0-rc1"
   ["github.com/cosmos/ibc-go/v3".fetch]
     type = "git"
     url = "https://github.com/cosmos/ibc-go"
-    rev = "55344184b3a5a5eb2ad2a96a7b0f715a210494f9"
-    sha256 = "01mafnbwqjxhdnpx8j2f2d2gd0yvlvik25kmcdrhn6agwpn5gqqg"
+    rev = "22bea13d3c8c2dba224f3c41bc1d10366e58e065"
+    sha256 = "0ig4bl2278ywgwlfcb78n4wi3pw8zk94sd78x467wyxampkj7gr4"
 
 ["github.com/cosmos/ledger-cosmos-go"]
   sumVersion = "v0.9.10-0.20200929055312-01e1d341de0f"
