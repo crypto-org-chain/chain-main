@@ -300,6 +300,10 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999499
 
+    target_height = cluster.block_height() + 30
+
+    upgrade(cluster, "v4.0.0", target_height)
+
 
 def test_cancel_upgrade(cluster):
     """
