@@ -3,7 +3,7 @@
 package types
 
 import (
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 )
 
 // NewCollection creates a new NFT Collection

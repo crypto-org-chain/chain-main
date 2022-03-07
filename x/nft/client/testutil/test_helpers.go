@@ -15,8 +15,8 @@ import (
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 
-	"github.com/crypto-org-chain/chain-main/v3/app"
-	nftcli "github.com/crypto-org-chain/chain-main/v3/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/app"
+	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"

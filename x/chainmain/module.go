@@ -16,9 +16,9 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/client/cli"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 )
 
 var (

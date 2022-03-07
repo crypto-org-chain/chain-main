@@ -1,3 +1,4 @@
+//go:build testbincover
 // +build testbincover
 
 package main
@@ -8,8 +9,8 @@ import (
 	"github.com/confluentinc/bincover"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/crypto-org-chain/chain-main/v3/app"
-	cmd "github.com/crypto-org-chain/chain-main/v3/cmd/chain-maind/app"
+	"github.com/crypto-org-chain/chain-main/v4/app"
+	cmd "github.com/crypto-org-chain/chain-main/v4/cmd/chain-maind/app"
 )
 
 func test_main() {

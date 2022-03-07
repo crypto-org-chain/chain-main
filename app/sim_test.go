@@ -31,7 +31,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	nfttypes "github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // Get flags every time the simulator is run

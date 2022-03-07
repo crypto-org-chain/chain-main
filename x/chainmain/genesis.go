@@ -2,8 +2,8 @@ package chainmain
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/keeper"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 )
 
 // InitGenesis initializes the capability module's state from a provided genesis

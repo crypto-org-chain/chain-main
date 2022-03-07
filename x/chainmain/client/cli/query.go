@@ -15,9 +15,9 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	ibctypes "github.com/cosmos/ibc-go/v2/modules/apps/transfer/types"
-	"github.com/crypto-org-chain/chain-main/v3/config"
-	"github.com/crypto-org-chain/chain-main/v3/x/chainmain/types"
+	ibctypes "github.com/cosmos/ibc-go/v3/modules/apps/transfer/types"
+	"github.com/crypto-org-chain/chain-main/v4/config"
+	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

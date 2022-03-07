@@ -36,10 +36,10 @@ import (
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	"github.com/crypto-org-chain/chain-main/v3/app"
-	"github.com/crypto-org-chain/chain-main/v3/app/params"
-	"github.com/crypto-org-chain/chain-main/v3/config"
-	chainmaincli "github.com/crypto-org-chain/chain-main/v3/x/chainmain/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/app"
+	"github.com/crypto-org-chain/chain-main/v4/app/params"
+	"github.com/crypto-org-chain/chain-main/v4/config"
+	chainmaincli "github.com/crypto-org-chain/chain-main/v4/x/chainmain/client/cli"
 )
 
 // NewRootCmd creates a new root command for chain-maind. It is called once in the

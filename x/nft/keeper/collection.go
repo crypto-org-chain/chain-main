@@ -11,8 +11,8 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/exported"
-	"github.com/crypto-org-chain/chain-main/v3/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // SetGenesisCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32
