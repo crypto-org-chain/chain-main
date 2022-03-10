@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Upgrade `cosmos-sdk` to `v0.45.1` and `ibc-go` to `v3.0.0-rc0`. #717
+- Mark gRPC and CLI of `x/supply` as deprecated. #724
 
 *March 1, 2022*
 
