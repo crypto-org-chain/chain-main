@@ -142,9 +142,6 @@ replace github.com/opencontainers/image-spec => github.com/opencontainers/image-
 
 replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 
-// TODO: remove when ibc-go upgrades cosmos-sdk version
-replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.6
-
 // TODO: remove when cosmos sdk upgrades tendermint
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.16
 
