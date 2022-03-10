@@ -80,6 +80,7 @@ func (a AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Ro
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
+	// nolint: staticcheck
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 
 	if err != nil {
@@ -134,6 +135,7 @@ func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sd
 
 // RegisterServices registers query server.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
+	// nolint: staticcheck
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
