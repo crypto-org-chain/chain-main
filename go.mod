@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/confluentinc/bincover v0.1.0
 	github.com/cosmos/cosmos-sdk v0.45.1
-	github.com/cosmos/ibc-go/v3 v3.0.0-rc1
+	github.com/cosmos/ibc-go/v3 v3.0.0-rc2
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/renameio v1.0.0
@@ -141,9 +141,6 @@ replace github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 replace github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2
 
 replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
-
-// TODO: remove when ibc-go upgrades cosmos-sdk version
-replace github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.44.6
 
 // TODO: remove when cosmos sdk upgrades tendermint
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.16
