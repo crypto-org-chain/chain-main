@@ -18,7 +18,7 @@ func CmdRegisterAccount() *cobra.Command {
 		Short: "Registers an interchain account",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argConnectionId := args[0]
+			argConnectionID := args[0]
 
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
@@ -27,7 +27,7 @@ func CmdRegisterAccount() *cobra.Command {
 
 			msg := types.NewMsgRegisterAccount(
 				clientCtx.GetFromAddress().String(),
-				argConnectionId,
+				argConnectionID,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err

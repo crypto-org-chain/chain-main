@@ -9,10 +9,10 @@ const TypeMsgRegisterAccount = "register_account"
 
 var _ sdk.Msg = &MsgRegisterAccount{}
 
-func NewMsgRegisterAccount(owner string, connectionId string) *MsgRegisterAccount {
+func NewMsgRegisterAccount(owner string, connectionID string) *MsgRegisterAccount {
 	return &MsgRegisterAccount{
 		Owner:        owner,
-		ConnectionId: connectionId,
+		ConnectionId: connectionID,
 	}
 }
 

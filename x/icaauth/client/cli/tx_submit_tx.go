@@ -30,7 +30,7 @@ Example:
 		),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			argConnectionId := args[0]
+			argConnectionID := args[0]
 			argMsg := args[1]
 
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -50,7 +50,7 @@ Example:
 
 			msg := types.NewMsgSubmitTx(
 				clientCtx.GetFromAddress().String(),
-				argConnectionId,
+				argConnectionID,
 				theTx.GetMsgs(),
 				&timeoutDuration,
 			)

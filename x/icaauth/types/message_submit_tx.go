@@ -15,7 +15,7 @@ var (
 	_ cdctypes.UnpackInterfacesMessage = &MsgSubmitTx{}
 )
 
-func NewMsgSubmitTx(owner string, connectionId string, msgs []sdk.Msg, timeoutDuration *time.Duration) *MsgSubmitTx {
+func NewMsgSubmitTx(owner string, connectionID string, msgs []sdk.Msg, timeoutDuration *time.Duration) *MsgSubmitTx {
 	msgsAny := make([]*cdctypes.Any, len(msgs))
 	for i, msg := range msgs {
 		any, err := cdctypes.NewAnyWithValue(msg)
@@ -28,7 +28,7 @@ func NewMsgSubmitTx(owner string, connectionId string, msgs []sdk.Msg, timeoutDu
 
 	return &MsgSubmitTx{
 		Owner:           owner,
-		ConnectionId:    connectionId,
+		ConnectionId:    connectionID,
 		Msgs:            msgsAny,
 		TimeoutDuration: timeoutDuration,
 	}

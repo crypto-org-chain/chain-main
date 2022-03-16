@@ -17,7 +17,7 @@ func CmdInterchainAccountAddress() *cobra.Command {
 		Short: "Gets interchain account address on host chain",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			reqConnectionId := args[0]
+			reqConnectionID := args[0]
 			reqOwner := args[1]
 
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -28,7 +28,7 @@ func CmdInterchainAccountAddress() *cobra.Command {
 			queryClient := types.NewQueryClient(clientCtx)
 
 			params := &types.QueryInterchainAccountAddressRequest{
-				ConnectionId: reqConnectionId,
+				ConnectionId: reqConnectionID,
 				Owner:        reqOwner,
 			}
 

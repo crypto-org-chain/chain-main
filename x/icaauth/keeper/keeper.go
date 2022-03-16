@@ -48,18 +48,18 @@ func NewKeeper(
 }
 
 // DoSubmitTx submits a transaction to the host chain on behalf of interchain account
-func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionId, owner string, msgs []sdk.Msg, timeoutDuration time.Duration) error {
-	portId, err := icatypes.NewControllerPortID(owner)
+func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []sdk.Msg, timeoutDuration time.Duration) error {
+	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
 		return err
 	}
 
-	channelId, found := k.icaControllerKeeper.GetActiveChannelID(ctx, connectionId, portId)
+	channelID, found := k.icaControllerKeeper.GetActiveChannelID(ctx, connectionID, portID)
 	if !found {
-		return sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portId)
+		return sdkerrors.Wrapf(icatypes.ErrActiveChannelNotFound, "failed to retrieve active channel for port %s", portID)
 	}
 
-	channelCapability, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portId, channelId))
+	channelCapability, found := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(portID, channelID))
 	if !found {
 		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
 	}
@@ -76,7 +76,7 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionId, owner string, msgs []
 
 	timeoutTimestamp := ctx.BlockTime().Add(timeoutDuration).UnixNano()
 
-	_, err = k.icaControllerKeeper.SendTx(ctx, channelCapability, connectionId, portId, packetData, uint64(timeoutTimestamp))
+	_, err = k.icaControllerKeeper.SendTx(ctx, channelCapability, connectionID, portID, packetData, uint64(timeoutTimestamp))
 	if err != nil {
 		return err
 	}
@@ -85,13 +85,13 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionId, owner string, msgs []
 }
 
 // GetInterchainAccountAddress fetches the interchain account address for given `connectionId` and `owner`
-func (k *Keeper) GetInterchainAccountAddress(ctx sdk.Context, connectionId, owner string) (string, error) {
-	portId, err := icatypes.NewControllerPortID(owner)
+func (k *Keeper) GetInterchainAccountAddress(ctx sdk.Context, connectionID, owner string) (string, error) {
+	portID, err := icatypes.NewControllerPortID(owner)
 	if err != nil {
 		return "", status.Errorf(codes.InvalidArgument, "invalid owner address: %s", err)
 	}
 
-	icaAddress, found := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, connectionId, portId)
+	icaAddress, found := k.icaControllerKeeper.GetInterchainAccountAddress(ctx, connectionID, portID)
 
 	if !found {
 		return "", status.Errorf(codes.NotFound, "could not find account")
