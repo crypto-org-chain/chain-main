@@ -50,13 +50,13 @@ def start_and_wait_relayer(cluster):
     # start relaying
     cluster["ica-controller-1"].supervisor.startProcess("relayer-demo")
 
-    rsp = json.loads(subprocess.check_output(
-        relayer + ["query", "connections", "ica-controller-1"])
+    rsp = json.loads(
+        subprocess.check_output(relayer + ["query", "connections", "ica-controller-1"])
     )
     controller_connection = rsp["result"][0]
 
-    rsp = json.loads(subprocess.check_output(
-        relayer + ["query", "connections", "ica-host-1"])
+    rsp = json.loads(
+        subprocess.check_output(relayer + ["query", "connections", "ica-host-1"])
     )
     host_connection = rsp["result"][0]
 
@@ -120,10 +120,7 @@ def test_ica(cluster, tmp_path):
     # generate a transaction to send to host chain
     generated_tx = tmp_path / "generated_tx.txt"
     generated_tx_msg = cli_host.transfer(
-        ica_address,
-        addr_host,
-        "0.5cro",
-        generate_only=True
+        ica_address, addr_host, "0.5cro", generate_only=True
     )
 
     print(json.dumps(generated_tx_msg))
