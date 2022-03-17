@@ -527,12 +527,12 @@ func New(
 
 		// create ICS27 Controller submodule params
 		controllerParams := icacontrollertypes.Params{
-			ControllerEnabled: true,
+			ControllerEnabled: false,
 		}
 
 		// create ICS27 Host submodule params
 		hostParams := icahosttypes.Params{
-			HostEnabled: true,
+			HostEnabled: false,
 			AllowMessages: []string{
 				"/cosmos.authz.v1beta1.MsgExec",
 				"/cosmos.authz.v1beta1.MsgGrant",
