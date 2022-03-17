@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pystarport import ports
 
-from .utils import cluster_fixture, wait_for_block, wait_for_port, wait_for_new_blocks
+from .utils import cluster_fixture, wait_for_block, wait_for_port
 
 pytestmark = pytest.mark.ibc
 
@@ -50,10 +50,14 @@ def start_and_wait_relayer(cluster):
     # start relaying
     cluster["ica-controller-1"].supervisor.startProcess("relayer-demo")
 
-    rsp = json.loads(subprocess.check_output(relayer + ["query", "connections", "ica-controller-1"]))
+    rsp = json.loads(subprocess.check_output(
+        relayer + ["query", "connections", "ica-controller-1"])
+    )
     controller_connection = rsp["result"][0]
 
-    rsp = json.loads(subprocess.check_output(relayer + ["query", "connections", "ica-host-1"]))
+    rsp = json.loads(subprocess.check_output(
+        relayer + ["query", "connections", "ica-host-1"])
+    )
     host_connection = rsp["result"][0]
 
     return controller_connection, host_connection
@@ -91,7 +95,7 @@ def test_ica(cluster, tmp_path):
     time.sleep(20)
 
     # get interchain account address
-    icaAddress = json.loads(
+    ica_address = json.loads(
         cli_controller.raw(
             "query",
             "icaauth",
@@ -105,24 +109,29 @@ def test_ica(cluster, tmp_path):
     )["interchainAccountAddress"]
 
     # initial balance of interchain account should be zero
-    assert cli_host.balance(icaAddress) == 0
+    assert cli_host.balance(ica_address) == 0
 
     # send some funds to interchain account
-    cli_host.transfer("signer", icaAddress, "1cro")
+    cli_host.transfer("signer", ica_address, "1cro")
 
     # check if the funds are received in interchain account
-    assert cli_host.balance(icaAddress) == 100000000
+    assert cli_host.balance(ica_address) == 100000000
 
     # generate a transaction to send to host chain
     generated_tx = tmp_path / "generated_tx.txt"
-    generated_tx_msg = cli_host.transfer(icaAddress, addr_host, "0.5cro", generate_only=True)
+    generated_tx_msg = cli_host.transfer(
+        ica_address,
+        addr_host,
+        "0.5cro",
+        generate_only=True
+    )
 
     print(json.dumps(generated_tx_msg))
 
     with open(generated_tx, "w") as opened_file:
         json.dump(generated_tx_msg, opened_file)
 
-    num_txs = len(cli_host.query_all_txs(icaAddress)["txs"])
+    num_txs = len(cli_host.query_all_txs(ica_address)["txs"])
 
     # submit transaction on host chain on behalf of interchain account
     rsp = json.loads(
@@ -147,7 +156,7 @@ def test_ica(cluster, tmp_path):
     time.sleep(20)
 
     # check if the transaction is submitted
-    assert len(cli_host.query_all_txs(icaAddress)["txs"]) == num_txs + 1
+    assert len(cli_host.query_all_txs(ica_address)["txs"]) == num_txs + 1
 
     # check if the funds are reduced in interchain account
-    assert cli_host.balance(icaAddress) == 50000000
+    assert cli_host.balance(ica_address) == 50000000
