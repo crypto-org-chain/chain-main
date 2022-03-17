@@ -1,0 +1,27 @@
+syntax = "proto3";
+package chainmain.icaauth.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/icaauth/types";
+
+// Query defines the gRPC querier service.
+service Query {
+    // InterchainAccountAddress queries the interchain account address for given `connectionId` and `owner`
+    rpc InterchainAccountAddress(QueryInterchainAccountAddressRequest) returns (QueryInterchainAccountAddressResponse) {
+        option (google.api.http).get = "/devashishdxt/mars/icaauth/interchain_account_address/{connectionId}/{owner}";
+    }
+}
+
+// QueryInterchainAccountAddressRequest defines the request for the InterchainAccountAddress query.
+message QueryInterchainAccountAddressRequest {
+    string connectionId = 1;
+    string owner = 2;
+}
+
+// QueryInterchainAccountAddressResponse defines the response for the InterchainAccountAddress query.
+message QueryInterchainAccountAddressResponse {
+  string interchainAccountAddress = 1;
+}
