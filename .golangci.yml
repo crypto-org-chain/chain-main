@@ -1,43 +1,21 @@
 linters:
   enable:
     - bodyclose
-    - deadcode
     - depguard
     - dogsled
     - dupl
-    - errcheck
     - exportloopref
-    # - funlen
-    # - gochecknoglobals
-    # - gochecknoinits
     - goconst
     - gocritic
-    # - gocyclo
-    # - godox
     - gofmt
     - goimports
-    - golint
     - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    # - interfacer
     - misspell
-    # - maligned
     - nakedret
     - prealloc
-    # - scopelint
-    - staticcheck
-    - structcheck
+    - revive
     - stylecheck
-    - typecheck
     - unconvert
-    # - unparam
-    - unused
-    - varcheck
-    # - whitespace
-    # - wsl
-    # - gocognit
 
 linters-settings:
   exclude: ./pystarport/pystarport/*
@@ -47,7 +25,7 @@ linters-settings:
     # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
     # default is false: such cases aren't reported by default.
     check-blank: true
-  golint:
+  revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0
   prealloc:

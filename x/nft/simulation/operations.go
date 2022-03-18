@@ -19,6 +19,7 @@ import (
 )
 
 // Simulation operation weights constants
+// nolint:gosec
 const (
 	OpWeightMsgMintNFT     = "op_weight_msg_mint_nft"
 	OpWeightMsgEditNFT     = "op_weight_msg_edit_nft_tokenData"
