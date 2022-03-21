@@ -84,6 +84,10 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 	return nil
 }
 
+func (k *Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error {
+	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner)
+}
+
 // GetInterchainAccountAddress fetches the interchain account address for given `connectionId` and `owner`
 func (k *Keeper) GetInterchainAccountAddress(ctx sdk.Context, connectionID, owner string) (string, error) {
 	portID, err := icatypes.NewControllerPortID(owner)
