@@ -6,6 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
+	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
 	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/gogo/protobuf/gogoproto"
 	grpc1 "github.com/gogo/protobuf/grpc"
@@ -72,7 +73,7 @@ var xxx_messageInfo_SupplyRequest proto.InternalMessageInfo
 // method
 type SupplyResponse struct {
 	// supply is the supply of the coins
-	Supply []types.Coin `protobuf:"bytes,1,rep,name=supply,proto3" json:"supply"`
+	Supply github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,1,rep,name=supply,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"supply"`
 }
 
 func (m *SupplyResponse) Reset()         { *m = SupplyResponse{} }
@@ -108,7 +109,7 @@ func (m *SupplyResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SupplyResponse proto.InternalMessageInfo
 
-func (m *SupplyResponse) GetSupply() []types.Coin {
+func (m *SupplyResponse) GetSupply() github_com_cosmos_cosmos_sdk_types.Coins {
 	if m != nil {
 		return m.Supply
 	}

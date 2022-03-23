@@ -15,7 +15,9 @@ func (k msgServer) SubmitTx(goCtx context.Context, msg *types.MsgSubmitTx) (*typ
 		return nil, err
 	}
 
-	err = k.DoSubmitTx(ctx, msg.ConnectionId, msg.Owner, msgs, msg.CalculateTimeoutDuration())
+	minTimeoutDuration := k.MinTimeoutDuration(ctx)
+
+	err = k.DoSubmitTx(ctx, msg.ConnectionId, msg.Owner, msgs, msg.CalculateTimeoutDuration(minTimeoutDuration))
 	if err != nil {
 		return nil, err
 	}

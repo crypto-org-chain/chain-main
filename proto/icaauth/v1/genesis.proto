@@ -1,0 +1,13 @@
+syntax = "proto3";
+package chainmain.icaauth.v1;
+
+import "gogoproto/gogo.proto";
+import "icaauth/v1/params.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/icaauth/types";
+
+// GenesisState defines the icaauth module's genesis state.
+message GenesisState {
+  // params defines the genesis parameters
+  Params params = 1 [(gogoproto.nullable) = false];
+}

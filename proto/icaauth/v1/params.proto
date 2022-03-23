@@ -1,0 +1,20 @@
+syntax = "proto3";
+package chainmain.icaauth.v1;
+
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/icaauth/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+
+  // minTimeoutDuration defines the minimum value of packet timeout when submitting transactions to host chain on
+  // behalf of interchain account
+  google.protobuf.Duration minTimeoutDuration = 1 [
+    (gogoproto.moretags)    = "yaml:\"min_timeout_duration\"",
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable)    = false
+  ];
+}

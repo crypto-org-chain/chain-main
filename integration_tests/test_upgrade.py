@@ -27,7 +27,7 @@ def edit_chain_program(chain_id, ini_path, callback):
     # edit node process config in supervisor
     ini = configparser.RawConfigParser()
     ini.read_file(ini_path.open())
-    reg = re.compile(fr"^program:{chain_id}-node(\d+)")
+    reg = re.compile(rf"^program:{chain_id}-node(\d+)")
     for section in ini.sections():
         m = reg.match(section)
         if m:
@@ -303,6 +303,20 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     target_height = cluster.block_height() + 30
 
     upgrade(cluster, "v4.0.0", target_height)
+
+    cli = cluster.cosmos_cli()
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "icaauth",
+            "params",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+
+    assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
 
 
 def test_cancel_upgrade(cluster):
