@@ -60,7 +60,7 @@ func (p Params) String() string {
 
 // validateMinTimeoutDuration validates the MinTimeoutDuration param
 func validateMinTimeoutDuration(v interface{}) error {
-	_, ok := v.(*time.Duration)
+	_, ok := v.(time.Duration)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
 	}
