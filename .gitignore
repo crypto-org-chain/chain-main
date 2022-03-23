@@ -24,6 +24,7 @@ coverage.txt
 frontend/node_modules
 frontend/dist
 frontend/.cache
+**/*.bak
 
 # Pystarport
 /bot.yaml
