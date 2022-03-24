@@ -535,6 +535,9 @@ func New(
 		hostParams := icahosttypes.Params{
 			HostEnabled: false,
 			AllowMessages: []string{
+				"/cosmos.authz.v1beta1.MsgExec",
+				"/cosmos.authz.v1beta1.MsgGrant",
+				"/cosmos.authz.v1beta1.MsgRevoke",
 				"/cosmos.bank.v1beta1.MsgSend",
 				"/cosmos.bank.v1beta1.MsgMultiSend",
 				"/cosmos.distribution.v1beta1.MsgSetWithdrawAddress",
@@ -549,6 +552,10 @@ func New(
 				"/cosmos.staking.v1beta1.MsgUndelegate",
 				"/cosmos.staking.v1beta1.MsgBeginRedelegate",
 				"/ibc.applications.transfer.v1.MsgTransfer",
+				"/chainmain.nft.v1.MsgBurnNFT",
+				"/chainmain.nft.v1.MsgEditNFT",
+				"/chainmain.nft.v1.MsgIssueDenom",
+				"/chainmain.nft.v1.MsgMintNFT",
 				"/chainmain.nft.v1.MsgTransferNFT",
 			},
 		}
