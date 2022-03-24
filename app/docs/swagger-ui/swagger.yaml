@@ -4620,6 +4620,469 @@ paths:
             type: string
         '500':
           description: Internal Server Error
+  /cosmos/auth/v1beta1/accounts:
+    get:
+      summary: Accounts returns all the existing accounts
+      description: 'Since: cosmos-sdk 0.43'
+      operationId: Accounts
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              accounts:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                      description: >-
+                        A URL/resource name that uniquely identifies the type of
+                        the serialized
+
+                        protocol buffer message. This string must contain at
+                        least
+
+                        one "/" character. The last segment of the URL's path
+                        must represent
+
+                        the fully qualified name of the type (as in
+
+                        `path/google.protobuf.Duration`). The name should be in
+                        a canonical form
+
+                        (e.g., leading "." is not accepted).
+
+
+                        In practice, teams usually precompile into the binary
+                        all types that they
+
+                        expect it to use in the context of Any. However, for
+                        URLs which use the
+
+                        scheme `http`, `https`, or no scheme, one can optionally
+                        set up a type
+
+                        server that maps type URLs to message definitions as
+                        follows:
+
+
+                        * If no scheme is provided, `https` is assumed.
+
+                        * An HTTP GET on the URL must yield a
+                        [google.protobuf.Type][]
+                          value in binary format, or produce an error.
+                        * Applications are allowed to cache lookup results based
+                        on the
+                          URL, or have them precompiled into a binary to avoid any
+                          lookup. Therefore, binary compatibility needs to be preserved
+                          on changes to types. (Use versioned type names to manage
+                          breaking changes.)
+
+                        Note: this functionality is not currently available in
+                        the official
+
+                        protobuf release, and it is not used for type URLs
+                        beginning with
+
+                        type.googleapis.com.
+
+
+                        Schemes other than `http`, `https` (or the empty scheme)
+                        might be
+
+                        used with implementation specific semantics.
+                    value:
+                      type: string
+                      format: byte
+                      description: >-
+                        Must be a valid serialized protocol buffer of the above
+                        specified type.
+                  description: >-
+                    `Any` contains an arbitrary serialized protocol buffer
+                    message along with a
+
+                    URL that describes the type of the serialized message.
+
+
+                    Protobuf library provides support to pack/unpack Any values
+                    in the form
+
+                    of utility functions or additional generated methods of the
+                    Any type.
+
+
+                    Example 1: Pack and unpack a message in C++.
+
+                        Foo foo = ...;
+                        Any any;
+                        any.PackFrom(foo);
+                        ...
+                        if (any.UnpackTo(&foo)) {
+                          ...
+                        }
+
+                    Example 2: Pack and unpack a message in Java.
+
+                        Foo foo = ...;
+                        Any any = Any.pack(foo);
+                        ...
+                        if (any.is(Foo.class)) {
+                          foo = any.unpack(Foo.class);
+                        }
+
+                     Example 3: Pack and unpack a message in Python.
+
+                        foo = Foo(...)
+                        any = Any()
+                        any.Pack(foo)
+                        ...
+                        if any.Is(Foo.DESCRIPTOR):
+                          any.Unpack(foo)
+                          ...
+
+                     Example 4: Pack and unpack a message in Go
+
+                         foo := &pb.Foo{...}
+                         any, err := ptypes.MarshalAny(foo)
+                         ...
+                         foo := &pb.Foo{}
+                         if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                           ...
+                         }
+
+                    The pack methods provided by protobuf library will by
+                    default use
+
+                    'type.googleapis.com/full.type.name' as the type URL and the
+                    unpack
+
+                    methods only use the fully qualified type name after the
+                    last '/'
+
+                    in the type URL, for example "foo.bar.com/x/y.z" will yield
+                    type
+
+                    name "y.z".
+
+
+
+                    JSON
+
+                    ====
+
+                    The JSON representation of an `Any` value uses the regular
+
+                    representation of the deserialized, embedded message, with
+                    an
+
+                    additional field `@type` which contains the type URL.
+                    Example:
+
+                        package google.profile;
+                        message Person {
+                          string first_name = 1;
+                          string last_name = 2;
+                        }
+
+                        {
+                          "@type": "type.googleapis.com/google.profile.Person",
+                          "firstName": <string>,
+                          "lastName": <string>
+                        }
+
+                    If the embedded message type is well-known and has a custom
+                    JSON
+
+                    representation, that representation will be embedded adding
+                    a field
+
+                    `value` which holds the custom JSON in addition to the
+                    `@type`
+
+                    field. Example (for message [google.protobuf.Duration][]):
+
+                        {
+                          "@type": "type.googleapis.com/google.protobuf.Duration",
+                          "value": "1.212s"
+                        }
+                title: accounts are the existing accounts
+              pagination:
+                description: pagination defines the pagination in the response.
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+            description: >-
+              QueryAccountsResponse is the response type for the Query/Accounts
+              RPC method.
+
+
+              Since: cosmos-sdk 0.43
+        default:
+          description: An unexpected error response
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                      description: >-
+                        A URL/resource name that uniquely identifies the type of
+                        the serialized
+
+                        protocol buffer message. This string must contain at
+                        least
+
+                        one "/" character. The last segment of the URL's path
+                        must represent
+
+                        the fully qualified name of the type (as in
+
+                        `path/google.protobuf.Duration`). The name should be in
+                        a canonical form
+
+                        (e.g., leading "." is not accepted).
+
+
+                        In practice, teams usually precompile into the binary
+                        all types that they
+
+                        expect it to use in the context of Any. However, for
+                        URLs which use the
+
+                        scheme `http`, `https`, or no scheme, one can optionally
+                        set up a type
+
+                        server that maps type URLs to message definitions as
+                        follows:
+
+
+                        * If no scheme is provided, `https` is assumed.
+
+                        * An HTTP GET on the URL must yield a
+                        [google.protobuf.Type][]
+                          value in binary format, or produce an error.
+                        * Applications are allowed to cache lookup results based
+                        on the
+                          URL, or have them precompiled into a binary to avoid any
+                          lookup. Therefore, binary compatibility needs to be preserved
+                          on changes to types. (Use versioned type names to manage
+                          breaking changes.)
+
+                        Note: this functionality is not currently available in
+                        the official
+
+                        protobuf release, and it is not used for type URLs
+                        beginning with
+
+                        type.googleapis.com.
+
+
+                        Schemes other than `http`, `https` (or the empty scheme)
+                        might be
+
+                        used with implementation specific semantics.
+                    value:
+                      type: string
+                      format: byte
+                      description: >-
+                        Must be a valid serialized protocol buffer of the above
+                        specified type.
+                  description: >-
+                    `Any` contains an arbitrary serialized protocol buffer
+                    message along with a
+
+                    URL that describes the type of the serialized message.
+
+
+                    Protobuf library provides support to pack/unpack Any values
+                    in the form
+
+                    of utility functions or additional generated methods of the
+                    Any type.
+
+
+                    Example 1: Pack and unpack a message in C++.
+
+                        Foo foo = ...;
+                        Any any;
+                        any.PackFrom(foo);
+                        ...
+                        if (any.UnpackTo(&foo)) {
+                          ...
+                        }
+
+                    Example 2: Pack and unpack a message in Java.
+
+                        Foo foo = ...;
+                        Any any = Any.pack(foo);
+                        ...
+                        if (any.is(Foo.class)) {
+                          foo = any.unpack(Foo.class);
+                        }
+
+                     Example 3: Pack and unpack a message in Python.
+
+                        foo = Foo(...)
+                        any = Any()
+                        any.Pack(foo)
+                        ...
+                        if any.Is(Foo.DESCRIPTOR):
+                          any.Unpack(foo)
+                          ...
+
+                     Example 4: Pack and unpack a message in Go
+
+                         foo := &pb.Foo{...}
+                         any, err := ptypes.MarshalAny(foo)
+                         ...
+                         foo := &pb.Foo{}
+                         if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                           ...
+                         }
+
+                    The pack methods provided by protobuf library will by
+                    default use
+
+                    'type.googleapis.com/full.type.name' as the type URL and the
+                    unpack
+
+                    methods only use the fully qualified type name after the
+                    last '/'
+
+                    in the type URL, for example "foo.bar.com/x/y.z" will yield
+                    type
+
+                    name "y.z".
+
+
+
+                    JSON
+
+                    ====
+
+                    The JSON representation of an `Any` value uses the regular
+
+                    representation of the deserialized, embedded message, with
+                    an
+
+                    additional field `@type` which contains the type URL.
+                    Example:
+
+                        package google.profile;
+                        message Person {
+                          string first_name = 1;
+                          string last_name = 2;
+                        }
+
+                        {
+                          "@type": "type.googleapis.com/google.profile.Person",
+                          "firstName": <string>,
+                          "lastName": <string>
+                        }
+
+                    If the embedded message type is well-known and has a custom
+                    JSON
+
+                    representation, that representation will be embedded adding
+                    a field
+
+                    `value` which holds the custom JSON in addition to the
+                    `@type`
+
+                    field. Example (for message [google.protobuf.Duration][]):
+
+                        {
+                          "@type": "type.googleapis.com/google.protobuf.Duration",
+                          "value": "1.212s"
+                        }
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+      tags:
+        - Query
   '/cosmos/auth/v1beta1/accounts/{address}':
     get:
       summary: Account returns account details based on address.
@@ -4631,7 +5094,6 @@ paths:
             type: object
             properties:
               account:
-                description: account defines the account of the corresponding address.
                 type: object
                 properties:
                   type_url:
@@ -4697,6 +5159,111 @@ paths:
                     description: >-
                       Must be a valid serialized protocol buffer of the above
                       specified type.
+                description: >-
+                  `Any` contains an arbitrary serialized protocol buffer message
+                  along with a
+
+                  URL that describes the type of the serialized message.
+
+
+                  Protobuf library provides support to pack/unpack Any values in
+                  the form
+
+                  of utility functions or additional generated methods of the
+                  Any type.
+
+
+                  Example 1: Pack and unpack a message in C++.
+
+                      Foo foo = ...;
+                      Any any;
+                      any.PackFrom(foo);
+                      ...
+                      if (any.UnpackTo(&foo)) {
+                        ...
+                      }
+
+                  Example 2: Pack and unpack a message in Java.
+
+                      Foo foo = ...;
+                      Any any = Any.pack(foo);
+                      ...
+                      if (any.is(Foo.class)) {
+                        foo = any.unpack(Foo.class);
+                      }
+
+                   Example 3: Pack and unpack a message in Python.
+
+                      foo = Foo(...)
+                      any = Any()
+                      any.Pack(foo)
+                      ...
+                      if any.Is(Foo.DESCRIPTOR):
+                        any.Unpack(foo)
+                        ...
+
+                   Example 4: Pack and unpack a message in Go
+
+                       foo := &pb.Foo{...}
+                       any, err := ptypes.MarshalAny(foo)
+                       ...
+                       foo := &pb.Foo{}
+                       if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                         ...
+                       }
+
+                  The pack methods provided by protobuf library will by default
+                  use
+
+                  'type.googleapis.com/full.type.name' as the type URL and the
+                  unpack
+
+                  methods only use the fully qualified type name after the last
+                  '/'
+
+                  in the type URL, for example "foo.bar.com/x/y.z" will yield
+                  type
+
+                  name "y.z".
+
+
+
+                  JSON
+
+                  ====
+
+                  The JSON representation of an `Any` value uses the regular
+
+                  representation of the deserialized, embedded message, with an
+
+                  additional field `@type` which contains the type URL. Example:
+
+                      package google.profile;
+                      message Person {
+                        string first_name = 1;
+                        string last_name = 2;
+                      }
+
+                      {
+                        "@type": "type.googleapis.com/google.profile.Person",
+                        "firstName": <string>,
+                        "lastName": <string>
+                      }
+
+                  If the embedded message type is well-known and has a custom
+                  JSON
+
+                  representation, that representation will be embedded adding a
+                  field
+
+                  `value` which holds the custom JSON in addition to the `@type`
+
+                  field. Example (for message [google.protobuf.Duration][]):
+
+                      {
+                        "@type": "type.googleapis.com/google.protobuf.Duration",
+                        "value": "1.212s"
+                      }
             description: >-
               QueryAccountResponse is the response type for the Query/Account
               RPC method.
@@ -5246,9 +5813,20 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
-  '/cosmos/bank/v1beta1/balances/{address}/{denom}':
+  '/cosmos/bank/v1beta1/balances/{address}/by_denom':
     get:
       summary: Balance queries the balance of a single coin for a single account.
       operationId: Balance
@@ -5306,8 +5884,8 @@ paths:
           type: string
         - name: denom
           description: denom is the coin denom to query balances for.
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
       tags:
         - Query
@@ -5379,6 +5957,20 @@ paths:
                       description: |-
                         display indicates the suggested denom that should be
                         displayed in clients.
+                    name:
+                      type: string
+                      description: 'Since: cosmos-sdk 0.43'
+                      title: 'name defines the name of the token (eg: Cosmos Atom)'
+                    symbol:
+                      type: string
+                      description: >-
+                        symbol is the token symbol usually shown on exchanges
+                        (eg: ATOM). This can
+
+                        be the same as the display.
+
+
+                        Since: cosmos-sdk 0.43
                   description: |-
                     Metadata represents a struct that describes
                     a basic token.
@@ -5478,6 +6070,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/bank/v1beta1/denoms_metadata/{denom}':
@@ -5544,6 +6147,20 @@ paths:
                     description: |-
                       display indicates the suggested denom that should be
                       displayed in clients.
+                  name:
+                    type: string
+                    description: 'Since: cosmos-sdk 0.43'
+                    title: 'name defines the name of the token (eg: Cosmos Atom)'
+                  symbol:
+                    type: string
+                    description: >-
+                      symbol is the token symbol usually shown on exchanges (eg:
+                      ATOM). This can
+
+                      be the same as the display.
+
+
+                      Since: cosmos-sdk 0.43
                 description: |-
                   Metadata represents a struct that describes
                   a basic token.
@@ -5669,6 +6286,27 @@ paths:
 
                     signatures required by gogoproto.
                 title: supply is the supply of the coins
+              pagination:
+                description: |-
+                  pagination defines the pagination in the response.
+
+                  Since: cosmos-sdk 0.43
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
             title: >-
               QueryTotalSupplyResponse is the response type for the
               Query/TotalSupply RPC
@@ -5696,6 +6334,65 @@ paths:
                     value:
                       type: string
                       format: byte
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/bank/v1beta1/supply/{denom}':
@@ -7353,6 +8050,9 @@ paths:
                           type: string
                           title: checksum
                       title: Module is the type for VersionInfo
+                  cosmos_sdk_version:
+                    type: string
+                    title: 'Since: cosmos-sdk 0.43'
                 description: VersionInfo is the type for the GetNodeInfoResponse message.
             description: >-
               GetNodeInfoResponse is the request type for the Query/GetNodeInfo
@@ -8217,6 +8917,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Service
   '/cosmos/base/tendermint/v1beta1/validatorsets/{height}':
@@ -8682,6 +9393,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -9332,6 +10054,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   /cosmos/evidence/v1beta1/evidence:
@@ -9778,6 +10511,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -11002,6 +11746,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/gov/v1beta1/proposals/{proposal_id}':
@@ -11774,6 +12529,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/gov/v1beta1/proposals/{proposal_id}/deposits/{depositor}':
@@ -12270,6 +13036,15 @@ paths:
                     voter:
                       type: string
                     option:
+                      description: >-
+                        Deprecated: Prefer to use `options` instead. This field
+                        is set in queries
+
+                        if and only if `len(options) == 1` and that option has
+                        weight 1. In all
+
+                        other cases, this field will default to
+                        VOTE_OPTION_UNSPECIFIED.
                       type: string
                       enum:
                         - VOTE_OPTION_UNSPECIFIED
@@ -12278,15 +13053,38 @@ paths:
                         - VOTE_OPTION_NO
                         - VOTE_OPTION_NO_WITH_VETO
                       default: VOTE_OPTION_UNSPECIFIED
-                      description: >-
-                        VoteOption enumerates the valid vote options for a given
-                        governance proposal.
+                    options:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          option:
+                            type: string
+                            enum:
+                              - VOTE_OPTION_UNSPECIFIED
+                              - VOTE_OPTION_YES
+                              - VOTE_OPTION_ABSTAIN
+                              - VOTE_OPTION_NO
+                              - VOTE_OPTION_NO_WITH_VETO
+                            default: VOTE_OPTION_UNSPECIFIED
+                            description: >-
+                              VoteOption enumerates the valid vote options for a
+                              given governance proposal.
 
-                         - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
-                         - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
-                         - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
-                         - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
-                         - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                               - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+                               - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+                               - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+                               - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+                               - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                          weight:
+                            type: string
+                        description: >-
+                          WeightedVoteOption defines a unit of vote for vote
+                          split.
+
+
+                          Since: cosmos-sdk 0.43
+                      title: 'Since: cosmos-sdk 0.43'
                   description: >-
                     Vote defines a vote on a governance proposal.
 
@@ -12557,6 +13355,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/gov/v1beta1/proposals/{proposal_id}/votes/{voter}':
@@ -12578,6 +13387,15 @@ paths:
                   voter:
                     type: string
                   option:
+                    description: >-
+                      Deprecated: Prefer to use `options` instead. This field is
+                      set in queries
+
+                      if and only if `len(options) == 1` and that option has
+                      weight 1. In all
+
+                      other cases, this field will default to
+                      VOTE_OPTION_UNSPECIFIED.
                     type: string
                     enum:
                       - VOTE_OPTION_UNSPECIFIED
@@ -12586,15 +13404,38 @@ paths:
                       - VOTE_OPTION_NO
                       - VOTE_OPTION_NO_WITH_VETO
                     default: VOTE_OPTION_UNSPECIFIED
-                    description: >-
-                      VoteOption enumerates the valid vote options for a given
-                      governance proposal.
+                  options:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        option:
+                          type: string
+                          enum:
+                            - VOTE_OPTION_UNSPECIFIED
+                            - VOTE_OPTION_YES
+                            - VOTE_OPTION_ABSTAIN
+                            - VOTE_OPTION_NO
+                            - VOTE_OPTION_NO_WITH_VETO
+                          default: VOTE_OPTION_UNSPECIFIED
+                          description: >-
+                            VoteOption enumerates the valid vote options for a
+                            given governance proposal.
 
-                       - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
-                       - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
-                       - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
-                       - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
-                       - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                             - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+                             - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+                             - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+                             - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+                             - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                        weight:
+                          type: string
+                      description: >-
+                        WeightedVoteOption defines a unit of vote for vote
+                        split.
+
+
+                        Since: cosmos-sdk 0.43
+                    title: 'Since: cosmos-sdk 0.43'
                 description: >-
                   Vote defines a vote on a governance proposal.
 
@@ -13090,30 +13931,43 @@ paths:
                       type: string
                       format: int64
                       title: >-
-                        height at which validator was first a candidate OR was
+                        Height at which validator was first a candidate OR was
                         unjailed
                     index_offset:
                       type: string
                       format: int64
-                      title: index offset into signed block bit array
+                      description: >-
+                        Index which is incremented each time the validator was a
+                        bonded
+
+                        in a block and may have signed a precommit or not. This
+                        in conjunction with the
+
+                        `SignedBlocksWindow` param determines the index in the
+                        `MissedBlocksBitArray`.
                     jailed_until:
                       type: string
                       format: date-time
-                      title: timestamp validator cannot be unjailed until
+                      description: >-
+                        Timestamp until which the validator is jailed due to
+                        liveness downtime.
                     tombstoned:
                       type: boolean
                       format: boolean
-                      title: >-
-                        whether or not a validator has been tombstoned (killed
-                        out of validator
+                      description: >-
+                        Whether or not a validator has been tombstoned (killed
+                        out of validator set). It is set
 
-                        set)
+                        once the validator commits an equivocation or for any
+                        other configured misbehiavor.
                     missed_blocks_counter:
                       type: string
                       format: int64
-                      title: >-
-                        missed blocks counter (to avoid scanning the array every
-                        time)
+                      description: >-
+                        A counter kept to avoid unnecessary array reads.
+
+                        Note that `Sum(MissedBlocksBitArray)` always equals
+                        `MissedBlocksCounter`.
                   description: >-
                     ValidatorSigningInfo defines a validator's signing info for
                     monitoring their
@@ -13222,6 +14076,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/slashing/v1beta1/signing_infos/{cons_address}':
@@ -13243,30 +14108,43 @@ paths:
                     type: string
                     format: int64
                     title: >-
-                      height at which validator was first a candidate OR was
+                      Height at which validator was first a candidate OR was
                       unjailed
                   index_offset:
                     type: string
                     format: int64
-                    title: index offset into signed block bit array
+                    description: >-
+                      Index which is incremented each time the validator was a
+                      bonded
+
+                      in a block and may have signed a precommit or not. This in
+                      conjunction with the
+
+                      `SignedBlocksWindow` param determines the index in the
+                      `MissedBlocksBitArray`.
                   jailed_until:
                     type: string
                     format: date-time
-                    title: timestamp validator cannot be unjailed until
+                    description: >-
+                      Timestamp until which the validator is jailed due to
+                      liveness downtime.
                   tombstoned:
                     type: boolean
                     format: boolean
-                    title: >-
-                      whether or not a validator has been tombstoned (killed out
-                      of validator
+                    description: >-
+                      Whether or not a validator has been tombstoned (killed out
+                      of validator set). It is set
 
-                      set)
+                      once the validator commits an equivocation or for any
+                      other configured misbehiavor.
                   missed_blocks_counter:
                     type: string
                     format: int64
-                    title: >-
-                      missed blocks counter (to avoid scanning the array every
-                      time)
+                    description: >-
+                      A counter kept to avoid unnecessary array reads.
+
+                      Note that `Sum(MissedBlocksBitArray)` always equals
+                      `MissedBlocksCounter`.
                 description: >-
                   ValidatorSigningInfo defines a validator's signing info for
                   monitoring their
@@ -13634,6 +14512,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -14038,6 +14927,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/staking/v1beta1/delegators/{delegator_addr}/unbonding_delegations':
@@ -14366,6 +15266,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -14957,6 +15868,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -17124,6 +18046,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/cosmos/staking/v1beta1/validators/{validator_addr}':
@@ -17963,6 +18896,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -18826,6 +19770,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   /cosmos/tx/v1beta1/simulate:
@@ -19361,6 +20316,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
         - name: order_by
           description: |2-
              - ORDER_BY_UNSPECIFIED: ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case.
@@ -19656,6 +20622,53 @@ paths:
                       For height == 1,
 
                       it's genesis time.
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        attributes:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              key:
+                                type: string
+                                format: byte
+                              value:
+                                type: string
+                                format: byte
+                              index:
+                                type: boolean
+                                format: boolean
+                            description: >-
+                              EventAttribute is a single key-value pair,
+                              associated with an event.
+                      description: >-
+                        Event allows application developers to attach additional
+                        information to
+
+                        ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx
+                        and ResponseDeliverTx.
+
+                        Later, transactions may be queried using these events.
+                    description: >-
+                      Events defines all the events emitted by processing a
+                      transaction. Note,
+
+                      these events include those emitted by processing all the
+                      messages and those
+
+                      emitted from the ante handler. Whereas Logs contains the
+                      events, with
+
+                      additional metadata, emitted only by processing the
+                      messages.
+
+
+                      Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
                 description: >-
                   TxResponse defines a structure containing relevant tx data and
                   metadata. The
@@ -20352,10 +21365,12 @@ paths:
                     type: string
                     format: date-time
                     description: >-
-                      The time after which the upgrade must be performed.
+                      Deprecated: Time based upgrades have been deprecated. Time
+                      based upgrade logic
 
-                      Leave set to its zero value to use a pre-defined Height
-                      instead.
+                      has been removed from the SDK.
+
+                      If this field is not empty, an error will be thrown.
                   height:
                     type: string
                     format: int64
@@ -20545,20 +21560,6 @@ paths:
                             "@type": "type.googleapis.com/google.protobuf.Duration",
                             "value": "1.212s"
                           }
-                    title: >-
-                      IBC-enabled chains can opt-in to including the upgraded
-                      client state in its upgrade plan
-
-                      This will make the chain commit to the correct upgraded
-                      (self) client state before the upgrade occurs,
-
-                      so that connecting chains can verify that the new upgraded
-                      client is valid by verifying a proof on the
-
-                      previous version of the chain.
-
-                      This will allow IBC connections to persist smoothly across
-                      planned chain upgrades
             description: >-
               QueryCurrentPlanResponse is the response type for the
               Query/CurrentPlan RPC
@@ -20755,13 +21756,258 @@ paths:
                         }
       tags:
         - Query
+  /cosmos/upgrade/v1beta1/module_versions:
+    get:
+      summary: ModuleVersions queries the list of module versions from state.
+      description: 'Since: cosmos-sdk 0.43'
+      operationId: ModuleVersions
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              module_versions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      title: name of the app module
+                    version:
+                      type: string
+                      format: uint64
+                      title: consensus version of the app module
+                  description: |-
+                    ModuleVersion specifies a module and its consensus version.
+
+                    Since: cosmos-sdk 0.43
+                description: >-
+                  module_versions is a list of module names with their consensus
+                  versions.
+            description: >-
+              QueryModuleVersionsResponse is the response type for the
+              Query/ModuleVersions
+
+              RPC method.
+
+
+              Since: cosmos-sdk 0.43
+        default:
+          description: An unexpected error response
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                      description: >-
+                        A URL/resource name that uniquely identifies the type of
+                        the serialized
+
+                        protocol buffer message. This string must contain at
+                        least
+
+                        one "/" character. The last segment of the URL's path
+                        must represent
+
+                        the fully qualified name of the type (as in
+
+                        `path/google.protobuf.Duration`). The name should be in
+                        a canonical form
+
+                        (e.g., leading "." is not accepted).
+
+
+                        In practice, teams usually precompile into the binary
+                        all types that they
+
+                        expect it to use in the context of Any. However, for
+                        URLs which use the
+
+                        scheme `http`, `https`, or no scheme, one can optionally
+                        set up a type
+
+                        server that maps type URLs to message definitions as
+                        follows:
+
+
+                        * If no scheme is provided, `https` is assumed.
+
+                        * An HTTP GET on the URL must yield a
+                        [google.protobuf.Type][]
+                          value in binary format, or produce an error.
+                        * Applications are allowed to cache lookup results based
+                        on the
+                          URL, or have them precompiled into a binary to avoid any
+                          lookup. Therefore, binary compatibility needs to be preserved
+                          on changes to types. (Use versioned type names to manage
+                          breaking changes.)
+
+                        Note: this functionality is not currently available in
+                        the official
+
+                        protobuf release, and it is not used for type URLs
+                        beginning with
+
+                        type.googleapis.com.
+
+
+                        Schemes other than `http`, `https` (or the empty scheme)
+                        might be
+
+                        used with implementation specific semantics.
+                    value:
+                      type: string
+                      format: byte
+                      description: >-
+                        Must be a valid serialized protocol buffer of the above
+                        specified type.
+                  description: >-
+                    `Any` contains an arbitrary serialized protocol buffer
+                    message along with a
+
+                    URL that describes the type of the serialized message.
+
+
+                    Protobuf library provides support to pack/unpack Any values
+                    in the form
+
+                    of utility functions or additional generated methods of the
+                    Any type.
+
+
+                    Example 1: Pack and unpack a message in C++.
+
+                        Foo foo = ...;
+                        Any any;
+                        any.PackFrom(foo);
+                        ...
+                        if (any.UnpackTo(&foo)) {
+                          ...
+                        }
+
+                    Example 2: Pack and unpack a message in Java.
+
+                        Foo foo = ...;
+                        Any any = Any.pack(foo);
+                        ...
+                        if (any.is(Foo.class)) {
+                          foo = any.unpack(Foo.class);
+                        }
+
+                     Example 3: Pack and unpack a message in Python.
+
+                        foo = Foo(...)
+                        any = Any()
+                        any.Pack(foo)
+                        ...
+                        if any.Is(Foo.DESCRIPTOR):
+                          any.Unpack(foo)
+                          ...
+
+                     Example 4: Pack and unpack a message in Go
+
+                         foo := &pb.Foo{...}
+                         any, err := ptypes.MarshalAny(foo)
+                         ...
+                         foo := &pb.Foo{}
+                         if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                           ...
+                         }
+
+                    The pack methods provided by protobuf library will by
+                    default use
+
+                    'type.googleapis.com/full.type.name' as the type URL and the
+                    unpack
+
+                    methods only use the fully qualified type name after the
+                    last '/'
+
+                    in the type URL, for example "foo.bar.com/x/y.z" will yield
+                    type
+
+                    name "y.z".
+
+
+
+                    JSON
+
+                    ====
+
+                    The JSON representation of an `Any` value uses the regular
+
+                    representation of the deserialized, embedded message, with
+                    an
+
+                    additional field `@type` which contains the type URL.
+                    Example:
+
+                        package google.profile;
+                        message Person {
+                          string first_name = 1;
+                          string last_name = 2;
+                        }
+
+                        {
+                          "@type": "type.googleapis.com/google.profile.Person",
+                          "firstName": <string>,
+                          "lastName": <string>
+                        }
+
+                    If the embedded message type is well-known and has a custom
+                    JSON
+
+                    representation, that representation will be embedded adding
+                    a field
+
+                    `value` which holds the custom JSON in addition to the
+                    `@type`
+
+                    field. Example (for message [google.protobuf.Duration][]):
+
+                        {
+                          "@type": "type.googleapis.com/google.protobuf.Duration",
+                          "value": "1.212s"
+                        }
+      parameters:
+        - name: module_name
+          description: |-
+            module_name is a field to query a specific module
+            consensus version from state. Leaving this empty will
+            fetch the full list of module versions from state.
+          in: query
+          required: false
+          type: string
+      tags:
+        - Query
   '/cosmos/upgrade/v1beta1/upgraded_consensus_state/{last_height}':
     get:
-      summary: |-
+      summary: >-
         UpgradedConsensusState queries the consensus state that will serve
+
         as a trusted kernel for the next version of this chain. It will only be
+
         stored at the last height of this chain.
+
         UpgradedConsensusState RPC not supported with legacy querier
+
+        This rpc is deprecated now that IBC has its own replacement
+
+        (https://github.com/cosmos/ibc-go/blob/2c880a22e9f9cc75f62b527ca94aa75ce1106001/proto/ibc/core/client/v1/query.proto#L54)
       operationId: UpgradedConsensusState
       responses:
         '200':
@@ -20770,176 +22016,9 @@ paths:
             type: object
             properties:
               upgraded_consensus_state:
-                type: object
-                properties:
-                  type_url:
-                    type: string
-                    description: >-
-                      A URL/resource name that uniquely identifies the type of
-                      the serialized
-
-                      protocol buffer message. This string must contain at least
-
-                      one "/" character. The last segment of the URL's path must
-                      represent
-
-                      the fully qualified name of the type (as in
-
-                      `path/google.protobuf.Duration`). The name should be in a
-                      canonical form
-
-                      (e.g., leading "." is not accepted).
-
-
-                      In practice, teams usually precompile into the binary all
-                      types that they
-
-                      expect it to use in the context of Any. However, for URLs
-                      which use the
-
-                      scheme `http`, `https`, or no scheme, one can optionally
-                      set up a type
-
-                      server that maps type URLs to message definitions as
-                      follows:
-
-
-                      * If no scheme is provided, `https` is assumed.
-
-                      * An HTTP GET on the URL must yield a
-                      [google.protobuf.Type][]
-                        value in binary format, or produce an error.
-                      * Applications are allowed to cache lookup results based
-                      on the
-                        URL, or have them precompiled into a binary to avoid any
-                        lookup. Therefore, binary compatibility needs to be preserved
-                        on changes to types. (Use versioned type names to manage
-                        breaking changes.)
-
-                      Note: this functionality is not currently available in the
-                      official
-
-                      protobuf release, and it is not used for type URLs
-                      beginning with
-
-                      type.googleapis.com.
-
-
-                      Schemes other than `http`, `https` (or the empty scheme)
-                      might be
-
-                      used with implementation specific semantics.
-                  value:
-                    type: string
-                    format: byte
-                    description: >-
-                      Must be a valid serialized protocol buffer of the above
-                      specified type.
-                description: >-
-                  `Any` contains an arbitrary serialized protocol buffer message
-                  along with a
-
-                  URL that describes the type of the serialized message.
-
-
-                  Protobuf library provides support to pack/unpack Any values in
-                  the form
-
-                  of utility functions or additional generated methods of the
-                  Any type.
-
-
-                  Example 1: Pack and unpack a message in C++.
-
-                      Foo foo = ...;
-                      Any any;
-                      any.PackFrom(foo);
-                      ...
-                      if (any.UnpackTo(&foo)) {
-                        ...
-                      }
-
-                  Example 2: Pack and unpack a message in Java.
-
-                      Foo foo = ...;
-                      Any any = Any.pack(foo);
-                      ...
-                      if (any.is(Foo.class)) {
-                        foo = any.unpack(Foo.class);
-                      }
-
-                   Example 3: Pack and unpack a message in Python.
-
-                      foo = Foo(...)
-                      any = Any()
-                      any.Pack(foo)
-                      ...
-                      if any.Is(Foo.DESCRIPTOR):
-                        any.Unpack(foo)
-                        ...
-
-                   Example 4: Pack and unpack a message in Go
-
-                       foo := &pb.Foo{...}
-                       any, err := ptypes.MarshalAny(foo)
-                       ...
-                       foo := &pb.Foo{}
-                       if err := ptypes.UnmarshalAny(any, foo); err != nil {
-                         ...
-                       }
-
-                  The pack methods provided by protobuf library will by default
-                  use
-
-                  'type.googleapis.com/full.type.name' as the type URL and the
-                  unpack
-
-                  methods only use the fully qualified type name after the last
-                  '/'
-
-                  in the type URL, for example "foo.bar.com/x/y.z" will yield
-                  type
-
-                  name "y.z".
-
-
-
-                  JSON
-
-                  ====
-
-                  The JSON representation of an `Any` value uses the regular
-
-                  representation of the deserialized, embedded message, with an
-
-                  additional field `@type` which contains the type URL. Example:
-
-                      package google.profile;
-                      message Person {
-                        string first_name = 1;
-                        string last_name = 2;
-                      }
-
-                      {
-                        "@type": "type.googleapis.com/google.profile.Person",
-                        "firstName": <string>,
-                        "lastName": <string>
-                      }
-
-                  If the embedded message type is well-known and has a custom
-                  JSON
-
-                  representation, that representation will be embedded adding a
-                  field
-
-                  `value` which holds the custom JSON in addition to the `@type`
-
-                  field. Example (for message [google.protobuf.Duration][]):
-
-                      {
-                        "@type": "type.googleapis.com/google.protobuf.Duration",
-                        "value": "1.212s"
-                      }
+                type: string
+                format: byte
+                title: 'Since: cosmos-sdk 0.43'
             description: >-
               QueryUpgradedConsensusStateResponse is the response type for the
               Query/UpgradedConsensusState
@@ -21291,6 +22370,17 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
       tags:
         - Query
   '/chainmain/nft/collections/{denom_id}/supply':
@@ -21466,6 +22556,71 @@ paths:
           required: false
           type: boolean
           format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+      tags:
+        - Query
+  '/chainmain/nft/denoms/name/{denom_name}':
+    get:
+      summary: DenomByName queries the definition of a given denom by name
+      operationId: DenomByName
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              denom:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  schema:
+                    type: string
+                  creator:
+                    type: string
+                title: Denom defines a type of NFT
+            title: >-
+              QueryDenomByNameResponse is the response type for the
+              Query/DenomByName RPC method
+        default:
+          description: An unexpected error response
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: denom_name
+          in: path
+          required: true
+          type: string
       tags:
         - Query
   '/chainmain/nft/denoms/{denom_id}':
@@ -21656,6 +22811,17 @@ paths:
             when key
 
             is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
           in: query
           required: false
           type: boolean
@@ -23134,7 +24300,6 @@ definitions:
     type: object
     properties:
       account:
-        description: account defines the account of the corresponding address.
         type: object
         properties:
           type_url:
@@ -23195,9 +24360,299 @@ definitions:
             description: >-
               Must be a valid serialized protocol buffer of the above specified
               type.
+        description: >-
+          `Any` contains an arbitrary serialized protocol buffer message along
+          with a
+
+          URL that describes the type of the serialized message.
+
+
+          Protobuf library provides support to pack/unpack Any values in the
+          form
+
+          of utility functions or additional generated methods of the Any type.
+
+
+          Example 1: Pack and unpack a message in C++.
+
+              Foo foo = ...;
+              Any any;
+              any.PackFrom(foo);
+              ...
+              if (any.UnpackTo(&foo)) {
+                ...
+              }
+
+          Example 2: Pack and unpack a message in Java.
+
+              Foo foo = ...;
+              Any any = Any.pack(foo);
+              ...
+              if (any.is(Foo.class)) {
+                foo = any.unpack(Foo.class);
+              }
+
+           Example 3: Pack and unpack a message in Python.
+
+              foo = Foo(...)
+              any = Any()
+              any.Pack(foo)
+              ...
+              if any.Is(Foo.DESCRIPTOR):
+                any.Unpack(foo)
+                ...
+
+           Example 4: Pack and unpack a message in Go
+
+               foo := &pb.Foo{...}
+               any, err := ptypes.MarshalAny(foo)
+               ...
+               foo := &pb.Foo{}
+               if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                 ...
+               }
+
+          The pack methods provided by protobuf library will by default use
+
+          'type.googleapis.com/full.type.name' as the type URL and the unpack
+
+          methods only use the fully qualified type name after the last '/'
+
+          in the type URL, for example "foo.bar.com/x/y.z" will yield type
+
+          name "y.z".
+
+
+
+          JSON
+
+          ====
+
+          The JSON representation of an `Any` value uses the regular
+
+          representation of the deserialized, embedded message, with an
+
+          additional field `@type` which contains the type URL. Example:
+
+              package google.profile;
+              message Person {
+                string first_name = 1;
+                string last_name = 2;
+              }
+
+              {
+                "@type": "type.googleapis.com/google.profile.Person",
+                "firstName": <string>,
+                "lastName": <string>
+              }
+
+          If the embedded message type is well-known and has a custom JSON
+
+          representation, that representation will be embedded adding a field
+
+          `value` which holds the custom JSON in addition to the `@type`
+
+          field. Example (for message [google.protobuf.Duration][]):
+
+              {
+                "@type": "type.googleapis.com/google.protobuf.Duration",
+                "value": "1.212s"
+              }
     description: >-
       QueryAccountResponse is the response type for the Query/Account RPC
       method.
+  cosmos.auth.v1beta1.QueryAccountsResponse:
+    type: object
+    properties:
+      accounts:
+        type: array
+        items:
+          type: object
+          properties:
+            type_url:
+              type: string
+              description: >-
+                A URL/resource name that uniquely identifies the type of the
+                serialized
+
+                protocol buffer message. This string must contain at least
+
+                one "/" character. The last segment of the URL's path must
+                represent
+
+                the fully qualified name of the type (as in
+
+                `path/google.protobuf.Duration`). The name should be in a
+                canonical form
+
+                (e.g., leading "." is not accepted).
+
+
+                In practice, teams usually precompile into the binary all types
+                that they
+
+                expect it to use in the context of Any. However, for URLs which
+                use the
+
+                scheme `http`, `https`, or no scheme, one can optionally set up
+                a type
+
+                server that maps type URLs to message definitions as follows:
+
+
+                * If no scheme is provided, `https` is assumed.
+
+                * An HTTP GET on the URL must yield a [google.protobuf.Type][]
+                  value in binary format, or produce an error.
+                * Applications are allowed to cache lookup results based on the
+                  URL, or have them precompiled into a binary to avoid any
+                  lookup. Therefore, binary compatibility needs to be preserved
+                  on changes to types. (Use versioned type names to manage
+                  breaking changes.)
+
+                Note: this functionality is not currently available in the
+                official
+
+                protobuf release, and it is not used for type URLs beginning
+                with
+
+                type.googleapis.com.
+
+
+                Schemes other than `http`, `https` (or the empty scheme) might
+                be
+
+                used with implementation specific semantics.
+            value:
+              type: string
+              format: byte
+              description: >-
+                Must be a valid serialized protocol buffer of the above
+                specified type.
+          description: >-
+            `Any` contains an arbitrary serialized protocol buffer message along
+            with a
+
+            URL that describes the type of the serialized message.
+
+
+            Protobuf library provides support to pack/unpack Any values in the
+            form
+
+            of utility functions or additional generated methods of the Any
+            type.
+
+
+            Example 1: Pack and unpack a message in C++.
+
+                Foo foo = ...;
+                Any any;
+                any.PackFrom(foo);
+                ...
+                if (any.UnpackTo(&foo)) {
+                  ...
+                }
+
+            Example 2: Pack and unpack a message in Java.
+
+                Foo foo = ...;
+                Any any = Any.pack(foo);
+                ...
+                if (any.is(Foo.class)) {
+                  foo = any.unpack(Foo.class);
+                }
+
+             Example 3: Pack and unpack a message in Python.
+
+                foo = Foo(...)
+                any = Any()
+                any.Pack(foo)
+                ...
+                if any.Is(Foo.DESCRIPTOR):
+                  any.Unpack(foo)
+                  ...
+
+             Example 4: Pack and unpack a message in Go
+
+                 foo := &pb.Foo{...}
+                 any, err := ptypes.MarshalAny(foo)
+                 ...
+                 foo := &pb.Foo{}
+                 if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                   ...
+                 }
+
+            The pack methods provided by protobuf library will by default use
+
+            'type.googleapis.com/full.type.name' as the type URL and the unpack
+
+            methods only use the fully qualified type name after the last '/'
+
+            in the type URL, for example "foo.bar.com/x/y.z" will yield type
+
+            name "y.z".
+
+
+
+            JSON
+
+            ====
+
+            The JSON representation of an `Any` value uses the regular
+
+            representation of the deserialized, embedded message, with an
+
+            additional field `@type` which contains the type URL. Example:
+
+                package google.profile;
+                message Person {
+                  string first_name = 1;
+                  string last_name = 2;
+                }
+
+                {
+                  "@type": "type.googleapis.com/google.profile.Person",
+                  "firstName": <string>,
+                  "lastName": <string>
+                }
+
+            If the embedded message type is well-known and has a custom JSON
+
+            representation, that representation will be embedded adding a field
+
+            `value` which holds the custom JSON in addition to the `@type`
+
+            field. Example (for message [google.protobuf.Duration][]):
+
+                {
+                  "@type": "type.googleapis.com/google.protobuf.Duration",
+                  "value": "1.212s"
+                }
+        title: accounts are the existing accounts
+      pagination:
+        description: pagination defines the pagination in the response.
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+    description: >-
+      QueryAccountsResponse is the response type for the Query/Accounts RPC
+      method.
+
+
+      Since: cosmos-sdk 0.43
   cosmos.auth.v1beta1.QueryParamsResponse:
     type: object
     properties:
@@ -23221,6 +24676,84 @@ definitions:
             type: string
             format: uint64
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
+  cosmos.base.query.v1beta1.PageRequest:
+    type: object
+    properties:
+      key:
+        type: string
+        format: byte
+        description: |-
+          key is a value returned in PageResponse.next_key to begin
+          querying the next page most efficiently. Only one of offset or key
+          should be set.
+      offset:
+        type: string
+        format: uint64
+        description: |-
+          offset is a numeric offset that can be used when key is unavailable.
+          It is less efficient than using key. Only one of offset or key should
+          be set.
+      limit:
+        type: string
+        format: uint64
+        description: >-
+          limit is the total number of results to be returned in the result
+          page.
+
+          If left empty it will default to a value to be set by each app.
+      count_total:
+        type: boolean
+        format: boolean
+        description: >-
+          count_total is set to true  to indicate that the result set should
+          include
+
+          a count of the total number of items available for pagination in UIs.
+
+          count_total is only respected when offset is used. It is ignored when
+          key
+
+          is set.
+      reverse:
+        type: boolean
+        format: boolean
+        description: >-
+          reverse is set to true if results are to be returned in the descending
+          order.
+
+
+          Since: cosmos-sdk 0.43
+    description: |-
+      message SomeRequest {
+               Foo some_parameter = 1;
+               PageRequest pagination = 2;
+       }
+    title: |-
+      PageRequest is to be embedded in gRPC request messages for efficient
+      pagination. Ex:
+  cosmos.base.query.v1beta1.PageResponse:
+    type: object
+    properties:
+      next_key:
+        type: string
+        format: byte
+        title: |-
+          next_key is the key to be passed to PageRequest.key to
+          query the next page most efficiently
+      total:
+        type: string
+        format: uint64
+        title: |-
+          total is total number of results available if PageRequest.count_total
+          was set, its value is undefined otherwise
+    description: |-
+      PageResponse is to be embedded in gRPC response messages where the
+      corresponding request message has used PageRequest.
+
+       message SomeResponse {
+               repeated Bar results = 1;
+               PageResponse page = 2;
+       }
   google.protobuf.Any:
     type: object
     properties:
@@ -23627,6 +25160,20 @@ definitions:
         description: |-
           display indicates the suggested denom that should be
           displayed in clients.
+      name:
+        type: string
+        description: 'Since: cosmos-sdk 0.43'
+        title: 'name defines the name of the token (eg: Cosmos Atom)'
+      symbol:
+        type: string
+        description: >-
+          symbol is the token symbol usually shown on exchanges (eg: ATOM). This
+          can
+
+          be the same as the display.
+
+
+          Since: cosmos-sdk 0.43
     description: |-
       Metadata represents a struct that describes
       a basic token.
@@ -23763,6 +25310,20 @@ definitions:
             description: |-
               display indicates the suggested denom that should be
               displayed in clients.
+          name:
+            type: string
+            description: 'Since: cosmos-sdk 0.43'
+            title: 'name defines the name of the token (eg: Cosmos Atom)'
+          symbol:
+            type: string
+            description: >-
+              symbol is the token symbol usually shown on exchanges (eg: ATOM).
+              This can
+
+              be the same as the display.
+
+
+              Since: cosmos-sdk 0.43
         description: |-
           Metadata represents a struct that describes
           a basic token.
@@ -23825,6 +25386,20 @@ definitions:
               description: |-
                 display indicates the suggested denom that should be
                 displayed in clients.
+            name:
+              type: string
+              description: 'Since: cosmos-sdk 0.43'
+              title: 'name defines the name of the token (eg: Cosmos Atom)'
+            symbol:
+              type: string
+              description: >-
+                symbol is the token symbol usually shown on exchanges (eg:
+                ATOM). This can
+
+                be the same as the display.
+
+
+                Since: cosmos-sdk 0.43
           description: |-
             Metadata represents a struct that describes
             a basic token.
@@ -23918,6 +25493,27 @@ definitions:
             NOTE: The amount field is an Int which implements the custom method
             signatures required by gogoproto.
         title: supply is the supply of the coins
+      pagination:
+        description: |-
+          pagination defines the pagination in the response.
+
+          Since: cosmos-sdk 0.43
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
     title: >-
       QueryTotalSupplyResponse is the response type for the Query/TotalSupply
       RPC
@@ -23934,75 +25530,6 @@ definitions:
     description: |-
       SendEnabled maps coin denom to a send_enabled status (whether a denom is
       sendable).
-  cosmos.base.query.v1beta1.PageRequest:
-    type: object
-    properties:
-      key:
-        type: string
-        format: byte
-        description: |-
-          key is a value returned in PageResponse.next_key to begin
-          querying the next page most efficiently. Only one of offset or key
-          should be set.
-      offset:
-        type: string
-        format: uint64
-        description: |-
-          offset is a numeric offset that can be used when key is unavailable.
-          It is less efficient than using key. Only one of offset or key should
-          be set.
-      limit:
-        type: string
-        format: uint64
-        description: >-
-          limit is the total number of results to be returned in the result
-          page.
-
-          If left empty it will default to a value to be set by each app.
-      count_total:
-        type: boolean
-        format: boolean
-        description: >-
-          count_total is set to true  to indicate that the result set should
-          include
-
-          a count of the total number of items available for pagination in UIs.
-
-          count_total is only respected when offset is used. It is ignored when
-          key
-
-          is set.
-    description: |-
-      message SomeRequest {
-               Foo some_parameter = 1;
-               PageRequest pagination = 2;
-       }
-    title: |-
-      PageRequest is to be embedded in gRPC request messages for efficient
-      pagination. Ex:
-  cosmos.base.query.v1beta1.PageResponse:
-    type: object
-    properties:
-      next_key:
-        type: string
-        format: byte
-        title: |-
-          next_key is the key to be passed to PageRequest.key to
-          query the next page most efficiently
-      total:
-        type: string
-        format: uint64
-        title: |-
-          total is total number of results available if PageRequest.count_total
-          was set, its value is undefined otherwise
-    description: |-
-      PageResponse is to be embedded in gRPC response messages where the
-      corresponding request message has used PageRequest.
-
-       message SomeResponse {
-               repeated Bar results = 1;
-               PageResponse page = 2;
-       }
   cosmos.base.v1beta1.Coin:
     type: object
     properties:
@@ -25395,6 +26922,9 @@ definitions:
                   type: string
                   title: checksum
               title: Module is the type for VersionInfo
+          cosmos_sdk_version:
+            type: string
+            title: 'Since: cosmos-sdk 0.43'
         description: VersionInfo is the type for the GetNodeInfoResponse message.
     description: >-
       GetNodeInfoResponse is the request type for the Query/GetNodeInfo RPC
@@ -25832,6 +27362,9 @@ definitions:
               type: string
               title: checksum
           title: Module is the type for VersionInfo
+      cosmos_sdk_version:
+        type: string
+        title: 'Since: cosmos-sdk 0.43'
     description: VersionInfo is the type for the GetNodeInfoResponse message.
   tendermint.crypto.PublicKey:
     type: object
@@ -29904,6 +31437,14 @@ definitions:
           voter:
             type: string
           option:
+            description: >-
+              Deprecated: Prefer to use `options` instead. This field is set in
+              queries
+
+              if and only if `len(options) == 1` and that option has weight 1.
+              In all
+
+              other cases, this field will default to VOTE_OPTION_UNSPECIFIED.
             type: string
             enum:
               - VOTE_OPTION_UNSPECIFIED
@@ -29912,15 +31453,36 @@ definitions:
               - VOTE_OPTION_NO
               - VOTE_OPTION_NO_WITH_VETO
             default: VOTE_OPTION_UNSPECIFIED
-            description: >-
-              VoteOption enumerates the valid vote options for a given
-              governance proposal.
+          options:
+            type: array
+            items:
+              type: object
+              properties:
+                option:
+                  type: string
+                  enum:
+                    - VOTE_OPTION_UNSPECIFIED
+                    - VOTE_OPTION_YES
+                    - VOTE_OPTION_ABSTAIN
+                    - VOTE_OPTION_NO
+                    - VOTE_OPTION_NO_WITH_VETO
+                  default: VOTE_OPTION_UNSPECIFIED
+                  description: >-
+                    VoteOption enumerates the valid vote options for a given
+                    governance proposal.
 
-               - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
-               - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
-               - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
-               - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
-               - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                     - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+                     - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+                     - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+                     - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+                     - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                weight:
+                  type: string
+              description: |-
+                WeightedVoteOption defines a unit of vote for vote split.
+
+                Since: cosmos-sdk 0.43
+            title: 'Since: cosmos-sdk 0.43'
         description: |-
           Vote defines a vote on a governance proposal.
           A Vote consists of a proposal ID, the voter, and the vote option.
@@ -29939,6 +31501,14 @@ definitions:
             voter:
               type: string
             option:
+              description: >-
+                Deprecated: Prefer to use `options` instead. This field is set
+                in queries
+
+                if and only if `len(options) == 1` and that option has weight 1.
+                In all
+
+                other cases, this field will default to VOTE_OPTION_UNSPECIFIED.
               type: string
               enum:
                 - VOTE_OPTION_UNSPECIFIED
@@ -29947,15 +31517,36 @@ definitions:
                 - VOTE_OPTION_NO
                 - VOTE_OPTION_NO_WITH_VETO
               default: VOTE_OPTION_UNSPECIFIED
-              description: >-
-                VoteOption enumerates the valid vote options for a given
-                governance proposal.
+            options:
+              type: array
+              items:
+                type: object
+                properties:
+                  option:
+                    type: string
+                    enum:
+                      - VOTE_OPTION_UNSPECIFIED
+                      - VOTE_OPTION_YES
+                      - VOTE_OPTION_ABSTAIN
+                      - VOTE_OPTION_NO
+                      - VOTE_OPTION_NO_WITH_VETO
+                    default: VOTE_OPTION_UNSPECIFIED
+                    description: >-
+                      VoteOption enumerates the valid vote options for a given
+                      governance proposal.
 
-                 - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
-                 - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
-                 - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
-                 - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
-                 - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                       - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+                       - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+                       - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+                       - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+                       - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                  weight:
+                    type: string
+                description: |-
+                  WeightedVoteOption defines a unit of vote for vote split.
+
+                  Since: cosmos-sdk 0.43
+              title: 'Since: cosmos-sdk 0.43'
           description: |-
             Vote defines a vote on a governance proposal.
             A Vote consists of a proposal ID, the voter, and the vote option.
@@ -30022,6 +31613,14 @@ definitions:
       voter:
         type: string
       option:
+        description: >-
+          Deprecated: Prefer to use `options` instead. This field is set in
+          queries
+
+          if and only if `len(options) == 1` and that option has weight 1. In
+          all
+
+          other cases, this field will default to VOTE_OPTION_UNSPECIFIED.
         type: string
         enum:
           - VOTE_OPTION_UNSPECIFIED
@@ -30030,15 +31629,36 @@ definitions:
           - VOTE_OPTION_NO
           - VOTE_OPTION_NO_WITH_VETO
         default: VOTE_OPTION_UNSPECIFIED
-        description: >-
-          VoteOption enumerates the valid vote options for a given governance
-          proposal.
+      options:
+        type: array
+        items:
+          type: object
+          properties:
+            option:
+              type: string
+              enum:
+                - VOTE_OPTION_UNSPECIFIED
+                - VOTE_OPTION_YES
+                - VOTE_OPTION_ABSTAIN
+                - VOTE_OPTION_NO
+                - VOTE_OPTION_NO_WITH_VETO
+              default: VOTE_OPTION_UNSPECIFIED
+              description: >-
+                VoteOption enumerates the valid vote options for a given
+                governance proposal.
 
-           - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
-           - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
-           - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
-           - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
-           - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+                 - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+                 - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+                 - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+                 - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+                 - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+            weight:
+              type: string
+          description: |-
+            WeightedVoteOption defines a unit of vote for vote split.
+
+            Since: cosmos-sdk 0.43
+        title: 'Since: cosmos-sdk 0.43'
     description: |-
       Vote defines a vote on a governance proposal.
       A Vote consists of a proposal ID, the voter, and the vote option.
@@ -30067,6 +31687,33 @@ definitions:
         type: string
         description: Length of the voting period.
     description: VotingParams defines the params for voting on governance proposals.
+  cosmos.gov.v1beta1.WeightedVoteOption:
+    type: object
+    properties:
+      option:
+        type: string
+        enum:
+          - VOTE_OPTION_UNSPECIFIED
+          - VOTE_OPTION_YES
+          - VOTE_OPTION_ABSTAIN
+          - VOTE_OPTION_NO
+          - VOTE_OPTION_NO_WITH_VETO
+        default: VOTE_OPTION_UNSPECIFIED
+        description: >-
+          VoteOption enumerates the valid vote options for a given governance
+          proposal.
+
+           - VOTE_OPTION_UNSPECIFIED: VOTE_OPTION_UNSPECIFIED defines a no-op vote option.
+           - VOTE_OPTION_YES: VOTE_OPTION_YES defines a yes vote option.
+           - VOTE_OPTION_ABSTAIN: VOTE_OPTION_ABSTAIN defines an abstain vote option.
+           - VOTE_OPTION_NO: VOTE_OPTION_NO defines a no vote option.
+           - VOTE_OPTION_NO_WITH_VETO: VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
+      weight:
+        type: string
+    description: |-
+      WeightedVoteOption defines a unit of vote for vote split.
+
+      Since: cosmos-sdk 0.43
   cosmos.mint.v1beta1.Params:
     type: object
     properties:
@@ -30214,27 +31861,41 @@ definitions:
           start_height:
             type: string
             format: int64
-            title: height at which validator was first a candidate OR was unjailed
+            title: Height at which validator was first a candidate OR was unjailed
           index_offset:
             type: string
             format: int64
-            title: index offset into signed block bit array
+            description: >-
+              Index which is incremented each time the validator was a bonded
+
+              in a block and may have signed a precommit or not. This in
+              conjunction with the
+
+              `SignedBlocksWindow` param determines the index in the
+              `MissedBlocksBitArray`.
           jailed_until:
             type: string
             format: date-time
-            title: timestamp validator cannot be unjailed until
+            description: >-
+              Timestamp until which the validator is jailed due to liveness
+              downtime.
           tombstoned:
             type: boolean
             format: boolean
-            title: >-
-              whether or not a validator has been tombstoned (killed out of
-              validator
+            description: >-
+              Whether or not a validator has been tombstoned (killed out of
+              validator set). It is set
 
-              set)
+              once the validator commits an equivocation or for any other
+              configured misbehiavor.
           missed_blocks_counter:
             type: string
             format: int64
-            title: missed blocks counter (to avoid scanning the array every time)
+            description: >-
+              A counter kept to avoid unnecessary array reads.
+
+              Note that `Sum(MissedBlocksBitArray)` always equals
+              `MissedBlocksCounter`.
         description: >-
           ValidatorSigningInfo defines a validator's signing info for monitoring
           their
@@ -30259,27 +31920,41 @@ definitions:
             start_height:
               type: string
               format: int64
-              title: height at which validator was first a candidate OR was unjailed
+              title: Height at which validator was first a candidate OR was unjailed
             index_offset:
               type: string
               format: int64
-              title: index offset into signed block bit array
+              description: >-
+                Index which is incremented each time the validator was a bonded
+
+                in a block and may have signed a precommit or not. This in
+                conjunction with the
+
+                `SignedBlocksWindow` param determines the index in the
+                `MissedBlocksBitArray`.
             jailed_until:
               type: string
               format: date-time
-              title: timestamp validator cannot be unjailed until
+              description: >-
+                Timestamp until which the validator is jailed due to liveness
+                downtime.
             tombstoned:
               type: boolean
               format: boolean
-              title: >-
-                whether or not a validator has been tombstoned (killed out of
-                validator
+              description: >-
+                Whether or not a validator has been tombstoned (killed out of
+                validator set). It is set
 
-                set)
+                once the validator commits an equivocation or for any other
+                configured misbehiavor.
             missed_blocks_counter:
               type: string
               format: int64
-              title: missed blocks counter (to avoid scanning the array every time)
+              description: >-
+                A counter kept to avoid unnecessary array reads.
+
+                Note that `Sum(MissedBlocksBitArray)` always equals
+                `MissedBlocksCounter`.
           description: >-
             ValidatorSigningInfo defines a validator's signing info for
             monitoring their
@@ -30324,27 +31999,41 @@ definitions:
       start_height:
         type: string
         format: int64
-        title: height at which validator was first a candidate OR was unjailed
+        title: Height at which validator was first a candidate OR was unjailed
       index_offset:
         type: string
         format: int64
-        title: index offset into signed block bit array
+        description: >-
+          Index which is incremented each time the validator was a bonded
+
+          in a block and may have signed a precommit or not. This in conjunction
+          with the
+
+          `SignedBlocksWindow` param determines the index in the
+          `MissedBlocksBitArray`.
       jailed_until:
         type: string
         format: date-time
-        title: timestamp validator cannot be unjailed until
+        description: >-
+          Timestamp until which the validator is jailed due to liveness
+          downtime.
       tombstoned:
         type: boolean
         format: boolean
-        title: >-
-          whether or not a validator has been tombstoned (killed out of
-          validator
+        description: >-
+          Whether or not a validator has been tombstoned (killed out of
+          validator set). It is set
 
-          set)
+          once the validator commits an equivocation or for any other configured
+          misbehiavor.
       missed_blocks_counter:
         type: string
         format: int64
-        title: missed blocks counter (to avoid scanning the array every time)
+        description: >-
+          A counter kept to avoid unnecessary array reads.
+
+          Note that `Sum(MissedBlocksBitArray)` always equals
+          `MissedBlocksCounter`.
     description: >-
       ValidatorSigningInfo defines a validator's signing info for monitoring
       their
@@ -34017,6 +35706,51 @@ definitions:
           == 1,
 
           it's genesis time.
+      events:
+        type: array
+        items:
+          type: object
+          properties:
+            type:
+              type: string
+            attributes:
+              type: array
+              items:
+                type: object
+                properties:
+                  key:
+                    type: string
+                    format: byte
+                  value:
+                    type: string
+                    format: byte
+                  index:
+                    type: boolean
+                    format: boolean
+                description: >-
+                  EventAttribute is a single key-value pair, associated with an
+                  event.
+          description: >-
+            Event allows application developers to attach additional information
+            to
+
+            ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and
+            ResponseDeliverTx.
+
+            Later, transactions may be queried using these events.
+        description: >-
+          Events defines all the events emitted by processing a transaction.
+          Note,
+
+          these events include those emitted by processing all the messages and
+          those
+
+          emitted from the ante handler. Whereas Logs contains the events, with
+
+          additional metadata, emitted only by processing the messages.
+
+
+          Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
     description: >-
       TxResponse defines a structure containing relevant tx data and metadata.
       The
@@ -34447,6 +36181,52 @@ definitions:
               height == 1,
 
               it's genesis time.
+          events:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        format: byte
+                      value:
+                        type: string
+                        format: byte
+                      index:
+                        type: boolean
+                        format: boolean
+                    description: >-
+                      EventAttribute is a single key-value pair, associated with
+                      an event.
+              description: >-
+                Event allows application developers to attach additional
+                information to
+
+                ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and
+                ResponseDeliverTx.
+
+                Later, transactions may be queried using these events.
+            description: >-
+              Events defines all the events emitted by processing a transaction.
+              Note,
+
+              these events include those emitted by processing all the messages
+              and those
+
+              emitted from the ante handler. Whereas Logs contains the events,
+              with
+
+              additional metadata, emitted only by processing the messages.
+
+
+              Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
         description: >-
           TxResponse defines a structure containing relevant tx data and
           metadata. The
@@ -34774,6 +36554,52 @@ definitions:
               height == 1,
 
               it's genesis time.
+          events:
+            type: array
+            items:
+              type: object
+              properties:
+                type:
+                  type: string
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                        format: byte
+                      value:
+                        type: string
+                        format: byte
+                      index:
+                        type: boolean
+                        format: boolean
+                    description: >-
+                      EventAttribute is a single key-value pair, associated with
+                      an event.
+              description: >-
+                Event allows application developers to attach additional
+                information to
+
+                ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and
+                ResponseDeliverTx.
+
+                Later, transactions may be queried using these events.
+            description: >-
+              Events defines all the events emitted by processing a transaction.
+              Note,
+
+              these events include those emitted by processing all the messages
+              and those
+
+              emitted from the ante handler. Whereas Logs contains the events,
+              with
+
+              additional metadata, emitted only by processing the messages.
+
+
+              Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
         description: >-
           TxResponse defines a structure containing relevant tx data and
           metadata. The
@@ -35053,6 +36879,52 @@ definitions:
                 height == 1,
 
                 it's genesis time.
+            events:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  attributes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                          format: byte
+                        value:
+                          type: string
+                          format: byte
+                        index:
+                          type: boolean
+                          format: boolean
+                      description: >-
+                        EventAttribute is a single key-value pair, associated
+                        with an event.
+                description: >-
+                  Event allows application developers to attach additional
+                  information to
+
+                  ResponseBeginBlock, ResponseEndBlock, ResponseCheckTx and
+                  ResponseDeliverTx.
+
+                  Later, transactions may be queried using these events.
+              description: >-
+                Events defines all the events emitted by processing a
+                transaction. Note,
+
+                these events include those emitted by processing all the
+                messages and those
+
+                emitted from the ante handler. Whereas Logs contains the events,
+                with
+
+                additional metadata, emitted only by processing the messages.
+
+
+                Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
           description: >-
             TxResponse defines a structure containing relevant tx data and
             metadata. The
@@ -35373,7 +37245,16 @@ definitions:
     properties:
       tx:
         $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
-        description: tx is the transaction to simulate.
+        description: |-
+          tx is the transaction to simulate.
+          Deprecated. Send raw tx bytes instead.
+      tx_bytes:
+        type: string
+        format: byte
+        description: |-
+          tx_bytes is the raw transaction.
+
+          Since: cosmos-sdk 0.43
     description: |-
       SimulateRequest is the request type for the Service.Simulate
       RPC method.
@@ -35651,7 +37532,14 @@ definitions:
               transaction.
           memo:
             type: string
-            title: memo is any arbitrary memo to be added to the transaction
+            description: >-
+              memo is any arbitrary note/comment to be added to the transaction.
+
+              WARNING: in clients, any publicly exposed text should not be
+              called memo,
+
+              but should be called `note` instead (see
+              https://github.com/cosmos/cosmos-sdk/issues/9122).
           timeout_height:
             type: string
             format: uint64
@@ -36221,7 +38109,14 @@ definitions:
           transaction.
       memo:
         type: string
-        title: memo is any arbitrary memo to be added to the transaction
+        description: >-
+          memo is any arbitrary note/comment to be added to the transaction.
+
+          WARNING: in clients, any publicly exposed text should not be called
+          memo,
+
+          but should be called `note` instead (see
+          https://github.com/cosmos/cosmos-sdk/issues/9122).
       timeout_height:
         type: string
         format: uint64
@@ -36611,6 +38506,20 @@ definitions:
         type: boolean
         format: boolean
     description: 'EventAttribute is a single key-value pair, associated with an event.'
+  cosmos.upgrade.v1beta1.ModuleVersion:
+    type: object
+    properties:
+      name:
+        type: string
+        title: name of the app module
+      version:
+        type: string
+        format: uint64
+        title: consensus version of the app module
+    description: |-
+      ModuleVersion specifies a module and its consensus version.
+
+      Since: cosmos-sdk 0.43
   cosmos.upgrade.v1beta1.Plan:
     type: object
     properties:
@@ -36637,9 +38546,13 @@ definitions:
       time:
         type: string
         format: date-time
-        description: |-
-          The time after which the upgrade must be performed.
-          Leave set to its zero value to use a pre-defined Height instead.
+        description: >-
+          Deprecated: Time based upgrades have been deprecated. Time based
+          upgrade logic
+
+          has been removed from the SDK.
+
+          If this field is not empty, an error will be thrown.
       height:
         type: string
         format: int64
@@ -36810,20 +38723,6 @@ definitions:
                 "@type": "type.googleapis.com/google.protobuf.Duration",
                 "value": "1.212s"
               }
-        title: >-
-          IBC-enabled chains can opt-in to including the upgraded client state
-          in its upgrade plan
-
-          This will make the chain commit to the correct upgraded (self) client
-          state before the upgrade occurs,
-
-          so that connecting chains can verify that the new upgraded client is
-          valid by verifying a proof on the
-
-          previous version of the chain.
-
-          This will allow IBC connections to persist smoothly across planned
-          chain upgrades
     description: >-
       Plan specifies information about a planned upgrade and when it should
       occur.
@@ -36871,9 +38770,13 @@ definitions:
           time:
             type: string
             format: date-time
-            description: |-
-              The time after which the upgrade must be performed.
-              Leave set to its zero value to use a pre-defined Height instead.
+            description: >-
+              Deprecated: Time based upgrades have been deprecated. Time based
+              upgrade logic
+
+              has been removed from the SDK.
+
+              If this field is not empty, an error will be thrown.
           height:
             type: string
             format: int64
@@ -37052,187 +38955,48 @@ definitions:
                     "@type": "type.googleapis.com/google.protobuf.Duration",
                     "value": "1.212s"
                   }
-            title: >-
-              IBC-enabled chains can opt-in to including the upgraded client
-              state in its upgrade plan
-
-              This will make the chain commit to the correct upgraded (self)
-              client state before the upgrade occurs,
-
-              so that connecting chains can verify that the new upgraded client
-              is valid by verifying a proof on the
-
-              previous version of the chain.
-
-              This will allow IBC connections to persist smoothly across planned
-              chain upgrades
     description: >-
       QueryCurrentPlanResponse is the response type for the Query/CurrentPlan
       RPC
 
       method.
+  cosmos.upgrade.v1beta1.QueryModuleVersionsResponse:
+    type: object
+    properties:
+      module_versions:
+        type: array
+        items:
+          type: object
+          properties:
+            name:
+              type: string
+              title: name of the app module
+            version:
+              type: string
+              format: uint64
+              title: consensus version of the app module
+          description: |-
+            ModuleVersion specifies a module and its consensus version.
+
+            Since: cosmos-sdk 0.43
+        description: >-
+          module_versions is a list of module names with their consensus
+          versions.
+    description: >-
+      QueryModuleVersionsResponse is the response type for the
+      Query/ModuleVersions
+
+      RPC method.
+
+
+      Since: cosmos-sdk 0.43
   cosmos.upgrade.v1beta1.QueryUpgradedConsensusStateResponse:
     type: object
     properties:
       upgraded_consensus_state:
-        type: object
-        properties:
-          type_url:
-            type: string
-            description: >-
-              A URL/resource name that uniquely identifies the type of the
-              serialized
-
-              protocol buffer message. This string must contain at least
-
-              one "/" character. The last segment of the URL's path must
-              represent
-
-              the fully qualified name of the type (as in
-
-              `path/google.protobuf.Duration`). The name should be in a
-              canonical form
-
-              (e.g., leading "." is not accepted).
-
-
-              In practice, teams usually precompile into the binary all types
-              that they
-
-              expect it to use in the context of Any. However, for URLs which
-              use the
-
-              scheme `http`, `https`, or no scheme, one can optionally set up a
-              type
-
-              server that maps type URLs to message definitions as follows:
-
-
-              * If no scheme is provided, `https` is assumed.
-
-              * An HTTP GET on the URL must yield a [google.protobuf.Type][]
-                value in binary format, or produce an error.
-              * Applications are allowed to cache lookup results based on the
-                URL, or have them precompiled into a binary to avoid any
-                lookup. Therefore, binary compatibility needs to be preserved
-                on changes to types. (Use versioned type names to manage
-                breaking changes.)
-
-              Note: this functionality is not currently available in the
-              official
-
-              protobuf release, and it is not used for type URLs beginning with
-
-              type.googleapis.com.
-
-
-              Schemes other than `http`, `https` (or the empty scheme) might be
-
-              used with implementation specific semantics.
-          value:
-            type: string
-            format: byte
-            description: >-
-              Must be a valid serialized protocol buffer of the above specified
-              type.
-        description: >-
-          `Any` contains an arbitrary serialized protocol buffer message along
-          with a
-
-          URL that describes the type of the serialized message.
-
-
-          Protobuf library provides support to pack/unpack Any values in the
-          form
-
-          of utility functions or additional generated methods of the Any type.
-
-
-          Example 1: Pack and unpack a message in C++.
-
-              Foo foo = ...;
-              Any any;
-              any.PackFrom(foo);
-              ...
-              if (any.UnpackTo(&foo)) {
-                ...
-              }
-
-          Example 2: Pack and unpack a message in Java.
-
-              Foo foo = ...;
-              Any any = Any.pack(foo);
-              ...
-              if (any.is(Foo.class)) {
-                foo = any.unpack(Foo.class);
-              }
-
-           Example 3: Pack and unpack a message in Python.
-
-              foo = Foo(...)
-              any = Any()
-              any.Pack(foo)
-              ...
-              if any.Is(Foo.DESCRIPTOR):
-                any.Unpack(foo)
-                ...
-
-           Example 4: Pack and unpack a message in Go
-
-               foo := &pb.Foo{...}
-               any, err := ptypes.MarshalAny(foo)
-               ...
-               foo := &pb.Foo{}
-               if err := ptypes.UnmarshalAny(any, foo); err != nil {
-                 ...
-               }
-
-          The pack methods provided by protobuf library will by default use
-
-          'type.googleapis.com/full.type.name' as the type URL and the unpack
-
-          methods only use the fully qualified type name after the last '/'
-
-          in the type URL, for example "foo.bar.com/x/y.z" will yield type
-
-          name "y.z".
-
-
-
-          JSON
-
-          ====
-
-          The JSON representation of an `Any` value uses the regular
-
-          representation of the deserialized, embedded message, with an
-
-          additional field `@type` which contains the type URL. Example:
-
-              package google.profile;
-              message Person {
-                string first_name = 1;
-                string last_name = 2;
-              }
-
-              {
-                "@type": "type.googleapis.com/google.profile.Person",
-                "firstName": <string>,
-                "lastName": <string>
-              }
-
-          If the embedded message type is well-known and has a custom JSON
-
-          representation, that representation will be embedded adding a field
-
-          `value` which holds the custom JSON in addition to the `@type`
-
-          field. Example (for message [google.protobuf.Duration][]):
-
-              {
-                "@type": "type.googleapis.com/google.protobuf.Duration",
-                "value": "1.212s"
-              }
+        type: string
+        format: byte
+        title: 'Since: cosmos-sdk 0.43'
     description: >-
       QueryUpgradedConsensusStateResponse is the response type for the
       Query/UpgradedConsensusState
@@ -37387,6 +39151,24 @@ definitions:
     title: >-
       QueryCollectionResponse is the response type for the Query/Collection RPC
       method
+  chainmain.nft.v1.QueryDenomByNameResponse:
+    type: object
+    properties:
+      denom:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          schema:
+            type: string
+          creator:
+            type: string
+        title: Denom defines a type of NFT
+    title: >-
+      QueryDenomByNameResponse is the response type for the Query/DenomByName
+      RPC method
   chainmain.nft.v1.QueryDenomResponse:
     type: object
     properties:

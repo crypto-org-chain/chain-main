@@ -198,9 +198,9 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_TotalSupply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "supply", "v1", "total"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_TotalSupply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "supply", "v1", "total"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_LiquidSupply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "supply", "v1", "liquid"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_Query_LiquidSupply_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "supply", "v1", "liquid"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

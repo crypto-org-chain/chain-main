@@ -12,120 +12,120 @@ option go_package = "github.com/crypto-org-chain/chain-main/x/nft/types";
 
 // Query defines the gRPC querier service for NFT module
 service Query {
-    // Supply queries the total supply of a given denom or owner
-    rpc Supply(QuerySupplyRequest) returns (QuerySupplyResponse) {
-        option (google.api.http).get = "/chainmain/nft/collections/{denom_id}/supply";
-    }
+  // Supply queries the total supply of a given denom or owner
+  rpc Supply(QuerySupplyRequest) returns (QuerySupplyResponse) {
+    option (google.api.http).get = "/chainmain/nft/collections/{denom_id}/supply";
+  }
 
-    // Owner queries the NFTs of the specified owner
-    rpc Owner(QueryOwnerRequest) returns (QueryOwnerResponse) {
-        option (google.api.http).get = "/chainmain/nft/nfts";
-    }
+  // Owner queries the NFTs of the specified owner
+  rpc Owner(QueryOwnerRequest) returns (QueryOwnerResponse) {
+    option (google.api.http).get = "/chainmain/nft/nfts";
+  }
 
-    // Collection queries the NFTs of the specified denom
-    rpc Collection(QueryCollectionRequest) returns (QueryCollectionResponse) {
-        option (google.api.http).get = "/chainmain/nft/collections/{denom_id}";
-    }
+  // Collection queries the NFTs of the specified denom
+  rpc Collection(QueryCollectionRequest) returns (QueryCollectionResponse) {
+    option (google.api.http).get = "/chainmain/nft/collections/{denom_id}";
+  }
 
-    // Denom queries the definition of a given denom
-    rpc Denom(QueryDenomRequest) returns (QueryDenomResponse) {
-        option (google.api.http).get = "/chainmain/nft/denoms/{denom_id}";
-    }
+  // Denom queries the definition of a given denom
+  rpc Denom(QueryDenomRequest) returns (QueryDenomResponse) {
+    option (google.api.http).get = "/chainmain/nft/denoms/{denom_id}";
+  }
 
-    // DenomByName queries the definition of a given denom by name
-    rpc DenomByName(QueryDenomByNameRequest) returns (QueryDenomByNameResponse) {
-        option (google.api.http).get = "/chainmain/nft/denoms/name/{denom_name}";
-    }
+  // DenomByName queries the definition of a given denom by name
+  rpc DenomByName(QueryDenomByNameRequest) returns (QueryDenomByNameResponse) {
+    option (google.api.http).get = "/chainmain/nft/denoms/name/{denom_name}";
+  }
 
-    // Denoms queries all the denoms
-    rpc Denoms(QueryDenomsRequest) returns (QueryDenomsResponse) {
-        option (google.api.http).get = "/chainmain/nft/denoms";
-    }
+  // Denoms queries all the denoms
+  rpc Denoms(QueryDenomsRequest) returns (QueryDenomsResponse) {
+    option (google.api.http).get = "/chainmain/nft/denoms";
+  }
 
-    // NFT queries the NFT for the given denom and token ID
-    rpc NFT(QueryNFTRequest) returns (QueryNFTResponse) {
-        option (google.api.http).get = "/chainmain/nft/nfts/{denom_id}/{token_id}";
-    }
+  // NFT queries the NFT for the given denom and token ID
+  rpc NFT(QueryNFTRequest) returns (QueryNFTResponse) {
+    option (google.api.http).get = "/chainmain/nft/nfts/{denom_id}/{token_id}";
+  }
 }
 
 // QuerySupplyRequest is the request type for the Query/HTLC RPC method
 message QuerySupplyRequest {
-    string denom_id = 1 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
-    string owner = 2;
+  string denom_id = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
+  string owner    = 2;
 }
 
 // QuerySupplyResponse is the response type for the Query/Supply RPC method
 message QuerySupplyResponse {
-    uint64 amount = 1;
+  uint64 amount = 1;
 }
 
 // QueryOwnerRequest is the request type for the Query/Owner RPC method
 message QueryOwnerRequest {
-    string denom_id = 1 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
-    string owner = 2 [ (gogoproto.moretags) = "yaml:\"owner\"" ];
-    // pagination defines an optional pagination for the request.
-    cosmos.base.query.v1beta1.PageRequest pagination = 3;
+  string denom_id = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
+  string owner    = 2 [(gogoproto.moretags) = "yaml:\"owner\""];
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 // QueryOwnerResponse is the response type for the Query/Owner RPC method
 message QueryOwnerResponse {
-    Owner owner = 1;
-    cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  Owner                                  owner      = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryCollectionRequest is the request type for the Query/Collection RPC method
 message QueryCollectionRequest {
-    string denom_id = 1 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
-    // pagination defines an optional pagination for the request.
-    cosmos.base.query.v1beta1.PageRequest pagination = 2;
+  string denom_id = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryCollectionResponse is the response type for the Query/Collection RPC method
 message QueryCollectionResponse {
-    Collection collection = 1;
-    cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  Collection                             collection = 1;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryDenomRequest is the request type for the Query/Denom RPC method
 message QueryDenomRequest {
-    string denom_id = 1 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
+  string denom_id = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
 }
 
 // QueryDenomResponse is the response type for the Query/Denom RPC method
 message QueryDenomResponse {
-    Denom denom = 1;
+  Denom denom = 1;
 }
 
 // QueryDenomByNameRequest is the request type for the Query/DenomByName RPC method
 message QueryDenomByNameRequest {
-    string denom_name = 1 [ (gogoproto.moretags) = "yaml:\"denom_name\"" ];
+  string denom_name = 1 [(gogoproto.moretags) = "yaml:\"denom_name\""];
 }
 
 // QueryDenomByNameResponse is the response type for the Query/DenomByName RPC method
 message QueryDenomByNameResponse {
-    Denom denom = 1;
+  Denom denom = 1;
 }
 
 // QueryDenomsRequest is the request type for the Query/Denoms RPC method
 message QueryDenomsRequest {
-    // pagination defines an optional pagination for the request.
-    cosmos.base.query.v1beta1.PageRequest pagination = 1;
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
 // QueryDenomsResponse is the response type for the Query/Denoms RPC method
 message QueryDenomsResponse {
-    repeated Denom denoms = 1 [ (gogoproto.nullable) = false ];
+  repeated Denom denoms = 1 [(gogoproto.nullable) = false];
 
-    cosmos.base.query.v1beta1.PageResponse pagination = 2;
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryNFTRequest is the request type for the Query/NFT RPC method
 message QueryNFTRequest {
-    string denom_id = 1 [ (gogoproto.moretags) = "yaml:\"denom_id\"" ];
-    string token_id = 2 [ (gogoproto.moretags) = "yaml:\"token_id\"" ];
+  string denom_id = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
+  string token_id = 2 [(gogoproto.moretags) = "yaml:\"token_id\""];
 }
 
 // QueryNFTResponse is the response type for the Query/NFT RPC method
 message QueryNFTResponse {
-    BaseNFT nft = 1 [ (gogoproto.customname) = "NFT" ];
+  BaseNFT nft = 1 [(gogoproto.customname) = "NFT"];
 }

@@ -47,13 +47,13 @@ func (msg MsgSubmitTx) GetMessages() ([]sdk.Msg, error) {
 	return msgs, nil
 }
 
-func (msg MsgSubmitTx) CalculateTimeoutDuration() time.Duration {
+func (msg MsgSubmitTx) CalculateTimeoutDuration(minTimeoutDuration time.Duration) time.Duration {
 	var timeoutDuration time.Duration
 
-	if msg.TimeoutDuration != nil {
+	if msg.TimeoutDuration != nil && *msg.TimeoutDuration >= minTimeoutDuration {
 		timeoutDuration = *msg.TimeoutDuration
 	} else {
-		timeoutDuration = time.Minute * 5
+		timeoutDuration = minTimeoutDuration
 	}
 
 	return timeoutDuration

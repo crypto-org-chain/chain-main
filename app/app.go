@@ -380,7 +380,8 @@ func New(
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
 
 	app.ICAAuthKeeper = *icaauthmodulekeeper.NewKeeper(appCodec, keys[icaauthmoduletypes.StoreKey],
-		keys[icaauthmoduletypes.MemStoreKey], app.ICAControllerKeeper, scopedICAAuthKeeper)
+		keys[icaauthmoduletypes.MemStoreKey], app.GetSubspace(icaauthmoduletypes.ModuleName), app.ICAControllerKeeper,
+		scopedICAAuthKeeper)
 
 	icaAuthModule := icaauthmodule.NewAppModule(appCodec, app.ICAAuthKeeper)
 	icaAuthIBCModule := icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
@@ -755,6 +756,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(icaauthmoduletypes.ModuleName)
 
 	return paramsKeeper
 }
