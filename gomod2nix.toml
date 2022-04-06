@@ -847,12 +847,12 @@
     sha256 = "10x22k92ra1sdddj2pksprfhsm683sldflcnjm8nfz4rjjhjwkay"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.45.1"
+  sumVersion = "v0.45.2"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "2646b474c7beb0c93d4fafd395ef345f41afc251"
-    sha256 = "1z3yvvv7zzmp4likc023xmdmf9z1fjbakbqx6xazqadc5847av5l"
+    rev = "9494992bd0ea487ef56984167b355e5ac770c506"
+    sha256 = "10zp1bljk3gdixp4v718ilh68lbbxly4916z6c9p0xijh9iapyrb"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -3705,12 +3705,12 @@
     sha256 = "1wkipg7xxc0ha5p6c3bj0vpgq38l18441n5l6zxdhx0gzvz5z1hs"
 
 ["google.golang.org/genproto"]
-  sumVersion = "v0.0.0-20211208223120-3a66f561d7aa"
+  sumVersion = "v0.0.0-20211223182754-3ac035c7e7cb"
   ["google.golang.org/genproto".fetch]
     type = "git"
     url = "https://github.com/googleapis/go-genproto"
-    rev = "3a66f561d7aa4010d9715ecf4c19b19e81e19f3c"
-    sha256 = "1021gpy2753zffim3sh2mi723pvnnpl8mpabsyp18k1880zgxham"
+    rev = "3ac035c7e7cbd86eb6d8b95be888cf83d73dedd3"
+    sha256 = "0fk3n2f6x3pyrfx2nn5ws88sp16yr42awc1n5dsfkzx47w9grczi"
 
 ["google.golang.org/grpc"]
   sumVersion = "v1.33.2"
