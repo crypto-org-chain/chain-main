@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Upgrade `cosmos-sdk` to `v0.45.2` and `ibc-go` to `v3.0.0`. #717 #725 #728 #745
+- Upgrade `cosmos-sdk` to `v0.45.3` and `ibc-go` to `v3.0.0`. #717 #725 #728 #745 #750
 - Mark gRPC and CLI of `x/supply` as deprecated. #724
 - Enable interchain accounts. #730 #732 #733
 
