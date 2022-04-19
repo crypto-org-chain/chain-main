@@ -92,6 +92,33 @@
     rev = "232aee85e8e3a6223a11c0943f7df2ae0fac00e4"
     sha256 = "1agn2nzmm1dkwggm4w7h4bnrav4n5jrl0vqbqy2s49vqlr8zirn6"
 
+["github.com/Azure/azure-sdk-for-go/sdk/azcore"]
+  sumVersion = "v0.19.0"
+  relPath = "sdk/azcore"
+  ["github.com/Azure/azure-sdk-for-go/sdk/azcore".fetch]
+    type = "git"
+    url = "https://github.com/Azure/azure-sdk-for-go"
+    rev = "bbf5386148ebae79096e2880c17ef89a15e472e9"
+    sha256 = "13pca9br86l16dici7daynkrrih9pqjajgy0pd8yjj2x6qg2i85s"
+
+["github.com/Azure/azure-sdk-for-go/sdk/azidentity"]
+  sumVersion = "v0.11.0"
+  relPath = "sdk/azidentity"
+  ["github.com/Azure/azure-sdk-for-go/sdk/azidentity".fetch]
+    type = "git"
+    url = "https://github.com/Azure/azure-sdk-for-go"
+    rev = "57625dbd8d36cd93086c778d9cef131118aa2b40"
+    sha256 = "0sjlm2ghysq0mqsninnn7wmpylh3dnacigib6697bi3g4b7xixni"
+
+["github.com/Azure/azure-sdk-for-go/sdk/internal"]
+  sumVersion = "v0.7.0"
+  relPath = "sdk/internal"
+  ["github.com/Azure/azure-sdk-for-go/sdk/internal".fetch]
+    type = "git"
+    url = "https://github.com/Azure/azure-sdk-for-go"
+    rev = "1eb47c16ddfd8feeb2cb4ff1698e1a3f3e1765ab"
+    sha256 = "0j1dnznjy9nfpy8yggiy0yyg412rcmpc9ny4z1z58ghfwzclimsc"
+
 ["github.com/Azure/azure-storage-blob-go"]
   sumVersion = "v0.7.0"
   ["github.com/Azure/azure-storage-blob-go".fetch]
@@ -163,12 +190,12 @@
     sha256 = "0n482cjr2pk6ql6awcnn6llrnygjzakihbjaahgmylf3znwil7jp"
 
 ["github.com/BurntSushi/toml"]
-  sumVersion = "v1.0.0"
+  sumVersion = "v1.1.0"
   ["github.com/BurntSushi/toml".fetch]
     type = "git"
     url = "https://github.com/BurntSushi/toml"
-    rev = "4272474656f1b35414cdee32185a45e36b39246e"
-    sha256 = "1ql7k5cpl9kmjyzx5vxb2sm6pbnfyqjr1gilgz0yhsi7vs53h3lv"
+    rev = "891d2617ddbdfa265c4095b53103c010c98e6591"
+    sha256 = "1vbs6ajvapgk851r9r0sarb6855dd0gxzs0dq3jilqpz13f9pj6l"
 
 ["github.com/BurntSushi/xgb"]
   sumVersion = "v0.0.0-20160522181843-27f122750802"
@@ -307,12 +334,12 @@
     sha256 = "06hzp118gzkbfvmzpwsqd4iky9br99lxgidgs5xnxwhzhli017w1"
 
 ["github.com/adlio/schema"]
-  sumVersion = "v1.2.3"
+  sumVersion = "v1.3.0"
   ["github.com/adlio/schema".fetch]
     type = "git"
     url = "https://github.com/adlio/schema"
-    rev = "770089bd7517c63f5f10d9e8f1249981963635b3"
-    sha256 = "1pdg8z1xyy4s7qpavaz932sqgc3qcrb5c328njvwa5kh0a212ywl"
+    rev = "0c0c352416bd34f6b3edabbfa6139291a1f32a98"
+    sha256 = "12gsmp0xvz5xyd6j1n9hl5fikprama4w70rbvnyjwpna6pp8v8kg"
 
 ["github.com/aead/siphash"]
   sumVersion = "v1.0.1"
@@ -791,12 +818,12 @@
     sha256 = "13d5l6p6c5wvkr6vn9hkhz9c593qifn7fgx0hg4d6jcvg1y0bnm2"
 
 ["github.com/coreos/etcd"]
-  sumVersion = "v3.3.10+incompatible"
+  sumVersion = "v3.3.13+incompatible"
   ["github.com/coreos/etcd".fetch]
     type = "git"
     url = "https://github.com/coreos/etcd"
-    rev = "27fc7e2296f506182f58ce846e48f36b34fe6842"
-    sha256 = "1x2ii1hj8jraba8rbxz6dmc03y3sjxdnzipdvg6fywnlq1f3l3wl"
+    rev = "98d308426819d892e149fe45f6fd542464cb1f9d"
+    sha256 = "1kac4qfr83f2hdz35403f1ald05wc85vvhw79vxb431n61jvyaqy"
 
 ["github.com/coreos/go-etcd"]
   sumVersion = "v2.0.0+incompatible"
@@ -847,12 +874,12 @@
     sha256 = "10x22k92ra1sdddj2pksprfhsm683sldflcnjm8nfz4rjjhjwkay"
 
 ["github.com/cosmos/cosmos-sdk"]
-  sumVersion = "v0.45.2"
+  sumVersion = "v0.45.3"
   ["github.com/cosmos/cosmos-sdk".fetch]
     type = "git"
     url = "https://github.com/cosmos/cosmos-sdk"
-    rev = "9494992bd0ea487ef56984167b355e5ac770c506"
-    sha256 = "10zp1bljk3gdixp4v718ilh68lbbxly4916z6c9p0xijh9iapyrb"
+    rev = "c2fd51b4c5f41efc56c9aec1f44b4ce9e963dfc3"
+    sha256 = "0gmx4lkxa3hczwxl79m61sq5hy93m3gff79imwjll6dq0zc62arj"
 
 ["github.com/cosmos/go-bip39"]
   sumVersion = "v1.0.0"
@@ -960,6 +987,14 @@
     rev = "5c3e0d6454001c8d14fcf06be94381d93991aaea"
     sha256 = "0m2mxrkbnr4dfan9ljxq9dd5hhqmpx5n9pd4hnwn5mlj4zgv018a"
 
+["github.com/denisenkom/go-mssqldb"]
+  sumVersion = "v0.12.0"
+  ["github.com/denisenkom/go-mssqldb".fetch]
+    type = "git"
+    url = "https://github.com/denisenkom/go-mssqldb"
+    rev = "e53873151a46af22b77fa010fc1485c31cbb38b1"
+    sha256 = "1856s51f0gd9zg8x1s4ba91zzk1kaf7lgpj96r78vy4zfigl93p8"
+
 ["github.com/desertbit/timer"]
   sumVersion = "v0.0.0-20180107155436-c41aec40b27f"
   ["github.com/desertbit/timer".fetch]
@@ -1015,6 +1050,14 @@
     url = "https://github.com/dlclark/regexp2"
     rev = "92c702aa5812963ef9193a9624191932d44073d7"
     sha256 = "011l1prsywvhhi0yc7qmpsca1cwavmawyyld5kjzi0ff9ghvj4ng"
+
+["github.com/dnaeon/go-vcr"]
+  sumVersion = "v1.2.0"
+  ["github.com/dnaeon/go-vcr".fetch]
+    type = "git"
+    url = "https://github.com/dnaeon/go-vcr"
+    rev = "772bae50809638c7542567970ab01724dcd522ca"
+    sha256 = "1aw8s3aljhw9vpzcf8m64r5yv5g0j09dky30shzxvpjwpl5yxhir"
 
 ["github.com/docker/docker"]
   sumVersion = "v1.4.2-0.20180625184442-8e610b2b55bf"
@@ -1441,6 +1484,22 @@
     url = "https://github.com/golang-jwt/jwt"
     rev = "2ebb50f957d606de5909fcf9ed49f9af3bc35e97"
     sha256 = "0vc122v3aycq3g9mgaxs5cbs5p762n2x61nxhsniw1x2cz7jgwcv"
+
+["github.com/golang-sql/civil"]
+  sumVersion = "v0.0.0-20190719163853-cb61b32ac6fe"
+  ["github.com/golang-sql/civil".fetch]
+    type = "git"
+    url = "https://github.com/golang-sql/civil"
+    rev = "cb61b32ac6fe84d34b81730175f91965e43d0f90"
+    sha256 = "0yadfbvi0w06lg3sxw0daji02jxd3vv2in26yfmwpl4vd4vm9zay"
+
+["github.com/golang-sql/sqlexp"]
+  sumVersion = "v0.0.0-20170517235910-f1bb20e5a188"
+  ["github.com/golang-sql/sqlexp".fetch]
+    type = "git"
+    url = "https://github.com/golang-sql/sqlexp"
+    rev = "f1bb20e5a188752a0c7ff90d88e4c9a4fe9655a6"
+    sha256 = "0qj2d23jqdrkjkx7ghiwsz0cfa6gfqw68g085ifyjnaim397qfcn"
 
 ["github.com/golang/freetype"]
   sumVersion = "v0.0.0-20170609003504-e2365dfdc4a0"
@@ -2392,6 +2451,14 @@
     rev = "2b33151c9bbc5231aea69b8861c540102b087070"
     sha256 = "05a89f9j4nj8v1bchfkv2sy8piz746ikj831ilbp54g8dqhl8vzr"
 
+["github.com/modocache/gover"]
+  sumVersion = "v0.0.0-20171022184752-b58185e213c5"
+  ["github.com/modocache/gover".fetch]
+    type = "git"
+    url = "https://github.com/modocache/gover"
+    rev = "b58185e213c533169f76aa366e6c68fe56f2881b"
+    sha256 = "1w7pzqh8ljacpxhwq9f4s4ax908dgl22qfxyrx51mblylwzvm6va"
+
 ["github.com/mrunalp/fileutils"]
   sumVersion = "v0.5.0"
   ["github.com/mrunalp/fileutils".fetch]
@@ -2769,6 +2836,14 @@
     rev = "ea731401f5c95a8ba30f15787e5e0fb77c60c66b"
     sha256 = "0y5rh7z01zycd59nnjpkqq0ydyjmcg9j1xw15q1i600l9j9g617p"
 
+["github.com/pkg/browser"]
+  sumVersion = "v0.0.0-20180916011732-0a3d74bf9ce4"
+  ["github.com/pkg/browser".fetch]
+    type = "git"
+    url = "https://github.com/pkg/browser"
+    rev = "0a3d74bf9ce488f035cf5bc36f753a711bc74334"
+    sha256 = "0lv6kwvm31n79mh14a63zslaf4l9bspi2q0i8i9im4njfl42iv1c"
+
 ["github.com/pkg/errors"]
   sumVersion = "v0.9.1"
   ["github.com/pkg/errors".fetch]
@@ -3090,12 +3165,12 @@
     sha256 = "06qsfpvcbgkf2pvcvf9l46fj55kmbhp2yz382fkj5gll2bykx9ld"
 
 ["github.com/spf13/cobra"]
-  sumVersion = "v1.3.0"
+  sumVersion = "v1.4.0"
   ["github.com/spf13/cobra".fetch]
     type = "git"
     url = "https://github.com/spf13/cobra"
-    rev = "178edbb247f35e466578211dcf5f4892dbbd369b"
-    sha256 = "0j3kj6yxrl2aigixapjl6bi2gmghrj52763wbd7jc079f38wz94n"
+    rev = "5b2b9e9f61d36ccb66167301f76a2292c3729855"
+    sha256 = "0ijhnk9pcks1v1cxri4kf6v1h26ym3jikmkgv4fdfrmm7sqgva13"
 
 ["github.com/spf13/jwalterweatherman"]
   sumVersion = "v1.1.0"
@@ -3170,12 +3245,12 @@
     sha256 = "0pcdvakxgddaiwcdj73ra4da05a3q4cgwbpm2w75ycq4kzv8ij8k"
 
 ["github.com/stretchr/testify"]
-  sumVersion = "v1.7.0"
+  sumVersion = "v1.7.1"
   ["github.com/stretchr/testify".fetch]
     type = "git"
     url = "https://github.com/stretchr/testify"
-    rev = "acba37e5db06f0093b465a7d47822bf13644b66c"
-    sha256 = "0ixgjsvafr3513pz3r6pmgk074s2dxkll0dadvl25gkf30rkmh10"
+    rev = "083ff1c0449867d0d8d456483ee5fab8e0c0e1e6"
+    sha256 = "0k4pcysfr25j2i8s9h0hbx5b1ihz97xh0dqazsik8872h5a18avn"
 
 ["github.com/subosito/gotenv"]
   sumVersion = "v1.2.0"
@@ -3235,12 +3310,12 @@
     sha256 = "1zcms3l5fihzg8nf4vhdk18qpn1jkbm3rpkjfpskfcrgzlxk6vi5"
 
 ["github.com/tendermint/tendermint"]
-  sumVersion = "v0.34.16"
+  sumVersion = "v0.34.19"
   ["github.com/tendermint/tendermint".fetch]
     type = "git"
     url = "https://github.com/tendermint/tendermint"
-    rev = "1d25a3f0bc7994aa12c48cf600bb756ecbb4756d"
-    sha256 = "03lypqm5wzvrqp7w8q5npnlw8z3d8vgq0nna89rm7pl92xcnx5n6"
+    rev = "2f231ceb952a2426cf3c0abaf0b455aadd11e5b2"
+    sha256 = "1j04xnaf2l1swj5rfijiq7632v6nnj8mvn0gmd6qbqjgy5q47frm"
 
 ["github.com/tendermint/tm-db"]
   sumVersion = "v0.6.6"
