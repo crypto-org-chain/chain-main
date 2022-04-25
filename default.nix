@@ -73,6 +73,8 @@ rec {
 
   chain-maind-testnet = build-chain-maind { network = "testnet"; };
 
+  solomachine = pkgs.callPackage ./integration_tests/install_solo_machine.nix { };
+
   # for testing and dev
   chain-maind-zemu = build-chain-maind { ledger_zemu = true; };
 
@@ -110,6 +112,7 @@ rec {
     "^integration_tests/configs$"
     "^integration_tests/configs/.*"
     "^integration_tests/upgrade-test.nix$"
+    "^integration_tests/install_solo_machine.nix$"
     "^integration_tests/upgrade-test.patch$"
     "^nix$"
     "^nix/.*"
@@ -124,8 +127,10 @@ rec {
       lint-env
       chain-maind-zemu
       chain-maind-zemu.instrumented
+      solomachine
     ] ++ common-env;
   };
+
 
   # main entrypoint script to run integration tests
   run-integration-tests = pkgs.writeShellScriptBin "run-integration-tests" ''
@@ -134,10 +139,11 @@ rec {
     export TESTS=${tests_src}/integration_tests
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
     export CHAIN_MAIND="${chain-maind}/bin/chain-maind"
+    export SOLO_MACHINE_HOME="${solomachine}/solomachine"
     # check argument exists, then use it, otherwise use default
     if [ -z $1 ]
     then 
-      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc' $TESTS
+      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine' $TESTS
     else 
       $1 $TESTS
     fi
@@ -153,7 +159,7 @@ rec {
     # check argument exists, then use it, otherwise use default
     if [ -z $1 ]
     then 
-      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc' $TESTS
+      pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc not solomachine' $TESTS
     else 
       $1 $TESTS
     fi
