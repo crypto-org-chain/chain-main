@@ -5,6 +5,7 @@ package testutil
 import (
 	"fmt"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/tendermint/tendermint/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -27,7 +28,9 @@ func GetApp(val network.Validator) servertypes.Application {
 	return app.New(
 		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
 		app.MakeEncodingConfig(),
+		wasm.EnableAllProposals,
 		simapp.EmptyAppOptions{},
+		nil,
 		baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 		baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 	)
