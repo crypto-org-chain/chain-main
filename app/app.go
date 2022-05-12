@@ -364,7 +364,7 @@ func New(
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+	transferStack := transfer.NewIBCModule(app.TransferKeeper)
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
@@ -384,17 +384,17 @@ func New(
 		scopedICAAuthKeeper)
 
 	icaAuthModule := icaauthmodule.NewAppModule(appCodec, app.ICAAuthKeeper)
-	icaAuthIBCModule := icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
+	icaAuthStack := icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
 
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, icaAuthIBCModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+	icaControllerStack := icacontroller.NewIBCMiddleware(icaAuthStack, app.ICAControllerKeeper)
+	icaHostStack := icahost.NewIBCModule(app.ICAHostKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule)
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
-	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerIBCModule)
+	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerStack)
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
