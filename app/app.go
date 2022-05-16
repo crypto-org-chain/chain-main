@@ -405,14 +405,20 @@ func New(
 
 	icaAuthModule := icaauthmodule.NewAppModule(appCodec, app.ICAAuthKeeper)
 
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
 	var icaAuthStack porttypes.IBCModule
 	icaAuthStack = icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
 	// icaAuthStack = ibcfee.NewIBCMiddleware(icaAuthStack, app.IBCFeeKeeper)
 
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
 	var icaControllerStack porttypes.IBCModule
 	icaControllerStack = icacontroller.NewIBCMiddleware(icaAuthStack, app.ICAControllerKeeper)
 	// icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, app.IBCFeeKeeper)
 
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
 	var icaHostStack porttypes.IBCModule
 	icaHostStack = icahost.NewIBCModule(app.ICAHostKeeper)
 	// icaHostStack = ibcfee.NewIBCMiddleware(icaHostStack, app.IBCFeeKeeper)
