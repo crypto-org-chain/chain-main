@@ -1,66 +1,103 @@
 import pytest
-from chainlibpy import Transaction, Wallet
 from pystarport import ports
-from pystarport.proto_python.api_util import ApiUtil
 
 from .utils import wait_for_new_blocks
 
 pytestmark = pytest.mark.normal
 
 
-@pytest.mark.skip(reason="/txs API removed in 0.44")
+def get_network_config(grpc_port, chain_id):
+    from chainlibpy.grpc_client import NetworkConfig
+
+    return NetworkConfig(
+        grpc_endpoint=f"127.0.0.1:{grpc_port}",
+        chain_id=chain_id,
+        address_prefix="cro",
+        coin_denom="cro",
+        coin_base_denom="basecro",
+        exponent=8,
+        derivation_path="m/44'/394'/0'/0/0",
+    )
+
+
 def test_sign_offline(cluster):
     """
     check simple transfer tx success
     - send 1cro from community to reserve
     """
-    # 1. first create two hd new wallet
-    seed = "dune car envelope chuckle elbow slight proud fury remove candy uphold \
-    puzzle call select sibling sport gadget please want vault glance verb damage gown"
-    wallet_1 = Wallet(seed)
-    address_1 = wallet_1.address
-    wallet_2 = Wallet.new()
-    address_2 = wallet_2.address
+    from chainlibpy import CROCoin, GrpcClient, Transaction, Wallet
+    from chainlibpy.generated.cosmos.bank.v1beta1.tx_pb2 import MsgSend
 
-    sender_addr = cluster.address("signer1")
+    grpc_port = ports.grpc_port(cluster.base_port(0))
+    chain_id = cluster.chain_id
 
-    sender_balance = cluster.balance(sender_addr)
-    assert sender_balance > 100 * 10 ** 8
-    balance_1 = cluster.balance(wallet_1.address)
-    assert balance_1 == 0
-    balance_2 = cluster.balance(wallet_2.address)
-    assert balance_2 == 0
+    network_config = get_network_config(grpc_port, chain_id)
+    grpc_client = GrpcClient(network_config)
 
-    # 2. transfer some coin to wallet_1
-    cluster.transfer(sender_addr, address_1, "100cro")
+    # 1. first create offline wallet
+    offline_wallet = Wallet.new()
+    offline_addr = offline_wallet.address
+
+    # 2. transfer some coin to offline_wallet so it can sign tx offline
+    alice_addr = cluster.address("signer1")
+    cluster.transfer(alice_addr, offline_addr, "100cro")
     wait_for_new_blocks(cluster, 2)
+    assert cluster.balance(offline_addr) == 100 * 10 ** 8
 
-    assert cluster.balance(sender_addr) == sender_balance - 100 * 10 ** 8
-    assert cluster.balance(address_1) == 100 * 10 ** 8
-
-    # 3. get the send's account info
-    port = ports.api_port(cluster.base_port(0))
-    api = ApiUtil(port)
-
-    amount = 1 * 10 ** 8
+    ten_cro = CROCoin(10, network_config.coin_denom, network_config)
     # make transaction without/with fee
+    receiver_addr = alice_addr
     for fee in [0, 600000]:
-        sender_account_info = api.account_info(address_1)
-        balance_1_before = api.balance(address_1)
-        balance_2_before = api.balance(address_2)
-        tx = Transaction(
-            wallet=wallet_1,
-            account_num=sender_account_info["account_num"],
-            sequence=sender_account_info["sequence"],
-            chain_id=cluster.chain_id,
-            fee=fee,
+        sender_account = grpc_client.query_account(offline_addr)
+        sender_balance_bef = grpc_client.query_account_balance(offline_addr)
+        receiver_balance_bef = grpc_client.query_account_balance(receiver_addr)
+
+        sender_cro_bef = CROCoin(
+            sender_balance_bef.balance.amount,
+            sender_balance_bef.balance.denom,
+            network_config,
         )
-        tx.add_transfer(to_address=address_2, amount=amount, base_denom="basecro")
-        signed_tx = tx.get_pushable()
-        assert isinstance(signed_tx, dict)
-        api.broadcast_tx(signed_tx)
+
+        receiver_cro_bef = CROCoin(
+            receiver_balance_bef.balance.amount,
+            receiver_balance_bef.balance.denom,
+            network_config,
+        )
+
+        msg_send_10_cro = MsgSend(
+            from_address=offline_addr,
+            to_address=receiver_addr,
+            amount=[ten_cro.protobuf_coin_message],
+        )
+
+        fee_cro = CROCoin(fee, network_config.coin_base_denom, network_config)
+        tx = Transaction(
+            chain_id=network_config.chain_id,
+            from_wallets=[offline_wallet],
+            msgs=[msg_send_10_cro],
+            account_number=sender_account.account_number,
+            fee=[fee_cro.protobuf_coin_message],
+            client=grpc_client,
+        )
+
+        signature_offline = offline_wallet.sign(tx.sign_doc.SerializeToString())
+        signed_tx = tx.set_signatures(signature_offline).signed_tx
+        grpc_client.broadcast_transaction(signed_tx.SerializeToString())
         wait_for_new_blocks(cluster, 3)
-        balance_1_after = api.balance(address_1)
-        balance_2_after = api.balance(address_2)
-        assert balance_2_after == balance_2_before + amount
-        assert balance_1_after == balance_1_before - amount - fee
+
+        sender_balance_aft = grpc_client.query_account_balance(offline_addr)
+        receiver_balance_aft = grpc_client.query_account_balance(receiver_addr)
+        sender_cro_aft = CROCoin(
+            sender_balance_aft.balance.amount,
+            sender_balance_aft.balance.denom,
+            network_config,
+        )
+
+        receiver_cro_aft = CROCoin(
+            receiver_balance_aft.balance.amount,
+            receiver_balance_aft.balance.denom,
+            network_config,
+        )
+
+        assert sender_cro_aft == sender_cro_bef - ten_cro - fee_cro
+        assert receiver_cro_aft == receiver_cro_bef + ten_cro
