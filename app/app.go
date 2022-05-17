@@ -113,6 +113,10 @@ import (
 	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
 	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 
+	ibcfee "github.com/cosmos/ibc-go/v3/modules/apps/29-fee"
+	ibcfeekeeper "github.com/cosmos/ibc-go/v3/modules/apps/29-fee/keeper"
+	ibcfeetypes "github.com/cosmos/ibc-go/v3/modules/apps/29-fee/types"
+
 	icaauthmodule "github.com/crypto-org-chain/chain-main/v4/x/icaauth"
 	icaauthmodulekeeper "github.com/crypto-org-chain/chain-main/v4/x/icaauth/keeper"
 	icaauthmoduletypes "github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
@@ -153,6 +157,7 @@ var (
 		vesting.AppModuleBasic{},
 		ica.AppModuleBasic{},
 		icaauthmodule.AppModuleBasic{},
+		ibcfee.AppModuleBasic{},
 		supply.AppModuleBasic{},
 		chainmain.AppModuleBasic{},
 		nft.AppModuleBasic{},
@@ -167,6 +172,7 @@ var (
 		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
+		ibcfeetypes.ModuleName:         nil,
 		icatypes.ModuleName:            nil,
 	}
 )
@@ -206,6 +212,7 @@ type ChainApp struct {
 	UpgradeKeeper       upgradekeeper.Keeper
 	ParamsKeeper        paramskeeper.Keeper
 	IBCKeeper           *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
+	IBCFeeKeeper        ibcfeekeeper.Keeper
 	ICAControllerKeeper icacontrollerkeeper.Keeper
 	ICAHostKeeper       icahostkeeper.Keeper
 	ICAAuthKeeper       icaauthmodulekeeper.Keeper
@@ -220,6 +227,7 @@ type ChainApp struct {
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
+	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
 	ScopedICAAuthKeeper       capabilitykeeper.ScopedKeeper
@@ -264,8 +272,8 @@ func New(
 		authtypes.StoreKey, banktypes.StoreKey, stakingtypes.StoreKey, minttypes.StoreKey, distrtypes.StoreKey,
 		slashingtypes.StoreKey, govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		feegrant.StoreKey, evidencetypes.StoreKey, ibctransfertypes.StoreKey, icacontrollertypes.StoreKey,
-		icahosttypes.StoreKey, capabilitytypes.StoreKey, authzkeeper.StoreKey, icaauthmoduletypes.StoreKey,
-		chainmaintypes.StoreKey, supplytypes.StoreKey, nfttypes.StoreKey,
+		icahosttypes.StoreKey, capabilitytypes.StoreKey, authzkeeper.StoreKey, ibcfeetypes.StoreKey,
+		icaauthmoduletypes.StoreKey, chainmaintypes.StoreKey, supplytypes.StoreKey, nfttypes.StoreKey,
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -357,6 +365,14 @@ func New(
 		),
 	)
 
+	// IBC Fee Module keeper
+	app.IBCFeeKeeper = ibcfeekeeper.NewKeeper(
+		appCodec, keys[ibcfeetypes.StoreKey], app.GetSubspace(ibcfeetypes.ModuleName),
+		app.IBCFeeKeeper, // more middlewares can be added in future
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper, app.AccountKeeper, app.BankKeeper,
+	)
+
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
@@ -364,7 +380,11 @@ func New(
 		app.AccountKeeper, app.BankKeeper, scopedTransferKeeper,
 	)
 	transferModule := transfer.NewAppModule(app.TransferKeeper)
-	transferIBCModule := transfer.NewIBCModule(app.TransferKeeper)
+	feeModule := ibcfee.NewAppModule(app.IBCFeeKeeper)
+
+	var transferStack porttypes.IBCModule
+	transferStack = transfer.NewIBCModule(app.TransferKeeper)
+	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper)
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
@@ -384,17 +404,31 @@ func New(
 		scopedICAAuthKeeper)
 
 	icaAuthModule := icaauthmodule.NewAppModule(appCodec, app.ICAAuthKeeper)
-	icaAuthIBCModule := icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
 
-	icaControllerIBCModule := icacontroller.NewIBCModule(app.ICAControllerKeeper, icaAuthIBCModule)
-	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
+	var icaAuthStack porttypes.IBCModule
+	icaAuthStack = icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
+	// icaAuthStack = ibcfee.NewIBCMiddleware(icaAuthStack, app.IBCFeeKeeper)
+
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
+	var icaControllerStack porttypes.IBCModule
+	icaControllerStack = icacontroller.NewIBCMiddleware(icaAuthStack, app.ICAControllerKeeper)
+	// icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, app.IBCFeeKeeper)
+
+	// TODO: Remove this `nolint` when fee middleware is added
+	// nolint: gosimple
+	var icaHostStack porttypes.IBCModule
+	icaHostStack = icahost.NewIBCModule(app.ICAHostKeeper)
+	// icaHostStack = ibcfee.NewIBCMiddleware(icaHostStack, app.IBCFeeKeeper)
 
 	// Create static IBC router, add transfer route, then set and seal it
 	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerIBCModule)
-	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferIBCModule)
-	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerIBCModule)
+	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerStack)
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -427,6 +461,7 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		transferModule,
+		feeModule,
 		icaModule,
 		icaAuthModule,
 		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
@@ -443,15 +478,15 @@ func New(
 		slashingtypes.ModuleName, evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		ibctransfertypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, govtypes.ModuleName,
 		genutiltypes.ModuleName, authz.ModuleName, feegrant.ModuleName, paramstypes.ModuleName, vestingtypes.ModuleName,
-		icatypes.ModuleName, icaauthmoduletypes.ModuleName, chainmaintypes.ModuleName, nfttypes.ModuleName,
-		supplytypes.ModuleName,
+		icatypes.ModuleName, icaauthmoduletypes.ModuleName, ibcfeetypes.ModuleName, chainmaintypes.ModuleName,
+		nfttypes.ModuleName, supplytypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(govtypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		ibctransfertypes.ModuleName, capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName,
 		distrtypes.ModuleName, slashingtypes.ModuleName, minttypes.ModuleName, genutiltypes.ModuleName,
 		evidencetypes.ModuleName, authz.ModuleName, feegrant.ModuleName, paramstypes.ModuleName,
 		upgradetypes.ModuleName, vestingtypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName,
-		chainmaintypes.ModuleName, nfttypes.ModuleName, supplytypes.ModuleName)
+		ibcfeetypes.ModuleName, chainmaintypes.ModuleName, nfttypes.ModuleName, supplytypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -462,9 +497,9 @@ func New(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName,
 		stakingtypes.ModuleName, slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName, feegrant.ModuleName,
-		ibctransfertypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName, chainmaintypes.ModuleName,
-		supplytypes.ModuleName, nfttypes.ModuleName, paramstypes.ModuleName, upgradetypes.ModuleName,
-		vestingtypes.ModuleName,
+		ibctransfertypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName, ibcfeetypes.ModuleName,
+		chainmaintypes.ModuleName, supplytypes.ModuleName, nfttypes.ModuleName, paramstypes.ModuleName,
+		upgradetypes.ModuleName, vestingtypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
