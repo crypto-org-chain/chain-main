@@ -179,6 +179,9 @@ make-proto:
 nix-integration-test: check-network make-proto
 	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests
 
+nix-integration-test-solomachine: check-network
+	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m solomachine"	
+
 nix-integration-test-upgrade: check-network
 	nix shell -f ./default.nix run-integration-tests --extra-experimental-features nix-command --command run-integration-tests "pytest -v -m upgrade"	
 
