@@ -1,5 +1,5 @@
-//go:build !testnet
-// +build !testnet
+//go:build mainnet
+// +build mainnet
 
 package config
 
