@@ -81,7 +81,7 @@ builds:
       - -s -w -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain -X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}} -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
 archives:
-- name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}_croeseid'
+- name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
   replacements:
     darwin: Darwin
     linux: Linux
