@@ -1,7 +1,0 @@
-name: "Chain CodeQL config"
-
-queries:
-  - name: security-extended, plus maintainability and reliability queries
-    uses: security-and-quality
-  - name: defer in loop etc.
-    uses: ./.github/codeql/queries/custom.qls
