@@ -72,22 +72,15 @@ version = "2.2.0"
 description = "Tools for Crypto.org Chain wallet management and offline transaction signing"
 category = "main"
 optional = false
-python-versions = ">=3.8, <4.0"
-develop = false
+python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
-bech32 = "~=1.1.0"
-ecdsa = ">=0.14.0, <0.17.0"
-grpcio = "^1.42.0"
-grpcio-tools = "^1.42.0"
-hdwallets = "~=0.1.0"
-mnemonic = ">=0.19, <0.20"
-
-[package.source]
-type = "git"
-url = "https://github.com/crypto-org-chain/chainlibpy.git"
-reference = "master"
-resolved_reference = "267ee78fbd7be5c9ffe39d489b68cc6c86316db6"
+bech32 = ">=1.1.0,<1.2.0"
+ecdsa = ">=0.14.0,<0.17.0"
+grpcio = ">=1.42.0,<2.0.0"
+grpcio-tools = ">=1.42.0,<2.0.0"
+hdwallets = ">=0.1.0,<0.2.0"
+mnemonic = ">=0.19,<0.20"
 
 [[package]]
 name = "chardet"
@@ -701,7 +694,7 @@ python-versions = ">=3.6"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "35f7fdfc21b22c893b4e0a249651aacc6114cf69c48b2c4e12e05e7c0eff495e"
+content-hash = "9c7ba5cd178988cb1499ea7e3eb981e91c136cea1ad4d8aa61bed296ab977985"
 
 [metadata.files]
 appdirs = [
@@ -727,7 +720,9 @@ certifi = [
     {file = "certifi-2021.5.30-py2.py3-none-any.whl", hash = "sha256:50b1e4f8446b06f41be7dd6338db18e0990601dce795c2b1686458aa7e8fa7d8"},
     {file = "certifi-2021.5.30.tar.gz", hash = "sha256:2bbf76fd432960138b3ef6dda3dde0544f27cbf8546c458e60baf371917ba9ee"},
 ]
-chainlibpy = []
+chainlibpy = [
+    {file = "chainlibpy-2.2.0-py3-none-any.whl", hash = "sha256:f1d002414dfc43301e4fb0bf97a5998566819093a5b5ec4674d79e7748f5a572"},
+]
 chardet = [
     {file = "chardet-4.0.0-py2.py3-none-any.whl", hash = "sha256:f864054d66fd9118f2e67044ac8981a54775ec5b67aed0441892edb553d21da5"},
     {file = "chardet-4.0.0.tar.gz", hash = "sha256:0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa"},
