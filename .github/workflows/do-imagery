@@ -1,0 +1,40 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+GitHub Access Token:
+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
+Client Secret:
+f4f48a55d2e2314b08bd92004daa646b12f328f2
+App ID:
+23042bb0a339a113580b
+CircleCI
+SHA256:SJBbpcYQDXM0vLmtJaKS3yl9eu2KkVUAdbmPMprJpsM
+CircleCI
+SHA256:/xdQiBc5Qegrr78aVC47PAHVd91SaMqktpwWrLmf970
+
+
+0x63CcDFA51a4Dec5D2f7F5a943d27c82c43492889
+Private Key
+0xd068ba623c313136a10b7757eb22e3c02e817a26840672478d965e0e61db5804
+
+Bitcoin cash
+xpub6CZ3gfku5WR4MjjiPJy1Em2SUn6PuEjBLKxGa4QYRfVFCk5MmHvneZiXTtEz5T3DGEAmYfRV46kGJ4x7hFrN3YcQqkn2GBkuWCakSsMt6Q4
+4b2b4128-a62f-4b5f-b4a7-2c070176a798
+
+
+046ec62df55f5ec58d0b99904d8999eed1045fc9786e696b2111428755754a53I 
