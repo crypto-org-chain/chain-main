@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/CosmWasm/wasmd/x/wasm"
 	"github.com/stretchr/testify/require"
 	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -69,7 +70,7 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// run randomized simulation
@@ -108,7 +109,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -150,7 +151,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	var genesisState GenesisState
@@ -209,7 +210,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -256,7 +257,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
@@ -309,7 +310,7 @@ func TestAppStateDeterminism(t *testing.T) {
 
 			db := dbm.NewMemDB()
 			app := New(logger, db, nil, true, map[int64]bool{},
-				simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, interBlockCacheOpt())
+				simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, interBlockCacheOpt())
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
