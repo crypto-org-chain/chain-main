@@ -24,6 +24,7 @@ let
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoApplication rec {
     pname = "chain-maind";
     version = "4.0.0";
+    go = pkgs.go_1_17;
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
