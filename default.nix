@@ -61,7 +61,7 @@ let
       mv ./${instrumentedBinary} $instrumented/bin/
     '';
     preFixup = ''
-      find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${pkgs.go} || true
+      find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
     '';
   };
 in
