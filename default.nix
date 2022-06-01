@@ -57,7 +57,7 @@ let
       echo "Build instrumented binary"
       go test ./cmd/chain-maind $buildFlags",testbincover" "''${buildFlagsArray[@]} -w -s" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
     '';
-    preInstall = ''
+    postInstall = ''
       mkdir -p $instrumented/bin
       mv ./${instrumentedBinary} $instrumented/bin/
     '';
