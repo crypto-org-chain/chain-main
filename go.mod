@@ -151,3 +151,5 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 replace github.com/cosmos/ibc-go/v3 => github.com/cosmos/ibc-go/v3 v3.0.0-alpha1.0.20220510152759-dcd0681d8f07
 
 replace github.com/CosmWasm/wasmd => github.com/devashishdxt/wasmd v0.27.1-0.20220530042031-4126e5b964df
+
+replace github.com/CosmWasm/wasmvm => github.com/yihuang/wasmvm v1.0.1-0.20220601153132-00fa4d9fdb62

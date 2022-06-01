@@ -30,6 +30,15 @@ import sources.nixpkgs {
         };
       };
     })
+    (_: pkgs: {
+      libwasmvm = pkgs.rustPlatform.buildRustPackage rec {
+        name = "libwasmvm";
+        src = sources.wasmvm + "/libwasmvm";
+        cargoDepsName = "vendor"; # use a static name to avoid rebuild when name changed
+        cargoSha256 = "sha256-G9FqDaayJfGBcWRpAxTN9xivXiijDXcaV0ad9Uzc5aA=";
+        doCheck = false;
+      };
+    })
   ];
   config = { };
   inherit system;

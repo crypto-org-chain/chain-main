@@ -46,5 +46,17 @@
         "type": "tarball",
         "url": "https://github.com/cosmos/relayer/archive/82d0fe787cbf2c69b961dff45c85b33c75ca0ad9.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "wasmvm": {
+        "branch": "v1.0.0",
+        "description": "Go bindings to the running cosmwasm contracts with wasmer ",
+        "homepage": null,
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "bc49a2f4842d023c0038798f343b56f3f0530646",
+        "sha256": "1zlkrs8bxpmxcn9x51b4q3vmf2r5lp6w95a2ckd3wbq5zjcbhvp2",
+        "type": "tarball",
+        "url": "https://github.com/CosmWasm/wasmvm/archive/bc49a2f4842d023c0038798f343b56f3f0530646.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

@@ -32,6 +32,7 @@ let
     modules = ./gomod2nix.toml;
     pwd = src; # needed to support replace
     subPackages = [ "cmd/chain-maind" ];
+    buildInputs = [ pkgs.libwasmvm ];
     CGO_ENABLED = "1";
     outputs = [
       "out"
