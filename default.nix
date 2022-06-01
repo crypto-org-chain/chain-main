@@ -64,6 +64,10 @@ let
     preFixup = ''
       find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
     '';
+    postFixup = pkgs.lib.optionalString pkgs.stdenv.isDarwin ''
+      install_name_tool -change "@rpath/libwasmvm.dylib" ${pkgs.libwasmvm}/lib/libwasmvm.dylib $out/bin/chain-maind
+      install_name_tool -change "@rpath/libwasmvm.dylib" ${pkgs.libwasmvm}/lib/libwasmvm.dylib $instrumented/bin/chain-maind-inst
+    '';
   };
 in
 rec {
