@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
+      - uses: cachix/install-nix-action@v14
       - uses: cachix/cachix-action@v10
         with:
           name: crypto-com
@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
+      - uses: cachix/install-nix-action@v14
       - uses: cachix/cachix-action@v10
         with:
           name: crypto-com
