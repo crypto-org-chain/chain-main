@@ -35,7 +35,7 @@ import sources.nixpkgs {
         name = "libwasmvm";
         src = sources.wasmvm + "/libwasmvm";
         cargoDepsName = "vendor"; # use a static name to avoid rebuild when name changed
-        cargoSha256 = "sha256-G9FqDaayJfGBcWRpAxTN9xivXiijDXcaV0ad9Uzc5aA=";
+        cargoSha256 = "sha256-m3CtXHAkjNR7t7zie9FWK4k5xvr6/O2BfGQYi+foxCc=";
         doCheck = false;
       };
     })

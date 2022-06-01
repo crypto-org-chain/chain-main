@@ -38,7 +38,7 @@ let
       "out"
       "instrumented"
     ];
-    buildTags = "cgo,ledger,!test_ledger_mock,!ledger_mock," +
+    buildTags = "custom_wasmvm,cgo,ledger,!test_ledger_mock,!ledger_mock," +
       (if ledger_zemu then "ledger_zemu" else "!ledger_zemu") +
       (lib.optionalString (network == "testnet") ",testnet");
     buildFlags = "-tags ${buildTags}";
