@@ -36,6 +36,8 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		sigGasConsumer = ante.DefaultSigVerificationGasConsumer
 	}
 
+	// the decorator list is copy-pasted from [cosmos-sdk](https://github.com/cosmos/cosmos-sdk/blob/release/v0.45.x/x/auth/ante/ante.go#L41),
+	// plus the ibcante decorator.
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
 		ante.NewRejectExtensionOptionsDecorator(),
