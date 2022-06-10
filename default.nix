@@ -117,6 +117,8 @@ rec {
     "^integration_tests/.*\\.py$"
     "^integration_tests/configs$"
     "^integration_tests/configs/.*"
+    "^integration_tests/contracts$"
+    "^integration_tests/contracts/.*"
     "^integration_tests/upgrade-test.nix$"
     "^integration_tests/install_solo_machine.nix$"
     "^integration_tests/upgrade-test.patch$"
