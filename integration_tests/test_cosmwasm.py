@@ -56,8 +56,6 @@ def test_cosmwasm(cluster):
         )
     )
 
-    print(rsp)
-
     # code_id of uploaded code
     code_id = rsp["logs"][0]["events"][-1]["attributes"][0]["value"]
 
