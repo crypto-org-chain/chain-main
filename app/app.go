@@ -559,7 +559,7 @@ func New(
 		slashingtypes.ModuleName, evidencetypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
 		ibctransfertypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, govtypes.ModuleName,
 		genutiltypes.ModuleName, authz.ModuleName, feegrant.ModuleName, paramstypes.ModuleName, vestingtypes.ModuleName,
-		icatypes.ModuleName, icaauthmoduletypes.ModuleName, wasm.ModuleName, ibcfeetypes.ModuleName,
+		icatypes.ModuleName, icaauthmoduletypes.ModuleName, ibcfeetypes.ModuleName, wasm.ModuleName,
 		chainmaintypes.ModuleName, nfttypes.ModuleName, supplytypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(govtypes.ModuleName, stakingtypes.ModuleName, ibchost.ModuleName,
@@ -567,7 +567,7 @@ func New(
 		distrtypes.ModuleName, slashingtypes.ModuleName, minttypes.ModuleName, genutiltypes.ModuleName,
 		evidencetypes.ModuleName, authz.ModuleName, feegrant.ModuleName, paramstypes.ModuleName,
 		upgradetypes.ModuleName, vestingtypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName,
-		wasm.ModuleName, ibcfeetypes.ModuleName, chainmaintypes.ModuleName, nfttypes.ModuleName, supplytypes.ModuleName)
+		ibcfeetypes.ModuleName, wasm.ModuleName, chainmaintypes.ModuleName, nfttypes.ModuleName, supplytypes.ModuleName)
 
 	// NOTE: The genutils module must occur after staking so that pools are
 	// properly initialized with tokens from genesis accounts.
@@ -578,9 +578,9 @@ func New(
 		capabilitytypes.ModuleName, authtypes.ModuleName, banktypes.ModuleName, distrtypes.ModuleName,
 		stakingtypes.ModuleName, slashingtypes.ModuleName, govtypes.ModuleName, minttypes.ModuleName,
 		ibchost.ModuleName, genutiltypes.ModuleName, evidencetypes.ModuleName, authz.ModuleName, feegrant.ModuleName,
-		ibctransfertypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName, wasm.ModuleName,
-		ibcfeetypes.ModuleName, chainmaintypes.ModuleName, supplytypes.ModuleName, nfttypes.ModuleName,
-		paramstypes.ModuleName, upgradetypes.ModuleName, vestingtypes.ModuleName,
+		ibctransfertypes.ModuleName, icatypes.ModuleName, icaauthmoduletypes.ModuleName, ibcfeetypes.ModuleName,
+		wasm.ModuleName, chainmaintypes.ModuleName, supplytypes.ModuleName, nfttypes.ModuleName, paramstypes.ModuleName,
+		upgradetypes.ModuleName, vestingtypes.ModuleName,
 	)
 
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
