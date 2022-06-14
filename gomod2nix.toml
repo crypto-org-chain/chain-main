@@ -1,4 +1,4 @@
-schema = 1
+schema = 3
 
 [mod]
   [mod."bazil.org/fuse"]
@@ -83,7 +83,7 @@ schema = 1
   [mod."github.com/CosmWasm/wasmd"]
     version = "v0.27.1-0.20220530042031-4126e5b964df"
     hash = "sha256-89/cpT2JeElncHX9SDPqK9sFxUzow2cgNtXncKqM/GM="
-    replaced = "github.com/devashishdxt/wasmd"
+    replaced = "github.com/crypto-org-chain/wasmd"
   [mod."github.com/CosmWasm/wasmvm"]
     version = "v1.0.1-0.20220608063751-1afba37bfd0e"
     hash = "sha256-2ujrCfckBO2O2t/FSPF7Me6sWgvR9VbNT+wuGO98SIE="
@@ -206,8 +206,8 @@ schema = 1
     version = "v1.2.0"
     hash = "sha256-IxNmtELycM+XVzg4qBv04hAJUT3nSWuyP9R+8zc9LmU="
   [mod."github.com/bketelsen/crypt"]
-    version = "v0.0.4"
-    hash = "sha256-N20MtsAH7dG2stzNLV/qhrbUJMiW8hzENlEL77RGgNQ="
+    version = "v0.0.3-0.20200106085610-5cbc8cc4026c"
+    hash = "sha256-d44/dm431lvmGZQBJjDOWfIa/GX/jNE9y4t49WO1a/U="
   [mod."github.com/btcsuite/btcd"]
     version = "v0.22.0-beta"
     hash = "sha256-W/g/27jZmKXPsDtlEfr5h1n68c1LDMNPNTjIfuCMNZM="
@@ -633,9 +633,6 @@ schema = 1
   [mod."github.com/gopherjs/gopherjs"]
     version = "v0.0.0-20181017120253-0766667cb4d1"
     hash = "sha256-AuXnjjoLbFZ85Oi8sldH117MBh+yCUB9HU5Y5syJ7Lg="
-  [mod."github.com/gordonklaus/ineffassign"]
-    version = "v0.0.0-20200309095847-7953dde2c7bf"
-    hash = "sha256-v6Tm3XEsXZQQYyAzO8tSMTS7vSDZP1bPWwq615kUGSE="
   [mod."github.com/gorilla/context"]
     version = "v1.1.1"
     hash = "sha256-pA7z/VCUIHuoP4wOeeJx+tLUFx7G8HQBjK6yfZCF5A4="
@@ -981,9 +978,6 @@ schema = 1
   [mod."github.com/niemeyer/pretty"]
     version = "v0.0.0-20200227124842-a10e7caefd8e"
     hash = "sha256-m2D7hWZrDst0rb91lmjSuNrzBQbmQ0Oe2UOp3wn8qso="
-  [mod."github.com/nishanths/predeclared"]
-    version = "v0.0.0-20200524104333-86fad755b4d3"
-    hash = "sha256-A7bLZOBo/KAlu6/IeS4PHNlWRD2UQAh7EkK3SWCzLN8="
   [mod."github.com/nxadm/tail"]
     version = "v1.4.8"
     hash = "sha256-JP3RZVZLFhaBZ2VdF/fbyMPMLqrPZDjP98f1ey2OePo="
@@ -1046,12 +1040,6 @@ schema = 1
   [mod."github.com/otiai10/copy"]
     version = "v1.6.0"
     hash = "sha256-fz04JUYSXlgkqcrtQRJtlJOlhcRR86NKm4vOhv/hbiE="
-  [mod."github.com/otiai10/curr"]
-    version = "v1.0.0"
-    hash = "sha256-B6Uas1pr7Bh7lGshRUwjKsskt1L/IEbocY4L3BQQ/Do="
-  [mod."github.com/otiai10/mint"]
-    version = "v1.3.2"
-    hash = "sha256-xCoIj/5ft4FPWgAbOYD8KIRvI+qlniYeMd6GW+G0iBA="
   [mod."github.com/pact-foundation/pact-go"]
     version = "v1.0.4"
     hash = "sha256-4w92Zo53qmhuIxTmnfo9llSTPvkJsU5mRLnfit/lReg="

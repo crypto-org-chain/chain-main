@@ -255,6 +255,8 @@ github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f h1:
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f/go.mod h1:TJ0bt9M3eOD5V6ZCUvenKA1ODkvOcYuJDMBr9/XW1QY=
 github.com/crypto-org-chain/keyring v1.1.6-fixes h1:AUFSu56NY6XobY6XfRoDx6v3loiOrHK5MNUm32GEjwA=
 github.com/crypto-org-chain/keyring v1.1.6-fixes/go.mod h1:0mkLWIoZuQ7uBoospo5Q9zIpqq6rYCPJDSUdeCJvPM8=
+github.com/crypto-org-chain/wasmd v0.27.1-0.20220530042031-4126e5b964df h1:tZEW36NxP2lVkgL5fPd7jZPIRqDEDSJJhczjmVHOtwM=
+github.com/crypto-org-chain/wasmd v0.27.1-0.20220530042031-4126e5b964df/go.mod h1:iDwnZv2EpXT2eeOfAIXMAfNUDAKAmxd5J+lBN1Tt0bE=
 github.com/cyphar/filepath-securejoin v0.2.2/go.mod h1:FpkQEhXnPnOthhzymB7CGsFk2G9VLXONKD9G7QGMM+4=
 github.com/danieljoos/wincred v1.0.2 h1:zf4bhty2iLuwgjgpraD2E9UbvO+fe54XXGJbOwe23fU=
 github.com/danieljoos/wincred v1.0.2/go.mod h1:SnuYRW9lp1oJrZX/dXJqr0cPK5gYXqx3EJbmjhLdK9U=
@@ -267,8 +269,6 @@ github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0
 github.com/denisenkom/go-mssqldb v0.12.0/go.mod h1:iiK0YP1ZeepvmBQk/QpLEhhTNJgfzrpArPY/aFvc9yU=
 github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f h1:U5y3Y5UE0w7amNe7Z5G/twsBW0KEalRQXZzf8ufSh9I=
 github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f/go.mod h1:xH/i4TFMt8koVQZ6WFms69WAsDWr2XsYL3Hkl7jkoLE=
-github.com/devashishdxt/wasmd v0.27.1-0.20220530042031-4126e5b964df h1:driAiXtVIDVB5X/MS6KqmeCkZ83FAH64b8ZuSLg2/vA=
-github.com/devashishdxt/wasmd v0.27.1-0.20220530042031-4126e5b964df/go.mod h1:iDwnZv2EpXT2eeOfAIXMAfNUDAKAmxd5J+lBN1Tt0bE=
 github.com/dgraph-io/badger/v2 v2.2007.2 h1:EjjK0KqwaFMlPin1ajhP943VPENHJdEz1KLIegjaI3k=
 github.com/dgraph-io/badger/v2 v2.2007.2/go.mod h1:26P/7fbL4kUZVEVKLAKXkBXKOydDmM2p1e+NhhnBCAE=
 github.com/dgraph-io/ristretto v0.0.3-0.20200630154024-f66de99634de/go.mod h1:KPxhHT9ZxKefz+PCeOGsrHpl1qZ7i70dGTu2u+Ahh6E=
