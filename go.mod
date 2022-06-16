@@ -152,4 +152,4 @@ replace github.com/cosmos/ibc-go/v3 => github.com/cosmos/ibc-go/v3 v3.0.0-alpha1
 
 replace github.com/CosmWasm/wasmd => github.com/crypto-org-chain/wasmd v0.27.1-0.20220530042031-4126e5b964df
 
-replace github.com/CosmWasm/wasmvm => github.com/CosmWasm/wasmvm v1.0.1-0.20220608063751-1afba37bfd0e
+replace github.com/CosmWasm/wasmvm => github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e

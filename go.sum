@@ -81,8 +81,6 @@ github.com/BurntSushi/toml v1.1.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbi
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d h1:nalkkPQcITbvhmL4+C4cKA87NW0tfm3Kl9VXRoPywFg=
 github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d/go.mod h1:URdX5+vg25ts3aCh8H5IFZybJYKWhJHYMTnf+ULtoC4=
-github.com/CosmWasm/wasmvm v1.0.1-0.20220608063751-1afba37bfd0e h1:TGoMXMkzOytVWzvHjCR9rCpAKuIisYEiVbpPlwIQPpo=
-github.com/CosmWasm/wasmvm v1.0.1-0.20220608063751-1afba37bfd0e/go.mod h1:ei0xpvomwSdONsxDuONzV7bL1jSET1M8brEx0FCXc+A=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/zstd v1.4.1/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
@@ -257,6 +255,8 @@ github.com/crypto-org-chain/keyring v1.1.6-fixes h1:AUFSu56NY6XobY6XfRoDx6v3loiO
 github.com/crypto-org-chain/keyring v1.1.6-fixes/go.mod h1:0mkLWIoZuQ7uBoospo5Q9zIpqq6rYCPJDSUdeCJvPM8=
 github.com/crypto-org-chain/wasmd v0.27.1-0.20220530042031-4126e5b964df h1:tZEW36NxP2lVkgL5fPd7jZPIRqDEDSJJhczjmVHOtwM=
 github.com/crypto-org-chain/wasmd v0.27.1-0.20220530042031-4126e5b964df/go.mod h1:iDwnZv2EpXT2eeOfAIXMAfNUDAKAmxd5J+lBN1Tt0bE=
+github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e h1:9Nwpy5gr0Olxrq4/5NGZpI+2mkQcctLaNpLszdDZOvs=
+github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e/go.mod h1:ei0xpvomwSdONsxDuONzV7bL1jSET1M8brEx0FCXc+A=
 github.com/cyphar/filepath-securejoin v0.2.2/go.mod h1:FpkQEhXnPnOthhzymB7CGsFk2G9VLXONKD9G7QGMM+4=
 github.com/danieljoos/wincred v1.0.2 h1:zf4bhty2iLuwgjgpraD2E9UbvO+fe54XXGJbOwe23fU=
 github.com/danieljoos/wincred v1.0.2/go.mod h1:SnuYRW9lp1oJrZX/dXJqr0cPK5gYXqx3EJbmjhLdK9U=

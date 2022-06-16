@@ -5,7 +5,3 @@
 [submodule "wasmd"]
 	path = third_party/wasmd
 	url = https://github.com/CosmWasm/wasmd.git
-
-[submodule "wasmvm"]
-	path = third_party/wasmvm
-	url = https://github.com/CosmWasm/wasmvm.git

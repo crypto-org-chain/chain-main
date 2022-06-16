@@ -85,9 +85,9 @@ schema = 3
     hash = "sha256-89/cpT2JeElncHX9SDPqK9sFxUzow2cgNtXncKqM/GM="
     replaced = "github.com/crypto-org-chain/wasmd"
   [mod."github.com/CosmWasm/wasmvm"]
-    version = "v1.0.1-0.20220608063751-1afba37bfd0e"
-    hash = "sha256-2ujrCfckBO2O2t/FSPF7Me6sWgvR9VbNT+wuGO98SIE="
-    replaced = "github.com/CosmWasm/wasmvm"
+    version = "v1.0.1-0.20220616065451-935f00e54d0e"
+    hash = "sha256-zsnIDb1NvSnKPqWcrmDsykIbTmwo6vHZTbBQI1Cph3c="
+    replaced = "github.com/crypto-org-chain/wasmvm"
   [mod."github.com/DATA-DOG/go-sqlmock"]
     version = "v1.5.0"
     hash = "sha256-pN1DharFi+9vxIMojT8fdSKYWcPHgfFEGFVhPlw3dqc="
