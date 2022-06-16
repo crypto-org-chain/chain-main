@@ -24,6 +24,7 @@ let
   build-chain-maind = { ledger_zemu ? false, network ? "mainnet" }: pkgs.buildGoApplication rec {
     pname = "chain-maind";
     version = "4.0.0";
+    go = pkgs.go_1_17;
     src = lib.cleanSourceWith {
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
@@ -31,12 +32,13 @@ let
     modules = ./gomod2nix.toml;
     pwd = src; # needed to support replace
     subPackages = [ "cmd/chain-maind" ];
+    buildInputs = [ pkgs.libwasmvm ];
     CGO_ENABLED = "1";
     outputs = [
       "out"
       "instrumented"
     ];
-    buildTags = "cgo,ledger,!test_ledger_mock,!ledger_mock," +
+    buildTags = "sys_wasmvm,cgo,ledger,!test_ledger_mock,!ledger_mock," +
       (if ledger_zemu then "ledger_zemu" else "!ledger_zemu") +
       (lib.optionalString (network == "testnet") ",testnet");
     buildFlags = "-tags ${buildTags}";
@@ -60,7 +62,7 @@ let
       mv ./${instrumentedBinary} $instrumented/bin/
     '';
     preFixup = ''
-      find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${pkgs.go} || true
+      find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
     '';
   };
 in
@@ -111,6 +113,8 @@ rec {
     "^integration_tests/.*\\.py$"
     "^integration_tests/configs$"
     "^integration_tests/configs/.*"
+    "^integration_tests/contracts$"
+    "^integration_tests/contracts/.*"
     "^integration_tests/upgrade-test.nix$"
     "^integration_tests/install_solo_machine.nix$"
     "^integration_tests/upgrade-test.patch$"
