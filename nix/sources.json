@@ -1,14 +1,14 @@
 {
     "gomod2nix": {
-        "branch": "fix-regex",
+        "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
         "homepage": null,
-        "owner": "yihuang",
+        "owner": "tweag",
         "repo": "gomod2nix",
-        "rev": "af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f",
-        "sha256": "1268jddzg2kf8jbbkc4wsvpq39lldi6cfp6vsl0sclg1k2r10hc9",
+        "rev": "fb910de8cc78c3e820d24f9b718614ea255af469",
+        "sha256": "0wdpdjy91a9g3zxf3588l2hyih11hjarhwil7v3z28dzgh9l7584",
         "type": "tarball",
-        "url": "https://github.com/yihuang/gomod2nix/archive/af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f.tar.gz",
+        "url": "https://github.com/tweag/gomod2nix/archive/fb910de8cc78c3e820d24f9b718614ea255af469.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
@@ -45,6 +45,18 @@
         "sha256": "0d7s4ckdamivr94kq6wdjl5s9iicdpg4whbicqqiqx0yrn8smxld",
         "type": "tarball",
         "url": "https://github.com/cosmos/relayer/archive/82d0fe787cbf2c69b961dff45c85b33c75ca0ad9.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "wasmvm": {
+        "branch": "v1.0.0",
+        "description": "Go bindings to the running cosmwasm contracts with wasmer ",
+        "homepage": null,
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "bc49a2f4842d023c0038798f343b56f3f0530646",
+        "sha256": "1zlkrs8bxpmxcn9x51b4q3vmf2r5lp6w95a2ckd3wbq5zjcbhvp2",
+        "type": "tarball",
+        "url": "https://github.com/CosmWasm/wasmvm/archive/bc49a2f4842d023c0038798f343b56f3f0530646.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
