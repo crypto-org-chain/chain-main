@@ -126,6 +126,7 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmclient "github.com/CosmWasm/wasmd/x/wasm/client"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
+	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
@@ -704,7 +705,19 @@ func New(
 
 		ctx.Logger().Info("start to run module migrations...")
 
-		return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		var newVM module.VersionMap
+		newVM, err = app.mm.RunMigrations(ctx, app.configurator, fromVM)
+		if err != nil {
+			return newVM, err
+		}
+
+		// Override wasm params after init genesis
+		params := app.WasmKeeper.GetParams(ctx)
+		params.CodeUploadAccess = wasmtypes.AllowNobody
+		params.InstantiateDefaultPermission = wasmtypes.AccessTypeNobody
+		app.WasmKeeper.SetParams(ctx, params)
+
+		return newVM, err
 	})
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()

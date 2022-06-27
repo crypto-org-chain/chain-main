@@ -318,6 +318,34 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
 
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "uploadAccess",
+            home=cli.data_dir,
+            node=cli.node_dir,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '{"permission":"Nobody"}', rsp
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "instantiateAccess",
+            home=cli.data_dir,
+            node=cli.node_dir,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '"Nobody"', rsp
+
 
 def test_cancel_upgrade(cluster):
     """
