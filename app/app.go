@@ -727,7 +727,7 @@ func New(
 
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{icacontrollertypes.StoreKey, icahosttypes.StoreKey, icaauthmoduletypes.StoreKey},
+			Added: []string{icacontrollertypes.StoreKey, icahosttypes.StoreKey, icaauthmoduletypes.StoreKey, wasm.StoreKey},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades

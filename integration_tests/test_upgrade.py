@@ -326,7 +326,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             "wasm",
             "uploadAccess",
             home=cli.data_dir,
-            node=cli.node_dir,
+            node=cli.node_rpc,
             output="json",
         )
     )
@@ -340,7 +340,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             "wasm",
             "instantiateAccess",
             home=cli.data_dir,
-            node=cli.node_dir,
+            node=cli.node_rpc,
             output="json",
         )
     )
