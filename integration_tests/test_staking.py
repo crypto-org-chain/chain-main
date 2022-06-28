@@ -136,7 +136,7 @@ def test_join_validator(cluster):
     addr = cluster.address("validator", i)
     # transfer 1cro from ecosystem account
     assert cluster.transfer(cluster.address("ecosystem"), addr, "1cro")["code"] == 0
-    assert cluster.balance(addr) == 10 ** 8
+    assert cluster.balance(addr) == 10**8
 
     # start the node
     cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
@@ -160,7 +160,7 @@ def test_join_validator(cluster):
     val = cluster.validator(val_addr)
     assert not val["jailed"]
     assert val["status"] == "BOND_STATUS_BONDED"
-    assert val["tokens"] == str(10 ** 8)
+    assert val["tokens"] == str(10**8)
     assert val["description"]["moniker"] == "new joined"
     assert val["commission"]["commission_rates"] == {
         "rate": "0.100000000000000000",

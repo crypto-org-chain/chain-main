@@ -42,7 +42,7 @@ def test_sign_offline(cluster):
     alice_addr = cluster.address("signer1")
     cluster.transfer(alice_addr, offline_addr, "100cro")
     wait_for_new_blocks(cluster, 2)
-    assert cluster.balance(offline_addr) == 100 * 10 ** 8
+    assert cluster.balance(offline_addr) == 100 * 10**8
 
     ten_cro = CROCoin(10, network_config.coin_denom, network_config)
     # make transaction without/with fee

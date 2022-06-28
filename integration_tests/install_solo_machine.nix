@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> { } }:
+{ stdenv, fetchurl, lib }:
 let
   version = "v0.1.2";
   srcUrl = {
@@ -12,13 +12,13 @@ let
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/macos-latest-${version}.tar.gz";
       sha256 = "sha256-zx4342stMYzgQDXAKwnZKSfdLynGIApOFKZ+CjRCyaE=";
     };
-  }.${pkgs.stdenv.system} or (throw
-    "Unsupported system: ${pkgs.stdenv.system}");
+  }.${stdenv.system} or (throw
+    "Unsupported system: ${stdenv.system}");
 in
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   name = "solomachine";
   inherit version;
-  src = pkgs.fetchurl srcUrl;
+  src = fetchurl srcUrl;
   sourceRoot = ".";
   installPhase = ''
     echo "installing solomachine ..."
@@ -27,5 +27,5 @@ pkgs.stdenv.mkDerivation {
     install -m 755 -v -D * $out/solomachine
     echo `env`
   '';
-  meta = with pkgs.lib; { platforms = with platforms; linux ++ darwin; };
+  meta = with lib; { platforms = with platforms; linux ++ darwin; };
 }

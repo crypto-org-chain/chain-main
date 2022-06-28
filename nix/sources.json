@@ -5,10 +5,10 @@
         "homepage": null,
         "owner": "tweag",
         "repo": "gomod2nix",
-        "rev": "fb910de8cc78c3e820d24f9b718614ea255af469",
-        "sha256": "0wdpdjy91a9g3zxf3588l2hyih11hjarhwil7v3z28dzgh9l7584",
+        "rev": "40d32f82fc60d66402eb0972e6e368aeab3faf58",
+        "sha256": "0li17ynbg2wg0xqy655m5rmcw905sbv7d4ir35z7s5pg1yhhzxkp",
         "type": "tarball",
-        "url": "https://github.com/tweag/gomod2nix/archive/fb910de8cc78c3e820d24f9b718614ea255af469.tar.gz",
+        "url": "https://github.com/tweag/gomod2nix/archive/40d32f82fc60d66402eb0972e6e368aeab3faf58.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
@@ -24,27 +24,27 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "release-21.11",
+        "branch": "22.05",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b61bf7a96aa6ddd3c425fa1db8c45acfdd82e36b",
-        "sha256": "0dw23adh6b0jxa58nba31bf4033cd6yiwzgzp5bbl4zf2jaw9prh",
+        "rev": "ce6aa13369b667ac2542593170993504932eb836",
+        "sha256": "0d643wp3l77hv2pmg2fi7vyxn4rwy0iyr8djcw1h5x72315ck9ik",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/b61bf7a96aa6ddd3c425fa1db8c45acfdd82e36b.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/ce6aa13369b667ac2542593170993504932eb836.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "relayer": {
-        "branch": "master",
-        "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
-        "homepage": null,
-        "owner": "cosmos",
-        "repo": "relayer",
-        "rev": "82d0fe787cbf2c69b961dff45c85b33c75ca0ad9",
-        "sha256": "0d7s4ckdamivr94kq6wdjl5s9iicdpg4whbicqqiqx0yrn8smxld",
+    "rocksdb": {
+        "branch": "v6.29.5",
+        "description": "A library that provides an embeddable, persistent key-value store for fast storage.",
+        "homepage": "http://rocksdb.org",
+        "owner": "facebook",
+        "repo": "rocksdb",
+        "rev": "da11a59034584ea2d0911268b8136e5249d6b692",
+        "sha256": "1fr3lhkakjrplgmms07amrxfiasz1b4vl2rppgx50k8gcy0p1awv",
         "type": "tarball",
-        "url": "https://github.com/cosmos/relayer/archive/82d0fe787cbf2c69b961dff45c85b33c75ca0ad9.tar.gz",
+        "url": "https://github.com/facebook/rocksdb/archive/da11a59034584ea2d0911268b8136e5249d6b692.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "wasmvm": {
