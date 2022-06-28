@@ -108,6 +108,10 @@ changelog:
 snapshot:
   name_template: "{{ .Tag }}-next"
 
+release:
+  draft: true
+  mode: append
+
 # brews:
 #   - name: "chain-maind"
 #     description: "chain-main daemon"

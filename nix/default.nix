@@ -39,6 +39,22 @@ import sources.nixpkgs {
         doCheck = false;
       };
     })
+    (_: pkgs: {
+      test-env = pkgs.poetry2nix.mkPoetryEnv { projectDir = ./integration_tests; };
+      lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
+        EXIT_STATUS=0
+        go mod verify || EXIT_STATUS=$?
+        flake8 --show-source --count --statistics \
+          --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
+          || EXIT_STATUS=$?
+        find . -name "*.nix" -type f | xargs nixpkgs-fmt --check || EXIT_STATUS=$?
+        exit $EXIT_STATUS
+      '';
+      solomachine = pkgs.callPackage ./integration_tests/install_solo_machine.nix { };
+      chain-maind-zemu = pkgs.callPackage ../. {
+        ledger_zemu = true;
+      };
+    })
   ];
   config = { };
   inherit system;
