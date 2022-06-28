@@ -47,7 +47,7 @@ buildGoApplication rec {
   CGO_ENABLED = "1";
   outputs = [
     "out"
-    # "instrumented"
+    "instrumented"
   ];
   tags = [
     "sys_wasmvm"
@@ -68,6 +68,7 @@ buildGoApplication rec {
 
   postInstall = lib.optionalString stdenv.isDarwin ''
     install_name_tool -change @rpath/libwasmvm.dylib "${libwasmvm}/lib/libwasmvm.dylib" $out/bin/chain-maind
+    install_name_tool -change @rpath/libwasmvm.dylib "${libwasmvm}/lib/libwasmvm.dylib" $instrumented/bin/${instrumentedBinary}
   '';
 
   instrumentedBinary = "chain-maind-inst";

@@ -21,4 +21,9 @@ pkgs.mkShell {
     chain-maind-zemu
     chain-maind-zemu.instrumented
   ];
+  shellHook = ''
+    export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
+    export CHAIN_MAIND="${pkgs.chain-maind}/bin/chain-maind"
+    export SOLO_MACHINE_HOME="${pkgs.solomachine}/solomachine"
+  '';
 }
