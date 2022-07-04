@@ -12,6 +12,7 @@ from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
 from .utils import (
+    BLOCK_BROADCASTING,
     cluster_fixture,
     parse_events,
     wait_for_block,
@@ -226,7 +227,7 @@ def upgrade(cluster, plan_name, target_height):
     cluster.reload_supervisor()
 
     # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2, 600)
+    wait_for_block(cluster, target_height + 4, 600)
 
 
 @pytest.mark.skip(reason="tested in test_manual_upgrade_all")
@@ -255,7 +256,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     upgrade(cluster, "v2.0.0", target_height)
 
 
-def test_manual_upgrade_all(cosmovisor_cluster):
+def test_manual_upgrade_all(cosmovisor_cluster, tmp_path):
     test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
 
@@ -305,6 +306,9 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     upgrade(cluster, "v4.0.0", target_height)
 
     cli = cluster.cosmos_cli()
+    cli1 = cluster.cosmos_cli(i=1)
+
+    # check icaauth params
     rsp = json.loads(
         cli.raw(
             "query",
@@ -318,6 +322,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
 
+    # check wasmd params
     rsp = json.loads(
         cli.raw(
             "query",
@@ -346,7 +351,87 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     )
     assert rsp["value"] == '"Nobody"', rsp
 
+    # verify that new code cannot be uploaded into wasmd
+    wasm_path = Path(__file__).parent / "contracts/cw_nameservice.wasm"
 
+    # try to upload wasm code
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "wasm",
+            "store",
+            wasm_path,
+            "--gas",
+            "5000000",
+            "-y",
+            from_="community",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            output="json",
+            broadcast_mode=BLOCK_BROADCASTING,
+        )
+    )
+
+    assert rsp["raw_log"].endswith("can not create code: unauthorized")
+
+    propose_and_pass(
+        cluster,
+        "param-change",
+        {
+            "title": "Give wasmd upload access to everybody",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "wasm",
+                    "key": "uploadAccess",
+                    "value": {"permission": "Everybody"},
+                }
+            ],
+            "deposit": "100000000basecro",
+        },
+    )
+
+    # check wasmd params
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "uploadAccess",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '{"permission":"Everybody"}', rsp
+
+    # try to upload wasm code
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "wasm",
+            "store",
+            wasm_path,
+            "--gas",
+            "5000000",
+            "-y",
+            from_="community",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            output="json",
+            broadcast_mode=BLOCK_BROADCASTING,
+        )
+    )
+
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+
+@pytest.mark.skip(reason="temp")
 def test_cancel_upgrade(cluster):
     """
     use default cluster
@@ -386,6 +471,7 @@ def test_cancel_upgrade(cluster):
     wait_for_block(cluster, upgrade_height + 2)
 
 
+@pytest.mark.skip(reason="temp")
 def test_manual_export(cosmovisor_cluster):
     """
     - do chain state export, override the genesis time to the genesis file
