@@ -3,6 +3,7 @@
 , buildGoApplication
 , nix-gitignore
 , go_1_18
+, go_1_17
 , libwasmvm
 , rocksdb ? null
 , db_backend ? "goleveldb"
@@ -36,7 +37,9 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.0.0";
-  go = go_1_18;
+  # TODO need to wait for nixpkgs to update mac sdk before using go_1_18 on mac
+  # https://github.com/NixOS/nixpkgs/issues/101229
+  go = if stdenv.isDarwin then go_1_17 else go_1_18;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
