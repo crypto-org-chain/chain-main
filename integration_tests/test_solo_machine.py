@@ -38,7 +38,7 @@ def parse_output(output, return_json=True):
         return s
 
 
-CRO_DECIMALS = 10 ** 8
+CRO_DECIMALS = 10**8
 SOLO_HD_PATH = "m/44'/394'/0'/0/0"
 SOLO_ACCOUNT_PREFIX = "cro"
 SOLO_ADDRESS_ALGO = "secp256k1"
