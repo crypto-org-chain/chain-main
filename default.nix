@@ -2,7 +2,7 @@
 , stdenv
 , buildGoApplication
 , nix-gitignore
-, go_1_17
+, go_1_18
 , libwasmvm
 , rocksdb ? null
 , db_backend ? "goleveldb"
@@ -36,7 +36,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.0.0";
-  go = go_1_17;
+  go = go_1_18;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
