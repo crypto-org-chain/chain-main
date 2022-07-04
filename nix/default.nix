@@ -39,6 +39,28 @@ import sources.nixpkgs {
         doCheck = false;
       };
     })
+    (pkgs: prev: {
+      go = pkgs.go_1_17;
+      test-env = pkgs.callPackage ./testenv.nix { };
+      lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
+        EXIT_STATUS=0
+        ${pkgs.go}/bin/go mod verify || EXIT_STATUS=$?
+        ${pkgs.test-env}/bin/flake8 --show-source --count --statistics \
+          --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
+          || EXIT_STATUS=$?
+        find . -name "*.nix" -type f | xargs ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check || EXIT_STATUS=$?
+        exit $EXIT_STATUS
+      '';
+      solomachine = pkgs.callPackage ../integration_tests/install_solo_machine.nix { };
+      chain-maind-zemu = pkgs.callPackage ../. {
+        ledger_zemu = true;
+      };
+      rocksdb = (prev.rocksdb.overrideAttrs (old: rec {
+        pname = "rocksdb";
+        version = "6.29.5";
+        src = sources.rocksdb;
+      })).override { enableJemalloc = true; };
+    })
   ];
   config = { };
   inherit system;

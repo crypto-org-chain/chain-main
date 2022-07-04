@@ -82,19 +82,16 @@ def test_ibc_genesis_channel(cluster):
     denom_hash = (
         hashlib.sha256("transfer/channel-0/basecro".encode()).hexdigest().upper()
     )
-    assert (
-        json.loads(
-            raw(
-                "query",
-                "ibc-transfer",
-                "denom-trace",
-                denom_hash,
-                node=cluster["ibc-1"].node_rpc(0),
-                output="json",
-            )
+    assert json.loads(
+        raw(
+            "query",
+            "ibc-transfer",
+            "denom-trace",
+            denom_hash,
+            node=cluster["ibc-1"].node_rpc(0),
+            output="json",
         )
-        == {"denom_trace": {"path": "transfer/channel-0", "base_denom": "basecro"}}
-    )
+    ) == {"denom_trace": {"path": "transfer/channel-0", "base_denom": "basecro"}}
     # # recipient get the coins
     assert json.loads(
         raw(

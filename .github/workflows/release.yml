@@ -1,0 +1,85 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  nix-bundle-x86_64:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    environment: release
+    steps:
+      - uses: cachix/install-nix-action@v16
+        with:
+          nix_path: nixpkgs=channel:nixos-21.11
+      - uses: cachix/cachix-action@v10
+        with:
+          name: crypto-com
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: build linux/mac x86_64 binaries
+        run: |
+          PLATFORM="$(uname -s)_x86_64"
+          BUILD_TYPE="tarball"
+          FLAKE="github:${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}"
+
+          nix build -L ${FLAKE}#chain-maind-$BUILD_TYPE
+          cp result chain-main_${GITHUB_REF_NAME:1}_${PLATFORM}.tar.gz
+
+          nix-env -i coreutils -f '<nixpkgs>'
+          sha256sum *.tar.gz > "checksums-$PLATFORM.txt"
+
+          echo 'FILES<<EOF' >> $GITHUB_ENV
+          ls -1 *.tar.gz >> $GITHUB_ENV
+          ls -1 checksums-*.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          cat $GITHUB_ENV
+      - name: upload linux/mac x86_64 binaries
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: "${{ env.FILES }}"
+
+  nix-bundle-aarch64-linux:
+    needs: ["nix-bundle-x86_64"]
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: cachix/install-nix-action@v16
+      - run: |
+         DEBIAN_FRONTEND=noninteractive
+         sudo apt-get update -q -y && sudo apt-get install -q -y qemu-system-aarch64 qemu-efi binfmt-support qemu-user-static
+         mkdir -p ~/.config/nix
+         sudo bash -c "echo system-features = aarch64-linux arm-linux >> /etc/nix/nix.conf"
+      - uses: cachix/cachix-action@v10
+        with:
+          name: crypto-com
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: build linux arm64 binaries
+        env:
+          PLATFORM: Linux_arm64
+        run: |
+          BUILD_TYPE="tarball"
+          FLAKE="github:${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}"
+
+          nix build -L --extra-platforms aarch64-linux ${FLAKE}#packages.aarch64-linux.chain-maind-$BUILD_TYPE
+          cp result chain-main_${GITHUB_REF_NAME:1}_${PLATFORM}.tar.gz
+
+          sha256sum *.tar.gz > checksums-$PLATFORM.txt
+
+          echo 'FILES<<EOF' >> $GITHUB_ENV
+          ls -1 *.tar.gz >> $GITHUB_ENV
+          ls -1 checksums-*.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
+          cat $GITHUB_ENV
+      - name: upload linux arm64 binaries
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: "${{ env.FILES }}"
