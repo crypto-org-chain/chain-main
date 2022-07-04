@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - "v*.*.*"
+
+permissions:
+  contents: write
+
 jobs:
   nix-bundle-x86_64:
     strategy:
