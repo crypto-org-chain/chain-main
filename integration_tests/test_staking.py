@@ -208,40 +208,42 @@ def test_min_self_delegation(cluster):
         find_validator()["status"] == "BOND_STATUS_UNBONDING"
     ), "validator get removed"
 
-# TODO: remove this when nix build issues with main branch of pystarport are resolved https://github.com/crypto-org-chain/chain-main/runs/7209853743?check_suite_focus=true
-def edit_validator(
-        cluster,
-        i,
-        commission_rate=None,
-        new_moniker=None,
-        identity=None,
-        website=None,
-        security_contact=None,
-        details=None,
-    ):
-        cli = cluster.cosmos_cli(i)
 
-        """MsgEditValidator"""
-        options = dict(
-            commission_rate=commission_rate,
-            # description
-            new_moniker=new_moniker,
-            identity=identity,
-            website=website,
-            security_contact=security_contact,
-            details=details,
+# TODO: remove this when nix build issues with main branch of pystarport are resolved
+# https://github.com/crypto-org-chain/chain-main/runs/7209853743?check_suite_focus=true
+def edit_validator(
+    cluster,
+    i,
+    commission_rate=None,
+    new_moniker=None,
+    identity=None,
+    website=None,
+    security_contact=None,
+    details=None,
+):
+    cli = cluster.cosmos_cli(i)
+
+    """MsgEditValidator"""
+    options = dict(
+        commission_rate=commission_rate,
+        # description
+        new_moniker=new_moniker,
+        identity=identity,
+        website=website,
+        security_contact=security_contact,
+        details=details,
+    )
+    return json.loads(
+        cli.raw(
+            "tx",
+            "staking",
+            "edit-validator",
+            "-y",
+            from_=cli.address("validator"),
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            **{k: v for k, v in options.items() if v is not None},
         )
-        return json.loads(
-            cli.raw(
-                "tx",
-                "staking",
-                "edit-validator",
-                "-y",
-                from_=cli.address("validator"),
-                home=cli.data_dir,
-                node=cli.node_rpc,
-                keyring_backend="test",
-                chain_id=cli.chain_id,
-                **{k: v for k, v in options.items() if v is not None},
-            )
-        )
+    )
