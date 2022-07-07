@@ -6258,6 +6258,147 @@ paths:
                       format: byte
       tags:
         - Query
+  '/cosmos/bank/v1beta1/spendable_balances/{address}':
+    get:
+      summary: |-
+        SpendableBalances queries the spenable balance of all coins for a single
+        account.
+      operationId: SpendableBalances
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              balances:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    denom:
+                      type: string
+                    amount:
+                      type: string
+                  description: >-
+                    Coin defines a token with a denomination and an amount.
+
+
+                    NOTE: The amount field is an Int which implements the custom
+                    method
+
+                    signatures required by gogoproto.
+                description: balances is the spendable balances of all the coins.
+              pagination:
+                description: pagination defines the pagination in the response.
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    title: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+            description: >-
+              QuerySpendableBalancesResponse defines the gRPC response structure
+              for querying
+
+              an account's spendable balances.
+        default:
+          description: An unexpected error response
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: address
+          description: address is the address to query spendable balances for.
+          in: path
+          required: true
+          type: string
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+      tags:
+        - Query
   /cosmos/bank/v1beta1/supply:
     get:
       summary: TotalSupply queries the total supply of all coins.
@@ -20903,6 +21044,272 @@ paths:
               RPC method.
       tags:
         - Service
+  '/cosmos/tx/v1beta1/txs/block/{height}':
+    get:
+      summary: GetBlockWithTxs fetches a block with decoded txs.
+      description: 'Since: cosmos-sdk 0.45.2'
+      operationId: GetBlockWithTxs
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/cosmos.tx.v1beta1.GetBlockWithTxsResponse'
+        default:
+          description: An unexpected error response
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                      description: >-
+                        A URL/resource name that uniquely identifies the type of
+                        the serialized
+
+                        protocol buffer message. This string must contain at
+                        least
+
+                        one "/" character. The last segment of the URL's path
+                        must represent
+
+                        the fully qualified name of the type (as in
+
+                        `path/google.protobuf.Duration`). The name should be in
+                        a canonical form
+
+                        (e.g., leading "." is not accepted).
+
+
+                        In practice, teams usually precompile into the binary
+                        all types that they
+
+                        expect it to use in the context of Any. However, for
+                        URLs which use the
+
+                        scheme `http`, `https`, or no scheme, one can optionally
+                        set up a type
+
+                        server that maps type URLs to message definitions as
+                        follows:
+
+
+                        * If no scheme is provided, `https` is assumed.
+
+                        * An HTTP GET on the URL must yield a
+                        [google.protobuf.Type][]
+                          value in binary format, or produce an error.
+                        * Applications are allowed to cache lookup results based
+                        on the
+                          URL, or have them precompiled into a binary to avoid any
+                          lookup. Therefore, binary compatibility needs to be preserved
+                          on changes to types. (Use versioned type names to manage
+                          breaking changes.)
+
+                        Note: this functionality is not currently available in
+                        the official
+
+                        protobuf release, and it is not used for type URLs
+                        beginning with
+
+                        type.googleapis.com.
+
+
+                        Schemes other than `http`, `https` (or the empty scheme)
+                        might be
+
+                        used with implementation specific semantics.
+                    value:
+                      type: string
+                      format: byte
+                      description: >-
+                        Must be a valid serialized protocol buffer of the above
+                        specified type.
+                  description: >-
+                    `Any` contains an arbitrary serialized protocol buffer
+                    message along with a
+
+                    URL that describes the type of the serialized message.
+
+
+                    Protobuf library provides support to pack/unpack Any values
+                    in the form
+
+                    of utility functions or additional generated methods of the
+                    Any type.
+
+
+                    Example 1: Pack and unpack a message in C++.
+
+                        Foo foo = ...;
+                        Any any;
+                        any.PackFrom(foo);
+                        ...
+                        if (any.UnpackTo(&foo)) {
+                          ...
+                        }
+
+                    Example 2: Pack and unpack a message in Java.
+
+                        Foo foo = ...;
+                        Any any = Any.pack(foo);
+                        ...
+                        if (any.is(Foo.class)) {
+                          foo = any.unpack(Foo.class);
+                        }
+
+                     Example 3: Pack and unpack a message in Python.
+
+                        foo = Foo(...)
+                        any = Any()
+                        any.Pack(foo)
+                        ...
+                        if any.Is(Foo.DESCRIPTOR):
+                          any.Unpack(foo)
+                          ...
+
+                     Example 4: Pack and unpack a message in Go
+
+                         foo := &pb.Foo{...}
+                         any, err := ptypes.MarshalAny(foo)
+                         ...
+                         foo := &pb.Foo{}
+                         if err := ptypes.UnmarshalAny(any, foo); err != nil {
+                           ...
+                         }
+
+                    The pack methods provided by protobuf library will by
+                    default use
+
+                    'type.googleapis.com/full.type.name' as the type URL and the
+                    unpack
+
+                    methods only use the fully qualified type name after the
+                    last '/'
+
+                    in the type URL, for example "foo.bar.com/x/y.z" will yield
+                    type
+
+                    name "y.z".
+
+
+
+                    JSON
+
+                    ====
+
+                    The JSON representation of an `Any` value uses the regular
+
+                    representation of the deserialized, embedded message, with
+                    an
+
+                    additional field `@type` which contains the type URL.
+                    Example:
+
+                        package google.profile;
+                        message Person {
+                          string first_name = 1;
+                          string last_name = 2;
+                        }
+
+                        {
+                          "@type": "type.googleapis.com/google.profile.Person",
+                          "firstName": <string>,
+                          "lastName": <string>
+                        }
+
+                    If the embedded message type is well-known and has a custom
+                    JSON
+
+                    representation, that representation will be embedded adding
+                    a field
+
+                    `value` which holds the custom JSON in addition to the
+                    `@type`
+
+                    field. Example (for message [google.protobuf.Duration][]):
+
+                        {
+                          "@type": "type.googleapis.com/google.protobuf.Duration",
+                          "value": "1.212s"
+                        }
+      parameters:
+        - name: height
+          description: height is the height of the block to query.
+          in: path
+          required: true
+          type: string
+          format: int64
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+          format: boolean
+      tags:
+        - Service
   '/cosmos/tx/v1beta1/txs/{hash}':
     get:
       summary: GetTx fetches a tx by hash.
@@ -25457,6 +25864,47 @@ definitions:
     description: >-
       QueryParamsResponse defines the response type for querying x/bank
       parameters.
+  cosmos.bank.v1beta1.QuerySpendableBalancesResponse:
+    type: object
+    properties:
+      balances:
+        type: array
+        items:
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            Coin defines a token with a denomination and an amount.
+
+            NOTE: The amount field is an Int which implements the custom method
+            signatures required by gogoproto.
+        description: balances is the spendable balances of all the coins.
+      pagination:
+        description: pagination defines the pagination in the response.
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+    description: >-
+      QuerySpendableBalancesResponse defines the gRPC response structure for
+      querying
+
+      an account's spendable balances.
   cosmos.bank.v1beta1.QuerySupplyOfResponse:
     type: object
     properties:
@@ -35777,6 +36225,7 @@ definitions:
       - SIGN_MODE_DIRECT
       - SIGN_MODE_TEXTUAL
       - SIGN_MODE_LEGACY_AMINO_JSON
+      - SIGN_MODE_EIP_191
     default: SIGN_MODE_UNSPECIFIED
     description: |-
       SignMode represents a signing mode with its own security guarantees.
@@ -35790,6 +36239,16 @@ definitions:
       from SIGN_MODE_DIRECT
        - SIGN_MODE_LEGACY_AMINO_JSON: SIGN_MODE_LEGACY_AMINO_JSON is a backwards compatibility mode which uses
       Amino JSON and will be removed in the future
+       - SIGN_MODE_EIP_191: SIGN_MODE_EIP_191 specifies the sign mode for EIP 191 signing on the Cosmos
+      SDK. Ref: https://eips.ethereum.org/EIPS/eip-191
+
+      Currently, SIGN_MODE_EIP_191 is registered as a SignMode enum variant,
+      but is not implemented on the SDK by default. To enable EIP-191, you need
+      to pass a custom `TxConfig` that has an implementation of
+      `SignModeHandler` for EIP-191. The SDK may decide to fully support
+      EIP-191 in the future.
+
+      Since: cosmos-sdk 0.45.2
   cosmos.tx.v1beta1.AuthInfo:
     type: object
     properties:
@@ -36289,6 +36748,583 @@ definitions:
       "gasprice",
 
       which must be above some miminum to be accepted into the mempool.
+  cosmos.tx.v1beta1.GetBlockWithTxsResponse:
+    type: object
+    properties:
+      txs:
+        type: array
+        items:
+          $ref: '#/definitions/cosmos.tx.v1beta1.Tx'
+        description: txs are the transactions in the block.
+      block_id:
+        type: object
+        properties:
+          hash:
+            type: string
+            format: byte
+          part_set_header:
+            type: object
+            properties:
+              total:
+                type: integer
+                format: int64
+              hash:
+                type: string
+                format: byte
+            title: PartsetHeader
+        title: BlockID
+      block:
+        type: object
+        properties:
+          header:
+            type: object
+            properties:
+              version:
+                title: basic block info
+                type: object
+                properties:
+                  block:
+                    type: string
+                    format: uint64
+                  app:
+                    type: string
+                    format: uint64
+                description: >-
+                  Consensus captures the consensus rules for processing a block
+                  in the blockchain,
+
+                  including all blockchain data structures and the rules of the
+                  application's
+
+                  state transition machine.
+              chain_id:
+                type: string
+              height:
+                type: string
+                format: int64
+              time:
+                type: string
+                format: date-time
+              last_block_id:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    format: byte
+                  part_set_header:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        format: int64
+                      hash:
+                        type: string
+                        format: byte
+                    title: PartsetHeader
+                title: BlockID
+              last_commit_hash:
+                type: string
+                format: byte
+                title: hashes of block data
+              data_hash:
+                type: string
+                format: byte
+              validators_hash:
+                type: string
+                format: byte
+                title: hashes from the app output from the prev block
+              next_validators_hash:
+                type: string
+                format: byte
+              consensus_hash:
+                type: string
+                format: byte
+              app_hash:
+                type: string
+                format: byte
+              last_results_hash:
+                type: string
+                format: byte
+              evidence_hash:
+                type: string
+                format: byte
+                title: consensus info
+              proposer_address:
+                type: string
+                format: byte
+            description: Header defines the structure of a Tendermint block header.
+          data:
+            type: object
+            properties:
+              txs:
+                type: array
+                items:
+                  type: string
+                  format: byte
+                description: >-
+                  Txs that will be applied by state @ block.Height+1.
+
+                  NOTE: not all txs here are valid.  We're just agreeing on the
+                  order first.
+
+                  This means that block.AppHash does not include these txs.
+            title: Data contains the set of transactions included in the block
+          evidence:
+            type: object
+            properties:
+              evidence:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    duplicate_vote_evidence:
+                      type: object
+                      properties:
+                        vote_a:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              enum:
+                                - SIGNED_MSG_TYPE_UNKNOWN
+                                - SIGNED_MSG_TYPE_PREVOTE
+                                - SIGNED_MSG_TYPE_PRECOMMIT
+                                - SIGNED_MSG_TYPE_PROPOSAL
+                              default: SIGNED_MSG_TYPE_UNKNOWN
+                              description: >-
+                                SignedMsgType is a type of signed message in the
+                                consensus.
+
+                                 - SIGNED_MSG_TYPE_PREVOTE: Votes
+                                 - SIGNED_MSG_TYPE_PROPOSAL: Proposals
+                            height:
+                              type: string
+                              format: int64
+                            round:
+                              type: integer
+                              format: int32
+                            block_id:
+                              type: object
+                              properties:
+                                hash:
+                                  type: string
+                                  format: byte
+                                part_set_header:
+                                  type: object
+                                  properties:
+                                    total:
+                                      type: integer
+                                      format: int64
+                                    hash:
+                                      type: string
+                                      format: byte
+                                  title: PartsetHeader
+                              title: BlockID
+                            timestamp:
+                              type: string
+                              format: date-time
+                            validator_address:
+                              type: string
+                              format: byte
+                            validator_index:
+                              type: integer
+                              format: int32
+                            signature:
+                              type: string
+                              format: byte
+                          description: >-
+                            Vote represents a prevote, precommit, or commit vote
+                            from validators for
+
+                            consensus.
+                        vote_b:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                              enum:
+                                - SIGNED_MSG_TYPE_UNKNOWN
+                                - SIGNED_MSG_TYPE_PREVOTE
+                                - SIGNED_MSG_TYPE_PRECOMMIT
+                                - SIGNED_MSG_TYPE_PROPOSAL
+                              default: SIGNED_MSG_TYPE_UNKNOWN
+                              description: >-
+                                SignedMsgType is a type of signed message in the
+                                consensus.
+
+                                 - SIGNED_MSG_TYPE_PREVOTE: Votes
+                                 - SIGNED_MSG_TYPE_PROPOSAL: Proposals
+                            height:
+                              type: string
+                              format: int64
+                            round:
+                              type: integer
+                              format: int32
+                            block_id:
+                              type: object
+                              properties:
+                                hash:
+                                  type: string
+                                  format: byte
+                                part_set_header:
+                                  type: object
+                                  properties:
+                                    total:
+                                      type: integer
+                                      format: int64
+                                    hash:
+                                      type: string
+                                      format: byte
+                                  title: PartsetHeader
+                              title: BlockID
+                            timestamp:
+                              type: string
+                              format: date-time
+                            validator_address:
+                              type: string
+                              format: byte
+                            validator_index:
+                              type: integer
+                              format: int32
+                            signature:
+                              type: string
+                              format: byte
+                          description: >-
+                            Vote represents a prevote, precommit, or commit vote
+                            from validators for
+
+                            consensus.
+                        total_voting_power:
+                          type: string
+                          format: int64
+                        validator_power:
+                          type: string
+                          format: int64
+                        timestamp:
+                          type: string
+                          format: date-time
+                      description: >-
+                        DuplicateVoteEvidence contains evidence of a validator
+                        signed two conflicting votes.
+                    light_client_attack_evidence:
+                      type: object
+                      properties:
+                        conflicting_block:
+                          type: object
+                          properties:
+                            signed_header:
+                              type: object
+                              properties:
+                                header:
+                                  type: object
+                                  properties:
+                                    version:
+                                      title: basic block info
+                                      type: object
+                                      properties:
+                                        block:
+                                          type: string
+                                          format: uint64
+                                        app:
+                                          type: string
+                                          format: uint64
+                                      description: >-
+                                        Consensus captures the consensus rules
+                                        for processing a block in the
+                                        blockchain,
+
+                                        including all blockchain data structures
+                                        and the rules of the application's
+
+                                        state transition machine.
+                                    chain_id:
+                                      type: string
+                                    height:
+                                      type: string
+                                      format: int64
+                                    time:
+                                      type: string
+                                      format: date-time
+                                    last_block_id:
+                                      type: object
+                                      properties:
+                                        hash:
+                                          type: string
+                                          format: byte
+                                        part_set_header:
+                                          type: object
+                                          properties:
+                                            total:
+                                              type: integer
+                                              format: int64
+                                            hash:
+                                              type: string
+                                              format: byte
+                                          title: PartsetHeader
+                                      title: BlockID
+                                    last_commit_hash:
+                                      type: string
+                                      format: byte
+                                      title: hashes of block data
+                                    data_hash:
+                                      type: string
+                                      format: byte
+                                    validators_hash:
+                                      type: string
+                                      format: byte
+                                      title: >-
+                                        hashes from the app output from the prev
+                                        block
+                                    next_validators_hash:
+                                      type: string
+                                      format: byte
+                                    consensus_hash:
+                                      type: string
+                                      format: byte
+                                    app_hash:
+                                      type: string
+                                      format: byte
+                                    last_results_hash:
+                                      type: string
+                                      format: byte
+                                    evidence_hash:
+                                      type: string
+                                      format: byte
+                                      title: consensus info
+                                    proposer_address:
+                                      type: string
+                                      format: byte
+                                  description: >-
+                                    Header defines the structure of a Tendermint
+                                    block header.
+                                commit:
+                                  type: object
+                                  properties:
+                                    height:
+                                      type: string
+                                      format: int64
+                                    round:
+                                      type: integer
+                                      format: int32
+                                    block_id:
+                                      type: object
+                                      properties:
+                                        hash:
+                                          type: string
+                                          format: byte
+                                        part_set_header:
+                                          type: object
+                                          properties:
+                                            total:
+                                              type: integer
+                                              format: int64
+                                            hash:
+                                              type: string
+                                              format: byte
+                                          title: PartsetHeader
+                                      title: BlockID
+                                    signatures:
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          block_id_flag:
+                                            type: string
+                                            enum:
+                                              - BLOCK_ID_FLAG_UNKNOWN
+                                              - BLOCK_ID_FLAG_ABSENT
+                                              - BLOCK_ID_FLAG_COMMIT
+                                              - BLOCK_ID_FLAG_NIL
+                                            default: BLOCK_ID_FLAG_UNKNOWN
+                                            title: >-
+                                              BlockIdFlag indicates which BlcokID the
+                                              signature is for
+                                          validator_address:
+                                            type: string
+                                            format: byte
+                                          timestamp:
+                                            type: string
+                                            format: date-time
+                                          signature:
+                                            type: string
+                                            format: byte
+                                        description: >-
+                                          CommitSig is a part of the Vote included
+                                          in a Commit.
+                                  description: >-
+                                    Commit contains the evidence that a block
+                                    was committed by a set of validators.
+                            validator_set:
+                              type: object
+                              properties:
+                                validators:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      address:
+                                        type: string
+                                        format: byte
+                                      pub_key:
+                                        type: object
+                                        properties:
+                                          ed25519:
+                                            type: string
+                                            format: byte
+                                          secp256k1:
+                                            type: string
+                                            format: byte
+                                        title: >-
+                                          PublicKey defines the keys available for
+                                          use with Tendermint Validators
+                                      voting_power:
+                                        type: string
+                                        format: int64
+                                      proposer_priority:
+                                        type: string
+                                        format: int64
+                                proposer:
+                                  type: object
+                                  properties:
+                                    address:
+                                      type: string
+                                      format: byte
+                                    pub_key:
+                                      type: object
+                                      properties:
+                                        ed25519:
+                                          type: string
+                                          format: byte
+                                        secp256k1:
+                                          type: string
+                                          format: byte
+                                      title: >-
+                                        PublicKey defines the keys available for
+                                        use with Tendermint Validators
+                                    voting_power:
+                                      type: string
+                                      format: int64
+                                    proposer_priority:
+                                      type: string
+                                      format: int64
+                                total_voting_power:
+                                  type: string
+                                  format: int64
+                        common_height:
+                          type: string
+                          format: int64
+                        byzantine_validators:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              address:
+                                type: string
+                                format: byte
+                              pub_key:
+                                type: object
+                                properties:
+                                  ed25519:
+                                    type: string
+                                    format: byte
+                                  secp256k1:
+                                    type: string
+                                    format: byte
+                                title: >-
+                                  PublicKey defines the keys available for use
+                                  with Tendermint Validators
+                              voting_power:
+                                type: string
+                                format: int64
+                              proposer_priority:
+                                type: string
+                                format: int64
+                        total_voting_power:
+                          type: string
+                          format: int64
+                        timestamp:
+                          type: string
+                          format: date-time
+                      description: >-
+                        LightClientAttackEvidence contains evidence of a set of
+                        validators attempting to mislead a light client.
+          last_commit:
+            type: object
+            properties:
+              height:
+                type: string
+                format: int64
+              round:
+                type: integer
+                format: int32
+              block_id:
+                type: object
+                properties:
+                  hash:
+                    type: string
+                    format: byte
+                  part_set_header:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        format: int64
+                      hash:
+                        type: string
+                        format: byte
+                    title: PartsetHeader
+                title: BlockID
+              signatures:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    block_id_flag:
+                      type: string
+                      enum:
+                        - BLOCK_ID_FLAG_UNKNOWN
+                        - BLOCK_ID_FLAG_ABSENT
+                        - BLOCK_ID_FLAG_COMMIT
+                        - BLOCK_ID_FLAG_NIL
+                      default: BLOCK_ID_FLAG_UNKNOWN
+                      title: BlockIdFlag indicates which BlcokID the signature is for
+                    validator_address:
+                      type: string
+                      format: byte
+                    timestamp:
+                      type: string
+                      format: date-time
+                    signature:
+                      type: string
+                      format: byte
+                  description: CommitSig is a part of the Vote included in a Commit.
+            description: >-
+              Commit contains the evidence that a block was committed by a set
+              of validators.
+      pagination:
+        description: pagination defines a pagination for the response.
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            title: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+    description: >-
+      GetBlockWithTxsResponse is the response type for the
+      Service.GetBlockWithTxs method.
+
+
+      Since: cosmos-sdk 0.45.2
   cosmos.tx.v1beta1.GetTxResponse:
     type: object
     properties:
@@ -36932,7 +37968,7 @@ definitions:
             tags are stringified and the log is JSON decoded.
         description: tx_responses is the list of queried TxResponses.
       pagination:
-        description: pagination defines an pagination for the response.
+        description: pagination defines a pagination for the response.
         type: object
         properties:
           next_key:
@@ -36967,6 +38003,7 @@ definitions:
               - SIGN_MODE_DIRECT
               - SIGN_MODE_TEXTUAL
               - SIGN_MODE_LEGACY_AMINO_JSON
+              - SIGN_MODE_EIP_191
             default: SIGN_MODE_UNSPECIFIED
             description: >-
               SignMode represents a signing mode with its own security
@@ -36983,6 +38020,24 @@ definitions:
               from SIGN_MODE_DIRECT
                - SIGN_MODE_LEGACY_AMINO_JSON: SIGN_MODE_LEGACY_AMINO_JSON is a backwards compatibility mode which uses
               Amino JSON and will be removed in the future
+               - SIGN_MODE_EIP_191: SIGN_MODE_EIP_191 specifies the sign mode for EIP 191 signing on the Cosmos
+              SDK. Ref: https://eips.ethereum.org/EIPS/eip-191
+
+
+              Currently, SIGN_MODE_EIP_191 is registered as a SignMode enum
+              variant,
+
+              but is not implemented on the SDK by default. To enable EIP-191,
+              you need
+
+              to pass a custom `TxConfig` that has an implementation of
+
+              `SignModeHandler` for EIP-191. The SDK may decide to fully support
+
+              EIP-191 in the future.
+
+
+              Since: cosmos-sdk 0.45.2
       multi:
         $ref: '#/definitions/cosmos.tx.v1beta1.ModeInfo.Multi'
         title: multi represents a nested multisig signer
@@ -37028,6 +38083,7 @@ definitions:
           - SIGN_MODE_DIRECT
           - SIGN_MODE_TEXTUAL
           - SIGN_MODE_LEGACY_AMINO_JSON
+          - SIGN_MODE_EIP_191
         default: SIGN_MODE_UNSPECIFIED
         description: >-
           SignMode represents a signing mode with its own security guarantees.
@@ -37043,6 +38099,23 @@ definitions:
           from SIGN_MODE_DIRECT
            - SIGN_MODE_LEGACY_AMINO_JSON: SIGN_MODE_LEGACY_AMINO_JSON is a backwards compatibility mode which uses
           Amino JSON and will be removed in the future
+           - SIGN_MODE_EIP_191: SIGN_MODE_EIP_191 specifies the sign mode for EIP 191 signing on the Cosmos
+          SDK. Ref: https://eips.ethereum.org/EIPS/eip-191
+
+
+          Currently, SIGN_MODE_EIP_191 is registered as a SignMode enum variant,
+
+          but is not implemented on the SDK by default. To enable EIP-191, you
+          need
+
+          to pass a custom `TxConfig` that has an implementation of
+
+          `SignModeHandler` for EIP-191. The SDK may decide to fully support
+
+          EIP-191 in the future.
+
+
+          Since: cosmos-sdk 0.45.2
     title: |-
       Single is the mode info for a single signer. It is structured as a message
       to allow for additional fields such as locale for SIGN_MODE_TEXTUAL in the

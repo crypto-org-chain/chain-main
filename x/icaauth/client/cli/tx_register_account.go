@@ -20,6 +20,11 @@ func CmdRegisterAccount() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			argConnectionID := args[0]
 
+			version, err := cmd.Flags().GetString(FlagVersion)
+			if err != nil {
+				return err
+			}
+
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -28,6 +33,7 @@ func CmdRegisterAccount() *cobra.Command {
 			msg := types.NewMsgRegisterAccount(
 				clientCtx.GetFromAddress().String(),
 				argConnectionID,
+				version,
 			)
 			if err := msg.ValidateBasic(); err != nil {
 				return err
@@ -36,6 +42,7 @@ func CmdRegisterAccount() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().String(FlagVersion, "", "version of the ICA channel")
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
