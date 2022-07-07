@@ -10,10 +10,10 @@ import (
 	capabilitykeeper "github.com/cosmos/cosmos-sdk/x/capability/keeper"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/controller/keeper"
-	icatypes "github.com/cosmos/ibc-go/v3/modules/apps/27-interchain-accounts/types"
-	channeltypes "github.com/cosmos/ibc-go/v3/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v3/modules/core/24-host"
+	icacontrollerkeeper "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/controller/keeper"
+	icatypes "github.com/cosmos/ibc-go/v4/modules/apps/27-interchain-accounts/types"
+	channeltypes "github.com/cosmos/ibc-go/v4/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v4/modules/core/24-host"
 	"github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
 	"github.com/tendermint/tendermint/libs/log"
 	"google.golang.org/grpc/codes"
@@ -94,8 +94,8 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 }
 
 // RegisterInterchainAccount registers an interchain account with the given `connectionId` and `owner` on the host chain
-func (k *Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string) error {
-	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner)
+func (k *Keeper) RegisterInterchainAccount(ctx sdk.Context, connectionID, owner string, version string) error {
+	return k.icaControllerKeeper.RegisterInterchainAccount(ctx, connectionID, owner, version)
 }
 
 // GetInterchainAccountAddress fetches the interchain account address for given `connectionId` and `owner`
