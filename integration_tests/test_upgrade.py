@@ -12,6 +12,7 @@ from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
 from .utils import (
+    BLOCK_BROADCASTING,
     cluster_fixture,
     parse_events,
     wait_for_block,
@@ -141,7 +142,7 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(cluster, kind, proposal):
+def propose_and_pass(cluster, kind, title, proposal):
     rsp = cluster.gov_propose(
         "community",
         kind,
@@ -151,7 +152,7 @@ def propose_and_pass(cluster, kind, proposal):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == kind.title().replace("-", ""), rsp
+    assert ev["proposal_type"] == title, rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -178,6 +179,7 @@ def upgrade(cluster, plan_name, target_height):
     propose_and_pass(
         cluster,
         "software-upgrade",
+        "SoftwareUpgrade",
         {
             "name": plan_name,
             "title": "upgrade test",
@@ -304,6 +306,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     upgrade(cluster, "v4.0.0", target_height)
 
+    # check icaauth params
     cli = cluster.cosmos_cli()
     rsp = json.loads(
         cli.raw(
@@ -317,6 +320,115 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     )
 
     assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
+
+    # check wasmd params
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "uploadAccess",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '{"permission":"Nobody"}', rsp
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "instantiateAccess",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '"Nobody"', rsp
+
+    # verify that new code cannot be uploaded into wasmd
+    wasm_path = Path(__file__).parent / "contracts/cw_nameservice.wasm"
+
+    # try to upload wasm code
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "wasm",
+            "store",
+            wasm_path,
+            "--gas",
+            "5000000",
+            "-y",
+            from_="community",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            output="json",
+            broadcast_mode=BLOCK_BROADCASTING,
+        )
+    )
+    assert rsp["raw_log"].endswith("can not create code: unauthorized"), rsp["raw_log"]
+
+    # Propose and pass param change to enable upload of code
+    propose_and_pass(
+        cluster,
+        "param-change",
+        "ParameterChange",
+        {
+            "title": "Give wasmd upload access to everybody",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "wasm",
+                    "key": "uploadAccess",
+                    "value": {"permission": "Everybody"},
+                }
+            ],
+            "deposit": "100000000basecro",
+        },
+    )
+
+    # check wasmd params
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "params",
+            "subspace",
+            "wasm",
+            "uploadAccess",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["value"] == '{"permission":"Everybody"}', rsp
+
+    # try to upload wasm code (should succeed after param change)
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "wasm",
+            "store",
+            wasm_path,
+            "--gas",
+            "5000000",
+            "-y",
+            from_="community",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            output="json",
+            broadcast_mode=BLOCK_BROADCASTING,
+        )
+    )
+
+    assert rsp["code"] == 0, rsp["raw_log"]
 
 
 def test_cancel_upgrade(cluster):
@@ -334,6 +446,7 @@ def test_cancel_upgrade(cluster):
     propose_and_pass(
         cluster,
         "software-upgrade",
+        "SoftwareUpgrade",
         {
             "name": plan_name,
             "title": "upgrade test",
@@ -347,6 +460,7 @@ def test_cancel_upgrade(cluster):
     propose_and_pass(
         cluster,
         "cancel-software-upgrade",
+        "CancelSoftwareUpgrade",
         {
             "title": "there is bug, cancel upgrade",
             "description": "there is bug, cancel upgrade",
