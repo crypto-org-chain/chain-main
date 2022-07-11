@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Support for smart contracts using `CosmWasm`. #780 #805
+
+### Changed
+
+- Upgrade `cosmos-sdk` to `v0.45.6` and `ibc-go` to `v4.0.0-rc0`. #803
+- Changed go version to `1.18`. #803
+
+### Security
+
+- Upgraded CodeQL scanning pipeline. #773
+
+## v4.0.0-alpha3-croeseid
+
+### Added
+
+- IBC Fee middleware for incentivizing relayers (only for IBC transfers). #763.
+
+### Testing
+
+- Integration tests for solo machine. #757.
+- Integration tests for offline signing. #761.
+
 ## v4.0.0-alpha1
 
 - Upgrade `cosmos-sdk` to `v0.45.3` and `ibc-go` to `v3.0.0`. #717 #725 #728 #745 #750
