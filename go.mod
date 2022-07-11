@@ -1,6 +1,6 @@
 module github.com/crypto-org-chain/chain-main/v4
 
-go 1.17
+go 1.18
 
 require (
 	github.com/CosmWasm/wasmd v0.27.0
