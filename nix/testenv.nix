@@ -1,4 +1,4 @@
-{ poetry2nix, python3Packages, python39 }:
+{ poetry2nix, python39Packages, python39 }:
 poetry2nix.mkPoetryEnv {
   python = python39;
   projectDir = ../integration_tests;
@@ -9,7 +9,7 @@ poetry2nix.mkPoetryEnv {
       }
     );
 
-    platformdirs = python3Packages.platformdirs;
+    platformdirs = python39Packages.platformdirs;
 
     hdwallets = super.hdwallets.overridePythonAttrs (
       old: {
