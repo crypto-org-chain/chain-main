@@ -1,5 +1,6 @@
-{ poetry2nix, python3Packages }:
+{ poetry2nix, python3Packages, python39 }:
 poetry2nix.mkPoetryEnv {
+  python = python39;
   projectDir = ../integration_tests;
   overrides = poetry2nix.overrides.withDefaults (self: super: {
     pyparsing = super.pyparsing.overridePythonAttrs (
