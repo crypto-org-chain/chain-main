@@ -22,8 +22,8 @@ jobs:
         if: github.event_name == 'issue_comment'
         with:
           username: ${{ github.actor }}
-          team: 'chain-dev'
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          team: 'maintainers'
+          GITHUB_TOKEN: ${{ secrets.ORG_READ_BOT_PAT }}
       - name: set valid if it is push/pull_request event or check if it is triggered by team members with issue_comment
         id: setValid
         run: |
