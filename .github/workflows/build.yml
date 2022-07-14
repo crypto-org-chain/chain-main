@@ -9,9 +9,6 @@ on:
   issue_comment:
     types: [created, edited]
 
-permissions:
-  issues: write
-
 jobs:
   member:
     name: Check whether it is triggered by team members with issue_comment or push or pull_request
@@ -42,6 +39,8 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     needs: [member]
+    permissions:
+      pull-requests: write
     timeout-minutes: 5
     if: needs.member.outputs.valid == 'true'
     steps:
@@ -336,6 +335,8 @@ jobs:
   report-status-pr:
     runs-on: ubuntu-latest
     needs: [member, test-sim-nondeterminism, test-sim-import-export, test-sim-after-import]
+    permissions:
+      pull-requests: write
     if: always() && github.event_name == 'issue_comment' && needs.member.outputs.valid == 'true'
     steps: 
       - name: Download artifact pass_status_build
