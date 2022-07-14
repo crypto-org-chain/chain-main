@@ -9,6 +9,9 @@ on:
   issue_comment:
     types: [created, edited]
 
+permissions:
+  issues: write
+
 jobs:
   member:
     name: Check whether it is triggered by team members with issue_comment or push or pull_request
