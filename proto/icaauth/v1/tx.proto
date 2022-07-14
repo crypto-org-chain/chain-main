@@ -24,6 +24,9 @@ message MsgRegisterAccount {
 
   // connectionId represents the IBC `connectionId` of the host chain
   string connectionId = 2 [(gogoproto.moretags) = "yaml:\"connection_id\""];
+
+  // version represents the version of the ICA channel
+  string version = 3;
 }
 
 // MsgRegisterAccountResponse defines the response message for MsgRegisterAccount

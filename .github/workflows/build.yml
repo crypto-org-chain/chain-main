@@ -10,20 +10,40 @@ on:
     types: [created, edited]
 
 jobs:
+  member:
+    name: Check whether it is triggered by team members with issue_comment or push or pull_request
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.comment.body == '/runsim'
+    outputs:
+      valid: ${{ steps.setValid.outputs.valid }}
+    steps:
+      - uses: tspascoal/get-user-teams-membership@v1.0.2
+        id: checkUserMember
+        if: github.event_name == 'issue_comment'
+        with:
+          username: ${{ github.actor }}
+          team: 'maintainers'
+          GITHUB_TOKEN: ${{ secrets.ORG_READ_BOT_PAT }}
+      - name: set valid if it is push/pull_request event or check if it is triggered by team members with issue_comment
+        id: setValid
+        run: |
+          if [[ "${{ steps.checkUserMember.outputs.isTeamMember }}" == "true" ]]; then
+            echo "::set-output name=valid::true"
+          elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "::set-output name=valid::true"
+          else  
+            echo "::set-output name=valid::false"
+          fi
+
   build:
     name: Build
     runs-on: ubuntu-latest
-
+    needs: [member]
     timeout-minutes: 5
-    if: >-
-      github.event_name == 'push' || github.event_name == 'pull_request' || 
-      (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || 
-      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' || 
-      github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' 
-      || github.actor == 'cdc-Hitesh'))
+    if: needs.member.outputs.valid == 'true'
     steps:
       - name: Comment PR for Sim test started
-        uses: allthatjazzleo/actions-pull-request-add-comment@master
+        uses: crypto-org-chain/actions-pull-request-add-comment@master
         if: github.event_name == 'issue_comment'
         with:
           message: |
@@ -48,7 +68,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -104,10 +124,10 @@ jobs:
     steps:
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18.3
       - name: install runsim
         run: |
-          export GO111MODULE="on" && go get github.com/cosmos/tools/cmd/runsim@v1.0.0
+          export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
       - uses: actions/cache@v2.1.1
         with:
           path: ~/go/bin
@@ -143,7 +163,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -206,7 +226,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -268,7 +288,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.17.3
+          go-version: 1.18.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -312,12 +332,8 @@ jobs:
 
   report-status-pr:
     runs-on: ubuntu-latest
-    needs: [test-sim-nondeterminism, test-sim-import-export, test-sim-after-import]
-    if: >-
-      always() && (github.event.comment.body == '/runsim' && (github.actor == 'allthatjazzleo' || github.actor == 'tomtau' || 
-      github.actor == 'lezzokafka' || github.actor == 'yihuang' || github.actor == 'calvinaco' ||
-      github.actor == 'CeruleanAtMonaco' || github.actor == 'devashishdxt' || github.actor == 'leejw51crypto' 
-      || github.actor == 'cdc-Hitesh'))
+    needs: [member, test-sim-nondeterminism, test-sim-import-export, test-sim-after-import]
+    if: always() && github.event_name == 'issue_comment' && needs.member.outputs.valid == 'true'
     steps: 
       - name: Download artifact pass_status_build
         uses: actions/download-artifact@v1
@@ -354,7 +370,7 @@ jobs:
           echo "::set-output name=status_job04::$(<pass_status_sim2/status_sim2.txt)"
           echo "::set-output name=status_job05::$(<pass_status_sim3/status_sim3.txt)"
       - name: The sim jobs has succeed
-        uses: allthatjazzleo/actions-pull-request-add-comment@master
+        uses: crypto-org-chain/actions-pull-request-add-comment@master
         if: >-
           steps.set_outputs.outputs.status_job01 == 'success' && steps.set_outputs.outputs.status_job02 == 'success' 
           && steps.set_outputs.outputs.status_job03 == 'success' && steps.set_outputs.outputs.status_job04 == 'success' 
@@ -365,7 +381,7 @@ jobs:
             Can further check [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: The sim jobs has failed
-        uses: allthatjazzleo/actions-pull-request-add-comment@master
+        uses: crypto-org-chain/actions-pull-request-add-comment@master
         if: >-
           steps.set_outputs.outputs.status_job01 != 'success' || steps.set_outputs.outputs.status_job02 != 'success' 
           || steps.set_outputs.outputs.status_job03 != 'success' || steps.set_outputs.outputs.status_job04 != 'success' 

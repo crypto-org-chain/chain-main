@@ -1,14 +1,14 @@
 {
     "gomod2nix": {
-        "branch": "fix-regex",
+        "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
         "homepage": null,
-        "owner": "yihuang",
+        "owner": "tweag",
         "repo": "gomod2nix",
-        "rev": "af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f",
-        "sha256": "1268jddzg2kf8jbbkc4wsvpq39lldi6cfp6vsl0sclg1k2r10hc9",
+        "rev": "40d32f82fc60d66402eb0972e6e368aeab3faf58",
+        "sha256": "0li17ynbg2wg0xqy655m5rmcw905sbv7d4ir35z7s5pg1yhhzxkp",
         "type": "tarball",
-        "url": "https://github.com/yihuang/gomod2nix/archive/af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f.tar.gz",
+        "url": "https://github.com/tweag/gomod2nix/archive/40d32f82fc60d66402eb0972e6e368aeab3faf58.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
@@ -24,27 +24,39 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
-        "branch": "release-21.11",
+        "branch": "master",
         "description": "Nix Packages collection",
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "b61bf7a96aa6ddd3c425fa1db8c45acfdd82e36b",
-        "sha256": "0dw23adh6b0jxa58nba31bf4033cd6yiwzgzp5bbl4zf2jaw9prh",
+        "rev": "f904e3562aabca382d12f8471ca2330b3f82899a",
+        "sha256": "1lsa3sjwp1v3nv2jjpkl5lf9dncplwihmavasalg9fq1217pmzmb",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/b61bf7a96aa6ddd3c425fa1db8c45acfdd82e36b.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/f904e3562aabca382d12f8471ca2330b3f82899a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "relayer": {
-        "branch": "master",
-        "description": "An example of a server side IBC relayer to be used for Game of Zones and beyond",
-        "homepage": null,
-        "owner": "cosmos",
-        "repo": "relayer",
-        "rev": "82d0fe787cbf2c69b961dff45c85b33c75ca0ad9",
-        "sha256": "0d7s4ckdamivr94kq6wdjl5s9iicdpg4whbicqqiqx0yrn8smxld",
+    "rocksdb": {
+        "branch": "v6.29.5",
+        "description": "A library that provides an embeddable, persistent key-value store for fast storage.",
+        "homepage": "http://rocksdb.org",
+        "owner": "facebook",
+        "repo": "rocksdb",
+        "rev": "da11a59034584ea2d0911268b8136e5249d6b692",
+        "sha256": "1fr3lhkakjrplgmms07amrxfiasz1b4vl2rppgx50k8gcy0p1awv",
         "type": "tarball",
-        "url": "https://github.com/cosmos/relayer/archive/82d0fe787cbf2c69b961dff45c85b33c75ca0ad9.tar.gz",
+        "url": "https://github.com/facebook/rocksdb/archive/da11a59034584ea2d0911268b8136e5249d6b692.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
+    "wasmvm": {
+        "branch": "v1.0.0",
+        "description": "Go bindings to the running cosmwasm contracts with wasmer ",
+        "homepage": null,
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "bc49a2f4842d023c0038798f343b56f3f0530646",
+        "sha256": "1zlkrs8bxpmxcn9x51b4q3vmf2r5lp6w95a2ckd3wbq5zjcbhvp2",
+        "type": "tarball",
+        "url": "https://github.com/CosmWasm/wasmvm/archive/bc49a2f4842d023c0038798f343b56f3f0530646.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
