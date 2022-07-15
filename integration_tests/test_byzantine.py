@@ -52,7 +52,12 @@ def test_byzantine(cluster):
         if val1["jailed"]:
             break
     assert val1["jailed"]
-    assert val1["status"] == "BOND_STATUS_UNBONDING"
+    assert any(
+        [
+            val1["status"] == "BOND_STATUS_UNBONDING",
+            val1["status"] == "BOND_STATUS_UNBONDED",
+        ]
+    )
     print("\n{}s waiting for node 1 jailed".format(i))
 
     i = 0
@@ -66,7 +71,12 @@ def test_byzantine(cluster):
         if val2["jailed"]:
             break
     assert val2["jailed"]
-    assert val2["status"] == "BOND_STATUS_UNBONDING"
+    assert any(
+        [
+            val1["status"] == "BOND_STATUS_UNBONDING",
+            val1["status"] == "BOND_STATUS_UNBONDED",
+        ]
+    )
     print("\n{}s waiting for node 2 jailed".format(i))
 
     tokens_byzantine_after = int((cluster.validator(val_addr_byzantine))["tokens"])
