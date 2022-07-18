@@ -29,7 +29,7 @@ jobs:
           BUILD_TYPE="tarball"
           FLAKE="github:${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}"
 
-          nix build -L ${FLAKE}#chain-maind-$BUILD_TYPE
+          nix build -L ${FLAKE}#chain-maind-testnet-$BUILD_TYPE
           cp result chain-main_${GITHUB_REF_NAME:1}_${PLATFORM}.tar.gz
 
           nix-env -i coreutils -f '<nixpkgs>'
@@ -68,7 +68,7 @@ jobs:
           BUILD_TYPE="tarball"
           FLAKE="github:${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}"
 
-          nix build -L --extra-platforms aarch64-linux ${FLAKE}#packages.aarch64-linux.chain-maind-$BUILD_TYPE
+          nix build -L --extra-platforms aarch64-linux ${FLAKE}#packages.aarch64-linux.chain-maind-testnet-$BUILD_TYPE
           cp result chain-main_${GITHUB_REF_NAME:1}_${PLATFORM}.tar.gz
 
           sha256sum *.tar.gz > checksums-$PLATFORM.txt
