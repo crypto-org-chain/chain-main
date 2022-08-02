@@ -3,12 +3,12 @@
         "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
         "homepage": null,
-        "owner": "tweag",
+        "owner": "yihuang",
         "repo": "gomod2nix",
-        "rev": "40d32f82fc60d66402eb0972e6e368aeab3faf58",
-        "sha256": "0li17ynbg2wg0xqy655m5rmcw905sbv7d4ir35z7s5pg1yhhzxkp",
+        "rev": "2be74ae9177c9c897c3924a984cf8e85159832ce",
+        "sha256": "1rzc0dw0kcav0034y39qrwmvj9w127raq0x5rscz97mwcyjz3sp5",
         "type": "tarball",
-        "url": "https://github.com/tweag/gomod2nix/archive/40d32f82fc60d66402eb0972e6e368aeab3faf58.tar.gz",
+        "url": "https://github.com/yihuang/gomod2nix/archive/2be74ae9177c9c897c3924a984cf8e85159832ce.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
@@ -29,10 +29,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f904e3562aabca382d12f8471ca2330b3f82899a",
-        "sha256": "1lsa3sjwp1v3nv2jjpkl5lf9dncplwihmavasalg9fq1217pmzmb",
+        "rev": "0011e576fb992ea9305d3c49387d09a84eadd596",
+        "sha256": "0xl4qqw2xq3kjcbi6lvp7gj89vg9rf9c7ipbk7khz7j18haxsb6z",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/f904e3562aabca382d12f8471ca2330b3f82899a.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/0011e576fb992ea9305d3c49387d09a84eadd596.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "rocksdb": {
