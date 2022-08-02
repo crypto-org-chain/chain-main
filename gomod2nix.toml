@@ -81,9 +81,9 @@ schema = 3
     version = "v0.0.0-20200405005733-88cbf1b4c40d"
     hash = "sha256-i8RXZemJGlSjBT35oPm0SawFiBoIU5Pkq5xp4n/rzCY="
   [mod."github.com/CosmWasm/wasmd"]
-    version = "v0.28.1-0.20220802043642-851ce52c5992"
+    version = "v0.27.1-0.20220802043642-851ce52c5992"
     hash = "sha256-l7kOPXp0dKUJqcJL6K/i5RenvpYh2DavsI1eTzXfVOg="
-    replaced = "github.com/devashishdxt/wasmd"
+    replaced = "github.com/crypto-org-chain/wasmd"
   [mod."github.com/CosmWasm/wasmvm"]
     version = "v1.0.1-0.20220616065451-935f00e54d0e"
     hash = "sha256-zsnIDb1NvSnKPqWcrmDsykIbTmwo6vHZTbBQI1Cph3c="

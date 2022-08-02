@@ -148,6 +148,6 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 
 // replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v1.2.0
 
-replace github.com/CosmWasm/wasmd => github.com/devashishdxt/wasmd v0.28.1-0.20220802043642-851ce52c5992
+replace github.com/CosmWasm/wasmd => github.com/crypto-org-chain/wasmd v0.27.1-0.20220802043642-851ce52c5992
 
 replace github.com/CosmWasm/wasmvm => github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e
