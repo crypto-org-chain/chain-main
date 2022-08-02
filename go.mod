@@ -3,10 +3,10 @@ module github.com/crypto-org-chain/chain-main/v4
 go 1.18
 
 require (
-	github.com/CosmWasm/wasmd v0.27.0
+	github.com/CosmWasm/wasmd v0.28.0
 	github.com/confluentinc/bincover v0.1.0
 	github.com/cosmos/cosmos-sdk v0.45.6
-	github.com/cosmos/ibc-go/v4 v4.0.0-rc0
+	github.com/cosmos/ibc-go/v4 v4.0.0-rc2
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/renameio v1.0.0
@@ -48,7 +48,6 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gorocksdb v1.2.0 // indirect
 	github.com/cosmos/iavl v0.17.3 // indirect
-	github.com/cosmos/ibc-go/v3 v3.0.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.11.1 // indirect
 	github.com/cosmos/ledger-go v0.9.2 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
@@ -149,6 +148,6 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 
 // replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v1.2.0
 
-replace github.com/CosmWasm/wasmd => github.com/crypto-org-chain/wasmd v0.27.1-0.20220706011935-a2eea1c679cd
+replace github.com/CosmWasm/wasmd => github.com/devashishdxt/wasmd v0.28.1-0.20220802043642-851ce52c5992
 
 replace github.com/CosmWasm/wasmvm => github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e

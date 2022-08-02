@@ -81,9 +81,9 @@ schema = 3
     version = "v0.0.0-20200405005733-88cbf1b4c40d"
     hash = "sha256-i8RXZemJGlSjBT35oPm0SawFiBoIU5Pkq5xp4n/rzCY="
   [mod."github.com/CosmWasm/wasmd"]
-    version = "v0.27.1-0.20220706011935-a2eea1c679cd"
-    hash = "sha256-hBWSn3Cvzeo5EL/t2Zxx7RH3lzSZN4FetfYdIPWy0hs="
-    replaced = "github.com/crypto-org-chain/wasmd"
+    version = "v0.28.1-0.20220802043642-851ce52c5992"
+    hash = "sha256-l7kOPXp0dKUJqcJL6K/i5RenvpYh2DavsI1eTzXfVOg="
+    replaced = "github.com/devashishdxt/wasmd"
   [mod."github.com/CosmWasm/wasmvm"]
     version = "v1.0.1-0.20220616065451-935f00e54d0e"
     hash = "sha256-zsnIDb1NvSnKPqWcrmDsykIbTmwo6vHZTbBQI1Cph3c="
@@ -346,15 +346,12 @@ schema = 3
   [mod."github.com/cosmos/iavl"]
     version = "v0.17.3"
     hash = "sha256-gRWMH/ijkw569JSYsAVnZljH3Q6ywTTc6P8DdyJKKAk="
-  [mod."github.com/cosmos/ibc-go/v3"]
-    version = "v3.0.0"
-    hash = "sha256-RukNWraHwPQdVZ8CC1uTDD0CcNG1cH2zPdC7KquTawA="
   [mod."github.com/cosmos/ibc-go/v4"]
-    version = "v4.0.0-rc0"
-    hash = "sha256-jH0wAQTWnknL05/CLhnpdFYb4wjEatVMgJttsTqtdJg="
+    version = "v4.0.0-rc2"
+    hash = "sha256-YmV9z5mAmtgj/OkjcDhiGO56oW5iQ/rVg8/W7Iav15c="
   [mod."github.com/cosmos/interchain-accounts"]
-    version = "v0.1.0"
-    hash = "sha256-84ptjsoWH4C2rYMmw3feVEghPMVjadarRW/Ubq+9HQo="
+    version = "v0.1.1-0.20220801105946-a4139e927530"
+    hash = "sha256-QeaX4R4bMNqeOCgNUEZHf+W/YRA8WNGAzLAwIOMCij8="
   [mod."github.com/cosmos/ledger-cosmos-go"]
     version = "v0.9.10-0.20200929055312-01e1d341de0f"
     hash = "sha256-YD8G/BZH7Ytb3FFyh9e41V9XbTBzFSdB5lQ8PdgrX7Y="
