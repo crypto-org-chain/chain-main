@@ -10,14 +10,7 @@ import sources.nixpkgs {
         doCheck = false;
       };
     })
-    # https://github.com/NixOS/nixpkgs/pull/179622
-    (import ./go_1_18_overlay.nix)
-    (final: prev:
-      (import "${sources.gomod2nix}/overlay.nix")
-        (final // {
-          inherit (final.darwin.apple_sdk_11_0) callPackage;
-        })
-        prev)
+    (import "${sources.gomod2nix}/overlay.nix")
     (_: pkgs: {
       hermes = pkgs.rustPlatform.buildRustPackage rec {
         name = "hermes";
