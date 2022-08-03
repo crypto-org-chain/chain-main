@@ -34,7 +34,7 @@ func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simty
 	) (appState json.RawMessage, simAccs []simtypes.Account, chainID string, genesisTimestamp time.Time) {
 
 		if simapp.FlagGenesisTimeValue == 0 {
-			genesisTimestamp = simtypes.RandTimestamp(r)
+			genesisTimestamp = time.Now()
 		} else {
 			genesisTimestamp = time.Unix(simapp.FlagGenesisTimeValue, 0)
 		}
@@ -136,6 +136,7 @@ func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simty
 		if err != nil {
 			panic(err)
 		}
+
 		return appState, simAccs, chainID, genesisTimestamp
 	}
 }
