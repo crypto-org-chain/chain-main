@@ -79,8 +79,9 @@ func SetupSimulation(dirPrefix, dbName string) (simtypes.Config, dbm.DB, string,
 		}
 
 		path = filepath.Dir(path)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			if err := os.MkdirAll(path, os.ModePerm); err != nil {
+
+		if _, err = os.Stat(path); os.IsNotExist(err) {
+			if err = os.MkdirAll(path, os.ModePerm); err != nil {
 				panic(err)
 			}
 		}
@@ -401,8 +402,8 @@ func TestAppStateDeterminism(t *testing.T) {
 				}
 
 				path = filepath.Dir(path)
-				if _, err := os.Stat(path); os.IsNotExist(err) {
-					if err := os.MkdirAll(path, os.ModePerm); err != nil {
+				if _, err = os.Stat(path); os.IsNotExist(err) {
+					if err = os.MkdirAll(path, os.ModePerm); err != nil {
 						panic(err)
 					}
 				}
