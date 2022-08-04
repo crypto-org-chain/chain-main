@@ -1,7 +1,3 @@
 [submodule "cosmos-sdk"]
 	path = third_party/cosmos-sdk
 	url = https://github.com/cosmos/cosmos-sdk.git
-
-[submodule "wasmd"]
-	path = third_party/wasmd
-	url = https://github.com/CosmWasm/wasmd.git

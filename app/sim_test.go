@@ -3,8 +3,10 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -63,6 +65,30 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
 }
 
+// SetupSimulation wraps simapp.SetupSimulation in order to create any export directory if they do not exist yet
+func SetupSimulation(dirPrefix, dbName string) (simtypes.Config, dbm.DB, string, log.Logger, bool, error) {
+	config, db, dir, logger, skip, err := simapp.SetupSimulation(dirPrefix, dbName)
+	if err != nil {
+		return simtypes.Config{}, nil, "", nil, false, err
+	}
+
+	paths := []string{config.ExportParamsPath, config.ExportStatePath, config.ExportStatsPath}
+	for _, path := range paths {
+		if len(path) == 0 {
+			continue
+		}
+
+		path = filepath.Dir(path)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			if err := os.MkdirAll(path, os.ModePerm); err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	return config, db, dir, logger, skip, err
+}
+
 func TestFullAppSimulation(t *testing.T) {
 	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
 	if skip {
@@ -104,7 +130,7 @@ func TestFullAppSimulation(t *testing.T) {
 }
 
 func TestAppImportExport(t *testing.T) {
-	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
+	config, db, dir, logger, skip, err := SetupSimulation("leveldb-app-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application import/export simulation")
 	}
@@ -118,7 +144,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		dir, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -160,7 +186,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		newDir, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	var genesisState GenesisState
@@ -243,7 +269,7 @@ func TestAppImportExport(t *testing.T) {
 }
 
 func TestAppSimulationAfterImport(t *testing.T) {
-	config, db, dir, logger, skip, err := simapp.SetupSimulation("leveldb-app-sim", "Simulation")
+	config, db, dir, logger, skip, err := SetupSimulation("leveldb-app-sim", "Simulation")
 	if skip {
 		t.Skip("skipping application simulation after import")
 	}
@@ -257,7 +283,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		dir, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -295,7 +321,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	fmt.Printf("importing genesis...\n")
 
 	// nolint: dogsled
-	_, newDB, newDir, _, _, err := simapp.SetupSimulation("leveldb-app-sim-2", "Simulation-2")
+	_, newDB, newDir, _, _, err := SetupSimulation("leveldb-app-sim-2", "Simulation-2")
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -304,7 +330,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		newDir, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
@@ -356,16 +382,38 @@ func TestAppStateDeterminism(t *testing.T) {
 				logger = log.NewNopLogger()
 			}
 
+			dir, err := ioutil.TempDir("", "app-sim")
+			require.NoError(t, err)
+
 			db := dbm.NewMemDB()
 			app := New(logger, db, nil, true, map[int64]bool{},
-				simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, interBlockCacheOpt())
+				dir, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, interBlockCacheOpt())
+
+			defer func() {
+				db.Close()
+				require.NoError(t, os.RemoveAll(dir))
+			}()
+
+			paths := []string{config.ExportParamsPath, config.ExportStatePath, config.ExportStatsPath}
+			for _, path := range paths {
+				if len(path) == 0 {
+					continue
+				}
+
+				path = filepath.Dir(path)
+				if _, err := os.Stat(path); os.IsNotExist(err) {
+					if err := os.MkdirAll(path, os.ModePerm); err != nil {
+						panic(err)
+					}
+				}
+			}
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
 				config.Seed, i+1, numSeeds, j+1, numTimesToRunPerSeed,
 			)
 
-			_, _, err := simulation.SimulateFromSeed(
+			_, _, err = simulation.SimulateFromSeed(
 				t,
 				os.Stdout,
 				app.BaseApp,
