@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/x/supply/client/rest"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -71,11 +69,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 	return genState.Validate()
-}
-
-// RegisterRESTRoutes registers the capability module's REST service handlers.
-func (a AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
