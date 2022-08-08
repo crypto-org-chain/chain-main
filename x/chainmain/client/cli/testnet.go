@@ -34,6 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -249,7 +250,7 @@ func InitTestnet(
 		memo := fmt.Sprintf("%s@%s:26656", nodeIDs[i], ip)
 		genFiles = append(genFiles, nodeConfig.GenesisFile())
 
-		kb, keyErr := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf)
+		kb, keyErr := keyring.New(sdk.KeyringServiceName(), keyringBackend, nodeDir, inBuf, clientCtx.Codec)
 		if keyErr != nil {
 			return keyErr
 		}
@@ -266,7 +267,11 @@ func InitTestnet(
 			_ = os.RemoveAll(outputDir)
 			return saveErr
 		}
-		addr := keyInfo.GetAddress()
+		addr, err := keyInfo.GetAddress()
+		if err != nil {
+			_ = os.RemoveAll(outputDir)
+			return err
+		}
 
 		info := map[string]string{"secret": secret, "addr": addr.String()}
 
@@ -397,10 +402,9 @@ func initGenFiles(
 	appGenState[stakingtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenState)
 
 	// set gov min_deposit in the genesis state
-	var govGenState govtypes.GenesisState
+	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom
-	govGenState.DepositParams.MinDeposit[0].Amount = govtypes.DefaultMinDepositTokens
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state

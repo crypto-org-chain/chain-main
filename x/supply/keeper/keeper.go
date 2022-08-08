@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/crypto-org-chain/chain-main/v4/config"
@@ -30,7 +31,7 @@ var (
 // Keeper for supply module
 type Keeper struct {
 	cdc           codec.BinaryCodec
-	storeKey      sdk.StoreKey
+	storeKey      storetypes.StoreKey
 	bankKeeper    types.BankKeeper
 	accountKeeper types.AccountKeeper
 }
@@ -38,7 +39,7 @@ type Keeper struct {
 // NewKeeper returns a new keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	storeKey sdk.StoreKey,
+	storeKey storetypes.StoreKey,
 	bankKeeper types.BankKeeper,
 	accountKeeper types.AccountKeeper,
 ) Keeper {
@@ -141,5 +142,5 @@ func (k Keeper) GetLiquidSupply(ctx sdk.Context) sdk.Coins {
 	unvestedSupply := k.GetUnvestedSupply(ctx)
 	moduleAccountBalance := k.GetTotalModuleAccountBalance(ctx, ModuleAccounts...)
 
-	return totalSupply.Sub(unvestedSupply).Sub(moduleAccountBalance)
+	return totalSupply.Sub(unvestedSupply...).Sub(moduleAccountBalance...)
 }
