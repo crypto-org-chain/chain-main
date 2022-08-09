@@ -73,7 +73,7 @@ endif
 
 ifeq ($(NETWORK),testnet)
 	BUILD_TAGS += testnet
-	TEST_TAGS := "--tags=testnet"
+	test_tags += testnet
 endif
 
 build_tags += $(BUILD_TAGS)
@@ -109,6 +109,8 @@ endif
 ifeq (debug,$(findstring debug,$(COSMOS_BUILD_OPTIONS)))
   BUILD_FLAGS += -gcflags "all=-N -l"
 endif
+
+TEST_FLAGS := -tags "$(test_tags)"
 
 TESTNET_FLAGS ?=
 
@@ -153,7 +155,7 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test: check-network
-	@go test $(TEST_TAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 # look into .golangci.yml for enabling / disabling linters
@@ -172,13 +174,13 @@ lint-ci:
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
-	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=0 -v -timeout 24h
 
 test-sim-custom-genesis-fast: check-network
 	@echo "Running custom genesis simulation..."
 	@echo "By default, ${HOME}/.chain-maind/config/genesis.json will be used."
-	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
 		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h
 
 test-sim-import-export:
