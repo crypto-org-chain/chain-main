@@ -52,7 +52,7 @@
           devShells = {
             chain-maind = pkgs.mkShell {
               buildInputs = with pkgs; [
-                go_1_17
+                go_1_18
                 rocksdb
                 libwasmvm
               ];

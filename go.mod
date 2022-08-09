@@ -173,3 +173,6 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 replace github.com/CosmWasm/wasmd => github.com/yihuang/wasmd v0.28.1-0.20220808100335-f1e9ba9446b3
 
 replace github.com/CosmWasm/wasmvm => github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e
+
+// TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
+replace github.com/zondax/hid => github.com/zondax/hid v0.9.0
