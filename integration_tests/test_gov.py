@@ -91,8 +91,8 @@ def test_param_proposal(cluster, vote_option):
     else:
         assert new_max_validators == max_validators
 
-    if vote_option in ("no_with_veto", None):
-        # not refunded
+    if vote_option == "no_with_veto":
+        # deposit only get burnt for vetoed proposal
         assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
     else:
         # refunded, no matter passed or rejected
@@ -135,7 +135,7 @@ def test_deposit_period_expires(cluster):
 
     amount2 = cluster.balance(cluster.address("ecosystem"))
 
-    rsp = cluster.gov_deposit("ecosystem", proposal["proposal_id"], "5000basecro")
+    rsp = cluster.gov_deposit("ecosystem", proposal_id, "5000basecro")
     assert rsp["code"] == 0, rsp["raw_log"]
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "10000"}]
@@ -151,9 +151,9 @@ def test_deposit_period_expires(cluster):
     with pytest.raises(Exception):
         cluster.query_proposal(proposal_id)
 
-    # deposits don't get refunded
-    assert cluster.balance(cluster.address("community")) == amount1 - 5000
-    assert cluster.balance(cluster.address("ecosystem")) == amount2 - 5000
+    # deposits get refunded
+    assert cluster.balance(cluster.address("community")) == amount1
+    assert cluster.balance(cluster.address("ecosystem")) == amount2
 
 
 def test_community_pool_spend_proposal(cluster):
