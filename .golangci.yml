@@ -17,12 +17,6 @@ linters:
     - stylecheck
     - unconvert
 
-issues:
-  exclude-rules:
-    - text: "Use of weak random number generator"
-      linters:
-        - gosec
-
 linters-settings:
   exclude: ./pystarport/pystarport/*
   govet:
