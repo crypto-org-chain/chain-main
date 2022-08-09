@@ -227,6 +227,9 @@ def upgrade(cluster, plan_name, target_height):
     )
     cluster.reload_supervisor()
 
+    # update the cli cmd to correct binary
+    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
+
     # wait for it to generate new blocks
     wait_for_block(cluster, target_height + 2, 600)
 
