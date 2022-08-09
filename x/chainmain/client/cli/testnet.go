@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
+	sdkmath "cosmossdk.io/math"
 	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/spf13/cobra"
 	tmconfig "github.com/tendermint/tendermint/config"
@@ -267,7 +268,8 @@ func InitTestnet(
 			_ = os.RemoveAll(outputDir)
 			return saveErr
 		}
-		addr, err := keyInfo.GetAddress()
+		var addr sdk.AccAddress
+		addr, err = keyInfo.GetAddress()
 		if err != nil {
 			_ = os.RemoveAll(outputDir)
 			return err
@@ -562,10 +564,10 @@ func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 }
 
 // return half amount of coins
-func halfCoins(coins sdk.Coins) sdk.Int {
-	amount := sdk.ZeroInt()
+func halfCoins(coins sdk.Coins) sdkmath.Int {
+	amount := sdkmath.ZeroInt()
 	for _, coin := range coins {
-		amount = amount.Add(coin.Amount.Quo(sdk.NewInt(2)))
+		amount = amount.Add(coin.Amount.Quo(sdkmath.NewInt(2)))
 	}
 	return amount
 }
