@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/crypto-org-chain/chain-main/v4/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 	nfttestutil "github.com/crypto-org-chain/chain-main/v4/x/nft/client/testutil"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
@@ -35,6 +36,9 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	cfg := network.DefaultConfig()
 	cfg.AppConstructor = nfttestutil.GetApp
 	cfg.NumValidators = 2
+
+	encCfg := app.MakeEncodingConfig()
+	cfg.GenesisState = app.NewDefaultGenesisState(encCfg.Marshaler)
 
 	s.cfg = cfg
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
