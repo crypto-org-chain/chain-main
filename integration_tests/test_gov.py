@@ -18,7 +18,7 @@ def test_param_proposal(cluster, vote_option):
     """
     max_validators = cluster.staking_params()["max_validators"]
 
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "param-change",
         {
@@ -37,11 +37,11 @@ def test_param_proposal(cluster, vote_option):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "ParameterChange", rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
-    assert proposal["content"]["changes"] == [
+    assert proposal["messages"][0]["content"]["changes"] == [
         {
             "subspace": "staking",
             "key": "MaxValidators",
@@ -64,15 +64,15 @@ def test_param_proposal(cluster, vote_option):
         rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
         assert rsp["code"] == 0, rsp["raw_log"]
         assert (
-            int(cluster.query_tally(proposal_id, i=1)[vote_option])
+            int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
             == cluster.staking_pool()
         ), "all voted"
     else:
         assert cluster.query_tally(proposal_id) == {
-            "yes": "0",
-            "no": "0",
-            "abstain": "0",
-            "no_with_veto": "0",
+            "yes_count": "0",
+            "no_count": "0",
+            "abstain_count": "0",
+            "no_with_veto_count": "0",
         }
 
     wait_for_block_time(
@@ -107,7 +107,7 @@ def test_deposit_period_expires(cluster):
       - no refund
     """
     amount1 = cluster.balance(cluster.address("community"))
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "param-change",
         {
@@ -125,7 +125,7 @@ def test_deposit_period_expires(cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "ParameterChange", rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -170,7 +170,7 @@ def test_community_pool_spend_proposal(cluster):
     recipient = cluster.address("community")
     old_amount = cluster.balance(recipient)
 
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "community-pool-spend",
         {
@@ -185,7 +185,7 @@ def test_community_pool_spend_proposal(cluster):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "CommunityPoolSpend", rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     # vote
@@ -215,7 +215,7 @@ def test_change_vote(cluster):
     - change vote
     - check tally
     """
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "param-change",
         {
@@ -243,10 +243,10 @@ def test_change_vote(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     cluster.query_tally(proposal_id) == {
-        "yes": str(voting_power),
-        "no": "0",
-        "abstain": "0",
-        "no_with_veto": "0",
+        "yes_count": str(voting_power),
+        "no_count": "0",
+        "abstain_count": "0",
+        "no_with_veto_count": "0",
     }
 
     # change vote to no
@@ -254,10 +254,10 @@ def test_change_vote(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     cluster.query_tally(proposal_id) == {
-        "no": str(voting_power),
-        "yes": "0",
-        "abstain": "0",
-        "no_with_veto": "0",
+        "no_count": str(voting_power),
+        "yes_count": "0",
+        "abstain_count": "0",
+        "no_with_veto_count": "0",
     }
 
 
@@ -270,7 +270,7 @@ def test_inherit_vote(cluster):
     - A vote No
     - change tally: {yes: v, no: a}
     """
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "param-change",
         {
@@ -298,18 +298,18 @@ def test_inherit_vote(cluster):
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.query_tally(proposal_id) == {
-        "yes": "1000000010",
-        "no": "0",
-        "abstain": "0",
-        "no_with_veto": "0",
+        "yes_count": "1000000010",
+        "no_count": "0",
+        "abstain_count": "0",
+        "no_with_veto_count": "0",
     }
 
     rsp = cluster.gov_vote(voter1, proposal_id, "no")
     assert rsp["code"] == 0, rsp["raw_log"]
 
     assert cluster.query_tally(proposal_id) == {
-        "yes": "1000000000",
-        "no": "10",
-        "abstain": "0",
-        "no_with_veto": "0",
+        "yes_count": "1000000000",
+        "no_count": "10",
+        "abstain_count": "0",
+        "no_with_veto_count": "0",
     }
