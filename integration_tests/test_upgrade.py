@@ -110,7 +110,7 @@ def test_cosmovisor(cosmovisor_cluster):
     target_height = height + 15
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "software-upgrade",
         {
@@ -125,7 +125,7 @@ def test_cosmovisor(cosmovisor_cluster):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "SoftwareUpgrade", rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
@@ -143,7 +143,7 @@ def test_cosmovisor(cosmovisor_cluster):
 
 
 def propose_and_pass(cluster, kind, title, proposal):
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         kind,
         proposal,
@@ -152,7 +152,7 @@ def propose_and_pass(cluster, kind, title, proposal):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == title, rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
