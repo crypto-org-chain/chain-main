@@ -4,7 +4,6 @@ go 1.18
 
 require (
 	cosmossdk.io/math v1.0.0-beta.2
-	github.com/CosmWasm/wasmd v0.28.0
 	github.com/confluentinc/bincover v0.1.0
 	github.com/cosmos/cosmos-sdk v0.46.0
 	github.com/cosmos/ibc-go/v5 v5.0.0-beta1
@@ -14,7 +13,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imdario/mergo v0.3.13
-	github.com/prometheus/client_golang v1.12.2
 	github.com/rakyll/statik v0.1.7
 	github.com/regen-network/cosmos-proto v0.3.1
 	github.com/spf13/cast v1.5.0
@@ -40,7 +38,7 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v0.0.0-20200405005733-88cbf1b4c40d // indirect
-	github.com/CosmWasm/wasmvm v1.0.0 // indirect
+	github.com/DataDog/zstd v1.4.5 // indirect
 	github.com/Workiva/go-datastructures v1.0.53 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/aws/aws-sdk-go v1.40.45 // indirect
@@ -119,6 +117,7 @@ require (
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -136,9 +135,8 @@ require (
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	github.com/ulikunitz/xz v0.5.8 // indirect
-	github.com/zondax/hid v0.9.1-0.20220302062450-5552068d2266 // indirect
-	github.com/zondax/ledger-go v0.12.1 // indirect
+	github.com/zondax/hid v0.9.0 // indirect
+	github.com/zondax/ledger-go v0.12.2 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
@@ -156,23 +154,20 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+replace (
+	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
-replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
+	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
-replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
+	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
+	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
+	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 
-replace github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
+	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
-replace github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2
+  // TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
+  github.com/zondax/hid => github.com/zondax/hid v0.9.0
 
-replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
-
-// replace github.com/tecbot/gorocksdb => github.com/cosmos/gorocksdb v1.2.0
-
-replace github.com/CosmWasm/wasmd => github.com/yihuang/wasmd v0.28.1-0.20220808100335-f1e9ba9446b3
-
-replace github.com/CosmWasm/wasmvm => github.com/crypto-org-chain/wasmvm v1.0.1-0.20220616065451-935f00e54d0e
-
-// TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
-replace github.com/zondax/hid => github.com/zondax/hid v0.9.0
+	// REF: https://github.com/cosmos/cosmos-sdk/blob/main/docs/basics/app-anatomy.md#dependencies-and-makefile
+	google.golang.org/grpc => google.golang.org/grpc v1.33.2
+)
