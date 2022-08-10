@@ -12,7 +12,6 @@ from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
 from .utils import (
-    BLOCK_BROADCASTING,
     cluster_fixture,
     parse_events,
     wait_for_block,
