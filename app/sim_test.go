@@ -17,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	"github.com/cosmos/cosmos-sdk/store"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -33,9 +32,6 @@ import (
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
-
-	"github.com/CosmWasm/wasmd/x/wasm"
-	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
 const ParamsFile string = "simulation-params.json"
@@ -70,14 +66,12 @@ func TestFullAppSimulation(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ParamsFile = ParamsFile
-
 	defer func() {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		dir, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// run randomized simulation
@@ -110,15 +104,13 @@ func TestAppImportExport(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ParamsFile = ParamsFile
-
 	defer func() {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		dir, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -160,7 +152,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		newDir, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	var genesisState GenesisState
@@ -191,43 +183,7 @@ func TestAppImportExport(t *testing.T) {
 		{app.keys[nfttypes.StoreKey], newApp.keys[nfttypes.StoreKey], [][]byte{}},
 		{app.keys[capabilitytypes.StoreKey], newApp.keys[capabilitytypes.StoreKey], [][]byte{}},
 		{app.keys[authzkeeper.StoreKey], newApp.keys[authzkeeper.StoreKey], [][]byte{}},
-		{app.keys[wasm.StoreKey], newApp.keys[wasm.StoreKey], [][]byte{}},
 	}
-
-	// delete persistent tx counter value
-	ctxA.KVStore(app.keys[wasm.StoreKey]).Delete(wasmtypes.TXCounterPrefix)
-
-	// reset contract code index in source DB for comparison with dest DB
-	dropContractHistory := func(s store.KVStore, keys ...[]byte) {
-		for _, key := range keys {
-			prefixStore := prefix.NewStore(s, key)
-			iter := prefixStore.Iterator(nil, nil)
-			for ; iter.Valid(); iter.Next() {
-				prefixStore.Delete(iter.Key())
-			}
-			iter.Close()
-		}
-	}
-	prefixes := [][]byte{wasmtypes.ContractCodeHistoryElementPrefix, wasmtypes.ContractByCodeIDAndCreatedSecondaryIndexPrefix}
-	dropContractHistory(ctxA.KVStore(app.keys[wasm.StoreKey]), prefixes...)
-	dropContractHistory(ctxB.KVStore(newApp.keys[wasm.StoreKey]), prefixes...)
-
-	normalizeContractInfo := func(ctx sdk.Context, app *ChainApp) {
-		var index uint64
-		app.WasmKeeper.IterateContractInfo(ctx, func(address sdk.AccAddress, info wasmtypes.ContractInfo) bool {
-			created := &wasmtypes.AbsoluteTxPosition{
-				BlockHeight: uint64(0),
-				TxIndex:     index,
-			}
-			info.Created = created
-			store := ctx.KVStore(app.keys[wasm.StoreKey])
-			store.Set(wasmtypes.GetContractAddressKey(address), app.appCodec.MustMarshal(&info))
-			index++
-			return false
-		})
-	}
-	normalizeContractInfo(ctxA, app)
-	normalizeContractInfo(ctxB, newApp)
 
 	for _, skp := range storeKeysPrefixes {
 		storeA := ctxA.KVStore(skp.A)
@@ -249,15 +205,13 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ParamsFile = ParamsFile
-
 	defer func() {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		dir, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -304,7 +258,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, fauxMerkleModeOpt)
+		newDir, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
@@ -338,7 +292,6 @@ func TestAppStateDeterminism(t *testing.T) {
 	config.OnOperation = false
 	config.AllInvariants = false
 	config.ChainID = helpers.SimAppChainID
-	config.ParamsFile = ParamsFile
 
 	numSeeds := 3
 	numTimesToRunPerSeed := 5
@@ -358,7 +311,7 @@ func TestAppStateDeterminism(t *testing.T) {
 
 			db := dbm.NewMemDB()
 			app := New(logger, db, nil, true, map[int64]bool{},
-				simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), wasm.EnableAllProposals, EmptyAppOptions{}, nil, interBlockCacheOpt())
+				simapp.DefaultNodeHome, simapp.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, interBlockCacheOpt())
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
