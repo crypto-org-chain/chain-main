@@ -21,7 +21,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     description=proposal.get("description"),
                     upgrade_height=proposal.get("upgrade-height"),
                     upgrade_time=proposal.get("upgrade-time"),
-                    upgrade_info=proposal.get("upgrade-info"),
+                    upgrade_info=proposal.get("upgrade-info", "'{}'"),
                     deposit=proposal.get("deposit"),
                     # basic
                     home=self.data_dir,
