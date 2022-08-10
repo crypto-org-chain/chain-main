@@ -73,6 +73,10 @@ class CosmosCLI(cosmoscli.CosmosCLI):
 
 
 class ClusterCLI(cluster.ClusterCLI):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cmd = self.cmd or self.config.get("cmd") or "chain-maind"
+
     def cosmos_cli(self, i=0):
         return CosmosCLI(
             self.home(i),
