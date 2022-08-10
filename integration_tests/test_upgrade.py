@@ -141,18 +141,29 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(cluster, kind, title, proposal, **kwargs):
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        kind,
-        proposal,
-        **kwargs,
-    )
+def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwargs):
+    if cosmos_sdk_46:
+        rsp = cluster.gov_propose_legacy(
+            "community",
+            kind,
+            proposal,
+            **kwargs,
+        )
+    else:
+        rsp = cluster.gov_propose(
+            "community",
+            kind,
+            proposal,
+            **kwargs,
+        )
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
+    if cosmos_sdk_46:
+        assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
+    else:
+        assert ev["proposal_type"] == "SoftwareUpgrade", rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -173,7 +184,7 @@ def propose_and_pass(cluster, kind, title, proposal, **kwargs):
     return proposal
 
 
-def upgrade(cluster, plan_name, target_height):
+def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
     print("upgrade height", target_height)
 
     propose_and_pass(
@@ -187,6 +198,7 @@ def upgrade(cluster, plan_name, target_height):
             "upgrade-height": target_height,
             "deposit": "0.1cro",
         },
+        cosmos_sdk_46,
     )
 
     # wait for upgrade plan activated
@@ -257,7 +269,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
 
-    upgrade(cluster, "v2.0.0", target_height)
+    upgrade(cluster, "v2.0.0", target_height, cosmos_sdk_46=False)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
@@ -296,7 +308,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     target_height = cluster.block_height() + 30
 
-    upgrade(cluster, "v3.0.0", target_height)
+    upgrade(cluster, "v3.0.0", target_height, cosmos_sdk_46=False)
 
     rsp = cluster.delegate_amount(
         validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
@@ -307,7 +319,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     target_height = cluster.block_height() + 30
 
-    upgrade(cluster, "v4.0.0", target_height)
+    upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_46=False)
 
     # check icaauth params
     cli = cluster.cosmos_cli()
