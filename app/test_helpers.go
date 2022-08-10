@@ -331,6 +331,7 @@ func SignCheckDeliver(
 ) (sdk.GasInfo, *sdk.Result, error) {
 
 	tx, err := helpers.GenTx(
+		// nolint: gosec
 		rand.New(rand.NewSource(time.Now().UnixNano())),
 		txCfg,
 		msgs,
@@ -382,6 +383,7 @@ func GenSequenceOfTxs(txGen client.TxConfig, msgs []sdk.Msg, accNums []uint64, i
 	var err error
 	for i := 0; i < numToGenerate; i++ {
 		txs[i], err = helpers.GenTx(
+			// nolint: gosec
 			rand.New(rand.NewSource(time.Now().UnixNano())),
 			txGen,
 			msgs,
