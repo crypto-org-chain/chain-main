@@ -5,7 +5,7 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
-    def gov_propose_legacy(self, proposer, kind, proposal, **kwargs):
+    def gov_propose_legacy(self, proposer, kind, proposal, no_validate=False, **kwargs):
         if kind == "software-upgrade":
             return json.loads(
                 self.raw(
@@ -15,13 +15,14 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     kind,
                     proposal["name"],
                     "-y",
+                    "--no-validate" if no_validate else None,
                     from_=proposer,
                     # content
                     title=proposal.get("title"),
                     description=proposal.get("description"),
                     upgrade_height=proposal.get("upgrade-height"),
                     upgrade_time=proposal.get("upgrade-time"),
-                    upgrade_info=proposal.get("upgrade-info", "'{}'"),
+                    upgrade_info=proposal.get("upgrade-info"),
                     deposit=proposal.get("deposit"),
                     # basic
                     home=self.data_dir,
