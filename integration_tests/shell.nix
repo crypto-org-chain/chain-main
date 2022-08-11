@@ -2,10 +2,9 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # build tools
-    go_1_17
+    go_1_18
     gomod2nix
     rocksdb
-    libwasmvm
 
     # lint tools
     test-env
