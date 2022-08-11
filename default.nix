@@ -3,7 +3,6 @@
 , buildGoApplication
 , nix-gitignore
 , go_1_18
-, libwasmvm
 , rocksdb ? null
 , network ? "mainnet"  # mainnet|testnet
 , rev ? "dirty"
@@ -42,7 +41,7 @@ buildGoApplication rec {
   };
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
-  buildInputs = [ libwasmvm ] ++ lib.lists.optional (rocksdb != null) rocksdb;
+  buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   outputs = [
     "out"
@@ -63,11 +62,6 @@ buildGoApplication rec {
     -X github.com/cosmos/cosmos-sdk/version.Version=${version}
     -X github.com/cosmos/cosmos-sdk/version.Commit=${rev}
     -X github.com/cosmos/cosmos-sdk/version.BuildTags=${concatStringsSep "," tags}
-  '';
-
-  postInstall = lib.optionalString stdenv.isDarwin ''
-    install_name_tool -change @rpath/libwasmvm.dylib "${libwasmvm}/lib/libwasmvm.dylib" $out/bin/chain-maind
-    install_name_tool -change @rpath/libwasmvm.dylib "${libwasmvm}/lib/libwasmvm.dylib" $instrumented/bin/${instrumentedBinary}
   '';
 
   instrumentedBinary = "chain-maind-inst";

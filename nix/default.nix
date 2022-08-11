@@ -30,15 +30,6 @@ import sources.nixpkgs {
         };
       };
     })
-    (_: pkgs: {
-      libwasmvm = pkgs.rustPlatform.buildRustPackage rec {
-        name = "libwasmvm";
-        src = sources.wasmvm + "/libwasmvm";
-        cargoDepsName = "vendor"; # use a static name to avoid rebuild when name changed
-        cargoSha256 = "sha256-m3CtXHAkjNR7t7zie9FWK4k5xvr6/O2BfGQYi+foxCc=";
-        doCheck = false;
-      };
-    })
     (pkgs: prev: {
       go = pkgs.go_1_17;
       test-env = pkgs.callPackage ./testenv.nix { };
