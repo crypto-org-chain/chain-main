@@ -15,13 +15,9 @@
       url = "github:facebook/rocksdb/v6.29.5";
       flake = false;
     };
-    libwasmvm-src = {
-      url = "github:CosmWasm/wasmvm/v1.0.0";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, nix-bundle-exe, gomod2nix, flake-utils, rocksdb-src, libwasmvm-src }:
+  outputs = { self, nixpkgs, nix-bundle-exe, gomod2nix, flake-utils, rocksdb-src }:
     let
       rev = self.shortRev or "dirty";
       mkApp = drv: {
@@ -76,13 +72,6 @@
           version = "6.29.5";
           src = rocksdb-src;
         })).override { enableJemalloc = true; };
-        libwasmvm = final.rustPlatform.buildRustPackage rec {
-          name = "libwasmvm";
-          src = libwasmvm-src + "/libwasmvm";
-          cargoDepsName = "vendor"; # use a static name to avoid rebuild when name changed
-          cargoSha256 = "sha256-m3CtXHAkjNR7t7zie9FWK4k5xvr6/O2BfGQYi+foxCc=";
-          doCheck = false;
-        };
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {
