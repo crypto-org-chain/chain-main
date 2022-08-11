@@ -48,7 +48,6 @@ buildGoApplication rec {
     "instrumented"
   ];
   tags = [
-    "sys_wasmvm"
     "cgo"
     "ledger"
     "!test_ledger_mock"
