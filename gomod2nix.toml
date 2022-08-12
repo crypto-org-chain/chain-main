@@ -17,8 +17,8 @@ schema = 3
     version = "v1.0.0-beta.7"
     hash = "sha256-XblGvIx6Wvvq6wggXjp+KbeJGXoe7AZH7hXEdauCezU="
   [mod."cosmossdk.io/math"]
-    version = "v1.0.0-beta.2"
-    hash = "sha256-D5FXRgotSFaUYSE7KUTeLJAyWyLGwe760v900Wh/pfA="
+    version = "v1.0.0-beta.3"
+    hash = "sha256-lTQ27ZlL+kWlc+S//sJmyiOwaf9qS+YLv61I4OXi9XE="
   [mod."filippo.io/edwards25519"]
     version = "v1.0.0-rc.1"
     hash = "sha256-3DboBqby2ejRU33FG96Z8JF5AJ8HP2rC/v++VyoQ2LQ="
@@ -80,9 +80,9 @@ schema = 3
     version = "v1.0.0-alpha7"
     hash = "sha256-2wCH+toTF2A6MfFjOa13muEH5oBCcxAhZEqirNOrBA0="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.43.0-beta1.0.20220811091413-ef8c1f4e5d33"
-    hash = "sha256-b5yxeY/0tutNLgSa3m6QqQIy++ePl+gbELZCde/a0Qk="
-    replaced = "github.com/yihuang/cosmos-sdk"
+    version = "v0.46.1-0.20220811143248-629b3b9df8de"
+    hash = "sha256-5LI+KoicHvuvVlZ3gDH2IDLNfQYmE5ooXdCyrjS9Z3Q="
+    replaced = "github.com/cosmos/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="

@@ -3,7 +3,7 @@ module github.com/crypto-org-chain/chain-main/v4
 go 1.18
 
 require (
-	cosmossdk.io/math v1.0.0-beta.2
+	cosmossdk.io/math v1.0.0-beta.3
 	github.com/confluentinc/bincover v0.1.0
 	github.com/cosmos/cosmos-sdk v0.46.0
 	github.com/cosmos/ibc-go/v5 v5.0.0-beta1
@@ -154,6 +154,7 @@ require (
 )
 
 replace (
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.46.1-0.20220811143248-629b3b9df8de
 	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
@@ -165,5 +166,3 @@ replace (
 	// TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
 	github.com/zondax/hid => github.com/zondax/hid v0.9.0
 )
-
-replace github.com/cosmos/cosmos-sdk => github.com/yihuang/cosmos-sdk v0.43.0-beta1.0.20220811091413-ef8c1f4e5d33
