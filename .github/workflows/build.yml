@@ -41,7 +41,7 @@ jobs:
     needs: [member]
     permissions:
       pull-requests: write
-    timeout-minutes: 5
+    timeout-minutes: 10
     if: needs.member.outputs.valid == 'true'
     steps:
       - name: Comment PR for Sim test started
