@@ -46,7 +46,7 @@ jobs:
           flags: integration_tests
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files.tar.gz -C "$TMPDIR/pytest-of-runner" .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
