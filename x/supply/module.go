@@ -29,15 +29,11 @@ var (
 // ----------------------------------------------------------------------------
 
 // AppModuleBasic implements the AppModuleBasic interface for the capability module.
-type AppModuleBasic struct {
-	cdc codec.Codec
-}
+type AppModuleBasic struct{}
 
 // NewAppModuleBasic creates a new AppModuleBasic
-func NewAppModuleBasic(cdc codec.Codec) AppModuleBasic {
-	return AppModuleBasic{
-		cdc,
-	}
+func NewAppModuleBasic() AppModuleBasic {
+	return AppModuleBasic{}
 }
 
 // Name returns the capability module's name.
@@ -103,9 +99,9 @@ type AppModule struct {
 }
 
 // NewAppModule creates a new AppModule
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule {
+func NewAppModule(keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: NewAppModuleBasic(cdc),
+		AppModuleBasic: NewAppModuleBasic(),
 		keeper:         keeper,
 	}
 }

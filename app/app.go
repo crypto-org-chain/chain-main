@@ -492,8 +492,8 @@ func New(
 		feeModule,
 		icaModule,
 		icaAuthModule,
-		chainmain.NewAppModule(appCodec, app.chainmainKeeper),
-		supply.NewAppModule(appCodec, app.SupplyKeeper),
+		chainmain.NewAppModule(app.chainmainKeeper),
+		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
