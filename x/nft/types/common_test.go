@@ -32,8 +32,8 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 		numString := strconv.Itoa(i)
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString)                    // adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHex(buffer.String()) // nolint: errcheck
+		buffer.WriteString(numString)                          // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String()) // nolint: errcheck
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()
@@ -43,7 +43,7 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 
 // for incode address generation
 func testAddr(addr string, bech string) sdk.AccAddress {
-	res, err := sdk.AccAddressFromHex(addr)
+	res, err := sdk.AccAddressFromHexUnsafe(addr)
 	if err != nil {
 		panic(err)
 	}

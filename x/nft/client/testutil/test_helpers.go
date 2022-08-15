@@ -18,8 +18,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	dbm "github.com/tendermint/tm-db"
 )
 
@@ -28,7 +28,7 @@ func GetApp(val network.Validator) servertypes.Application {
 		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
 		app.MakeEncodingConfig(),
 		simapp.EmptyAppOptions{},
-		baseapp.SetPruning(storetypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
+		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
 		baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
 	)
 }

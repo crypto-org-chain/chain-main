@@ -4,7 +4,6 @@
 , nix-gitignore
 , go_1_18
 , rocksdb ? null
-, db_backend ? "goleveldb"
 , network ? "mainnet"  # mainnet|testnet
 , rev ? "dirty"
 , ledger_zemu ? false
@@ -42,21 +41,20 @@ buildGoApplication rec {
   };
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
-  buildInputs = lib.lists.optional (db_backend == "rocksdb") rocksdb;
+  buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   outputs = [
     "out"
     "instrumented"
   ];
   tags = [
-    "sys_wasmvm"
     "cgo"
     "ledger"
     "!test_ledger_mock"
     "!ledger_mock"
     (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
     network
-  ] ++ (lib.lists.optional (db_backend == "rocksdb") "rocksdb");
+  ] ++ lib.lists.optionals (rocksdb != null) [ "rocksdb" "rocksdb_build" ];
   ldflags = ''
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}

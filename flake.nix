@@ -48,7 +48,7 @@
           devShells = {
             chain-maind = pkgs.mkShell {
               buildInputs = with pkgs; [
-                go_1_17
+                go_1_18
                 rocksdb
                 libwasmvm
               ];
@@ -75,7 +75,6 @@
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {
-            db_backend = [ "goleveldb" "rocksdb" ];
             network = [ "mainnet" "testnet" ];
             pkgtype = [
               "nix" # normal nix package
@@ -84,17 +83,16 @@
             ];
           };
           binaries = builtins.listToAttrs (builtins.map
-            ({ db_backend, network, pkgtype }: {
+            ({ network, pkgtype }: {
               name = builtins.concatStringsSep "-" (
                 [ "chain-maind" ] ++
                 lib.optional (network != "mainnet") network ++
-                lib.optional (db_backend != "goleveldb") db_backend ++
                 lib.optional (pkgtype != "nix") pkgtype
               );
               value =
                 let
                   chain-maind = callPackage ./. {
-                    inherit rev db_backend network;
+                    inherit rev network;
                   };
                   bundle = bundle-exe chain-maind;
                 in

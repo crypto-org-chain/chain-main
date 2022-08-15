@@ -13,6 +13,8 @@ from dateutil.parser import isoparse
 from pystarport import cluster, ledger
 from pystarport.ports import rpc_port
 
+from .cosmoscli import ClusterCLI
+
 #################
 # CONSTANTS
 # Reponse code
@@ -156,7 +158,7 @@ def cluster_fixture(
                     flags=re.M,
                 )
             )
-        clis[chain_id] = cluster.ClusterCLI(data, chain_id=chain_id)
+        clis[chain_id] = ClusterCLI(data, chain_id=chain_id, cmd=cmd)
 
     supervisord = cluster.start_cluster(data)
 

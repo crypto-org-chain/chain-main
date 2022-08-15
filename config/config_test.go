@@ -9,13 +9,15 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/chain-main/v4/config"
 )
 
 func TestMnemonic(t *testing.T) {
-	kb := keys.NewInMemory()
+	kb := keys.NewInMemory(app.MakeEncodingConfig().Marshaler)
 	account, err := kb.NewAccount(
 		"croTest",
 		"point shiver hurt flight fun online hub antenna engine pave chef fantasy front interest poem accident catch load frequent praise elite pet remove used",
@@ -25,14 +27,15 @@ func TestMnemonic(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	publicKey := account.GetPubKey()
+	publicKey, ok := account.PubKey.GetCachedValue().(*secp256k1.PubKey)
+	require.True(t, ok)
 	expectedPublicKey := []byte("0396bb69cbbf27c07e08c0a9d8ac2002ed75a6287a3f2e4cfe11977817ca14fad0")
 
 	expectedPublicKeyBytes := make([]byte, hex.DecodedLen(len(expectedPublicKey)))
 	_, err = hex.Decode(expectedPublicKeyBytes, expectedPublicKey)
 	require.NoError(t, err)
 
-	if !bytes.Equal(expectedPublicKeyBytes, publicKey.Bytes()) {
+	if !bytes.Equal(expectedPublicKeyBytes, publicKey.Key) {
 		t.Error("HD public key does not match to expected public key")
 	}
 }
