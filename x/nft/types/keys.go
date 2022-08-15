@@ -13,6 +13,9 @@ const (
 	// ModuleName is the name of the module
 	ModuleName = "nft"
 
+	// avoid conflicts with sdk nft module
+	ModuleNameAlias = "nft2"
+
 	// StoreKey is the default store key for NFT
 	StoreKey = ModuleName
 

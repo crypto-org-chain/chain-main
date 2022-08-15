@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -22,7 +21,6 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/rest"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/simulation"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
@@ -62,11 +60,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	}
 
 	return types.ValidateGenesis(data)
-}
-
-// RegisterRESTRoutes registers the REST routes for the NFT module.
-func (AppModuleBasic) RegisterRESTRoutes(clientCtx client.Context, rtr *mux.Router) {
-	rest.RegisterHandlers(clientCtx, rtr, types.RouterKey)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the NFT module.

@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/crypto-org-chain/chain-main/v4/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 	nfttestutil "github.com/crypto-org-chain/chain-main/v4/x/nft/client/testutil"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
@@ -29,16 +30,21 @@ type IntegrationTestSuite struct {
 }
 
 func (s *IntegrationTestSuite) SetupSuite() {
+	var err error
 	s.T().Log("setting up integration test suite")
 
 	cfg := network.DefaultConfig()
 	cfg.AppConstructor = nfttestutil.GetApp
 	cfg.NumValidators = 2
 
-	s.cfg = cfg
-	s.network = network.New(s.T(), cfg)
+	encCfg := app.MakeEncodingConfig()
+	cfg.GenesisState = app.NewDefaultGenesisState(encCfg.Marshaler)
 
-	_, err := s.network.WaitForHeight(1)
+	s.cfg = cfg
+	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
+	s.Require().NoError(err)
+
+	_, err = s.network.WaitForHeight(1)
 	s.Require().NoError(err)
 }
 

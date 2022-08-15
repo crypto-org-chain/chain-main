@@ -4,58 +4,115 @@ GOLANG_CROSS_VERSION  = v1.18
 
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
+TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
+# RocksDB is a native dependency, so we don't assume the library is installed.
+# Instead, it must be explicitly enabled and we warn when it is not.
+ENABLE_ROCKSDB ?= false
+
+export GO111MODULE = on
+
+build_tags = netgo
+ifeq ($(LEDGER_ENABLED),true)
+  ifeq ($(OS),Windows_NT)
+    GCCEXE = $(shell where gcc.exe 2> NUL)
+    ifeq ($(GCCEXE),)
+      $(error gcc.exe not installed for ledger support, please install or set LEDGER_ENABLED=false)
+    else
+      build_tags += ledger
+    endif
+  else
+    UNAME_S = $(shell uname -s)
+    ifeq ($(UNAME_S),OpenBSD)
+      $(warning OpenBSD detected, disabling ledger support (https://github.com/cosmos/cosmos-sdk/issues/1988))
+    else
+      GCC = $(shell command -v gcc 2> /dev/null)
+      ifeq ($(GCC),)
+        $(error gcc not installed for ledger support, please install or set LEDGER_ENABLED=false)
+      else
+        build_tags += ledger
+      endif
+    endif
+  endif
+endif
+
+ifeq (secp,$(findstring secp,$(COSMOS_BUILD_OPTIONS)))
+  build_tags += libsecp256k1_sdk
+endif
+
+ifeq ($(ENABLE_ROCKSDB),true)
+  BUILD_TAGS += rocksdb_build
+  test_tags += rocksdb_build
+else
+  $(warning RocksDB support is disabled; to build and test with RocksDB support, set ENABLE_ROCKSDB=true)
+endif
 
 # DB backend selection
 ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
+  build_tags += gcc
 endif
 ifeq (badgerdb,$(findstring badgerdb,$(COSMOS_BUILD_OPTIONS)))
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=badgerdb
-  BUILD_TAGS := $(BUILD_TAGS),badgerdb
+  BUILD_TAGS += badgerdb
 endif
 # handle rocksdb
 ifeq (rocksdb,$(findstring rocksdb,$(COSMOS_BUILD_OPTIONS)))
-  $(info ################################################################)
-  $(info To use rocksdb, you need to install rocksdb first)
-  $(info Please follow this guide https://github.com/rockset/rocksdb-cloud/blob/master/INSTALL.md)
-  $(info ################################################################)
+  ifneq ($(ENABLE_ROCKSDB),true)
+    $(error Cannot use RocksDB backend unless ENABLE_ROCKSDB=true)
+  endif
   CGO_ENABLED=1
-  BUILD_TAGS := $(BUILD_TAGS),rocksdb
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
+  BUILD_TAGS += rocksdb
 endif
 # handle boltdb
 ifeq (boltdb,$(findstring boltdb,$(COSMOS_BUILD_OPTIONS)))
-  BUILD_TAGS := $(BUILD_TAGS),boltdb
-  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=boltdb
-endif
-
-ldflags += -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
-	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
-	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
-
-BUILD_FLAGS := -ldflags '$(ldflags)'
-TESTNET_FLAGS ?=
-
-ledger ?= HID
-ifeq ($(LEDGER_ENABLED),true)
-	BUILD_TAGS := -tags $(BUILD_TAGS),cgo,ledger,!test_ledger_mock,!ledger_mock
-	ifeq ($(ledger), ZEMU)
-		BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
-	else
-		BUILD_TAGS := $(BUILD_TAGS),!ledger_zemu
-	endif
+  BUILD_TAGS += boltdb
 endif
 
 ifeq ($(NETWORK),testnet)
-	BUILD_TAGS := $(BUILD_TAGS),testnet
-	TEST_TAGS := "--tags=testnet"
+	BUILD_TAGS += testnet
+	test_tags += testnet
 endif
+
+build_tags += $(BUILD_TAGS)
+build_tags := $(strip $(build_tags))
+
+whitespace :=
+whitespace += $(whitespace)
+comma := ,
+build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
+
+# process linker flags
+
+ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
+	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
+	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
+	-X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION) \
+	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+
+ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
+  ldflags += -w -s
+endif
+ldflags += $(LDFLAGS)
+ldflags := $(strip $(ldflags))
+
+BUILD_FLAGS := -tags "$(build_tags)" -ldflags '$(ldflags)'
+# check for nostrip option
+ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
+  BUILD_FLAGS += -trimpath
+endif
+
+# Check for debug option
+ifeq (debug,$(findstring debug,$(COSMOS_BUILD_OPTIONS)))
+  BUILD_FLAGS += -gcflags "all=-N -l"
+endif
+
+TEST_FLAGS := -tags "$(test_tags)"
+
+TESTNET_FLAGS ?=
 
 SIMAPP = github.com/crypto-org-chain/chain-main/v4/app
 BINDIR ?= ~/go/bin
@@ -68,13 +125,13 @@ download:
 	git submodule update --init --recursive
 
 install: check-network go.sum
-		go install -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) ./cmd/chain-maind
+		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
 
 build: check-network go.sum
-		go build -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
+		go build -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
 
 buildwindows: check-network go.sum
-		go build -buildmode=exe -mod=readonly $(BUILD_FLAGS) $(BUILD_TAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
+		go build -buildmode=exe -mod=readonly $(BUILD_FLAGS) -o $(BUILDDIR)/chain-maind ./cmd/chain-maind
 
 
 .PHONY: build
@@ -98,7 +155,7 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test: check-network
-	@go test $(TEST_TAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 # look into .golangci.yml for enabling / disabling linters
@@ -117,22 +174,22 @@ lint-ci:
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
-	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=0 -v -timeout 24h
 
 test-sim-custom-genesis-fast: check-network
 	@echo "Running custom genesis simulation..."
 	@echo "By default, ${HOME}/.chain-maind/config/genesis.json will be used."
-	@go test $(TEST_TAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
-		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
+		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h -ExitOnFail
 
 test-sim-import-export:
 	@echo "Running Chain import/export simulation. This may take several minutes..."
-	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) 25 5 TestAppImportExport
+	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 25 5 TestAppImportExport
 
 test-sim-after-import:
 	@echo "Running application simulation-after-import. This may take several minutes..."
-	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) 50 5 TestAppSimulationAfterImport
+	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppSimulationAfterImport
 
 ###############################################################################
 ###                                Localnet                                 ###

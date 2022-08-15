@@ -40,7 +40,7 @@ def test_basic_fee_allowance(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
 
     assert cluster.balance(fee_granter_address) == fee_granter_balance - fee_coins
@@ -80,7 +80,7 @@ def test_tx_failed_when_exceeds_grant_fee(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
     assert tx["code"] != SUCCESS_CODE, "should fail as fee limit exceeded"
 
@@ -118,7 +118,7 @@ def test_tx_failed_after_grant_expiration(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
     assert tx["code"] != SUCCESS_CODE, "should fail as fee allowance expired"
 
@@ -162,7 +162,7 @@ def test_periodic_fee_allowance(cluster):
             receiver_address,
             "%s%s" % (transaction_coins, BASECRO_DENOM),
             fees="%s%s" % (fee_coins, BASECRO_DENOM),
-            fee_account=fee_granter_address,
+            fee_granter=fee_granter_address,
         )
         wait_for_block(cluster, int(tx["height"]) + 1)  # wait for next block
         block_info = query_block_info(cluster, tx["height"])
@@ -219,7 +219,7 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
 
     failed_tx = transfer(
@@ -228,7 +228,7 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
     assert failed_tx["code"] != SUCCESS_CODE, "should fail as fee exceeds period limit"
 
@@ -246,7 +246,7 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
 
     # transaction only happened two times
@@ -280,7 +280,7 @@ def test_revoke_fee_grant(cluster):
         receiver_address,
         "%s%s" % (transaction_coins, BASECRO_DENOM),
         fees="%s%s" % (fee_coins, BASECRO_DENOM),
-        fee_account=fee_granter_address,
+        fee_granter=fee_granter_address,
     )
 
     assert failed_tx["code"] != SUCCESS_CODE, "should fail as grant is revoked"

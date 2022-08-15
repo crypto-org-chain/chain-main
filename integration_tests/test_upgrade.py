@@ -109,7 +109,7 @@ def test_cosmovisor(cosmovisor_cluster):
     target_height = height + 15
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
-    rsp = cluster.gov_propose(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "software-upgrade",
         {
@@ -124,7 +124,7 @@ def test_cosmovisor(cosmovisor_cluster):
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == "SoftwareUpgrade", rsp
+    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
@@ -141,17 +141,29 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(cluster, kind, title, proposal):
-    rsp = cluster.gov_propose(
-        "community",
-        kind,
-        proposal,
-    )
+def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwargs):
+    if cosmos_sdk_46:
+        rsp = cluster.gov_propose_legacy(
+            "community",
+            kind,
+            proposal,
+            **kwargs,
+        )
+    else:
+        rsp = cluster.gov_propose(
+            "community",
+            kind,
+            proposal,
+            **kwargs,
+        )
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_type"] == title, rsp
+    if cosmos_sdk_46:
+        assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
+    else:
+        assert ev["proposal_type"] == "SoftwareUpgrade", rsp
     proposal_id = ev["proposal_id"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -172,7 +184,7 @@ def propose_and_pass(cluster, kind, title, proposal):
     return proposal
 
 
-def upgrade(cluster, plan_name, target_height):
+def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
     print("upgrade height", target_height)
 
     propose_and_pass(
@@ -186,6 +198,7 @@ def upgrade(cluster, plan_name, target_height):
             "upgrade-height": target_height,
             "deposit": "0.1cro",
         },
+        cosmos_sdk_46,
     )
 
     # wait for upgrade plan activated
@@ -226,6 +239,9 @@ def upgrade(cluster, plan_name, target_height):
     )
     cluster.reload_supervisor()
 
+    # update the cli cmd to correct binary
+    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
+
     # wait for it to generate new blocks
     wait_for_block(cluster, target_height + 2, 600)
 
@@ -253,7 +269,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
 
-    upgrade(cluster, "v2.0.0", target_height)
+    upgrade(cluster, "v2.0.0", target_height, cosmos_sdk_46=False)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
@@ -292,7 +308,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     target_height = cluster.block_height() + 30
 
-    upgrade(cluster, "v3.0.0", target_height)
+    upgrade(cluster, "v3.0.0", target_height, cosmos_sdk_46=False)
 
     rsp = cluster.delegate_amount(
         validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
@@ -303,7 +319,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     target_height = cluster.block_height() + 30
 
-    upgrade(cluster, "v4.0.0", target_height)
+    upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_46=False)
 
     # check icaauth params
     cli = cluster.cosmos_cli()
@@ -344,6 +360,7 @@ def test_cancel_upgrade(cluster):
             "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
+        no_validate=True,
     )
 
     print("cancel upgrade plan")
@@ -356,6 +373,7 @@ def test_cancel_upgrade(cluster):
             "description": "there is bug, cancel upgrade",
             "deposit": "0.1cro",
         },
+        no_validate=True,
     )
 
     # wait for blocks after upgrade, should success since upgrade is canceled
