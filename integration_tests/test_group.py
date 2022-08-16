@@ -183,6 +183,9 @@ def test_group(cluster, tmp_path):
     # transfer some amount to group policy address
     cluster.transfer(admin, group_policy_address, "1cro")
 
+    group_policy_balance = cluster.balance(group_policy_address)
+    signer1_balance = cluster.balance(signer1)
+
     # execute proposal
     rsp = json.loads(
         cli.raw(
@@ -213,3 +216,6 @@ def test_group(cluster, tmp_path):
         )
         == "PROPOSAL_EXECUTOR_RESULT_SUCCESS"
     ), rsp["raw_log"]
+
+    assert group_policy_balance - 100000000 == cluster.balance(group_policy_address)
+    assert signer1_balance + 100000000 == cluster.balance(signer1)
