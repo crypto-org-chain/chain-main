@@ -318,7 +318,36 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert cluster.staking_pool() == old_bonded + 2009999499
 
     target_height = cluster.block_height() + 30
+    cli = cluster.cosmos_cli()
 
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "validator",
+            f"{validator1_operator_address}",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print("validator1 commission", rsp["commission"]["commission_rates"]["rate"])
+    assert rsp["commission"]["commission_rates"]["rate"] == "0.000000000000000000", rsp
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "validator",
+            f"{validator2_operator_address}",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print("validator2 commission", rsp["commission"]["commission_rates"]["rate"])
+
+    assert rsp["commission"]["commission_rates"]["rate"] == "0.100000000000000000", rsp
+    
     upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_46=False)
 
     # check icaauth params
@@ -335,6 +364,48 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     )
 
     assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
+    # check min commission
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "params",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print("min commission", rsp["min_commission_rate"])
+
+    assert rsp["min_commission_rate"] == "0.050000000000000000", rsp
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "validator",
+            f"{validator1_operator_address}",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print("validator1 commission", rsp["commission"]["commission_rates"]["rate"])
+
+    assert rsp["commission"]["commission_rates"]["rate"] == "0.050000000000000000", rsp
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "validator",
+            f"{validator2_operator_address}",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print("validator2 commission", rsp["commission"]["commission_rates"]["rate"])
+
+    assert rsp["commission"]["commission_rates"]["rate"] == "0.100000000000000000", rsp
 
 
 def test_cancel_upgrade(cluster):

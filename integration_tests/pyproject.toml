@@ -19,8 +19,7 @@ pytest-github-actions-annotate-failures = "^0.1.1"
 protobuf = "3.19.4"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
-# chainlibpy use version 0.2.3 pystarport
-pystarport = "=0.2.3"
+pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
 chainlibpy = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
