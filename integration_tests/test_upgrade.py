@@ -421,7 +421,7 @@ def test_manual_export(cosmovisor_cluster):
 
     for i in range(cluster.nodes_len()):
         migrate_genesis_time(cluster, i)
-        cluster.validate_genesis(i)
+        cluster.validate_genesis()
         cluster.cosmos_cli(i).unsaferesetall()
 
     cluster.supervisor.startAllProcesses()
