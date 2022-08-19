@@ -670,6 +670,27 @@ func New(
 
 	planName := "v4.0.0"
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		// the minimal commission rate of 5% (0.05)
+		// (default is needed to be set because of SDK store migrations that set the param)
+		stakingtypes.DefaultMinCommissionRate = sdk.NewDecWithPrec(5, 2)
+
+		stakingKeeper.IterateValidators(ctx, func(index int64, val stakingtypes.ValidatorI) (stop bool) {
+			if val.GetCommission().LT(stakingtypes.DefaultMinCommissionRate) {
+				validator, found := stakingKeeper.GetValidator(ctx, val.GetOperator())
+				if !found {
+					ctx.Logger().Error("validator not found", val)
+					return true
+				}
+				ctx.Logger().Info("update validator's commission rate to a minimal one", val)
+				validator.Commission.Rate = stakingtypes.DefaultMinCommissionRate
+				if validator.Commission.MaxRate.LT(stakingtypes.DefaultMinCommissionRate) {
+					validator.Commission.MaxRate = stakingtypes.DefaultMinCommissionRate
+				}
+				stakingKeeper.SetValidator(ctx, validator)
+			}
+			return false
+		})
+
 		// set the ICS27 consensus version so InitGenesis is not run
 		fromVM[icatypes.ModuleName] = icaModule.ConsensusVersion()
 
