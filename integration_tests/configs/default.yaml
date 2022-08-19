@@ -2,6 +2,7 @@ chaintest:
   validators:
     - coins: 10cro
       staked: 10cro
+      commission_rate: "0.000000000000000000"
     - coins: 10cro
       staked: 10cro
     # - coins: 1cro

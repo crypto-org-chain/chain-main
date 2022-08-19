@@ -12,14 +12,16 @@ def test_reward(cluster):
     validator1_address = cluster.address("validator", i=0)
     validator2_address = cluster.address("validator", i=1)
     # starts with crocncl1
-    validator1_operator_address = cluster.address("validator", i=0, bech="val")
+    # validator1_operator_address = cluster.address("validator", i=0, bech="val")
     validator2_operator_address = cluster.address("validator", i=1, bech="val")
     signer1_old_balance = cluster.balance(signer1_address)
     amount_to_send = 2
     fees = 3_000_000_000
     # wait for initial reward processed, so that distribution values can be read
     wait_for_block(cluster, 2)
-    old_commission_amount = cluster.distribution_commission(validator1_operator_address)
+    old_commission_amount = (
+        0  # cluster.distribution_commission(validator1_operator_address)
+    )
     old_commission_amount2 = cluster.distribution_commission(
         validator2_operator_address,
     )
@@ -37,7 +39,9 @@ def test_reward(cluster):
     wait_for_new_blocks(cluster, 2)
     signer1_balance = cluster.balance(signer1_address)
     assert signer1_balance + fees + amount_to_send == signer1_old_balance
-    commission_amount = cluster.distribution_commission(validator1_operator_address)
+    commission_amount = (
+        0  # cluster.distribution_commission(validator1_operator_address)
+    )
     commission_amount2 = cluster.distribution_commission(validator2_operator_address)
     commission_amount_diff = (commission_amount - old_commission_amount) + (
         commission_amount2 - old_commission_amount2
