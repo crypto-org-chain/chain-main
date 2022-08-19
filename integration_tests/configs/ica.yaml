@@ -35,4 +35,6 @@ ica-host-1:
         host_genesis_state:
           params:
             allow_messages: ["/cosmos.bank.v1beta1.MsgSend"]
-relayer: {}
+relayer:
+  global:
+    strategy: all
