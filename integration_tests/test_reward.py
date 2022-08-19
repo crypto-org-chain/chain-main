@@ -12,7 +12,7 @@ def test_reward(cluster):
     validator1_address = cluster.address("validator", i=0)
     validator2_address = cluster.address("validator", i=1)
     # starts with crocncl1
-    validator1_operator_address = cluster.address("validator", i=0, bech="val")
+    # validator1_operator_address = cluster.address("validator", i=0, bech="val")
     validator2_operator_address = cluster.address("validator", i=1, bech="val")
     signer1_old_balance = cluster.balance(signer1_address)
     amount_to_send = 2
