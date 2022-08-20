@@ -13,7 +13,7 @@ MAX_SLEEP_SEC = 600
 def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/byzantine.yaml",
+        Path(__file__).parent / "configs/byzantine.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
     )

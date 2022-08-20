@@ -45,7 +45,7 @@ pytestmark = pytest.mark.normal
 def cluster_temp(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/default.yaml",
+        Path(__file__).parent / "configs/default.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
     )

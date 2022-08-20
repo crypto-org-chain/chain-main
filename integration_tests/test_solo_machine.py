@@ -19,7 +19,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     try:
         yield from cluster_fixture(
-            Path(__file__).parent / "configs/solo_machine.yaml",
+            Path(__file__).parent / "configs/solo_machine.jsonnet",
             worker_index,
             tmp_path_factory.mktemp("data"),
         )
@@ -142,7 +142,7 @@ def get_balance(cluster, addr):
 
 
 def get_mnemonic(cli):
-    config = yaml.safe_load(open(Path(__file__).parent / "configs/solo_machine.yaml"))
+    config = yaml.safe_load(open(Path(__file__).parent / "configs/solo_machine.jsonnet"))
     return config[cli.chain_id]["accounts"][0]["mnemonic"]
 
 
