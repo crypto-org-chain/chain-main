@@ -5,7 +5,7 @@ from pystarport import ports
 from .utils import wait_for_block, wait_for_port
 
 
-def start_and_wait_relayer(cluster, init_relayer=True):
+def wait_relayer_ready(cluster):
     for cli in cluster.values():
         for i in range(cli.nodes_len()):
             wait_for_port(ports.grpc_port(cli.base_port(i)))
@@ -17,7 +17,11 @@ def start_and_wait_relayer(cluster, init_relayer=True):
 
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
-    relayer = ["hermes", "--config", data_root / "relayer.toml"]
+    return ["hermes", "--config", data_root / "relayer.toml"]
+
+
+def start_and_wait_relayer(cluster, init_relayer=True):
+    relayer = wait_relayer_ready(cluster)
     chains = ["ibc-0", "ibc-1"]
     if init_relayer:
         # create connection and channel
@@ -45,7 +49,7 @@ def start_and_wait_relayer(cluster, init_relayer=True):
 
     query = relayer + ["query", "channels", "--chain"]
     [src_channel, dst_channel] = [re.search(
-        "channel-.",
+        r"channel-\d*",
         subprocess.check_output(query + [chain]).decode("utf-8"),
     ).group() for chain in chains]
     return src_channel, dst_channel
