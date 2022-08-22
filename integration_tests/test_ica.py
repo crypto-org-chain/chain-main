@@ -1,11 +1,11 @@
 import json
 import subprocess
 import time
-import re
 from pathlib import Path
 
 import pytest
-from .ibc_utils import wait_relayer_ready
+
+from .ibc_utils import search_target, wait_relayer_ready
 from .utils import cluster_fixture
 
 pytestmark = pytest.mark.ibc
@@ -42,11 +42,8 @@ def start_and_wait_relayer(cluster):
     cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
     query = relayer + ["query", "connections", "--chain"]
-    [controller_connection, host_connection] = [re.search(
-        r"connection-\d*",
-        subprocess.check_output(query + [chain]).decode("utf-8"),
-    ).group() for chain in chains]
-    return controller_connection, host_connection
+    [conn_a, conn_b] = [search_target(query, "connection", chain) for chain in chains]
+    return conn_a, conn_b
 
 
 def test_ica(cluster, tmp_path):

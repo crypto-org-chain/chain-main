@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from .utils import cluster_fixture
 from .ibc_utils import start_and_wait_relayer
+from .utils import cluster_fixture
 
 pytestmark = pytest.mark.ibc
 

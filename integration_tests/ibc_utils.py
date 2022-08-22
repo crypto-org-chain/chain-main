@@ -1,7 +1,8 @@
-import subprocess
 import re
+import subprocess
 
 from pystarport import ports
+
 from .utils import wait_for_block, wait_for_port
 
 
@@ -18,6 +19,13 @@ def wait_relayer_ready(cluster):
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
     return ["hermes", "--config", data_root / "relayer.toml"]
+
+
+def search_target(query, key, chain):
+    return re.search(
+        r"" + key + r"-\d*",
+        subprocess.check_output(query + [chain]).decode("utf-8"),
+    ).group()
 
 
 def start_and_wait_relayer(cluster, init_relayer=True):
@@ -48,8 +56,5 @@ def start_and_wait_relayer(cluster, init_relayer=True):
         cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
     query = relayer + ["query", "channels", "--chain"]
-    [src_channel, dst_channel] = [re.search(
-        r"channel-\d*",
-        subprocess.check_output(query + [chain]).decode("utf-8"),
-    ).group() for chain in chains]
-    return src_channel, dst_channel
+    [src, dst] = [search_target(query, "channel", chain) for chain in chains]
+    return src, dst
