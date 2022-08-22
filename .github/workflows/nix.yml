@@ -54,6 +54,27 @@ jobs:
           path: debug_files.tar.gz
           if-no-files-found: ignore
 
+  upload-cache:
+    if: github.event_name == 'push'
+    needs: ["test"]
+    strategy:
+      matrix:
+        os: [macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@v15
+      - uses: cachix/cachix-action@v10
+        with:
+          name: crypto-com
+          # github don't pass secrets for pull request from fork repos,
+          # in that case the push is disabled naturally.
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: 'instantiate integration test env'
+        run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
+
   test-upgrade:
     runs-on: ubuntu-latest
     steps:
