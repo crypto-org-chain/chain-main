@@ -42,8 +42,7 @@ def start_and_wait_relayer(cluster):
     cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
     query = relayer + ["query", "connections", "--chain"]
-    [conn_a, conn_b] = [search_target(query, "connection", chain) for chain in chains]
-    return conn_a, conn_b
+    return search_target(query, "connection", chains)
 
 
 def test_ica(cluster, tmp_path):

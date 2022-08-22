@@ -21,11 +21,12 @@ def wait_relayer_ready(cluster):
     return ["hermes", "--config", data_root / "relayer.toml"]
 
 
-def search_target(query, key, chain):
-    return re.search(
-        r"" + key + r"-\d*",
-        subprocess.check_output(query + [chain]).decode("utf-8"),
-    ).group()
+def search_target(query, key, chains):
+    results = []
+    for chain in chains:
+        raw = subprocess.check_output(query + [chain]).decode("utf-8")
+        results.append(re.search(r"" + key + r"-\d*", raw).group())
+    return results
 
 
 def start_and_wait_relayer(cluster, init_relayer=True):
@@ -56,5 +57,4 @@ def start_and_wait_relayer(cluster, init_relayer=True):
         cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
     query = relayer + ["query", "channels", "--chain"]
-    [src, dst] = [search_target(query, "channel", chain) for chain in chains]
-    return src, dst
+    return search_target(query, "channel", chains)
