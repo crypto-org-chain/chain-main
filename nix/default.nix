@@ -11,6 +11,32 @@ import sources.nixpkgs {
       };
     })
     (import "${sources.gomod2nix}/overlay.nix")
+    (_: pkgs: {
+      hermes = pkgs.stdenv.mkDerivation rec {
+        version = "v1.0.0-rc.2";
+        name = "hermes";
+        src = pkgs.fetchurl {
+          x86_64-linux = {
+            url =
+              "https://github.com/informalsystems/ibc-rs/releases/download/${version}/hermes-${version}-x86_64-unknown-linux-gnu.tar.gz";
+            sha256 = "sha256-ms+3Ka8Ijbx63OXQzzNZ1kLrwVJDIVnvyc1TG69bun0=";
+          };
+          x86_64-darwin = {
+            url =
+              "https://github.com/informalsystems/ibc-rs/releases/download/${version}/hermes-${version}-x86_64-apple-darwin.tar.gz";
+            sha256 = "sha256-ygp49IPTXKqK12gE8OiyXjXhkJvfUZNuXVnS14SVScQ=";
+          };
+        }.${pkgs.stdenv.system} or (throw
+          "Unsupported system: ${pkgs.stdenv.system}");
+        sourceRoot = ".";
+        installPhase = ''
+          echo "hermes"
+          echo $out
+          install -m755 -D hermes $out/bin/hermes
+        '';
+        meta = with pkgs.lib; { platforms = with platforms; linux ++ darwin; };
+      };
+    })
     (pkgs: prev: {
       go = pkgs.go_1_17;
       test-env = pkgs.callPackage ./testenv.nix { };

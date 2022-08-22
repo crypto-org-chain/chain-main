@@ -13,12 +13,12 @@ pkgs.mkShell {
 
     # tools
     cosmovisor
+    hermes
     solomachine
 
     # chain-maind for testing
     chain-maind-zemu
     chain-maind-zemu.instrumented
-    (import ../nix/hermes.nix { inherit pkgs; })
   ];
   shellHook = ''
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
