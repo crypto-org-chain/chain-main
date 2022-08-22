@@ -2,6 +2,7 @@ import hashlib
 import json
 import subprocess
 import time
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -62,12 +63,11 @@ def start_and_wait_relayer(cluster, init_relayer=True):
         # start relaying
         cluster["ibc-0"].supervisor.startProcess("relayer-demo")
 
-    rsp = json.loads(subprocess.check_output(relayer + ["query", "channels", "ibc-0"]))
-    src_channel = rsp["result"][0]["channel_id"]
-
-    rsp = json.loads(subprocess.check_output(relayer + ["query", "channels", "ibc-1"]))
-    dst_channel = rsp["result"][0]["channel_id"]
-
+    query = relayer + ["query", "channels", "--chain"]
+    [src_channel, dst_channel] = [
+        re.search('channel-.', subprocess.check_output(query + [f"ibc-{i}"])
+        .decode("utf-8")).group() for i in [0, 1]
+    ]
     return src_channel, dst_channel
 
 
