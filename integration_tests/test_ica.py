@@ -1,6 +1,7 @@
 import json
 import subprocess
 import time
+import re
 from pathlib import Path
 
 import pytest
@@ -34,32 +35,29 @@ def start_and_wait_relayer(cluster):
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
     relayer = ["hermes", "--config", data_root / "relayer.toml"]
-
+    chains = ["ica-controller-1", "ica-host-1"]
     # create connection
     subprocess.run(
         relayer
         + [
             "create",
             "connection",
-            "ica-controller-1",
-            "ica-host-1",
+            "--a-chain",
+            chains[0],
+            "--b-chain",
+            chains[1],
         ],
         check=True,
     )
 
     # start relaying
-    cluster["ica-controller-1"].supervisor.startProcess("relayer-demo")
+    cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
-    rsp = json.loads(
-        subprocess.check_output(relayer + ["query", "connections", "ica-controller-1"])
-    )
-    controller_connection = rsp["result"][0]
-
-    rsp = json.loads(
-        subprocess.check_output(relayer + ["query", "connections", "ica-host-1"])
-    )
-    host_connection = rsp["result"][0]
-
+    query = relayer + ["query", "connections", "--chain"]
+    [controller_connection, host_connection] = [re.search(
+        r"connection-\d*",
+        subprocess.check_output(query + [chain]).decode("utf-8"),
+    ).group() for chain in chains]
     return controller_connection, host_connection
 
 

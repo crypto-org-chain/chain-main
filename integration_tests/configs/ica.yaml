@@ -36,5 +36,15 @@ ica-host-1:
           params:
             allow_messages: ["/cosmos.bank.v1beta1.MsgSend"]
 relayer:
-  global:
-    strategy: all
+  mode:
+    clients:
+      enabled: true
+      refresh: true
+      misbehaviour: true
+    connections:
+      enabled: true
+    channels:
+      enabled: true
+    packets:
+      enabled: true
+      tx_confirmation: true
