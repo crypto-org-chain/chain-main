@@ -1,6 +1,7 @@
 import json
 import tempfile
 
+import requests
 from pystarport import cluster, cosmoscli
 
 
@@ -72,6 +73,78 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     )
                 )
 
+    def transfer(self, from_, to, coins, generate_only=False, **kwargs):
+        default_kwargs = {
+            "home": self.data_dir,
+            "keyring_backend": "test",
+            "chain_id": self.chain_id,
+            "node": self.node_rpc,
+        }
+        return json.loads(
+            self.raw(
+                "tx",
+                "bank",
+                "send",
+                from_,
+                to,
+                coins,
+                "-y",
+                "--generate-only" if generate_only else None,
+                **(default_kwargs | kwargs),
+            )
+        )
+
+    def sign_tx(self, tx_file, signer):
+        return json.loads(
+            self.raw(
+                "tx",
+                "sign",
+                tx_file,
+                from_=signer,
+                home=self.data_dir,
+                keyring_backend="test",
+                chain_id=self.chain_id,
+                node=self.node_rpc,
+            )
+        )
+
+    def sign_tx_json(self, tx, signer, max_priority_price=None):
+        if max_priority_price is not None:
+            tx["body"]["extension_options"].append(
+                {
+                    "@type": "/ethermint.types.v1.ExtensionOptionDynamicFeeTx",
+                    "max_priority_price": str(max_priority_price),
+                }
+            )
+        with tempfile.NamedTemporaryFile("w") as fp:
+            json.dump(tx, fp)
+            fp.flush()
+            return self.sign_tx(fp.name, signer)
+
+    def broadcast_tx(self, tx_file, **kwargs):
+        kwargs.setdefault("broadcast_mode", "block")
+        kwargs.setdefault("output", "json")
+        return json.loads(
+            self.raw("tx", "broadcast", tx_file, node=self.node_rpc, **kwargs)
+        )
+
+    def broadcast_tx_json(self, tx, **kwargs):
+        with tempfile.NamedTemporaryFile("w") as fp:
+            json.dump(tx, fp)
+            fp.flush()
+            return self.broadcast_tx(fp.name, **kwargs)
+
+    def tx_search_rpc(self, events: str):
+        node_rpc_http = "http" + self.node_rpc.removeprefix("tcp")
+        rsp = requests.get(
+            f"{node_rpc_http}/tx_search",
+            params={
+                "query": f'"{events}"',
+            },
+        ).json()
+        assert "error" not in rsp, rsp["error"]
+        return rsp["result"]["txs"]
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -90,3 +163,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def gov_propose_legacy(self, proposer, kind, proposal, i=0, **kwargs):
         return self.cosmos_cli(i).gov_propose_legacy(proposer, kind, proposal, **kwargs)
+
+    def transfer(self, from_, to, coins, i=0, generate_only=False, **kwargs):
+        return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)

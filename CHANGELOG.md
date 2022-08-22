@@ -10,6 +10,7 @@
 
 - Upgrade `cosmos-sdk` to `v0.45.6` and `ibc-go` to `v4.0.0-rc0`. #803
 - Changed go version to `1.18`. #803
+- Change the default priority mechanism to be based on gas price
 
 ### Security
 

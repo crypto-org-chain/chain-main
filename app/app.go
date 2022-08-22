@@ -643,6 +643,7 @@ func New(
 				FeegrantKeeper:  app.FeeGrantKeeper,
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
+				TxFeeChecker:    checkTxFeeWithValidatorMinGasPrices,
 			},
 			IBCKeeper: app.IBCKeeper,
 		},
