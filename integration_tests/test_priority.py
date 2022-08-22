@@ -1,35 +1,54 @@
+from pathlib import Path
+
+import pytest
+
 from .cosmoscli import ClusterCLI
-from .utils import wait_for_new_blocks
+from .utils import cluster_fixture, wait_for_new_blocks
 
 PRIORITY_REDUCTION = 1000000
 
 
+pytestmark = pytest.mark.normal
+
+
+@pytest.fixture(scope="module")
+def cluster(worker_index, pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/mempool.yaml",
+        worker_index,
+        tmp_path_factory.mktemp("data"),
+    )
+
+
 def test_priority(cluster: ClusterCLI):
+    """
+    Check that prioritized mempool works, and the priority is decided by gas price.
+    """
     cli = cluster.cosmos_cli()
     test_cases = [
         {
             "from": cli.address("community"),
             "to": cli.address("validator"),
             "amount": "1000aphoton",
-            "gas_prices": "1000basecro",
+            "gas_prices": "10basecro",
+            # if the priority is decided by fee, this tx will have the highest priority,
+            # if by gas price, it's the lowest.
+            "gas": 200000 * 10,
         },
         {
             "from": cli.address("signer1"),
             "to": cli.address("signer2"),
             "amount": "1000aphoton",
-            "gas_prices": "2000basecro",
+            "gas_prices": "20basecro",
+            "gas": 200000,
         },
         {
             "from": cli.address("signer2"),
             "to": cli.address("signer1"),
             "amount": "1000aphoton",
-            "gas_prices": "3000basecro",
-        },
-        {
-            "from": cli.address("validator"),
-            "to": cli.address("community"),
-            "amount": "1000aphoton",
-            "gas_prices": "4000basecro",
+            "gas_prices": "30basecro",
+            "gas": 200000,
         },
     ]
     txs = []
@@ -40,12 +59,17 @@ def test_priority(cluster: ClusterCLI):
             tc["amount"],
             gas_prices=tc["gas_prices"],
             generate_only=True,
+            gas=tc["gas"],
         )
         txs.append(
             cli.sign_tx_json(
                 tx, tc["from"], max_priority_price=tc.get("max_priority_price")
             )
         )
+
+    # wait for the beginning of a new block, so the window of time is biggest
+    # before the next block get proposed.
+    wait_for_new_blocks(cli, 1)
 
     txhashes = []
     for tx in txs:
