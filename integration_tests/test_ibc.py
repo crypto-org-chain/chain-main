@@ -36,7 +36,7 @@ def start_and_wait_relayer(cluster, init_relayer=True):
 
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
-    relayer = ["hermes", "-j", "-c", data_root / "relayer.toml"]
+    relayer = ["hermes", "--config", data_root / "relayer.toml"]
 
     if init_relayer:
         # create connection and channel
@@ -45,12 +45,16 @@ def start_and_wait_relayer(cluster, init_relayer=True):
             + [
                 "create",
                 "channel",
+                "--a-port",
+                "transfer",
+                "--b-port",
+                "transfer",
+                "--a-chain",
                 "ibc-0",
+                "--b-chain",
                 "ibc-1",
-                "--port-a",
-                "transfer",
-                "--port-b",
-                "transfer",
+                "--new-client-connection",
+                "--yes",
             ],
             check=True,
         )

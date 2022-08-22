@@ -26,8 +26,7 @@ def create_ibc_client(data_root, dst_chain, src_chain):
     subprocess.run(
         [
             "hermes",
-            "-j",
-            "-c",
+            "--config",
             data_root / "relayer.toml",
             "tx",
             "raw",

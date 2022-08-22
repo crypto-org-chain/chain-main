@@ -33,7 +33,7 @@ def start_and_wait_relayer(cluster):
 
     # all clusters share the same root data directory
     data_root = next(iter(cluster.values())).data_root
-    relayer = ["hermes", "-j", "-c", data_root / "relayer.toml"]
+    relayer = ["hermes", "--config", data_root / "relayer.toml"]
 
     # create connection
     subprocess.run(
