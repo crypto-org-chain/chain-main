@@ -2,15 +2,15 @@ import hashlib
 import json
 import subprocess
 import time
-import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 import yaml
-from pystarport import ports
 
-from .utils import cluster_fixture, wait_for_block, wait_for_port
+from .utils import cluster_fixture
+from .ibc_utils import start_and_wait_relayer
+
 
 pytestmark = pytest.mark.ibc
 
@@ -23,52 +23,6 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         worker_index,
         tmp_path_factory.mktemp("data"),
     )
-
-
-def start_and_wait_relayer(cluster, init_relayer=True):
-    for cli in cluster.values():
-        for i in range(cli.nodes_len()):
-            wait_for_port(ports.grpc_port(cli.base_port(i)))
-
-    for cli in cluster.values():
-        # wait for at least 3 blocks, because
-        # "proof queries at height <= 2 are not supported"
-        wait_for_block(cli, 3)
-
-    # all clusters share the same root data directory
-    data_root = next(iter(cluster.values())).data_root
-    relayer = ["hermes", "--config", data_root / "relayer.toml"]
-
-    if init_relayer:
-        # create connection and channel
-        subprocess.run(
-            relayer
-            + [
-                "create",
-                "channel",
-                "--a-port",
-                "transfer",
-                "--b-port",
-                "transfer",
-                "--a-chain",
-                "ibc-0",
-                "--b-chain",
-                "ibc-1",
-                "--new-client-connection",
-                "--yes",
-            ],
-            check=True,
-        )
-
-        # start relaying
-        cluster["ibc-0"].supervisor.startProcess("relayer-demo")
-
-    query = relayer + ["query", "channels", "--chain"]
-    [src_channel, dst_channel] = [
-        re.search('channel-.', subprocess.check_output(query + [f"ibc-{i}"])
-        .decode("utf-8")).group() for i in [0, 1]
-    ]
-    return src_channel, dst_channel
 
 
 def test_ibc(cluster):
