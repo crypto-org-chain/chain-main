@@ -163,3 +163,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def gov_propose_legacy(self, proposer, kind, proposal, i=0, **kwargs):
         return self.cosmos_cli(i).gov_propose_legacy(proposer, kind, proposal, **kwargs)
+
+    def transfer(self, from_, to, coins, i=0, generate_only=False, **kwargs):
+        return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)
