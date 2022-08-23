@@ -4,9 +4,9 @@ import time
 from pathlib import Path
 
 import pytest
-from pystarport import ports
 
-from .utils import cluster_fixture, wait_for_block, wait_for_port
+from .ibc_utils import search_target, wait_relayer_ready
+from .utils import cluster_fixture
 
 pytestmark = pytest.mark.ibc
 
@@ -22,45 +22,27 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 
 def start_and_wait_relayer(cluster):
-    for cli in cluster.values():
-        for i in range(cli.nodes_len()):
-            wait_for_port(ports.grpc_port(cli.base_port(i)))
-
-    for cli in cluster.values():
-        # wait for at least 3 blocks, because
-        # "proof queries at height <= 2 are not supported"
-        wait_for_block(cli, 3)
-
-    # all clusters share the same root data directory
-    data_root = next(iter(cluster.values())).data_root
-    relayer = ["hermes", "-j", "-c", data_root / "relayer.toml"]
-
+    relayer = wait_relayer_ready(cluster)
+    chains = ["ica-controller-1", "ica-host-1"]
     # create connection
     subprocess.run(
         relayer
         + [
             "create",
             "connection",
-            "ica-controller-1",
-            "ica-host-1",
+            "--a-chain",
+            chains[0],
+            "--b-chain",
+            chains[1],
         ],
         check=True,
     )
 
     # start relaying
-    cluster["ica-controller-1"].supervisor.startProcess("relayer-demo")
+    cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
-    rsp = json.loads(
-        subprocess.check_output(relayer + ["query", "connections", "ica-controller-1"])
-    )
-    controller_connection = rsp["result"][0]
-
-    rsp = json.loads(
-        subprocess.check_output(relayer + ["query", "connections", "ica-host-1"])
-    )
-    host_connection = rsp["result"][0]
-
-    return controller_connection, host_connection
+    query = relayer + ["query", "connections", "--chain"]
+    return search_target(query, "connection", chains)
 
 
 def test_ica(cluster, tmp_path):
