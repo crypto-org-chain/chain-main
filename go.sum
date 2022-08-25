@@ -236,8 +236,8 @@ github.com/cosmos/gorocksdb v1.2.0 h1:d0l3jJG8M4hBouIZq0mDUHZ+zjOx044J3nGRskwTb4
 github.com/cosmos/gorocksdb v1.2.0/go.mod h1:aaKvKItm514hKfNJpUJXnnOWeBnk2GL4+Qw9NHizILw=
 github.com/cosmos/iavl v0.19.1 h1:3gaq9b6SjiB0KBTygRnAvEGml2pQlu1TH8uma5g63Ys=
 github.com/cosmos/iavl v0.19.1/go.mod h1:X9PKD3J0iFxdmgNLa7b2LYWdsGd90ToV5cAONApkEPw=
-github.com/cosmos/ibc-go/v5 v5.0.0-beta1 h1:YqC9giQlZId8Wui8xpaUFI+TpVmEupQZSoDlmxAu6yI=
-github.com/cosmos/ibc-go/v5 v5.0.0-beta1/go.mod h1:9mmcbzuidgX7nhafIKng/XhXAHDEnRqDjGy/60W1cvg=
+github.com/cosmos/ibc-go/v5 v5.0.0-rc0 h1:KWuyL0DmXQ2/vtwlP3ZvLFjZxD8J6o6zTqje4XCRHYw=
+github.com/cosmos/ibc-go/v5 v5.0.0-rc0/go.mod h1:gSeljfcWlUKjKhTptUpqz83zYpGE+/Q+HJwmDPq5pJs=
 github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1 h1:e7+BMQWvKKETTFEUMRqZ0wQZL+x+aCMWCnTj8sa5P6U=
 github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1/go.mod h1:VykKmRH1tLBfOsp4ZIFu4vEOpNdE+aWLhruKiaVTG5M=
 github.com/cpuguy83/go-md2man v1.0.10/go.mod h1:SmD6nW6nTyfqj6ABTjUi3V3JVMnlJmwcJI5acqYI6dE=
