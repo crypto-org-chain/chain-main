@@ -1,5 +1,19 @@
 # Changelog
 
+*September 5, 2022*
+
+## v3.3.5
+
+This version is identical to v3.3.3, but Cosmos SDK was upgraded to a 
+custom fork that is based on its latest v0.44.x release (v0.44.8),
+but reverted the state machine breaking change introduced in v0.44.6
+and cherry-picked the IAVL upgrade-related changes from v0.45.x release.
+
+NOTE: The IAVL v0.19 upgrade introduces a new index that improves performance,
+but when the node is started up for the first time, it may take a while
+for the index to be initialized (a few minutes or hours depending on the node
+configuration and underlying hardware).
+
 *March 1, 2022*
 
 ## v3.3.4
