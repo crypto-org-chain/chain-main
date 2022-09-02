@@ -395,3 +395,32 @@ jobs:
             ❌  `/runsim` simulation test has failed 😅
             Can further check [here](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  gomod2nix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - id: changed-files
+        uses: tj-actions/changed-files@v29.0.2
+        with:
+          files: |
+            go.mod
+            go.sum
+      - uses: cachix/install-nix-action@v15
+        if: steps.changed-files.outputs.any_changed == 'true'
+      - name: update gomod2nix
+        run: nix run .#update-gomod2nix
+        if: steps.changed-files.outputs.any_changed == 'true'
+      - name: check working directory is clean
+        id: changes
+        run: |
+          set +e
+          (git diff --no-ext-diff --exit-code)
+          echo ::set-output name=changed::$?
+      - uses: actions/upload-artifact@v2
+        if: steps.changes.outputs.changed == 1
+        with:
+          name: gomod2nix.toml
+          path: ./gomod2nix.toml
+      - if: steps.changes.outputs.changed == 1
+        run: echo "Working directory is dirty" && exit 1
