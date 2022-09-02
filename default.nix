@@ -28,6 +28,7 @@ let
       name = "src";
       src = lib.sourceByRegex ./. src_regexes;
     };
+    go = pkgs.go_1_17;
     modules = ./gomod2nix.toml;
     pwd = src; # needed to support replace
     subPackages = [ "cmd/chain-maind" ];

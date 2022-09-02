@@ -1,14 +1,14 @@
 {
     "gomod2nix": {
-        "branch": "fix-regex",
+        "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
         "homepage": null,
-        "owner": "yihuang",
+        "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f",
-        "sha256": "1268jddzg2kf8jbbkc4wsvpq39lldi6cfp6vsl0sclg1k2r10hc9",
+        "rev": "cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1",
+        "sha256": "1s9m70q2jsr75hynx7q4brgbf22n1lfw5hc45mc3x4r9g4m8qrdz",
         "type": "tarball",
-        "url": "https://github.com/yihuang/gomod2nix/archive/af2ff6eb58f1ebbc374bc2fa0c23fa105b2d490f.tar.gz",
+        "url": "https://github.com/nix-community/gomod2nix/archive/cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
