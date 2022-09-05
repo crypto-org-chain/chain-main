@@ -25,33 +25,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1658368080,
-        "narHash": "sha256-5erxpWe8nvSZzqUDrPIRgSe5K884DU8GAFuxCXgD7Oc=",
-        "owner": "yihuang",
+        "lastModified": 1662095654,
+        "narHash": "sha256-v2WMKnkpkz5YLYTBwh0NVgi3Xl4En249LCdrKTA4Nek=",
+        "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "2be74ae9177c9c897c3924a984cf8e85159832ce",
+        "rev": "cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1",
         "type": "github"
       },
       "original": {
-        "owner": "yihuang",
+        "owner": "nix-community",
         "repo": "gomod2nix",
-        "type": "github"
-      }
-    },
-    "libwasmvm-src": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1652698028,
-        "narHash": "sha256-4m64mPwFLz7aZEKVxM2lJQtX98BkhdKTZb3evpDOk/4=",
-        "owner": "CosmWasm",
-        "repo": "wasmvm",
-        "rev": "bc49a2f4842d023c0038798f343b56f3f0530646",
-        "type": "github"
-      },
-      "original": {
-        "owner": "CosmWasm",
-        "ref": "v1.0.0",
-        "repo": "wasmvm",
         "type": "github"
       }
     },
@@ -108,7 +91,6 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "gomod2nix": "gomod2nix",
-        "libwasmvm-src": "libwasmvm-src",
         "nix-bundle-exe": "nix-bundle-exe",
         "nixpkgs": "nixpkgs",
         "rocksdb-src": "rocksdb-src"

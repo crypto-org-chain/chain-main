@@ -7,7 +7,7 @@
       flake = false;
     };
     gomod2nix = {
-      url = "github:yihuang/gomod2nix";
+      url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.utils.follows = "flake-utils";
     };
@@ -42,6 +42,10 @@
           apps = {
             chain-maind = mkApp packages.chain-maind;
             chain-maind-testnet = mkApp packages.chain-maind-testnet;
+            update-gomod2nix = {
+              type = "app";
+              program = "${packages.chain-maind.updateScript}";
+            };
           };
           defaultPackage = packages.chain-maind;
           defaultApp = apps.chain-maind;
