@@ -3,6 +3,8 @@
 , buildGoApplication
 , nix-gitignore
 , go_1_18
+, writeShellScript
+, gomod2nix
 , rocksdb ? null
 , network ? "mainnet"  # mainnet|testnet
 , rev ? "dirty"
@@ -75,6 +77,16 @@ buildGoApplication rec {
   preFixup = ''
     find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
   '';
+
+  passthru = {
+    # update script use the same golang version as the project
+    updateScript =
+      let helper = gomod2nix.override { inherit go; };
+      in
+      writeShellScript "${pname}-updater" ''
+        exec ${helper}/bin/gomod2nix
+      '';
+  };
 
   meta = with lib; {
     description = "Official implementation of the Crypto.org blockchain protocol";
