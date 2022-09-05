@@ -1,0 +1,19 @@
+# This module represents the "proto" root.
+version: v1
+name: buf.build/crypto-org-chain/chain-main
+deps:
+  - buf.build/cosmos/cosmos-sdk
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT
+    - COMMENTS
+    - FILE_LOWER_SNAKE_CASE
+  except:
+    - UNARY_RPC
+    - COMMENT_FIELD
+    - SERVICE_SUFFIX
+    - PACKAGE_VERSION_SUFFIX
+    - RPC_REQUEST_STANDARD_NAME
