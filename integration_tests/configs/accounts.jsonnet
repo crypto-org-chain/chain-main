@@ -16,4 +16,9 @@
     name: 'signer2',
     coins: '2000cro',
   }],
+  reserves: [{
+    name: 'reserve',
+    coins: '200cro',
+    vesting: '60s',
+  }],
 }
