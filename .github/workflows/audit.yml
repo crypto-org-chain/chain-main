@@ -1,4 +1,4 @@
-name: Go Nancy
+name: govuln
 
 on:
     pull_request:
@@ -7,20 +7,19 @@ on:
         - master
         - release/**
 jobs:
-  build:
+  check:
 
     runs-on: ubuntu-latest
 
     steps:
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19.1
     - uses: actions/checkout@v2
       with:
           submodules: true
-    - name: WriteGoList
-      run: go list -json -m all > go.list
-    - name: Nancy
-      uses: sonatype-nexus-community/nancy-github-action@main
-      # FIXME: https://github.com/crypto-com/chain-main/issues/25 remove exclusion when viper+tendermint are upgraded
-      # FIXME(CVE-2022-23327): github.com/coinbase/rosetta-sdk-go contains a vulnerable version of go-ethereum. Remove this when it is updated in upstream.
-      #                        (https://ossindex.sonatype.org/vulnerability/de9d3742-ac18-44af-bebb-5727e3957c94?component-type=golang&component-name=github.com/ethereum/go-ethereum&utm_source=nancy-client&utm_medium=integration&utm_content=0.0.0-dev)
-      with:
-        nancyCommand: sleuth --exclude-vulnerability CVE-2020-15115,CVE-2020-15136,CVE-2021-41173,CVE-2020-15114,CVE-2022-23327
+    - name: install govulncheck
+      run: go install golang.org/x/vuln/cmd/govulncheck@latest
+    - name: govuln sec scan
+      run: govulncheck ./...
