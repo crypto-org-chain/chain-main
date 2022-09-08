@@ -23,7 +23,7 @@ pytestmark = pytest.mark.normal
 def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/staking.yaml",
+        Path(__file__).parent / "configs/staking.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
     )
