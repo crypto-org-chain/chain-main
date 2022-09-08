@@ -8,9 +8,8 @@ import sys
 import time
 import uuid
 
-import yaml
 from dateutil.parser import isoparse
-from pystarport import cluster, ledger
+from pystarport import cluster, expansion, ledger
 from pystarport.ports import rpc_port
 
 from .cosmoscli import ClusterCLI
@@ -132,8 +131,7 @@ def cluster_fixture(
     base_port = gen_base_port(worker_index)
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config_path, base_port, cmd=cmd)
-
-    config = yaml.safe_load(open(config_path))
+    config = expansion.expand_jsonnet(config_path, None)
     clis = {}
     for key in config:
         if key == "relayer":

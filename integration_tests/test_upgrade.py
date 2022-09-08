@@ -86,7 +86,7 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     data = tmp_path_factory.mktemp("data")
     init_cosmovisor(data)
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/default.yaml",
+        Path(__file__).parent / "configs/default.jsonnet",
         worker_index,
         data,
         post_init=post_init,
