@@ -28,7 +28,7 @@ def worker_index(worker_id):
 def cluster(worker_index, pytestconfig, tmp_path_factory):
     "default cluster fixture"
     yield from cluster_fixture(
-        Path(__file__).parent / "configs/default.yaml",
+        Path(__file__).parent / "configs/default.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
     )

@@ -5,8 +5,7 @@ from pathlib import Path
 
 import pytest
 import requests
-import yaml
-from pystarport import ports
+from pystarport import expansion, ports
 from pystarport.utils import interact
 
 from .utils import cluster_fixture, wait_for_block, wait_for_port
@@ -19,7 +18,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     "override cluster fixture for this test module"
     try:
         yield from cluster_fixture(
-            Path(__file__).parent / "configs/solo_machine.yaml",
+            Path(__file__).parent / "configs/solo_machine.jsonnet",
             worker_index,
             tmp_path_factory.mktemp("data"),
         )
@@ -142,7 +141,8 @@ def get_balance(cluster, addr):
 
 
 def get_mnemonic(cli):
-    config = yaml.safe_load(open(Path(__file__).parent / "configs/solo_machine.yaml"))
+    config_path = Path(__file__).parent / "configs/solo_machine.jsonnet"
+    config = expansion.expand_jsonnet(config_path, None)
     return config[cli.chain_id]["accounts"][0]["mnemonic"]
 
 

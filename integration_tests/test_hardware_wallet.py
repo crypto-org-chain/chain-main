@@ -15,7 +15,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     ledger.start()
     try:
         yield from cluster_fixture(
-            Path(__file__).parent / "configs/ledger.yaml",
+            Path(__file__).parent / "configs/ledger.jsonnet",
             worker_index,
             tmp_path_factory.mktemp("data"),
         )
