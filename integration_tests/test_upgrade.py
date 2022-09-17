@@ -361,7 +361,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             home=cli.data_dir,
             node=cli.node_rpc,
             output="json",
-            _from="community",
+            from_="community",
             keyring_backend="test",
             chain_id=cli.chain_id,
         )

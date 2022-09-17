@@ -29,7 +29,7 @@ def search_target(query, key, chains):
     return results
 
 
-def start_and_wait_relayer(cluster, init_relayer=True):
+def start_and_wait_relayer(cluster, port="transfer", init_relayer=True):
     relayer = wait_relayer_ready(cluster)
     chains = ["ibc-0", "ibc-1"]
     if init_relayer:
@@ -40,9 +40,9 @@ def start_and_wait_relayer(cluster, init_relayer=True):
                 "create",
                 "channel",
                 "--a-port",
-                "transfer",
+                port,
                 "--b-port",
-                "transfer",
+                port,
                 "--a-chain",
                 chains[0],
                 "--b-chain",
@@ -58,3 +58,36 @@ def start_and_wait_relayer(cluster, init_relayer=True):
 
     query = relayer + ["query", "channels", "--chain"]
     return search_target(query, "channel", chains)
+
+
+# def start_and_wait_relayer_nft_transfer(cluster, init_relayer=True):
+#     relayer = wait_relayer_ready(cluster)
+#     chains = ["ibc-0", "ibc-1"]
+#     if init_relayer:
+#         # create connection and channel
+#         subprocess.run(
+#             relayer
+#             + [
+#                 "create",
+#                 "channel",
+#                 "--a-port",
+#                 "nft-transfer",
+#                 "--b-port",
+#                 "nft-transfer",
+#                 "--a-chain",
+#                 chains[0],
+#                 "--b-chain",
+#                 chains[1],
+#                 "--new-client-connection",
+#                 "--channel-version",
+#                 "ics721-1",
+#                 "--yes",
+#             ],
+#             check=True,
+#         )
+
+#         # start relaying
+#         cluster[chains[0]].supervisor.startProcess("relayer-demo")
+
+#     query = relayer + ["query", "channels", "--chain"]
+#     return search_target(query, "channel", chains)
