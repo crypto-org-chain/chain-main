@@ -9,13 +9,13 @@ import (
 
 const (
 	// Module name defines IBC nft-transfer moduel name
-	ModuleName = "nft-transfer"
-
-	// RouterKey is the message route for IBC nft-transfer
-	RouterKey = ModuleName
+	ModuleName = "nonfungibletokentransfer"
 
 	// StoreKey is the store key string for IBC nft-transfer
 	StoreKey = ModuleName
+
+	// RouterKey is the message route for IBC nft-transfer
+	RouterKey = ModuleName
 
 	// QuerierRoute is the querier route for IBC nft-transfer
 	QuerierRoute = ModuleName
