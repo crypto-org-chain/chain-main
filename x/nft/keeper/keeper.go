@@ -36,9 +36,9 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 
 // IssueDenom issues a denom according to the given params
 func (k Keeper) IssueDenom(ctx sdk.Context,
-	id, name, schema string,
+	id, name, schema, uri string,
 	creator sdk.AccAddress) error {
-	return k.SetDenom(ctx, types.NewDenom(id, name, schema, creator))
+	return k.SetDenom(ctx, types.NewDenom(id, name, schema, uri, creator))
 }
 
 // MintNFTUnverified mints an NFT without verifying if the owner is the creator of denom
@@ -149,6 +149,25 @@ func (k Keeper) BurnNFT(ctx sdk.Context, denomID, tokenID string, owner sdk.AccA
 	}
 
 	_, err = k.IsDenomCreator(ctx, denomID, owner)
+	if err != nil {
+		return err
+	}
+
+	k.deleteNFT(ctx, denomID, nft)
+	k.deleteOwner(ctx, denomID, tokenID, owner)
+	k.decreaseSupply(ctx, denomID)
+
+	return nil
+}
+
+// BurnNFTUnverified deletes a specified NFT without verifying if the owner is the creator of denom
+// Needed for IBC transfer of NFT
+func (k Keeper) BurnNFTUnverified(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) error {
+	if !k.HasDenomID(ctx, denomID) {
+		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
+	}
+
+	nft, err := k.IsOwner(ctx, denomID, tokenID, owner)
 	if err != nil {
 		return err
 	}
