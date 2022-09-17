@@ -348,11 +348,49 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, "0.000000000000000000")
     assert_commission(validator2_operator_address, default_rate)
 
+    # create denom before upgrade
+    cli = cluster.cosmos_cli()
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "nft",
+            "issue",
+            "testdenomid",
+            "-y",
+            name="testdenomname",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+            _from="community",
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+        )
+    )
+    raw_log = json.loads(rsp["raw_log"])
+    assert raw_log[0]["events"][0]["type"] == "issue_denom"
+
     target_height = cluster.block_height() + 30
     upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_46=False)
 
-    # check icaauth params
     cli = cluster.cosmos_cli()
+
+    # check denom after upgrade
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "nft",
+            "denom",
+            "testdenomid",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+
+    assert rsp["name"] == "testdenomname", rsp
+    assert rsp["uri"] == "", rsp
+
+    # check icaauth params
     rsp = json.loads(
         cli.raw(
             "query",
