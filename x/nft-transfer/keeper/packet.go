@@ -29,12 +29,14 @@ func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, d
 	escrowAddress := types.GetEscrowAddress(packet.GetSourcePort(), packet.GetSourceChannel())
 
 	if isAwayFromOrigin {
+		// unescrow tokens back to the sender
 		for _, tokenID := range data.TokenIds {
 			if err := k.nftKeeper.TransferOwner(ctx, voucherClassID, tokenID, escrowAddress, sender); err != nil {
 				return err
 			}
 		}
 	} else {
+		// we are sink chain, mint voucher back to sender
 		for i, tokenID := range data.TokenIds {
 			if err := k.nftKeeper.MintNFT(ctx, voucherClassID, tokenID, "", data.TokenUris[i], "", escrowAddress, sender); err != nil {
 				return err
@@ -104,6 +106,7 @@ func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 				return channeltypes.Packet{}, err
 			}
 		} else {
+			// we are sink chain, burn the voucher
 			if err := k.nftKeeper.BurnNFTUnverified(ctx, classID, tokenID, sender); err != nil {
 				return channeltypes.Packet{}, err
 			}

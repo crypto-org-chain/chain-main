@@ -64,9 +64,9 @@ func GetCmdQuerySupply() *cobra.Command {
 			}
 
 			// nolint: govet
-			// if err := types.ValidateDenomID(args[0]); err != nil {
-			// 	return err
-			// }
+			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 			resp, err := queryClient.Supply(context.Background(), &types.QuerySupplyRequest{
@@ -143,9 +143,9 @@ func GetCmdQueryCollection() *cobra.Command {
 			}
 
 			// nolint: govet
-			// if err := types.ValidateDenomID(args[0]); err != nil {
-			// 	return err
-			// }
+			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
+				return err
+			}
 			pageReq, err := client.ReadPageRequest(cmd.Flags())
 			if err != nil {
 				return err
@@ -213,9 +213,9 @@ func GetCmdQueryDenom() *cobra.Command {
 			}
 
 			// nolint: govet
-			// if err := types.ValidateDenomID(args[0]); err != nil {
-			// 	return err
-			// }
+			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
+				return err
+			}
 
 			queryClient := types.NewQueryClient(clientCtx)
 			resp, err := queryClient.Denom(
@@ -281,9 +281,9 @@ func GetCmdQueryNFT() *cobra.Command {
 			}
 
 			// nolint: govet
-			// if err := types.ValidateDenomID(args[0]); err != nil {
-			// 	return err
-			// }
+			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
+				return err
+			}
 
 			// nolint: govet
 			if err := types.ValidateTokenID(args[1]); err != nil {

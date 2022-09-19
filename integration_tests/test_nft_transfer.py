@@ -21,7 +21,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 
 def test_nft_transfer(cluster):
-    src_channel, dst_channel = start_and_wait_relayer(cluster, "nft-transfer")
+    src_channel, dst_channel = start_and_wait_relayer(cluster, "nft")
 
     cli_src = cluster["ibc-0"].cosmos_cli()
     cli_dst = cluster["ibc-1"].cosmos_cli()
@@ -87,7 +87,7 @@ def test_nft_transfer(cluster):
             "tx",
             "nft-transfer",
             "transfer",
-            "nft-transfer",
+            "nft",
             src_channel,
             addr_dst,
             denomid,
@@ -112,7 +112,7 @@ def test_nft_transfer(cluster):
             "query",
             "nft-transfer",
             "class-hash",
-            "nft-transfer/" + dst_channel + "/" + denomid,
+            "nft/" + dst_channel + "/" + denomid,
             home=cli_dst.data_dir,
             node=cli_dst.node_rpc,
             output="json",
@@ -159,7 +159,7 @@ def test_nft_transfer(cluster):
             "tx",
             "nft-transfer",
             "transfer",
-            "nft-transfer",
+            "nft",
             dst_channel,
             addr_src,
             dst_denom_id,

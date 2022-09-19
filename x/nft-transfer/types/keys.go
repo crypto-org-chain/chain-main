@@ -25,7 +25,7 @@ const (
 	Version = "ics721-1"
 
 	// PortID is the default port id that nft-transfer module binds to
-	PortID = "nft-transfer"
+	PortID = "nft"
 
 	// ClassPrefix is the prefix used for internal SDK NFT representation.
 	ClassPrefix = "ibc"

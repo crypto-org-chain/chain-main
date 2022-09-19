@@ -9,16 +9,7 @@ local default = {
       coins: '200cro',
     },
   ],
-  genesis: {
-    app_state: {
-      transfer: {
-        params: {
-          receive_enabled: true,
-          send_enabled: true,
-        },
-      },
-    },
-  },
+  genesis: {},
 };
 local validator = {
   coins: '10cro',
