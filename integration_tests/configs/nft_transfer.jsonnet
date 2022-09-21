@@ -23,5 +23,8 @@ local validator = {
   'ibc-1': default {
     validators: [validator { base_port: port } for port in [26750, 26760]],
   },
+  'ibc-2': default {
+    validators: [validator { base_port: port } for port in [26850, 26860]],
+  },
   relayer: {},
 }
