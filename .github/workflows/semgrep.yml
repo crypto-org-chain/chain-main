@@ -1,0 +1,34 @@
+name: Semgrep
+on:
+  # Scan changed files in PRs, block on new issues only (existing issues ignored)
+  pull_request: {}
+  push:
+    branches:
+      - master
+      - release/**
+    paths:
+      - .github/workflows/semgrep.yml
+  schedule:
+    - cron: '0 0 * * 0'
+jobs:
+  # Update from: https://semgrep.dev/docs/semgrep-ci/sample-ci-configs/#github-actions
+  semgrep:
+    name: Scan
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    if: (github.actor != 'dependabot[bot]')
+    steps:
+      # Fetch project source with GitHub Actions Checkout.
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      # Run the "semgrep ci" command on the command line of the docker image.
+      - run: semgrep ci
+        env:
+           # Add the rules that Semgrep uses by setting the SEMGREP_RULES environment variable. 
+           SEMGREP_RULES: p/golang # more at semgrep.dev/explore
+           # Uncomment SEMGREP_TIMEOUT to set this job's timeout (in seconds):
+           # Default timeout is 1800 seconds (30 minutes).
+           # Set to 0 to disable the timeout.
+           # SEMGREP_TIMEOUT: 300
