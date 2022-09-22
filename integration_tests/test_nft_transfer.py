@@ -1,5 +1,4 @@
 import json
-from re import A
 import time
 from pathlib import Path
 
@@ -21,7 +20,8 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-# This function tests nft transfer from source chain -> mid chain -> destination chain and all the way back to source
+# This function tests nft transfer from source chain -> mid chain -> destination chain
+# and all the way back to source
 # chain following the same path
 def test_nft_transfer(cluster):
     src_channel, mid_src_channel = start_and_wait_relayer(cluster, "nft")
