@@ -277,15 +277,15 @@ func (im IBCModule) OnTimeoutPacket(
 		return err
 	}
 
-	// ctx.EventManager().EmitEvent(
-	// 	sdk.NewEvent(
-	// 		types.EventTypeTimeout,
-	// 		sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-	// 		sdk.NewAttribute(types.AttributeKeyRefundReceiver, data.Sender),
-	// 		sdk.NewAttribute(types.AttributeKeyRefundDenom, data.Denom),
-	// 		sdk.NewAttribute(types.AttributeKeyRefundAmount, data.Amount),
-	// 	),
-	// )
+	ctx.EventManager().EmitEvent(
+		sdk.NewEvent(
+			types.EventTypeTimeout,
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
+			sdk.NewAttribute(types.AttributeKeyReceiver, data.Sender),
+			sdk.NewAttribute(types.AttributeKeyClassID, data.ClassId),
+			sdk.NewAttribute(types.AttributeKeyTokenIDs, strings.Join(data.TokenIds, ",")),
+		),
+	)
 
 	return nil
 }
