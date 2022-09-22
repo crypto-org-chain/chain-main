@@ -449,3 +449,63 @@ def test_nft_transfer(cluster):
 
     assert rsp["uri"] == tokenuri, rsp
     assert rsp["owner"] == addr_src, rsp
+
+    # Test packet timeout
+
+    # transfer nft on mid chain (with very less timeout so that the packet times out)
+    rsp = json.loads(
+        cli_src.raw(
+            "tx",
+            "nft-transfer",
+            "transfer",
+            "nft",
+            src_channel,
+            addr_mid,
+            denomid,
+            tokenid,
+            "-y",
+            packet_timeout_height="0-1",
+            home=cli_src.data_dir,
+            from_=addr_src,
+            keyring_backend="test",
+            chain_id=cli_src.chain_id,
+            node=cli_src.node_rpc,
+        )
+    )
+
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # FIXME more stable way to wait for relaying
+    time.sleep(20)
+
+    # nft should be not be present on mid chain
+    rsp = json.loads(
+        cli_mid.raw(
+            "query",
+            "nft",
+            "collection",
+            mid_denom_id,
+            home=cli_mid.data_dir,
+            node=cli_mid.node_rpc,
+            output="json",
+        )
+    )["collection"]
+
+    assert len(rsp["nfts"]) == 0, rsp
+
+    # query nft on source chain (as the transfer should time out)
+    rsp = json.loads(
+        cli_src.raw(
+            "query",
+            "nft",
+            "token",
+            denomid,
+            tokenid,
+            home=cli_src.data_dir,
+            node=cli_src.node_rpc,
+            output="json",
+        )
+    )
+
+    assert rsp["uri"] == tokenuri, rsp
+    assert rsp["owner"] == addr_src, rsp
