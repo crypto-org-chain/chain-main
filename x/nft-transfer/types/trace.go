@@ -48,10 +48,7 @@ func RemoveClassPrefix(portID, channelID, classID string) string {
 // The longer the fullClassPath, the farther it is from the origin chain
 func IsAwayFromOrigin(sourcePort, sourceChannel, fullClassPath string) bool {
 	prefixClassID := GetClassPrefix(sourcePort, sourceChannel)
-	if !strings.HasPrefix(fullClassPath, prefixClassID) {
-		return true
-	}
-	return fullClassPath[:len(prefixClassID)] != prefixClassID
+	return !strings.HasPrefix(fullClassPath, prefixClassID)
 }
 
 // ParseClassTrace parses a string with the ibc prefix (class trace) and the base classID
