@@ -18,6 +18,7 @@ var (
 	// relative to the current block timestamp of the counterparty chain provided by the client
 	// state. The timeout is disabled when set to 0. The default is currently set to a 10 minute
 	// timeout.
+	// nolint: gosec
 	DefaultRelativePacketTimeoutTimestamp = uint64((time.Duration(10) * time.Minute).Nanoseconds())
 )
 

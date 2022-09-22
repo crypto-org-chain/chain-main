@@ -11,9 +11,9 @@ message NonFungibleTokenPacketData {
   string class_id = 1;
   // the class_uri of tokens to be transferred
   string class_uri = 2;
-  // the non fungible tokens to be transferred
+  // the non fungible tokens to be transferred (count should be equal to token_uris)
   repeated string token_ids = 3;
-  // the non fungible tokens's uri to be transferred
+  // the non fungible tokens's uri to be transferred (count should be equal to token ids)
   repeated string token_uris = 4;
   // the sender address
   string sender = 5;

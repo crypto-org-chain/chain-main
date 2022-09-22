@@ -30,9 +30,9 @@ type NonFungibleTokenPacketData struct {
 	ClassId string `protobuf:"bytes,1,opt,name=class_id,json=classId,proto3" json:"class_id,omitempty"`
 	// the class_uri of tokens to be transferred
 	ClassUri string `protobuf:"bytes,2,opt,name=class_uri,json=classUri,proto3" json:"class_uri,omitempty"`
-	// the non fungible tokens to be transferred
+	// the non fungible tokens to be transferred (count should be equal to token_uris)
 	TokenIds []string `protobuf:"bytes,3,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
-	// the non fungible tokens's uri to be transferred
+	// the non fungible tokens's uri to be transferred (count should be equal to token ids)
 	TokenUris []string `protobuf:"bytes,4,rep,name=token_uris,json=tokenUris,proto3" json:"token_uris,omitempty"`
 	// the sender address
 	Sender string `protobuf:"bytes,5,opt,name=sender,proto3" json:"sender,omitempty"`
