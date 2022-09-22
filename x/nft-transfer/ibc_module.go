@@ -32,7 +32,7 @@ func NewIBCModule(k keeper.Keeper) IBCModule {
 }
 
 // ValidateTransferChannelParams does validation of a newly created nft-transfer channel. A nft-transfer
-// channel must be UNORDERED, use the correct port (by default 'nft-transfer'), and use the current
+// channel must be UNORDERED, use the correct port (by default 'nft'), and use the current
 // supported version. Only 2^32 channels are allowed to be created.
 func ValidateTransferChannelParams(
 	ctx sdk.Context,

@@ -361,7 +361,7 @@ def test_nft_transfer(cluster):
     # FIXME more stable way to wait for relaying
     time.sleep(20)
 
-    # TODO: nft should be burnt on destination chain
+    # nft should be burnt on destination chain
     rsp = json.loads(
         cli_dst.raw(
             "query",
@@ -376,7 +376,7 @@ def test_nft_transfer(cluster):
 
     assert len(rsp["nfts"]) == 0, rsp
 
-    # TODO: query nft on mid chain
+    # query nft on mid chain
     rsp = json.loads(
         cli_mid.raw(
             "query",
