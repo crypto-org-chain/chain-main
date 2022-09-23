@@ -9,12 +9,14 @@ on:
 jobs:
   Gosec:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     env:
       GO111MODULE: on
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
       - uses: technote-space/get-diff-action@v3
         with:
           SUFFIX_FILTER: |
