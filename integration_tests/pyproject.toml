@@ -16,7 +16,7 @@ grpcio = "^1.42.0"
 grpcio-tools = "^1.42.0"
 pep8-naming = "^0.11.1"
 pytest-github-actions-annotate-failures = "^0.1.1"
-protobuf = "3.19.4"
+protobuf = "3.19.5"
 PyYAML = "^5.3.1"
 python-dateutil = "^2.8.1"
 pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
