@@ -1,0 +1,13 @@
+syntax = "proto3";
+package chainmain.nft_transfer.v1;
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/nft-transfer/types";
+
+import "nft_transfer/v1/trace.proto";
+import "gogoproto/gogo.proto";
+
+// GenesisState defines the ibc-nft-transfer genesis state
+message GenesisState {
+  string              port_id = 1;
+  repeated ClassTrace traces  = 2 [(gogoproto.castrepeated) = "Traces", (gogoproto.nullable) = false];
+}

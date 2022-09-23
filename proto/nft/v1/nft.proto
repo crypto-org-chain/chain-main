@@ -27,6 +27,8 @@ message Denom {
   string name    = 2;
   string schema  = 3;
   string creator = 4;
+  string uri     = 5; // This was added because Cosmos SDK's native NFT module has uri as a parameter for class which is
+                      // needed for nft transfers
 }
 
 // IDCollection defines a type of collection with specified ID

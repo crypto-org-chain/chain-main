@@ -126,6 +126,9 @@ import (
 	icaauthmodulekeeper "github.com/crypto-org-chain/chain-main/v4/x/icaauth/keeper"
 	icaauthmoduletypes "github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft"
+	nfttransfer "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer"
+	nfttransferkeeper "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
+	nfttransfertypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 	nftkeeper "github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 	supply "github.com/crypto-org-chain/chain-main/v4/x/supply"
@@ -168,6 +171,7 @@ var (
 		upgrade.AppModuleBasic{},
 		evidence.AppModuleBasic{},
 		transfer.AppModuleBasic{},
+		nfttransfer.AppModuleBasic{},
 		authzmodule.AppModuleBasic{},
 		groupmodule.AppModuleBasic{},
 		vesting.AppModuleBasic{},
@@ -237,6 +241,7 @@ type ChainApp struct {
 	FeeGrantKeeper      feegrantkeeper.Keeper
 	GroupKeeper         groupkeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
+	NFTTransferKeeper   nfttransferkeeper.Keeper
 	chainmainKeeper     chainmainkeeper.Keeper
 	SupplyKeeper        supplykeeper.Keeper
 	NFTKeeper           nftkeeper.Keeper
@@ -244,6 +249,7 @@ type ChainApp struct {
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
 	ScopedTransferKeeper      capabilitykeeper.ScopedKeeper
+	ScopedNFTTransferKeeper   capabilitykeeper.ScopedKeeper
 	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
@@ -310,6 +316,7 @@ func New(
 		icahosttypes.StoreKey,
 		capabilitytypes.StoreKey,
 		authzkeeper.StoreKey,
+		nfttransfertypes.StoreKey,
 		group.StoreKey,
 		ibcfeetypes.StoreKey,
 		icaauthmoduletypes.StoreKey,
@@ -346,6 +353,7 @@ func New(
 	app.CapabilityKeeper = capabilitykeeper.NewKeeper(appCodec, keys[capabilitytypes.StoreKey], memKeys[capabilitytypes.MemStoreKey])
 	scopedIBCKeeper := app.CapabilityKeeper.ScopeToModule(ibchost.ModuleName)
 	scopedTransferKeeper := app.CapabilityKeeper.ScopeToModule(ibctransfertypes.ModuleName)
+	scopedNFTTransferKeeper := app.CapabilityKeeper.ScopeToModule(nfttransfertypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
 	scopedICAAuthKeeper := app.CapabilityKeeper.ScopeToModule(icaauthmoduletypes.ModuleName)
@@ -444,6 +452,21 @@ func New(
 	transferStack = transfer.NewIBCModule(app.TransferKeeper)
 	transferStack = ibcfee.NewIBCMiddleware(transferStack, app.IBCFeeKeeper)
 
+	app.NFTTransferKeeper = nfttransferkeeper.NewKeeper(
+		appCodec,
+		keys[nfttransfertypes.StoreKey],
+		app.IBCFeeKeeper,
+		app.IBCKeeper.ChannelKeeper,
+		&app.IBCKeeper.PortKeeper,
+		app.NFTKeeper,
+		app.AccountKeeper,
+		scopedNFTTransferKeeper,
+	)
+
+	var nftTransferStack porttypes.IBCModule
+	nftTransferStack = nfttransfer.NewIBCModule(app.NFTTransferKeeper)
+	nftTransferStack = ibcfee.NewIBCMiddleware(nftTransferStack, app.IBCFeeKeeper)
+
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, keys[icacontrollertypes.StoreKey], app.GetSubspace(icacontrollertypes.SubModuleName),
 		app.IBCFeeKeeper, // ISC4 Wrapper: fee IBC middleware
@@ -477,6 +500,7 @@ func New(
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerStack)
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+	ibcRouter.AddRoute(nfttransfertypes.ModuleName, nftTransferStack)
 	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
@@ -511,6 +535,7 @@ func New(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		transferModule,
+		nfttransfer.NewAppModule(app.NFTTransferKeeper),
 		feeModule,
 		icaModule,
 		icaAuthModule,
@@ -547,6 +572,7 @@ func New(
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
+		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
@@ -573,6 +599,7 @@ func New(
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
+		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 	)
 
@@ -603,6 +630,7 @@ func New(
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
 		nfttypes.ModuleName,
+		nfttransfertypes.ModuleName,
 		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
@@ -751,6 +779,7 @@ func New(
 				icahosttypes.StoreKey,
 				icaauthmoduletypes.StoreKey,
 				ibcfeetypes.StoreKey,
+				nfttransfertypes.StoreKey,
 			},
 		}
 

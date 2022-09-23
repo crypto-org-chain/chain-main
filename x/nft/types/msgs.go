@@ -25,12 +25,13 @@ var (
 )
 
 // NewMsgIssueDenom is a constructor function for MsgSetName
-func NewMsgIssueDenom(denomID, denomName, schema, sender string) *MsgIssueDenom {
+func NewMsgIssueDenom(denomID, denomName, schema, uri, sender string) *MsgIssueDenom {
 	return &MsgIssueDenom{
 		Sender: sender,
 		Id:     denomID,
 		Name:   denomName,
 		Schema: schema,
+		Uri:    uri,
 	}
 }
 

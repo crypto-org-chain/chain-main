@@ -18153,6 +18153,8 @@ paths:
                         type: string
                       creator:
                         type: string
+                      uri:
+                        type: string
                     title: Denom defines a type of NFT
                   nfts:
                     type: array
@@ -18359,6 +18361,8 @@ paths:
                       type: string
                     creator:
                       type: string
+                    uri:
+                      type: string
                   title: Denom defines a type of NFT
               pagination:
                 type: object
@@ -18493,6 +18497,8 @@ paths:
                     type: string
                   creator:
                     type: string
+                  uri:
+                    type: string
                 title: Denom defines a type of NFT
             title: >-
               QueryDenomByNameResponse is the response type for the
@@ -18546,6 +18552,8 @@ paths:
                   schema:
                     type: string
                   creator:
+                    type: string
+                  uri:
                     type: string
                 title: Denom defines a type of NFT
             title: >-
@@ -34390,6 +34398,8 @@ definitions:
             type: string
           creator:
             type: string
+          uri:
+            type: string
         title: Denom defines a type of NFT
       nfts:
         type: array
@@ -34418,6 +34428,8 @@ definitions:
       schema:
         type: string
       creator:
+        type: string
+      uri:
         type: string
     title: Denom defines a type of NFT
   chainmain.nft.v1.IDCollection:
@@ -34464,6 +34476,8 @@ definitions:
               schema:
                 type: string
               creator:
+                type: string
+              uri:
                 type: string
             title: Denom defines a type of NFT
           nfts:
@@ -34526,6 +34540,8 @@ definitions:
             type: string
           creator:
             type: string
+          uri:
+            type: string
         title: Denom defines a type of NFT
     title: >-
       QueryDenomByNameResponse is the response type for the Query/DenomByName
@@ -34544,6 +34560,8 @@ definitions:
             type: string
           creator:
             type: string
+          uri:
+            type: string
         title: Denom defines a type of NFT
     title: QueryDenomResponse is the response type for the Query/Denom RPC method
   chainmain.nft.v1.QueryDenomsResponse:
@@ -34561,6 +34579,8 @@ definitions:
             schema:
               type: string
             creator:
+              type: string
+            uri:
               type: string
           title: Denom defines a type of NFT
       pagination:

@@ -73,11 +73,11 @@ func (suite *KeeperSuite) SetupTest() {
 	types.RegisterQueryServer(queryHelper, app.NFTKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
-	err := suite.keeper.IssueDenom(suite.ctx, denomID, denomNm, schema, address)
+	err := suite.keeper.IssueDenom(suite.ctx, denomID, denomNm, schema, "", address)
 	suite.NoError(err)
 
 	// MintNFT shouldn't fail when collection does not exist
-	err = suite.keeper.IssueDenom(suite.ctx, denomID2, denomNm2, schema, address)
+	err = suite.keeper.IssueDenom(suite.ctx, denomID2, denomNm2, schema, "", address)
 	suite.NoError(err)
 
 	// collections should equal 1
