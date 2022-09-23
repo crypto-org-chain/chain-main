@@ -1,3 +1,7 @@
 [submodule "cosmos-sdk"]
 	path = third_party/cosmos-sdk
 	url = https://github.com/cosmos/cosmos-sdk.git
+
+[submodule "ibc-go"]
+	path = third_party/ibc-go
+	url = https://github.com/cosmos/ibc-go.git

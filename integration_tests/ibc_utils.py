@@ -29,9 +29,14 @@ def search_target(query, key, chains):
     return results
 
 
-def start_and_wait_relayer(cluster, init_relayer=True):
+def start_and_wait_relayer(
+    cluster,
+    port="transfer",
+    chains=["ibc-0", "ibc-1"],
+    start_relaying=True,
+    init_relayer=True,
+):
     relayer = wait_relayer_ready(cluster)
-    chains = ["ibc-0", "ibc-1"]
     if init_relayer:
         # create connection and channel
         subprocess.run(
@@ -40,9 +45,9 @@ def start_and_wait_relayer(cluster, init_relayer=True):
                 "create",
                 "channel",
                 "--a-port",
-                "transfer",
+                port,
                 "--b-port",
-                "transfer",
+                port,
                 "--a-chain",
                 chains[0],
                 "--b-chain",
@@ -54,7 +59,8 @@ def start_and_wait_relayer(cluster, init_relayer=True):
         )
 
         # start relaying
-        cluster[chains[0]].supervisor.startProcess("relayer-demo")
+        if start_relaying:
+            cluster[chains[0]].supervisor.startProcess("relayer-demo")
 
     query = relayer + ["query", "channels", "--chain"]
     return search_target(query, "channel", chains)

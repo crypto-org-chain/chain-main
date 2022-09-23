@@ -49,6 +49,7 @@ func GetCmdIssueDenom() *cobra.Command {
 				"--from=<key-name> "+
 				"--name=<denom-name> "+
 				"--schema=<schema-content or path to schema.json> "+
+				"--uri=<uri of denom> "+
 				"--chain-id=<chain-id> "+
 				"--fees=<fee>",
 			version.AppName,
@@ -68,6 +69,10 @@ func GetCmdIssueDenom() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			uri, err := cmd.Flags().GetString(FlagDenomURI)
+			if err != nil {
+				return err
+			}
 			optionsContent, err := ioutil.ReadFile(schema)
 			if err == nil {
 				schema = string(optionsContent)
@@ -77,6 +82,7 @@ func GetCmdIssueDenom() *cobra.Command {
 				args[0],
 				denomName,
 				schema,
+				uri,
 				clientCtx.GetFromAddress().String(),
 			)
 			if err := msg.ValidateBasic(); err != nil {
