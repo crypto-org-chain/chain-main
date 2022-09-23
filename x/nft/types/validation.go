@@ -13,6 +13,7 @@ const (
 	DoNotModify = "[do-not-modify]"
 	MinDenomLen = 3
 	MaxDenomLen = 64
+	IBCDenomLen = 68
 
 	MaxTokenURILen = 256
 )
@@ -33,6 +34,19 @@ func ValidateDenomID(denomID string) error {
 		return sdkerrors.Wrapf(ErrInvalidDenom, "the denom(%s) only accepts lowercase alphanumeric characters, and begin with an english letter", denomID)
 	}
 	return nil
+}
+
+// ValidateDenomIDWithIBC verifies whether the  parameters are legal and considers IBC denom IDs when checking
+func ValidateDenomIDWithIBC(denomID string) error {
+	if strings.HasPrefix(denomID, "ibc/") {
+		if len(denomID) != IBCDenomLen {
+			return sdkerrors.Wrapf(ErrInvalidDenom, "the length of ibc denom(%s) only accepts value [%d]", denomID, IBCDenomLen)
+		}
+
+		return nil
+	}
+
+	return ValidateDenomID(denomID)
 }
 
 // ValidateDenomName verifies whether the  parameters are legal
