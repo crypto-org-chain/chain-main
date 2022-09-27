@@ -18,7 +18,7 @@ linters:
     - unconvert
 
 linters-settings:
-  exclude: ./pystarport/pystarport/*
+  exclude: ./pystarport/*
   govet:
     check-shadowing: true
   errcheck:
