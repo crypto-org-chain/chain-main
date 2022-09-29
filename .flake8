@@ -1,4 +1,4 @@
 [flake8]
 max-line-length = 88
 extend-ignore = E203
-exclude = .git,__pycache__,./pystarport/pystarport/tendermint,./pystarport/pystarport/proto_python,./third_party/cosmos-sdk,./third_party/ibc-go
+exclude = .git,__pycache__,./pystarport/tendermint,./pystarport/proto_python,./third_party/cosmos-sdk,./third_party/ibc-go
