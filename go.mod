@@ -146,6 +146,6 @@ replace github.com/opencontainers/image-spec => github.com/opencontainers/image-
 replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 
 // needed due to a breaking change in 0.44.6
-replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch3
+replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch4
 
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.21

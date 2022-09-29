@@ -235,6 +235,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {
+	startCmd.Flags().String(app.FlagStreamers, "", "Enable streamers, only file streamer is supported right now")
 }
 
 func queryCommand() *cobra.Command {
