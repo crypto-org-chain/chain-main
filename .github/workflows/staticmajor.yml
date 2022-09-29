@@ -1,0 +1,23 @@
+name: Staticmajor
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/**
+
+jobs:
+  run_staticmajor:
+    name: Scan for resource leaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Staticmajor action
+        id: staticmajor
+        uses: orijtech/staticmajor-action@main
+        with:
+            packages: ./...
+            resleak: true
+            structslop: false
+            tests: false
