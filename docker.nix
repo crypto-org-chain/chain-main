@@ -6,12 +6,12 @@ in
   chaindImage =
     pkgs.dockerTools.buildLayeredImage {
       name = "crypto-org-chain/chain-maind";
-      config.Entrypoint = [ "${self.chain-maind}/bin/chain-maind" ];
+      config.Entrypoint = [ "${pkgs.callPackage ./. {}}/bin/chain-maind" ];
     };
 
   pystarportImage =
     pkgs.dockerTools.buildLayeredImage {
       name = "crypto-org-chain/chain-main-pystarport";
-      config.Entrypoint = [ "${self.pystarport}/bin/pystarport" ];
+      config.Entrypoint = [ "${pkgs.test-env}/bin/pystarport" ];
     };
 }
