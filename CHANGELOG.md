@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Improvements
+
+- add flag `iavl-disable-fastnode` to disable iavl fast node.
+
 *September 5, 2022*
 
 ## v3.3.5
