@@ -48,15 +48,15 @@ schema = 3
     version = "v1.0.4"
     hash = "sha256-JvcBXBdjdmnaW/nyf/tw/uaOAGn1b78yxrtl2/Rs3kA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.44.8-patch3"
-    hash = "sha256-oz+42WzRM7rOGBQ9kzCoU+nhXg5bWlMdNv6FUhU02mU="
-    replaced = "github.com/crypto-org-chain/cosmos-sdk"
+    version = "v0.44.6-0.20221010082958-9409c8b56ad9"
+    hash = "sha256-w6TqctlPAYJC5MXK9+GkZwzPEihGwKFU1OQylwASt+c="
+    replaced = "github.com/yihuang/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
   [mod."github.com/cosmos/iavl"]
-    version = "v0.19.1"
-    hash = "sha256-XrJeCNK0W8j3Qwxya4sr6R05zpI6+oYXFucWguiMiqM="
+    version = "v0.19.2-0.20220916140702-9b6be3095313"
+    hash = "sha256-49xr/7/4L1wZ45eW5lE7C4SlcbGf4gBY+662SfJiWPQ="
   [mod."github.com/cosmos/ibc-go/v2"]
     version = "v2.0.3"
     hash = "sha256-XO4z5mq5hUCgcN9F9jQnOndNXTA9PQI6mVjjDwq9cDc="
