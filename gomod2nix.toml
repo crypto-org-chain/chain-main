@@ -55,6 +55,9 @@ schema = 3
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
+  [mod."github.com/cosmos/gorocksdb"]
+    version = "v1.2.0"
+    hash = "sha256-209TcVuXc5s/TcOvNlaQ1HEJAUDTEK3nxPhs+d8TEcY="
   [mod."github.com/cosmos/iavl"]
     version = "v0.19.2-0.20220916140702-9b6be3095313"
     hash = "sha256-49xr/7/4L1wZ45eW5lE7C4SlcbGf4gBY+662SfJiWPQ="
@@ -291,9 +294,6 @@ schema = 3
   [mod."github.com/syndtr/goleveldb"]
     version = "v1.0.1-0.20200815110645-5c35d600f0ca"
     hash = "sha256-59eJ01Q7GsEIXrORY5onzkowKo1DUEbm+3CCG//yWHM="
-  [mod."github.com/tecbot/gorocksdb"]
-    version = "v0.0.0-20191217155057-f0fad39f321c"
-    hash = "sha256-VODgdnIxK9bhCHrt4nKfPYk/LLycTIwSRi930fws3Pk="
   [mod."github.com/tendermint/btcd"]
     version = "v0.1.1"
     hash = "sha256-QQl2GWZaKQtd+LQrgx2unkTLI1qye57fCWwJcmCXT/0="
@@ -308,8 +308,8 @@ schema = 3
     hash = "sha256-C1KW6Wd4TwsFC09IHt8Jo3dozEk/Q2ZVdTapM8btEJ0="
     replaced = "github.com/tendermint/tendermint"
   [mod."github.com/tendermint/tm-db"]
-    version = "v0.6.6"
-    hash = "sha256-NJN6mkyW8xW3e5lNfOyoUZ2qVZxMo/pR33ftg8voxOU="
+    version = "v0.6.7"
+    hash = "sha256-hl/3RrBrpkk2zA6dmrNlIYKs1/GfqegSscDSkA5Pjlo="
   [mod."github.com/tidwall/gjson"]
     version = "v1.9.3"
     hash = "sha256-EUaWUTATM2UrGZKyYvKkmU9bEPmfMIRmZ84Nc3nJgh0="
