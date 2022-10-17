@@ -148,4 +148,6 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 // needed due to a breaking change in 0.44.6
 replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch-dragonberry
 
+replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
+
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.21
