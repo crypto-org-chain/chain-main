@@ -562,8 +562,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/creack/pty v1.1.11/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f h1:pizxWsDWb07eC9jhw1oEUraFSZr3q17jvBU8CZ5Cp6s=
 github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f/go.mod h1:TJ0bt9M3eOD5V6ZCUvenKA1ODkvOcYuJDMBr9/XW1QY=
-github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch-iavl-fastnode-flag h1:MJgbMrnnip+P2FZjCDZgpQGAqgJUAgvKJ+IkY5YqxFw=
-github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch-iavl-fastnode-flag/go.mod h1:jeuU6Ds8YnVKkDZNSd0yaVe5tmULDagqEXIzyxXwWNY=
+github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch-dragonberry h1:RKjxAKyjie/ThmVOcaj7dCs97kHAP3Gsax6IR044sBo=
+github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch-dragonberry/go.mod h1:kRbGR3q8tyLsSms9lfKQvgK/ttJVePuvkDRXI4kHGhA=
 github.com/crypto-org-chain/keyring v1.1.6-fixes h1:AUFSu56NY6XobY6XfRoDx6v3loiOrHK5MNUm32GEjwA=
 github.com/crypto-org-chain/keyring v1.1.6-fixes/go.mod h1:0mkLWIoZuQ7uBoospo5Q9zIpqq6rYCPJDSUdeCJvPM8=
 github.com/cyphar/filepath-securejoin v0.2.2/go.mod h1:FpkQEhXnPnOthhzymB7CGsFk2G9VLXONKD9G7QGMM+4=

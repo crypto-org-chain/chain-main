@@ -48,8 +48,8 @@ schema = 3
     version = "v1.0.4"
     hash = "sha256-JvcBXBdjdmnaW/nyf/tw/uaOAGn1b78yxrtl2/Rs3kA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.44.8-patch-iavl-fastnode-flag"
-    hash = "sha256-w6TqctlPAYJC5MXK9+GkZwzPEihGwKFU1OQylwASt+c="
+    version = "v0.44.8-patch-dragonberry"
+    hash = "sha256-/B6IwWo5+R3byA0ulFIQJgk/mn0M9t855pa/wcxZeqU="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
