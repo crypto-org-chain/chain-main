@@ -3,6 +3,15 @@
 ## UNRELEASED
 
 ### Improvements
+- upgrade Tendermint to 0.34.22
+- upgrade ibc-go to 2.0.4
+- upgrade the Go compiler to 1.19.2
+
+*October 16, 2022*
+
+## v3.3.6
+
+### Improvements
 
 - add flag `iavl-disable-fastnode` to disable iavl fast node.
 - update dragonberry.
