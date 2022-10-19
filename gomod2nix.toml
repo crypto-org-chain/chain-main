@@ -49,8 +49,8 @@ schema = 3
     version = "v1.0.4"
     hash = "sha256-JvcBXBdjdmnaW/nyf/tw/uaOAGn1b78yxrtl2/Rs3kA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.44.8-patch-dragonberry"
-    hash = "sha256-/B6IwWo5+R3byA0ulFIQJgk/mn0M9t855pa/wcxZeqU="
+    version = "v0.44.8-patch5"
+    hash = "sha256-oM6eWvBEsyE3Dlo15C5/Gkishxfppja+OnNHYnSoNO8="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
