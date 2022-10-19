@@ -1,6 +1,11 @@
 # Changelog
 
-## UNRELEASED
+*October 16, 2022*
+
+## v3.3.7
+
+### Added
+- backported the state streaming function
 
 ### Improvements
 - upgrade Tendermint to 0.34.22
