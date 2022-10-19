@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
+	"github.com/spf13/cast"
 
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
@@ -19,6 +21,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -68,6 +71,7 @@ import (
 	ibchost "github.com/cosmos/ibc-go/v2/modules/core/24-host"
 	ibckeeper "github.com/cosmos/ibc-go/v2/modules/core/keeper"
 
+	"github.com/cosmos/cosmos-sdk/store/streaming/file"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
@@ -110,7 +114,11 @@ import (
 	_ "github.com/crypto-org-chain/chain-main/v3/app/docs/statik"
 )
 
-const appName = "chain-maind"
+const (
+	appName               = "chain-maind"
+	FlagStreamers         = "streamers"
+	FileStreamerDirectory = "file_streamer"
+)
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
@@ -249,6 +257,32 @@ func New(
 	)
 	tkeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+
+	// configure state listening capabilities using AppOptions
+	// we are doing nothing with the returned streamingServices and waitGroup in this case
+	// Only support file streamer right now.
+	if cast.ToString(appOpts.Get(FlagStreamers)) == "file" {
+		streamingDir := filepath.Join(cast.ToString(appOpts.Get(flags.FlagHome)), "data", FileStreamerDirectory)
+		if err := os.MkdirAll(streamingDir, os.ModePerm); err != nil {
+			panic(err)
+		}
+
+		// default to exposing all
+		exposeStoreKeys := make([]sdk.StoreKey, 0, len(keys))
+		for _, storeKey := range keys {
+			exposeStoreKeys = append(exposeStoreKeys, storeKey)
+		}
+		service, err := file.NewStreamingService(streamingDir, "", exposeStoreKeys, appCodec)
+		if err != nil {
+			panic(err)
+		}
+		bApp.SetStreamingService(service)
+
+		wg := new(sync.WaitGroup)
+		if err := service.Stream(wg); err != nil {
+			panic(err)
+		}
+	}
 
 	app := &ChainApp{
 		BaseApp:           bApp,

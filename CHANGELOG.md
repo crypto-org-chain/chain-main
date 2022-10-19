@@ -1,6 +1,20 @@
 # Changelog
 
-## UNRELEASED
+*October 16, 2022*
+
+## v3.3.7
+
+### Added
+- backported the state streaming function
+
+### Improvements
+- upgrade Tendermint to 0.34.22
+- upgrade ibc-go to 2.0.4
+- upgrade the Go compiler to 1.19.2
+
+*October 16, 2022*
+
+## v3.3.6
 
 ### Improvements
 
