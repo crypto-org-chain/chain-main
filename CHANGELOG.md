@@ -5,6 +5,7 @@
 ### Improvements
 
 - add flag `iavl-disable-fastnode` to disable iavl fast node.
+- update dragonberry.
 
 *September 5, 2022*
 

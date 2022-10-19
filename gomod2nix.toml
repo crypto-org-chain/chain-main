@@ -39,8 +39,9 @@ schema = 3
     version = "v0.7.0"
     hash = "sha256-W4cY7vr/+f6zjmO16WxF7XQBhW5mVrEfpYTNcu+y8yo="
   [mod."github.com/confio/ics23/go"]
-    version = "v0.7.0"
-    hash = "sha256-FjUQfDKtX+/13+UjJzbYPAkgM4GPZ0vk+dKz7/iRetw="
+    version = "v0.8.0"
+    hash = "sha256-mFKxFHp7RaE1L5NdtH9H9px2Cy6I5uOZVnFOgE8Nrew="
+    replaced = "github.com/cosmos/cosmos-sdk/ics23/go"
   [mod."github.com/confluentinc/bincover"]
     version = "v0.1.0"
     hash = "sha256-bMCtvBFSR8edk3gzCKSXCrR2a0LXBsJAlR5WjPZdKBE="
@@ -48,12 +49,15 @@ schema = 3
     version = "v1.0.4"
     hash = "sha256-JvcBXBdjdmnaW/nyf/tw/uaOAGn1b78yxrtl2/Rs3kA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.44.8-patch-iavl-fastnode-flag"
-    hash = "sha256-w6TqctlPAYJC5MXK9+GkZwzPEihGwKFU1OQylwASt+c="
+    version = "v0.44.8-patch-dragonberry"
+    hash = "sha256-/B6IwWo5+R3byA0ulFIQJgk/mn0M9t855pa/wcxZeqU="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
+  [mod."github.com/cosmos/gorocksdb"]
+    version = "v1.2.0"
+    hash = "sha256-209TcVuXc5s/TcOvNlaQ1HEJAUDTEK3nxPhs+d8TEcY="
   [mod."github.com/cosmos/iavl"]
     version = "v0.19.2-0.20220916140702-9b6be3095313"
     hash = "sha256-49xr/7/4L1wZ45eW5lE7C4SlcbGf4gBY+662SfJiWPQ="
@@ -290,9 +294,6 @@ schema = 3
   [mod."github.com/syndtr/goleveldb"]
     version = "v1.0.1-0.20200815110645-5c35d600f0ca"
     hash = "sha256-59eJ01Q7GsEIXrORY5onzkowKo1DUEbm+3CCG//yWHM="
-  [mod."github.com/tecbot/gorocksdb"]
-    version = "v0.0.0-20191217155057-f0fad39f321c"
-    hash = "sha256-VODgdnIxK9bhCHrt4nKfPYk/LLycTIwSRi930fws3Pk="
   [mod."github.com/tendermint/btcd"]
     version = "v0.1.1"
     hash = "sha256-QQl2GWZaKQtd+LQrgx2unkTLI1qye57fCWwJcmCXT/0="
@@ -307,8 +308,8 @@ schema = 3
     hash = "sha256-C1KW6Wd4TwsFC09IHt8Jo3dozEk/Q2ZVdTapM8btEJ0="
     replaced = "github.com/tendermint/tendermint"
   [mod."github.com/tendermint/tm-db"]
-    version = "v0.6.6"
-    hash = "sha256-NJN6mkyW8xW3e5lNfOyoUZ2qVZxMo/pR33ftg8voxOU="
+    version = "v0.6.7"
+    hash = "sha256-hl/3RrBrpkk2zA6dmrNlIYKs1/GfqegSscDSkA5Pjlo="
   [mod."github.com/tidwall/gjson"]
     version = "v1.9.3"
     hash = "sha256-EUaWUTATM2UrGZKyYvKkmU9bEPmfMIRmZ84Nc3nJgh0="
