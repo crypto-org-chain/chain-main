@@ -1,4 +1,4 @@
-{ poetry2nix, python39Packages, python39, lib }:
+{ poetry2nix, python39, lib }:
 poetry2nix.mkPoetryEnv {
   python = python39;
   projectDir = ../integration_tests;
@@ -23,7 +23,11 @@ poetry2nix.mkPoetryEnv {
         buildSystems
     )
     (self: super: {
-      platformdirs = python39Packages.platformdirs;
+      pyyaml-include = super.pyyaml-include.overridePythonAttrs {
+        preConfigure = ''
+          substituteInPlace setup.py --replace "setup()" "setup(version=\"1.3\")"
+        '';
+      };
     })
   ]);
 }
