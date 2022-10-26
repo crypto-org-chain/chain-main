@@ -166,7 +166,7 @@ replace (
 
 	// Ref: https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
 	github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.46.3
+	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.46.4-0.20221025141727-ec09eae77376
 	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
