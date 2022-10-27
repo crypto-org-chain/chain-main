@@ -54,7 +54,6 @@
               buildInputs = with pkgs; [
                 go_1_18
                 rocksdb
-                libwasmvm
               ];
             };
           };
