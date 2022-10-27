@@ -56,8 +56,8 @@ func IsAwayFromOrigin(sourcePort, sourceChannel, fullClassPath string) bool {
 //
 // Examples:
 //
-// 	- "port-1/channel-1/class-1" => ClassTrace{Path: "port-1/channel-1", BaseClassId: "class-1"}
-// 	- "class-1" => ClassTrace{Path: "", BaseClassId: "class-1"}
+//   - "port-1/channel-1/class-1" => ClassTrace{Path: "port-1/channel-1", BaseClassId: "class-1"}
+//   - "class-1" => ClassTrace{Path: "", BaseClassId: "class-1"}
 func ParseClassTrace(rawClassID string) ClassTrace {
 	classSplit := strings.Split(rawClassID, "/")
 
