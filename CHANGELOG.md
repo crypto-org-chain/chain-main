@@ -1,5 +1,13 @@
 # Changelog
 
+*October 27, 2022*
+
+## v3.3.8
+
+### Improvements
+
+- Make `iavl-cache-size` and `iavl-disable-fastnode` take effects.
+
 *October 16, 2022*
 
 ## v3.3.7
