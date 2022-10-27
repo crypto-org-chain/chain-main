@@ -1,6 +1,8 @@
 # Changelog
 
-## UNRELEASED
+*October 27, 2022*
+
+## v3.3.8
 
 ### Improvements
 
