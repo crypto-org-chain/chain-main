@@ -6,7 +6,7 @@ import sources.nixpkgs {
         name = "cosmovisor";
         src = ../third_party/cosmos-sdk/cosmovisor;
         subPackages = [ "./cmd/cosmovisor" ];
-        vendorSha256 = "sha256-e0QeHe/SLuhcYPXsRsZ739vPbHgHG0A1Ga+Mc0KsGUo=";
+        vendorSha256 = sha256:1hb9yxxm41yg21hm6qbjv53i7dr7qgdpis7y93hdibjs1apxc19q;
         doCheck = false;
       };
       hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
