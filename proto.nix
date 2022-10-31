@@ -2,12 +2,10 @@
 with pkgs;
 pkgs.mkShell {
   buildInputs = [
-    python38
-    python38Packages.grpcio
-    python38Packages.grpcio-tools
+    buf
     git
   ];
   shellHook = ''                                                                                       
   cd ./pystarport
-  ./convert.sh                                                                                          '';
+  ./new-convert.sh                                                                                          '';
 }

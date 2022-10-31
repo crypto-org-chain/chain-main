@@ -1,4 +1,16 @@
 {
+    "cosmos-sdk": {
+        "branch": "v0.45.0",
+        "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
+        "homepage": "https://cosmos.network/",
+        "owner": "cosmos",
+        "repo": "cosmos-sdk",
+        "rev": "b6c77e6c819f8a51166649eaef125d1bfb276f04",
+        "sha256": "09ns4yfxyfi7c7n5g69zv32m1rdssdl48c1akmv1y2vz6ayz4v02",
+        "type": "tarball",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/b6c77e6c819f8a51166649eaef125d1bfb276f04.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "gomod2nix": {
         "branch": "master",
         "description": "Convert applications using Go modules to Nix expressions",
@@ -29,10 +41,10 @@
         "homepage": "",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "0011e576fb992ea9305d3c49387d09a84eadd596",
-        "sha256": "0xl4qqw2xq3kjcbi6lvp7gj89vg9rf9c7ipbk7khz7j18haxsb6z",
+        "rev": "216f82bfc090015b6309a19a6d8ea441da69bffe",
+        "sha256": "0i9970rk83p4y6ab17yfw6v20fsp1a126f3xm7bxvpwsl3w3dl67",
         "type": "tarball",
-        "url": "https://github.com/NixOS/nixpkgs/archive/0011e576fb992ea9305d3c49387d09a84eadd596.tar.gz",
+        "url": "https://github.com/NixOS/nixpkgs/archive/216f82bfc090015b6309a19a6d8ea441da69bffe.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "rocksdb": {
