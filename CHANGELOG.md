@@ -1,38 +1,32 @@
 # Changelog
 
-## Unreleased
+*October 31, 2022*
 
-### Added
+## v4.0.0
 
-- Support for smart contracts using `CosmWasm`. #780 #805
+This is the release of Crypto.org Chain's `v4.0.0`. It contains following changes (when compared with `v3`):
 
-### Changed
+## Added
 
-- Upgrade `cosmos-sdk` to `v0.45.6` and `ibc-go` to `v4.0.0-rc0`. #803
-- Changed go version to `1.18`. #803
+- Support for interchain accounts. #730 #732 #733
+- IBC Fee middleware for incentivizing relayers. #763 #834 
+- Add support for NFT transfer via IBC. #860 
+- Set default `min_commission_rate` to `5%`. #845 
+
+## Changed
+
+- Upgrade `cosmos-sdk` to `v0.46.3+` and `ibc-go` to `v5.0.1`. #850 #869 #884
+- Changed go version to `1.19`. #884
 - Change the default priority mechanism to be based on gas price
-- Upgrade `cosmos-sdk` to `v0.46.1` and `ibc-go` to `v0.5.0-rc0` and remove the custom priority mechanism.
+- Add `url` in `x/nft`'s `Denom`.  #860 
 
-### Security
+## Deprecated
 
-- Upgraded CodeQL scanning pipeline. #773
+- Marked `x/supply` module, including its CLI and gRPC, as deprecated. #724
 
-## v4.0.0-alpha3-croeseid
+## Security
 
-### Added
-
-- IBC Fee middleware for incentivizing relayers (only for IBC transfers). #763.
-
-### Testing
-
-- Integration tests for solo machine. #757.
-- Integration tests for offline signing. #761.
-
-## v4.0.0-alpha1
-
-- Upgrade `cosmos-sdk` to `v0.45.3` and `ibc-go` to `v3.0.0`. #717 #725 #728 #745 #750
-- Mark gRPC and CLI of `x/supply` as deprecated. #724
-- Enable interchain accounts. #730 #732 #733
+- Security fixes for Swagger UI. #704
 
 *March 1, 2022*
 
