@@ -2,7 +2,7 @@
 , stdenv
 , buildGoApplication
 , nix-gitignore
-, go_1_18
+, go_1_19
 , writeShellScript
 , gomod2nix
 , rocksdb ? null
@@ -36,7 +36,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.0.0";
-  go = go_1_18;
+  go = go_1_19;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;

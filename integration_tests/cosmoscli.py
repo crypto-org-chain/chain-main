@@ -145,6 +145,32 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         assert "error" not in rsp, rsp["error"]
         return rsp["result"]["txs"]
 
+    def sign_batch_multisig_tx(
+        self,
+        tx_file,
+        multi_addr,
+        signer_name,
+        account_number,
+        sequence_number,
+        sigonly=True,
+    ):
+        r = self.raw(
+            "tx",
+            "sign-batch",
+            "--offline",
+            "--signature-only" if sigonly else None,
+            tx_file,
+            account_number=account_number,
+            sequence=sequence_number,
+            from_=signer_name,
+            multisig=multi_addr,
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+        )
+        return r.decode("utf-8")
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -166,3 +192,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def transfer(self, from_, to, coins, i=0, generate_only=False, **kwargs):
         return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)
+
+    def sign_batch_multisig_tx(self, *args, i=0, **kwargs):
+        return self.cosmos_cli(i).sign_batch_multisig_tx(*args, **kwargs)
