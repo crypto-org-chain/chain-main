@@ -130,17 +130,22 @@ require (
 // TODO: https://github.com/cosmos/cosmos-sdk/pull/8388/files#r560319528
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2
 
+// Use cosmos flavored protobufs
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
+// use the patched ledger-cosmos-go
 replace github.com/cosmos/ledger-cosmos-go => github.com/crypto-com/ledger-cosmos-go v0.9.10-0.20200929055312-01e1d341de0f
 
 // TODO: fix keyring upstream
 replace github.com/99designs/keyring => github.com/crypto-org-chain/keyring v1.1.6-fixes
 
+// use a fork of jwt-go that ensures safety
 replace github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 
-replace github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
+// avoid security issues in gin
+replace github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.8.1
 
+// ensure that we use v1.0.2 of image-spec only
 replace github.com/opencontainers/image-spec => github.com/opencontainers/image-spec v1.0.2
 
 replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
@@ -148,6 +153,10 @@ replace github.com/opencontainers/runc => github.com/opencontainers/runc v1.0.3
 // needed due to a breaking change in 0.44.6
 replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.44.8-patch5
 
+// dragonberry ics23 patch
 replace github.com/confio/ics23/go => github.com/cosmos/cosmos-sdk/ics23/go v0.8.0
 
 replace github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.22
+
+// more preventive IAVL patches
+replace github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.4

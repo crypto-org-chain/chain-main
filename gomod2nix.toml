@@ -59,8 +59,9 @@ schema = 3
     version = "v1.2.0"
     hash = "sha256-209TcVuXc5s/TcOvNlaQ1HEJAUDTEK3nxPhs+d8TEcY="
   [mod."github.com/cosmos/iavl"]
-    version = "v0.19.2-0.20220916140702-9b6be3095313"
-    hash = "sha256-49xr/7/4L1wZ45eW5lE7C4SlcbGf4gBY+662SfJiWPQ="
+    version = "v0.19.4"
+    hash = "sha256-EmpRZ48pjPFq/fIHneut9Vyo5QJATfb3ZO7KzWnqs9g="
+    replaced = "github.com/cosmos/iavl"
   [mod."github.com/cosmos/ibc-go/v2"]
     version = "v2.0.4"
     hash = "sha256-FiARi0pH33L+fOWYoJmSGiHupGVUfP5gB/nsWmatPiU="
