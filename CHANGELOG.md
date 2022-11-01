@@ -1,6 +1,6 @@
 # Changelog
 
-*Jan 22, 2022*
+*1 Nov, 2022*
 ## v2.1.3
 This version is based on Cosmos SDK 0.42.9.
 ### Improvements
