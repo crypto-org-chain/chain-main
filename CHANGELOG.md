@@ -1,5 +1,13 @@
 # Changelog
 
+*November 1, 2022*
+
+## v3.3.9
+
+### Improvements
+
+- IAVL upgraded to 0.19.4 which contains preventive patches to avoid accidental app hash mismatch scenarios.
+
 *October 27, 2022*
 
 ## v3.3.8
