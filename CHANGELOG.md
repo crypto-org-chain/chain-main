@@ -1,10 +1,10 @@
 # Changelog
 
-*November 1, 2022*
+*November 2, 2022*
 
 ## v4.0.1
 
-A small fix on top of `v4.0.0`.
+A small fix on top of `v4.0.0` and upgrade to Cosmos SDK v0.46.4.
 
 ### Improvements
 - [890](https://github.com/crypto-org-chain/chain-main/pull/890) added IAVL configuration flags
