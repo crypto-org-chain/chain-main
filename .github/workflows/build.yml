@@ -70,7 +70,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.19.2
+          go-version: 1.19.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -126,7 +126,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.19.2
+          go-version: 1.19.3
       - name: install runsim
         run: |
           export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
@@ -165,7 +165,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.19.2
+          go-version: 1.19.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -228,7 +228,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.19.2
+          go-version: 1.19.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
@@ -290,7 +290,7 @@ jobs:
           echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
       - uses: actions/setup-go@v2
         with:
-          go-version: 1.19.2
+          go-version: 1.19.3
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v2
         if: github.event_name == 'issue_comment'
