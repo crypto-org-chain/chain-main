@@ -24,7 +24,7 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
-        "branch": "master",
+        "branch": "v1.1.0",
         "description": "IBC modules and relayer - Formal specifications and Rust implementation",
         "homepage": "",
         "owner": "informalsystems",
