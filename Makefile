@@ -10,7 +10,31 @@ COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
 LEDGER_ENABLED ?= true
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
+# DB backend selection
+ifeq (cleveldb,$(findstring cleveldb,$(COSMOS_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=cleveldb
+endif
+ifeq (badgerdb,$(findstring badgerdb,$(COSMOS_BUILD_OPTIONS)))
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=badgerdb
+  BUILD_TAGS := $(BUILD_TAGS),badgerdb
+endif
+# handle rocksdb
+ifeq (rocksdb,$(findstring rocksdb,$(COSMOS_BUILD_OPTIONS)))
+  $(info ################################################################)
+  $(info To use rocksdb, you need to install rocksdb first)
+  $(info Please follow this guide https://github.com/rockset/rocksdb-cloud/blob/master/INSTALL.md)
+  $(info ################################################################)
+  CGO_ENABLED=1
+  BUILD_TAGS := $(BUILD_TAGS),rocksdb
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=rocksdb
+endif
+# handle boltdb
+ifeq (boltdb,$(findstring boltdb,$(COSMOS_BUILD_OPTIONS)))
+  BUILD_TAGS := $(BUILD_TAGS),boltdb
+  ldflags += -X github.com/cosmos/cosmos-sdk/types.DBBackend=boltdb
+endif
+
+ldflags += -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
@@ -20,7 +44,7 @@ TESTNET_FLAGS ?=
 
 ledger ?= HID
 ifeq ($(LEDGER_ENABLED),true)
-	BUILD_TAGS := -tags cgo,ledger,!test_ledger_mock,!ledger_mock
+	BUILD_TAGS := -tags $(BUILD_TAGS),cgo,ledger,!test_ledger_mock,!ledger_mock
 	ifeq ($(ledger), ZEMU)
 		BUILD_TAGS := $(BUILD_TAGS),ledger_zemu
 	else
