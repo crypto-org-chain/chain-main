@@ -1,5 +1,14 @@
 # Changelog
 
+*November 11, 2022*
+
+## v4.1.0
+
+Upgrade to Cosmos SDK to v0.46.5+ and ibc-go to 5.1.
+
+### Improvements
+- [896](https://github.com/crypto-org-chain/chain-main/pull/896) upgraded Cosmos SDK to v0.46.5+ and ibc-go to 5.1
+
 *November 2, 2022*
 
 ## v4.0.1
