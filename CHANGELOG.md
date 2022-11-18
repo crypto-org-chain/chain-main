@@ -1,5 +1,14 @@
 # Changelog
 
+*November 18, 2022*
+
+## v4.1.1
+
+Upgrade to Cosmos SDK to v0.46.5 and Tendermint to v0.34.23.
+
+### Improvements
+- [897](https://github.com/crypto-org-chain/chain-main/pull/897) upgraded Cosmos SDK to v0.46.5 and Tendermint to v0.34.23.
+
 *November 11, 2022*
 
 ## v4.1.0
