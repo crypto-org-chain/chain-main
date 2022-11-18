@@ -210,7 +210,7 @@ def test_group(cluster, tmp_path):
             list(
                 filter(
                     lambda attribute: attribute["key"] == "result",
-                    json.loads(rsp["raw_log"])[0]["events"][0]["attributes"],
+                    json.loads(rsp["raw_log"])[0]["events"][2]["attributes"],
                 )
             )[0]["value"],
         )
