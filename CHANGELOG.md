@@ -1,5 +1,15 @@
 # Changelog
 
+*November 21, 2022*
+
+## v4.1.2
+
+Upgrade to Cosmos SDK to v0.46.6.
+
+### Improvements
+- [899](https://github.com/crypto-org-chain/chain-main/pull/899) upgraded Cosmos SDK to v0.46.6.
+
+
 *November 18, 2022*
 
 ## v4.1.1
