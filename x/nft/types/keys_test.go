@@ -10,6 +10,7 @@ import (
 func TestSplitKeyDenomWithoutIBC(t *testing.T) {
 	keyDenom := []byte("testdenomid/testtokenid")
 
+	// nolint: govet
 	denomID, tokenID, err := types.SplitKeyDenom(keyDenom)
 
 	require.NoError(t, err)
@@ -20,6 +21,7 @@ func TestSplitKeyDenomWithoutIBC(t *testing.T) {
 func TestSplitKeyDenomWithIBC(t *testing.T) {
 	keyDenom := []byte("ibc/testdenomid/testtokenid")
 
+	// nolint: govet
 	denomID, tokenID, err := types.SplitKeyDenom(keyDenom)
 
 	require.NoError(t, err)
