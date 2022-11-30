@@ -1,5 +1,17 @@
 # Changelog
 
+*December 1, 2022*
+
+## v4.1.3
+
+A bug fix and upgrade to Cosmos SDK to the latest v0.46.x revision and Tendermint to 0.34.24.
+
+### Bug Fixes
+- [903](https://github.com/crypto-org-chain/chain-main/pull/903) Fixed denomID and tokenID splitting logic when denom has ibc
+
+### Improvements
+- [904](https://github.com/crypto-org-chain/chain-main/pull/904) Cosmos SDK to the latest v0.46.x revision and Tendermint to 0.34.24.
+
 *November 21, 2022*
 
 ## v4.1.2
