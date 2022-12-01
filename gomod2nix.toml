@@ -82,8 +82,8 @@ schema = 3
     version = "v1.0.0-alpha7"
     hash = "sha256-2wCH+toTF2A6MfFjOa13muEH5oBCcxAhZEqirNOrBA0="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.6"
-    hash = "sha256-H1VZxZUWXhpXiY3A9smLp09MEGpXmh+XvX6YUiXPcpQ="
+    version = "v0.46.7-0.20221130150212-85d6f66de543"
+    hash = "sha256-fy6gW4BxcoRZC3TCHaZtTUNVGtcEC20uFTIbCWU4stY="
     replaced = "github.com/cosmos/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
@@ -382,8 +382,9 @@ schema = 3
     version = "v0.16.0"
     hash = "sha256-JW4zO/0vMzf1dXLePOqaMtiLUZgNbuIseh9GV+jQlf0="
   [mod."github.com/tendermint/tendermint"]
-    version = "v0.34.23"
-    hash = "sha256-eir0vr8lQOG+FTPo+ZUeDidAIACfyUq2ie3XRE8rIa4="
+    version = "v0.34.24"
+    hash = "sha256-3HFTv4XgN535RDaJ5OwUS+fnJHgkmLTwU7CNU2ilxEQ="
+    replaced = "github.com/tendermint/tendermint"
   [mod."github.com/tendermint/tm-db"]
     version = "v0.6.7"
     hash = "sha256-hl/3RrBrpkk2zA6dmrNlIYKs1/GfqegSscDSkA5Pjlo="
