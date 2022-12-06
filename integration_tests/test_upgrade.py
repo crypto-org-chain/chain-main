@@ -370,7 +370,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert raw_log[0]["events"][0]["type"] == "issue_denom"
 
     target_height = cluster.block_height() + 30
-    upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_46=False)
+    upgrade(cluster, "v4.2.0", target_height, cosmos_sdk_46=False)
 
     cli = cluster.cosmos_cli()
 

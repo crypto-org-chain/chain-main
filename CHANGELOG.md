@@ -1,5 +1,14 @@
 # Changelog
 
+*December 6, 2022*
+
+## v4.2.0
+The upgrade plan name was changed to "v4.2.0" (from "v4.0.0") which adds several other
+messages to the ICA allowlist (missing staking messages and ICS721).
+
+### Improvements
+- [905](https://github.com/crypto-org-chain/chain-main/pull/905) ics23 was bumped to the official 0.9 release.
+
 *December 1, 2022*
 
 ## v4.1.3
