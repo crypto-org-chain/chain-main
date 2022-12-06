@@ -752,6 +752,7 @@ func New(
 				"/cosmos.staking.v1beta1.MsgUndelegate",
 				"/cosmos.staking.v1beta1.MsgBeginRedelegate",
 				"/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation",
+				"/cosmos.slashing.v1beta1.MsgUnjail",
 				"/ibc.applications.transfer.v1.MsgTransfer",
 				"/chainmain.nft_transfer.v1.MsgTransfer",
 				"/chainmain.nft.v1.MsgBurnNFT",
