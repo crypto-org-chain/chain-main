@@ -698,7 +698,7 @@ func New(
 	// upgrade.
 	app.setPostHandler()
 
-	planName := "v4.0.0"
+	planName := "v4.2.0"
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx sdk.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		// the minimal commission rate of 5% (0.05)
 		// (default is needed to be set because of SDK store migrations that set the param)
@@ -746,10 +746,15 @@ func New(
 				"/cosmos.gov.v1beta1.MsgSubmitProposal",
 				"/cosmos.gov.v1beta1.MsgDeposit",
 				"/cosmos.gov.v1beta1.MsgVote",
+				"/cosmos.staking.v1beta1.MsgCreateValidator",
+				"/cosmos.staking.v1beta1.MsgEditValidator",
 				"/cosmos.staking.v1beta1.MsgDelegate",
 				"/cosmos.staking.v1beta1.MsgUndelegate",
 				"/cosmos.staking.v1beta1.MsgBeginRedelegate",
+				"/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation",
+				"/cosmos.slashing.v1beta1.MsgUnjail",
 				"/ibc.applications.transfer.v1.MsgTransfer",
+				"/chainmain.nft_transfer.v1.MsgTransfer",
 				"/chainmain.nft.v1.MsgBurnNFT",
 				"/chainmain.nft.v1.MsgEditNFT",
 				"/chainmain.nft.v1.MsgIssueDenom",

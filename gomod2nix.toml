@@ -69,9 +69,9 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/confio/ics23/go"]
-    version = "v0.8.0"
-    hash = "sha256-mFKxFHp7RaE1L5NdtH9H9px2Cy6I5uOZVnFOgE8Nrew="
-    replaced = "github.com/cosmos/cosmos-sdk/ics23/go"
+    version = "v0.9.0"
+    hash = "sha256-guD8w7YygfUp7lpTAUyXQuCPx8F3lXkcg+yR5+JOCbk="
+    replaced = "github.com/confio/ics23/go"
   [mod."github.com/confluentinc/bincover"]
     version = "v0.1.0"
     hash = "sha256-bMCtvBFSR8edk3gzCKSXCrR2a0LXBsJAlR5WjPZdKBE="
@@ -414,23 +414,23 @@ schema = 3
     version = "v0.23.0"
     hash = "sha256-R3O9GyNtv6j0ic7s+2xkLLaLzbJEop0Otj1nJDFBjsg="
   [mod."golang.org/x/crypto"]
-    version = "v0.1.0"
-    hash = "sha256-0oZWBSiW5Pd/2a1p2beuoelDe0CpfXZhrg/qPduJlYs="
+    version = "v0.2.0"
+    hash = "sha256-7xbZm2rKYVl71Hcm4HIT8lN4ZxpcbaOt8a7vkq13VM0="
   [mod."golang.org/x/exp"]
     version = "v0.0.0-20220722155223-a9213eeb770e"
     hash = "sha256-kNgzydWRpjm0sZl4uXEs3LX5L0xjJtJRAFf/CTlYUN4="
   [mod."golang.org/x/net"]
-    version = "v0.1.0"
-    hash = "sha256-SrThFBg6sqGYpiN1E3d1SilJxbKkQhSZXPmAFoMAA/I="
+    version = "v0.2.0"
+    hash = "sha256-0MqnHDdLkkau6k7hlWD9MzIoAFROvxulyT+KzZkSXOs="
   [mod."golang.org/x/oauth2"]
     version = "v0.0.0-20220622183110-fd043fe589d2"
     hash = "sha256-VLffpTpx3DlUzXB8mKiJfFzm4ZmgnLSUuLB5Ir0WQUg="
   [mod."golang.org/x/sys"]
-    version = "v0.1.0"
-    hash = "sha256-nZbEJ/2PuWrDLD4ujeVvcFGoIsfVoIH/Lcp4FjD7hpU="
+    version = "v0.2.0"
+    hash = "sha256-N6yfQH7R2gfcvyWTQZbxWuSNyVy6hAxiab2WFzgAykI="
   [mod."golang.org/x/term"]
-    version = "v0.1.0"
-    hash = "sha256-UWnNsJIj5nXsuzlPWQ1NyHQuHStaDacMVkFbJ4pnxXk="
+    version = "v0.2.0"
+    hash = "sha256-azcllZ0o/9TurqX9udaJ0o9yxqSoI0/bSJsvQQLYIQc="
   [mod."golang.org/x/text"]
     version = "v0.4.0"
     hash = "sha256-JvyMygdmTvWg7xhbnUB9MMk6WcYXJt8DAj4DYl82Pys="
