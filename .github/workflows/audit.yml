@@ -20,6 +20,6 @@ jobs:
       with:
           submodules: true
     - name: install govulncheck
-      run: go get golang.org/x/vuln/cmd/govulncheck && go install golang.org/x/vuln/cmd/govulncheck@latest
+      run: go install -v golang.org/x/vuln/cmd/govulncheck@v0.0.0-20221208170415-d970d6cd0f6e
     - name: govuln sec scan
       run: govulncheck ./...
