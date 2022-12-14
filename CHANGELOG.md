@@ -1,5 +1,13 @@
 # Changelog
 
+*December 14, 2022*
+
+## v4.2.1
+The Cosmos SDK was upgraded to v0.46.7 and binaries are built with go 1.19.4.
+
+### Improvements
+- [909](https://github.com/crypto-org-chain/chain-main/issues/909) Cosmos SDK upgraded to v0.46.7
+
 *December 6, 2022*
 
 ## v4.2.0
