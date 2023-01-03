@@ -1,6 +1,6 @@
 # Changelog
 
-*January 4, 2023*
+*January 3, 2023*
 
 ## v4.2.2
 The ibc-go was upgraded to v5.2.0
