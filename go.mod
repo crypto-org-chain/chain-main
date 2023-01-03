@@ -4,11 +4,11 @@ go 1.19
 
 require (
 	cosmossdk.io/math v1.0.0-beta.3
-	github.com/armon/go-metrics v0.4.0
+	github.com/armon/go-metrics v0.4.1
 	github.com/confluentinc/bincover v0.1.0
-	github.com/cosmos/cosmos-proto v1.0.0-alpha7
+	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.7
-	github.com/cosmos/ibc-go/v5 v5.1.0
+	github.com/cosmos/ibc-go/v5 v5.2.0
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/renameio v1.0.0
@@ -164,9 +164,6 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 
-	// Ref: https://forum.cosmos.network/t/ibc-security-advisory-dragonberry/7702
-	github.com/confio/ics23/go => github.com/confio/ics23/go v0.9.0
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.46.7
 	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
@@ -174,7 +171,6 @@ replace (
 	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-	github.com/tendermint/tendermint => github.com/tendermint/tendermint v0.34.24
 
 	// TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
 	github.com/zondax/hid => github.com/zondax/hid v0.9.0
