@@ -1,5 +1,13 @@
 # Changelog
 
+*January 4, 2023*
+
+## v4.2.2
+The ibc-go was upgraded to v5.2.0
+
+### Improvements
+- [910](https://github.com/crypto-org-chain/chain-main/issues/910) ibc-go was upgraded to v5.2.0
+
 *December 14, 2022*
 
 ## v4.2.1
