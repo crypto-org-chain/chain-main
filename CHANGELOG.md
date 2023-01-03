@@ -6,7 +6,7 @@
 The ibc-go was upgraded to v5.2.0
 
 ### Improvements
-- [910](https://github.com/crypto-org-chain/chain-main/issues/910) ibc-go was upgraded to v5.2.0
+- [912](https://github.com/crypto-org-chain/chain-main/issues/912) ibc-go was upgraded to v5.2.0
 
 *December 14, 2022*
 
