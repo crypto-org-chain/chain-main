@@ -26,7 +26,7 @@
   - [install latest python (for linux)](#install-latest-python-for-linux)
   - [set path (for linux or for mac)](#set-path-for-linux-or-for-mac)
   - [install pystarport](#install-pystarport)
-  - [quitck start](#quitck-start)
+  - [quick start](#quick-start)
   - [get status](#get-status)
   - [stop all](#stop-all)
 - [10. Useful links](#10-useful-links)
@@ -112,7 +112,7 @@ Please follow this [documentation](https://crypto.org/docs/getting-started/local
 
 ## 7. Send Your First Transaction
 
-After setting the local devnet, you may interact with the your local blockchain by following this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#interact-with-the-chain).
+After setting the local devnet, you may interact with your local blockchain by following this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#interact-with-the-chain).
 
 <a id="testing" />
 
@@ -159,7 +159,7 @@ export PATH=/usr/local/bin:$HOME/.local/bin:$PATH
 
 python3 -m pip install pystarport
 
-### quitck start
+### quick start
 
 run two nodes devnet
 
