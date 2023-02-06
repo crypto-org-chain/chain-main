@@ -17,10 +17,11 @@ pkgs.mkShell {
 
     # chain-maind for testing
     chain-maind-zemu
-    chain-maind-zemu.instrumented
   ];
   shellHook = ''
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
     export SOLO_MACHINE_HOME="${pkgs.solomachine}/solomachine"
+    mkdir -p "$PWD/coverage"
+    export GOCOVERDIR="$PWD/coverage"
   '';
 }

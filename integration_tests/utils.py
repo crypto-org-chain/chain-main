@@ -1,7 +1,6 @@
 import datetime
 import json
 import os
-import re
 import shutil
 import socket
 import sys
@@ -143,19 +142,6 @@ def cluster_fixture(
         if post_init:
             post_init(chain_id, chain_data)
 
-        if enable_cov:
-            # replace the first node with the instrumented binary
-            ini = chain_data / cluster.SUPERVISOR_CONFIG_FILE
-            ini.write_text(
-                re.sub(
-                    r"^command = (.*/)?chain-maind",
-                    "command = chain-maind-inst\n"
-                    "environment = GOCOVERDIR=%(here)s/",
-                    ini.read_text(),
-                    count=1,
-                    flags=re.M,
-                )
-            )
         clis[chain_id] = ClusterCLI(data, chain_id=chain_id, cmd=cmd)
 
     supervisord = cluster.start_cluster(data)

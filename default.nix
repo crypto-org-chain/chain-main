@@ -43,11 +43,11 @@ buildGoApplication rec {
   };
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
+  buildFlags = "-cover";
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   outputs = [
     "out"
-    "instrumented"
   ];
   tags = [
     "cgo"
@@ -63,19 +63,6 @@ buildGoApplication rec {
     -X github.com/cosmos/cosmos-sdk/version.Version=${version}
     -X github.com/cosmos/cosmos-sdk/version.Commit=${rev}
     -X github.com/cosmos/cosmos-sdk/version.BuildTags=${concatStringsSep "," tags}
-  '';
-
-  instrumentedBinary = "chain-maind-inst";
-  postBuild = ''
-    echo "Build instrumented binary"
-    go build ./cmd/chain-maind -cover ''${tags:+-tags=${concatStringsSep "," tags}} ''${ldflags:+-ldflags="$ldflags"} "''${buildFlagsArray[@]}" -o ${instrumentedBinary}
-  '';
-  preInstall = ''
-    mkdir -p $instrumented/bin
-    mv ./${instrumentedBinary} $instrumented/bin/
-  '';
-  preFixup = ''
-    find $instrumented/bin/ -type f 2>/dev/null | xargs -r remove-references-to -t ${go} || true
   '';
 
   passthru = {
