@@ -140,7 +140,6 @@ def cluster_fixture(
     supervisord = cluster.start_cluster(data)
 
     try:
-        begin = time.time()
         for cli in clis.values():
             # wait for first node rpc port available before start testing
             wait_for_port(rpc_port(cli.config["validators"][0]["base_port"]))
