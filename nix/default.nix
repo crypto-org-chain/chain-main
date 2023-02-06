@@ -13,7 +13,7 @@ import sources.nixpkgs {
     })
     (import "${sources.gomod2nix}/overlay.nix")
     (pkgs: prev: {
-      go = pkgs.go_1_19;
+      go = pkgs.go_1_20;
       test-env = pkgs.callPackage ./testenv.nix { };
       lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
         EXIT_STATUS=0

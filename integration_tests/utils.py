@@ -149,8 +149,8 @@ def cluster_fixture(
             ini.write_text(
                 re.sub(
                     r"^command = (.*/)?chain-maind",
-                    "command = chain-maind-inst "
-                    "-test.coverprofile=%(here)s/coverage.txt",
+                    "command = chain-maind-inst\n"
+                    "environment = GOCOVERDIR=%(here)s/",
                     ini.read_text(),
                     count=1,
                     flags=re.M,

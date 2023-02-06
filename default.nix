@@ -2,7 +2,7 @@
 , stdenv
 , buildGoApplication
 , nix-gitignore
-, go_1_19
+, go_1_20
 , writeShellScript
 , gomod2nix
 , rocksdb ? null
@@ -36,7 +36,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.0.0";
-  go = go_1_19;
+  go = go_1_20;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
@@ -68,7 +68,7 @@ buildGoApplication rec {
   instrumentedBinary = "chain-maind-inst";
   postBuild = ''
     echo "Build instrumented binary"
-    go test ./cmd/chain-maind ''${tags:+-tags=${concatStringsSep "," tags}}",testbincover" ''${ldflags:+-ldflags="$ldflags"} "''${buildFlagsArray[@]}" -coverpkg=./...,github.com/cosmos/cosmos-sdk/x/... -c -o ${instrumentedBinary}
+    go build ./cmd/chain-maind -cover ''${tags:+-tags=${concatStringsSep "," tags}} ''${ldflags:+-ldflags="$ldflags"} "''${buildFlagsArray[@]}" -o ${instrumentedBinary}
   '';
   preInstall = ''
     mkdir -p $instrumented/bin
