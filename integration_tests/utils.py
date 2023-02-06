@@ -1,11 +1,7 @@
-import datetime
 import json
-import os
-import shutil
 import socket
 import sys
 import time
-import uuid
 
 from dateutil.parser import isoparse
 from pystarport import cluster, expansion, ledger
@@ -119,14 +115,11 @@ def cluster_fixture(
     worker_index,
     data,
     post_init=None,
-    enable_cov=None,
     cmd=None,
 ):
     """
     init a single devnet
     """
-    if enable_cov is None:
-        enable_cov = os.environ.get("GITHUB_ACTIONS") == "true"
     base_port = gen_base_port(worker_index)
     print("init cluster at", data, ", base port:", base_port)
     cluster.init_cluster(data, config_path, base_port, cmd=cmd)
@@ -159,34 +152,9 @@ def cluster_fixture(
         else:
             yield clis
 
-        if enable_cov:
-            # wait for server startup complete to generate the coverage report
-            duration = time.time() - begin
-            if duration < 15:
-                time.sleep(15 - duration)
     finally:
         supervisord.terminate()
         supervisord.wait()
-
-    if enable_cov:
-        # collect the coverage results
-        try:
-            shutil.move(
-                str(chain_data / "coverage.txt"), f"coverage.{uuid.uuid1()}.txt"
-            )
-        except FileNotFoundError:
-            ts = time.time()
-            st = datetime.datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
-            print(st + " FAILED TO FIND COVERAGE")
-            print(os.listdir(chain_data))
-            data = [
-                (int(p), c)
-                for p, c in [
-                    x.rstrip("\n").split(" ", 1)
-                    for x in os.popen("ps h -eo pid:1,command")
-                ]
-            ]
-            print(data)
 
 
 def get_ledger():
