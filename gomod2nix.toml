@@ -72,9 +72,6 @@ schema = 3
     version = "v0.9.0"
     hash = "sha256-guD8w7YygfUp7lpTAUyXQuCPx8F3lXkcg+yR5+JOCbk="
     replaced = "github.com/confio/ics23/go"
-  [mod."github.com/confluentinc/bincover"]
-    version = "v0.1.0"
-    hash = "sha256-bMCtvBFSR8edk3gzCKSXCrR2a0LXBsJAlR5WjPZdKBE="
   [mod."github.com/cosmos/btcutil"]
     version = "v1.0.5"
     hash = "sha256-t572Sr5iiHcuMKLMWa2i+LBAt192oa+G1oA371tG/eI="

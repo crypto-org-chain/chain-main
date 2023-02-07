@@ -90,7 +90,6 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
         worker_index,
         data,
         post_init=post_init,
-        enable_cov=False,
         cmd=(data / "cosmovisor/genesis/bin/chain-maind"),
     )
 
