@@ -40,7 +40,7 @@ func (app *ChainApp) ExportAppStateAndValidators(
 	}
 
 	validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
-	if err != nil { 
+	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
 	return servertypes.ExportedApp{
