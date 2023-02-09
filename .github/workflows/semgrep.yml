@@ -2,6 +2,7 @@ name: Semgrep
 on:
   # Scan changed files in PRs, block on new issues only (existing issues ignored)
   pull_request: {}
+  merge_group:
   push:
     branches:
       - master

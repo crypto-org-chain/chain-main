@@ -24,6 +24,7 @@ on:
         - release/**
       paths:
         - "**.go"
+  merge_group:
 
 jobs:
   analyze:

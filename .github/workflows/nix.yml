@@ -1,6 +1,7 @@
 name: nix flow
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - master
@@ -38,12 +39,10 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
       - name: Run integration tests
         run: make nix-integration-test
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.20.0
       - name: Convert coverage data
-        run: go tool covdata textfmt -i=coverage -o profile.txt
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
         uses: codecov/codecov-action@v1
         with:
@@ -93,6 +92,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-upgrade
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_upgrade
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_upgrade.tar.gz -C /tmp/pytest-of-runner .
@@ -115,6 +124,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-ledger
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_ledger
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ledger.tar.gz -C /tmp/pytest-of-runner .
@@ -137,6 +156,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-solomachine
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_solomachine
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_solomachine.tar.gz -C /tmp/pytest-of-runner .
@@ -159,6 +188,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-slow
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_slow
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_slow.tar.gz -C /tmp/pytest-of-runner .
@@ -181,6 +220,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-ibc
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_ibc
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ibc.tar.gz -C /tmp/pytest-of-runner .
@@ -203,6 +252,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-byzantine
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_byzantine
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_byzantine.tar.gz -C /tmp/pytest-of-runner .
@@ -225,6 +284,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-gov
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_gov
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_gov.tar.gz -C /tmp/pytest-of-runner .
@@ -248,6 +317,16 @@ jobs:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-grpc
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_20
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_grpc
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_grpc.tar.gz -C /tmp/pytest-of-runner .

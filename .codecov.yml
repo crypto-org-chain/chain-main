@@ -26,3 +26,5 @@ ignore:
   - "tests/*"
   - "tests/**/*"
   - "x/**/*.pb.go"
+  - "app/sim_test.go"
+  - "app/test_helpers.go"
