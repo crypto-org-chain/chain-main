@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	newsdkerrors "cosmossdk.io/errors"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -39,7 +40,7 @@ func (msg MsgSubmitTx) GetMessages() ([]sdk.Msg, error) {
 	for i, msgAny := range msg.Msgs {
 		msg, ok := msgAny.GetCachedValue().(sdk.Msg)
 		if !ok {
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "messages contains %T which is not a sdk.Msg", msgAny)
+			return nil, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "messages contains %T which is not a sdk.Msg", msgAny)
 		}
 		msgs[i] = msg
 	}
@@ -83,7 +84,7 @@ func (msg *MsgSubmitTx) GetSignBytes() []byte {
 func (msg *MsgSubmitTx) ValidateBasic() error {
 	_, err := sdk.AccAddressFromBech32(msg.Owner)
 	if err != nil {
-		return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid owner address (%s)", err)
+		return newsdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid owner address (%s)", err)
 	}
 	return nil
 }

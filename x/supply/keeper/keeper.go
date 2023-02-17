@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	newsdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -119,7 +120,7 @@ func (k Keeper) GetModuleAccountBalance(ctx sdk.Context, moduleName string) sdk.
 	addr := k.accountKeeper.GetModuleAddress(moduleName)
 
 	if addr == nil {
-		panic(sdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleName))
+		panic(newsdkerrors.Wrapf(sdkerrors.ErrUnknownAddress, "module account %s does not exist", moduleName))
 	}
 
 	return k.bankKeeper.GetAllBalances(ctx, addr)

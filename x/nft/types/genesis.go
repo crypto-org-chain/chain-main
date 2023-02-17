@@ -3,6 +3,7 @@
 package types
 
 import (
+	newsdkerrors "cosmossdk.io/errors"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
@@ -23,7 +24,7 @@ func ValidateGenesis(data GenesisState) error {
 
 		for _, nft := range c.NFTs {
 			if nft.GetOwner().Empty() {
-				return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "missing owner")
+				return newsdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "missing owner")
 			}
 
 			if err := ValidateTokenID(nft.GetID()); err != nil {

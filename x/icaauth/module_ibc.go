@@ -3,6 +3,7 @@ package icaauth
 import (
 	"strings"
 
+	newsdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -65,7 +66,7 @@ func (am IBCModule) OnChanOpenTry(
 	counterpartyVersion string,
 ) (string, error) {
 	// https://github.com/cosmos/ibc-go/blob/v3.0.0/docs/apps/interchain-accounts/auth-modules.md#ibcmodule-implementation
-	return "", sdkerrors.Wrap(icatypes.ErrInvalidChannelFlow, "channel handshake must be initiated by controller chain")
+	return "", newsdkerrors.Wrap(icatypes.ErrInvalidChannelFlow, "channel handshake must be initiated by controller chain")
 }
 
 // OnChanOpenAck implements the IBCModule interface
@@ -86,7 +87,7 @@ func (am IBCModule) OnChanOpenConfirm(
 	channelID string,
 ) error {
 	// https://github.com/cosmos/ibc-go/blob/v3.0.0/docs/apps/interchain-accounts/auth-modules.md#ibcmodule-implementation
-	return sdkerrors.Wrap(icatypes.ErrInvalidChannelFlow, "channel handshake must be initiated by controller chain")
+	return newsdkerrors.Wrap(icatypes.ErrInvalidChannelFlow, "channel handshake must be initiated by controller chain")
 }
 
 // OnChanCloseInit implements the IBCModule interface
@@ -96,7 +97,7 @@ func (am IBCModule) OnChanCloseInit(
 	channelID string,
 ) error {
 	// https://github.com/cosmos/ibc-go/blob/v3.0.0/docs/apps/interchain-accounts/auth-modules.md#ibcmodule-implementation
-	return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+	return newsdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
 }
 
 // OnChanCloseConfirm implements the IBCModule interface
@@ -115,7 +116,7 @@ func (am IBCModule) OnRecvPacket(
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	// https://github.com/cosmos/ibc-go/blob/v3.0.0/docs/apps/interchain-accounts/auth-modules.md#ibcmodule-implementation
-	return channeltypes.NewErrorAcknowledgement(sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "cannot receive packet on controller chain"))
+	return channeltypes.NewErrorAcknowledgement(newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "cannot receive packet on controller chain"))
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface
