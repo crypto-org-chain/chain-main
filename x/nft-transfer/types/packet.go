@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	newsdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -46,33 +47,33 @@ func NewNonFungibleTokenPacketData(
 // formats defined by their corresponding chains that are not known to IBC.
 func (nftpd NonFungibleTokenPacketData) ValidateBasic() error {
 	if strings.TrimSpace(nftpd.ClassId) == "" {
-		return sdkerrors.Wrap(ErrInvalidClassID, "classId cannot be blank")
+		return newsdkerrors.Wrap(ErrInvalidClassID, "classId cannot be blank")
 	}
 
 	if len(nftpd.TokenIds) == 0 {
-		return sdkerrors.Wrap(ErrInvalidTokenID, "tokenId cannot be blank")
+		return newsdkerrors.Wrap(ErrInvalidTokenID, "tokenId cannot be blank")
 	}
 
 	if len(nftpd.TokenIds) != len(nftpd.TokenUris) {
-		return sdkerrors.Wrap(ErrInvalidPacket, "tokenIds and tokenUris lengths do not match")
+		return newsdkerrors.Wrap(ErrInvalidPacket, "tokenIds and tokenUris lengths do not match")
 	}
 
 	if strings.TrimSpace(nftpd.Sender) == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "sender address cannot be blank")
+		return newsdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "sender address cannot be blank")
 	}
 
 	// decode the sender address
 	if _, err := sdk.AccAddressFromBech32(nftpd.Sender); err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "invalid sender address")
+		return newsdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "invalid sender address")
 	}
 
 	if strings.TrimSpace(nftpd.Receiver) == "" {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "receiver address cannot be blank")
+		return newsdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "receiver address cannot be blank")
 	}
 
 	// decode the receiver address
 	if _, err := sdk.AccAddressFromBech32(nftpd.Receiver); err != nil {
-		return sdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "invalid receiver address")
+		return newsdkerrors.Wrap(sdkerrors.ErrInvalidAddress, "invalid receiver address")
 	}
 	return nil
 }
