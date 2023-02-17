@@ -374,8 +374,11 @@ jobs:
           files: |
             go.mod
             go.sum
-      - uses: cachix/install-nix-action@v15
+      - uses: cachix/install-nix-action@v18
         if: steps.changed-files.outputs.any_changed == 'true'
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: update gomod2nix
         run: nix run .#update-gomod2nix
         if: steps.changed-files.outputs.any_changed == 'true'

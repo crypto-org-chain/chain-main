@@ -16,8 +16,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
           skipPush: true
@@ -30,8 +33,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
           # github don't pass secrets for pull request from fork repos,
@@ -70,8 +76,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
           # github don't pass secrets for pull request from fork repos,
@@ -86,8 +95,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -118,8 +130,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -150,8 +165,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -182,8 +200,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -214,8 +235,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -246,8 +270,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -278,8 +305,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
@@ -311,8 +341,11 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v15
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/install-nix-action@v18
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v12
         with:
           name: crypto-com
       - name: Run integration tests
