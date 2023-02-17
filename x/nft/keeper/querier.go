@@ -7,9 +7,10 @@ import (
 
 	abci "github.com/tendermint/tendermint/abci/types"
 
-	sdkerrors "cosmossdk.io/errors"
+	newsdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
@@ -35,7 +36,7 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 		case types.QueryNFT:
 			return queryNFT(ctx, req, k, legacyQuerierCdc)
 		default:
-			return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
+			return nil, newsdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "unknown query path: %s", path[0])
 		}
 	}
 }
@@ -179,7 +180,7 @@ func queryNFT(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc
 
 	nft, err := k.GetNFT(ctx, params.Denom, params.TokenID)
 	if err != nil {
-		return nil, sdkerrors.Wrapf(types.ErrUnknownNFT, "invalid NFT %s from collection %s", params.TokenID, params.Denom)
+		return nil, newsdkerrors.Wrapf(types.ErrUnknownNFT, "invalid NFT %s from collection %s", params.TokenID, params.Denom)
 	}
 
 	bz, err := codec.MarshalJSONIndent(legacyQuerierCdc, nft)

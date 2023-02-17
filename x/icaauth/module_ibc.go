@@ -3,8 +3,9 @@ package icaauth
 import (
 	"strings"
 
-	sdkerrors "cosmossdk.io/errors"
+	newsdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
 	icatypes "github.com/cosmos/ibc-go/v5/modules/apps/27-interchain-accounts/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
@@ -115,7 +116,7 @@ func (am IBCModule) OnRecvPacket(
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
 	// https://github.com/cosmos/ibc-go/blob/v3.0.0/docs/apps/interchain-accounts/auth-modules.md#ibcmodule-implementation
-	return channeltypes.NewErrorAcknowledgement(sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "cannot receive packet on controller chain"))
+	return channeltypes.NewErrorAcknowledgement(newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "cannot receive packet on controller chain"))
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface
