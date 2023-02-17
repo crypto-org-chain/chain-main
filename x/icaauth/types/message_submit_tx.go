@@ -3,9 +3,9 @@ package types
 import (
 	"time"
 
+	sdkerrors "cosmossdk.io/errors"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const TypeMsgSubmitTx = "submit_tx"

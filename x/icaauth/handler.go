@@ -3,8 +3,8 @@ package icaauth
 import (
 	"fmt"
 
+	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/crypto-org-chain/chain-main/v4/x/icaauth/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
 )
