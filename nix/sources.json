@@ -46,17 +46,5 @@
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/8587ea5347fdc86a911ab1c7d22f11fea4e7777a.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "rocksdb": {
-        "branch": "v6.29.5",
-        "description": "A library that provides an embeddable, persistent key-value store for fast storage.",
-        "homepage": "http://rocksdb.org",
-        "owner": "facebook",
-        "repo": "rocksdb",
-        "rev": "da11a59034584ea2d0911268b8136e5249d6b692",
-        "sha256": "1fr3lhkakjrplgmms07amrxfiasz1b4vl2rppgx50k8gcy0p1awv",
-        "type": "tarball",
-        "url": "https://github.com/facebook/rocksdb/archive/da11a59034584ea2d0911268b8136e5249d6b692.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

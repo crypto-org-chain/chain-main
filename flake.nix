@@ -11,13 +11,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.utils.follows = "flake-utils";
     };
-    rocksdb-src = {
-      url = "github:facebook/rocksdb/v6.29.5";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, nix-bundle-exe, gomod2nix, flake-utils, rocksdb-src }:
+  outputs = { self, nixpkgs, nix-bundle-exe, gomod2nix, flake-utils }:
     let
       rev = self.shortRev or "dirty";
       mkApp = drv: {
@@ -70,11 +66,9 @@
             --owner=0 --group=0 --mode=u+rw,uga+r --hard-dereference . \
             | "${gzip}/bin/gzip" -9 > $out
         '';
-        rocksdb = (prev.rocksdb.overrideAttrs (old: rec {
-          pname = "rocksdb";
-          version = "6.29.5";
-          src = rocksdb-src;
-        })).override { enableJemalloc = true; };
+        # only enable jemalloc for non-windows platforms
+        # see: https://github.com/NixOS/nixpkgs/issues/216479
+        rocksdb = final.callPackage ./nix/rocksdb.nix { enableJemalloc = !final.stdenv.hostPlatform.isWindows; };
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {
