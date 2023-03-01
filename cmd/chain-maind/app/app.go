@@ -236,6 +236,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 
 	// add rosetta
 	rootCmd.AddCommand(server.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
+
+	// versiondb changeset commands
+	changeSetCmd := ChangeSetCmd()
+	if changeSetCmd != nil {
+		rootCmd.AddCommand(changeSetCmd)
+	}
 }
 
 func addModuleInitFlags(startCmd *cobra.Command) {

@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1",
-        "sha256": "1s9m70q2jsr75hynx7q4brgbf22n1lfw5hc45mc3x4r9g4m8qrdz",
+        "rev": "3cbf3a51fe32e2f57af4c52744e7228bab22983d",
+        "sha256": "11kn199nxcw6zspqawkrsfwv8wzx581wif3day160qlg11ya9di5",
         "type": "tarball",
-        "url": "https://github.com/nix-community/gomod2nix/archive/cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1.tar.gz",
+        "url": "https://github.com/nix-community/gomod2nix/archive/3cbf3a51fe32e2f57af4c52744e7228bab22983d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
@@ -45,18 +45,6 @@
         "sha256": "11ipcp1v55ss664c011cwlgp0idf6gg5ladh5m8jn5dm30rzdm29",
         "type": "tarball",
         "url": "https://github.com/NixOS/nixpkgs/archive/8587ea5347fdc86a911ab1c7d22f11fea4e7777a.tar.gz",
-        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
-    },
-    "rocksdb": {
-        "branch": "v6.29.5",
-        "description": "A library that provides an embeddable, persistent key-value store for fast storage.",
-        "homepage": "http://rocksdb.org",
-        "owner": "facebook",
-        "repo": "rocksdb",
-        "rev": "da11a59034584ea2d0911268b8136e5249d6b692",
-        "sha256": "1fr3lhkakjrplgmms07amrxfiasz1b4vl2rppgx50k8gcy0p1awv",
-        "type": "tarball",
-        "url": "https://github.com/facebook/rocksdb/archive/da11a59034584ea2d0911268b8136e5249d6b692.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }

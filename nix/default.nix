@@ -28,11 +28,7 @@ import sources.nixpkgs {
       chain-maind-zemu = pkgs.callPackage ../. {
         ledger_zemu = true;
       };
-      rocksdb = (prev.rocksdb.overrideAttrs (old: rec {
-        pname = "rocksdb";
-        version = "6.29.5";
-        src = sources.rocksdb;
-      })).override { enableJemalloc = true; };
+      rocksdb = pkgs.callPackage ./rocksdb.nix { enableJemalloc = true; };
     })
   ];
   config = { };
