@@ -17,10 +17,10 @@
         "homepage": null,
         "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1",
-        "sha256": "1s9m70q2jsr75hynx7q4brgbf22n1lfw5hc45mc3x4r9g4m8qrdz",
+        "rev": "3cbf3a51fe32e2f57af4c52744e7228bab22983d",
+        "sha256": "11kn199nxcw6zspqawkrsfwv8wzx581wif3day160qlg11ya9di5",
         "type": "tarball",
-        "url": "https://github.com/nix-community/gomod2nix/archive/cc75990c60d01d9eedcf32ff4bf0055dd49c3ea1.tar.gz",
+        "url": "https://github.com/nix-community/gomod2nix/archive/3cbf3a51fe32e2f57af4c52744e7228bab22983d.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
