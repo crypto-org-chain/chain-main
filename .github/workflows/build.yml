@@ -163,7 +163,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
       - uses: actions/upload-artifact@v3
         with:
-          name: "cronosd-tarball-${{ matrix.os }}"
+          name: "chain-maind-tarball-${{ matrix.os }}"
           path: "*.tar.gz"
           if-no-files-found: ignore
 
