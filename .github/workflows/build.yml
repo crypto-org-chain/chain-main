@@ -18,7 +18,7 @@ jobs:
     outputs:
       valid: ${{ steps.setValid.outputs.valid }}
     steps:
-      - uses: tspascoal/get-user-teams-membership@v1.0.2
+      - uses: tspascoal/get-user-teams-membership@v2
         id: checkUserMember
         if: github.event_name == 'issue_comment'
         with:
@@ -81,7 +81,7 @@ jobs:
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -89,7 +89,7 @@ jobs:
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
@@ -201,7 +201,7 @@ jobs:
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -209,7 +209,7 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
@@ -250,7 +250,7 @@ jobs:
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -258,7 +258,7 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
@@ -298,7 +298,7 @@ jobs:
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -306,7 +306,7 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
@@ -374,11 +374,11 @@ jobs:
         id: set_outputs
         continue-on-error: true
         run: |
-          echo "::set-output name=status_job01::$(<pass_status_build/status_build.txt)"
-          echo "::set-output name=status_job02::$(<pass_status_install/status_install.txt)"
-          echo "::set-output name=status_job03::$(<pass_status_sim1/status_sim1.txt)"
-          echo "::set-output name=status_job04::$(<pass_status_sim2/status_sim2.txt)"
-          echo "::set-output name=status_job05::$(<pass_status_sim3/status_sim3.txt)"
+          echo "status_job01=$(<pass_status_build/status_build.txt)" >> $GITHUB_OUTPUT
+          echo "status_job02=$(<pass_status_install/status_install.txt)" >> $GITHUB_OUTPUT
+          echo "status_job03=$(<pass_status_sim1/status_sim1.txt)" >> $GITHUB_OUTPUT
+          echo "status_job04=$(<pass_status_sim2/status_sim2.txt)" >> $GITHUB_OUTPUT
+          echo "status_job05=$(<pass_status_sim3/status_sim3.txt)" >> $GITHUB_OUTPUT
       - name: The sim jobs has succeed
         uses: crypto-org-chain/actions-pull-request-add-comment@master
         if: >-
@@ -406,7 +406,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -429,7 +429,7 @@ jobs:
         run: |
           set +e
           (git diff --no-ext-diff --exit-code)
-          echo ::set-output name=changed::$?
+          echo "changed=$?" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@v2
         if: steps.changes.outputs.changed == 1
         with:

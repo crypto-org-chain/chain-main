@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v19
@@ -33,7 +33,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v19
@@ -79,7 +79,7 @@ jobs:
         os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v19
@@ -101,7 +101,7 @@ jobs:
   test-upgrade:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v19
@@ -139,7 +139,7 @@ jobs:
   test-ledger:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -177,7 +177,7 @@ jobs:
   test-solomachine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -215,7 +215,7 @@ jobs:
   test-slow:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -253,7 +253,7 @@ jobs:
   test-ibc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -291,7 +291,7 @@ jobs:
   test-byzantine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -329,7 +329,7 @@ jobs:
   test-gov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -368,7 +368,7 @@ jobs:
   test-grpc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
