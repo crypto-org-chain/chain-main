@@ -148,9 +148,9 @@ jobs:
         uses: tj-actions/changed-files@v35
         with:
           files: |
-            **.go
-            **.mod
-            **.sum
+            **/*.go
+            go.mod
+            go.sum
       - uses: cachix/cachix-action@v12
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
