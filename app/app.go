@@ -142,6 +142,7 @@ import (
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
 )
 
+// FIXME remove this line
 const appName = "chain-maind"
 
 var (
