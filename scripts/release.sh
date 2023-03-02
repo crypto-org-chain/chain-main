@@ -38,6 +38,6 @@ else
 fi
 
 for t in $hosts; do
-    IFS=',' read name host <<< "${t}"
+    IFS=',' read -r name host <<< "${t}"
     build "$host" "$name"
 done
