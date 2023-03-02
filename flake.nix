@@ -54,18 +54,23 @@
             };
           };
           devShell = devShells.chain-maind;
+          legacyPackages = pkgs;
         }
       )
     ) // {
       overlay = final: prev: {
-        bundle-exe = import nix-bundle-exe { pkgs = final; };
+        bundle-exe = final.pkgsBuildBuild.callPackage nix-bundle-exe { };
         # make-tarball don't follow symbolic links to avoid duplicate file, the bundle should have no external references.
         # reset the ownership and permissions to make the extract result more normal.
-        make-tarball = drv: with final; runCommand drv.name { } ''
-          "${gnutar}/bin/tar" cfv - -C ${drv} \
+        make-tarball = drv: final.runCommand "tarball-${drv.name}"
+          {
+            nativeBuildInputs = with final.buildPackages; [ gnutar gzip ];
+          } ''
+          tar cfv - -C "${drv}" \
             --owner=0 --group=0 --mode=u+rw,uga+r --hard-dereference . \
-            | "${gzip}/bin/gzip" -9 > $out
+            | gzip -9 > $out
         '';
+        bundle-win-exe = drv: final.callPackage ./nix/bundle-win-exe.nix { cronosd = drv; };
         # only enable jemalloc for non-windows platforms
         # see: https://github.com/NixOS/nixpkgs/issues/216479
         rocksdb = final.callPackage ./nix/rocksdb.nix { enableJemalloc = !final.stdenv.hostPlatform.isWindows; };

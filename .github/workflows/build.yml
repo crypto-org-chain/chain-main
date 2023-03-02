@@ -128,6 +128,45 @@ jobs:
           name: pass_status_build
           path: status_build.txt
 
+  build-rocksdb:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v19
+        with:
+          # pin to nix-2.13 to workaround compability issue of 2.14,
+          # see: https://github.com/cachix/install-nix-action/issues/161
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
+          nix_path: nixpkgs=channel:nixos-22.11
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - id: changed-files
+        uses: tj-actions/changed-files@v34
+        with:
+          files: |
+            *.go
+            *.mod
+            *.sum
+      - uses: cachix/cachix-action@v12
+        if: steps.changed-files.outputs.any_changed == 'true'
+        with:
+          name: crypto-com
+          # github don't pass secrets for pull request from fork repos,
+          # in that case the push is disabled naturally.
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: Run build
+        run: ./scripts/release.sh
+        if: steps.changed-files.outputs.any_changed == 'true'
+      - uses: actions/upload-artifact@v3
+        with:
+          name: "cronosd-tarball-${{ matrix.os }}"
+          path: "*.tar.gz"
+          if-no-files-found: ignore
+
   install-runsim:
     runs-on: ubuntu-latest
     needs: build
