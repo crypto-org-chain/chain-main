@@ -145,7 +145,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - id: changed-files
-        uses: tj-actions/changed-files@v34
+        uses: tj-actions/changed-files@v35
         with:
           files: |
             *.go
@@ -408,7 +408,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - id: changed-files
-        uses: tj-actions/changed-files@v29.0.2
+        uses: tj-actions/changed-files@v35
         with:
           files: |
             go.mod
