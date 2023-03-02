@@ -28,6 +28,8 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
 
       - name: build binaries
+        env:
+          NETWORK: mainnet
         run: |
           # install sha256sum
           nix-env -i coreutils -f '<nixpkgs>'
@@ -77,6 +79,7 @@ jobs:
           MAC_CODE_API_KEY_ID: ${{ secrets.MAC_CODE_API_KEY_ID }}
           MAC_CODE_API_ISSUER_ID: ${{ secrets.MAC_CODE_API_ISSUER_ID }}
           MAC_CODE_API_DEVELOPER_ID: ${{ secrets.MAC_CODE_API_DEVELOPER_ID }}
+          NETWORK: mainnet
         run: |
           # install sha256sum
           nix-env -i coreutils -f '<nixpkgs>'
