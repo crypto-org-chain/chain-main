@@ -18,7 +18,7 @@ jobs:
     outputs:
       valid: ${{ steps.setValid.outputs.valid }}
     steps:
-      - uses: tspascoal/get-user-teams-membership@v1.0.2
+      - uses: tspascoal/get-user-teams-membership@v2
         id: checkUserMember
         if: github.event_name == 'issue_comment'
         with:
@@ -29,11 +29,11 @@ jobs:
         id: setValid
         run: |
           if [[ "${{ steps.checkUserMember.outputs.isTeamMember }}" == "true" ]]; then
-            echo "::set-output name=valid::true"
+            echo "valid=true" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "::set-output name=valid::true"
+            echo "valid=true" >> $GITHUB_OUTPUT
           else  
-            echo "::set-output name=valid::false"
+            echo "valid=false" >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -69,19 +69,21 @@ jobs:
         id: pr_data
         if: github.event_name == 'issue_comment'
         run: |
-          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+          echo "repo_name=${{ fromJson(steps.request.outputs.data).head.repo.full_name }}" >> $GITHUB_OUTPUT
           comment_hash=`echo ${{ github.event.comment.body }} | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
-            echo "::set-output name=ref::${{ fromJson(steps.request.outputs.data).head.ref }}" # use default head ref
+            # use default head ref
+            echo "ref=${{ fromJson(steps.request.outputs.data).head.ref }}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=ref::${comment_hash}" # use comment provided ref
+            # use comment provided ref
+            echo "ref=${comment_hash}" >> $GITHUB_OUTPUT
           fi
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -89,30 +91,29 @@ jobs:
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
-      - uses: technote-space/get-diff-action@v3
+      - id: changed-files
+        uses: tj-actions/changed-files@v35
         with:
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
-          SET_ENV_NAME_INSERTIONS: 1
-          SET_ENV_NAME_LINES: 1
+          files: |
+            **/*.go
+            go.mod
+            go.sum
       - name: Set GOBIN
         run: |
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: build
         if: | 
-          env.GIT_DIFF != '' || github.event_name == 'issue_comment'
+          steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'
         run: make build
       - name: test
         run: make test
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Upload coverage report
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
@@ -172,7 +173,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' || github.event_name == 'issue_comment'
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: install runsim
@@ -197,11 +198,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -209,28 +210,26 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
-      - uses: technote-space/get-diff-action@v3
+      - id: changed-files
+        uses: tj-actions/changed-files@v35
         with:
-          submodules: true
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
-          SET_ENV_NAME_INSERTIONS: 1
-          SET_ENV_NAME_LINES: 1
+          files: |
+            **/*.go
+            go.mod
+            go.sum
       - uses: actions/cache@v2.1.1
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: test-sim-nondeterminism
         run: |
           make test-sim-nondeterminism
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Create file status_sim1.txt and write the job status into it
         if: github.event_name == 'issue_comment'
         run: |
@@ -246,11 +245,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -258,27 +257,26 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
-      - uses: technote-space/get-diff-action@v3
+      - id: changed-files
+        uses: tj-actions/changed-files@v35
         with:
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
-          SET_ENV_NAME_INSERTIONS: 1
-          SET_ENV_NAME_LINES: 1
+          files: |
+            **/*.go
+            go.mod
+            go.sum
       - uses: actions/cache@v2.1.1
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: test-sim-import-export
         run: |
           make test-sim-import-export
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Create file status_sim2.txt and write the job status into it
         if: github.event_name == 'issue_comment'
         run: |
@@ -294,11 +292,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
@@ -306,27 +304,26 @@ jobs:
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
-      - uses: technote-space/get-diff-action@v3
+      - id: changed-files
+        uses: tj-actions/changed-files@v35
         with:
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
-          SET_ENV_NAME_INSERTIONS: 1
-          SET_ENV_NAME_LINES: 1
+          files: |
+            **/*.go
+            go.mod
+            go.sum
       - uses: actions/cache@v2.1.1
         with:
           path: ~/go/bin
           key: ${{ runner.os }}-go-runsim-binary
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: test-sim-after-import
         run: |
           make test-sim-after-import
-        if: "env.GIT_DIFF != '' || github.event_name == 'issue_comment'"
+        if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Create file status_sim3.txt and write the job status into it
         if: github.event_name == 'issue_comment'
         run: |
@@ -374,11 +371,11 @@ jobs:
         id: set_outputs
         continue-on-error: true
         run: |
-          echo "::set-output name=status_job01::$(<pass_status_build/status_build.txt)"
-          echo "::set-output name=status_job02::$(<pass_status_install/status_install.txt)"
-          echo "::set-output name=status_job03::$(<pass_status_sim1/status_sim1.txt)"
-          echo "::set-output name=status_job04::$(<pass_status_sim2/status_sim2.txt)"
-          echo "::set-output name=status_job05::$(<pass_status_sim3/status_sim3.txt)"
+          echo "status_job01=$(<pass_status_build/status_build.txt)" >> $GITHUB_OUTPUT
+          echo "status_job02=$(<pass_status_install/status_install.txt)" >> $GITHUB_OUTPUT
+          echo "status_job03=$(<pass_status_sim1/status_sim1.txt)" >> $GITHUB_OUTPUT
+          echo "status_job04=$(<pass_status_sim2/status_sim2.txt)" >> $GITHUB_OUTPUT
+          echo "status_job05=$(<pass_status_sim3/status_sim3.txt)" >> $GITHUB_OUTPUT
       - name: The sim jobs has succeed
         uses: crypto-org-chain/actions-pull-request-add-comment@master
         if: >-
@@ -406,7 +403,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -429,7 +426,7 @@ jobs:
         run: |
           set +e
           (git diff --no-ext-diff --exit-code)
-          echo ::set-output name=changed::$?
+          echo "changed=$?" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@v2
         if: steps.changes.outputs.changed == 1
         with:

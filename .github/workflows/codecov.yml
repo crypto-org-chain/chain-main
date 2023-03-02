@@ -13,27 +13,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: technote-space/get-diff-action@v3
+      - id: changed-files
+        uses: tj-actions/changed-files@v35
         with:
-          SUFFIX_FILTER: |
-            .go
-            .mod
-            .sum
-          SET_ENV_NAME_INSERTIONS: 1
-          SET_ENV_NAME_LINES: 1
-
+          files: |
+            **/*.go
+            go.mod
+            go.sum
       - name: test
         run: COVERAGE=coverage.txt make test
-        if: "env.GIT_DIFF != ''"
+        if: steps.changed-files.outputs.any_changed == 'true'
 
       # - name: Upload coverage report
-      #   uses: codecov/codecov-action@v1
+      #   uses: codecov/codecov-action@v3
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #     file: ./coverage.txt
