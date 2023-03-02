@@ -2,8 +2,8 @@
 , stdenv
 , buildGoApplication
 , nix-gitignore
-, go_1_20
 , writeShellScript
+, buildPackages
 , gomod2nix
 , rocksdb ? null
 , network ? "mainnet"  # mainnet|testnet
@@ -36,7 +36,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.2.4";
-  go = go_1_20;
+  go = buildPackages.go_1_20;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
