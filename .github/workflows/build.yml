@@ -29,11 +29,11 @@ jobs:
         id: setValid
         run: |
           if [[ "${{ steps.checkUserMember.outputs.isTeamMember }}" == "true" ]]; then
-            echo "::set-output name=valid::true"
+            echo "valid=true" >> $GITHUB_OUTPUT
           elif [[ "${{ github.event_name }}" == "push" || "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "::set-output name=valid::true"
+            echo "valid=true" >> $GITHUB_OUTPUT
           else  
-            echo "::set-output name=valid::false"
+            echo "valid=false" >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -69,15 +69,17 @@ jobs:
         id: pr_data
         if: github.event_name == 'issue_comment'
         run: |
-          echo "::set-output name=repo_name::${{ fromJson(steps.request.outputs.data).head.repo.full_name }}"
+          echo "repo_name=${{ fromJson(steps.request.outputs.data).head.repo.full_name }}" >> $GITHUB_OUTPUT
           comment_hash=`echo ${{ github.event.comment.body }} | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
-            echo "::set-output name=ref::${{ fromJson(steps.request.outputs.data).head.ref }}" # use default head ref
+            # use default head ref
+            echo "ref=${{ fromJson(steps.request.outputs.data).head.ref }}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=ref::${comment_hash}" # use comment provided ref
+            # use comment provided ref
+            echo "ref=${comment_hash}" >> $GITHUB_OUTPUT
           fi
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
@@ -172,7 +174,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' || github.event_name == 'issue_comment'
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: install runsim
@@ -197,7 +199,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
@@ -246,7 +248,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
@@ -294,7 +296,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, install-runsim]
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: 1.20.1
       - name: Checkout Comment PR Branch
