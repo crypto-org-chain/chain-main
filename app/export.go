@@ -192,7 +192,9 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 		counter++
 	}
 
-	iter.Close()
+	if err := iter.Close(); err != nil {
+		log.Fatal(err)
+	}
 
 	_, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
 	if err != nil {
