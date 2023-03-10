@@ -67,6 +67,8 @@ func TestFullAppSimulation(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
+	config.ChainID = helpers.SimAppChainID
+
 	defer func() {
 		db.Close()
 		require.NoError(t, os.RemoveAll(dir))
@@ -104,6 +106,8 @@ func TestAppImportExport(t *testing.T) {
 		t.Skip("skipping application import/export simulation")
 	}
 	require.NoError(t, err, "simulation setup failed")
+
+	config.ChainID = helpers.SimAppChainID
 
 	defer func() {
 		db.Close()
@@ -171,8 +175,8 @@ func TestAppImportExport(t *testing.T) {
 		}
 	}()
 
-	ctxA := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
-	ctxB := newApp.NewContext(true, tmproto.Header{Height: app.LastBlockHeight()})
+	ctxA := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID})
+	ctxB := newApp.NewContext(true, tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID})
 	newApp.mm.InitGenesis(ctxB, app.AppCodec(), genesisState)
 	newApp.StoreConsensusParams(ctxB, exported.ConsensusParams)
 
@@ -217,6 +221,8 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		t.Skip("skipping application simulation after import")
 	}
 	require.NoError(t, err, "simulation setup failed")
+
+	config.ChainID = helpers.SimAppChainID
 
 	defer func() {
 		db.Close()
@@ -275,6 +281,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
+		ChainId:       helpers.SimAppChainID,
 		AppStateBytes: exported.AppState,
 	})
 
