@@ -175,8 +175,9 @@ func TestAppImportExport(t *testing.T) {
 		}
 	}()
 
-	ctxA := app.NewContext(true, tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID})
-	ctxB := newApp.NewContext(true, tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID})
+	header := tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID}
+	ctxA := app.NewContext(true, header)
+	ctxB := newApp.NewContext(true, header)
 	newApp.mm.InitGenesis(ctxB, app.AppCodec(), genesisState)
 	newApp.StoreConsensusParams(ctxB, exported.ConsensusParams)
 
