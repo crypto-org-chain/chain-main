@@ -5,18 +5,14 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
 
 	sdkmath "cosmossdk.io/math"
-	tmjson "github.com/tendermint/tendermint/libs/json"
-	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/simapp"
 	simappparams "github.com/cosmos/cosmos-sdk/simapp/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -48,7 +44,7 @@ func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simty
 
 		case config.GenesisFile != "":
 			// override the default chain-id from simapp to set it later to the config
-			genesisDoc, accounts := AppStateFromGenesisFileFn(r, cdc, config.GenesisFile)
+			genesisDoc, accounts := simapp.AppStateFromGenesisFileFn(r, cdc, config.GenesisFile)
 
 			if simapp.FlagGenesisTimeValue == 0 {
 				// use genesis timestamp if no custom timestamp is provided (i.e no random timestamp)
@@ -199,56 +195,4 @@ func AppStateRandomizedFn(
 	}
 
 	return appState, accs
-}
-
-// AppStateFromGenesisFileFn util function to generate the genesis AppState
-// from a genesis.json file.
-// nolint:revive
-func AppStateFromGenesisFileFn(r io.Reader, cdc codec.JSONCodec, genesisFile string) (tmtypes.GenesisDoc, []simtypes.Account) {
-	bytes, err := os.ReadFile(filepath.Clean(genesisFile))
-	if err != nil {
-		panic(err)
-	}
-
-	var genesis tmtypes.GenesisDoc
-	// NOTE: Tendermint uses a custom JSON decoder for GenesisDoc
-	err = tmjson.Unmarshal(bytes, &genesis)
-	if err != nil {
-		panic(err)
-	}
-
-	var appState GenesisState
-	err = json.Unmarshal(genesis.AppState, &appState)
-	if err != nil {
-		panic(err)
-	}
-
-	var authGenesis authtypes.GenesisState
-	if appState[authtypes.ModuleName] != nil {
-		cdc.MustUnmarshalJSON(appState[authtypes.ModuleName], &authGenesis)
-	}
-
-	newAccs := make([]simtypes.Account, len(authGenesis.Accounts))
-	for i, acc := range authGenesis.Accounts {
-		// Pick a random private key, since we don't know the actual key
-		// This should be fine as it's only used for mock Tendermint validators
-		// and these keys are never actually used to sign by mock Tendermint.
-		privkeySeed := make([]byte, 15)
-		if _, err := r.Read(privkeySeed); err != nil {
-			panic(err)
-		}
-
-		privKey := secp256k1.GenPrivKeyFromSecret(privkeySeed)
-
-		a, ok := acc.GetCachedValue().(authtypes.AccountI)
-		if !ok {
-			panic("expected account")
-		}
-
-		// create simulator accounts
-		simAcc := simtypes.Account{PrivKey: privKey, PubKey: privKey.PubKey(), Address: a.GetAddress()}
-		newAccs[i] = simAcc
-	}
-
-	return genesis, newAccs
 }
