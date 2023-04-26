@@ -74,6 +74,9 @@ schema = 3
   [mod."github.com/coinbase/rosetta-sdk-go"]
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
+  [mod."github.com/cometbft/cometbft-db"]
+    version = "v0.7.0"
+    hash = "sha256-EMvHp+5Hga5KkR9kkCiUBkz1HMfVhSHSxmpA5ZQ/Adw="
   [mod."github.com/confio/ics23/go"]
     version = "v0.9.0"
     hash = "sha256-guD8w7YygfUp7lpTAUyXQuCPx8F3lXkcg+yR5+JOCbk="
@@ -85,8 +88,8 @@ schema = 3
     version = "v1.0.0-alpha8"
     hash = "sha256-iXzXoS5Kfh5DBy+PhdFWraDWXda/3M4j7j4VECjv4CA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.10"
-    hash = "sha256-lCrSKm9WZCBcqJv/2c9fUhEPkd9kLo7a/7OgUqcGwdo="
+    version = "v0.46.12"
+    hash = "sha256-0ZdWZr3qYfOpwQ5ztsmGOGltI8tmZFwTTzS8v11xfSQ="
     replaced = "github.com/cosmos/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
@@ -388,13 +391,16 @@ schema = 3
   [mod."github.com/syndtr/goleveldb"]
     version = "v1.0.1-0.20210819022825-2ae1ddf74ef7"
     hash = "sha256-36a4hgVQfwtS2zhylKpQuFhrjdc/Y8pF0dxc26jcZIU="
+  [mod."github.com/tecbot/gorocksdb"]
+    version = "v0.0.0-20191217155057-f0fad39f321c"
+    hash = "sha256-VODgdnIxK9bhCHrt4nKfPYk/LLycTIwSRi930fws3Pk="
   [mod."github.com/tendermint/go-amino"]
     version = "v0.16.0"
     hash = "sha256-JW4zO/0vMzf1dXLePOqaMtiLUZgNbuIseh9GV+jQlf0="
   [mod."github.com/tendermint/tendermint"]
-    version = "v0.34.26"
-    hash = "sha256-vnobLRBnlGm46WOvgHX+MOks+rdFEgY17u3d2t91+0s="
-    replaced = "github.com/informalsystems/tendermint"
+    version = "v0.34.27"
+    hash = "sha256-BbpfLcLRf6PwB1xmgkhTm9ckZekelrDUlXDX0/FSMU8="
+    replaced = "github.com/cometbft/cometbft"
   [mod."github.com/tendermint/tm-db"]
     version = "v0.6.8-0.20230118040049-14dc6b00a5b3"
     hash = "sha256-kCe9nqzVgG+7ynuvYAGAOTCPESBnV28dDvRuAtsssbw="
