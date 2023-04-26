@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 - [#927](https://github.com/crypto-org-chain/chain-main/pull/927) Integrate versiondb.
+- [#942](https://github.com/crypto-org-chain/chain-main/pull/942) Update cosmos-sdk to `v0.46.12` to support `iavl-lazy-loading`.
 
 *February 20, 2023*
 
