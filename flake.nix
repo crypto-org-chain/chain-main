@@ -71,9 +71,7 @@
             | gzip -9 > $out
         '';
         bundle-win-exe = drv: final.callPackage ./nix/bundle-win-exe.nix { cronosd = drv; };
-        # only enable jemalloc for non-windows platforms
-        # see: https://github.com/NixOS/nixpkgs/issues/216479
-        rocksdb = final.callPackage ./nix/rocksdb.nix { enableJemalloc = !final.stdenv.hostPlatform.isWindows; };
+        rocksdb = final.callPackage ./nix/rocksdb.nix { };
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {
