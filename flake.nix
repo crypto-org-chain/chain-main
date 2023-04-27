@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-22.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-bundle-exe = {
       url = "github:3noch/nix-bundle-exe";
@@ -72,6 +72,13 @@
         '';
         bundle-win-exe = drv: final.callPackage ./nix/bundle-win-exe.nix { cronosd = drv; };
         rocksdb = final.callPackage ./nix/rocksdb.nix { };
+        go_1_20 = prev.go_1_20.overrideAttrs (prev: rec {
+          version = "1.20.3";
+          src = final.fetchurl {
+            url = "https://go.dev/dl/go${version}.src.tar.gz";
+            hash = "sha256-5Ee0mM3lAhXE92GeUSSw/E4l+10W6kcnHEfyeOeqdjo=";
+          };
+        });
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {

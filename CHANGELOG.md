@@ -1,9 +1,12 @@
 # Changelog
 
-## UNRELEASED
+*April 27, 2023*
+
+## v4.2.4
 
 - [#927](https://github.com/crypto-org-chain/chain-main/pull/927) Integrate versiondb.
 - [#942](https://github.com/crypto-org-chain/chain-main/pull/942) Update cosmos-sdk to `v0.46.12` to support `iavl-lazy-loading`.
+- [#]() Update nixpkgs to release-22.11 and go version to 1.20.3.
 
 *February 20, 2023*
 
