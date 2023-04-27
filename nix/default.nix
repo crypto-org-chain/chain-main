@@ -28,7 +28,7 @@ import sources.nixpkgs {
       chain-maind-zemu = pkgs.callPackage ../. {
         ledger_zemu = true;
       };
-      rocksdb = pkgs.callPackage ./rocksdb.nix { enableJemalloc = true; };
+      rocksdb = pkgs.callPackage ./rocksdb.nix { };
     })
   ];
   config = { };
