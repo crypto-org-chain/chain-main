@@ -9,6 +9,7 @@
 , network ? "mainnet"  # mainnet|testnet
 , rev ? "dirty"
 , ledger_zemu ? false
+, static ? stdenv.hostPlatform.isStatic
 }:
 let
   inherit (lib) concatStringsSep;
@@ -47,8 +48,8 @@ buildGoApplication rec {
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   CGO_LDFLAGS =
-    if stdenv.hostPlatform.isWindows
-    then "-lrocksdb-shared"
+    if static then "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
+    else if stdenv.hostPlatform.isWindows then "-lrocksdb-shared"
     else "-lrocksdb -pthread -lstdc++ -ldl";
   tags = [
     "cgo"

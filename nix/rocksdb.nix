@@ -10,7 +10,9 @@
 , zlib
 , zstd
 , windows
-, enableJemalloc ? false
+  # only enable jemalloc for non-windows platforms
+  # see: https://github.com/NixOS/nixpkgs/issues/216479
+, enableJemalloc ? !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.isStatic
 , jemalloc
 , enableLite ? false
 , enableShared ? !stdenv.hostPlatform.isStatic
