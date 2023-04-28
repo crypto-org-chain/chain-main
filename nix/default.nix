@@ -12,14 +12,8 @@ import sources.nixpkgs {
       hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
     })
     (import "${sources.gomod2nix}/overlay.nix")
+    (import ./build_overlay.nix)
     (pkgs: prev: {
-      go_1_20 = prev.go_1_20.overrideAttrs (prev: rec {
-        version = "1.20.3";
-        src = pkgs.fetchurl {
-          url = "https://go.dev/dl/go${version}.src.tar.gz";
-          hash = "sha256-5Ee0mM3lAhXE92GeUSSw/E4l+10W6kcnHEfyeOeqdjo=";
-        };
-      });
       go = pkgs.go_1_20;
       test-env = pkgs.callPackage ./testenv.nix { };
       lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
@@ -35,7 +29,6 @@ import sources.nixpkgs {
       chain-maind-zemu = pkgs.callPackage ../. {
         ledger_zemu = true;
       };
-      rocksdb = pkgs.callPackage ./rocksdb.nix { };
     })
   ];
   config = { };
