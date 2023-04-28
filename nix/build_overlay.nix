@@ -1,5 +1,6 @@
 # some basic overlays nessesary for the build
 final: super: {
+  // include the fix: https://github.com/NixOS/nixpkgs/pull/211515
   zstd = final.callPackage ./zstd.nix {
     cmake = final.buildPackages.cmakeMinimal;
   };
