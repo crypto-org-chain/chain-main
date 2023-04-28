@@ -1,37 +1,33 @@
-{ lib, stdenv, fetchFromGitHub, cmake, bash, gnugrep
+{ lib
+, stdenv
+, fetchFromGitHub
+, cmake
+, bash
+, gnugrep
 , fixDarwinDylibNames
 , file
 , fetchpatch
 , legacySupport ? false
 , static ? stdenv.hostPlatform.isStatic
-# these need to be ran on the host, thus disable when cross-compiling
+  # these need to be ran on the host, thus disable when cross-compiling
 , buildContrib ? stdenv.hostPlatform == stdenv.buildPlatform
 , doCheck ? stdenv.hostPlatform == stdenv.buildPlatform
 , nix-update-script
-
-# for passthru.tests
-, libarchive
-, rocksdb
-, arrow-cpp
-, libzip
-, curl
-, python3Packages
-, haskellPackages
 }:
 
 stdenv.mkDerivation rec {
   pname = "zstd";
-  version = "1.5.5";
+  version = "1.5.2";
 
   src = fetchFromGitHub {
     owner = "facebook";
     repo = "zstd";
     rev = "v${version}";
-    sha256 = "sha256-tHHHIsQU7vJySrVhJuMKUSq11MzkmC+Pcsj00uFJdnQ=";
+    sha256 = "sha256-yJvhcysxcbUGuDOqe/TQ3Y5xyM2AUw6r1THSHOqmUy0=";
   };
 
   nativeBuildInputs = [ cmake ]
-   ++ lib.optional stdenv.isDarwin fixDarwinDylibNames;
+    ++ lib.optional stdenv.isDarwin fixDarwinDylibNames;
   buildInputs = lib.optional stdenv.hostPlatform.isUnix bash;
 
   patches = [
@@ -53,7 +49,8 @@ stdenv.mkDerivation rec {
   LDFLAGS = lib.optionalString stdenv.hostPlatform.isRiscV "-latomic";
 
   cmakeFlags = lib.attrsets.mapAttrsToList
-    (name: value: "-DZSTD_${name}:BOOL=${if value then "ON" else "OFF"}") {
+    (name: value: "-DZSTD_${name}:BOOL=${if value then "ON" else "OFF"}")
+    {
       BUILD_SHARED = !static;
       BUILD_STATIC = static;
       BUILD_CONTRIB = buildContrib;
@@ -68,7 +65,7 @@ stdenv.mkDerivation rec {
     mkdir -p build_ && cd $_
   '';
 
-  nativeCheckInputs = [ file ];
+  checkInputs = [ file ];
   inherit doCheck;
   checkPhase = ''
     runHook preCheck
@@ -99,14 +96,8 @@ stdenv.mkDerivation rec {
     ++ [ "out" ];
 
   passthru = {
-    updateScript = nix-update-script { };
-    tests = {
-      inherit libarchive rocksdb arrow-cpp;
-      libzip = libzip.override { withZstd = true; };
-      curl = curl.override { zstdSupport = true; };
-      python-zstd = python3Packages.zstd;
-      haskell-zstd = haskellPackages.zstd;
-      haskell-hs-zstd = haskellPackages.hs-zstd;
+    updateScript = nix-update-script {
+      attrPath = pname;
     };
   };
 
