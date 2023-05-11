@@ -29,6 +29,11 @@ import sources.nixpkgs {
       chain-maind-zemu = pkgs.callPackage ../. {
         ledger_zemu = true;
       };
+      # chain-maind for integration test
+      chain-maind-test = pkgs.callPackage ../. {
+        ledger_zemu = true;
+        coverage = true;
+      };
     })
   ];
   config = { };
