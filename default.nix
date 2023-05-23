@@ -4,6 +4,7 @@
 , nix-gitignore
 , writeShellScript
 , buildPackages
+, coverage ? false # https://tip.golang.org/doc/go1.20#cover
 , gomod2nix
 , rocksdb ? null
 , network ? "mainnet"  # mainnet|testnet
@@ -44,7 +45,7 @@ buildGoApplication rec {
   };
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
-  buildFlags = "-cover";
+  buildFlags = lib.optionalString coverage "-cover";
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   CGO_LDFLAGS =

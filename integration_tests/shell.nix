@@ -16,7 +16,7 @@ pkgs.mkShell {
     solomachine
 
     # chain-maind for testing
-    chain-maind-zemu
+    chain-maind-test
   ];
   shellHook = ''
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
