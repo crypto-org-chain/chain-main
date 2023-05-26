@@ -164,6 +164,9 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 
+	// IBC huckleberry security advisory
+	github.com/cosmos/ibc-go/v5 => github.com/cosmos/ibc-go/v5 v5.2.1
+
 	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
