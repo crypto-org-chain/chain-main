@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+- [#]() Update ibc-go to `v5.2.1`.
+
 *April 27, 2023*
 
 ## v4.2.4
