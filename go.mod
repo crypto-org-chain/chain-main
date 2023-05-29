@@ -9,7 +9,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.13-rc.0
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/versiondb v1.0.4
+	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529052801-5a3e3353a593
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/renameio v1.0.0
@@ -39,6 +39,7 @@ require (
 	cloud.google.com/go/iam v0.12.0 // indirect
 	cloud.google.com/go/storage v1.28.1 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
+	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
@@ -118,7 +119,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
-	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -190,25 +190,18 @@ require (
 )
 
 replace (
-	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
+	// Use cosmos keyring
+	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	github.com/cometbft/cometbft-db => github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6
-	github.com/cosmos/cosmos-sdk => github.com/cosmos/cosmos-sdk v0.46.13-rc.0
-	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
-	github.com/crypto-org-chain/cronos/versiondb => github.com/yihuang/cronos/versiondb v0.0.0-20230529015846-7fb8f2369b44
 
-	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.
+	// Fix upstream GHSA-h395-qcrw-5vmq and GHSA-3vp4-m3rf-835h vulnerabilities.
 	// TODO Remove it: https://github.com/cosmos/cosmos-sdk/issues/10409
-	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
 
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
+	github.com/jhump/protoreflect => github.com/jhump/protoreflect v1.9.0
 
-	// use replace to force update grocksdb dependency in tm-db
-	github.com/linxGnu/grocksdb => github.com/linxGnu/grocksdb v1.7.15-0.20230222024938-b61261a9193b
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.28
 	// https://github.com/crypto-org-chain/tm-db/tree/release/v0.6.x
 	github.com/tendermint/tm-db => github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61
-
-	// TODO: remove after fixed https://github.com/cosmos/cosmos-sdk/issues/11364
-	github.com/zondax/hid => github.com/zondax/hid v0.9.0
-	golang.org/x/net => golang.org/x/net v0.7.0
 )
