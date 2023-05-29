@@ -138,11 +138,11 @@ schema = 3
     version = "v0.3.2"
     hash = "sha256-Y261IO/d9xjV0UScqHvo31broxvnKn4IQQC9Mu6jNkE="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.0-20230526230006-5055d462d5b1"
+    version = "v0.0.2"
     hash = "sha256-Ua+eNcUTJUYiFDwwJKdNaO8VHlK+X/kzDN3BMVztB2E="
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.0-20230529052801-5a3e3353a593"
-    hash = "sha256-kJwUIrH2wWxJ1c7IBP/k298Z8tlxG/g7HwgIVxHiKTI="
+    version = "v0.0.0-20230529083827-565fa417b0f8"
+    hash = "sha256-jTWVxOHchsC1e98wldJp6pZe7+lH2wiUUhhUnvJA8O4="
   [mod."github.com/danieljoos/wincred"]
     version = "v1.1.2"
     hash = "sha256-Nnklfg12vmWCOhELGyoRqEF4w4srp0WbPwreaChYLKs="

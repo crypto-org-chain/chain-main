@@ -420,10 +420,10 @@ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7Do
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4h4Ki1UE/LF6CKwYEm3OZ+HIBCrzSmOokG1vce0O98=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
-github.com/crypto-org-chain/cronos/memiavl v0.0.0-20230526230006-5055d462d5b1 h1:z8SwV5MFtBit4nIYhxl2TXMUWHwziSofUkTC9iE1Igg=
-github.com/crypto-org-chain/cronos/memiavl v0.0.0-20230526230006-5055d462d5b1/go.mod h1:2/31Co9jqQYJJkB8Z0bXnbVCtkBQH5EOumRjRuUriiA=
-github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529052801-5a3e3353a593 h1:TITxYQjRD02wqA//78oEyymkAljaBlS5q+8UX5JyrxQ=
-github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529052801-5a3e3353a593/go.mod h1:hEak9W2iA1lTdn3pkYHWCbySg4orgfWn5D28EUei2p0=
+github.com/crypto-org-chain/cronos/memiavl v0.0.2 h1:SmIS7OaH+sUGLiPzIvZt6zlROXlFOKh1mnDdtVcji7c=
+github.com/crypto-org-chain/cronos/memiavl v0.0.2/go.mod h1:2/31Co9jqQYJJkB8Z0bXnbVCtkBQH5EOumRjRuUriiA=
+github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8 h1:HiSwdL2dzYnqwcG+cU3Phrm7FWag5yknViZnnZBgqQ0=
+github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8/go.mod h1:VJuoTEh4AmvQv1+rxCZutb/Z0OXvS1PdL9zUU+U2+zs=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61 h1:Y5OuzOkZtjCfO53Jgzl+H8re6pOU4X205a1VMkDcUdk=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61/go.mod h1:BA6bNc7haulu2IjMy/I2SJiKWjQzfIb7LEAMsnIoLWU=
 github.com/cyberdelia/templates v0.0.0-20141128023046-ca7fffd4298c/go.mod h1:GyV+0YP4qX0UQ7r2MoYZ+AvYDp12OF5yg4q8rGnyNh4=

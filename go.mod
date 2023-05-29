@@ -9,7 +9,8 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.13-rc.0
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529052801-5a3e3353a593
+	// v1.0.8
+	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/renameio v1.0.0
@@ -71,7 +72,7 @@ require (
 	github.com/cosmos/iavl v0.19.6 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
-	github.com/crypto-org-chain/cronos/memiavl v0.0.0-20230526230006-5055d462d5b1 // indirect
+	github.com/crypto-org-chain/cronos/memiavl v0.0.2 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
