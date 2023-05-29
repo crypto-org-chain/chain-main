@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+- [#974](https://github.com/crypto-org-chain/chain-main/pull/974) Update ibc-go to `v5.2.1`.
+
 *April 27, 2023*
 
 ## v4.2.4
