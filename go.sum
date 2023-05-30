@@ -396,8 +396,6 @@ github.com/cosmos/btcutil v1.0.5 h1:t+ZFcX77LpKtDBhjucvnOH8C2l2ioGsBNEQ3jef8xFk=
 github.com/cosmos/btcutil v1.0.5/go.mod h1:IyB7iuqZMJlthe2tkIFL33xPyzbFYP0XVdS8P5lUPis=
 github.com/cosmos/cosmos-proto v1.0.0-alpha8 h1:d3pCRuMYYvGA5bM0ZbbjKn+AoQD4A7dyNG2wzwWalUw=
 github.com/cosmos/cosmos-proto v1.0.0-alpha8/go.mod h1:6/p+Bc4O8JKeZqe0VqUGTX31eoYqemTT4C1hLCWsO7I=
-github.com/cosmos/cosmos-sdk v0.46.13-rc.0 h1:WwWcR8ZnuKYfWSQfNRXIzOFT0x5vtCHwzPWOjV5x/Wo=
-github.com/cosmos/cosmos-sdk v0.46.13-rc.0/go.mod h1:maYupex8eSZZhw9jow4D/7qWV9XpYB/fyVu7MIbD3RM=
 github.com/cosmos/go-bip39 v0.0.0-20180819234021-555e2067c45d/go.mod h1:tSxLoYXyBmiFeKpvmq4dzayMdCjCnu8uqmCysIGBT2Y=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
@@ -420,6 +418,8 @@ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7Do
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4h4Ki1UE/LF6CKwYEm3OZ+HIBCrzSmOokG1vce0O98=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
+github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20230530011856-885b47bfbe64 h1:Tm2/C40LyzDPl6iCVwKXwWmaZ/+QXTkdwA6Qf3KjGiw=
+github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20230530011856-885b47bfbe64/go.mod h1:2ALi2ZQ7tK8MkRP/SwZAEUQ1guTo+MNzhPqGHdWjarM=
 github.com/crypto-org-chain/cronos/memiavl v0.0.2 h1:SmIS7OaH+sUGLiPzIvZt6zlROXlFOKh1mnDdtVcji7c=
 github.com/crypto-org-chain/cronos/memiavl v0.0.2/go.mod h1:2/31Co9jqQYJJkB8Z0bXnbVCtkBQH5EOumRjRuUriiA=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8 h1:HiSwdL2dzYnqwcG+cU3Phrm7FWag5yknViZnnZBgqQ0=
