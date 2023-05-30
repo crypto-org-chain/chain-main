@@ -5,7 +5,7 @@
 ## v4.2.5
 
 - [#974](https://github.com/crypto-org-chain/chain-main/pull/974) Update ibc-go to `v5.2.1`.
-- [#]() Revert accidental breaking change in `v4.2.4`.
+- [#983](https://github.com/crypto-org-chain/chain-main/pull/983) Revert accidental breaking change in `v4.2.4`.
 
 *April 27, 2023*
 
