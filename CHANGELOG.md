@@ -4,7 +4,7 @@
 
 ## v4.2.6
 
-- [#]() Patch barberry.
+- [#986](https://github.com/crypto-org-chain/chain-main/pull/986) Patch barberry.
 
 *May 30, 2023*
 
