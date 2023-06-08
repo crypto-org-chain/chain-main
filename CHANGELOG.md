@@ -1,5 +1,11 @@
 # Changelog
 
+*Jun 9, 2023*
+
+## v4.2.6
+
+- [#]() Patch barberry.
+
 *May 30, 2023*
 
 ## v4.2.5
