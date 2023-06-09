@@ -178,7 +178,8 @@ require (
 replace (
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 	github.com/cometbft/cometbft-db => github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6
-	github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20230530021201-0a93ffb1f9d4
+	// https://github.com/crypto-org-chain/cosmos-sdk/tree/release/v0.46.12-hotfix
+	github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20230608170216-c8ad6f2b4074
 	github.com/cosmos/ledger-cosmos-go => github.com/cosmos/ledger-cosmos-go v0.11.2-0.20220719170349-e736b9afa7d1
 
 	// Fix upstream GHSA-h395-qcrw-5vmq vulnerability.

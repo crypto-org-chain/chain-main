@@ -107,8 +107,8 @@ schema = 3
     version = "v1.0.0-alpha8"
     hash = "sha256-iXzXoS5Kfh5DBy+PhdFWraDWXda/3M4j7j4VECjv4CA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.3-0.20230530021201-0a93ffb1f9d4"
-    hash = "sha256-8/fRL+irUZ8mNQX5oNXdLp1OCeDkPrux9j6JiHJsew0="
+    version = "v0.46.3-0.20230608170216-c8ad6f2b4074"
+    hash = "sha256-DIrDj4bnM9n8OI9k093gHVlth0xWw+qnfv6VcgaYxXY="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
