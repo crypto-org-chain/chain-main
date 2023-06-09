@@ -71,7 +71,7 @@
             --owner=0 --group=0 --mode=u+rw,uga+r --hard-dereference . \
             | gzip -9 > $out
         '';
-        bundle-win-exe = drv: final.callPackage ./nix/bundle-win-exe.nix { cronosd = drv; };
+        bundle-win-exe = drv: final.callPackage ./nix/bundle-win-exe.nix { chain-maind = drv; };
       } // (with final;
         let
           matrix = lib.cartesianProductOfSets {
@@ -94,7 +94,11 @@
                   chain-maind = callPackage ./. {
                     inherit rev network;
                   };
-                  bundle = bundle-exe chain-maind;
+                  bundle =
+                    if stdenv.hostPlatform.isWindows then
+                      bundle-win-exe chain-maind
+                    else
+                      bundle-exe chain-maind;
                 in
                 if pkgtype == "bundle" then
                   bundle
