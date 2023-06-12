@@ -5,7 +5,6 @@ baseurl="."
 build_type="tarball"
 build_platform="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
 ref_name_clean=$(echo "${GITHUB_REF_NAME:=vdevel}" | sed -e 's/[^A-Za-z0-9._-]/_/g')
-NETWORK=${NETWORK:-"mainnet"}
 
 build() {
     set -e
