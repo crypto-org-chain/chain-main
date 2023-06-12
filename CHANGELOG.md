@@ -1,11 +1,22 @@
 # Changelog
 
-*May 29, 2023*
+## UNRELEASED
+
+- [#975](https://github.com/crypto-org-chain/chain-main/pull/975) Integrate local state-sync commands.
+- [#988](https://github.com/crypto-org-chain/chain-main/pull/988) Release testnet binaries together.
+
+*Jun 9, 2023*
+
+## v4.2.6
+
+- [#986](https://github.com/crypto-org-chain/chain-main/pull/986) Patch barberry.
+
+*May 30, 2023*
 
 ## v4.2.5
 
 - [#974](https://github.com/crypto-org-chain/chain-main/pull/974) Update ibc-go to `v5.2.1`.
-- [#975](https://github.com/crypto-org-chain/chain-main/pull/975) Integrate local state-sync commands.
+- [#983](https://github.com/crypto-org-chain/chain-main/pull/983) Revert accidental breaking change in `v4.2.4`.
 
 *April 27, 2023*
 

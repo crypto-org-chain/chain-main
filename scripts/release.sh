@@ -5,17 +5,13 @@ baseurl="."
 build_type="tarball"
 build_platform="$(nix eval --impure --raw --expr 'builtins.currentSystem')"
 ref_name_clean=$(echo "${GITHUB_REF_NAME:=vdevel}" | sed -e 's/[^A-Za-z0-9._-]/_/g')
-NETWORK=${NETWORK:-"mainnet"}
 
 build() {
     set -e
-    host="$1"
-    name="$2"
-    if [[ "$NETWORK" == "testnet" ]]; then
-        pkg="chain-maind-testnet-${build_type}"
-    else
-        pkg="chain-maind-${build_type}"
-    fi
+    network=$1
+    host="$2"
+    name="$3"
+    pkg="chain-maind${network}-${build_type}"
     if [[ "$host" == "native" ]]; then
         if [[ "${build_platform: -6}" == "-linux" ]]; then
             # static link for linux targets
@@ -33,7 +29,7 @@ build() {
     fi
     echo "building $FLAKE"
     nix build -L "$FLAKE"
-    cp result "chain-main_${ref_name_clean:1}_${name}.tar.gz"
+    cp result "chain-main_${ref_name_clean:1}${network}_${name}.tar.gz"
 }
 
 if [[ "$build_platform" == "x86_64-linux" ]]; then
@@ -47,7 +43,9 @@ else
     exit 1
 fi
 
-for t in $hosts; do
-    IFS=',' read -r name host <<< "${t}"
-    build "$host" "$name"
+for network in "" "-testnet"; do
+    for t in $hosts; do
+        IFS=',' read -r name host <<< "${t}"
+        build "$network" "$host" "$name"
+    done
 done
