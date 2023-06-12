@@ -2,6 +2,7 @@
 
 ## UNRELEASED
 
+- [#975](https://github.com/crypto-org-chain/chain-main/pull/975) Integrate local state-sync commands.
 - [#988](https://github.com/crypto-org-chain/chain-main/pull/988) Release testnet binaries together.
 
 *Jun 9, 2023*
