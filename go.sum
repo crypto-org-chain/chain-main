@@ -422,6 +422,8 @@ github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
 github.com/crypto-org-chain/cronos/memiavl v0.0.2 h1:SmIS7OaH+sUGLiPzIvZt6zlROXlFOKh1mnDdtVcji7c=
 github.com/crypto-org-chain/cronos/memiavl v0.0.2/go.mod h1:2/31Co9jqQYJJkB8Z0bXnbVCtkBQH5EOumRjRuUriiA=
+github.com/crypto-org-chain/cronos/store v0.0.2 h1:BohIiu/YwDjffhGEBJmw0cB+XbjLmk5FmjDm0RrRu7s=
+github.com/crypto-org-chain/cronos/store v0.0.2/go.mod h1:dygv91/zTRAHAT1pqhgZdO1t07V8Z+lvq7Sfa4IFkwE=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8 h1:HiSwdL2dzYnqwcG+cU3Phrm7FWag5yknViZnnZBgqQ0=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8/go.mod h1:VJuoTEh4AmvQv1+rxCZutb/Z0OXvS1PdL9zUU+U2+zs=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61 h1:Y5OuzOkZtjCfO53Jgzl+H8re6pOU4X205a1VMkDcUdk=
