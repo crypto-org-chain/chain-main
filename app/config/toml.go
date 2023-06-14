@@ -1,9 +1,9 @@
 package config
 
-// DefaultConfigTemplate defines the configuration template for the EVM RPC configuration
+// DefaultConfigTemplate defines the configuration template for the memiavl configuration
 const DefaultConfigTemplate = `
 ###############################################################################
-###                             Cronos Configuration                        ###
+###                             MemIAVL Configuration                        ###
 ###############################################################################
 
 [memiavl]
