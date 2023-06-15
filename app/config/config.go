@@ -23,8 +23,9 @@ type MemIAVLConfig struct {
 
 func DefaultMemIAVLConfig() MemIAVLConfig {
 	return MemIAVLConfig{
-		CacheSize:        DefaultCacheSize,
-		SnapshotInterval: memiavl.DefaultSnapshotInterval,
-		ZeroCopy:         true,
+		CacheSize:          DefaultCacheSize,
+		SnapshotInterval:   memiavl.DefaultSnapshotInterval,
+		ZeroCopy:           true,
+		SnapshotKeepRecent: 1,
 	}
 }

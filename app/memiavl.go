@@ -33,9 +33,7 @@ func SetupMemIAVL(logger log.Logger, homePath string, appOpts servertypes.AppOpt
 			ZeroCopy:           cast.ToBool(appOpts.Get(FlagZeroCopy)),
 			SnapshotKeepRecent: cast.ToUint32(appOpts.Get(FlagSnapshotKeepRecent)),
 			SnapshotInterval:   cast.ToUint32(appOpts.Get(FlagSnapshotInterval)),
-			// make sure a few queryable states even with pruning="nothing", needed for ibc relayer to work.
-			MinQueryStates: 3,
-			CacheSize:      cast.ToInt(appOpts.Get(FlagCacheSize)),
+			CacheSize:          cast.ToInt(appOpts.Get(FlagCacheSize)),
 		})
 		baseAppOptions = append([]func(*baseapp.BaseApp){setCMS(cms)}, baseAppOptions...)
 	}
