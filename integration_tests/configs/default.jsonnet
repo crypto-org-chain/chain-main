@@ -7,7 +7,19 @@ local validator = {
 
 {
   chaintest: {
-    validators: [validator { commission_rate: '0.000000000000000000' }, validator],
+    validators: [validator {
+      commission_rate: '0.000000000000000000',
+      'app-config': {
+        memiavl: {
+          enable: true,
+          'zero-copy': true,
+          'snapshot-interval': 5,
+        },
+        store: {
+          streamers: ['versiondb'],
+        },
+      },
+    }, validator],
     accounts: default.accounts + default.reserves + default.signers + [
       {
         name: 'msigner1',

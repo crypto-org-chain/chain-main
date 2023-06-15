@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -140,6 +141,8 @@ import (
 
 	// unnamed import of statik for swagger UI support
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
+
+	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
 
 // FIXME remove this line, dummy
@@ -297,6 +300,7 @@ func New(
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
+	baseAppOptions = SetupMemIAVL(logger, homePath, appOpts, baseAppOptions)
 	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
@@ -929,4 +933,15 @@ func StoreKeys() (
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	return keys, memKeys, tkeys
+}
+
+// Close will be called in graceful shutdown in start cmd
+func (app *ChainApp) Close() error {
+	err := app.BaseApp.Close()
+
+	if cms, ok := app.CommitMultiStore().(*memiavlrootmulti.Store); ok {
+		return errors.Join(err, cms.WaitAsyncCommit())
+	}
+
+	return err
 }

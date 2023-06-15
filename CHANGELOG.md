@@ -12,6 +12,7 @@
 
 - [#975](https://github.com/crypto-org-chain/chain-main/pull/975) Integrate local state-sync commands.
 - [#988](https://github.com/crypto-org-chain/chain-main/pull/988) Release testnet binaries together.
+- [#989](https://github.com/crypto-org-chain/chain-main/pull/989) Integrate memiavl feature.
 
 *Jun 9, 2023*
 
