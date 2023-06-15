@@ -9,8 +9,8 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.13
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/memiavl v0.0.2
-	github.com/crypto-org-chain/cronos/store v0.0.2
+	github.com/crypto-org-chain/cronos/memiavl v0.0.3-0.20230615113127-926000fa6493
+	github.com/crypto-org-chain/cronos/store v0.0.3-0.20230615113127-926000fa6493
 	// v1.0.8
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8
 	github.com/gogo/protobuf v1.3.3
@@ -195,7 +195,6 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	github.com/cometbft/cometbft-db => github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6
-	github.com/crypto-org-chain/cronos/memiavl => github.com/yihuang/cronos/memiavl v0.0.0-20230615093417-9d49275c0940
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
