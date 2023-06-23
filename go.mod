@@ -9,10 +9,10 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.13
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/memiavl v0.0.3-0.20230615113127-926000fa6493
-	github.com/crypto-org-chain/cronos/store v0.0.3-0.20230615113127-926000fa6493
-	// v1.0.8
-	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230529083827-565fa417b0f8
+	github.com/crypto-org-chain/cronos/memiavl v0.0.3-0.20230621152914-f83c74b904cd
+	github.com/crypto-org-chain/cronos/store v0.0.3-0.20230621152914-f83c74b904cd
+	// release/v1.0.x
+	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230623043455-e162787ed0b9
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
 	github.com/google/renameio v1.0.0

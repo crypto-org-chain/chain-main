@@ -8,7 +8,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 
 	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/crypto-org-chain/cronos/store/rootmulti"
@@ -25,22 +24,29 @@ const (
 
 func SetupMemIAVL(logger log.Logger, homePath string, appOpts servertypes.AppOptions, baseAppOptions []func(*baseapp.BaseApp)) []func(*baseapp.BaseApp) {
 	if cast.ToBool(appOpts.Get(FlagMemIAVL)) {
-		// cms must be overridden before the other options, because they may use the cms,
-		// make sure the cms aren't be overridden by the other options later on.
-		cms := rootmulti.NewStore(filepath.Join(homePath, "data", "memiavl.db"), logger)
-		cms.SetMemIAVLOptions(memiavl.Options{
+		opts := memiavl.Options{
 			AsyncCommitBuffer:  cast.ToInt(appOpts.Get(FlagAsyncCommitBuffer)),
 			ZeroCopy:           cast.ToBool(appOpts.Get(FlagZeroCopy)),
 			SnapshotKeepRecent: cast.ToUint32(appOpts.Get(FlagSnapshotKeepRecent)),
 			SnapshotInterval:   cast.ToUint32(appOpts.Get(FlagSnapshotInterval)),
 			CacheSize:          cast.ToInt(appOpts.Get(FlagCacheSize)),
-		})
-		baseAppOptions = append([]func(*baseapp.BaseApp){setCMS(cms)}, baseAppOptions...)
+		}
+		// cms must be overridden before the other options, because they may use the cms,
+		// make sure the cms aren't be overridden by the other options later on.
+		baseAppOptions = append([]func(*baseapp.BaseApp){setMemIAVL(homePath, logger, opts)}, baseAppOptions...)
 	}
 
 	return baseAppOptions
 }
 
-func setCMS(cms storetypes.CommitMultiStore) func(*baseapp.BaseApp) {
-	return func(bapp *baseapp.BaseApp) { bapp.SetCMS(cms) }
+func setMemIAVL(homePath string, logger log.Logger, opts memiavl.Options) func(*baseapp.BaseApp) {
+	return func(bapp *baseapp.BaseApp) {
+		// trigger state-sync snapshot creation by memiavl
+		opts.TriggerStateSyncExport = func(height int64) {
+			go bapp.SnapshotManager().SnapshotIfApplicable(height)
+		}
+		cms := rootmulti.NewStore(filepath.Join(homePath, "data", "memiavl.db"), logger)
+		cms.SetMemIAVLOptions(opts)
+		bapp.SetCMS(cms)
+	}
 }
