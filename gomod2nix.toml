@@ -140,8 +140,9 @@ schema = 3
     version = "v0.0.3-0.20230621152914-f83c74b904cd"
     hash = "sha256-cKUm7IniQ682rFL1mXI2wr/Q15MSb3nMyUxx+6aAMz8="
   [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.3-0.20230621152914-f83c74b904cd"
-    hash = "sha256-wZG6K7CmWzKPD0MQ/3ThXD50Miy+aysa9wCDWc3ONCc="
+    version = "v0.0.0-20230626024957-93568c8a8ca2"
+    hash = "sha256-ub5lU6KNqXUIHwXu2ANss+1pU47Gkr+S1nx5NmEVDCM="
+    replaced = "github.com/yihuang/cronos/store"
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
     version = "v0.0.0-20230623043455-e162787ed0b9"
     hash = "sha256-Z+uXkJk9zUrR5uf7MHsaDX27suu3DJO4CBgcA8TG20I="
