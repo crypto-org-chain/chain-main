@@ -37,10 +37,11 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 
 	"github.com/crypto-org-chain/chain-main/v4/app"
-	appcfg "github.com/crypto-org-chain/chain-main/v4/app/config"
 	"github.com/crypto-org-chain/chain-main/v4/app/params"
 	"github.com/crypto-org-chain/chain-main/v4/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v4/x/chainmain/client/cli"
+
+	memiavlcfg "github.com/crypto-org-chain/cronos/store/config"
 )
 
 const EnvPrefix = "CRO"
@@ -101,7 +102,7 @@ func initAppConfig() (string, interface{}) {
 	type CustomAppConfig struct {
 		serverconfig.Config
 
-		MemIAVL appcfg.MemIAVLConfig `mapstructure:"memiavl"`
+		MemIAVL memiavlcfg.MemIAVLConfig `mapstructure:"memiavl"`
 	}
 
 	// Optionally allow the chain developer to overwrite the SDK's default
@@ -112,10 +113,10 @@ func initAppConfig() (string, interface{}) {
 
 	customAppConfig := CustomAppConfig{
 		Config:  *srvCfg,
-		MemIAVL: appcfg.DefaultMemIAVLConfig(),
+		MemIAVL: memiavlcfg.DefaultMemIAVLConfig(),
 	}
 
-	return serverconfig.DefaultConfigTemplate + appcfg.DefaultConfigTemplate, customAppConfig
+	return serverconfig.DefaultConfigTemplate + memiavlcfg.DefaultConfigTemplate, customAppConfig
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {

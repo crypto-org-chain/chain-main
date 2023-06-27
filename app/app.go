@@ -142,6 +142,7 @@ import (
 	// unnamed import of statik for swagger UI support
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
 
+	memiavlstore "github.com/crypto-org-chain/cronos/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
 
@@ -300,7 +301,7 @@ func New(
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
-	baseAppOptions = SetupMemIAVL(logger, homePath, appOpts, baseAppOptions)
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, baseAppOptions)
 	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)

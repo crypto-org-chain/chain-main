@@ -11,6 +11,7 @@
 , rev ? "dirty"
 , ledger_zemu ? false
 , static ? stdenv.hostPlatform.isStatic
+, nativeByteOrder ? true # nativeByteOrder mode will panic on big endian machines
 }:
 let
   inherit (lib) concatStringsSep;
@@ -59,7 +60,8 @@ buildGoApplication rec {
     "!ledger_mock"
     (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
     network
-  ] ++ lib.lists.optionals (rocksdb != null) [ "rocksdb" "grocksdb_no_link" ];
+  ] ++ lib.optionals (rocksdb != null) [ "rocksdb" "grocksdb_no_link" ]
+  ++ lib.optionals nativeByteOrder [ "nativebyteorder" ];
   ldflags = ''
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
