@@ -420,8 +420,6 @@ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7Do
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4h4Ki1UE/LF6CKwYEm3OZ+HIBCrzSmOokG1vce0O98=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
-github.com/crypto-org-chain/cronos/memiavl v0.0.3 h1:oNKmV2Vp14eeW4zN/Wvr6H4iYJ5j2YTYZqQwzKNeblM=
-github.com/crypto-org-chain/cronos/memiavl v0.0.3/go.mod h1:k3+p+k+HzXx+NoqULMKzai1WHm5z+9CYGO/T9EVbb4w=
 github.com/crypto-org-chain/cronos/store v0.0.3 h1:sOn2lCHPIbbC+bVXg/d38M8wrlmSjJcHifeExQVPvdc=
 github.com/crypto-org-chain/cronos/store v0.0.3/go.mod h1:jpkj59pegLuibS3LRb1ieD+tZG1qc78f4623fTyBa/4=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230623043455-e162787ed0b9 h1:kgdqW/ZIn1DmYh6795XqwNJfTSFVfFIts7XTsw09NlQ=
@@ -1250,6 +1248,8 @@ github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6/go.mod h1:ce1O1j6Ut
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0/go.mod h1:/LWChgwKmvncFJFHJ7Gvn9wZArjbV5/FppcK2fKk/tI=
 github.com/ybbus/jsonrpc v2.1.2+incompatible/go.mod h1:XJrh1eMSzdIYFbM08flv0wp5G35eRniyeGut1z+LSiE=
+github.com/yihuang/cronos/memiavl v0.0.0-20230630101021-14f5ea7f08a9 h1:ckQnW8Gtd0xw7oxeTWErp/C3hrhs4wVWnUiw0vgoEAY=
+github.com/yihuang/cronos/memiavl v0.0.0-20230630101021-14f5ea7f08a9/go.mod h1:k3+p+k+HzXx+NoqULMKzai1WHm5z+9CYGO/T9EVbb4w=
 github.com/yudai/gojsondiff v1.0.0/go.mod h1:AY32+k2cwILAkW1fbgxQ5mUmMiZFgLIV+FBNExI05xg=
 github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82/go.mod h1:lgjkn3NuSvDfVJdfcVVdX+jpBxNmX4rDAzaS45IcYoM=
 github.com/yudai/pp v2.0.1+incompatible/go.mod h1:PuxR/8QJ7cyCkFp/aUDS+JY727OFEZkTdatxwunjIkc=
