@@ -143,7 +143,6 @@ import (
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
 
 	memiavlstore "github.com/crypto-org-chain/cronos/store"
-	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
 
 // FIXME remove this line, dummy
@@ -301,7 +300,7 @@ func New(
 	legacyAmino := encodingConfig.Amino
 	interfaceRegistry := encodingConfig.InterfaceRegistry
 
-	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, baseAppOptions)
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, true, baseAppOptions)
 	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
@@ -940,8 +939,8 @@ func StoreKeys() (
 func (app *ChainApp) Close() error {
 	err := app.BaseApp.Close()
 
-	if cms, ok := app.CommitMultiStore().(*memiavlrootmulti.Store); ok {
-		return errors.Join(err, cms.WaitAsyncCommit())
+	if cms, ok := app.CommitMultiStore().(io.Closer); ok {
+		return errors.Join(err, cms.Close())
 	}
 
 	return err
