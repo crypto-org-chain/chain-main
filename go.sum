@@ -1246,10 +1246,10 @@ github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6/go.mod h1:ce1O1j6Ut
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 github.com/yalp/jsonpath v0.0.0-20180802001716-5cc68e5049a0/go.mod h1:/LWChgwKmvncFJFHJ7Gvn9wZArjbV5/FppcK2fKk/tI=
 github.com/ybbus/jsonrpc v2.1.2+incompatible/go.mod h1:XJrh1eMSzdIYFbM08flv0wp5G35eRniyeGut1z+LSiE=
-github.com/yihuang/cronos/memiavl v0.0.0-20230703034242-8d48988d99f4 h1:ZDFB2ejAh3r7+TKWww9vRYGhvBxyQB8a9YAvJblyyp0=
-github.com/yihuang/cronos/memiavl v0.0.0-20230703034242-8d48988d99f4/go.mod h1:k3+p+k+HzXx+NoqULMKzai1WHm5z+9CYGO/T9EVbb4w=
-github.com/yihuang/cronos/store v0.0.0-20230703034242-8d48988d99f4 h1:VA2LCngqubS6YVbt/94l8N6COHoMC7hZrtC9DP2LLIc=
-github.com/yihuang/cronos/store v0.0.0-20230703034242-8d48988d99f4/go.mod h1:jpkj59pegLuibS3LRb1ieD+tZG1qc78f4623fTyBa/4=
+github.com/yihuang/cronos/memiavl v0.0.0-20230703050503-fc883e9d9c3a h1:QUCuOPP9AdqN144MHiFDpHh+YAlOYopRFHJf/iZoBt8=
+github.com/yihuang/cronos/memiavl v0.0.0-20230703050503-fc883e9d9c3a/go.mod h1:k3+p+k+HzXx+NoqULMKzai1WHm5z+9CYGO/T9EVbb4w=
+github.com/yihuang/cronos/store v0.0.0-20230703050503-fc883e9d9c3a h1:hOAci7YcR6Db38sXl7dLKz5ibnuKARzohSeD478SgZg=
+github.com/yihuang/cronos/store v0.0.0-20230703050503-fc883e9d9c3a/go.mod h1:jpkj59pegLuibS3LRb1ieD+tZG1qc78f4623fTyBa/4=
 github.com/yudai/gojsondiff v1.0.0/go.mod h1:AY32+k2cwILAkW1fbgxQ5mUmMiZFgLIV+FBNExI05xg=
 github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82/go.mod h1:lgjkn3NuSvDfVJdfcVVdX+jpBxNmX4rDAzaS45IcYoM=
 github.com/yudai/pp v2.0.1+incompatible/go.mod h1:PuxR/8QJ7cyCkFp/aUDS+JY727OFEZkTdatxwunjIkc=
