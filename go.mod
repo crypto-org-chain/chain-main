@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/math v1.0.0-rc.0
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
-	github.com/cosmos/cosmos-sdk v0.46.13
+	github.com/cosmos/cosmos-sdk v0.46.14-0.20230619074511-56df2b2e33a1
 	github.com/cosmos/ibc-go/v5 v5.2.1
 	github.com/crypto-org-chain/cronos/store v0.0.4-0.20230701031330-91fbcb44fffb
 	// release/v1.0.x
