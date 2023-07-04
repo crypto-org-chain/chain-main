@@ -9,7 +9,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-alpha8
 	github.com/cosmos/cosmos-sdk v0.46.13
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/store v0.0.4-0.20230701031330-91fbcb44fffb
+	github.com/crypto-org-chain/cronos/store v0.0.4-0.20230703124409-322bd99b54bf
 	// release/v1.0.x
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230623043455-e162787ed0b9
 	github.com/gogo/protobuf v1.3.3
@@ -73,7 +73,7 @@ require (
 	github.com/cosmos/iavl v0.19.6 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
-	github.com/crypto-org-chain/cronos/memiavl v0.0.4-0.20230701031330-91fbcb44fffb // indirect
+	github.com/crypto-org-chain/cronos/memiavl v0.0.4-0.20230703124409-322bd99b54bf // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
@@ -195,8 +195,6 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	github.com/cometbft/cometbft-db => github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6
-	github.com/crypto-org-chain/cronos/memiavl => github.com/yihuang/cronos/memiavl v0.0.0-20230703050503-fc883e9d9c3a
-	github.com/crypto-org-chain/cronos/store => github.com/yihuang/cronos/store v0.0.0-20230703050503-fc883e9d9c3a
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2
