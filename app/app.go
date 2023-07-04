@@ -29,6 +29,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -270,6 +271,10 @@ type ChainApp struct {
 
 	// the configurator
 	configurator module.Configurator
+
+	// duplicate the logic here because it's private in sdk
+	haltHeight uint64
+	haltTime   uint64
 }
 
 func init() {
@@ -334,6 +339,8 @@ func New(
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
+		haltHeight:        cast.ToUint64(appOpts.Get(server.FlagHaltHeight)),
+		haltTime:          cast.ToUint64(appOpts.Get(server.FlagHaltTime)),
 	}
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
@@ -729,6 +736,24 @@ func (app *ChainApp) Name() string { return app.BaseApp.Name() }
 
 // BeginBlocker application updates every begin block
 func (app *ChainApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {
+	// backport: https://github.com/cosmos/cosmos-sdk/pull/16639
+	var halt bool
+	switch {
+	case app.haltHeight > 0 && uint64(req.Header.Height) > app.haltHeight:
+		halt = true
+
+	case app.haltTime > 0 && req.Header.Time.Unix() > int64(app.haltTime):
+		halt = true
+	}
+
+	if halt {
+		app.Logger().Info("halting node per configuration", "height", app.haltHeight, "time", app.haltTime)
+		if err := app.Close(); err != nil {
+			app.Logger().Info("close application failed", "error", err)
+		}
+		panic("halt application")
+	}
+
 	return app.mm.BeginBlock(ctx, req)
 }
 
@@ -937,11 +962,10 @@ func StoreKeys() (
 
 // Close will be called in graceful shutdown in start cmd
 func (app *ChainApp) Close() error {
-	err := app.BaseApp.Close()
-
+	var err error
 	if cms, ok := app.CommitMultiStore().(io.Closer); ok {
-		return errors.Join(err, cms.Close())
+		err = cms.Close()
 	}
 
-	return err
+	return errors.Join(err, app.BaseApp.Close())
 }
