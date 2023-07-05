@@ -3,6 +3,7 @@
 ## Unreleased
 
 - [#991](https://github.com/crypto-org-chain/chain-main/pull/991) Update cometbft `v0.34.29` with several minor bug fixes and low-severity security-fixes.
+- [#998](https://github.com/crypto-org-chain/chain-main/pull/998) Port halt-height fix from sdk
 
 ### Bug Fixes
 
