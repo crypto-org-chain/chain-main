@@ -132,7 +132,7 @@ def test_staking_redelegate(cluster):
 
 
 def test_join_validator(cluster):
-    i = cluster.create_node(moniker="new joined")
+    i = cluster.create_node(moniker="new joined", broadcastmode="block")
     addr = cluster.address("validator", i)
     # transfer 1cro from ecosystem account
     assert cluster.transfer(cluster.address("ecosystem"), addr, "1cro")["code"] == 0
