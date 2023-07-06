@@ -116,8 +116,8 @@ schema = 3
     version = "v1.0.0-alpha8"
     hash = "sha256-iXzXoS5Kfh5DBy+PhdFWraDWXda/3M4j7j4VECjv4CA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.14-0.20230619074511-56df2b2e33a1"
-    hash = "sha256-9GDhGWyc/DW81P7uYq7H157Nl5xiERq/SzLtGiptHso="
+    version = "v0.46.14-0.20230705083228-b39cdb2e74ad"
+    hash = "sha256-6vVIkETNO/d5q8xMQALL97H08IKzsbQEME9iFAK+fGk="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -137,11 +137,11 @@ schema = 3
     version = "v0.3.2"
     hash = "sha256-Y261IO/d9xjV0UScqHvo31broxvnKn4IQQC9Mu6jNkE="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.4-0.20230703124409-322bd99b54bf"
-    hash = "sha256-wjUReZW2cLvxzPo+2APINZL4QQioEK1y1vTe/dHnHX8="
+    version = "v0.0.4-0.20230705094240-373719727a8a"
+    hash = "sha256-lCUTaMcxp5QUjNIz+yc9fK/AUvPIepnz74MfbG0NKgE="
   [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.4-0.20230703124409-322bd99b54bf"
-    hash = "sha256-IytY+uteQGtfpD7LxwwtVQwB/8csuPtVonssAk6DXQ8="
+    version = "v0.0.4-0.20230705094240-373719727a8a"
+    hash = "sha256-jHlTaHg5C+iVLE3VnuWdX2l1fNTeB1guLWPf7gai/sI="
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
     version = "v0.0.0-20230623043455-e162787ed0b9"
     hash = "sha256-Z+uXkJk9zUrR5uf7MHsaDX27suu3DJO4CBgcA8TG20I="
