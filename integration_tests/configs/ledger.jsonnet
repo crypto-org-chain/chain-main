@@ -1,9 +1,10 @@
 local default = import 'accounts.jsonnet';
 local genesis = import 'genesis.jsonnet';
+local validator = import 'validator.jsonnet';
 
 {
   chaintest: {
-    validators: [{ coins: value, staked: value } for value in ['10cro', '10cro']],
+    validators: [validator, validator],
     accounts: default.reserves,
     hw_account: {
       name: 'hw',

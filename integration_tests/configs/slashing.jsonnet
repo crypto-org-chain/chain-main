@@ -3,7 +3,13 @@ local genesis = import 'genesis.jsonnet';
 
 {
   slashingtest: {
-    validators: [{ coins: value, staked: value } for value in ['40cro', '10cro', '10cro']],
+    validators: [{
+      coins: value,
+      staked: value,
+      client_config: {
+        'broadcast-mode': 'block',
+      },
+    } for value in ['40cro', '10cro', '10cro']],
     accounts: default.accounts + default.reserves,
     genesis: {
       app_state: {

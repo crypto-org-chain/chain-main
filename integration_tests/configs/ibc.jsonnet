@@ -20,10 +20,7 @@ local default = {
     },
   },
 };
-local validator = {
-  coins: '10cro',
-  staked: '10cro',
-};
+local validator = import 'validator.jsonnet';
 
 {
   'ibc-0': default {
