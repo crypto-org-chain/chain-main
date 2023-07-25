@@ -69,6 +69,7 @@ func NewRocksdbOptions(sstFileWriter bool) *grocksdb.Options {
 	// http://rocksdb.org/blog/2017/05/12/partitioned-index-filter.html
 	bbto.SetIndexType(grocksdb.KTwoLevelIndexSearchIndexType)
 	bbto.SetPartitionFilters(true)
+	bbto.SetOptimizeFiltersForMemory(true)
 
 	// hash index is better for iavl tree which mostly do point lookup.
 	bbto.SetDataBlockIndexType(grocksdb.KDataBlockIndexTypeBinarySearchAndHash)
