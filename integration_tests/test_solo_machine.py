@@ -84,8 +84,8 @@ class SoloMachine(object):
         os.environ["SOLO_FEE_DENOM"] = SOLO_FEE_DENOM
         os.environ["SOLO_FEE_AMOUNT"] = "1000"
         os.environ["SOLO_GAS_LIMIT"] = "300000"
-        os.environ["SOLO_GRPC_ADDRESS"] = f"http://0.0.0.0:{self.grpc_port}"
-        os.environ["SOLO_RPC_ADDRESS"] = f"http://0.0.0.0:{self.rpc_port}"
+        os.environ["SOLO_GRPC_ADDRESS"] = f"http://127.0.0.1:{self.grpc_port}"
+        os.environ["SOLO_RPC_ADDRESS"] = f"http://127.0.0.1:{self.rpc_port}"
         os.environ["SOLO_TRUSTED_HASH"] = self.trusted_hash
         os.environ["SOLO_TRUSTED_HEIGHT"] = self.trusted_height
 
