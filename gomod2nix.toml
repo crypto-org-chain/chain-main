@@ -38,9 +38,6 @@ schema = 3
   [mod."github.com/DataDog/zstd"]
     version = "v1.5.0"
     hash = "sha256-i+vPadZcmSHCALA50FaADRmj6oqe1t5SIfqEbCxr9Ao="
-  [mod."github.com/VictoriaMetrics/metrics"]
-    version = "v1.23.1"
-    hash = "sha256-z2X1DkTPXhI1eI9AJJ8d6LDeapiaKmd2l/2orxKsxi0="
   [mod."github.com/Workiva/go-datastructures"]
     version = "v1.0.53"
     hash = "sha256-W6qOvqu8sokMlZrpOF1SWG138H0/BotywKNLlDF8Zug="
@@ -65,9 +62,6 @@ schema = 3
   [mod."github.com/btcsuite/btcd/btcec/v2"]
     version = "v2.3.2"
     hash = "sha256-natWs+yIAuD1UI07iZtjPilroQLfXizFn3lNOiOT83U="
-  [mod."github.com/c2h5oh/datasize"]
-    version = "v0.0.0-20220606134207-859f65c6625b"
-    hash = "sha256-1uH+D3w0Y/B3poXm545XGrT4S4c+msTbj7gKgu9pbPM="
   [mod."github.com/cenkalti/backoff/v4"]
     version = "v4.1.3"
     hash = "sha256-u6MEDopHoTWAZoVvvXOKnAg++xre53YgQx0gmf6t2KU="
@@ -115,8 +109,8 @@ schema = 3
     version = "v1.0.0-beta.1"
     hash = "sha256-oATkuj+fM5eBn+ywO+w/tL0AFSIEkx0J3Yz+VhVe0QA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.14-0.20230705083228-b39cdb2e74ad"
-    hash = "sha256-6vVIkETNO/d5q8xMQALL97H08IKzsbQEME9iFAK+fGk="
+    version = "v0.46.15"
+    hash = "sha256-QwztH5PlDscGl9pSGvbfv6ca7PQkBmcLvGZufxGT4fw="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -136,11 +130,11 @@ schema = 3
     version = "v0.3.2"
     hash = "sha256-Y261IO/d9xjV0UScqHvo31broxvnKn4IQQC9Mu6jNkE="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.4-0.20230705094240-373719727a8a"
-    hash = "sha256-lCUTaMcxp5QUjNIz+yc9fK/AUvPIepnz74MfbG0NKgE="
+    version = "v0.0.5-0.20230904032434-c575f4797ca4"
+    hash = "sha256-IxhgTLeBuxJ7FuZua+ZMWXRH4YJwrQMpYBR4gpSjgVY="
   [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.4-0.20230705094240-373719727a8a"
-    hash = "sha256-jHlTaHg5C+iVLE3VnuWdX2l1fNTeB1guLWPf7gai/sI="
+    version = "v0.0.5-0.20230904032434-c575f4797ca4"
+    hash = "sha256-XgSJKw05uaowu7SXFVPqtdLBNUextxD78kEhFyTswIY="
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
     version = "v0.0.0-20230623043455-e162787ed0b9"
     hash = "sha256-Z+uXkJk9zUrR5uf7MHsaDX27suu3DJO4CBgcA8TG20I="
@@ -186,9 +180,6 @@ schema = 3
   [mod."github.com/go-logfmt/logfmt"]
     version = "v0.5.1"
     hash = "sha256-t50m9ffvW8PiGvO+2svnLI+N/XaWaBS+ZlhwrEQn2gU="
-  [mod."github.com/go-stack/stack"]
-    version = "v1.8.1"
-    hash = "sha256-ixcJ2RrK1ZH3YWGQZF9QFBo02NOuLeSp9wJ7gniipgY="
   [mod."github.com/godbus/dbus"]
     version = "v0.0.0-20190726142602-4481cbc300e2"
     hash = "sha256-R7Gb9+Zjy80FbQSDGketoVEqfdOQKuOVTfWRjQ5kxZY="
@@ -316,9 +307,6 @@ schema = 3
   [mod."github.com/ledgerwatch/erigon-lib"]
     version = "v0.0.0-20230210071639-db0e7ed11263"
     hash = "sha256-SKFGLsJV6G4xIQ5IU+qq9EY3v0/I8B/CTMcDOhXGfc4="
-  [mod."github.com/ledgerwatch/log/v3"]
-    version = "v3.7.0"
-    hash = "sha256-o0tOdlRL0LSU3BRJxK15LkBEh/RDGnsTWWVU/vgmARk="
   [mod."github.com/lib/pq"]
     version = "v1.10.7"
     hash = "sha256-YPUv1VBZNFVUjFxQKdYd0Djje6KYYE99Hz6FnTfrmMw="
@@ -409,9 +397,6 @@ schema = 3
   [mod."github.com/sasha-s/go-deadlock"]
     version = "v0.3.1"
     hash = "sha256-2CBEi9/iN/OMt7wEIG+hRjgDH6CRWIgibGGGy1dQ78I="
-  [mod."github.com/spaolacci/murmur3"]
-    version = "v1.1.0"
-    hash = "sha256-RWD4PPrlAsZZ8Xy356MBxpj+/NZI7w2XOU14Ob7/Y9M="
   [mod."github.com/spf13/afero"]
     version = "v1.9.2"
     hash = "sha256-R1mir7Fu95QK+YL99U14RGbLJzxqWRH5rSFpssgJvzA="
@@ -469,18 +454,12 @@ schema = 3
   [mod."github.com/tidwall/wal"]
     version = "v1.1.7"
     hash = "sha256-HLLFUEw8hWSSSSPSWZHt2KjoZftbje3Xxd9gROM2I+U="
-  [mod."github.com/torquem-ch/mdbx-go"]
-    version = "v0.27.5"
-    hash = "sha256-GSDtoGSdX8E4QLnBgLzWVW/9qYMuvcsogoo2LC8T3eU="
   [mod."github.com/ulikunitz/xz"]
     version = "v0.5.10"
     hash = "sha256-bogOwQNmQVS7W+C7wci7XEUeYm9TB7PnxnyBIXKYbm0="
-  [mod."github.com/valyala/fastrand"]
-    version = "v1.1.0"
-    hash = "sha256-+tvsaq1TJGA/bCLXztr0iIZ08CatTG9x7ooNTPIKSZY="
-  [mod."github.com/valyala/histogram"]
-    version = "v1.2.0"
-    hash = "sha256-zmCr5jZHdbOes9XiAA8HdXBHBeDiaOYVWHeW8tQIbUQ="
+  [mod."github.com/zbiljic/go-filelock"]
+    version = "v0.0.0-20170914061330-1dbf7103ab7d"
+    hash = "sha256-JqNj/Wg8nGFSmndgYC7+FZzL2zG7rwOQMjlqYs3ZGvw="
   [mod."github.com/zondax/hid"]
     version = "v0.9.1"
     hash = "sha256-hSVmN/f/lQHFhF60o6ej78ELC0MMoqQgqIX2hHjdTXg="
@@ -493,9 +472,6 @@ schema = 3
   [mod."go.opencensus.io"]
     version = "v0.24.0"
     hash = "sha256-4H+mGZgG2c9I1y0m8avF4qmt8LUKxxVsTqR8mKgP4yo="
-  [mod."go.uber.org/atomic"]
-    version = "v1.10.0"
-    hash = "sha256-E6UEDc1eh/cLUFd+J86cDesQ0B8wEv/DdaAVKb+x2t8="
   [mod."golang.org/x/crypto"]
     version = "v0.9.0"
     hash = "sha256-RpGvWrx96GBXpu1zsWxdv9/+WcRmjBxOC7fvSgOJGL0="
