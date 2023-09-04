@@ -6,7 +6,7 @@
 - [#998](https://github.com/crypto-org-chain/chain-main/pull/998) Port halt-height fix from sdk
 - [#1002](https://github.com/crypto-org-chain/chain-main/pull/1002) Update to latest memiavl version
 - [#1004](https://github.com/crypto-org-chain/chain-main/pull/1004) Update rocksdb dependency to 8.1.1.
-- [#]() Update memiavl to c575f4797ca4, update cosmos-sdk to v0.46.15.
+- [#1009](https://github.com/crypto-org-chain/chain-main/pull/1009) Update memiavl to c575f4797ca4, update cosmos-sdk to v0.46.15.
 
 ### Bug Fixes
 
