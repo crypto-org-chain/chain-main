@@ -6,6 +6,7 @@
 - [#998](https://github.com/crypto-org-chain/chain-main/pull/998) Port halt-height fix from sdk
 - [#1002](https://github.com/crypto-org-chain/chain-main/pull/1002) Update to latest memiavl version
 - [#1004](https://github.com/crypto-org-chain/chain-main/pull/1004) Update rocksdb dependency to 8.1.1.
+- [#]() Bump librocksdb to 8.5.3
 
 ### Bug Fixes
 
