@@ -7,9 +7,9 @@ require (
 	cosmossdk.io/math v1.0.0-rc.0
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-proto v1.0.0-beta.1
-	github.com/cosmos/cosmos-sdk v0.46.14-0.20230705083228-b39cdb2e74ad
+	github.com/cosmos/cosmos-sdk v0.46.15
 	github.com/cosmos/ibc-go/v5 v5.2.1
-	github.com/crypto-org-chain/cronos/store v0.0.4-0.20230705094240-373719727a8a
+	github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4
 	// release/v1.0.x
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230623043455-e162787ed0b9
 	github.com/gogo/protobuf v1.3.3
@@ -24,7 +24,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.3
-	github.com/tendermint/tendermint v0.34.28
+	github.com/tendermint/tendermint v0.34.29
 	github.com/tendermint/tm-db v0.6.7
 	github.com/tidwall/gjson v1.14.0
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
@@ -45,7 +45,6 @@ require (
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/ChainSafe/go-schnorrkel v1.0.0 // indirect
 	github.com/DataDog/zstd v1.5.0 // indirect
-	github.com/VictoriaMetrics/metrics v1.23.1 // indirect
 	github.com/Workiva/go-datastructures v1.0.53 // indirect
 	github.com/alitto/pond v1.8.2 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
@@ -53,7 +52,6 @@ require (
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
-	github.com/c2h5oh/datasize v0.0.0-20220606134207-859f65c6625b // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -73,7 +71,7 @@ require (
 	github.com/cosmos/iavl v0.19.6 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
-	github.com/crypto-org-chain/cronos/memiavl v0.0.4-0.20230705094240-373719727a8a // indirect
+	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
@@ -88,7 +86,6 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/gateway v1.1.0 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -125,7 +122,6 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/ledgerwatch/erigon-lib v0.0.0-20230210071639-db0e7ed11263 // indirect
-	github.com/ledgerwatch/log/v3 v3.7.0 // indirect
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -154,7 +150,6 @@ require (
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/rs/zerolog v1.29.1 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.14.0 // indirect
@@ -166,15 +161,12 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
-	github.com/torquem-ch/mdbx-go v0.27.5 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
-	github.com/valyala/fastrand v1.1.0 // indirect
-	github.com/valyala/histogram v1.2.0 // indirect
+	github.com/zbiljic/go-filelock v0.0.0-20170914061330-1dbf7103ab7d // indirect
 	github.com/zondax/hid v0.9.1 // indirect
 	github.com/zondax/ledger-go v0.14.1 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
