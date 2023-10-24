@@ -171,6 +171,21 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         )
         return r.decode("utf-8")
 
+    def query_host_params(self):
+        kwargs = {
+            "node": self.node_rpc,
+            "output": "json",
+        }
+        return json.loads(
+            self.raw(
+                "q",
+                "interchain-accounts",
+                "host",
+                "params",
+                **kwargs,
+            )
+        )
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -195,3 +210,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def sign_batch_multisig_tx(self, *args, i=0, **kwargs):
         return self.cosmos_cli(i).sign_batch_multisig_tx(*args, **kwargs)
+
+    def query_host_params(self, i=0):
+        return self.cosmos_cli(i).query_host_params()

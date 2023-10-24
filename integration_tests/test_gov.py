@@ -34,27 +34,33 @@ def test_param_proposal(cluster, vote_option):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
+    amount = approve_proposal(cluster, rsp, vote_option)
+    new_max_validators = cluster.staking_params()["max_validators"]
+    if vote_option == "yes":
+        assert new_max_validators == max_validators + 1
+    else:
+        assert new_max_validators == max_validators
 
+    if vote_option == "no_with_veto":
+        # deposit only get burnt for vetoed proposal
+        assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+    else:
+        # refunded, no matter passed or rejected
+        assert cluster.balance(cluster.address("ecosystem")) == amount
+
+
+def approve_proposal(cluster, rsp, vote_option="yes"):
     # get proposal_id
     ev = parse_events(rsp["logs"])["submit_proposal"]
     assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
-
     proposal = cluster.query_proposal(proposal_id)
-    assert proposal["messages"][0]["content"]["changes"] == [
-        {
-            "subspace": "staking",
-            "key": "MaxValidators",
-            "value": str(max_validators + 1),
-        }
-    ], proposal
     assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
 
     amount = cluster.balance(cluster.address("ecosystem"))
     rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
-
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
@@ -78,25 +84,12 @@ def test_param_proposal(cluster, vote_option):
     wait_for_block_time(
         cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
     )
-
     proposal = cluster.query_proposal(proposal_id)
     if vote_option == "yes":
         assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
     else:
         assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
-
-    new_max_validators = cluster.staking_params()["max_validators"]
-    if vote_option == "yes":
-        assert new_max_validators == max_validators + 1
-    else:
-        assert new_max_validators == max_validators
-
-    if vote_option == "no_with_veto":
-        # deposit only get burnt for vetoed proposal
-        assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
-    else:
-        # refunded, no matter passed or rejected
-        assert cluster.balance(cluster.address("ecosystem")) == amount
+    return amount
 
 
 def test_deposit_period_expires(cluster):
@@ -313,3 +306,28 @@ def test_inherit_vote(cluster):
         "abstain_count": "0",
         "no_with_veto_count": "0",
     }
+
+
+def test_host_enabled(cluster):
+    cli = cluster.cosmos_cli()
+    p = cluster.cosmos_cli().query_host_params()
+    assert p["host_enabled"]
+    rsp = cluster.gov_propose_legacy(
+        "community",
+        "param-change",
+        {
+            "title": "Update icahost enabled",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "icahost",
+                    "key": "HostEnabled",
+                    "value": False,
+                }
+            ],
+        },
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(cluster, rsp)
+    p = cli.query_host_params()
+    assert not p["host_enabled"]
