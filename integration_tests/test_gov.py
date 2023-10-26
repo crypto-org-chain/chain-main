@@ -310,7 +310,7 @@ def test_inherit_vote(cluster):
 
 def test_host_enabled(cluster):
     cli = cluster.cosmos_cli()
-    p = cluster.cosmos_cli().query_host_params()
+    p = cli.query_host_params()
     assert p["host_enabled"]
     rsp = cluster.gov_propose_legacy(
         "community",
@@ -331,3 +331,35 @@ def test_host_enabled(cluster):
     approve_proposal(cluster, rsp)
     p = cli.query_host_params()
     assert not p["host_enabled"]
+
+
+def test_gov_voting(cluster):
+    """
+    - change voting_period from default 10s to 216s
+    """
+    cli = cluster.cosmos_cli()
+
+    def assert_voting_period(voting_period_in_ns):
+        p = cli.query_gov_params()
+        assert p["voting_params"]["voting_period"] == voting_period_in_ns
+
+    assert_voting_period("10000000000")
+    voting_period_in_ns = "216000000000"
+    rsp = cluster.gov_propose_legacy(
+        "community",
+        "param-change",
+        {
+            "title": "Update gov voting",
+            "description": "ditto",
+            "changes": [
+                {
+                    "subspace": "gov",
+                    "key": "votingparams",
+                    "value": {"voting_period": voting_period_in_ns},
+                }
+            ],
+        },
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(cluster, rsp)
+    assert_voting_period(voting_period_in_ns)
