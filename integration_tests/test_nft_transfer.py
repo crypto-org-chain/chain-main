@@ -96,6 +96,28 @@ def test_nft_transfer(cluster):
         == "/chainmain.nft.v1.MsgMintNFT"
     )
 
+    # nft transfer that's supposed to fail, exceeds max receiver length
+    rsp = json.loads(
+        cli_src.raw(
+            "tx",
+            "nft-transfer",
+            "transfer",
+            "nft",
+            src_channel,
+            'a'*2049,
+            denomid,
+            tokenid,
+            "-y",
+            home=cli_src.data_dir,
+            from_=addr_src,
+            keyring_backend="test",
+            chain_id=cli_src.chain_id,
+            node=cli_src.node_rpc,
+        )
+    )
+    assert rsp["code"] != 0
+    assert "receiver length must be less than 2048" in rsp["raw_log"]
+
     # transfer nft on mid-destination chain
     rsp = json.loads(
         cli_src.raw(
