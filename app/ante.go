@@ -71,6 +71,7 @@ func NewValidateMsgTransferDecorator() ValidateMsgTransferDecorator {
 }
 
 func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+        // avoid breaking consensus
 	if !ctx.IsCheckTx() {
 		return next(ctx, tx, simulate)
 	}
