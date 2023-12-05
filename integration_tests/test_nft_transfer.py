@@ -104,7 +104,7 @@ def test_nft_transfer(cluster):
             "transfer",
             "nft",
             src_channel,
-            "a"*2049,
+            "a" * 2049,
             denomid,
             tokenid,
             "-y",
