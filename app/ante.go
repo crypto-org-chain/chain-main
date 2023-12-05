@@ -71,7 +71,7 @@ func NewValidateMsgTransferDecorator() ValidateMsgTransferDecorator {
 }
 
 func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-        // avoid breaking consensus
+	// avoid breaking consensus
 	if !ctx.IsCheckTx() {
 		return next(ctx, tx, simulate)
 	}
@@ -84,21 +84,21 @@ func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 		}
 
 		if len(transfer.ClassId) > MaxClassIDLength {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "class id length must be less than %d", MaxClassIDLength)
+			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "class id length must be less than %d", MaxClassIDLength)
 		}
 
 		if len(transfer.TokenIds) > MaxTokenIds {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIds)
+			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIds)
 		}
 
 		for _, tokenID := range transfer.TokenIds {
 			if len(tokenID) > MaxTokenIDLength {
-				return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIDLength)
+				return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIDLength)
 			}
 		}
 
 		if len(transfer.Receiver) > MaximumReceiverLength {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "receiver length must be less than %d", MaximumReceiverLength)
+			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "receiver length must be less than %d", MaximumReceiverLength)
 		}
 	}
 
