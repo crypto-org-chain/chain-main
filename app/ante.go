@@ -87,8 +87,8 @@ func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "class id length must be less than %d", MaxClassIDLength)
 		}
 
-		if len(transfer.TokenIds) > MaxClassIDLength {
-			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxClassIDLength)
+		if len(transfer.TokenIds) > MaxTokenIds {
+			return ctx, sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIds)
 		}
 
 		for _, tokenID := range transfer.TokenIds {
