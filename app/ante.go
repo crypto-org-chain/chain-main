@@ -57,9 +57,9 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 
 const (
 	// values chosen arbitrarily
-	MaxClassIDLength      = 256
-	MaxTokenIds           = 256
-	MaxTokenIDLength      = 256
+	MaxClassIDLength      = 2048
+	MaxTokenIds           = 2048
+	MaxTokenIDLength      = 2048
 	MaximumReceiverLength = 2048
 )
 
