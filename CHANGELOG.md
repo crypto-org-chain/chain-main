@@ -8,6 +8,7 @@
 - [#1004](https://github.com/crypto-org-chain/chain-main/pull/1004) Update rocksdb dependency to 8.1.1.
 - [#1009](https://github.com/crypto-org-chain/chain-main/pull/1009) Update memiavl to c575f4797ca4, update cosmos-sdk to v0.46.15.
 - [#1010](https://github.com/crypto-org-chain/chain-main/pull/1010) Bump librocksdb to 8.5.3
+- [#]() Limit the length of NFTTransfer fields.
 
 ### Bug Fixes
 
