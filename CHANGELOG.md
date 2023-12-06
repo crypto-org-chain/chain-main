@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+*Dec 6, 2023*
+
+## v4.2.8
 
 - [#991](https://github.com/crypto-org-chain/chain-main/pull/991) Update cometbft `v0.34.29` with several minor bug fixes and low-severity security-fixes.
 - [#998](https://github.com/crypto-org-chain/chain-main/pull/998) Port halt-height fix from sdk
@@ -9,8 +11,6 @@
 - [#1009](https://github.com/crypto-org-chain/chain-main/pull/1009) Update memiavl to c575f4797ca4, update cosmos-sdk to v0.46.15.
 - [#1010](https://github.com/crypto-org-chain/chain-main/pull/1010) Bump librocksdb to 8.5.3
 - [#1019](https://github.com/crypto-org-chain/chain-main/pull/1019) Limit the length of NFTTransfer fields.
-
-### Bug Fixes
 
 *Jun 14, 2023*
 
