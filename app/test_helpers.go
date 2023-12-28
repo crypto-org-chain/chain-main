@@ -36,6 +36,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+const (
+	SimAppChainID = "simulation_777-1"
+)
+
 // DefaultConsensusParams defines the default Tendermint consensus params used in
 // ChainApp testing.
 var DefaultConsensusParams = &tmproto.ConsensusParams{
