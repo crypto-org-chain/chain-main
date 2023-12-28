@@ -1,7 +1,7 @@
 package app
 
 import (
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
@@ -34,7 +34,7 @@ type App interface {
 
 	// Exports the state of the application for a genesis file.
 	ExportAppStateAndValidators(
-		forZeroHeight bool, jailAllowedAddrs []string,
+		forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 	) (servertypes.ExportedApp, error)
 
 	// All the registered module account addreses.

@@ -7,11 +7,11 @@ import (
 	"sort"
 	"strings"
 
-	tmbytes "github.com/tendermint/tendermint/libs/bytes"
-	tmtypes "github.com/tendermint/tendermint/types"
+	tmbytes "github.com/cometbft/cometbft/libs/bytes"
+	tmtypes "github.com/cometbft/cometbft/types"
 
 	sdkerrors "cosmossdk.io/errors"
-	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
 )
 
 // ParseHexHash parses a hex hash in string format to bytes and validates its correctness.

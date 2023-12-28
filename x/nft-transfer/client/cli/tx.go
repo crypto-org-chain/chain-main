@@ -12,8 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
 
-	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
-	channelutils "github.com/cosmos/ibc-go/v5/modules/core/04-channel/client/utils"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
+	channelutils "github.com/cosmos/ibc-go/v7/modules/core/04-channel/client/utils"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 

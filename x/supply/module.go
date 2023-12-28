@@ -8,6 +8,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/client/cli"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -16,7 +17,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (
@@ -108,19 +108,6 @@ func NewAppModule(keeper keeper.Keeper) AppModule {
 
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
-
-// Route returns the capability module's message routing key.
-func (AppModule) Route() sdk.Route { return sdk.Route{} }
-
-// QuerierRoute returns the capability module's query routing key.
-func (AppModule) QuerierRoute() string { return types.RouterKey }
-
-// LegacyQuerierHandler returns the capability module's Querier.
-// (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
 
 // RegisterServices registers query server.
 func (am AppModule) RegisterServices(cfg module.Configurator) {

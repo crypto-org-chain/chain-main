@@ -8,10 +8,10 @@ import (
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
 	types "github.com/cosmos/cosmos-sdk/codec/types"
-	_ "github.com/gogo/protobuf/gogoproto"
-	grpc1 "github.com/gogo/protobuf/grpc"
-	proto "github.com/gogo/protobuf/proto"
-	github_com_gogo_protobuf_types "github.com/gogo/protobuf/types"
+	_ "github.com/cosmos/gogoproto/gogoproto"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
+	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -495,7 +495,7 @@ func (m *MsgSubmitTx) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.TimeoutDuration != nil {
-		n1, err1 := github_com_gogo_protobuf_types.StdDurationMarshalTo(*m.TimeoutDuration, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdDuration(*m.TimeoutDuration):])
+		n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(*m.TimeoutDuration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(*m.TimeoutDuration):])
 		if err1 != nil {
 			return 0, err1
 		}
@@ -620,7 +620,7 @@ func (m *MsgSubmitTx) Size() (n int) {
 		}
 	}
 	if m.TimeoutDuration != nil {
-		l = github_com_gogo_protobuf_types.SizeOfStdDuration(*m.TimeoutDuration)
+		l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(*m.TimeoutDuration)
 		n += 1 + l + sovTx(uint64(l))
 	}
 	return n
@@ -996,7 +996,7 @@ func (m *MsgSubmitTx) Unmarshal(dAtA []byte) error {
 			if m.TimeoutDuration == nil {
 				m.TimeoutDuration = new(time.Duration)
 			}
-			if err := github_com_gogo_protobuf_types.StdDurationUnmarshal(m.TimeoutDuration, dAtA[iNdEx:postIndex]); err != nil {
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(m.TimeoutDuration, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

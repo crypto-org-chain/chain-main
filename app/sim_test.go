@@ -9,15 +9,14 @@ import (
 	"strings"
 	"testing"
 
+	dbm "github.com/cometbft/cometbft-db"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/libs/log"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/stretchr/testify/require"
-	abci "github.com/tendermint/tendermint/abci/types"
-	"github.com/tendermint/tendermint/libs/log"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
+	"cosmossdk.io/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/simapp"
-	"github.com/cosmos/cosmos-sdk/simapp/helpers"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -67,7 +66,7 @@ func TestFullAppSimulation(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = simapp.SimAppChainID
 
 	defer func() {
 		db.Close()
@@ -107,7 +106,7 @@ func TestAppImportExport(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = simapp.SimAppChainID
 
 	defer func() {
 		db.Close()
@@ -175,7 +174,7 @@ func TestAppImportExport(t *testing.T) {
 		}
 	}()
 
-	header := tmproto.Header{Height: app.LastBlockHeight(), ChainID: helpers.SimAppChainID}
+	header := tmproto.Header{Height: app.LastBlockHeight(), ChainID: simapp.SimAppChainID}
 	ctxA := app.NewContext(true, header)
 	ctxB := newApp.NewContext(true, header)
 	newApp.mm.InitGenesis(ctxB, app.AppCodec(), genesisState)
@@ -223,7 +222,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}
 	require.NoError(t, err, "simulation setup failed")
 
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = simapp.SimAppChainID
 
 	defer func() {
 		db.Close()
@@ -282,7 +281,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
-		ChainId:       helpers.SimAppChainID,
+		ChainId:       simapp.SimAppChainID,
 		AppStateBytes: exported.AppState,
 	})
 
@@ -312,7 +311,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	config.ExportParamsPath = ""
 	config.OnOperation = false
 	config.AllInvariants = false
-	config.ChainID = helpers.SimAppChainID
+	config.ChainID = simapp.SimAppChainID
 
 	numSeeds := 3
 	numTimesToRunPerSeed := 5

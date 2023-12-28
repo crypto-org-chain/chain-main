@@ -13,12 +13,12 @@ import (
 	"time"
 
 	sdkmath "cosmossdk.io/math"
+	tmconfig "github.com/cometbft/cometbft/config"
+	tmos "github.com/cometbft/cometbft/libs/os"
+	tmtypes "github.com/cometbft/cometbft/types"
+	tmtime "github.com/cometbft/cometbft/types/time"
 	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/spf13/cobra"
-	tmconfig "github.com/tendermint/tendermint/config"
-	tmos "github.com/tendermint/tendermint/libs/os"
-	tmtypes "github.com/tendermint/tendermint/types"
-	tmtime "github.com/tendermint/tendermint/types/time"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -51,7 +51,7 @@ var (
 	flagUnbondingTime     = "unbonding-time"
 )
 
-// get cmd to initialize all files for tendermint testnet and application
+// get cmd to initialize all files for cometbft testnet and application
 func AddTestnetCmd(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
@@ -103,9 +103,9 @@ Example:
 			if numValidatorsErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flagNumValidators, numValidatorsErr)
 			}
-			algo, algoErr := cmd.Flags().GetString(flags.FlagKeyAlgorithm)
+			algo, algoErr := cmd.Flags().GetString(flags.FlagKeyType)
 			if algoErr != nil {
-				return fmt.Errorf("failed to parse %v: %w", flags.FlagKeyAlgorithm, algoErr)
+				return fmt.Errorf("failed to parse %v: %w", flags.FlagKeyType, algoErr)
 			}
 			amount, amountErr := cmd.Flags().GetString(flagAmount)
 			if amountErr != nil {
@@ -135,7 +135,7 @@ Example:
 	cmd.Flags().String(server.FlagMinGasPrices, "",
 		"Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.00000001cro,1basecro)") //nolint
 	cmd.Flags().String(flags.FlagKeyringBackend, keyring.BackendTest, "Select keyring's backend (os|file|test)")
-	cmd.Flags().String(flags.FlagKeyAlgorithm, string(hd.Secp256k1Type), "Key signing algorithm to generate keys for")
+	cmd.Flags().String(flags.FlagKeyType, string(hd.Secp256k1Type), "Key signing algorithm to generate keys for")
 	cmd.Flags().String(flagAmount, "20000000000000000basecro", "amount of coins for accounts")
 	cmd.Flags().String(flagStakingAmount, "", "amount of coins for staking (default half of account amount)")
 	cmd.Flags().String(flagVestingAmt, "", "amount of coins for vesting accounts")
@@ -481,7 +481,7 @@ func collectGenFiles(
 
 		nodeAppState, err := genutil.GenAppStateFromConfig(
 			clientCtx.Codec, clientCtx.TxConfig,
-			nodeConfig, initCfg, *genDoc, genBalIterator)
+			nodeConfig, initCfg, *genDoc, genBalIterator, genutiltypes.DefaultMessageValidator)
 		if err != nil {
 			return err
 		}

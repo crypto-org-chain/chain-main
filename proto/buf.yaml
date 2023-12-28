@@ -2,7 +2,7 @@
 version: v1
 name: buf.build/crypto-org-chain/chain-main
 deps:
-  - buf.build/cosmos/cosmos-sdk
+  - buf.build/cosmos/cosmos-sdk:954f7b05f38440fc8250134b15adec47
 breaking:
   use:
     - FILE

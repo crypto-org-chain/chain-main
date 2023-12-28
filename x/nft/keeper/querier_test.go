@@ -5,7 +5,7 @@ package keeper_test
 import (
 	"encoding/binary"
 
-	abci "github.com/tendermint/tendermint/abci/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 	keep "github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
