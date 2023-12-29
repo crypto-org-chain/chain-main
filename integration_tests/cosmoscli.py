@@ -124,8 +124,22 @@ class CosmosCLI(cosmoscli.CosmosCLI):
     def broadcast_tx(self, tx_file, **kwargs):
         kwargs.setdefault("broadcast_mode", "sync")
         kwargs.setdefault("output", "json")
-        return json.loads(
+        rsp = json.loads(
             self.raw("tx", "broadcast", tx_file, node=self.node_rpc, **kwargs)
+        )
+        if rsp["code"] == 0:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+    
+    def event_query_tx_for(self, hash):
+        return json.loads(
+            self.raw(
+                "query",
+                "event-query-tx-for",
+                hash,
+                "-y",
+                home=self.data_dir,
+            )
         )
 
     def broadcast_tx_json(self, tx, **kwargs):
