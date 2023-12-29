@@ -130,7 +130,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         if rsp["code"] == 0:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
-    
+
     def event_query_tx_for(self, hash):
         return json.loads(
             self.raw(
