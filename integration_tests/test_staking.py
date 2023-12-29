@@ -1,4 +1,3 @@
-import json
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -106,24 +105,12 @@ def test_staking_redelegate(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
     old_output = delegation_info["delegation_responses"][0]["balance"]["amount"]
-    cli = cluster.cosmos_cli()
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "staking",
-            "redelegate",
-            validator2_operator_address,
-            validator1_operator_address,
-            "2basecro",
-            "-y",
-            "--gas",
-            "300000",
-            home=cli.data_dir,
-            from_=signer1_address,
-            keyring_backend="test",
-            chain_id=cli.chain_id,
-            node=cli.node_rpc,
-        )
+    rsp = cluster.redelegate_amount(
+        validator1_operator_address,
+        validator2_operator_address,
+        "2basecro",
+        signer1_address,
+        gas="300000",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
@@ -132,7 +119,7 @@ def test_staking_redelegate(cluster):
 
 
 def test_join_validator(cluster):
-    i = cluster.create_node(moniker="new joined", broadcastmode="block")
+    i = cluster.create_node(moniker="new joined")
     addr = cluster.address("validator", i)
     # transfer 1cro from ecosystem account
     assert cluster.transfer(cluster.address("ecosystem"), addr, "1cro")["code"] == 0
@@ -170,7 +157,7 @@ def test_join_validator(cluster):
     assert (
         cluster.edit_validator(i, commission_rate="0.2")["code"] == 12
     ), "commission cannot be changed more than once in 24h"
-    assert edit_validator(cluster, i, new_moniker="awesome node")["code"] == 0
+    assert cluster.edit_validator(i, moniker="awesome node")["code"] == 0
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
 
 
@@ -207,43 +194,3 @@ def test_min_self_delegation(cluster):
     assert (
         find_validator()["status"] == "BOND_STATUS_UNBONDING"
     ), "validator get removed"
-
-
-# TODO: remove this when nix build issues with main branch of pystarport are resolved
-# https://github.com/crypto-org-chain/chain-main/runs/7209853743?check_suite_focus=true
-def edit_validator(
-    cluster,
-    i,
-    commission_rate=None,
-    new_moniker=None,
-    identity=None,
-    website=None,
-    security_contact=None,
-    details=None,
-):
-    cli = cluster.cosmos_cli(i)
-
-    """MsgEditValidator"""
-    options = dict(
-        commission_rate=commission_rate,
-        # description
-        new_moniker=new_moniker,
-        identity=identity,
-        website=website,
-        security_contact=security_contact,
-        details=details,
-    )
-    return json.loads(
-        cli.raw(
-            "tx",
-            "staking",
-            "edit-validator",
-            "-y",
-            from_=cli.address("validator"),
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            keyring_backend="test",
-            chain_id=cli.chain_id,
-            **{k: v for k, v in options.items() if v is not None},
-        )
-    )
