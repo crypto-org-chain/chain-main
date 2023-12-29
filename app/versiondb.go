@@ -39,7 +39,7 @@ func setupVersionDB(
 	service := versiondb.NewStreamingService(versionDB, exposeStoreKeys)
 	app.SetStreamingService(service)
 
-	verDB := versiondb.NewMultiStore(versionDB, exposeStoreKeys)
+	verDB := versiondb.NewMultiStore(app.CommitMultiStore(), versionDB, exposeStoreKeys)
 	verDB.MountTransientStores(tkeys)
 	verDB.MountMemoryStores(memKeys)
 
