@@ -220,19 +220,7 @@ class ClusterCLI(cluster.ClusterCLI):
         return self.cosmos_cli(i).gov_propose_legacy(proposer, kind, proposal, **kwargs)
 
     def transfer(self, from_, to, coins, i=0, generate_only=False, **kwargs):
-        rsp = self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)
-        if not generate_only and rsp["code"] == 0:
-            cli = self.cosmos_cli(i)
-            rsp = json.loads(
-                cli.raw(
-                    "query",
-                    "event-query-tx-for",
-                    rsp["txhash"],
-                    "-y",
-                    home=cli.data_dir,
-                )
-            )
-        return rsp
+        return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)
 
     def sign_batch_multisig_tx(self, *args, i=0, **kwargs):
         return self.cosmos_cli(i).sign_batch_multisig_tx(*args, **kwargs)
