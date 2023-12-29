@@ -275,7 +275,7 @@ def throw_error_for_non_success_code(func):
 
 @throw_error_for_non_success_code
 def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -290,13 +290,28 @@ def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
+
+
+def event_query_tx_for(cli, hash):
+    return json.loads(
+        cli.raw(
+            "query",
+            "event-query-tx-for",
+            hash,
+            "-y",
+            home=cli.data_dir,
+        )
+    )
 
 
 @throw_error_for_non_success_code
 def grant_authorization(
     cli, grantee, authorization_type, granter, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -310,13 +325,16 @@ def grant_authorization(
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def revoke_authorization(
     cli, grantee, msg_type, granter, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -330,6 +348,9 @@ def revoke_authorization(
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 def query_command(cli, *k_options, i=0, **kv_options):
