@@ -1,8 +1,8 @@
 package types
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cometbft/cometbft/crypto/ed25519"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // AccAddress returns a sample account address (for use in testing)
