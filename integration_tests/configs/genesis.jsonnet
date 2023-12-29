@@ -6,10 +6,8 @@
       },
     },
     gov: {
-      voting_params: {
+      params: {
         voting_period: '10s',
-      },
-      deposit_params: {
         max_deposit_period: '10s',
         min_deposit: [
           {
