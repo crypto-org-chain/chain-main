@@ -205,7 +205,7 @@ def find_balance(balances, denom):
 
 
 def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "bank",
@@ -222,10 +222,13 @@ def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "feegrant",
@@ -241,10 +244,13 @@ def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_opt
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "feegrant",
@@ -260,6 +266,9 @@ def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_option
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 def throw_error_for_non_success_code(func):
