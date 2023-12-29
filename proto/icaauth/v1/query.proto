@@ -1,5 +1,5 @@
 syntax = "proto3";
-package chainmain.icaauth.v1;
+package icaauth.v1;
 
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
