@@ -1,6 +1,6 @@
-import json
-
 import pytest
+
+from .utils import find_log_event_attrs
 
 pytestmark = pytest.mark.normal
 
@@ -14,9 +14,13 @@ def test_create_nft(cluster):
     singer1_addr = cluster.address("signer1")
     denomid = "testdenomid"
     denomname = "testdenomname"
-    response = cluster.create_nft(singer1_addr, denomid, denomname)
-    raw_log = json.loads(response["raw_log"])
-    assert raw_log[0]["events"][0]["type"] == "issue_denom"
+    rsp = cluster.create_nft(singer1_addr, denomid, denomname)
+    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    assert ev == {
+        "denom_id": denomid,
+        "denom_name": denomname,
+        "creator": singer1_addr,
+    }, ev
 
 
 def test_query_nft(cluster):
@@ -42,14 +46,9 @@ def test_create_nft_token(cluster):
     singer1_addr = cluster.address("signer1")
     singer2_addr = cluster.address("signer2")
     uri = "testuri"
-    response = cluster.create_nft_token(
-        singer1_addr, singer2_addr, denomid, tokenid, uri
-    )
-    raw_log = json.loads(response["raw_log"])
-    assert (
-        raw_log[0]["events"][0]["attributes"][0]["value"]
-        == "/chainmain.nft.v1.MsgMintNFT"
-    )
+    rsp = cluster.create_nft_token(singer1_addr, singer2_addr, denomid, tokenid, uri)
+    ev = find_log_event_attrs(rsp["logs"], "message")
+    assert ev["action"] == "/nft.v1.MsgMintNFT", ev
 
 
 def test_query_nft_token(cluster):
@@ -66,12 +65,9 @@ def test_transfer_nft_token(cluster):
     tokenid = "testtokenid"
     singer1_addr = cluster.address("signer1")
     singer2_addr = cluster.address("signer2")
-    response = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
-    raw_log = json.loads(response["raw_log"])
-    assert (
-        raw_log[0]["events"][0]["attributes"][0]["value"]
-        == "/chainmain.nft.v1.MsgTransferNFT"
-    )
+    rsp = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
+    ev = find_log_event_attrs(rsp["logs"], "message")
+    assert ev["action"] == "/nft.v1.MsgTransferNFT", ev
 
 
 def test_query_nft_token_again(cluster):
@@ -89,17 +85,24 @@ def test_edit_nft_token(cluster):
     singer1_addr = cluster.address("signer1")
     newuri = "newuri"
     newname = "newname"
-    response = cluster.edit_nft_token(singer1_addr, denomid, tokenid, newuri, newname)
-    raw_log = json.loads(response["raw_log"])
-    assert raw_log[0]["events"][0]["type"] == "edit_nft"
-    assert raw_log[0]["events"][0]["attributes"][2]["key"] == "token_uri"
-    assert raw_log[0]["events"][0]["attributes"][2]["value"] == newuri
+    rsp = cluster.edit_nft_token(singer1_addr, denomid, tokenid, newuri, newname)
+    ev = find_log_event_attrs(rsp["logs"], "edit_nft")
+    assert ev == {
+        "token_id": tokenid,
+        "denom_id": denomid,
+        "token_uri": newuri,
+        "owner": singer1_addr,
+    }, ev
 
 
 def test_burn_nft_token(cluster):
     denomid = "testdenomid"
     tokenid = "testtokenid"
     singer1_addr = cluster.address("signer1")
-    response = cluster.burn_nft_token(singer1_addr, denomid, tokenid)
-    raw_log = json.loads(response["raw_log"])
-    assert raw_log[0]["events"][0]["type"] == "burn_nft"
+    rsp = cluster.burn_nft_token(singer1_addr, denomid, tokenid)
+    ev = find_log_event_attrs(rsp["logs"], "burn_nft")
+    assert ev == {
+        "denom_id": denomid,
+        "token_id": tokenid,
+        "owner": singer1_addr,
+    }, ev
