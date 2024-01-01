@@ -111,7 +111,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             "chain_id": self.chain_id,
             "node": self.node_rpc,
         }
-        return json.loads(
+        rsp = json.loads(
             self.raw(
                 "tx",
                 "bank",
@@ -124,6 +124,9 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 **(default_kwargs | kwargs),
             )
         )
+        if not generate_only and rsp["code"] == 0:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
 
     def sign_tx(self, tx_file, signer):
         return json.loads(
