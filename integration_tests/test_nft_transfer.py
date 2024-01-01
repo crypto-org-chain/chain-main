@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from .ibc_utils import start_and_wait_relayer
-from .utils import cluster_fixture
+from .utils import cluster_fixture, find_log_event_attrs
 
 pytestmark = pytest.mark.ibc
 
@@ -68,9 +68,15 @@ def test_nft_transfer(cluster):
             node=cli_src.node_rpc,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli_src.event_query_tx_for(rsp["txhash"])
 
-    raw_log = json.loads(rsp["raw_log"])
-    assert raw_log[0]["events"][0]["type"] == "issue_denom"
+    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    assert ev == {
+        "denom_id": denomid,
+        "denom_name": denomname,
+        "creator": addr_src,
+    }, ev
 
     rsp = json.loads(
         cli_src.raw(
@@ -90,11 +96,10 @@ def test_nft_transfer(cluster):
         )
     )
 
-    raw_log = json.loads(rsp["raw_log"])
-    assert (
-        raw_log[0]["events"][0]["attributes"][0]["value"]
-        == "/chainmain.nft.v1.MsgMintNFT"
-    )
+    if rsp["code"] == 0:
+        rsp = cli_src.event_query_tx_for(rsp["txhash"])
+    ev = find_log_event_attrs(rsp["logs"], "message")
+    assert ev["action"] == "/nft.v1.MsgMintNFT", ev
 
     # nft transfer that's supposed to fail, exceeds max receiver length
     rsp = json.loads(
@@ -137,7 +142,8 @@ def test_nft_transfer(cluster):
             node=cli_src.node_rpc,
         )
     )
-
+    if rsp["code"] == 0:
+        rsp = cli_src.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
@@ -256,7 +262,8 @@ def test_nft_transfer(cluster):
             node=cli_mid.node_rpc,
         )
     )
-
+    if rsp["code"] == 0:
+        rsp = cli_mid.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
@@ -377,7 +384,8 @@ def test_nft_transfer(cluster):
             node=cli_dst.node_rpc,
         )
     )
-
+    if rsp["code"] == 0:
+        rsp = cli_dst.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
@@ -434,7 +442,8 @@ def test_nft_transfer(cluster):
             node=cli_mid.node_rpc,
         )
     )
-
+    if rsp["code"] == 0:
+        rsp = cli_mid.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
@@ -494,7 +503,8 @@ def test_nft_transfer(cluster):
             node=cli_src.node_rpc,
         )
     )
-
+    if rsp["code"] == 0:
+        rsp = cli_src.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # FIXME more stable way to wait for relaying
