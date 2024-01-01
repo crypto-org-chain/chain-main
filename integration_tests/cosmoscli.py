@@ -25,8 +25,9 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         return rsp
 
     def gov_propose_legacy(self, proposer, kind, proposal, no_validate=False, **kwargs):
+        kwargs.setdefault("broadcast_mode", "sync")
         if kind == "software-upgrade":
-            return json.loads(
+            rsp = json.loads(
                 self.raw(
                     "tx",
                     "gov",
@@ -48,10 +49,14 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     node=self.node_rpc,
                     keyring_backend="test",
                     chain_id=self.chain_id,
+                    **kwargs,
                 )
             )
+            if rsp["code"] == 0:
+                rsp = self.event_query_tx_for(rsp["txhash"])
+            return rsp
         elif kind == "cancel-software-upgrade":
-            return json.loads(
+            rsp = json.loads(
                 self.raw(
                     "tx",
                     "gov",
@@ -68,8 +73,12 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     node=self.node_rpc,
                     keyring_backend="test",
                     chain_id=self.chain_id,
+                    **kwargs,
                 )
             )
+            if rsp["code"] == 0:
+                rsp = self.event_query_tx_for(rsp["txhash"])
+            return rsp
         else:
             with tempfile.NamedTemporaryFile("w") as fp:
                 json.dump(proposal, fp)
@@ -88,6 +97,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         node=self.node_rpc,
                         keyring_backend="test",
                         chain_id=self.chain_id,
+                        **kwargs,
                     )
                 )
                 if rsp["code"] == 0:
