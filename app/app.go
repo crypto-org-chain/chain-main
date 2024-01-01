@@ -1,7 +1,7 @@
 package app
 
 import (
-	"errors"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,12 +23,16 @@ import (
 
 	// cosmos-sdk imports
 
+	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/client/grpc/tmservice"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
@@ -147,6 +151,7 @@ import (
 	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
 
 	memiavlstore "github.com/crypto-org-chain/cronos/store"
+	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
 
 // FIXME remove this line, dummy
@@ -210,7 +215,7 @@ var (
 )
 
 var (
-	_ App                     = (*ChainApp)(nil)
+	_ runtime.AppI            = (*ChainApp)(nil)
 	_ servertypes.Application = (*ChainApp)(nil)
 )
 
@@ -664,6 +669,13 @@ func New(
 		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, app.GetSubspace(authtypes.ModuleName)),
 	}
 	app.sm = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
+	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
+
+	reflectionSvc, err := runtimeservices.NewReflectionService()
+	if err != nil {
+		panic(err)
+	}
+	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
 	app.sm.RegisterStoreDecoders()
 
@@ -975,10 +987,11 @@ func StoreKeys() (
 
 // Close will be called in graceful shutdown in start cmd
 func (app *ChainApp) Close() error {
-	var err error
-	if cms, ok := app.CommitMultiStore().(io.Closer); ok {
-		err = cms.Close()
+	err := app.BaseApp.Close()
+
+	if cms, ok := app.CommitMultiStore().(*memiavlrootmulti.Store); ok {
+		return stderrors.Join(err, cms.Close())
 	}
 
-	return errors.Join(err, app.BaseApp.Close())
+	return err
 }
