@@ -406,7 +406,7 @@ func initGenFiles(
 	// set gov min_deposit in the genesis state
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
-	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom
+	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom //nolint:staticcheck
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state

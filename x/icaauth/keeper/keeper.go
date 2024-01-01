@@ -78,7 +78,7 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 
 	timeoutTimestamp := ctx.BlockTime().Add(timeoutDuration).UnixNano()
 
-	_, err = k.icaControllerKeeper.SendTx(ctx, nil, connectionID, portID, packetData, uint64(timeoutTimestamp))
+	_, err = k.icaControllerKeeper.SendTx(ctx, nil, connectionID, portID, packetData, uint64(timeoutTimestamp)) //nolint:staticcheck
 	if err != nil {
 		return err
 	}
