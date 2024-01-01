@@ -82,7 +82,7 @@ def test_sign_offline(cluster):
 
         signature_offline = offline_wallet.sign(tx.sign_doc.SerializeToString())
         signed_tx = tx.set_signatures(signature_offline).signed_tx
-        grpc_client.broadcast_transaction(signed_tx.SerializeToString())
+        grpc_client.broadcast_transaction(signed_tx.SerializeToString(), "sync")
         wait_for_new_blocks(cluster, 3)
 
         sender_balance_aft = grpc_client.query_account_balance(offline_addr)
