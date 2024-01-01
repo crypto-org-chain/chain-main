@@ -222,7 +222,7 @@ def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
-    if rsp["code"] == 0:
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
         rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
     return rsp
 
@@ -389,7 +389,7 @@ def query_block_info(cli, height, i=0):
 def delegate_amount(
     cli, validator_address, amount, from_, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -403,11 +403,14 @@ def delegate_amount(
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -421,13 +424,16 @@ def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_o
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def redelegate_amount(
     cli, src_validator, dst_validator, amount, from_, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -442,6 +448,9 @@ def redelegate_amount(
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
 
 
 def query_delegation_amount(cluster, delegator_address, validator_address):
@@ -477,7 +486,7 @@ def query_total_reward_amount(cluster, delegator_address, validator_address=""):
 
 @throw_error_for_non_success_code
 def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "distribution",
@@ -489,3 +498,6 @@ def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+    return rsp
