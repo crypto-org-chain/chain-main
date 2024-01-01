@@ -1,4 +1,5 @@
 import json
+import subprocess
 import tempfile
 
 import requests
@@ -6,6 +7,23 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
+    def submit_gov_proposal(self, proposal, **kwargs):
+        rsp = json.loads(
+            self.raw(
+                "tx",
+                "gov",
+                "submit-proposal",
+                proposal,
+                "-y",
+                home=self.data_dir,
+                stderr=subprocess.DEVNULL,
+                **kwargs,
+            )
+        )
+        if rsp["code"] == 0:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+
     def gov_propose_legacy(self, proposer, kind, proposal, no_validate=False, **kwargs):
         if kind == "software-upgrade":
             return json.loads(
@@ -56,7 +74,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             with tempfile.NamedTemporaryFile("w") as fp:
                 json.dump(proposal, fp)
                 fp.flush()
-                return json.loads(
+                rsp = json.loads(
                     self.raw(
                         "tx",
                         "gov",
@@ -72,6 +90,9 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         chain_id=self.chain_id,
                     )
                 )
+                if rsp["code"] == 0:
+                    rsp = self.event_query_tx_for(rsp["txhash"])
+                return rsp
 
     def transfer(self, from_, to, coins, generate_only=False, **kwargs):
         default_kwargs = {
@@ -200,6 +221,20 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
 
+    def query_params(self, mod):
+        kwargs = {
+            "node": self.node_rpc,
+            "output": "json",
+        }
+        return json.loads(
+            self.raw(
+                "q",
+                mod,
+                "params",
+                **kwargs,
+            )
+        )
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -216,6 +251,9 @@ class ClusterCLI(cluster.ClusterCLI):
             zemu_button_port=self.zemu_button_port,
         )
 
+    def submit_gov_proposal(self, proposer, i=0, **kwargs):
+        return self.cosmos_cli(i).submit_gov_proposal(proposer, **kwargs)
+
     def gov_propose_legacy(self, proposer, kind, proposal, i=0, **kwargs):
         return self.cosmos_cli(i).gov_propose_legacy(proposer, kind, proposal, **kwargs)
 
@@ -227,3 +265,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def query_host_params(self, i=0):
         return self.cosmos_cli(i).query_host_params()
+
+    def query_params(self, mod, i=0):
+        return self.cosmos_cli(i).query_params(mod)

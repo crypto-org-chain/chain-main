@@ -1,11 +1,15 @@
+import enum
+import hashlib
 import json
 import socket
 import sys
 import time
 
+import bech32
 from dateutil.parser import isoparse
 from pystarport import cluster, expansion, ledger
 from pystarport.ports import rpc_port
+from pystarport.utils import format_doc_string
 
 from .cosmoscli import ClusterCLI
 
@@ -58,6 +62,29 @@ GRANTS = "grants"
 
 # QUerying commands for distribution module
 REWARDS = "rewards"
+
+
+class ModuleAccount(enum.Enum):
+    FeeCollector = "fee_collector"
+    Mint = "mint"
+    Gov = "gov"
+    Distribution = "distribution"
+    BondedPool = "bonded_tokens_pool"
+    NotBondedPool = "not_bonded_tokens_pool"
+    IBCTransfer = "transfer"
+
+
+@format_doc_string(
+    options=",".join(v.value for v in ModuleAccount.__members__.values())
+)
+def module_address(name):
+    """
+    get address of module accounts
+
+    :param name: name of module account, values: {options}
+    """
+    data = hashlib.sha256(ModuleAccount(name).value.encode()).digest()[:20]
+    return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
 
 def wait_for_block(cli, height, timeout=240):
@@ -165,6 +192,15 @@ def parse_events(logs):
         ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
         for ev in logs[0]["events"]
     }
+
+
+def find_log_event_attrs(logs, ev_type, cond=None):
+    for ev in logs[0]["events"]:
+        if ev["type"] == ev_type:
+            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+            if cond is None or cond(attrs):
+                return attrs
+    return None
 
 
 _next_unique = 0

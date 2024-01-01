@@ -1,15 +1,21 @@
+import json
 from datetime import timedelta
 
 import pytest
 from dateutil.parser import isoparse
 
-from .utils import parse_events, wait_for_block, wait_for_block_time
+from .utils import (
+    find_log_event_attrs,
+    module_address,
+    wait_for_block,
+    wait_for_block_time,
+)
 
 pytestmark = pytest.mark.gov
 
 
 @pytest.mark.parametrize("vote_option", ["yes", "no", "no_with_veto", "abstain", None])
-def test_param_proposal(cluster, vote_option):
+def test_param_proposal(cluster, vote_option, tmp_path):
     """
     - send proposal to change max_validators
     - all validator vote same option (None means don't vote)
@@ -17,23 +23,7 @@ def test_param_proposal(cluster, vote_option):
     - check deposit refunded
     """
     max_validators = cluster.staking_params()["max_validators"]
-
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Increase number of max validators",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": max_validators + 1,
-                }
-            ],
-        },
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = change_max_validators(cluster, tmp_path, max_validators + 1)
     amount = approve_proposal(cluster, rsp, vote_option)
     new_max_validators = cluster.staking_params()["max_validators"]
     if vote_option == "yes":
@@ -49,14 +39,48 @@ def test_param_proposal(cluster, vote_option):
         assert cluster.balance(cluster.address("ecosystem")) == amount
 
 
-def approve_proposal(cluster, rsp, vote_option="yes"):
-    # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
-    proposal_id = ev["proposal_id"]
-    proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
+def change_max_validators(cluster, tmp_path, num, deposit="10000000basecro"):
+    params = cluster.staking_params()
+    params["max_validators"] = num
+    proposal = tmp_path / "proposal.json"
+    authority = module_address("gov")
+    proposal_src = {
+        "messages": [
+            {
+                "@type": "/cosmos.staking.v1beta1.MsgUpdateParams",
+                "authority": authority,
+                "params": params,
+            }
+        ],
+        "deposit": deposit,
+        "title": "Increase number of max validators",
+        "summary": "ditto",
+    }
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cluster.submit_gov_proposal(proposal, from_="community")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    return rsp
 
+
+def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
+    def cb(attrs):
+        return "proposal_id" in attrs
+
+    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
+    assert ev["proposal_messages"] == msg, rsp
+    return ev["proposal_id"]
+
+
+def approve_proposal(
+    cluster,
+    rsp,
+    vote_option="yes",
+    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+):
+    proposal_id = get_proposal_id(rsp, msg)
+    proposal = cluster.query_proposal(proposal_id)
+    if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
+        assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
     amount = cluster.balance(cluster.address("ecosystem"))
     rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -92,7 +116,7 @@ def approve_proposal(cluster, rsp, vote_option="yes"):
     return amount
 
 
-def test_deposit_period_expires(cluster):
+def test_deposit_period_expires(cluster, tmp_path):
     """
     - proposal and partially deposit
     - wait for deposit period end and check
@@ -100,40 +124,20 @@ def test_deposit_period_expires(cluster):
       - no refund
     """
     amount1 = cluster.balance(cluster.address("community"))
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Increase number of max validators",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
-            "deposit": "5000basecro",
-        },
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
-    proposal_id = ev["proposal_id"]
-
+    denom = "basecro"
+    deposit_amt = 5000
+    deposit = f"{deposit_amt}{denom}"
+    rsp = change_max_validators(cluster, tmp_path, 1, deposit)
+    proposal_id = get_proposal_id(rsp)
     proposal = cluster.query_proposal(proposal_id)
-    assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "5000"}]
-
-    assert cluster.balance(cluster.address("community")) == amount1 - 5000
-
+    assert proposal["total_deposit"] == [{"denom": denom, "amount": f"{deposit_amt}"}]
+    assert cluster.balance(cluster.address("community")) == amount1 - deposit_amt
     amount2 = cluster.balance(cluster.address("ecosystem"))
-
-    rsp = cluster.gov_deposit("ecosystem", proposal_id, "5000basecro")
+    rsp = cluster.gov_deposit("ecosystem", proposal_id, deposit)
     assert rsp["code"] == 0, rsp["raw_log"]
     proposal = cluster.query_proposal(proposal_id)
-    assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "10000"}]
-
-    assert cluster.balance(cluster.address("ecosystem")) == amount2 - 5000
+    assert proposal["total_deposit"] == [{"denom": denom, "amount": f"{deposit_amt*2}"}]
+    assert cluster.balance(cluster.address("ecosystem")) == amount2 - deposit_amt
 
     # wait for deposit period passed
     wait_for_block_time(
@@ -149,37 +153,37 @@ def test_deposit_period_expires(cluster):
     assert cluster.balance(cluster.address("ecosystem")) == amount2
 
 
-def test_community_pool_spend_proposal(cluster):
+def test_community_pool_spend_proposal(cluster, tmp_path):
     """
     - proposal a community pool spend
     - pass it
     """
-    # need at least several blocks to populate community pool
     wait_for_block(cluster, 3)
-
     amount = int(cluster.distribution_community())
     assert amount > 0, "need positive pool to proceed this test"
-
     recipient = cluster.address("community")
     old_amount = cluster.balance(recipient)
-
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "community-pool-spend",
-        {
-            "title": "Community Pool Spend",
-            "description": "Pay me some cro!",
-            "recipient": recipient,
-            "amount": "%dbasecro" % amount,
-            "deposit": "10000001basecro",
-        },
-    )
+    proposal = tmp_path / "proposal.json"
+    authority = module_address("gov")
+    msg = "/cosmos.distribution.v1beta1.MsgCommunityPoolSpend"
+    amt = [{"denom": "basecro", "amount": f"{amount}"}]
+    proposal_src = {
+        "messages": [
+            {
+                "@type": msg,
+                "authority": authority,
+                "recipient": recipient,
+                "amount": amt,
+            }
+        ],
+        "deposit": "10000001basecro",
+        "title": "Community Pool Spend",
+        "summary": "Pay me some cro!",
+    }
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-
-    # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
-    assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
-    proposal_id = ev["proposal_id"]
+    proposal_id = get_proposal_id(rsp, f",{msg}")
 
     # vote
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
@@ -193,14 +197,12 @@ def test_community_pool_spend_proposal(cluster):
     wait_for_block_time(
         cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=1)
     )
-
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
-
     assert cluster.balance(recipient) == old_amount + amount
 
 
-def test_change_vote(cluster):
+def test_change_vote(cluster, tmp_path):
     """
     - submit proposal with deposit
     - vote yes
@@ -208,44 +210,22 @@ def test_change_vote(cluster):
     - change vote
     - check tally
     """
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Increase number of max validators",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
-            "deposit": "10000000basecro",
-        },
-    )
+    rsp = change_max_validators(cluster, tmp_path, 1)
+    proposal_id = get_proposal_id(rsp)
+    rsp = cluster.gov_vote("validator", proposal_id, "yes")
     assert rsp["code"] == 0, rsp["raw_log"]
-
     voting_power = int(
         cluster.validator(cluster.address("validator", bech="val"))["tokens"]
     )
-
-    proposal_id = parse_events(rsp["logs"])["submit_proposal"]["proposal_id"]
-
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
-    assert rsp["code"] == 0, rsp["raw_log"]
-
     cluster.query_tally(proposal_id) == {
         "yes_count": str(voting_power),
         "no_count": "0",
         "abstain_count": "0",
         "no_with_veto_count": "0",
     }
-
     # change vote to no
     rsp = cluster.gov_vote("validator", proposal_id, "no")
     assert rsp["code"] == 0, rsp["raw_log"]
-
     cluster.query_tally(proposal_id) == {
         "no_count": str(voting_power),
         "yes_count": "0",
@@ -254,7 +234,7 @@ def test_change_vote(cluster):
     }
 
 
-def test_inherit_vote(cluster):
+def test_inherit_vote(cluster, tmp_path):
     """
     - submit proposal with deposits
     - A delegate to V
@@ -263,24 +243,8 @@ def test_inherit_vote(cluster):
     - A vote No
     - change tally: {yes: v, no: a}
     """
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Increase number of max validators",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "staking",
-                    "key": "MaxValidators",
-                    "value": 1,
-                }
-            ],
-            "deposit": "10000000basecro",
-        },
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    proposal_id = parse_events(rsp["logs"])["submit_proposal"]["proposal_id"]
+    rsp = change_max_validators(cluster, tmp_path, 1)
+    proposal_id = get_proposal_id(rsp)
 
     # non-validator voter
     voter1 = cluster.address("community")
@@ -328,6 +292,6 @@ def test_host_enabled(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp)
+    approve_proposal(cluster, rsp, msg=",/cosmos.gov.v1.MsgExecLegacyContent")
     p = cli.query_host_params()
     assert not p["host_enabled"]
