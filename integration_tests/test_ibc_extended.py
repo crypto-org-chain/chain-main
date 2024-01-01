@@ -72,4 +72,5 @@ def test_ibc_extended(cluster):
         new_src_balance = cluster["ibc-0"].balance(addr_0_signer, denom)
         return new_src_balance != old_src_balance
 
+    wait_for_fn("balance change", check_balance_change)
     assert new_src_balance == amt2 + old_src_balance, new_src_balance
