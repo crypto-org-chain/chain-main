@@ -70,6 +70,8 @@ def test_ica(cluster, tmp_path):
             chain_id=cli_controller.chain_id,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli_controller.event_query_tx_for(rsp["txhash"])
 
     assert rsp["code"] == 0, rsp["raw_log"]
 
