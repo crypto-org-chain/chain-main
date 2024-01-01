@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from .ibc_utils import start_and_wait_relayer
+from .ibc_utils import ibc_transfer_flow, start_and_wait_relayer
 from .utils import cluster_fixture
 
 pytestmark = pytest.mark.ibc
@@ -26,95 +26,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 def test_ibc(cluster):
     src_channel, dst_channel = start_and_wait_relayer(cluster)
-
-    # call chain-maind directly
-    raw = cluster["ibc-0"].cosmos_cli().raw
-
-    addr_0 = cluster["ibc-0"].address("relayer")
-    addr_1 = cluster["ibc-1"].address("relayer")
-
-    assert cluster["ibc-0"].balance(addr_0) == 10000000000
-    assert cluster["ibc-1"].balance(addr_1) == 10000000000
-
-    # do a transfer from ibc-0 to ibc-1
-    rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", addr_1, "10000basecro", src_channel, 1
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    # sender balance decreased
-    assert cluster["ibc-0"].balance(addr_0) == 9999990000
-    print("ibc transfer")
-    # FIXME more stable way to wait for relaying
-    time.sleep(10)
-    query_txs_0 = cluster["ibc-0"].query_all_txs(addr_0)
-    assert len(query_txs_0["txs"]) == 1
-    query_txs_1 = cluster["ibc-0"].query_all_txs(addr_1)
-    assert len(query_txs_1["txs"]) == 1
-    query_txs_2 = cluster["ibc-1"].query_all_txs(addr_1)
-    assert len(query_txs_2["txs"]) == 1
-
-    denom_hash = (
-        hashlib.sha256(f"transfer/{dst_channel}/basecro".encode()).hexdigest().upper()
-    )
-    assert json.loads(
-        raw(
-            "query",
-            "ibc-transfer",
-            "denom-trace",
-            denom_hash,
-            node=cluster["ibc-1"].node_rpc(0),
-            output="json",
-        )
-    ) == {"denom_trace": {"path": f"transfer/{dst_channel}", "base_denom": "basecro"}}
-    # recipient get the coins
-    assert json.loads(
-        raw(
-            "query",
-            "bank",
-            "balances",
-            addr_1,
-            node=cluster["ibc-1"].node_rpc(0),
-            output="json",
-        )
-    )["balances"] == [
-        {"denom": "basecro", "amount": "10000000000"},
-        {
-            "denom": f"ibc/{denom_hash}",
-            "amount": "10000",
-        },
-    ]
-
-    # transfer back
-    rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", addr_0, f"10000ibc/{denom_hash}", dst_channel, 0
-    )
-    print("ibc transfer back")
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # FIXME more stable way to wait for relaying
-    time.sleep(40)
-    query_txs_0 = cluster["ibc-0"].query_all_txs(addr_0)
-    assert len(query_txs_0["txs"]) == 2
-    query_txs_1 = cluster["ibc-1"].query_all_txs(addr_0)
-    assert len(query_txs_1["txs"]) == 1
-    query_txs_2 = cluster["ibc-1"].query_all_txs(addr_1)
-    assert len(query_txs_2["txs"]) == 2
-
-    # both accounts return to normal
-    for i, cli in enumerate(cluster.values()):
-        balances = json.loads(
-            raw(
-                "query",
-                "bank",
-                "balances",
-                cli.address("relayer"),
-                node=cli.node_rpc(0),
-                output="json",
-            )
-        )["balances"]
-        assert [bal for bal in balances if int(bal["amount"]) > 0] == [
-            {"amount": "10000000000", "denom": "basecro"},
-        ]
+    ibc_transfer_flow(cluster, src_channel, dst_channel)
 
 
 @pytest.mark.skip(reason="chain-id change don't has effect")

@@ -537,3 +537,13 @@ def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
         rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
     return rsp
+
+
+def wait_for_fn(name, fn, *, timeout=240, interval=1):
+    for i in range(int(timeout / interval)):
+        result = fn()
+        if result:
+            return result
+        time.sleep(interval)
+    else:
+        raise TimeoutError(f"wait for {name} timeout")
