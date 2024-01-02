@@ -1,7 +1,7 @@
 {
   accounts: [{
     name: 'community',
-    coins: '100cro,10000000000000000000000aphoton',
+    coins: '100cro',
   }, {
     name: 'ecosystem',
     coins: '200cro',
@@ -11,10 +11,10 @@
   }],
   signers: [{
     name: 'signer1',
-    coins: '10000cro,100000000000000000000000aphoton',
+    coins: '10000cro',
   }, {
     name: 'signer2',
-    coins: '2000cro,200000000000000000000000aphoton',
+    coins: '2000cro',
   }],
   reserves: [{
     name: 'reserve',

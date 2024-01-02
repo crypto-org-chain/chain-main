@@ -16,7 +16,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 proposal,
                 "-y",
                 home=self.data_dir,
-                stderr=subprocess.DEVNULL,
                 **kwargs,
             )
         )
