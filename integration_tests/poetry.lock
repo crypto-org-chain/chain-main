@@ -842,7 +842,7 @@ tomlkit = "^0.7.0"
 
 [package.source]
 type = "git"
-url = "https://github.com/crypto-com/pystarport.git"
+url = "https://github.com/mmsqe/pystarport.git"
 reference = "d808e2b377361c71aba613b2c12979ea5b7ce290"
 resolved_reference = "d808e2b377361c71aba613b2c12979ea5b7ce290"
 
@@ -1217,4 +1217,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "121f8c3c42dbbdc65b0cb93549b3c7c54a74c59e11b67ce37e18450db6d81f33"
+content-hash = "6c96d2f2c93f6fa6397da054f2e59dac29122288923b7dfabf7816b7716edc3a"

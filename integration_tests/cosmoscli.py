@@ -102,7 +102,15 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     rsp = self.event_query_tx_for(rsp["txhash"])
                 return rsp
 
-    def transfer(self, from_, to, coins, generate_only=False, **kwargs):
+    def transfer(
+        self,
+        from_,
+        to,
+        coins,
+        generate_only=False,
+        event_query_tx=True,
+        **kwargs,
+    ):
         default_kwargs = {
             "home": self.data_dir,
             "keyring_backend": "test",
@@ -122,7 +130,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 **(default_kwargs | kwargs),
             )
         )
-        if not generate_only and rsp["code"] == 0:
+        if not generate_only and rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 

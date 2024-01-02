@@ -167,9 +167,9 @@ def propose_and_pass(cluster, kind, proposal, cosmos_sdk_46=True, **kwargs):
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1, event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -308,7 +308,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     community_addr = cluster.address("community")
     reserve_addr = cluster.address("reserve")
     # for the fee payment
-    cluster.transfer(community_addr, reserve_addr, "10000basecro")
+    cluster.transfer(community_addr, reserve_addr, "10000basecro", event_query_tx=False)
 
     signer1_address = cluster.address("reserve", i=0)
     staking_validator1 = cluster.validator(validator1_operator_address, i=0)
@@ -322,11 +322,17 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
+        event_query_tx=False,
     )
     # vesting bug
     assert rsp["code"] != 0, rsp["raw_log"]
@@ -336,7 +342,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     upgrade(cluster, "v3.0.0", target_height, cosmos_sdk_46=False)
 
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
+        event_query_tx=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -367,7 +378,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert raw_log[0]["events"][0]["type"] == "issue_denom"
 
     target_height = cluster.block_height() + 30
-    upgrade(cluster, "v4.2.0", target_height, cosmos_sdk_46=False)
+    upgrade(cluster, "sdk47-upgrade", target_height, cosmos_sdk_46=False)
 
     cli = cluster.cosmos_cli()
 

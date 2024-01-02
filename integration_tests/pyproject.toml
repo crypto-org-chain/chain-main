@@ -19,7 +19,7 @@ pytest-github-actions-annotate-failures = "^0.1.7"
 protobuf = "^3.20.2"
 pyyaml = "^6.0.1"
 python-dateutil = "^2.8.1"
-pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main", rev = "d808e2b377361c71aba613b2c12979ea5b7ce290" }
+pystarport = { git = "https://github.com/mmsqe/pystarport.git", branch = "event_query_tx_for", rev = "d808e2b377361c71aba613b2c12979ea5b7ce290" }
 chainlibpy = "^2.2.0"
 
 # manually upgrade to make hatchling build success in poetry2nix
