@@ -89,11 +89,7 @@ func (k Keeper) SendTransfer(
 		return err
 	}
 
-	bz, err := packet.Marshal()
-	if err != nil {
-		return err
-	}
-	if _, err := k.ics4Wrapper.SendPacket(ctx, channelCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, bz); err != nil {
+	if _, err := k.ics4Wrapper.SendPacket(ctx, channelCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, packet.GetData()); err != nil {
 		return err
 	}
 
