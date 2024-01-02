@@ -128,7 +128,7 @@ jobs:
           flags: integration_tests_upgrade
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_upgrade.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_upgrade.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -166,7 +166,7 @@ jobs:
           flags: integration_tests_ledger
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_ledger.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_ledger.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -204,7 +204,7 @@ jobs:
           flags: integration_tests_solomachine
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_solomachine.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_solomachine.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -242,7 +242,7 @@ jobs:
           flags: integration_tests_slow
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_slow.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_slow.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -280,7 +280,7 @@ jobs:
           flags: integration_tests_ibc
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_ibc.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_ibc.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -318,7 +318,7 @@ jobs:
           flags: integration_tests_byzantine
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_byzantine.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_byzantine.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -356,7 +356,7 @@ jobs:
           flags: integration_tests_gov
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_gov.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_gov.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -395,7 +395,7 @@ jobs:
           flags: integration_tests_grpc
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_grpc.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_grpc.tar.gz -C $TMPDIR/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
