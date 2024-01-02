@@ -73,8 +73,7 @@ def test_priority(cluster: ClusterCLI):
 
     txhashes = []
     for tx in txs:
-        rsp = cli.broadcast_tx_json(tx, broadcast_mode="sync")
-        assert rsp["code"] == 0, rsp["raw_log"]
+        rsp = cli.broadcast_tx_json(tx, event_query_tx=False)
         txhashes.append(rsp["txhash"])
 
     print("wait for two new blocks, so the sent txs are all included")

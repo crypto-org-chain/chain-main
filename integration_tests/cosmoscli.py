@@ -153,13 +153,13 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             fp.flush()
             return self.sign_tx(fp.name, signer)
 
-    def broadcast_tx(self, tx_file, **kwargs):
+    def broadcast_tx(self, tx_file, event_query_tx=True, **kwargs):
         kwargs.setdefault("broadcast_mode", "sync")
         kwargs.setdefault("output", "json")
         rsp = json.loads(
             self.raw("tx", "broadcast", tx_file, node=self.node_rpc, **kwargs)
         )
-        if rsp["code"] == 0:
+        if event_query_tx and rsp["code"] == 0:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -174,11 +174,11 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
 
-    def broadcast_tx_json(self, tx, **kwargs):
+    def broadcast_tx_json(self, tx, event_query_tx=True, **kwargs):
         with tempfile.NamedTemporaryFile("w") as fp:
             json.dump(tx, fp)
             fp.flush()
-            return self.broadcast_tx(fp.name, **kwargs)
+            return self.broadcast_tx(fp.name, event_query_tx, **kwargs)
 
     def tx_search_rpc(self, events: str):
         node_rpc_http = "http" + self.node_rpc.removeprefix("tcp")
