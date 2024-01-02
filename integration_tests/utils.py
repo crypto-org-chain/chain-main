@@ -203,6 +203,15 @@ def find_log_event_attrs(logs, ev_type, cond=None):
     return None
 
 
+def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
+    def cb(attrs):
+        return "proposal_id" in attrs
+
+    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
+    assert ev["proposal_messages"] == msg, rsp
+    return ev["proposal_id"]
+
+
 _next_unique = 0
 
 

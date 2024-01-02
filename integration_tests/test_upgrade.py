@@ -13,6 +13,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     cluster_fixture,
+    get_proposal_id,
     parse_events,
     wait_for_block,
     wait_for_block_time,
@@ -140,7 +141,7 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwargs):
+def propose_and_pass(cluster, kind, proposal, cosmos_sdk_46=True, **kwargs):
     if cosmos_sdk_46:
         rsp = cluster.gov_propose_legacy(
             "community",
@@ -156,15 +157,13 @@ def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwarg
             **kwargs,
         )
     assert rsp["code"] == 0, rsp["raw_log"]
-
     # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
     if cosmos_sdk_46:
-        assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
+        proposal_id = get_proposal_id(rsp, ",/cosmos.gov.v1.MsgExecLegacyContent")
     else:
+        ev = parse_events(rsp["logs"])["submit_proposal"]
         assert ev["proposal_type"] == "SoftwareUpgrade", rsp
-    proposal_id = ev["proposal_id"]
-
+        proposal_id = ev["proposal_id"]
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
@@ -189,7 +188,6 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
     propose_and_pass(
         cluster,
         "software-upgrade",
-        "SoftwareUpgrade",
         {
             "name": plan_name,
             "title": "upgrade test",
@@ -436,7 +434,6 @@ def test_cancel_upgrade(cluster):
     propose_and_pass(
         cluster,
         "software-upgrade",
-        "SoftwareUpgrade",
         {
             "name": plan_name,
             "title": "upgrade test",
@@ -451,7 +448,6 @@ def test_cancel_upgrade(cluster):
     propose_and_pass(
         cluster,
         "cancel-software-upgrade",
-        "CancelSoftwareUpgrade",
         {
             "title": "there is bug, cancel upgrade",
             "description": "there is bug, cancel upgrade",

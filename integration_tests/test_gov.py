@@ -4,12 +4,7 @@ from datetime import timedelta
 import pytest
 from dateutil.parser import isoparse
 
-from .utils import (
-    find_log_event_attrs,
-    module_address,
-    wait_for_block,
-    wait_for_block_time,
-)
+from .utils import get_proposal_id, module_address, wait_for_block, wait_for_block_time
 
 pytestmark = pytest.mark.gov
 
@@ -60,15 +55,6 @@ def change_max_validators(cluster, tmp_path, num, deposit="10000000basecro"):
     rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
     return rsp
-
-
-def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
-    def cb(attrs):
-        return "proposal_id" in attrs
-
-    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
-    assert ev["proposal_messages"] == msg, rsp
-    return ev["proposal_id"]
 
 
 def approve_proposal(
