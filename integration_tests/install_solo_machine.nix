@@ -12,6 +12,11 @@ let
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/macos-latest-${version}.tar.gz";
       sha256 = "sha256-zx4342stMYzgQDXAKwnZKSfdLynGIApOFKZ+CjRCyaE=";
     };
+    aarch64-darwin = {
+      url =
+        "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/macos-latest-${version}.tar.gz";
+      sha256 = "sha256-zx4342stMYzgQDXAKwnZKSfdLynGIApOFKZ+CjRCyaE=";
+    };
   }.${stdenv.system} or (throw
     "Unsupported system: ${stdenv.system}");
 in
