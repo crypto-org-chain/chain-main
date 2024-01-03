@@ -268,7 +268,7 @@ def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
         )
     )
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -290,7 +290,7 @@ def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_opt
         )
     )
     if rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -312,7 +312,7 @@ def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_option
         )
     )
     if rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -345,20 +345,8 @@ def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
         )
     )
     if rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
-
-
-def event_query_tx_for(cli, hash):
-    return json.loads(
-        cli.raw(
-            "query",
-            "event-query-tx-for",
-            hash,
-            "-y",
-            home=cli.data_dir,
-        )
-    )
 
 
 @throw_error_for_non_success_code
@@ -380,7 +368,7 @@ def grant_authorization(
         )
     )
     if rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -403,7 +391,7 @@ def revoke_authorization(
         )
     )
     if rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -449,7 +437,7 @@ def delegate_amount(
         )
     )
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -470,7 +458,7 @@ def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_o
         )
     )
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -494,7 +482,7 @@ def redelegate_amount(
         )
     )
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 
@@ -544,7 +532,7 @@ def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
         )
     )
     if GENERATE_ONLY not in k_options and rsp["code"] == 0:
-        rsp = event_query_tx_for(cli.cosmos_cli(i), rsp["txhash"])
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
     return rsp
 
 

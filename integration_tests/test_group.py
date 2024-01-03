@@ -7,18 +7,6 @@ from .utils import parse_events
 pytestmark = pytest.mark.normal
 
 
-def event_query_tx_for(cli, rsp):
-    return json.loads(
-        cli.raw(
-            "query",
-            "event-query-tx-for",
-            rsp["txhash"],
-            "-y",
-            home=cli.data_dir,
-        )
-    )
-
-
 def test_group(cluster, tmp_path):
     cli = cluster.cosmos_cli()
 
@@ -57,7 +45,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = event_query_tx_for(cli, rsp)
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
 
     # Get group id from events
     evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroup"]
@@ -93,7 +81,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = event_query_tx_for(cli, rsp)
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
     evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroupPolicy"]
     group_policy_address = evt["address"].strip('"')
 
@@ -134,7 +122,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = event_query_tx_for(cli, rsp)
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
     evt = parse_events(rsp["logs"])["cosmos.group.v1.EventSubmitProposal"]
     proposal_id = evt["proposal_id"]
 
@@ -158,7 +146,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    event_query_tx_for(cli, rsp)
+    cluster.event_query_tx_for(rsp["txhash"])
     rsp = json.loads(
         cli.raw(
             "tx",
@@ -178,7 +166,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    event_query_tx_for(cli, rsp)
+    cluster.event_query_tx_for(rsp["txhash"])
     # query proposal votes
     rsp = json.loads(
         cli.raw(
@@ -216,7 +204,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = event_query_tx_for(cli, rsp)
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
     # check if the proposal executed successfully
     evt = parse_events(rsp["logs"])["cosmos.group.v1.EventExec"]
     assert evt["result"].strip('"') == "PROPOSAL_EXECUTOR_RESULT_SUCCESS"

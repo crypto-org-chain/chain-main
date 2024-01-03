@@ -23,7 +23,8 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         return rsp
 
     def gov_propose_legacy(self, proposer, kind, proposal, no_validate=False, **kwargs):
-        kwargs.setdefault("broadcast_mode", "sync")
+        mode = kwargs.get("broadcast_mode", "block")
+        event_query_tx = mode != "block"
         if kind == "software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -50,7 +51,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0:
+            if rsp["code"] == 0 and event_query_tx:
                 rsp = self.event_query_tx_for(rsp["txhash"])
             return rsp
         elif kind == "cancel-software-upgrade":
@@ -74,7 +75,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0:
+            if rsp["code"] == 0 and event_query_tx:
                 rsp = self.event_query_tx_for(rsp["txhash"])
             return rsp
         else:
@@ -98,7 +99,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         **kwargs,
                     )
                 )
-                if rsp["code"] == 0:
+                if rsp["code"] == 0 and event_query_tx:
                     rsp = self.event_query_tx_for(rsp["txhash"])
                 return rsp
 
@@ -170,17 +171,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         if event_query_tx and rsp["code"] == 0:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
-
-    def event_query_tx_for(self, hash):
-        return json.loads(
-            self.raw(
-                "query",
-                "event-query-tx-for",
-                hash,
-                "-y",
-                home=self.data_dir,
-            )
-        )
 
     def broadcast_tx_json(self, tx, event_query_tx=True, **kwargs):
         with tempfile.NamedTemporaryFile("w") as fp:
