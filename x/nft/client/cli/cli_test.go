@@ -154,7 +154,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
-	txResp = s.eventQueryTxFor(val, txResp.TxHash)
+	s.eventQueryTxFor(val, txResp.TxHash)
 
 	//------test GetCmdQuerySupply()-------------
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
@@ -215,7 +215,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
-	txResp = s.eventQueryTxFor(val, txResp.TxHash)
+	s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.BaseNFT{})
 	bz, err = nfttestutil.QueryNFTExec(val.ClientCtx, denomID, tokenID)
@@ -242,7 +242,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
-	txResp = s.eventQueryTxFor(val, txResp.TxHash)
+	s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.BaseNFT{})
 	bz, err = nfttestutil.QueryNFTExec(val.ClientCtx, denomID, tokenID)
@@ -275,7 +275,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
-	txResp = s.eventQueryTxFor(val, txResp.TxHash)
+	s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
 	bz, err = nfttestutil.QuerySupplyExec(val.ClientCtx, denomID)
@@ -295,7 +295,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val2.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
-	txResp = s.eventQueryTxFor(val, txResp.TxHash)
+	s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
 	bz, err = nfttestutil.QuerySupplyExec(val.ClientCtx, denomID)

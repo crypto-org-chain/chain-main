@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	newsdkerrors "cosmossdk.io/errors"
-	bam "github.com/cosmos/cosmos-sdk/baseapp"
 	baseapp "github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -338,7 +337,7 @@ func CheckBalance(t *testing.T, app *ChainApp, addr sdk.AccAddress, balances sdk
 // the parameter 'expPass' against the result. A corresponding result is
 // returned.
 func SignCheckDeliver(
-	t *testing.T, txCfg client.TxConfig, app *bam.BaseApp, header tmproto.Header, msgs []sdk.Msg,
+	t *testing.T, txCfg client.TxConfig, app *baseapp.BaseApp, header tmproto.Header, msgs []sdk.Msg,
 	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
 
