@@ -147,7 +147,7 @@ def propose_and_pass(cluster, kind, proposal, cosmos_sdk_47=True, **kwargs):
             "community",
             kind,
             proposal,
-            mode="sync",
+            broadcast_mode="sync",
             **kwargs,
         )
     else:
