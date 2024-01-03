@@ -34,6 +34,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	s.T().Log("setting up integration test suite")
 
 	cfg := network.DefaultConfig(simapp.NewTestNetworkFixture)
+	cfg.ChainID = app.TestAppChainID
 	cfg.AppConstructor = nfttestutil.GetApp
 	cfg.NumValidators = 2
 

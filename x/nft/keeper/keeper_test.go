@@ -62,15 +62,14 @@ type KeeperSuite struct {
 
 func (suite *KeeperSuite) SetupTest() {
 
-	app := app.Setup(suite.T(), isCheckTx)
+	a := app.Setup(suite.T(), isCheckTx)
+	suite.app = a
+	suite.legacyAmino = a.LegacyAmino()
+	suite.ctx = a.BaseApp.NewContext(isCheckTx, tmproto.Header{ChainID: app.TestAppChainID})
+	suite.keeper = a.NFTKeeper
 
-	suite.app = app
-	suite.legacyAmino = app.LegacyAmino()
-	suite.ctx = app.BaseApp.NewContext(isCheckTx, tmproto.Header{})
-	suite.keeper = app.NFTKeeper
-
-	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, app.NFTKeeper)
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, a.InterfaceRegistry())
+	types.RegisterQueryServer(queryHelper, a.NFTKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
 	err := suite.keeper.IssueDenom(suite.ctx, denomID, denomNm, schema, "", address)

@@ -32,6 +32,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
+		baseapp.SetChainID(app.TestAppChainID),
 	)
 }
 
