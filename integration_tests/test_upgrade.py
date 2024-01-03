@@ -13,6 +13,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     cluster_fixture,
+    find_log_event_attrs,
     get_proposal_id,
     parse_events,
     wait_for_block,
@@ -348,7 +349,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
-        event_query_tx=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -360,24 +360,16 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # create denom before upgrade
     cli = cluster.cosmos_cli()
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "nft",
-            "issue",
-            "testdenomid",
-            "-y",
-            name="testdenomname",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            output="json",
-            from_="community",
-            keyring_backend="test",
-            chain_id=cli.chain_id,
-        )
-    )
-    raw_log = json.loads(rsp["raw_log"])
-    assert raw_log[0]["events"][0]["type"] == "issue_denom"
+    denomid = "testdenomid"
+    denomname = "testdenomname"
+    creator = cluster.address("community")
+    rsp = cluster.create_nft(creator, denomid, denomname)
+    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    assert ev == {
+        "denom_id": denomid,
+        "denom_name": denomname,
+        "creator": creator,
+    }, ev
 
     target_height = cluster.block_height() + 30
     upgrade(cluster, "sdk47-upgrade", target_height, cosmos_sdk_47=False)
@@ -385,19 +377,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     cli = cluster.cosmos_cli()
 
     # check denom after upgrade
-    rsp = json.loads(
-        cli.raw(
-            "query",
-            "nft",
-            "denom",
-            "testdenomid",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            output="json",
-        )
-    )
-
-    assert rsp["name"] == "testdenomname", rsp
+    rsp = cluster.query_nft(denomid)
+    assert rsp["name"] == denomname, rsp
     assert rsp["uri"] == "", rsp
 
     # check icaauth params
