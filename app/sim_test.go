@@ -76,7 +76,7 @@ func TestFullAppSimulation(t *testing.T) {
 		require.NoError(t, os.RemoveAll(dir))
 	}()
 	app := New(logger, db, nil, true, map[int64]bool{},
-		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
 	require.Equal(t, "chain-maind", app.Name())
 
 	// run randomized simulation
@@ -118,7 +118,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -160,7 +160,7 @@ func TestAppImportExport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		newDir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		newDir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	var genesisState GenesisState
@@ -192,7 +192,7 @@ func TestAppImportExport(t *testing.T) {
 			app.keys[stakingtypes.StoreKey], newApp.keys[stakingtypes.StoreKey],
 			[][]byte{
 				stakingtypes.UnbondingQueueKey, stakingtypes.RedelegationQueueKey, stakingtypes.ValidatorQueueKey,
-				stakingtypes.HistoricalInfoKey,
+				stakingtypes.HistoricalInfoKey, stakingtypes.UnbondingIDKey, stakingtypes.UnbondingIndexKey, stakingtypes.UnbondingTypeKey, stakingtypes.ValidatorUpdatesKey,
 			},
 		}, // ordering may change but it doesn't matter
 		{app.keys[slashingtypes.StoreKey], newApp.keys[slashingtypes.StoreKey], [][]byte{}},
@@ -237,7 +237,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	app := New(logger, db, nil, true, map[int64]bool{},
-		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		dir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
 	require.Equal(t, "chain-maind", app.Name())
 
 	// Run randomized simulation
@@ -284,7 +284,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	}()
 
 	newApp := New(log.NewNopLogger(), newDB, nil, true, map[int64]bool{},
-		newDir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt)
+		newDir, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, fauxMerkleModeOpt, baseapp.SetChainID(SimAppChainID))
 	require.Equal(t, "chain-maind", newApp.Name())
 
 	newApp.InitChain(abci.RequestInitChain{
@@ -338,7 +338,7 @@ func TestAppStateDeterminism(t *testing.T) {
 
 			db := dbm.NewMemDB()
 			app := New(logger, db, nil, true, map[int64]bool{},
-				simapp.DefaultNodeHome, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, interBlockCacheOpt())
+				simapp.DefaultNodeHome, simcli.FlagPeriodValue, MakeEncodingConfig(), EmptyAppOptions{}, interBlockCacheOpt(), baseapp.SetChainID(SimAppChainID))
 
 			fmt.Printf(
 				"running non-determinism simulation; seed %d: %d/%d, attempt: %d/%d\n",
