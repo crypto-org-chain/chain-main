@@ -349,6 +349,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
+        event_query_tx=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
