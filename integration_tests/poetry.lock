@@ -843,8 +843,8 @@ tomlkit = "^0.7.0"
 [package.source]
 type = "git"
 url = "https://github.com/mmsqe/pystarport.git"
-reference = "591b052ea8d202cd0f710eba4ba327f2abeb8609"
-resolved_reference = "591b052ea8d202cd0f710eba4ba327f2abeb8609"
+reference = "c19b101e636661446153ec95d780d032f81001a8"
+resolved_reference = "c19b101e636661446153ec95d780d032f81001a8"
 
 [[package]]
 name = "pytest"
@@ -1217,4 +1217,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "651878a5c4b3157430ded2f1710a2bee543caa0f3867d40ab4ceb55437ebf18d"
+content-hash = "338e604a07403fbe2a499b2197b5315859ed356db1e5fec7e29e86f87372c997"

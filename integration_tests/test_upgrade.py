@@ -364,7 +364,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomid = "testdenomid"
     denomname = "testdenomname"
     creator = cluster.address("community")
-    rsp = cluster.create_nft(creator, denomid, denomname)
+    rsp = cluster.create_nft(creator, denomid, denomname, event_query_tx=False)
+    print("mm-rsp", rsp)
     ev = find_log_event_attrs(rsp["logs"], "issue_denom")
     assert ev == {
         "denom_id": denomid,
