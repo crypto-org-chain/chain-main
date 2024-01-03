@@ -13,6 +13,8 @@ import (
 	"cosmossdk.io/simapp"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/rpc"
+	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -58,6 +60,14 @@ func TestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IntegrationTestSuite))
 }
 
+func (s *IntegrationTestSuite) eventQueryTxFor(val *network.Validator, hash string) *sdk.TxResponse {
+	bz, err := clitestutil.ExecTestCLICmd(val.ClientCtx, rpc.QueryEventForTxCmd(), []string{hash})
+	s.Require().NoError(err)
+	respType := proto.Message(&sdk.TxResponse{})
+	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
+	return respType.(*sdk.TxResponse)
+}
+
 func (s *IntegrationTestSuite) TestNft() {
 	val := s.network.Validators[0]
 	val2 := s.network.Validators[1]
@@ -93,8 +103,9 @@ func (s *IntegrationTestSuite) TestNft() {
 	txResp := respType.(*sdk.TxResponse)
 
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
-	denomID := gjson.Get(txResp.RawLog, "0.events.0.attributes.0.value").String()
+	denomID := gjson.Get(txResp.RawLog, "0.events.1.attributes.0.value").String()
 
 	//------test GetCmdQueryDenom()-------------
 	respType = proto.Message(&nfttypes.Denom{})
@@ -143,6 +154,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
 	//------test GetCmdQuerySupply()-------------
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
@@ -203,6 +215,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.BaseNFT{})
 	bz, err = nfttestutil.QueryNFTExec(val.ClientCtx, denomID, tokenID)
@@ -229,6 +242,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.BaseNFT{})
 	bz, err = nfttestutil.QueryNFTExec(val.ClientCtx, denomID, tokenID)
@@ -261,6 +275,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
 	bz, err = nfttestutil.QuerySupplyExec(val.ClientCtx, denomID)
@@ -280,6 +295,7 @@ func (s *IntegrationTestSuite) TestNft() {
 	s.Require().NoError(val2.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	txResp = respType.(*sdk.TxResponse)
 	s.Require().Equal(expectedCode, txResp.Code)
+	txResp = s.eventQueryTxFor(val, txResp.TxHash)
 
 	respType = proto.Message(&nfttypes.QuerySupplyResponse{})
 	bz, err = nfttestutil.QuerySupplyExec(val.ClientCtx, denomID)
