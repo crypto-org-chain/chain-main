@@ -422,6 +422,8 @@ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7Do
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20231011055109-57922ac52a63 h1:R1QJ9a3XdYMSKo+1RdFifxb/g3lNypC52L/rpYrWoKo=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20231011055109-57922ac52a63/go.mod h1:rocwIfnS+kA060x64gkSIRvWB9StSppIkJuo5MWzL24=
+github.com/crypto-org-chain/cosmos-sdk v0.46.0-beta2.0.20240103063449-c887e863fae2 h1:z3LXxlOuRHfRuS6LpA3t9eSaekHmzsdrrDkaXP8UEeU=
+github.com/crypto-org-chain/cosmos-sdk v0.46.0-beta2.0.20240103063449-c887e863fae2/go.mod h1:hljXsedSCJYge78hyaMYy+yzDQVGZtKAZBjZn5QMddk=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20231225065237-42f2597fca49 h1:gxeIn0Hqmwl9sRV3YI0Jd/4A33LaOPoe/yfDWos4FEg=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20231225065237-42f2597fca49/go.mod h1:b2P7ilsxOWAhl9augFxBeRVeqecnQtzqfzpqsglj5ik=
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20231225065237-42f2597fca49 h1:z/qWzVeCuLngCM+BCWZfVfmlwUw2Z35aGxn8X6Gpgkw=
@@ -924,8 +926,6 @@ github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/pointerstructure v1.2.0/go.mod h1:BRAsLI5zgXmw97Lf6s25bs8ohIXc3tViBH44KcwB2g4=
-github.com/mmsqe/cosmos-sdk v0.47.0-rc1.0.20240103013703-93556bdf8bf9 h1:mFIGNOQ4G52XYYcG0zWzq9+uvPiPGMa89jzFyoU1Nis=
-github.com/mmsqe/cosmos-sdk v0.47.0-rc1.0.20240103013703-93556bdf8bf9/go.mod h1:hljXsedSCJYge78hyaMYy+yzDQVGZtKAZBjZn5QMddk=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
