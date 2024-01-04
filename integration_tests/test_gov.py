@@ -276,7 +276,6 @@ def test_host_enabled(cluster):
                 }
             ],
         },
-        broadcast_mode="sync",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     approve_proposal(cluster, rsp, msg=",/cosmos.gov.v1.MsgExecLegacyContent")

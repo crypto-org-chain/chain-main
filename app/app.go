@@ -568,6 +568,9 @@ func New(
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 	)
+	app.mm.SetOrderPreBlockers(
+		upgradetypes.ModuleName,
+	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
 	// there is nothing left over in the validator fee pool, so as to keep the
@@ -696,6 +699,7 @@ func New(
 
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
@@ -767,6 +771,11 @@ func (app *ChainApp) setPostHandler() {
 
 // Name returns the name of the App
 func (app *ChainApp) Name() string { return app.BaseApp.Name() }
+
+// PreBlocker updates every pre begin block
+func (app *ChainApp) PreBlocker(ctx sdk.Context, req abci.RequestBeginBlock) (sdk.ResponsePreBlock, error) {
+	return app.mm.PreBlock(ctx, req)
+}
 
 // BeginBlocker application updates every begin block
 func (app *ChainApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) abci.ResponseBeginBlock {

@@ -22,9 +22,15 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
-    def gov_propose_legacy(self, proposer, kind, proposal, no_validate=False, **kwargs):
-        mode = kwargs.get("broadcast_mode", "block")
-        event_query_tx = mode != "block"
+    def gov_propose_legacy(
+        self,
+        proposer,
+        kind,
+        proposal,
+        no_validate=False,
+        event_query_tx=True,
+        **kwargs,
+    ):
         if kind == "software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -41,7 +47,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     description=proposal.get("description"),
                     upgrade_height=proposal.get("upgrade-height"),
                     upgrade_time=proposal.get("upgrade-time"),
-                    upgrade_info=proposal.get("upgrade-info"),
+                    upgrade_info=proposal.get("upgrade-info", "info"),
                     deposit=proposal.get("deposit"),
                     # basic
                     home=self.data_dir,
@@ -263,8 +269,24 @@ class ClusterCLI(cluster.ClusterCLI):
     def submit_gov_proposal(self, proposer, i=0, **kwargs):
         return self.cosmos_cli(i).submit_gov_proposal(proposer, **kwargs)
 
-    def gov_propose_legacy(self, proposer, kind, proposal, i=0, **kwargs):
-        return self.cosmos_cli(i).gov_propose_legacy(proposer, kind, proposal, **kwargs)
+    def gov_propose_legacy(
+        self,
+        proposer,
+        kind,
+        proposal,
+        i=0,
+        no_validate=False,
+        event_query_tx=True,
+        **kwargs,
+    ):
+        return self.cosmos_cli(i).gov_propose_legacy(
+            proposer,
+            kind,
+            proposal,
+            no_validate,
+            event_query_tx,
+            **kwargs,
+        )
 
     def transfer(self, from_, to, coins, i=0, generate_only=False, **kwargs):
         return self.cosmos_cli(i).transfer(from_, to, coins, generate_only, **kwargs)

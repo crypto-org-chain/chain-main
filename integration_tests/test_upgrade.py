@@ -142,13 +142,21 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(cluster, kind, proposal, cosmos_sdk_47=True, **kwargs):
-    if cosmos_sdk_47:
+def propose_and_pass(
+    cluster,
+    kind,
+    proposal,
+    propose_legacy=True,
+    event_query_tx=True,
+    **kwargs,
+):
+    if propose_legacy:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
-            broadcast_mode="sync",
+            no_validate=True,
+            event_query_tx=event_query_tx,
             **kwargs,
         )
     else:
@@ -160,20 +168,23 @@ def propose_and_pass(cluster, kind, proposal, cosmos_sdk_47=True, **kwargs):
         )
     assert rsp["code"] == 0, rsp["raw_log"]
     # get proposal_id
-    if cosmos_sdk_47:
+    if propose_legacy:
         proposal_id = get_proposal_id(rsp, ",/cosmos.gov.v1.MsgExecLegacyContent")
     else:
         ev = parse_events(rsp["logs"])["submit_proposal"]
         assert ev["proposal_type"] == "SoftwareUpgrade", rsp
         proposal_id = ev["proposal_id"]
     proposal = cluster.query_proposal(proposal_id)
-    print("mm-proposal", proposal)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
-    wait = cosmos_sdk_47
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=wait)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1, event_query_tx=wait)
-    assert rsp["code"] == 0, rsp["raw_log"]
+    for i in range(2):
+        rsp = cluster.gov_vote(
+            "validator",
+            proposal_id,
+            "yes",
+            i=i,
+            event_query_tx=event_query_tx,
+        )
+        assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
     wait_for_block_time(
@@ -185,9 +196,8 @@ def propose_and_pass(cluster, kind, proposal, cosmos_sdk_47=True, **kwargs):
     return proposal
 
 
-def upgrade(cluster, plan_name, target_height, cosmos_sdk_47=True):
+def upgrade(cluster, plan_name, target_height, propose_legacy=True):
     print("upgrade height", target_height)
-
     propose_and_pass(
         cluster,
         "software-upgrade",
@@ -198,7 +208,8 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_47=True):
             "upgrade-height": target_height,
             "deposit": "0.1cro",
         },
-        cosmos_sdk_47,
+        propose_legacy=propose_legacy,
+        event_query_tx=False,
     )
 
     # wait for upgrade plan activated
@@ -217,14 +228,14 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_47=True):
     )
 
     # check upgrade-info.json file is written
-    assert (
-        json.load((cluster.home(0) / "data/upgrade-info.json").open())
-        == json.load((cluster.home(1) / "data/upgrade-info.json").open())
-        == {
-            "name": plan_name,
-            "height": target_height,
-        }
-    )
+    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
+    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
+    expected = {
+        "name": plan_name,
+        "height": target_height,
+    }
+    assert js1 == js2
+    assert expected.items() <= js1.items()
 
     # use the upgrade-test binary
     edit_chain_program(
@@ -269,7 +280,7 @@ def test_manual_upgrade(cosmovisor_cluster):
     wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
 
-    upgrade(cluster, "v2.0.0", target_height, cosmos_sdk_47=False)
+    upgrade(cluster, "v2.0.0", target_height, propose_legacy=False)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
@@ -342,7 +353,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert cluster.staking_pool() == old_bonded + 2009999498
 
     target_height = cluster.block_height() + 30
-    upgrade(cluster, "v3.0.0", target_height, cosmos_sdk_47=False)
+    upgrade(cluster, "v3.0.0", target_height, propose_legacy=False)
 
     rsp = cluster.delegate_amount(
         validator2_operator_address,
@@ -372,16 +383,15 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         "creator": creator,
     }, ev
 
-    target_height = cluster.block_height() + 30
-    upgrade(cluster, "v4.0.0", target_height, cosmos_sdk_47=False)
+    target_height = cluster.block_height() + 15
+    upgrade(cluster, "v4.2.0", target_height, propose_legacy=False)
 
     cli = cluster.cosmos_cli()
 
     # check denom after upgrade
     rsp = cluster.query_nft(denomid)
-    print("mm-nft", rsp)
     assert rsp["name"] == denomname, rsp
-    # assert rsp["uri"] == "", rsp
+    assert rsp["uri"] == "", rsp
 
     # check icaauth params
     rsp = json.loads(
@@ -407,16 +417,18 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             output="json",
         )
     )
-    print("mm-commission", rsp)
-    # print("min commission", rsp["min_commission_rate"])
+    print("min commission", rsp["min_commission_rate"])
     min_commission_rate = "0.050000000000000000"
-    # assert rsp["min_commission_rate"] == min_commission_rate, rsp
+    assert rsp["min_commission_rate"] == min_commission_rate, rsp
 
     assert_commission(validator1_operator_address, min_commission_rate)
     assert_commission(validator2_operator_address, default_rate)
 
-    target_height = cluster.block_height() + 30
-    # upgrade(cluster, "sdk47-upgrade", target_height, cosmos_sdk_47=False)
+    target_height = cluster.block_height() + 15
+    # test migrate keystore
+    for i in range(2):
+        cluster.migrate_keystore(i=i)
+    upgrade(cluster, "sdk47-upgrade", target_height, propose_legacy=True)
 
 
 def test_cancel_upgrade(cluster):
@@ -441,7 +453,6 @@ def test_cancel_upgrade(cluster):
             "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     print("cancel upgrade plan")
@@ -453,7 +464,6 @@ def test_cancel_upgrade(cluster):
             "description": "there is bug, cancel upgrade",
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     # wait for blocks after upgrade, should success since upgrade is canceled
