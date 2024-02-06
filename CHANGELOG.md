@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- []() Rename Crypto.org Chain to Cronos POS Chain
+- [#1029](https://github.com/crypto-org-chain/chain-main/pull/1029) Rename Crypto.org Chain to Cronos POS Chain
 
 *Dec 6, 2023*
 
