@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- []() Rename Crypto.org Chain to Cronos POS Chain
+
 *Dec 6, 2023*
 
 ## v4.2.8
@@ -127,7 +131,7 @@ A small fix on top of `v4.0.0` and upgrade to Cosmos SDK v0.46.4.
 
 ## v4.0.0
 
-This is the release of Crypto.org Chain's `v4.0.0`. It contains following changes (when compared with `v3`):
+This is the release of Cronos POS Chain's `v4.0.0`. It contains following changes (when compared with `v3`):
 
 ## Added
 
@@ -210,14 +214,14 @@ The upgraded Cosmos SDK version contains a fix for the upgrade non-determinism i
 that was discovered during upgrade testing.
 
 *WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+on https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide .
 
 *September 7, 2021*
 
 ## v3.1.1
 This version is identical to the v3.1.0, but updated the ibc-go dependency to 1.1.0.
 *WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+on https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide .
 
 
 *September 2, 2021*
@@ -225,14 +229,14 @@ on https://crypto.org/docs/getting-started/upgrade_guide.html .
 ## v3.1.0
 This version is identical to the v3.0.1, but updated the Cosmos SDK dependency to 0.44.0 which contains a consensus-breaking security patch.
 *WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+on https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide .
 
 *August 26, 2021*
 
 ## v3.0.1
 This version is identical to the v3.0.0, but updated the IBC dependency to 1.0.1 which contains a security patch.
 *WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+on https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide .
 
 *August 23, 2021*
 
@@ -243,7 +247,7 @@ and breaking changes. For more details, please see the [Cosmos SDK](https://gith
 and [ibc-go](https://github.com/cosmos/ibc-go/releases/tag/v1.0.0) release notes.
 In addition to that, it also uses Tendermint v0.34.12.
 *WARNING*: DO NOT upgrade to this binary yet; instructions are going to be published later
-on https://crypto.org/docs/getting-started/upgrade_guide.html .
+on https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide .
 
 *August 6, 2021*
 
@@ -269,7 +273,7 @@ This version is based on Cosmos SDK 0.42.6 and Tendermint 0.34.11 which, among o
 ## v2.0.1
 This released version is the same as v2.0.0, but contains an upgrade-critical fix.
 NOTE that the upgrade plan name is still expected to be "v2.0.0".
-*WARNING*: please follow the upgrade instructions described here: https://crypto.org/docs/getting-started/upgrade_guide.html#the-canis-major-upgrade-guide-v1-to-v2-0-0
+*WARNING*: please follow the upgrade instructions described here: https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide#the-canis-major-upgrade-guide-v1-to-v2-0-0
 
 ### Bug Fixes
 - [552](https://github.com/crypto-org-chain/chain-main/pull/552) NFT module store initialized after upgrade
@@ -278,7 +282,7 @@ NOTE that the upgrade plan name is still expected to be "v2.0.0".
 
 ## v2.0.0
 This pre-release version contains the scope of [ADR-003](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/adr-003.md) for the mainnet upgrade. It also upgrades to the latest version of Tendermint (0.34.10).
-*WARNING*: please follow the upgrade instructions described here: https://crypto.org/docs/getting-started/upgrade_guide.html#the-canis-major-upgrade-guide-v1-to-v2-0-0
+*WARNING*: please follow the upgrade instructions described here: https://docs.cronos-pos.org/for-node-hosts/getting-started/mainnet/upgrade-guide#the-canis-major-upgrade-guide-v1-to-v2-0-0
 
 ### Breaking changes
 - [516](https://github.com/crypto-org-chain/chain-main/pull/516) NFT module added

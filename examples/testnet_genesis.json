@@ -152,7 +152,7 @@
       "supply": [],
       "denom_metadata": [
         {
-          "description": "The native token of Crypto.org app.",
+          "description": "The native token of Cronos POS Chain app.",
           "denom_units": [
             {
               "denom": "basetcro",

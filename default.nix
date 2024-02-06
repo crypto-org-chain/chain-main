@@ -84,8 +84,8 @@ buildGoApplication rec {
 
   doCheck = false;
   meta = with lib; {
-    description = "Official implementation of the Crypto.org blockchain protocol";
-    homepage = "https://crypto.org/";
+    description = "Official implementation of the Cronos POS blockchain protocol";
+    homepage = "https://cronos-pos.org/";
     license = licenses.asl20;
     mainProgram = "chain-maind" + stdenv.hostPlatform.extensions.executable;
     platforms = platforms.all;

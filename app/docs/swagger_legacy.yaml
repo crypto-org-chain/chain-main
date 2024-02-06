@@ -30,7 +30,7 @@ tags:
     description: Query app version
 schemes:
   - https
-host: mainnet.crypto.org
+host: rpc.mainnet.crypto.org
 securityDefinitions:
   kms:
     type: basic
