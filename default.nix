@@ -49,10 +49,11 @@ buildGoApplication rec {
   buildFlags = lib.optionalString coverage "-cover";
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
-  CGO_LDFLAGS =
+  CGO_LDFLAGS = lib.optionalString (rocksdb != null) (
     if static then "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
     else if stdenv.hostPlatform.isWindows then "-lrocksdb-shared"
-    else "-lrocksdb -pthread -lstdc++ -ldl";
+    else "-lrocksdb -pthread -lstdc++ -ldl"
+  );
   tags = [
     "cgo"
     "ledger"
@@ -69,8 +70,8 @@ buildGoApplication rec {
     -X github.com/cosmos/cosmos-sdk/version.Commit=${rev}
     -X github.com/cosmos/cosmos-sdk/version.BuildTags=${concatStringsSep "," tags}
   '';
-  postFixup = lib.optionalString stdenv.isDarwin ''
-    ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/librocksdb.8.dylib" "${rocksdb}/lib/librocksdb.dylib" $out/bin/chain-maind
+  postFixup = lib.optionalString (stdenv.isDarwin && rocksdb != null) ''
+    ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.8.dylib" "${rocksdb}/lib/librocksdb.dylib" $out/bin/chain-maind
   '';
   passthru = {
     # update script use the same golang version as the project
