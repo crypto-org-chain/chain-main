@@ -126,9 +126,9 @@ def test_cosmovisor(cosmovisor_cluster):
     assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1, event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -168,9 +168,9 @@ def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwarg
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1, event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
@@ -324,11 +324,17 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
+        event_query_tx=False,
     )
     # vesting bug
     assert rsp["code"] != 0, rsp["raw_log"]
@@ -338,7 +344,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     upgrade(cluster, "v3.0.0", target_height, cosmos_sdk_46=False)
 
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
+        event_query_tx=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]

@@ -9,6 +9,9 @@ on:
     tags:
       - "*"
 
+env:
+  NIXPKGS_ALLOW_INSECURE: 1
+
 jobs:
   lint:
     runs-on: ubuntu-latest

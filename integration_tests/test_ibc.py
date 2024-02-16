@@ -38,7 +38,12 @@ def test_ibc(cluster):
 
     # do a transfer from ibc-0 to ibc-1
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", addr_1, "10000basecro", src_channel, 1
+        "relayer",
+        addr_1,
+        "10000basecro",
+        src_channel,
+        1,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     # sender balance decreased
@@ -86,7 +91,12 @@ def test_ibc(cluster):
 
     # transfer back
     rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", addr_0, f"10000ibc/{denom_hash}", dst_channel, 0
+        "relayer",
+        addr_0,
+        f"10000ibc/{denom_hash}",
+        dst_channel,
+        0,
+        event_query_tx=False,
     )
     print("ibc transfer back")
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -185,7 +195,12 @@ def test_update_chain_id(cluster):
     balance_0 = cluster["ibc-0"].balance(cluster["ibc-0"].address("relayer"))
     recipient = cluster["ibc-1"].address("relayer")
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", recipient, "10000basecro", channels[0]["channel_id"], 1
+        "relayer",
+        recipient,
+        "10000basecro",
+        channels[0]["channel_id"],
+        1,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     time.sleep(10)

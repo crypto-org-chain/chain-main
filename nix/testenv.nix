@@ -1,6 +1,6 @@
-{ poetry2nix, python39, lib }:
+{ poetry2nix, python310, lib }:
 poetry2nix.mkPoetryEnv {
-  python = python39;
+  python = python310;
   projectDir = ../integration_tests;
   overrides = poetry2nix.overrides.withDefaults (lib.composeManyExtensions [
     (self: super:
@@ -8,7 +8,7 @@ poetry2nix.mkPoetryEnv {
         buildSystems = {
           pyparsing = [ "flit-core" ];
           hdwallets = [ "poetry" ];
-          pystarport = [ "poetry" ];
+          pystarport = [ "poetry-core" ];
           durations = [ "setuptools" ];
           multitail2 = [ "setuptools" ];
           pytest-github-actions-annotate-failures = [ "setuptools" ];
