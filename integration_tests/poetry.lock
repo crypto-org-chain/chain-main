@@ -516,19 +516,17 @@ files = [
 
 [[package]]
 name = "isort"
-version = "5.8.0"
+version = "5.13.2"
 description = "A Python utility / library to sort Python imports."
 optional = false
-python-versions = ">=3.6,<4.0"
+python-versions = ">=3.8.0"
 files = [
-    {file = "isort-5.8.0-py3-none-any.whl", hash = "sha256:2bb1680aad211e3c9944dbce1d4ba09a989f04e238296c87fe2139faa26d655d"},
-    {file = "isort-5.8.0.tar.gz", hash = "sha256:0a943902919f65c5684ac4e0154b1ad4fac6dcaa5d9f3426b732f1c8b5419be6"},
+    {file = "isort-5.13.2-py3-none-any.whl", hash = "sha256:8ca5e72a8d85860d5a3fa69b8745237f2939afe12dbf656afbcb47fe72d947a6"},
+    {file = "isort-5.13.2.tar.gz", hash = "sha256:48fdfcb9face5d58a4f6dde2e72a1fb8dcaf8ab26f95ab49fab84c2ddefb0109"},
 ]
 
 [package.extras]
-colors = ["colorama (>=0.4.3,<0.5.0)"]
-pipfile-deprecated-finder = ["pipreqs", "requirementslib"]
-requirements-deprecated-finder = ["pip-api", "pipreqs"]
+colors = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "jsonmerge"
@@ -801,8 +799,8 @@ tomlkit = "^0.7.0"
 [package.source]
 type = "git"
 url = "https://github.com/crypto-com/pystarport.git"
-reference = "main"
-resolved_reference = "b2aa98544958811429948aff3ab4bb3881f56a1f"
+reference = "d86272f"
+resolved_reference = "d86272fa850a1bb1b0d0117b9a3833cd06a0c76d"
 
 [[package]]
 name = "pytest"
@@ -1156,4 +1154,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "e49dc78a7fc6e19c0929da8ddaff97feaebeabcc0dd357311253adc7f7e9f286"
+content-hash = "cb4ef440f8f06480333fb8a97873c16d454a9a8f9673b6158bf94edea9b0a45d"

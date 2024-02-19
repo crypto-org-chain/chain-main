@@ -58,16 +58,27 @@ def approve_proposal(cluster, rsp, vote_option="yes"):
     assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
 
     amount = cluster.balance(cluster.address("ecosystem"))
-    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
+    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
     if vote_option is not None:
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
+        rsp = cluster.gov_vote(
+            "validator",
+            proposal_id,
+            vote_option,
+            event_query_tx=False,
+        )
         assert rsp["code"] == 0, rsp["raw_log"]
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
+        rsp = cluster.gov_vote(
+            "validator",
+            proposal_id,
+            vote_option,
+            i=1,
+            event_query_tx=False,
+        )
         assert rsp["code"] == 0, rsp["raw_log"]
         assert (
             int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
@@ -128,7 +139,12 @@ def test_deposit_period_expires(cluster):
 
     amount2 = cluster.balance(cluster.address("ecosystem"))
 
-    rsp = cluster.gov_deposit("ecosystem", proposal_id, "5000basecro")
+    rsp = cluster.gov_deposit(
+        "ecosystem",
+        proposal_id,
+        "5000basecro",
+        event_query_tx=False,
+    )
     assert rsp["code"] == 0, rsp["raw_log"]
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["total_deposit"] == [{"denom": "basecro", "amount": "10000"}]
@@ -182,9 +198,9 @@ def test_community_pool_spend_proposal(cluster):
     proposal_id = ev["proposal_id"]
 
     # vote
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
-    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1)
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", i=1, event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # wait for voting period end
@@ -232,7 +248,7 @@ def test_change_vote(cluster):
 
     proposal_id = parse_events(rsp["logs"])["submit_proposal"]["proposal_id"]
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     cluster.query_tally(proposal_id) == {
@@ -243,7 +259,7 @@ def test_change_vote(cluster):
     }
 
     # change vote to no
-    rsp = cluster.gov_vote("validator", proposal_id, "no")
+    rsp = cluster.gov_vote("validator", proposal_id, "no", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     cluster.query_tally(proposal_id) == {
@@ -285,10 +301,13 @@ def test_inherit_vote(cluster):
     # non-validator voter
     voter1 = cluster.address("community")
     cluster.delegate_amount(
-        cluster.address("validator", bech="val"), "10basecro", voter1
+        cluster.address("validator", bech="val"),
+        "10basecro",
+        voter1,
+        event_query_tx=False,
     )
 
-    rsp = cluster.gov_vote("validator", proposal_id, "yes")
+    rsp = cluster.gov_vote("validator", proposal_id, "yes", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.query_tally(proposal_id) == {
         "yes_count": "1000000010",
@@ -297,7 +316,7 @@ def test_inherit_vote(cluster):
         "no_with_veto_count": "0",
     }
 
-    rsp = cluster.gov_vote(voter1, proposal_id, "no")
+    rsp = cluster.gov_vote(voter1, proposal_id, "no", event_query_tx=False)
     assert rsp["code"] == 0, rsp["raw_log"]
 
     assert cluster.query_tally(proposal_id) == {

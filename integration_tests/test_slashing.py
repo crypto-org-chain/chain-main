@@ -50,14 +50,14 @@ def test_slashing(cluster):
     assert val["jailed"], "validator is jailed"
 
     # try to unjail
-    rsp = cluster.unjail(addr, i=2)
+    rsp = cluster.unjail(addr, i=2, event_query_tx=False)
     assert rsp["code"] == 4, "still jailed, can't be unjailed"
 
     # wait for 60s and unjail again
     wait_for_block_time(
         cluster, isoparse(val["unbonding_time"]) + datetime.timedelta(seconds=60)
     )
-    rsp = cluster.unjail(addr, i=2)
+    rsp = cluster.unjail(addr, i=2, event_query_tx=False)
     assert rsp["code"] == 0, f"unjail should success {rsp}"
 
     wait_for_new_blocks(cluster, 3)

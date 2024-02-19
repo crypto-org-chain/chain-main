@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-22.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-23.05";
     flake-utils.url = "github:numtide/flake-utils";
     nix-bundle-exe = {
       url = "github:3noch/nix-bundle-exe";
@@ -9,7 +9,7 @@
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.utils.follows = "flake-utils";
+      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
@@ -49,7 +49,7 @@
           devShells = {
             chain-maind = pkgs.mkShell {
               buildInputs = with pkgs; [
-                go_1_20
+                go_1_21
                 rocksdb
               ];
             };

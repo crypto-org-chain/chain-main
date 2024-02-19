@@ -34,7 +34,7 @@ def test_ledger_transfer(cluster):
     reserve_balance = cluster.balance(reserve_addr)
     hw_balance = cluster.balance(hw_addr)
 
-    tx = cluster.transfer_from_ledger("hw", reserve_addr, "1cro")
+    tx = cluster.transfer_from_ledger("hw", reserve_addr, "1cro", event_query_tx=False)
     print("transfer tx", tx["txhash"])
     assert tx["logs"] == [
         {

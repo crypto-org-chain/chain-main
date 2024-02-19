@@ -41,7 +41,10 @@ def test_staking_delegate(cluster):
     old_amount = cluster.balance(signer1_address)
     old_bonded = cluster.staking_pool()
     rsp = cluster.delegate_amount(
-        validator1_operator_address, "2basecro", signer1_address
+        validator1_operator_address,
+        "2basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2
@@ -61,11 +64,17 @@ def test_staking_unbond(cluster):
     old_amount = cluster.balance(signer1_address)
     old_bonded = cluster.staking_pool()
     rsp = cluster.delegate_amount(
-        validator1_operator_address, "3basecro", signer1_address
+        validator1_operator_address,
+        "3basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "4basecro", signer1_address
+        validator2_operator_address,
+        "4basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 7
@@ -73,7 +82,10 @@ def test_staking_unbond(cluster):
 
     old_unbonded = cluster.staking_pool(bonded=False)
     rsp = cluster.unbond_amount(
-        validator2_operator_address, "2basecro", signer1_address
+        validator2_operator_address,
+        "2basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp
     assert cluster.staking_pool(bonded=False) == old_unbonded + 2
@@ -97,11 +109,17 @@ def test_staking_redelegate(cluster):
     staking_validator2 = cluster.validator(validator2_operator_address, i=1)
     assert validator2_operator_address == staking_validator2["operator_address"]
     rsp = cluster.delegate_amount(
-        validator1_operator_address, "3basecro", signer1_address
+        validator1_operator_address,
+        "3basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "4basecro", signer1_address
+        validator2_operator_address,
+        "4basecro",
+        signer1_address,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     delegation_info = cluster.get_delegated_amount(signer1_address)
@@ -150,7 +168,7 @@ def test_join_validator(cluster):
     # wait for the new node to sync
     wait_for_block(cluster.cosmos_cli(i), cluster.block_height(0))
     # create validator tx
-    assert cluster.create_validator("1cro", i)["code"] == 0
+    assert cluster.create_validator("1cro", i, event_query_tx=False)["code"] == 0
     time.sleep(2)
 
     count2 = len(cluster.validators())
@@ -167,9 +185,8 @@ def test_join_validator(cluster):
         "max_rate": "0.200000000000000000",
         "max_change_rate": "0.010000000000000000",
     }
-    assert (
-        cluster.edit_validator(i, commission_rate="0.2")["code"] == 12
-    ), "commission cannot be changed more than once in 24h"
+    res = cluster.edit_validator(i, commission_rate="0.2", event_query_tx=False)
+    assert res["code"] == 12, "commission cannot be changed more than once in 24h"
     assert edit_validator(cluster, i, new_moniker="awesome node")["code"] == 0
     assert cluster.validator(val_addr)["description"]["moniker"] == "awesome node"
 
@@ -183,7 +200,13 @@ def test_min_self_delegation(cluster):
 
     oper_addr = cluster.address("validator", i=2, bech="val")
     acct_addr = cluster.address("validator", i=2)
-    rsp = cluster.unbond_amount(oper_addr, "90000000basecro", acct_addr, i=2)
+    rsp = cluster.unbond_amount(
+        oper_addr,
+        "90000000basecro",
+        acct_addr,
+        i=2,
+        event_query_tx=False,
+    )
     assert rsp["code"] == 0, rsp["raw_log"]
 
     def find_validator():
@@ -201,7 +224,11 @@ def test_min_self_delegation(cluster):
 
     # can't do commit broadcast here
     rsp = cluster.unbond_amount(
-        oper_addr, "1basecro", acct_addr, i=2  # , broadcast_mode="async"
+        oper_addr,
+        "1basecro",
+        acct_addr,
+        i=2,
+        event_query_tx=False,  # , broadcast_mode="async"
     )
     wait_for_new_blocks(cluster, 2)
     assert (

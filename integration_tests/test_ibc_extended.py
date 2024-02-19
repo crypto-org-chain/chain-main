@@ -41,7 +41,12 @@ def test_ibc_extended(cluster):
     denom_string = f"transfer/{dst_channel}/basecro"
     # send A -> C
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", addr_1, "10000basecro", src_channel, 1
+        "relayer",
+        addr_1,
+        "10000basecro",
+        src_channel,
+        1,
+        event_query_tx=False,
     )
     time.sleep(10)
     res = json.loads(
@@ -65,7 +70,12 @@ def test_ibc_extended(cluster):
     ]
     # send B <- C
     rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", addr_0_signer, f"55ibc/{denom_hash}", dst_channel, 0
+        "relayer",
+        addr_0_signer,
+        f"55ibc/{denom_hash}",
+        dst_channel,
+        0,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     time.sleep(10)

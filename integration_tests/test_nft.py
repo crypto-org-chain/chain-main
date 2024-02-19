@@ -14,7 +14,12 @@ def test_create_nft(cluster):
     singer1_addr = cluster.address("signer1")
     denomid = "testdenomid"
     denomname = "testdenomname"
-    response = cluster.create_nft(singer1_addr, denomid, denomname)
+    response = cluster.create_nft(
+        singer1_addr,
+        denomid,
+        denomname,
+        event_query_tx=False,
+    )
     raw_log = json.loads(response["raw_log"])
     assert raw_log[0]["events"][0]["type"] == "issue_denom"
 
@@ -43,7 +48,12 @@ def test_create_nft_token(cluster):
     singer2_addr = cluster.address("signer2")
     uri = "testuri"
     response = cluster.create_nft_token(
-        singer1_addr, singer2_addr, denomid, tokenid, uri
+        singer1_addr,
+        singer2_addr,
+        denomid,
+        tokenid,
+        uri,
+        event_query_tx=False,
     )
     raw_log = json.loads(response["raw_log"])
     assert (
@@ -66,7 +76,13 @@ def test_transfer_nft_token(cluster):
     tokenid = "testtokenid"
     singer1_addr = cluster.address("signer1")
     singer2_addr = cluster.address("signer2")
-    response = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
+    response = cluster.transfer_nft_token(
+        singer2_addr,
+        singer1_addr,
+        denomid,
+        tokenid,
+        event_query_tx=False,
+    )
     raw_log = json.loads(response["raw_log"])
     assert (
         raw_log[0]["events"][0]["attributes"][0]["value"]
@@ -89,7 +105,14 @@ def test_edit_nft_token(cluster):
     singer1_addr = cluster.address("signer1")
     newuri = "newuri"
     newname = "newname"
-    response = cluster.edit_nft_token(singer1_addr, denomid, tokenid, newuri, newname)
+    response = cluster.edit_nft_token(
+        singer1_addr,
+        denomid,
+        tokenid,
+        newuri,
+        newname,
+        event_query_tx=False,
+    )
     raw_log = json.loads(response["raw_log"])
     assert raw_log[0]["events"][0]["type"] == "edit_nft"
     assert raw_log[0]["events"][0]["attributes"][2]["key"] == "token_uri"
@@ -100,6 +123,11 @@ def test_burn_nft_token(cluster):
     denomid = "testdenomid"
     tokenid = "testtokenid"
     singer1_addr = cluster.address("signer1")
-    response = cluster.burn_nft_token(singer1_addr, denomid, tokenid)
+    response = cluster.burn_nft_token(
+        singer1_addr,
+        denomid,
+        tokenid,
+        event_query_tx=False,
+    )
     raw_log = json.loads(response["raw_log"])
     assert raw_log[0]["events"][0]["type"] == "burn_nft"

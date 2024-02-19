@@ -65,7 +65,12 @@ def test_ibc_genesis_channel(cluster):
 
     # # do a transfer from ibc-0 to ibc-1
     rsp = cluster["ibc-0"].ibc_transfer(
-        "relayer", addr_1, "%dbasecro" % transfer_amount, "channel-0", 1
+        "relayer",
+        addr_1,
+        "%dbasecro" % transfer_amount,
+        "channel-0",
+        1,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     # sender balance decreased
@@ -117,6 +122,7 @@ def test_ibc_genesis_channel(cluster):
         "%dibc/%s" % (transfer_amount, denom_hash),
         "channel-0",
         0,
+        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
