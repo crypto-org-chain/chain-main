@@ -186,6 +186,20 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
 
+    def query_gov_params(self):
+        kwargs = {
+            "node": self.node_rpc,
+            "output": "json",
+        }
+        return json.loads(
+            self.raw(
+                "q",
+                "gov",
+                "params",
+                **kwargs,
+            )
+        )
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -213,3 +227,6 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def query_host_params(self, i=0):
         return self.cosmos_cli(i).query_host_params()
+
+    def query_gov_params(self, i=0):
+        return self.cosmos_cli(i).query_gov_params()
