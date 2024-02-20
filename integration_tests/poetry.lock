@@ -88,7 +88,7 @@ files = [
 [[package]]
 name = "chainlibpy"
 version = "2.2.0"
-description = "Tools for Crypto.org Chain wallet management and offline transaction signing"
+description = "Tools for Cronos POS Chain wallet management and offline transaction signing"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [

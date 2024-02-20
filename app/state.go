@@ -1,5 +1,6 @@
 // Copyright 2016 All in Bits, Inc (licensed under the Apache License, Version 2.0)
-// Modifications Copyright (c) 2021-present Crypto.org (licensed under the Apache License, Version 2.0)
+// Modifications Copyright (c) 2021-2023 Crypto.org (licensed under the Apache License, Version 2.0)
+// Modifications Copyright (c) 2023-present Cronos Labs (licensed under the Apache License, Version 2.0)
 package app
 
 import (
