@@ -11,10 +11,11 @@ import sources.nixpkgs {
       };
       hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
     })
+    (import "${sources.poetry2nix}/overlay.nix")
     (import "${sources.gomod2nix}/overlay.nix")
     (import ./build_overlay.nix)
     (pkgs: prev: {
-      go = pkgs.go_1_20;
+      go = pkgs.go_1_22;
       test-env = pkgs.callPackage ./testenv.nix { };
       lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
         EXIT_STATUS=0

@@ -53,11 +53,15 @@ func TestConversion(t *testing.T) {
 		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "foo", sdk.Coin{}, true},
 		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "FOO", sdk.Coin{}, true},
 
-		{sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)),
-			config.BaseCoinUnit, sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)), false}, // cro => carson
+		{
+			sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)),
+			config.BaseCoinUnit, sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)), false,
+		}, // cro => carson
 
-		{sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)),
-			config.HumanCoinUnit, sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)), false}, // carson => cro
+		{
+			sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)),
+			config.HumanCoinUnit, sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)), false,
+		}, // carson => cro
 
 	}
 
@@ -72,5 +76,4 @@ func TestConversion(t *testing.T) {
 			"invalid result; tc: #%d, input: %s, denom: %s", i+1, tc.input, tc.denom,
 		)
 	}
-
 }

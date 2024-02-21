@@ -45,7 +45,6 @@ func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string,
 	}
 
 	address, err = sdk.AccAddressFromBech32(string(keys[0]))
-
 	if err != nil {
 		return address, denomID, tokenID, err
 	}
@@ -85,7 +84,7 @@ func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
 
 // KeyOwner gets the key of a collection owned by an account address
 func KeyOwner(address sdk.AccAddress, denomID, tokenID string) []byte {
-	key := append(PrefixOwners, delimiter...) // nolint:gocritic
+	key := append(PrefixOwners, delimiter...) //nolint:gocritic
 	if address != nil {
 		key = append(key, []byte(address.String())...)
 		key = append(key, delimiter...)
@@ -104,7 +103,7 @@ func KeyOwner(address sdk.AccAddress, denomID, tokenID string) []byte {
 
 // KeyNFT gets the key of nft stored by an denom and id
 func KeyNFT(denomID, tokenID string) []byte {
-	key := append(PrefixNFT, delimiter...) // nolint:gocritic
+	key := append(PrefixNFT, delimiter...) //nolint:gocritic
 	if len(denomID) > 0 {
 		key = append(key, []byte(denomID)...)
 		key = append(key, delimiter...)
@@ -118,18 +117,18 @@ func KeyNFT(denomID, tokenID string) []byte {
 
 // KeyCollection gets the storeKey by the collection
 func KeyCollection(denomID string) []byte {
-	key := append(PrefixCollection, delimiter...) // nolint:gocritic
+	key := append(PrefixCollection, delimiter...) //nolint:gocritic
 	return append(key, []byte(denomID)...)
 }
 
 // KeyDenomID gets the storeKey by the denom id
 func KeyDenomID(id string) []byte {
-	key := append(PrefixDenom, delimiter...) // nolint:gocritic
+	key := append(PrefixDenom, delimiter...) //nolint:gocritic
 	return append(key, []byte(id)...)
 }
 
 // KeyDenomName gets the storeKey by the denom name
 func KeyDenomName(name string) []byte {
-	key := append(PrefixDenomName, delimiter...) // nolint:gocritic
+	key := append(PrefixDenomName, delimiter...) //nolint:gocritic
 	return append(key, []byte(name)...)
 }

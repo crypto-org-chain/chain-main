@@ -2,11 +2,11 @@
 , lib
 , stdenv
 , darwin
-, rustPackages_1_70
+, rustPlatform
 , symlinkJoin
 , openssl
 }:
-rustPackages_1_70.rustPlatform.buildRustPackage rec {
+rustPlatform.buildRustPackage rec {
   name = "hermes";
   inherit src;
   cargoSha256 = "sha256-jqmIBmvY3PXpLFfv6XrnXJ0RmR6amFFMNfgK8qDFHb8=";

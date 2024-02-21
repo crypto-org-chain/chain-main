@@ -17,17 +17,15 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var (
-	// ModuleAccounts defines the module accounts which will be queried to get liquid supply
-	ModuleAccounts = []string{
-		authtypes.FeeCollectorName,
-		distrtypes.ModuleName,
-		stakingtypes.BondedPoolName,
-		stakingtypes.NotBondedPoolName,
-		minttypes.ModuleName,
-		govtypes.ModuleName,
-	}
-)
+// ModuleAccounts defines the module accounts which will be queried to get liquid supply
+var ModuleAccounts = []string{
+	authtypes.FeeCollectorName,
+	distrtypes.ModuleName,
+	stakingtypes.BondedPoolName,
+	stakingtypes.NotBondedPoolName,
+	minttypes.ModuleName,
+	govtypes.ModuleName,
+}
 
 // Keeper for supply module
 type Keeper struct {

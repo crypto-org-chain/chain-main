@@ -69,12 +69,11 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			cmd.SetOut(cmd.OutOrStdout())
 			cmd.SetErr(cmd.ErrOrStderr())
 
-			// nolint: govet
+			//nolint: govet
 			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
 			if err != nil {
 				return err
 			}
-			// nolint: govet
 			initClientCtx, err = conf.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return err
@@ -187,8 +186,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		path := config.GenesisFile()
 
 		cleanedPath := filepath.Clean(path)
-		// nolint: gosec
-		file, err := os.OpenFile(cleanedPath, os.O_RDWR, 0600)
+		file, err := os.OpenFile(cleanedPath, os.O_RDWR, 0o600)
 		if err != nil {
 			return err
 		}
@@ -211,7 +209,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 			return err
 		}
 
-		return WriteFile(cleanedPath, bz, 0600)
+		return WriteFile(cleanedPath, bz, 0o600)
 	}
 
 	rootCmd.AddCommand(
@@ -326,8 +324,8 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 // and exports state.
 func exportAppStateAndTMValidators(
 	logger log.Logger, db dbm.DB, traceStore io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string,
-	appOpts servertypes.AppOptions) (servertypes.ExportedApp, error) {
-
+	appOpts servertypes.AppOptions,
+) (servertypes.ExportedApp, error) {
 	encCfg := app.MakeEncodingConfig() // Ideally, we would reuse the one created by NewRootCmd.
 	encCfg.Marshaler = codec.NewProtoCodec(encCfg.InterfaceRegistry)
 

@@ -43,7 +43,6 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec does nothing. IBC does not support amino.
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
@@ -59,7 +58,8 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the capability module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
-	config client.TxEncodingConfig, bz json.RawMessage) error {
+	config client.TxEncodingConfig, bz json.RawMessage,
+) error {
 	var genState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -69,7 +69,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-
 }
 
 // GetTxCmd returns the capability module's root tx command.
@@ -111,7 +110,6 @@ func (AppModule) QuerierRoute() string { return "" }
 
 // LegacyQuerierHandler returns the capability module's Querier.
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func (am AppModule) LegacyQuerierHandler(*codec.LegacyAmino) sdk.Querier { return nil }
 
 // RegisterQueryService registers a GRPC query service to respond to the
