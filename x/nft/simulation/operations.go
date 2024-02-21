@@ -18,20 +18,19 @@ import (
 )
 
 // Simulation operation weights constants
-// nolint:gosec
 const (
-	OpWeightMsgMintNFT     = "op_weight_msg_mint_nft"
-	OpWeightMsgEditNFT     = "op_weight_msg_edit_nft_tokenData"
-	OpWeightMsgTransferNFT = "op_weight_msg_transfer_nft"
-	OpWeightMsgBurnNFT     = "op_weight_msg_transfer_burn_nft"
+	OpWeightMsgMintNFT     = "op_weight_msg_mint_nft"           //nolint: gosec
+	OpWeightMsgEditNFT     = "op_weight_msg_edit_nft_tokenData" //nolint: gosec
+	OpWeightMsgTransferNFT = "op_weight_msg_transfer_nft"       //nolint: gosec
+	OpWeightMsgBurnNFT     = "op_weight_msg_transfer_burn_nft"  //nolint: gosec
 )
 
 // WeightedOperations returns all the operations from the module with their respective weights
 func WeightedOperations(
 	appParams simtypes.AppParams,
 	cdc codec.JSONCodec,
-	k keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper) simulation.WeightedOperations {
-
+	k keeper.Keeper, ak types.AccountKeeper, bk types.BankKeeper,
+) simulation.WeightedOperations {
 	var weightMint, weightEdit, weightBurn, weightTransfer int
 	appParams.GetOrGenerate(
 		cdc, OpWeightMsgMintNFT, &weightMint, nil,
@@ -189,7 +188,7 @@ func SimulateMsgMintNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 			return simtypes.NoOpMsg(types.ModuleName, types.EventTypeMintNFT, err.Error()), nil, err
 		}
 
-		randomSenderAddress, _ := sdk.AccAddressFromBech32(denom.Creator) // nolint: errcheck
+		randomSenderAddress, _ := sdk.AccAddressFromBech32(denom.Creator) //nolint: errcheck
 		randomRecipient, _ := simtypes.RandomAcc(r, accs)
 
 		simAccount, found := simtypes.FindAccount(accs, randomSenderAddress)
@@ -270,7 +269,7 @@ func SimulateMsgBurnNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 }
 
 func getRandomNFTFromOwner(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (address sdk.AccAddress, denomID, tokenID string) {
-	owners, _ := k.GetOwners(ctx) // nolint: errcheck
+	owners, _ := k.GetOwners(ctx) //nolint: errcheck
 
 	ownersLen := len(owners)
 	if ownersLen == 0 {
@@ -300,7 +299,7 @@ func getRandomNFTFromOwner(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) (addr
 	i = r.Intn(idsLen)
 	tokenID = idCollection.TokenIds[i]
 
-	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) // nolint: errcheck
+	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) //nolint: errcheck
 	return ownerAddress, denomID, tokenID
 }
 
@@ -310,7 +309,7 @@ func getRandomNFTFromOwnerAndCreator(ctx sdk.Context, k keeper.Keeper, r *rand.R
 		return nil, "", "", err
 	}
 
-	creator, _ := sdk.AccAddressFromBech32(denom.Creator) // nolint: errcheck
+	creator, _ := sdk.AccAddressFromBech32(denom.Creator) //nolint: errcheck
 
 	owner, err := k.GetOwner(ctx, creator, denom.Id)
 	if err != nil {
@@ -336,12 +335,12 @@ func getRandomNFTFromOwnerAndCreator(ctx sdk.Context, k keeper.Keeper, r *rand.R
 	i = r.Intn(idsLen)
 	tokenID = idCollection.TokenIds[i]
 
-	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) // nolint: errcheck
+	ownerAddress, _ := sdk.AccAddressFromBech32(owner.Address) //nolint: errcheck
 	return ownerAddress, denomID, tokenID, nil
 }
 
 func getRandomDenom(ctx sdk.Context, k keeper.Keeper, r *rand.Rand) string {
-	var denoms = []string{kitties, doggos}
+	denoms := []string{kitties, doggos}
 	i := r.Intn(len(denoms))
 	return denoms[i]
 }

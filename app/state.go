@@ -12,7 +12,6 @@ import (
 // AppStateFn returns the initial application state using a genesis or the simulation parameters.
 // It panics if the user provides files for both of them.
 // If a file is not given for the genesis or the sim params, it creates a randomized one.
-// nolint:revive
 func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simtypes.AppStateFn {
 	return simapp.AppStateFnWithExtendedCb(cdc, simManager, NewDefaultGenesisState(cdc), nil)
 }

@@ -214,7 +214,6 @@ var (
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 type ChainApp struct {
 	*baseapp.BaseApp
 	legacyAmino       *codec.LegacyAmino
@@ -299,7 +298,6 @@ func New(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *ChainApp {
-
 	// TODO: Remove cdc in favor of appCodec once all modules are migrated.
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -792,7 +790,6 @@ func (app *ChainApp) ModuleAccountAddrs() map[string]bool {
 // NOTE: This is solely to be used for testing purposes as it may be desirable
 // for modules to register their own custom testing types.
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func (app *ChainApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
@@ -901,7 +898,6 @@ func GetMaccPerms() map[string][]string {
 
 // initParamsKeeper init params keeper and its subspaces
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
 

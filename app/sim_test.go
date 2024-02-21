@@ -147,7 +147,6 @@ func TestAppImportExport(t *testing.T) {
 
 	fmt.Printf("importing genesis...\n")
 
-	// nolint: dogsled
 	_, newDB, newDir, _, _, err := simapp.SetupSimulation("leveldb-app-sim-2", "Simulation-2")
 	require.NoError(t, err, "simulation setup failed")
 
@@ -268,7 +267,6 @@ func TestAppSimulationAfterImport(t *testing.T) {
 
 	fmt.Printf("importing genesis...\n")
 
-	// nolint: dogsled
 	_, newDB, newDir, _, _, err := simapp.SetupSimulation("leveldb-app-sim-2", "Simulation-2")
 	require.NoError(t, err, "simulation setup failed")
 
@@ -319,7 +317,7 @@ func TestAppStateDeterminism(t *testing.T) {
 	appHashList := make([]json.RawMessage, numTimesToRunPerSeed)
 
 	for i := 0; i < numSeeds; i++ {
-		// nolint: gosec
+		//nolint: gosec
 		config.Seed = rand.Int63()
 
 		for j := 0; j < numTimesToRunPerSeed; j++ {

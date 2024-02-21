@@ -17,7 +17,6 @@ import (
 
 // NewQuerier is the module level router for state queries
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
 		switch path[0] {
@@ -42,7 +41,6 @@ func NewQuerier(k Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func querySupply(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QuerySupplyParams
 
@@ -64,7 +62,6 @@ func querySupply(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerier
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryOwner(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryOwnerParams
 
@@ -74,7 +71,6 @@ func queryOwner(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 	}
 
 	owner, err := k.GetOwner(ctx, params.Owner, params.Denom)
-
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +84,6 @@ func queryOwner(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryCollection(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryCollectionParams
 
@@ -111,7 +106,6 @@ func queryCollection(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQue
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryDenom(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryDenomParams
 
@@ -120,7 +114,6 @@ func queryDenom(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 	}
 
 	denom, err := k.GetDenom(ctx, params.ID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +127,6 @@ func queryDenom(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierC
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryDenomByName(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryDenomByNameParams
 
@@ -143,7 +135,6 @@ func queryDenomByName(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQu
 	}
 
 	denom, err := k.GetDenomByName(ctx, params.Name)
-
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +148,6 @@ func queryDenomByName(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQu
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryDenoms(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	denoms := k.GetDenoms(ctx)
 
@@ -170,7 +160,6 @@ func queryDenoms(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerier
 }
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func queryNFT(ctx sdk.Context, req abci.RequestQuery, k Keeper, legacyQuerierCdc *codec.LegacyAmino) ([]byte, error) {
 	var params types.QueryNFTParams
 
