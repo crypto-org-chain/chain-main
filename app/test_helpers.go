@@ -341,8 +341,7 @@ func SignCheckDeliver(
 	chainID string, accNums, accSeqs []uint64, expSimPass, expPass bool, priv ...cryptotypes.PrivKey,
 ) (sdk.GasInfo, *sdk.Result, error) {
 	tx, err := simtestutil.GenSignedMockTx(
-		// nolint: gosec
-		rand.New(rand.NewSource(time.Now().UnixNano())),
+		rand.New(rand.NewSource(time.Now().UnixNano())), //nolint: gosec
 		txCfg,
 		msgs,
 		sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},
@@ -393,8 +392,7 @@ func GenSequenceOfTxs(txGen client.TxConfig, msgs []sdk.Msg, accNums []uint64, i
 	var err error
 	for i := 0; i < numToGenerate; i++ {
 		txs[i], err = simtestutil.GenSignedMockTx(
-			// nolint: gosec
-			rand.New(rand.NewSource(time.Now().UnixNano())),
+			rand.New(rand.NewSource(time.Now().UnixNano())), //nolint: gosec
 			txGen,
 			msgs,
 			sdk.Coins{sdk.NewInt64Coin(sdk.DefaultBondDenom, 0)},

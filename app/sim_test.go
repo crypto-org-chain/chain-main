@@ -149,8 +149,6 @@ func TestAppImportExport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-
-	// nolint: dogsled
 	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
 	require.NoError(t, err, "simulation setup failed")
 
@@ -273,8 +271,6 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-
-	// nolint: dogsled
 	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
 	require.NoError(t, err, "simulation setup failed")
 
