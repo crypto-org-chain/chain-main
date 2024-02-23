@@ -45,16 +45,13 @@ func GetCmdIssueDenom() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "issue [denom-id]",
 		Long: "Issue a new denom.",
-		Example: fmt.Sprintf(
-			"$ %s tx nft issue <denom-id> "+
-				"--from=<key-name> "+
-				"--name=<denom-name> "+
-				"--schema=<schema-content or path to schema.json> "+
-				"--uri=<uri of denom> "+
-				"--chain-id=<chain-id> "+
-				"--fees=<fee>",
-			version.AppName,
-		),
+		Example: fmt.Sprintf(`$ %s tx nft issue <denom-id>
+  --from=<key-name>
+  --name=<denom-name>
+  --schema=<schema-content or path to schema.json>
+  --uri=<uri of denom>
+  --chain-id=<chain-id>
+  --fees=<fee>`, version.AppName),
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -103,15 +100,12 @@ func GetCmdMintNFT() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "mint [denom-id] [token-id]",
 		Long: "Mint an NFT and set the owner to the recipient.",
-		Example: fmt.Sprintf(
-			"$ %s tx nft mint <denom-id> <token-id> "+
-				"--uri=<uri> "+
-				"--recipient=<recipient> "+
-				"--from=<key-name> "+
-				"--chain-id=<chain-id> "+
-				"--fees=<fee>",
-			version.AppName,
-		),
+		Example: fmt.Sprintf(`$ %s tx nft mint <denom-id> <token-id>
+  --uri=<uri>
+  --recipient=<recipient>
+  --from=<key-name>
+  --chain-id=<chain-id>
+  --fees=<fee>`, version.AppName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -119,7 +113,7 @@ func GetCmdMintNFT() *cobra.Command {
 				return err
 			}
 
-			var sender = clientCtx.GetFromAddress().String()
+			sender := clientCtx.GetFromAddress().String()
 
 			recipient, err := cmd.Flags().GetString(FlagRecipient)
 			if err != nil {
@@ -174,14 +168,11 @@ func GetCmdEditNFT() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "edit [denom-id] [token-id]",
 		Long: "Edit the token data of an NFT.",
-		Example: fmt.Sprintf(
-			"$ %s tx nft edit <denom-id> <token-id> "+
-				"--uri=<uri> "+
-				"--from=<key-name> "+
-				"--chain-id=<chain-id> "+
-				"--fees=<fee>",
-			version.AppName,
-		),
+		Example: fmt.Sprintf(`$ %s tx nft edit <denom-id> <token-id>
+  --uri=<uri>
+  --from=<key-name>
+  --chain-id=<chain-id>
+  --fees=<fee>`, version.AppName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -226,14 +217,11 @@ func GetCmdTransferNFT() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "transfer [recipient] [denom-id] [token-id]",
 		Long: "Transfer an NFT to a recipient.",
-		Example: fmt.Sprintf(
-			"$ %s tx nft transfer <recipient> <denom-id> <token-id> "+
-				"--uri=<uri> "+
-				"--from=<key-name> "+
-				"--chain-id=<chain-id> "+
-				"--fees=<fee>",
-			version.AppName,
-		),
+		Example: fmt.Sprintf(`$ %s tx nft transfer <recipient> <denom-id> <token-id>
+  --uri=<uri>
+  --from=<key-name>
+  --chain-id=<chain-id>
+  --fees=<fee>`, version.AppName),
 		Args: cobra.ExactArgs(3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
@@ -241,7 +229,6 @@ func GetCmdTransferNFT() *cobra.Command {
 				return err
 			}
 
-			// nolint: govet
 			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
 				return err
 			}
@@ -269,13 +256,10 @@ func GetCmdBurnNFT() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:  "burn [denom-id] [token-id]",
 		Long: "Burn an NFT.",
-		Example: fmt.Sprintf(
-			"$ %s tx nft burn <denom-id> <token-id> "+
-				"--from=<key-name> "+
-				"--chain-id=<chain-id> "+
-				"--fees=<fee>",
-			version.AppName,
-		),
+		Example: fmt.Sprintf(`$ %s tx nft burn <denom-id> <token-id>
+  --from=<key-name>
+  --chain-id=<chain-id>
+  --fees=<fee>`, version.AppName),
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)

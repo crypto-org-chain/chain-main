@@ -81,7 +81,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
@@ -137,11 +137,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -175,7 +172,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: install runsim
         run: |
           export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
@@ -200,7 +197,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
@@ -247,7 +244,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
@@ -294,7 +291,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
@@ -410,12 +407,9 @@ jobs:
           files: |
             go.mod
             go.sum
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: update gomod2nix

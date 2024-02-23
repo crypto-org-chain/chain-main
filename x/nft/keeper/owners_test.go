@@ -7,7 +7,6 @@ import (
 )
 
 func (suite *KeeperSuite) TestGetOwners() {
-
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 

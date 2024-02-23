@@ -44,7 +44,11 @@ def test_staking_vesting_redelegate(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999499

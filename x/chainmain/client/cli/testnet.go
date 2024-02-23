@@ -130,10 +130,10 @@ Example:
 	cmd.Flags().String(flagNodeDaemonHome, ".chain-maind", "Home directory of the node's daemon configuration")
 	cmd.Flags().String(flagStartingIPAddress,
 		"192.168.0.1",
-		"Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)") //nolint
+		"Starting IP address (192.168.0.1 results in persistent peers list ID0@192.168.0.1:46656, ID1@192.168.0.2:46656, ...)")
 	cmd.Flags().String(flags.FlagChainID, "cro-test", "genesis file chain-id")
 	cmd.Flags().String(server.FlagMinGasPrices, "",
-		"Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.00000001cro,1basecro)") //nolint
+		"Minimum gas prices to accept for transactions; All fees in a tx must meet this minimum (e.g. 0.00000001cro,1basecro)")
 	cmd.Flags().String(flags.FlagKeyringBackend, keyring.BackendTest, "Select keyring's backend (os|file|test)")
 	cmd.Flags().String(flags.FlagKeyType, string(hd.Secp256k1Type), "Key signing algorithm to generate keys for")
 	cmd.Flags().String(flagAmount, "20000000000000000basecro", "amount of coins for accounts")
@@ -146,7 +146,7 @@ Example:
 	return cmd
 }
 
-const nodeDirPerm = 0755
+const nodeDirPerm = 0o755
 
 var (
 	genAccounts []authtypes.GenesisAccount
@@ -459,7 +459,6 @@ func collectGenFiles(
 	nodeIDs []string, valPubKeys []crypto.PubKey, numValidators int,
 	outputDir, nodeDirPrefix, nodeDaemonHome string, genBalIterator banktypes.GenesisBalancesIterator,
 ) error {
-
 	var appState json.RawMessage
 	genTime := tmtime.Now()
 
@@ -529,12 +528,12 @@ func calculateIP(ip string, i int) (string, error) {
 func writeFile(name string, dir string, contents []byte) error {
 	file := filepath.Join(dir, name)
 
-	err := tmos.EnsureDir(dir, 0755)
+	err := tmos.EnsureDir(dir, 0o755)
 	if err != nil {
 		return err
 	}
 
-	err = tmos.WriteFile(file, contents, 0600)
+	err = tmos.WriteFile(file, contents, 0o600)
 	if err != nil {
 		return err
 	}

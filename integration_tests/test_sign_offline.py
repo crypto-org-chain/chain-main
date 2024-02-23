@@ -20,6 +20,10 @@ def get_network_config(grpc_port, chain_id):
     )
 
 
+# FIXME
+@pytest.mark.skip(
+    reason="chainlibpy is not maintained, need to refactor this test case"
+)
 def test_sign_offline(cluster):
     """
     check simple transfer tx success

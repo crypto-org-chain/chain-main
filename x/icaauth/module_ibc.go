@@ -14,9 +14,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/icaauth/keeper"
 )
 
-var (
-	_ porttypes.IBCModule = IBCModule{}
-)
+var _ porttypes.IBCModule = IBCModule{}
 
 // IBCModule implements the ICS26 interface for interchain accounts controller chains
 type IBCModule struct {

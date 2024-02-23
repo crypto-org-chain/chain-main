@@ -14,7 +14,5 @@ const (
 	QuerierRoute = ModuleName
 )
 
-var (
-	// VestingAccountsKey for storing vesting account addresses
-	VestingAccountsKey = []byte("vestingAccounts")
-)
+// VestingAccountsKey for storing vesting account addresses
+var VestingAccountsKey = []byte("vestingAccounts")

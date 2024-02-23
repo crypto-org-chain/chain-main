@@ -5,28 +5,23 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-pytest = "^7.1.3"
-pytest-xdist = "^2.5.0"
-flake8 = "^4.0.1"
-black = "^22.6"
-flake8-black = "^0.3.3"
-flake8-isort = "^4.1.1"
-grpcio = "^1.53.2"
-grpcio-tools = "^1.42.0"
-pep8-naming = "^0.11.1"
-pytest-github-actions-annotate-failures = "^0.1.7"
-protobuf = "^3.20.2"
-pyyaml = "^6.0.1"
-python-dateutil = "^2.8.1"
-pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main", rev = "558d68492fdf126db3d7270f7b88c420708c7e01" }
+python = "^3.9"
+pytest = "^8.0"
+pytest-xdist = "^3.5"
+flake8 = "^7.0"
+black = "^24.2"
+flake8-black = "^0.3"
+flake8-isort = "^6.1"
+pep8-naming = "^0.13"
+pytest-github-actions-annotate-failures = "^0.2"
+protobuf = "^4.25"
+pyyaml = "^6.0"
+python-dateutil = "^2.8"
+pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
 chainlibpy = "^2.2.0"
-
-# manually upgrade to make hatchling build success in poetry2nix
-pathspec = "^0.10.1"
 
 [tool.poetry.dev-dependencies]
 
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
