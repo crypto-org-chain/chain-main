@@ -4,12 +4,12 @@ import (
 	stderrors "errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
 	"golang.org/x/exp/slices"
 
@@ -148,9 +148,7 @@ import (
 	supplykeeper "github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v4/x/supply/types"
 
-	// unnamed import of statik for swagger UI support
-	_ "github.com/crypto-org-chain/chain-main/v4/app/docs/statik"
-
+	"github.com/crypto-org-chain/chain-main/v4/app/docs"
 	memiavlstore "github.com/crypto-org-chain/cronos/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
@@ -921,12 +919,12 @@ func (app *ChainApp) RegisterNodeService(clientCtx client.Context) {
 
 // RegisterSwaggerAPI registers swagger route with API Server
 func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router) {
-	statikFS, err := fs.NewWithNamespace("chainmain")
+	root, err := fs.Sub(docs.SwaggerUI, "swagger-ui")
 	if err != nil {
 		panic(err)
 	}
 
-	staticServer := http.FileServer(statikFS)
+	staticServer := http.FileServer(http.FS(root))
 	rtr.PathPrefix("/swagger/").Handler(http.StripPrefix("/swagger/", staticServer))
 }
 
