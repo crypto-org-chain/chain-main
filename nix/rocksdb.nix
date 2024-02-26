@@ -21,7 +21,7 @@
 
 stdenv.mkDerivation rec {
   pname = "rocksdb";
-  version = "8.1.1";
+  version = "8.5.3";
 
   src = fetchFromGitHub {
     owner = "facebook";
