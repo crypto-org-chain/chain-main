@@ -32,7 +32,7 @@ import (
 )
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKeeper clientkeeper.Keeper) {
-	planName := "sdk47-upgrade"
+	planName := "4.3.0"
 	// Set param key table for params module migration
 	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
 		var keyTable paramstypes.KeyTable

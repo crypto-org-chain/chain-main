@@ -18,5 +18,5 @@ pkgs.linkFarm "upgrade-test-package" [
   { name = "v2.0.0"; path = released2; }
   { name = "v3.0.0"; path = released3; }
   { name = "v4.2.0"; path = released4; }
-  { name = "sdk47-upgrade"; path = current; }
+  { name = "4.3.0"; path = current; }
 ]

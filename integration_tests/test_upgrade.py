@@ -428,7 +428,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # test migrate keystore
     for i in range(2):
         cluster.migrate_keystore(i=i)
-    upgrade(cluster, "sdk47-upgrade", target_height, propose_legacy=True)
+    upgrade(cluster, "4.3.0", target_height, propose_legacy=True)
 
 
 def test_cancel_upgrade(cluster):
