@@ -2,6 +2,7 @@
 import sources.nixpkgs {
   overlays = [
     (_: pkgs: {
+      flake-compat = import sources.flake-compat;
       cosmovisor = pkgs.buildGoModule rec {
         name = "cosmovisor";
         src = sources.cosmos-sdk + "/cosmovisor";

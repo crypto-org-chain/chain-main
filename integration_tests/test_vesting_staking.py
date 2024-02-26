@@ -40,7 +40,6 @@ def test_staking_vesting_redelegate(cluster):
         signer1_address,
         0,
         "0.025basecro",
-        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
@@ -50,7 +49,6 @@ def test_staking_vesting_redelegate(cluster):
         signer1_address,
         0,
         "0.025basecro",
-        event_query_tx=False,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999499
@@ -61,7 +59,6 @@ def test_staking_vesting_redelegate(cluster):
         validator2_operator_address,
         "2basecro",
         signer1_address,
-        event_query_tx=False,
     )
     # delegation_info = cluster.get_delegated_amount(signer1_address)
     # output = delegation_info["delegation_responses"][0]["balance"]["amount"]

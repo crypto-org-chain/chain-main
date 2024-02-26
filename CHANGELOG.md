@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+- [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
+
 *Dec 6, 2023*
 
 ## v4.2.8

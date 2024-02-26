@@ -7,7 +7,7 @@ local genesis = import 'genesis.jsonnet';
       coins: value,
       staked: value,
       client_config: {
-        'broadcast-mode': 'block',
+        'broadcast-mode': 'sync',
       },
     } for value in ['40cro', '10cro', '10cro']],
     accounts: default.accounts + default.reserves,

@@ -3,10 +3,10 @@ package types_test
 import (
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
+	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 var (

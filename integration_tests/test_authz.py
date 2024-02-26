@@ -13,12 +13,12 @@ from .utils import (
     AUTHORIZATION_UNBOND,
     AUTHZ,
     BASECRO_DENOM,
-    BLOCK_BROADCASTING,
     DELEGATE_MSG_TYPE_URL,
     GENERATE_ONLY,
     GRANTS,
     REDELEGATE_MSG_TYPE_URL,
     SEND_MSG_TYPE_URL,
+    SYNC_BROADCASTING,
     UNBOND_MSG_TYPE_URL,
     WITHDRAW_DELEGATOR_REWARD_TYPE_URL,
     cluster_fixture,
@@ -85,7 +85,7 @@ class TestAuthzModule:
             cluster_temp,
             generated_tx_txt,
             grantee_address,
-            broadcast_mode=BLOCK_BROADCASTING,
+            broadcast_mode=SYNC_BROADCASTING,
         )
         wait_for_new_blocks(cluster_temp, 1)
 
@@ -240,7 +240,7 @@ class TestAuthzModule:
             validator_address,
             "%s%s" % (delegate_coins, BASECRO_DENOM),
             granter_address,
-            broadcast_mode=BLOCK_BROADCASTING,
+            broadcast_mode=SYNC_BROADCASTING,
         )
         # wait for some reward
         wait_for_new_blocks(cluster_temp, 2)
@@ -266,7 +266,7 @@ class TestAuthzModule:
             cluster_temp,
             generated_tx_txt,
             grantee_address,
-            broadcast_mode=BLOCK_BROADCASTING,
+            broadcast_mode=SYNC_BROADCASTING,
         )
         wait_for_new_blocks(cluster_temp, 1)
 

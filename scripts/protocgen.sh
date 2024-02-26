@@ -35,5 +35,3 @@ cd ..
 # move proto files to the right places
 cp -r github.com/crypto-org-chain/chain-main/* ./
 rm -rf github.com
-
-go mod tidy -compat=1.18

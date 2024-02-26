@@ -37,40 +37,46 @@ def test_transfer(cluster):
     print("transfer tx", tx["txhash"])
     assert tx["logs"] == [
         {
+            "msg_index": 0,
+            "log": "",
             "events": [
                 {
-                    "attributes": [
-                        {"key": "receiver", "value": reserve_addr},
-                        {"key": "amount", "value": "100000000basecro"},
-                    ],
-                    "type": "coin_received",
-                },
-                {
-                    "attributes": [
-                        {"key": "spender", "value": community_addr},
-                        {"key": "amount", "value": "100000000basecro"},
-                    ],
-                    "type": "coin_spent",
-                },
-                {
+                    "type": "message",
                     "attributes": [
                         {"key": "action", "value": "/cosmos.bank.v1beta1.MsgSend"},
                         {"key": "sender", "value": community_addr},
                         {"key": "module", "value": "bank"},
                     ],
-                    "type": "message",
                 },
                 {
+                    "type": "coin_spent",
+                    "attributes": [
+                        {"key": "spender", "value": community_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                },
+                {
+                    "type": "coin_received",
+                    "attributes": [
+                        {"key": "receiver", "value": reserve_addr},
+                        {"key": "amount", "value": "100000000basecro"},
+                    ],
+                },
+                {
+                    "type": "transfer",
                     "attributes": [
                         {"key": "recipient", "value": reserve_addr},
                         {"key": "sender", "value": community_addr},
                         {"key": "amount", "value": "100000000basecro"},
                     ],
-                    "type": "transfer",
+                },
+                {
+                    "type": "message",
+                    "attributes": [
+                        {"key": "sender", "value": community_addr},
+                    ],
                 },
             ],
-            "log": "",
-            "msg_index": 0,
         }
     ]
 

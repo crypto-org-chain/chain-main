@@ -1,5 +1,5 @@
 syntax = "proto3";
-package chainmain.icaauth.v1;
+package icaauth.v1;
 
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/any.proto";

@@ -4,7 +4,7 @@ package app
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/simapp"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 )
@@ -13,5 +13,5 @@ import (
 // It panics if the user provides files for both of them.
 // If a file is not given for the genesis or the sim params, it creates a randomized one.
 func AppStateFn(cdc codec.JSONCodec, simManager *module.SimulationManager) simtypes.AppStateFn {
-	return simapp.AppStateFnWithExtendedCb(cdc, simManager, NewDefaultGenesisState(cdc), nil)
+	return simtestutil.AppStateFnWithExtendedCb(cdc, simManager, NewDefaultGenesisState(cdc), nil)
 }

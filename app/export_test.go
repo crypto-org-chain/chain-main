@@ -24,7 +24,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			app := Setup(t, false)
 			app.Commit()
-			_, err := app.ExportAppStateAndValidators(tc.forZeroHeight, []string{})
+			_, err := app.ExportAppStateAndValidators(tc.forZeroHeight, []string{}, []string{})
 			require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
 		})
 	}

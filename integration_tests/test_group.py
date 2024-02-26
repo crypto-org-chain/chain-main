@@ -2,6 +2,8 @@ import json
 
 import pytest
 
+from .utils import parse_events
+
 pytestmark = pytest.mark.normal
 
 
@@ -43,11 +45,11 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
 
     # Get group id from events
-    group_id = json.loads(
-        json.loads(rsp["raw_log"])[0]["events"][0]["attributes"][0]["value"]
-    )
+    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroup"]
+    group_id = evt["group_id"]
 
     # create group policy
     policy_file = tmp_path / "policy.json"
@@ -79,10 +81,9 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-
-    group_policy_address = json.loads(
-        json.loads(rsp["raw_log"])[0]["events"][0]["attributes"][0]["value"]
-    )
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
+    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroupPolicy"]
+    group_policy_address = evt["address"].strip('"')
 
     # submit a proposal
     proposal_file = tmp_path / "proposal.json"
@@ -98,6 +99,8 @@ def test_group(cluster, tmp_path):
         ],
         "metadata": "proposal",
         "proposers": [admin],
+        "title": "title",
+        "summary": "summary",
     }
 
     with open(proposal_file, "w") as f:
@@ -119,10 +122,9 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-
-    proposal_id = json.loads(
-        json.loads(rsp["raw_log"])[0]["events"][0]["attributes"][0]["value"]
-    )
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
+    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventSubmitProposal"]
+    proposal_id = evt["proposal_id"]
 
     # vote on proposal
     rsp = json.loads(
@@ -144,7 +146,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-
+    cluster.event_query_tx_for(rsp["txhash"])
     rsp = json.loads(
         cli.raw(
             "tx",
@@ -164,7 +166,7 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-
+    cluster.event_query_tx_for(rsp["txhash"])
     # query proposal votes
     rsp = json.loads(
         cli.raw(
@@ -177,7 +179,6 @@ def test_group(cluster, tmp_path):
             chain_id=cli.chain_id,
         )
     )
-
     assert len(rsp["votes"]) == 2, rsp
 
     # transfer some amount to group policy address
@@ -203,19 +204,10 @@ def test_group(cluster, tmp_path):
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]
-
+    rsp = cluster.event_query_tx_for(rsp["txhash"])
     # check if the proposal executed successfully
-    assert (
-        json.loads(
-            list(
-                filter(
-                    lambda attribute: attribute["key"] == "result",
-                    json.loads(rsp["raw_log"])[0]["events"][2]["attributes"],
-                )
-            )[0]["value"],
-        )
-        == "PROPOSAL_EXECUTOR_RESULT_SUCCESS"
-    ), rsp["raw_log"]
+    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventExec"]
+    assert evt["result"].strip('"') == "PROPOSAL_EXECUTOR_RESULT_SUCCESS"
 
     assert group_policy_balance - 100000000 == cluster.balance(group_policy_address)
     assert signer1_balance + 100000000 == cluster.balance(signer1)

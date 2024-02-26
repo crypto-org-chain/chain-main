@@ -1,11 +1,15 @@
+import enum
+import hashlib
 import json
 import socket
 import sys
 import time
 
+import bech32
 from dateutil.parser import isoparse
 from pystarport import cluster, expansion, ledger
 from pystarport.ports import rpc_port
+from pystarport.utils import format_doc_string
 
 from .cosmoscli import ClusterCLI
 
@@ -60,6 +64,29 @@ GRANTS = "grants"
 REWARDS = "rewards"
 
 
+class ModuleAccount(enum.Enum):
+    FeeCollector = "fee_collector"
+    Mint = "mint"
+    Gov = "gov"
+    Distribution = "distribution"
+    BondedPool = "bonded_tokens_pool"
+    NotBondedPool = "not_bonded_tokens_pool"
+    IBCTransfer = "transfer"
+
+
+@format_doc_string(
+    options=",".join(v.value for v in ModuleAccount.__members__.values())
+)
+def module_address(name):
+    """
+    get address of module accounts
+
+    :param name: name of module account, values: {options}
+    """
+    data = hashlib.sha256(ModuleAccount(name).value.encode()).digest()[:20]
+    return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
+
+
 def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
         try:
@@ -76,10 +103,10 @@ def wait_for_block(cli, height, timeout=240):
         raise TimeoutError(f"wait for block {height} timeout")
 
 
-def wait_for_new_blocks(cli, n):
+def wait_for_new_blocks(cli, n, sleep=0.5):
     begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
     while True:
-        time.sleep(0.5)
+        time.sleep(sleep)
         cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
         if cur_height - begin_height >= n:
             break
@@ -167,6 +194,24 @@ def parse_events(logs):
     }
 
 
+def find_log_event_attrs(logs, ev_type, cond=None):
+    for ev in logs[0]["events"]:
+        if ev["type"] == ev_type:
+            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+            if cond is None or cond(attrs):
+                return attrs
+    return None
+
+
+def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
+    def cb(attrs):
+        return "proposal_id" in attrs
+
+    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
+    assert ev["proposal_messages"] == msg, rsp
+    return ev["proposal_id"]
+
+
 _next_unique = 0
 
 
@@ -205,7 +250,7 @@ def find_balance(balances, denom):
 
 
 def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "bank",
@@ -222,10 +267,13 @@ def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "feegrant",
@@ -241,10 +289,13 @@ def grant_fee_allowance(cli, granter_address, grantee, *k_options, i=0, **kv_opt
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "feegrant",
@@ -260,6 +311,9 @@ def revoke_fee_grant(cli, granter_address, grantee, *k_options, i=0, **kv_option
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 def throw_error_for_non_success_code(func):
@@ -275,7 +329,7 @@ def throw_error_for_non_success_code(func):
 
 @throw_error_for_non_success_code
 def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -290,13 +344,16 @@ def exec_tx_by_grantee(cli, tx_file, grantee, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def grant_authorization(
     cli, grantee, authorization_type, granter, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -310,13 +367,16 @@ def grant_authorization(
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def revoke_authorization(
     cli, grantee, msg_type, granter, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "authz",
@@ -330,6 +390,9 @@ def revoke_authorization(
             **kv_options,
         )
     )
+    if rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 def query_command(cli, *k_options, i=0, **kv_options):
@@ -359,7 +422,7 @@ def query_block_info(cli, height, i=0):
 def delegate_amount(
     cli, validator_address, amount, from_, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -373,11 +436,14 @@ def delegate_amount(
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -391,13 +457,16 @@ def unbond_amount(cli, validator_address, amount, from_, *k_options, i=0, **kv_o
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 @throw_error_for_non_success_code
 def redelegate_amount(
     cli, src_validator, dst_validator, amount, from_, *k_options, i=0, **kv_options
 ):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "staking",
@@ -412,6 +481,9 @@ def redelegate_amount(
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 def query_delegation_amount(cluster, delegator_address, validator_address):
@@ -447,7 +519,7 @@ def query_total_reward_amount(cluster, delegator_address, validator_address=""):
 
 @throw_error_for_non_success_code
 def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
-    return json.loads(
+    rsp = json.loads(
         cli.cosmos_cli(i).raw(
             "tx",
             "distribution",
@@ -459,3 +531,16 @@ def withdraw_all_rewards(cli, from_delegator, *k_options, i=0, **kv_options):
             **kv_options,
         )
     )
+    if GENERATE_ONLY not in k_options and rsp["code"] == 0:
+        rsp = cli.cosmos_cli(i).event_query_tx_for(rsp["txhash"])
+    return rsp
+
+
+def wait_for_fn(name, fn, *, timeout=240, interval=1):
+    for i in range(int(timeout / interval)):
+        result = fn()
+        if result:
+            return result
+        time.sleep(interval)
+    else:
+        raise TimeoutError(f"wait for {name} timeout")

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/linxGnu/grocksdb"
-	dbm "github.com/tendermint/tm-db"
 )
 
 func OpenDB(home string, backendType dbm.BackendType) (dbm.DB, error) {

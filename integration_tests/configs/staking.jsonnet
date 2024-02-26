@@ -8,7 +8,7 @@ local validator = import 'validator.jsonnet';
       staked: '1cro',
       min_self_delegation: 10000000,  // 0.1cro
       client_config: {
-        'broadcast-mode': 'block',
+        'broadcast-mode': 'sync',
       },
     }],
     accounts: default.accounts + [

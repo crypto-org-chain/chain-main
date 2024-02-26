@@ -3,7 +3,7 @@ PACKAGE_NAME:=github.com/crypto-org-chain/chain-main
 
 
 VERSION := $(shell echo $(shell git describe --tags 2>/dev/null ) | sed 's/^v//')
-TMVERSION := $(shell go list -m github.com/tendermint/tendermint | sed 's:.* ::')
+TMVERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
