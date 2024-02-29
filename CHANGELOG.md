@@ -1,5 +1,11 @@
 # Changelog
 
+*Mar 1, 2024*
+
+## v4.2.9
+
+- [#]() Fix slashing logic.
+
 *Dec 6, 2023*
 
 ## v4.2.8
