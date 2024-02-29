@@ -11,5 +11,5 @@ var SlashingForkHeights = map[string]int64{
 }
 
 func SlashingForkEnabled(ctx sdk.Context) bool {
-	return SlashingForkHeights[ctx.ChainID()] >= ctx.BlockHeight()
+	return ctx.BlockHeight() >= SlashingForkHeights[ctx.ChainID()]
 }
