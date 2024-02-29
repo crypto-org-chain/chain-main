@@ -147,12 +147,7 @@ import (
 )
 
 // FIXME remove this line, dummy
-const (
-	appName = "chain-maind"
-
-	// hardfork height
-	SlashingHotfixHKHeight = 0
-)
+const appName = "chain-maind"
 
 var (
 	// DefaultNodeHome default home directories for the application daemon
