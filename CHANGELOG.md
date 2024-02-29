@@ -4,7 +4,7 @@
 
 ## v4.2.9
 
-- [#]() Fix slashing logic.
+- [#1036](https://github.com/crypto-org-chain/chain-main/pull/1036) Fix slashing logic.
 
 *Dec 6, 2023*
 
