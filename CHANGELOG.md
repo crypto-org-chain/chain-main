@@ -1,5 +1,11 @@
 # Changelog
 
+*Mar 1, 2024*
+
+## v4.2.9
+
+- [#1036](https://github.com/crypto-org-chain/chain-main/pull/1036) Fix slashing logic.
+
 *Dec 6, 2023*
 
 ## v4.2.8

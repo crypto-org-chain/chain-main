@@ -69,7 +69,7 @@ require (
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogoproto v1.4.7 // indirect
 	github.com/cosmos/iavl v0.19.6 // indirect
-	github.com/cosmos/ledger-cosmos-go v0.12.2 // indirect
+	github.com/cosmos/ledger-cosmos-go v0.12.4 // indirect
 	github.com/creachadair/taskgroup v0.3.2 // indirect
 	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
@@ -161,8 +161,8 @@ require (
 	github.com/tidwall/wal v1.1.7 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
 	github.com/zbiljic/go-filelock v0.0.0-20170914061330-1dbf7103ab7d // indirect
-	github.com/zondax/hid v0.9.1 // indirect
-	github.com/zondax/ledger-go v0.14.1 // indirect
+	github.com/zondax/hid v0.9.2 // indirect
+	github.com/zondax/ledger-go v0.14.3 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
@@ -185,6 +185,7 @@ replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
 	github.com/cometbft/cometbft-db => github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6
+	github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20240229063231-63265c2283dd
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
 	// TODO: remove it: https://github.com/cosmos/cosmos-sdk/issues/13134
 	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.4.2

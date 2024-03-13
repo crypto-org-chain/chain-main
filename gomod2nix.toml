@@ -109,8 +109,9 @@ schema = 3
     version = "v1.0.0-beta.1"
     hash = "sha256-oATkuj+fM5eBn+ywO+w/tL0AFSIEkx0J3Yz+VhVe0QA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.15"
-    hash = "sha256-QwztH5PlDscGl9pSGvbfv6ca7PQkBmcLvGZufxGT4fw="
+    version = "v0.46.3-0.20240229063231-63265c2283dd"
+    hash = "sha256-UMr2Jw/XkhqmNUXd4i9YusntCmUi5wiCJhgExoYAkiM="
+    replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -124,8 +125,8 @@ schema = 3
     version = "v5.2.1"
     hash = "sha256-zBw4oJQxhdviybdaL9n8PTFRTUpIIUbCGitVj6FD1/k="
   [mod."github.com/cosmos/ledger-cosmos-go"]
-    version = "v0.12.2"
-    hash = "sha256-fLkveUWxn0nZzvgsY0KTU/T1TUUQ8Ap6XTYSnJs6XXo="
+    version = "v0.12.4"
+    hash = "sha256-SYABql9QYhuZaNxRnvfHw/KqDTTzjYWgzbN7PDKVmGA="
   [mod."github.com/creachadair/taskgroup"]
     version = "v0.3.2"
     hash = "sha256-Y261IO/d9xjV0UScqHvo31broxvnKn4IQQC9Mu6jNkE="
@@ -455,11 +456,11 @@ schema = 3
     version = "v0.0.0-20170914061330-1dbf7103ab7d"
     hash = "sha256-JqNj/Wg8nGFSmndgYC7+FZzL2zG7rwOQMjlqYs3ZGvw="
   [mod."github.com/zondax/hid"]
-    version = "v0.9.1"
-    hash = "sha256-hSVmN/f/lQHFhF60o6ej78ELC0MMoqQgqIX2hHjdTXg="
+    version = "v0.9.2"
+    hash = "sha256-9h1gEJ/loyaJvu9AsmslztiA8U9ixDTC6TBw9lCU2BE="
   [mod."github.com/zondax/ledger-go"]
-    version = "v0.14.1"
-    hash = "sha256-iQmShSaty50yYTbYPNd4fnOyrcEG7P2fWmj+fLJQW4s="
+    version = "v0.14.3"
+    hash = "sha256-tldEok5ebZ4R4B7H8dSlYS5oVuLvh89n9wUaVlDjYwg="
   [mod."go.etcd.io/bbolt"]
     version = "v1.3.7"
     hash = "sha256-poZk8tPLDWwW95oCOkTJcQtEvOJTD9UXAZ2TqGJutwk="
