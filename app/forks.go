@@ -4,10 +4,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// TODO decide the fork heights
 var SlashingForkHeights = map[string]int64{
-	"crypto-org-chain-mainnet-1": 0,
-	"testnet-croeseid-4":         0,
+	"testnet-croeseid-4": 14857500,
+	"tempcrypto-org-chain-mainnet-dryrun-1":         6782000,
 }
 
 func SlashingForkEnabled(ctx sdk.Context) bool {
