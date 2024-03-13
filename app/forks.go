@@ -5,8 +5,8 @@ import (
 )
 
 var SlashingForkHeights = map[string]int64{
-	"testnet-croeseid-4": 14857500,
-	"tempcrypto-org-chain-mainnet-dryrun-1":         6782000,
+	"testnet-croeseid-4":                    14857500,
+	"tempcrypto-org-chain-mainnet-dryrun-1": 6782000,
 }
 
 func SlashingForkEnabled(ctx sdk.Context) bool {
