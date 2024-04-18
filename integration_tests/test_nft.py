@@ -48,7 +48,7 @@ def test_create_nft_token(cluster):
     uri = "testuri"
     rsp = cluster.create_nft_token(singer1_addr, singer2_addr, denomid, tokenid, uri)
     ev = find_log_event_attrs(rsp["logs"], "message")
-    assert ev["action"] == "/nft.v1.MsgMintNFT", ev
+    assert ev["action"] == "/chainmain.nft.v1.MsgMintNFT", ev
 
 
 def test_query_nft_token(cluster):
@@ -67,7 +67,7 @@ def test_transfer_nft_token(cluster):
     singer2_addr = cluster.address("signer2")
     rsp = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
     ev = find_log_event_attrs(rsp["logs"], "message")
-    assert ev["action"] == "/nft.v1.MsgTransferNFT", ev
+    assert ev["action"] == "/chainmain.nft.v1.MsgTransferNFT", ev
 
 
 def test_query_nft_token_again(cluster):

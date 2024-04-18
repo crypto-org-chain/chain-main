@@ -1,7 +1,7 @@
 syntax = "proto3";
-package chainmain.v1;
+package chainmain.supply.v1;
 
-option go_package = "github.com/crypto-org-chain/chain-main/x/chainmain/types";
+option go_package = "github.com/crypto-org-chain/chain-main/x/supply/types";
 
 // GenesisState defines the capability module's genesis state.
 // TODO: currently left empty (for versioning),
