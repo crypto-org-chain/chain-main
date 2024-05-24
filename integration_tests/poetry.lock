@@ -799,8 +799,8 @@ tomlkit = "^0"
 [package.source]
 type = "git"
 url = "https://github.com/crypto-com/pystarport.git"
-reference = "dependabot/pip/requests-2.32.0"
-resolved_reference = "e062fb5bccaddadbf65280b5ebba3a9c82a38202"
+reference = "main"
+resolved_reference = "2ad4a461da8d1a467bbcbdde05d785b51430a251"
 
 [[package]]
 name = "pytest"
@@ -1241,4 +1241,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "d95e24f80c98178886828d27245ad3efdd4f57ab4dd7ff752655223107ff141c"
+content-hash = "0591497c0794629b4ba7fa71d9944398ddd2f9bed1e430faf135bd21c28cd90e"
