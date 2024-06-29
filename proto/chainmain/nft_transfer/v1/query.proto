@@ -1,11 +1,11 @@
 syntax = "proto3";
-package nft_transfer.v1;
+package chainmain.nft_transfer.v1;
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/nft-transfer/types";
 
 import "gogoproto/gogo.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "nft_transfer/v1/trace.proto";
+import "chainmain/nft_transfer/v1/trace.proto";
 import "google/api/annotations.proto";
 
 // Query provides defines the gRPC querier service.

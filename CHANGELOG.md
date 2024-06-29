@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 - [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
+- [#1044](https://github.com/crypto-org-chain/chain-main/pull/1044) Revert the protobuf package name changes introduced in #1023.
 
 *Dec 6, 2023*
 
