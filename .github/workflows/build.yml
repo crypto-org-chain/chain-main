@@ -72,7 +72,7 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           echo "repo_name=${{ fromJson(steps.request.outputs.data).head.repo.full_name }}" >> $GITHUB_OUTPUT
-          comment_hash=`echo $COMMENT_BODY | cut -d' ' -f2` # get commit hash if any
+          comment_hash=`echo "$COMMENT_BODY" | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
             # use default head ref
             echo "ref=${{ fromJson(steps.request.outputs.data).head.ref }}" >> $GITHUB_OUTPUT
