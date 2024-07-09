@@ -99,7 +99,7 @@ def test_nft_transfer(cluster):
     if rsp["code"] == 0:
         rsp = cli_src.event_query_tx_for(rsp["txhash"])
     ev = find_log_event_attrs(rsp["logs"], "message")
-    assert ev["action"] == "/nft.v1.MsgMintNFT", ev
+    assert ev["action"] == "/chainmain.nft.v1.MsgMintNFT", ev
 
     # nft transfer that's supposed to fail, exceeds max receiver length
     rsp = json.loads(
