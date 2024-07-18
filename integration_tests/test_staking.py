@@ -149,9 +149,9 @@ def test_join_validator(cluster):
     assert val["tokens"] == str(10**8)
     assert val["description"]["moniker"] == "new joined"
     assert val["commission"]["commission_rates"] == {
-        "rate": "0.100000000000000000",
-        "max_rate": "0.200000000000000000",
-        "max_change_rate": "0.010000000000000000",
+        "rate": "100000000000000000",
+        "max_rate": "200000000000000000",
+        "max_change_rate": "10000000000000000",
     }
     assert (
         cluster.edit_validator(i, commission_rate="0.2")["code"] == 12
