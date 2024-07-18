@@ -9,7 +9,9 @@ import (
 	"time"
 
 	conf "github.com/cosmos/cosmos-sdk/client/config"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
 	"cosmossdk.io/log"
@@ -53,7 +55,12 @@ const EnvPrefix = "CRO"
 // main function.
 func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	config.SetConfig()
-	encodingConfig := app.MakeEncodingConfig()
+
+	tempApp := app.New(
+		log.NewNopLogger(), dbm.NewMemDB(), nil, true,
+		simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
+	)
+	encodingConfig := tempApp.EncodingConfig()
 	initClientCtx := client.Context{}.
 		WithCodec(encodingConfig.Marshaler).
 		WithInterfaceRegistry(encodingConfig.InterfaceRegistry).
@@ -91,7 +98,15 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 		},
 	}
 
-	initRootCmd(rootCmd, encodingConfig)
+	initRootCmd(rootCmd, encodingConfig, tempApp.BasicModuleManager)
+
+	autoCliOpts := tempApp.AutoCliOpts()
+	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
+	autoCliOpts.ClientCtx = initClientCtx
+
+	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
+		panic(err)
+	}
 
 	return rootCmd, encodingConfig
 }
@@ -120,12 +135,12 @@ func initAppConfig() (string, interface{}) {
 	return serverconfig.DefaultConfigTemplate + memiavlcfg.DefaultConfigTemplate, customAppConfig
 }
 
-func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
+func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, basicManager module.BasicManager) {
 	// authclient.Codec = encodingConfig.Marshaler
 	cfg := sdk.GetConfig()
 	cfg.Seal()
 
-	initCmd := genutilcli.InitCmd(app.ModuleBasics, app.DefaultNodeHome)
+	initCmd := genutilcli.InitCmd(basicManager, app.DefaultNodeHome)
 	initCmd.PreRun = func(cmd *cobra.Command, args []string) {
 		serverCtx := server.GetServerContextFromCmd(cmd)
 		serverCtx.Config.Consensus.TimeoutCommit = 3 * time.Second
@@ -218,7 +233,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 		initCmd,
 		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		chainmaincli.AddTestnetCmd(app.ModuleBasics, banktypes.GenesisBalancesIterator{}),
+		chainmaincli.AddTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
@@ -230,7 +245,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
 	// add keybase, auxiliary RPC, query, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		genesisCommand(encodingConfig.TxConfig, app.ModuleBasics),
+		genesisCommand(encodingConfig.TxConfig, basicManager),
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
@@ -264,7 +279,7 @@ func queryCommand() *cobra.Command {
 		Use:                        "query",
 		Aliases:                    []string{"q"},
 		Short:                      "Querying subcommands",
-		DisableFlagParsing:         true,
+		DisableFlagParsing:         false,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
@@ -280,9 +295,6 @@ func queryCommand() *cobra.Command {
 		chainmaincli.QueryAllTxCmd(),
 	)
 
-	app.ModuleBasics.AddQueryCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
-
 	return cmd
 }
 
@@ -290,7 +302,7 @@ func txCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
-		DisableFlagParsing:         true,
+		DisableFlagParsing:         false,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
@@ -305,10 +317,8 @@ func txCommand() *cobra.Command {
 		authcmd.GetBroadcastCommand(),
 		authcmd.GetEncodeCommand(),
 		authcmd.GetDecodeCommand(),
+		authcmd.GetSimulateCmd(),
 	)
-
-	app.ModuleBasics.AddTxCommands(cmd)
-	cmd.PersistentFlags().String(flags.FlagChainID, "", "The network chain ID")
 
 	return cmd
 }
@@ -321,14 +331,7 @@ func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts serverty
 	}
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
-	return app.New(
-		logger, db, traceStore, true, skipUpgradeHeights,
-		cast.ToString(appOpts.Get(flags.FlagHome)),
-		cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod)),
-		app.MakeEncodingConfig(), // Ideally, we would reuse the one created by NewRootCmd.
-		appOpts,
-		baseappOptions...,
-	)
+	return app.New(logger, db, traceStore, true, appOpts, baseappOptions...)
 }
 
 // exportAppStateAndTMValidators creates a new chain app (optionally at a given height)
@@ -345,13 +348,13 @@ func exportAppStateAndTMValidators(
 
 	var a *app.ChainApp
 	if height != -1 {
-		a = app.New(logger, db, traceStore, false, map[int64]bool{}, "", uint(1), encCfg, appOpts)
+		a = app.New(logger, db, traceStore, false, appOpts)
 
 		if err := a.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		a = app.New(logger, db, traceStore, true, map[int64]bool{}, "", uint(1), encCfg, appOpts)
+		a = app.New(logger, db, traceStore, true, appOpts)
 	}
 
 	return a.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

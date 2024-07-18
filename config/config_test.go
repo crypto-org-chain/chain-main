@@ -49,7 +49,7 @@ func TestConversion(t *testing.T) {
 		result sdk.Coin
 		expErr bool
 	}{
-		{sdk.NewCoin("foo", sdk.ZeroInt()), config.HumanCoinUnit, sdk.Coin{}, true},
+		{sdk.NewCoin("foo", sdkmath.ZeroInt()), config.HumanCoinUnit, sdk.Coin{}, true},
 		{sdk.NewCoin(config.HumanCoinUnit, sdkmath.ZeroInt()), "foo", sdk.Coin{}, true},
 		{sdk.NewCoin(config.HumanCoinUnit, sdkmath.ZeroInt()), "FOO", sdk.Coin{}, true},
 
