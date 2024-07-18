@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	clientcfg "github.com/cosmos/cosmos-sdk/client/config"
 	conf "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -101,6 +102,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	initRootCmd(rootCmd, encodingConfig, tempApp.BasicModuleManager)
 
 	autoCliOpts := tempApp.AutoCliOpts()
+	initClientCtx, _ = clientcfg.ReadDefaultValuesFromDefaultClientConfig(initClientCtx)
 	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
 	autoCliOpts.ClientCtx = initClientCtx
 
