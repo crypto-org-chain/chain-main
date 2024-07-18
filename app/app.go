@@ -737,7 +737,7 @@ func New(
 	// wire up the versiondb's `StreamingService` and `MultiStore`.
 	if cast.ToBool(appOpts.Get("versiondb.enable")) {
 		var err error
-		app.qms, err = setupVersionDB(homePath, bApp, keys, tkeys, memKeys, okeys)
+		app.qms, err = app.setupVersionDB(homePath, keys, tkeys, memKeys, okeys)
 		if err != nil {
 			panic(err)
 		}
