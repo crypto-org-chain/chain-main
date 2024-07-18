@@ -550,6 +550,9 @@ schema = 3
   [mod."go.opentelemetry.io/otel/trace"]
     version = "v1.22.0"
     hash = "sha256-38zzkmcoOzYYeDN+rC44HmwmdnalIcEpObCS6tIvMO8="
+  [mod."go.starlark.net"]
+    version = "v0.0.0-20240705175910-70002002b310"
+    hash = "sha256-WT2I7ZJM4urBI9LeIkWJ9SlcVwMSCboIdv5GNOX2SzA="
   [mod."go.uber.org/multierr"]
     version = "v1.10.0"
     hash = "sha256-GepuppwpqpOGSNKi6GtGoO01TFxUQWfKZmE0B3M/HQA="

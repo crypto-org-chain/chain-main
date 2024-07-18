@@ -9,19 +9,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	"github.com/cosmos/gogoproto/proto"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/keeper"
 	icatypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
-	"go.starlark.net/lib/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type (
 	Keeper struct {
-		cdc        codec.BinaryCodec
+		cdc        codec.Codec
 		storeKey   storetypes.StoreKey
 		memKey     storetypes.StoreKey
 		paramStore paramtypes.Subspace
@@ -32,7 +32,7 @@ type (
 )
 
 func NewKeeper(
-	cdc codec.BinaryCodec,
+	cdc codec.Codec,
 	storeKey,
 	memKey storetypes.StoreKey,
 	paramStore paramtypes.Subspace,
@@ -66,7 +66,7 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 	for i, msg := range msgs {
 		protoMsgs[i] = msg.(proto.Message)
 	}
-	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsgs)
+	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsgs, icatypes.EncodingProto3JSON)
 	if err != nil {
 		return err
 	}
