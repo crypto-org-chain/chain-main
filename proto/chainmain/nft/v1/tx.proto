@@ -3,6 +3,7 @@
 syntax = "proto3";
 package chainmain.nft.v1;
 
+import "cosmos/msg/v1/msg.proto";
 import "gogoproto/gogo.proto";
 
 option go_package                      = "github.com/crypto-org-chain/chain-main/x/nft/types";
@@ -28,7 +29,8 @@ service Msg {
 
 // MsgIssueDenom defines an SDK message for creating a new denom.
 message MsgIssueDenom {
-  option (gogoproto.equal) = true;
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.equal)      = true;
 
   string id     = 1;
   string name   = 2;
@@ -42,7 +44,8 @@ message MsgIssueDenomResponse {}
 
 // MsgTransferNFT defines an SDK message for transferring an NFT to recipient.
 message MsgTransferNFT {
-  option (gogoproto.equal) = true;
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.equal)      = true;
 
   string id        = 1;
   string denom_id  = 2 [(gogoproto.moretags) = "yaml:\"denom_id\""];
@@ -55,7 +58,8 @@ message MsgTransferNFTResponse {}
 
 // MsgEditNFT defines an SDK message for editing a nft.
 message MsgEditNFT {
-  option (gogoproto.equal) = true;
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.equal)      = true;
 
   string id       = 1;
   string denom_id = 2 [(gogoproto.moretags) = "yaml:\"denom_id\""];
@@ -70,7 +74,8 @@ message MsgEditNFTResponse {}
 
 // MsgMintNFT defines an SDK message for creating a new NFT.
 message MsgMintNFT {
-  option (gogoproto.equal) = true;
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.equal)      = true;
 
   string id        = 1;
   string denom_id  = 2 [(gogoproto.moretags) = "yaml:\"denom_id\""];
@@ -86,7 +91,8 @@ message MsgMintNFTResponse {}
 
 // MsgBurnNFT defines an SDK message for burning a NFT.
 message MsgBurnNFT {
-  option (gogoproto.equal) = true;
+  option (cosmos.msg.v1.signer) = "sender";
+  option (gogoproto.equal)      = true;
 
   string id       = 1;
   string denom_id = 2 [(gogoproto.moretags) = "yaml:\"denom_id\""];

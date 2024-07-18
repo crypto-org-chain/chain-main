@@ -15,7 +15,6 @@ from .utils import (
     cluster_fixture,
     find_log_event_attrs,
     get_proposal_id,
-    parse_events,
     wait_for_block,
     wait_for_block_time,
     wait_for_new_blocks,
@@ -124,7 +123,7 @@ def test_cosmovisor(cosmovisor_cluster):
     assert rsp["code"] == 0, rsp
 
     # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
+    ev = find_log_event_attrs(rsp["events"], "submit_proposal")
     assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
@@ -171,7 +170,7 @@ def propose_and_pass(
     if propose_legacy:
         proposal_id = get_proposal_id(rsp, ",/cosmos.gov.v1.MsgExecLegacyContent")
     else:
-        ev = parse_events(rsp["logs"])["submit_proposal"]
+        ev = find_log_event_attrs(rsp["events"], "submit_proposal")
         assert ev["proposal_type"] == "SoftwareUpgrade", rsp
         proposal_id = ev["proposal_id"]
     proposal = cluster.query_proposal(proposal_id)
@@ -376,7 +375,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomname = "testdenomname"
     creator = cluster.address("community")
     rsp = cluster.create_nft(creator, denomid, denomname, event_query_tx=False)
-    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    ev = find_log_event_attrs(rsp["events"], "issue_denom")
     assert ev == {
         "denom_id": denomid,
         "denom_name": denomname,

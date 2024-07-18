@@ -15,11 +15,12 @@ def test_create_nft(cluster):
     denomid = "testdenomid"
     denomname = "testdenomname"
     rsp = cluster.create_nft(singer1_addr, denomid, denomname)
-    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    ev = find_log_event_attrs(rsp["events"], "issue_denom")
     assert ev == {
         "denom_id": denomid,
         "denom_name": denomname,
         "creator": singer1_addr,
+        "msg_index": "0",
     }, ev
 
 
@@ -47,7 +48,7 @@ def test_create_nft_token(cluster):
     singer2_addr = cluster.address("signer2")
     uri = "testuri"
     rsp = cluster.create_nft_token(singer1_addr, singer2_addr, denomid, tokenid, uri)
-    ev = find_log_event_attrs(rsp["logs"], "message")
+    ev = find_log_event_attrs(rsp["events"], "message")
     assert ev["action"] == "/chainmain.nft.v1.MsgMintNFT", ev
 
 
@@ -66,7 +67,7 @@ def test_transfer_nft_token(cluster):
     singer1_addr = cluster.address("signer1")
     singer2_addr = cluster.address("signer2")
     rsp = cluster.transfer_nft_token(singer2_addr, singer1_addr, denomid, tokenid)
-    ev = find_log_event_attrs(rsp["logs"], "message")
+    ev = find_log_event_attrs(rsp["events"], "message")
     assert ev["action"] == "/chainmain.nft.v1.MsgTransferNFT", ev
 
 
@@ -86,12 +87,13 @@ def test_edit_nft_token(cluster):
     newuri = "newuri"
     newname = "newname"
     rsp = cluster.edit_nft_token(singer1_addr, denomid, tokenid, newuri, newname)
-    ev = find_log_event_attrs(rsp["logs"], "edit_nft")
+    ev = find_log_event_attrs(rsp["events"], "edit_nft")
     assert ev == {
         "token_id": tokenid,
         "denom_id": denomid,
         "token_uri": newuri,
         "owner": singer1_addr,
+        "msg_index": "0",
     }, ev
 
 
@@ -100,9 +102,10 @@ def test_burn_nft_token(cluster):
     tokenid = "testtokenid"
     singer1_addr = cluster.address("signer1")
     rsp = cluster.burn_nft_token(singer1_addr, denomid, tokenid)
-    ev = find_log_event_attrs(rsp["logs"], "burn_nft")
+    ev = find_log_event_attrs(rsp["events"], "burn_nft")
     assert ev == {
         "denom_id": denomid,
         "token_id": tokenid,
         "owner": singer1_addr,
+        "msg_index": "0",
     }, ev

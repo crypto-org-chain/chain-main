@@ -24,8 +24,8 @@ from .utils import (
     cluster_fixture,
     delegate_amount,
     exec_tx_by_grantee,
-    grant_authorization,
     find_log_event_attrs,
+    grant_authorization,
     query_command,
     query_delegation_amount,
     query_total_reward_amount,
@@ -49,6 +49,11 @@ def cluster_temp(worker_index, pytestconfig, tmp_path_factory):
         worker_index,
         tmp_path_factory.mktemp("data"),
     )
+
+
+def assert_grants(cluster, granter_address, grantee_address):
+    res = query_command(cluster, AUTHZ, GRANTS, granter_address, grantee_address)
+    assert "grants" not in res or len(res["grants"]) == 0
 
 
 class TestAuthzModule:
@@ -102,14 +107,7 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, SEND_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
     def test_execute_tx_beyond_authorization_spend_limit(self, cluster_temp, tmp_path):
         """
@@ -152,14 +150,7 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, SEND_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
     def test_revoke_authorization(self, cluster_temp, tmp_path):
         """
@@ -172,11 +163,7 @@ class TestAuthzModule:
         receiver_address = cluster_temp.address("reserve")
         granter_initial_balance = cluster_temp.balance(granter_address)
         receiver_initial_balance = cluster_temp.balance(receiver_address)
-
-        grants = query_command(
-            cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-        )
-        assert len(grants["grants"]) == 0
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
         grant_authorization(
             cluster_temp,
@@ -189,9 +176,8 @@ class TestAuthzModule:
             cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
         )
         assert len(grants_after_authorization["grants"]) == 1
-        assert grants_after_authorization["grants"][0]["authorization"]["spend_limit"][
-            0
-        ] == {
+        value = grants_after_authorization["grants"][0]["authorization"]["value"]
+        assert value["spend_limit"][0] == {
             "denom": BASECRO_DENOM,
             "amount": "%s" % spend_limit,
         }
@@ -199,14 +185,7 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, SEND_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
         generated_tx_txt = tmp_path / "generated_tx.txt"
         generated_tx_msg = transfer(
             cluster_temp,
@@ -283,14 +262,7 @@ class TestAuthzModule:
             WITHDRAW_DELEGATOR_REWARD_TYPE_URL,
             granter_address,
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
     def test_execute_delegate_to_allowed_validator(self, cluster_temp, tmp_path):
         """
@@ -366,14 +338,7 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, DELEGATE_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
     def test_unable_to_execute_delegate_to_deny_validator(self, cluster_temp, tmp_path):
         """
@@ -412,14 +377,7 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, DELEGATE_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)
 
     def test_execute_all_staking_operations(self, cluster_temp, tmp_path):
         """
@@ -492,11 +450,14 @@ class TestAuthzModule:
         with open(generated_unbond_txt, "w") as opened_file:
             json.dump(generated_unbond_msg, opened_file)
         rsp = exec_tx_by_grantee(cluster_temp, generated_unbond_txt, grantee_address)
-        data = find_log_event_attrs(rsp["events"], "unbond", lambda attrs: "completion_time" in attrs)
+        data = find_log_event_attrs(
+            rsp["events"],
+            "unbond",
+            lambda attrs: "completion_time" in attrs,
+        )
         wait_for_block_time(
             cluster_temp,
-            isoparse(data["completion_time"])
-            + timedelta(seconds=1),
+            isoparse(data["completion_time"]) + timedelta(seconds=1),
         )
 
         assert query_delegation_amount(
@@ -558,11 +519,4 @@ class TestAuthzModule:
         revoke_authorization(
             cluster_temp, grantee_address, REDELEGATE_MSG_TYPE_URL, granter_address
         )
-        assert (
-            len(
-                query_command(
-                    cluster_temp, AUTHZ, GRANTS, granter_address, grantee_address
-                )["grants"]
-            )
-            == 0
-        )
+        assert_grants(cluster_temp, granter_address, grantee_address)

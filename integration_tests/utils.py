@@ -191,13 +191,6 @@ def get_ledger():
     return ledger.Ledger()
 
 
-def find_log_event_attrs(logs):
-    return {
-        ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
-        for ev in logs[0]["events"]
-    }
-
-
 def find_log_event_attrs(events, ev_type, cond=None):
     for ev in events:
         if ev["type"] == ev_type:
@@ -211,7 +204,7 @@ def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
     def cb(attrs):
         return "proposal_id" in attrs
 
-    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
+    ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
     assert ev["proposal_messages"] == msg, rsp
     return ev["proposal_id"]
 
@@ -417,6 +410,7 @@ def query_block_info(cli, height, i=0):
             "query",
             "block",
             height,
+            type="height",
             home=cli.cosmos_cli(i).data_dir,
         )
     )
@@ -497,8 +491,7 @@ def query_delegation_amount(cluster, delegator_address, validator_address):
         )
     except AssertionError:
         return {"denom": BASECRO_DENOM, "amount": "0"}
-
-    return delegation_amount["balance"]
+    return delegation_amount["delegation_response"]["balance"]
 
 
 def query_total_reward_amount(cluster, delegator_address, validator_address=""):

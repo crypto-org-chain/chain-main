@@ -77,11 +77,14 @@ def test_staking_unbond(cluster):
     assert rsp["code"] == 0, rsp
     assert cluster.staking_pool(bonded=False) == old_unbonded + 2
 
-    data = find_log_event_attrs(rsp["events"], "unbond", lambda attrs: "completion_time" in attrs)
+    data = find_log_event_attrs(
+        rsp["events"],
+        "unbond",
+        lambda attrs: "completion_time" in attrs,
+    )
     wait_for_block_time(
         cluster,
-        isoparse(data["completion_time"])
-        + timedelta(seconds=1),
+        isoparse(data["completion_time"]) + timedelta(seconds=1),
     )
     assert cluster.balance(signer1_address) == old_amount - 5
 
@@ -145,6 +148,7 @@ def test_join_validator(cluster):
 
     val_addr = cluster.address("validator", i, bech="val")
     val = cluster.validator(val_addr)
+    assert not val.get("jailed")
     assert val["status"] == "BOND_STATUS_BONDED"
     assert val["tokens"] == str(10**8)
     assert val["description"]["moniker"] == "new joined"

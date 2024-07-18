@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from .utils import parse_events
+from .utils import find_log_event_attrs
 
 pytestmark = pytest.mark.normal
 
@@ -46,9 +46,8 @@ def test_group(cluster, tmp_path):
 
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.event_query_tx_for(rsp["txhash"])
-
     # Get group id from events
-    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroup"]
+    evt = find_log_event_attrs(rsp["events"], "cosmos.group.v1.EventCreateGroup")
     group_id = evt["group_id"]
 
     # create group policy
@@ -82,7 +81,7 @@ def test_group(cluster, tmp_path):
 
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.event_query_tx_for(rsp["txhash"])
-    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventCreateGroupPolicy"]
+    evt = find_log_event_attrs(rsp["events"], "cosmos.group.v1.EventCreateGroupPolicy")
     group_policy_address = evt["address"].strip('"')
 
     # submit a proposal
@@ -123,7 +122,7 @@ def test_group(cluster, tmp_path):
 
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.event_query_tx_for(rsp["txhash"])
-    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventSubmitProposal"]
+    evt = find_log_event_attrs(rsp["events"], "cosmos.group.v1.EventSubmitProposal")
     proposal_id = evt["proposal_id"]
 
     # vote on proposal
@@ -176,7 +175,6 @@ def test_group(cluster, tmp_path):
             proposal_id,
             home=cli.data_dir,
             node=cli.node_rpc,
-            chain_id=cli.chain_id,
         )
     )
     assert len(rsp["votes"]) == 2, rsp
@@ -206,7 +204,7 @@ def test_group(cluster, tmp_path):
     assert rsp["code"] == 0, rsp["raw_log"]
     rsp = cluster.event_query_tx_for(rsp["txhash"])
     # check if the proposal executed successfully
-    evt = parse_events(rsp["logs"])["cosmos.group.v1.EventExec"]
+    evt = find_log_event_attrs(rsp["events"], "cosmos.group.v1.EventExec")
     assert evt["result"].strip('"') == "PROPOSAL_EXECUTOR_RESULT_SUCCESS"
 
     assert group_policy_balance - 100000000 == cluster.balance(group_policy_address)

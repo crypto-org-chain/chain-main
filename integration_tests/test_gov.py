@@ -17,7 +17,8 @@ def test_param_proposal(cluster, vote_option, tmp_path):
     - check the result
     - check deposit refunded
     """
-    max_validators = cluster.staking_params()["max_validators"]
+    params = cluster.staking_params()
+    max_validators = params["max_validators"]
     rsp = change_max_validators(cluster, tmp_path, max_validators + 1)
     amount = approve_proposal(cluster, rsp, vote_option)
     new_max_validators = cluster.staking_params()["max_validators"]
@@ -111,7 +112,7 @@ def test_deposit_period_expires(cluster, tmp_path):
     """
     amount1 = cluster.balance(cluster.address("community"))
     denom = "basecro"
-    deposit_amt = 5000
+    deposit_amt = 100000
     deposit = f"{deposit_amt}{denom}"
     rsp = change_max_validators(cluster, tmp_path, 1, deposit)
     proposal_id = get_proposal_id(rsp)
@@ -258,26 +259,30 @@ def test_inherit_vote(cluster, tmp_path):
     }
 
 
-def test_host_enabled(cluster):
+def test_host_enabled(cluster, tmp_path):
     cli = cluster.cosmos_cli()
     p = cluster.cosmos_cli().query_host_params()
     assert p["host_enabled"]
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Update icahost enabled",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "icahost",
-                    "key": "HostEnabled",
-                    "value": False,
-                }
-            ],
-        },
-    )
+    p["host_enabled"] = False
+    proposal = tmp_path / "proposal.json"
+    authority = module_address("gov")
+    type = "/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams"
+    proposal_src = {
+        "messages": [
+            {
+                "@type": type,
+                "signer": authority,
+                "params": p,
+            }
+        ],
+        "deposit": "10000000basecro",
+        "title": "title",
+        "summary": "summary",
+    }
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=",/cosmos.gov.v1.MsgExecLegacyContent")
+    msg = ",/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams"
+    approve_proposal(cluster, rsp, msg=msg)
     p = cli.query_host_params()
     assert not p["host_enabled"]
