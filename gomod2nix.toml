@@ -48,6 +48,9 @@ schema = 3
     version = "v0.0.0-20240716063309-c47504d189d4"
     hash = "sha256-zne7cIFs9WLg11pIr9VLBBc+G+kZfKLn8UU1mP4w6BM="
     replaced = "github.com/crypto-org-chain/cosmos-sdk/store"
+  [mod."cosmossdk.io/tools/confix"]
+    version = "v0.1.0"
+    hash = "sha256-PvIYbcjsATI+gP0+efJZjlGhaClx4SNfadlVY3Ok9TE="
   [mod."cosmossdk.io/x/evidence"]
     version = "v0.1.0"
     hash = "sha256-ZhVrmCGOzx2yODpcgvM9c48jkqz37NwU2ln/uVuCEfc="
@@ -179,6 +182,12 @@ schema = 3
   [mod."github.com/cosmos/rosetta-sdk-go"]
     version = "v0.10.0"
     hash = "sha256-WmLq9E9mYV+ms6Tdb43lCoAy6cowkDnK4bvX/ApDzLY="
+  [mod."github.com/creachadair/atomicfile"]
+    version = "v0.3.1"
+    hash = "sha256-GEp1gRxKfBYI6K0XbElcVYcJMPu6eeLufaYxr7Z0MAQ="
+  [mod."github.com/creachadair/tomledit"]
+    version = "v0.0.24"
+    hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
     version = "v0.0.0-20240716081818-7f581a697f6d"
     hash = "sha256-KxwdnxZIIdZeugBwduaTFZichmEATZy5bdIiZZetbyE="
@@ -550,9 +559,6 @@ schema = 3
   [mod."go.opentelemetry.io/otel/trace"]
     version = "v1.22.0"
     hash = "sha256-38zzkmcoOzYYeDN+rC44HmwmdnalIcEpObCS6tIvMO8="
-  [mod."go.starlark.net"]
-    version = "v0.0.0-20240705175910-70002002b310"
-    hash = "sha256-WT2I7ZJM4urBI9LeIkWJ9SlcVwMSCboIdv5GNOX2SzA="
   [mod."go.uber.org/multierr"]
     version = "v1.10.0"
     hash = "sha256-GepuppwpqpOGSNKi6GtGoO01TFxUQWfKZmE0B3M/HQA="
