@@ -12,25 +12,25 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.2
 	github.com/cosmos/cosmos-sdk v0.47.7
 	github.com/cosmos/ibc-go/v7 v7.3.1-0.20240111145224-825fe90f9765
-	github.com/crypto-org-chain/cronos/store v0.0.5-0.20231225065237-42f2597fca49
-	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20231225065237-42f2597fca49
+	github.com/crypto-org-chain/cronos/store v0.0.5-0.20240708073435-ec2dc9e99fb1
+	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20240708073435-ec2dc9e99fb1
 	github.com/gogo/protobuf v1.3.3
-	github.com/golang/protobuf v1.5.3
+	github.com/golang/protobuf v1.5.4
 	github.com/google/renameio v1.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/imdario/mergo v0.3.13
-	github.com/linxGnu/grocksdb v1.8.4
+	github.com/linxGnu/grocksdb v1.9.2
 	github.com/rakyll/statik v0.1.7 // indirect
 	github.com/spf13/cast v1.5.1
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.14.0
 	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
 	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
 	google.golang.org/grpc v1.58.3
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -118,7 +118,7 @@ require (
 	github.com/gtank/merlin v0.1.1 // indirect
 	github.com/gtank/ristretto255 v0.1.2 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-getter v1.7.4 // indirect
+	github.com/hashicorp/go-getter v1.7.5 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect

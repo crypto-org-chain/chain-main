@@ -3,6 +3,8 @@
 ## UNRELEASED
 
 - [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
+- [#1044](https://github.com/crypto-org-chain/chain-main/pull/1044) Revert the protobuf package name changes introduced in #1023.
+- [#1060](https://github.com/crypto-org-chain/chain-main/pull/1060) Upgrade rocksdb to `v9.2.1` and bump versiondb.
 
 *Dec 6, 2023*
 
