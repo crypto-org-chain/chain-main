@@ -5,12 +5,12 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/chain-main/v4/config"
@@ -50,17 +50,17 @@ func TestConversion(t *testing.T) {
 		expErr bool
 	}{
 		{sdk.NewCoin("foo", sdk.ZeroInt()), config.HumanCoinUnit, sdk.Coin{}, true},
-		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "foo", sdk.Coin{}, true},
-		{sdk.NewCoin(config.HumanCoinUnit, sdk.ZeroInt()), "FOO", sdk.Coin{}, true},
+		{sdk.NewCoin(config.HumanCoinUnit, sdkmath.ZeroInt()), "foo", sdk.Coin{}, true},
+		{sdk.NewCoin(config.HumanCoinUnit, sdkmath.ZeroInt()), "FOO", sdk.Coin{}, true},
 
 		{
-			sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)),
-			config.BaseCoinUnit, sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)), false,
+			sdk.NewCoin(config.HumanCoinUnit, sdkmath.NewInt(5)),
+			config.BaseCoinUnit, sdk.NewCoin(config.BaseCoinUnit, sdkmath.NewInt(500000000)), false,
 		}, // cro => carson
 
 		{
-			sdk.NewCoin(config.BaseCoinUnit, sdk.NewInt(500000000)),
-			config.HumanCoinUnit, sdk.NewCoin(config.HumanCoinUnit, sdk.NewInt(5)), false,
+			sdk.NewCoin(config.BaseCoinUnit, sdkmath.NewInt(500000000)),
+			config.HumanCoinUnit, sdk.NewCoin(config.HumanCoinUnit, sdkmath.NewInt(5)), false,
 		}, // carson => cro
 
 	}

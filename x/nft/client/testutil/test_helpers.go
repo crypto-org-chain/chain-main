@@ -18,10 +18,12 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 
-	dbm "github.com/cometbft/cometbft-db"
+	pruningtypes "cosmossdk.io/store/pruning/types"
+	dbm "github.com/cosmos/cosmos-db"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	pruningtypes "github.com/cosmos/cosmos-sdk/store/pruning/types"
 )
+
+const TestAppChainID = "chainmain-1"
 
 func GetApp(val network.ValidatorI) servertypes.Application {
 	ctx := val.GetCtx()
@@ -32,7 +34,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
-		baseapp.SetChainID(app.TestAppChainID),
+		baseapp.SetChainID(TestAppChainID),
 	)
 }
 
