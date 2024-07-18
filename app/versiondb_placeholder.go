@@ -7,12 +7,10 @@ import (
 	"errors"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 )
 
-func setupVersionDB(
+func (app *ChainApp) setupVersionDB(
 	homePath string,
-	app *baseapp.BaseApp,
 	keys map[string]*storetypes.KVStoreKey,
 	tkeys map[string]*storetypes.TransientStoreKey,
 	memKeys map[string]*storetypes.MemoryStoreKey,
