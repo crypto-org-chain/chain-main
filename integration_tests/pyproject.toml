@@ -17,7 +17,7 @@ pytest-github-actions-annotate-failures = "^0.2"
 protobuf = "^4.25"
 pyyaml = "^6.0"
 python-dateutil = "^2.8"
-pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
+pystarport = { git = "https://github.com/mmsqe/pystarport.git", branch = "fix_validator" }
 chainlibpy = "^2.2.0"
 
 [tool.poetry.dev-dependencies]
