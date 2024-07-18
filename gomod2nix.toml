@@ -158,11 +158,11 @@ schema = 3
     version = "v0.0.5-0.20231225065237-42f2597fca49"
     hash = "sha256-WwkThqPMfhQywcgT5cXakLTNKH8WI+vZwqVzsYqfu9Q="
   [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.5-0.20231225065237-42f2597fca49"
-    hash = "sha256-LSEv9FwHV1WI9MmszW3E96+i/lFAWEPvDvqRcyLaemU="
+    version = "v0.0.5-0.20240708073435-ec2dc9e99fb1"
+    hash = "sha256-b7Jr0QR5MjZd6dq0dQt455ACYke62KwDRjNm9DDqA/8="
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.0-20231225065237-42f2597fca49"
-    hash = "sha256-VTQGyUWd/XubEhKgUGsvgydHoMS3ujhmoZIYmGoBkOw="
+    version = "v0.0.0-20240708073435-ec2dc9e99fb1"
+    hash = "sha256-7pkDL9pT2jujQHDYZ0/+Az4U4bpb+inSWJKyOK5/Lv0="
   [mod."github.com/danieljoos/wincred"]
     version = "v1.1.2"
     hash = "sha256-Nnklfg12vmWCOhELGyoRqEF4w4srp0WbPwreaChYLKs="
@@ -228,8 +228,8 @@ schema = 3
     version = "v1.6.0"
     hash = "sha256-fWdnMQisRbiRzGT3ISrUHovquzLRHWvcv1JEsJFZRno="
   [mod."github.com/golang/protobuf"]
-    version = "v1.5.3"
-    hash = "sha256-svogITcP4orUIsJFjMtp+Uv1+fKJv2Q5Zwf2dMqnpOQ="
+    version = "v1.5.4"
+    hash = "sha256-N3+Lv9lEZjrdOWdQhFj6Y3Iap4rVLEQeI8/eFFyAMZ0="
   [mod."github.com/golang/snappy"]
     version = "v0.0.4"
     hash = "sha256-Umx+5xHAQCN/Gi4HbtMhnDCSPFAXSsjVbXd8n5LhjAA="
@@ -342,8 +342,8 @@ schema = 3
     version = "v0.1.0"
     hash = "sha256-wQqGTtRWsfR9n0O/SXHVgECebbnNmHddxJIbG63OJBQ="
   [mod."github.com/linxGnu/grocksdb"]
-    version = "v1.8.4"
-    hash = "sha256-AGQ0YEuwUaev/mxOkiTNgAOLB9c7reHyTmNxXuaRah8="
+    version = "v1.9.2"
+    hash = "sha256-ThXtaXx6LvRIFW4xLHsMrVWdsN2qobLPA0InLmlADOM="
   [mod."github.com/magiconair/properties"]
     version = "v1.8.7"
     hash = "sha256-XQ2bnc2s7/IH3WxEO4GishZurMyKwEclZy1DXg+2xXc="
@@ -438,8 +438,8 @@ schema = 3
     version = "v1.16.0"
     hash = "sha256-TgBr1SBMaus1oAlA5Kn+iNUJfQCMyo0hT/xFaA7hreQ="
   [mod."github.com/stretchr/testify"]
-    version = "v1.8.4"
-    hash = "sha256-MoOmRzbz9QgiJ+OOBo5h5/LbilhJfRUryvzHJmXAWjo="
+    version = "v1.9.0"
+    hash = "sha256-uUp/On+1nK+lARkTVtb5RxlW15zxtw2kaAFuIASA+J0="
   [mod."github.com/subosito/gotenv"]
     version = "v1.4.2"
     hash = "sha256-LnrDR1k/AoCFWBMcU7vQsoQLkZ65evT2hoQHLDudTsg="
@@ -532,8 +532,8 @@ schema = 3
     version = "v1.58.3"
     hash = "sha256-YxXO1UAc/+4E0bsSsGSiFNrY3yyR6AIml/1sVY2QJjQ="
   [mod."google.golang.org/protobuf"]
-    version = "v1.31.0"
-    hash = "sha256-UdIk+xRaMfdhVICvKRk1THe3R1VU+lWD8hqoW/y8jT0="
+    version = "v1.33.0"
+    hash = "sha256-cWwQjtUwSIEkAlAadrlxK1PYZXTRrV4NKzt7xDpJgIU="
   [mod."gopkg.in/ini.v1"]
     version = "v1.67.0"
     hash = "sha256-V10ahGNGT+NLRdKUyRg1dos5RxLBXBk1xutcnquc/+4="
