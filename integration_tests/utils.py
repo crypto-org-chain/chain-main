@@ -87,6 +87,10 @@ def module_address(name):
     return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
 
+def get_sync_info(s):
+    return s.get("SyncInfo") or s.get("sync_info")
+
+
 def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
         try:
@@ -94,7 +98,7 @@ def wait_for_block(cli, height, timeout=240):
         except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
-            current_height = int(status["SyncInfo"]["latest_block_height"])
+            current_height = int(get_sync_info(status)["latest_block_height"])
             if current_height >= height:
                 break
             print("current block height", current_height)
@@ -104,10 +108,10 @@ def wait_for_block(cli, height, timeout=240):
 
 
 def wait_for_new_blocks(cli, n, sleep=0.5):
-    begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+    begin_height = int(get_sync_info((cli.status()))["latest_block_height"])
     while True:
         time.sleep(sleep)
-        cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+        cur_height = int(get_sync_info((cli.status()))["latest_block_height"])
         if cur_height - begin_height >= n:
             break
 
@@ -115,7 +119,7 @@ def wait_for_new_blocks(cli, n, sleep=0.5):
 def wait_for_block_time(cli, t):
     print("wait for block time", t)
     while True:
-        now = isoparse((cli.status())["SyncInfo"]["latest_block_time"])
+        now = isoparse(get_sync_info(cli.status())["latest_block_time"])
         print("block time now:", now)
         if now >= t:
             break
