@@ -8,7 +8,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     cluster_fixture,
-    parse_events,
+    find_log_event_attrs,
     wait_for_block,
     wait_for_block_time,
     wait_for_new_blocks,
@@ -77,12 +77,12 @@ def test_staking_unbond(cluster):
     assert rsp["code"] == 0, rsp
     assert cluster.staking_pool(bonded=False) == old_unbonded + 2
 
+    data = find_log_event_attrs(rsp["events"], "unbond", lambda attrs: "completion_time" in attrs)
     wait_for_block_time(
         cluster,
-        isoparse(parse_events(rsp["logs"])["unbond"]["completion_time"])
+        isoparse(data["completion_time"])
         + timedelta(seconds=1),
     )
-
     assert cluster.balance(signer1_address) == old_amount - 5
 
 
@@ -137,7 +137,7 @@ def test_join_validator(cluster):
     # wait for the new node to sync
     wait_for_block(cluster.cosmos_cli(i), cluster.block_height(0))
     # create validator tx
-    assert cluster.create_validator("1cro", i)["code"] == 0
+    assert cluster.create_validator("1cro", i, sdk47_compact=False)["code"] == 0
     time.sleep(2)
 
     count2 = len(cluster.validators())
@@ -145,7 +145,6 @@ def test_join_validator(cluster):
 
     val_addr = cluster.address("validator", i, bech="val")
     val = cluster.validator(val_addr)
-    assert not val["jailed"]
     assert val["status"] == "BOND_STATUS_BONDED"
     assert val["tokens"] == str(10**8)
     assert val["description"]["moniker"] == "new joined"

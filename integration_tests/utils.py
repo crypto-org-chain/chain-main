@@ -191,15 +191,15 @@ def get_ledger():
     return ledger.Ledger()
 
 
-def parse_events(logs):
+def find_log_event_attrs(logs):
     return {
         ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
         for ev in logs[0]["events"]
     }
 
 
-def find_log_event_attrs(logs, ev_type, cond=None):
-    for ev in logs[0]["events"]:
+def find_log_event_attrs(events, ev_type, cond=None):
+    for ev in events:
         if ev["type"] == ev_type:
             attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
             if cond is None or cond(attrs):

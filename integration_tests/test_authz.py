@@ -25,7 +25,7 @@ from .utils import (
     delegate_amount,
     exec_tx_by_grantee,
     grant_authorization,
-    parse_events,
+    find_log_event_attrs,
     query_command,
     query_delegation_amount,
     query_total_reward_amount,
@@ -492,9 +492,10 @@ class TestAuthzModule:
         with open(generated_unbond_txt, "w") as opened_file:
             json.dump(generated_unbond_msg, opened_file)
         rsp = exec_tx_by_grantee(cluster_temp, generated_unbond_txt, grantee_address)
+        data = find_log_event_attrs(rsp["events"], "unbond", lambda attrs: "completion_time" in attrs)
         wait_for_block_time(
             cluster_temp,
-            isoparse(parse_events(rsp["logs"])["unbond"]["completion_time"])
+            isoparse(data["completion_time"])
             + timedelta(seconds=1),
         )
 
