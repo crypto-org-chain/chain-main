@@ -72,7 +72,7 @@ schema = 3
     hash = "sha256-4EndKcspGC3GOPCmctXF1NnWzxWwMyY/OQpFMmr8Sc0="
   [mod."github.com/99designs/keyring"]
     version = "v1.2.0"
-    hash = "sha256-jDXfAm2fWZoyb/V1yyAoAYNRweeOlEBZetLwW3yGBF0="
+    hash = "sha256-emQlH+RQpESoFCzpHS38fEhs1SLjotxNPlRK4B5Aybs="
     replaced = "github.com/cosmos/keyring"
   [mod."github.com/DataDog/datadog-go"]
     version = "v3.2.0+incompatible"
