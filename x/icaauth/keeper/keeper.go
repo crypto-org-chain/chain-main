@@ -66,7 +66,7 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 	for i, msg := range msgs {
 		protoMsgs[i] = msg.(proto.Message)
 	}
-	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsgs, icatypes.EncodingProto3JSON)
+	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsgs, icatypes.EncodingProtobuf)
 	if err != nil {
 		return err
 	}

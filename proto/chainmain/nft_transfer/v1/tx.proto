@@ -9,6 +9,7 @@ import "ibc/core/client/v1/client.proto";
 
 // Msg defines the ibc/nft-transfer Msg service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
   // Transfer defines a rpc handler method for MsgTransfer.
   rpc Transfer(MsgTransfer) returns (MsgTransferResponse);
 }
