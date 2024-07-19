@@ -151,8 +151,11 @@ import (
 	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
 )
 
-// FIXME remove this line, dummy
-const appName = "chain-maind"
+const (
+	// FIXME remove this line, dummy
+	appName       = "chain-maind"
+	DefaultMaxTxs = 3000
+)
 
 func getGovProposalHandlers() []govclient.ProposalHandler {
 	var govProposalHandlers []govclient.ProposalHandler
@@ -287,7 +290,15 @@ func New(
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	// Setup Mempool and Proposal Handlers
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
-		mempool := mempool.NoOpMempool{}
+		maxTxs := cast.ToInt(appOpts.Get(server.FlagMempoolMaxTxs))
+		if maxTxs <= 0 {
+			maxTxs = DefaultMaxTxs
+		}
+		mempool := mempool.NewPriorityMempool(mempool.PriorityNonceMempoolConfig[int64]{
+			TxPriority:      mempool.NewDefaultTxPriority(),
+			SignerExtractor: mempool.NewDefaultSignerExtractionAdapter(),
+			MaxTx:           maxTxs,
+		})
 		app.SetMempool(mempool)
 		handler := baseapp.NewDefaultProposalHandler(mempool, app)
 		app.SetPrepareProposal(handler.PrepareProposalHandler())
