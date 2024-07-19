@@ -4,6 +4,7 @@ import json
 import socket
 import sys
 import time
+from datetime import timedelta
 
 import bech32
 from dateutil.parser import isoparse
@@ -207,6 +208,51 @@ def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
     ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
     assert ev["proposal_messages"] == msg, rsp
     return ev["proposal_id"]
+
+
+def approve_proposal(
+    cluster,
+    rsp,
+    vote_option="yes",
+    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+):
+    proposal_id = get_proposal_id(rsp, msg)
+    proposal = cluster.query_proposal(proposal_id)
+    if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
+        assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
+    amount = cluster.balance(cluster.address("ecosystem"))
+    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
+
+    if vote_option is not None:
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
+        assert rsp["code"] == 0, rsp["raw_log"]
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
+        assert rsp["code"] == 0, rsp["raw_log"]
+        assert (
+            int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
+            == cluster.staking_pool()
+        ), "all voted"
+    else:
+        assert cluster.query_tally(proposal_id) == {
+            "yes_count": "0",
+            "no_count": "0",
+            "abstain_count": "0",
+            "no_with_veto_count": "0",
+        }
+
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
+    )
+    proposal = cluster.query_proposal(proposal_id)
+    if vote_option == "yes":
+        assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+    else:
+        assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
+    return amount
 
 
 _next_unique = 0

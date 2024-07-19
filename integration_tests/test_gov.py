@@ -4,7 +4,13 @@ from datetime import timedelta
 import pytest
 from dateutil.parser import isoparse
 
-from .utils import get_proposal_id, module_address, wait_for_block, wait_for_block_time
+from .utils import (
+    approve_proposal,
+    get_proposal_id,
+    module_address,
+    wait_for_block,
+    wait_for_block_time,
+)
 
 pytestmark = pytest.mark.gov
 
@@ -56,51 +62,6 @@ def change_max_validators(cluster, tmp_path, num, deposit="10000000basecro"):
     rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
     return rsp
-
-
-def approve_proposal(
-    cluster,
-    rsp,
-    vote_option="yes",
-    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
-):
-    proposal_id = get_proposal_id(rsp, msg)
-    proposal = cluster.query_proposal(proposal_id)
-    if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
-        assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
-    amount = cluster.balance(cluster.address("ecosystem"))
-    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
-    assert rsp["code"] == 0, rsp["raw_log"]
-    assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
-    proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
-
-    if vote_option is not None:
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
-        assert rsp["code"] == 0, rsp["raw_log"]
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
-        assert rsp["code"] == 0, rsp["raw_log"]
-        assert (
-            int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
-            == cluster.staking_pool()
-        ), "all voted"
-    else:
-        assert cluster.query_tally(proposal_id) == {
-            "yes_count": "0",
-            "no_count": "0",
-            "abstain_count": "0",
-            "no_with_veto_count": "0",
-        }
-
-    wait_for_block_time(
-        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
-    )
-    proposal = cluster.query_proposal(proposal_id)
-    if vote_option == "yes":
-        assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
-    else:
-        assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
-    return amount
 
 
 def test_deposit_period_expires(cluster, tmp_path):
