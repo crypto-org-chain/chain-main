@@ -212,6 +212,7 @@ type ChainApp struct {
 	keys    map[string]*storetypes.KVStoreKey
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
+	okeys   map[string]*storetypes.ObjectStoreKey
 
 	// keepers
 	AccountKeeper         authkeeper.AccountKeeper
@@ -323,6 +324,7 @@ func New(
 		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
+		okeys:             okeys,
 		memKeys:           memKeys,
 	}
 

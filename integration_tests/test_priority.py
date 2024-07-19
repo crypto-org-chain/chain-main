@@ -21,9 +21,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-@pytest.mark.skip(
-    reason="no priority from cometbft anymore"
-)
+@pytest.mark.skip(reason="no priority from cometbft anymore")
 def test_priority(cluster: ClusterCLI):
     """
     Check that prioritized mempool works, and the priority is decided by gas price.
