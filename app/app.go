@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	stderrors "errors"
 	"fmt"
 	"io"
@@ -910,6 +911,11 @@ func (app *ChainApp) EncodingConfig() appparams.EncodingConfig {
 		TxConfig:          app.TxConfig(),
 		Amino:             app.LegacyAmino(),
 	}
+}
+
+// DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
+func (app *ChainApp) DefaultGenesis() map[string]json.RawMessage {
+	return app.BasicModuleManager.DefaultGenesis(app.appCodec)
 }
 
 // AutoCliOpts returns the autocli options for the app.

@@ -29,8 +29,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 	ctx := val.GetCtx()
 	appConfig := val.GetAppConfig()
 	return app.New(
-		ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), ctx.Config.RootDir, 0,
-		app.MakeEncodingConfig(),
+		ctx.Logger, dbm.NewMemDB(), nil, true,
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
