@@ -30,11 +30,11 @@ func TestExportAppStateAndValidators(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			db := dbm.NewMemDB()
-			ethApp := testutil.SetupWithDB(false, nil, db)
-			ethApp.Commit()
+			chainApp := testutil.SetupWithDB(false, nil, db)
+			chainApp.Commit()
 
 			// Making a new app object with the db, so that initchain hasn't been called
-			ethApp2 := app.New(
+			chainApp2 := app.New(
 				log.NewLogger(os.Stdout),
 				db,
 				nil,
@@ -42,7 +42,7 @@ func TestExportAppStateAndValidators(t *testing.T) {
 				simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 				baseapp.SetChainID(testutil.ChainID),
 			)
-			_, err := ethApp2.ExportAppStateAndValidators(false, []string{}, []string{})
+			_, err := chainApp2.ExportAppStateAndValidators(false, []string{}, []string{})
 			require.NoError(t, err, "ExportAppStateAndValidators should not have an error")
 		})
 	}

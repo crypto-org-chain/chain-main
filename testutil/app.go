@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 )
 
@@ -109,4 +110,10 @@ func SetupWithDBAndOpts(
 		panic(err)
 	}
 	return app
+}
+
+func StateFn(a *app.ChainApp) simtypes.AppStateFn {
+	return simtestutil.AppStateFnWithExtendedCb(
+		a.AppCodec(), a.SimulationManager(), a.DefaultGenesis(), nil,
+	)
 }
