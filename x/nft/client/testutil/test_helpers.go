@@ -21,9 +21,8 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	dbm "github.com/cosmos/cosmos-db"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	apptestutil "github.com/crypto-org-chain/chain-main/v4/testutil"
 )
-
-const TestAppChainID = "chainmain-1"
 
 func GetApp(val network.ValidatorI) servertypes.Application {
 	ctx := val.GetCtx()
@@ -33,7 +32,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
-		baseapp.SetChainID(TestAppChainID),
+		baseapp.SetChainID(apptestutil.ChainID),
 	)
 }
 

@@ -6,15 +6,18 @@ toolchain go1.22.0
 
 require (
 	cosmossdk.io/api v0.7.5
+	cosmossdk.io/client/v2 v2.0.0-beta.2
+	cosmossdk.io/core v0.11.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/simapp v0.0.0-20230608160436-666c345ad23d
 	cosmossdk.io/store v1.1.0
-	cosmossdk.io/tools/confix v0.1.0
-	cosmossdk.io/x/evidence v0.1.0
-	cosmossdk.io/x/feegrant v0.1.0
-	cosmossdk.io/x/upgrade v0.1.1
+	cosmossdk.io/tools/confix v0.1.1
+	cosmossdk.io/x/evidence v0.1.1
+	cosmossdk.io/x/feegrant v0.1.1
+	cosmossdk.io/x/tx v0.13.3
+	cosmossdk.io/x/upgrade v0.1.2
 	github.com/cometbft/cometbft v0.38.10
 	github.com/cosmos/cosmos-db v1.0.3-0.20240408151834-e75f6e4b28d8
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
@@ -37,6 +40,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
+	github.com/tidwall/gjson v1.14.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.33.0
@@ -49,11 +53,10 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.6 // indirect
 	cloud.google.com/go/storage v1.36.0 // indirect
-	cosmossdk.io/client/v2 v2.0.0-beta.2 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
-	cosmossdk.io/core v0.11.0 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
-	cosmossdk.io/x/tx v0.13.3 // indirect
+	cosmossdk.io/x/circuit v0.1.1 // indirect
+	cosmossdk.io/x/nft v0.1.1 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -179,7 +182,6 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
-	github.com/tidwall/gjson v1.14.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
@@ -220,6 +222,7 @@ require (
 // release/v0.50.x
 replace (
 	cosmossdk.io/client/v2 => github.com/crypto-org-chain/cosmos-sdk/client/v2 v2.0.0-20240716063309-c47504d189d4
+	cosmossdk.io/simapp => github.com/crypto-org-chain/cosmos-sdk/simapp v0.0.0-20240716063309-c47504d189d4
 	cosmossdk.io/store => github.com/crypto-org-chain/cosmos-sdk/store v0.0.0-20240716063309-c47504d189d4
 	cosmossdk.io/x/tx => github.com/crypto-org-chain/cosmos-sdk/x/tx v0.0.0-20240716063309-c47504d189d4
 	github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.50.6-0.20240716063309-c47504d189d4

@@ -42,28 +42,35 @@ schema = 3
     version = "v1.3.0"
     hash = "sha256-EEFK43Cr0g0ndhQhkIKher0FqV3mvkmE9z0sP7uVSHg="
   [mod."cosmossdk.io/simapp"]
-    version = "v0.0.0-20230608160436-666c345ad23d"
-    hash = "sha256-6BMBA98BpK3jG6++ZE4LdPQwwpS+lZ0GLMRF1fO4UfM="
+    version = "v0.0.0-20240716063309-c47504d189d4"
+    hash = "sha256-f7M7boC76frRltU/0Hhml1pV5IYhYF8WnexGn3yV9Ro="
+    replaced = "github.com/crypto-org-chain/cosmos-sdk/simapp"
   [mod."cosmossdk.io/store"]
     version = "v0.0.0-20240716063309-c47504d189d4"
     hash = "sha256-zne7cIFs9WLg11pIr9VLBBc+G+kZfKLn8UU1mP4w6BM="
     replaced = "github.com/crypto-org-chain/cosmos-sdk/store"
   [mod."cosmossdk.io/tools/confix"]
-    version = "v0.1.0"
-    hash = "sha256-PvIYbcjsATI+gP0+efJZjlGhaClx4SNfadlVY3Ok9TE="
+    version = "v0.1.1"
+    hash = "sha256-/Et2FFhb4XfakbLFvGQK3QxN5Y7alzO+DGfi2/EWbxo="
+  [mod."cosmossdk.io/x/circuit"]
+    version = "v0.1.1"
+    hash = "sha256-MGeCCqyF1IS/QqaMRDol9+JHjdPgQVj9weIN8o3aAIU="
   [mod."cosmossdk.io/x/evidence"]
-    version = "v0.1.0"
-    hash = "sha256-ZhVrmCGOzx2yODpcgvM9c48jkqz37NwU2ln/uVuCEfc="
+    version = "v0.1.1"
+    hash = "sha256-iSjMwFPu1InR6weF/m4hGHP+StsudOCqeDZefGPTfxw="
   [mod."cosmossdk.io/x/feegrant"]
-    version = "v0.1.0"
-    hash = "sha256-/gWvrqvy6bW90+NU66T+9QysYgvG1VbwfYJZ8tkqpeA="
+    version = "v0.1.1"
+    hash = "sha256-aps3LfnQau1TYeccGwtqHQvy1Rudc9+O+iVAwXBKyDw="
+  [mod."cosmossdk.io/x/nft"]
+    version = "v0.1.1"
+    hash = "sha256-6Nbgmpwx70Jr3S8f4A6imCsdEAxPdVQpmJQTW2RuzKo="
   [mod."cosmossdk.io/x/tx"]
     version = "v0.0.0-20240716063309-c47504d189d4"
     hash = "sha256-xT5IdapEx1h46ofBpxcBQfzGF2EntmC8xZl7aym/6xE="
     replaced = "github.com/crypto-org-chain/cosmos-sdk/x/tx"
   [mod."cosmossdk.io/x/upgrade"]
-    version = "v0.1.1"
-    hash = "sha256-bM9ybpaibMH7k4M6/QAXCZ3fJcADfJHxvMgp4AVUihs="
+    version = "v0.1.2"
+    hash = "sha256-rNOuZBlR4rfxka2XBJ4LRRnJ+pnADojDzb1o2m4YulU="
   [mod."filippo.io/edwards25519"]
     version = "v1.0.0"
     hash = "sha256-APnPAcmItvtJ5Zsy863lzR2TjEBF9Y66TY1e4M1ap98="

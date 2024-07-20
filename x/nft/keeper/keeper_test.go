@@ -60,13 +60,11 @@ type KeeperSuite struct {
 	queryClient types.QueryClient
 }
 
-const TestAppChainID = "chainmain-1"
-
 func (suite *KeeperSuite) SetupTest() {
 	a := testutil.Setup(isCheckTx, nil)
 	suite.app = a
 	suite.legacyAmino = a.LegacyAmino()
-	suite.ctx = a.BaseApp.NewContext(isCheckTx).WithBlockHeader(tmproto.Header{ChainID: TestAppChainID})
+	suite.ctx = a.BaseApp.NewContext(isCheckTx).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	suite.keeper = a.NFTKeeper
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, a.InterfaceRegistry())
