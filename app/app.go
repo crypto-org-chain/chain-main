@@ -195,6 +195,12 @@ var (
 	_ servertypes.Application = (*ChainApp)(nil)
 )
 
+type RootMultiStore interface {
+	storetypes.MultiStore
+
+	LoadLatestVersion() error
+}
+
 // ChainApp extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
@@ -212,7 +218,6 @@ type ChainApp struct {
 	keys    map[string]*storetypes.KVStoreKey
 	tkeys   map[string]*storetypes.TransientStoreKey
 	memKeys map[string]*storetypes.MemoryStoreKey
-	okeys   map[string]*storetypes.ObjectStoreKey
 
 	// keepers
 	AccountKeeper         authkeeper.AccountKeeper
@@ -260,7 +265,7 @@ type ChainApp struct {
 	// the configurator
 	configurator module.Configurator
 
-	qms storetypes.RootMultiStore
+	qms RootMultiStore
 }
 
 func init() {
@@ -304,7 +309,7 @@ func New(
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
-	keys, memKeys, tkeys, okeys := StoreKeys()
+	keys, memKeys, tkeys := StoreKeys()
 
 	invCheckPeriod := cast.ToUint(appOpts.Get(server.FlagInvCheckPeriod))
 	app := &ChainApp{
@@ -316,7 +321,6 @@ func New(
 		invCheckPeriod:    invCheckPeriod,
 		keys:              keys,
 		tkeys:             tkeys,
-		okeys:             okeys,
 		memKeys:           memKeys,
 	}
 
@@ -357,7 +361,6 @@ func New(
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
-		okeys[banktypes.ObjectStoreKey],
 		app.AccountKeeper,
 		app.BlockedAddrs(),
 		authAddr,
@@ -737,7 +740,6 @@ func New(
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
-	app.MountObjectStores(okeys)
 
 	// load state streaming if enabled
 	if err := app.RegisterStreamingServices(appOpts, keys); err != nil {
@@ -747,11 +749,11 @@ func New(
 
 	// wire up the versiondb's `StreamingService` and `MultiStore`.
 	if cast.ToBool(appOpts.Get("versiondb.enable")) {
-		var err error
-		app.qms, err = app.setupVersionDB(homePath, keys, tkeys, memKeys, okeys)
+		qms, err := app.setupVersionDB(homePath, keys, tkeys, memKeys)
 		if err != nil {
 			panic(err)
 		}
+		app.qms = qms.(RootMultiStore)
 	}
 
 	// initialize BaseApp
@@ -1057,7 +1059,6 @@ func StoreKeys() (
 	map[string]*storetypes.KVStoreKey,
 	map[string]*storetypes.MemoryStoreKey,
 	map[string]*storetypes.TransientStoreKey,
-	map[string]*storetypes.ObjectStoreKey,
 ) {
 	storeKeys := []string{
 		authtypes.StoreKey,
@@ -1089,9 +1090,8 @@ func StoreKeys() (
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
-	okeys := storetypes.NewObjectStoreKeys(banktypes.ObjectStoreKey)
 
-	return keys, memKeys, tkeys, okeys
+	return keys, memKeys, tkeys
 }
 
 // Close will be called in graceful shutdown in start cmd

@@ -17,8 +17,7 @@ func (app *ChainApp) setupVersionDB(
 	keys map[string]*storetypes.KVStoreKey,
 	tkeys map[string]*storetypes.TransientStoreKey,
 	memKeys map[string]*storetypes.MemoryStoreKey,
-	okeys map[string]*storetypes.ObjectStoreKey,
-) (storetypes.RootMultiStore, error) {
+) (storetypes.MultiStore, error) {
 	dataDir := filepath.Join(homePath, "data", "versiondb")
 	if err := os.MkdirAll(dataDir, os.ModePerm); err != nil {
 		return nil, err
@@ -36,20 +35,16 @@ func (app *ChainApp) setupVersionDB(
 	app.CommitMultiStore().AddListeners(exposedKeys)
 
 	// register in app streaming manager
-	sm := app.StreamingManager()
-	sm.ABCIListeners = append(sm.ABCIListeners,
-		versiondb.NewStreamingService(versionDB),
-	)
-	app.SetStreamingManager(sm)
+	app.SetStreamingManager(storetypes.StreamingManager{
+		ABCIListeners: []storetypes.ABCIListener{versiondb.NewStreamingService(versionDB)},
+		StopNodeOnErr: true,
+	})
 
 	delegatedStoreKeys := make(map[storetypes.StoreKey]struct{})
 	for _, k := range tkeys {
 		delegatedStoreKeys[k] = struct{}{}
 	}
 	for _, k := range memKeys {
-		delegatedStoreKeys[k] = struct{}{}
-	}
-	for _, k := range okeys {
 		delegatedStoreKeys[k] = struct{}{}
 	}
 
