@@ -2,8 +2,9 @@ package keeper
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
@@ -35,8 +36,7 @@ func (k Keeper) GetAllClassTraces(ctx sdk.Context) types.Traces {
 // and performs a callback function.
 func (k Keeper) IterateClassTraces(ctx sdk.Context, cb func(denomTrace types.ClassTrace) bool) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.ClassTraceKey)
-
+	iterator := storetypes.KVStorePrefixIterator(store, types.ClassTraceKey)
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		classTrace := k.MustUnmarshalClassTrace(iterator.Value())

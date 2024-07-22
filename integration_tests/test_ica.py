@@ -106,10 +106,12 @@ def test_ica(cluster, tmp_path):
     addr_host = cluster["ica-host-1"].address("signer")
 
     # create interchain account
+    v = json.dumps({"fee_version": "ics29-1", "app_version": ""})
     rsp = cli_controller.icaauth_register_account(
         controller_connection,
         from_=addr_controller,
         gas="400000",
+        version=v,
     )
 
     assert rsp["code"] == 0, rsp["raw_log"]

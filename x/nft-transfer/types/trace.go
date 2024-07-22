@@ -11,7 +11,7 @@ import (
 	tmtypes "github.com/cometbft/cometbft/types"
 
 	sdkerrors "cosmossdk.io/errors"
-	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 )
 
 // ParseHexHash parses a hex hash in string format to bytes and validates its correctness.

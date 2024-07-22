@@ -12,10 +12,8 @@ from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
 from .utils import (
+    approve_proposal,
     cluster_fixture,
-    find_log_event_attrs,
-    get_proposal_id,
-    parse_events,
     wait_for_block,
     wait_for_block_time,
     wait_for_new_blocks,
@@ -81,6 +79,24 @@ def migrate_genesis_time(cluster, i=0):
     (cluster.home(i) / "config/genesis.json").write_text(json.dumps(genesis))
 
 
+def find_log_event_attrs_legacy(logs, ev_type, cond=None):
+    for ev in logs[0]["events"]:
+        if ev["type"] == ev_type:
+            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+            if cond is None or cond(attrs):
+                return attrs
+    return None
+
+
+def get_proposal_id_legacy(rsp, msg=",/cosmos.gov.v1.MsgExecLegacyContent"):
+    def cb(attrs):
+        return "proposal_id" in attrs
+
+    ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal", cb)
+    assert ev["proposal_messages"] == msg, rsp
+    return ev["proposal_id"]
+
+
 # use function scope to re-initialize for each test case
 @pytest.fixture(scope="function")
 def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
@@ -124,7 +140,7 @@ def test_cosmovisor(cosmovisor_cluster):
     assert rsp["code"] == 0, rsp
 
     # get proposal_id
-    ev = parse_events(rsp["logs"])["submit_proposal"]
+    ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
     assert ev["proposal_messages"] == ",/cosmos.gov.v1.MsgExecLegacyContent", rsp
     proposal_id = ev["proposal_id"]
 
@@ -142,36 +158,36 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def propose_and_pass(
-    cluster,
-    kind,
-    proposal,
-    propose_legacy=True,
-    event_query_tx=True,
-    **kwargs,
-):
+def upgrade(cluster, plan_name, target_height, propose_legacy=True):
+    print("upgrade height", target_height)
+    kind = "software-upgrade"
+    proposal = {
+        "name": plan_name,
+        "title": "upgrade test",
+        "description": "ditto",
+        "upgrade-height": target_height,
+        "deposit": "0.1cro",
+    }
     if propose_legacy:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
             no_validate=True,
-            event_query_tx=event_query_tx,
-            **kwargs,
+            event_query_tx=False,
         )
     else:
         rsp = cluster.gov_propose(
             "community",
             kind,
             proposal,
-            **kwargs,
         )
     assert rsp["code"] == 0, rsp["raw_log"]
     # get proposal_id
     if propose_legacy:
-        proposal_id = get_proposal_id(rsp, ",/cosmos.gov.v1.MsgExecLegacyContent")
+        proposal_id = get_proposal_id_legacy(rsp)
     else:
-        ev = parse_events(rsp["logs"])["submit_proposal"]
+        ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
         assert ev["proposal_type"] == "SoftwareUpgrade", rsp
         proposal_id = ev["proposal_id"]
     proposal = cluster.query_proposal(proposal_id)
@@ -182,7 +198,7 @@ def propose_and_pass(
             proposal_id,
             "yes",
             i=i,
-            event_query_tx=event_query_tx,
+            event_query_tx=False,
         )
         assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -192,25 +208,6 @@ def propose_and_pass(
     )
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
-
-    return proposal
-
-
-def upgrade(cluster, plan_name, target_height, propose_legacy=True):
-    print("upgrade height", target_height)
-    propose_and_pass(
-        cluster,
-        "software-upgrade",
-        {
-            "name": plan_name,
-            "title": "upgrade test",
-            "description": "ditto",
-            "upgrade-height": target_height,
-            "deposit": "0.1cro",
-        },
-        propose_legacy=propose_legacy,
-        event_query_tx=False,
-    )
 
     # wait for upgrade plan activated
     wait_for_block(cluster, target_height, 600)
@@ -257,12 +254,8 @@ def upgrade(cluster, plan_name, target_height, propose_legacy=True):
     wait_for_block(cluster, target_height + 2, 600)
 
 
-@pytest.mark.skip(reason="tested in test_manual_upgrade_all")
-def test_manual_upgrade(cosmovisor_cluster):
-    """
-    - do the upgrade test by replacing binary manually
-    - check the panic do happens
-    """
+def test_manual_upgrade_all(cosmovisor_cluster):
+    # test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
     # use the normal binary first
     edit_chain_program(
@@ -281,11 +274,6 @@ def test_manual_upgrade(cosmovisor_cluster):
     target_height = cluster.block_height() + 15
 
     upgrade(cluster, "v2.0.0", target_height, propose_legacy=False)
-
-
-def test_manual_upgrade_all(cosmovisor_cluster):
-    test_manual_upgrade(cosmovisor_cluster)
-    cluster = cosmovisor_cluster
     cli = cluster.cosmos_cli()
 
     [validator1_operator_address, validator2_operator_address] = list(
@@ -376,7 +364,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomname = "testdenomname"
     creator = cluster.address("community")
     rsp = cluster.create_nft(creator, denomid, denomname, event_query_tx=False)
-    ev = find_log_event_attrs(rsp["logs"], "issue_denom")
+    ev = find_log_event_attrs_legacy(rsp["logs"], "issue_denom")
     assert ev == {
         "denom_id": denomid,
         "denom_name": denomname,
@@ -441,30 +429,33 @@ def test_cancel_upgrade(cluster):
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     upgrade_height = cluster.block_height() + 30
-    print("propose upgrade plan")
-    print("upgrade height", upgrade_height)
-    propose_and_pass(
-        cluster,
+    print("propose upgrade plan at", upgrade_height)
+    rsp = cluster.gov_propose_new(
+        "community",
         "software-upgrade",
         {
             "name": plan_name,
             "title": "upgrade test",
-            "description": "ditto",
+            "summary": "summary",
             "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
     )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     print("cancel upgrade plan")
-    propose_and_pass(
-        cluster,
+    rsp = cluster.gov_propose_new(
+        "community",
         "cancel-software-upgrade",
         {
             "title": "there is bug, cancel upgrade",
-            "description": "there is bug, cancel upgrade",
+            "summary": "summary",
             "deposit": "0.1cro",
         },
     )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgCancelUpgrade")
 
     # wait for blocks after upgrade, should success since upgrade is canceled
     wait_for_block(cluster, upgrade_height + 2)

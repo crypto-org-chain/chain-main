@@ -49,9 +49,9 @@ def test_byzantine(cluster):
         sys.stdout.flush()
         i += 1
         val1 = cluster.validator(val_addr_byzantine)
-        if val1["jailed"]:
+        if val1.get("jailed"):
             break
-    assert val1["jailed"]
+    assert val1.get("jailed")
     assert any(
         [
             val1["status"] == "BOND_STATUS_UNBONDING",
@@ -68,9 +68,9 @@ def test_byzantine(cluster):
         sys.stdout.write(".")
         sys.stdout.flush()
         val2 = cluster.validator(val_addr_slash)
-        if val2["jailed"]:
+        if val2.get("jailed"):
             break
-    assert val2["jailed"]
+    assert val2.get("jailed")
     assert any(
         [
             val1["status"] == "BOND_STATUS_UNBONDING",

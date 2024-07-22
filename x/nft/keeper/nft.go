@@ -4,8 +4,8 @@ package keeper
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
@@ -28,8 +28,7 @@ func (k Keeper) GetNFT(ctx sdk.Context, denomID, tokenID string) (nft exported.N
 // GetNFTs returns all NFTs by the specified denom ID
 func (k Keeper) GetNFTs(ctx sdk.Context, denom string) (nfts []exported.NFT) {
 	store := ctx.KVStore(k.storeKey)
-
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyNFT(denom, ""))
+	iterator := storetypes.KVStorePrefixIterator(store, types.KeyNFT(denom, ""))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		var baseNFT types.BaseNFT

@@ -1,6 +1,6 @@
 import pytest
 
-from .utils import wait_for_block
+from .utils import find_log_event_attrs, wait_for_block
 
 pytestmark = pytest.mark.normal
 
@@ -14,9 +14,9 @@ def test_simple(cluster):
 
     # check vesting account
     addr = cluster.address("reserve")
-    account = cluster.account(addr)
-    assert account["@type"] == "/cosmos.vesting.v1beta1.DelayedVestingAccount"
-    assert account["base_vesting_account"]["original_vesting"] == [
+    account = cluster.account(addr)["account"]
+    assert account["type"] == "cosmos-sdk/DelayedVestingAccount"
+    assert account["value"]["base_vesting_account"]["original_vesting"] == [
         {"denom": "basecro", "amount": "20000000000"}
     ]
 
@@ -33,52 +33,42 @@ def test_transfer(cluster):
     initial_community_addr_tx_count = len(cluster.query_all_txs(community_addr)["txs"])
     initial_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
 
-    tx = cluster.transfer(community_addr, reserve_addr, "1cro")
-    print("transfer tx", tx["txhash"])
-    assert tx["logs"] == [
-        {
-            "msg_index": 0,
-            "log": "",
-            "events": [
-                {
-                    "type": "message",
-                    "attributes": [
-                        {"key": "action", "value": "/cosmos.bank.v1beta1.MsgSend"},
-                        {"key": "sender", "value": community_addr},
-                        {"key": "module", "value": "bank"},
-                    ],
-                },
-                {
-                    "type": "coin_spent",
-                    "attributes": [
-                        {"key": "spender", "value": community_addr},
-                        {"key": "amount", "value": "100000000basecro"},
-                    ],
-                },
-                {
-                    "type": "coin_received",
-                    "attributes": [
-                        {"key": "receiver", "value": reserve_addr},
-                        {"key": "amount", "value": "100000000basecro"},
-                    ],
-                },
-                {
-                    "type": "transfer",
-                    "attributes": [
-                        {"key": "recipient", "value": reserve_addr},
-                        {"key": "sender", "value": community_addr},
-                        {"key": "amount", "value": "100000000basecro"},
-                    ],
-                },
-                {
-                    "type": "message",
-                    "attributes": [
-                        {"key": "sender", "value": community_addr},
-                    ],
-                },
-            ],
-        }
-    ]
+    rsp = cluster.transfer(community_addr, reserve_addr, "1cro")
+    ev = find_log_event_attrs(rsp["events"], "message")
+    assert ev == {
+        "action": "/cosmos.bank.v1beta1.MsgSend",
+        "sender": community_addr,
+        "module": "bank",
+        "msg_index": "0",
+    }, ev
+    ev = find_log_event_attrs(rsp["events"], "coin_spent")
+    assert ev == {
+        "spender": community_addr,
+        "amount": "100000000basecro",
+        "msg_index": "0",
+    }, ev
+    ev = find_log_event_attrs(rsp["events"], "coin_received")
+    assert ev == {
+        "receiver": reserve_addr,
+        "amount": "100000000basecro",
+        "msg_index": "0",
+    }, ev
+    ev = find_log_event_attrs(rsp["events"], "transfer")
+    assert ev == {
+        "recipient": reserve_addr,
+        "sender": community_addr,
+        "amount": "100000000basecro",
+        "msg_index": "0",
+    }, ev
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "message",
+        lambda attrs: "action" not in attrs,
+    )
+    assert ev == {
+        "sender": community_addr,
+        "msg_index": "0",
+    }, ev
 
     assert cluster.balance(community_addr) == community_balance - 100000000
     assert cluster.balance(reserve_addr) == reserve_balance + 100000000

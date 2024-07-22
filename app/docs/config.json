@@ -102,13 +102,24 @@
       }
     },
     {
-      "url": "./tmp-swagger-gen/nft/v1/query.swagger.json"
+      "url": "./tmp-swagger-gen/chainmain/nft/v1/query.swagger.json"
     },
     {
-      "url": "./tmp-swagger-gen/supply/v1/query.swagger.json",
+      "url": "./tmp-swagger-gen/chainmain/nft_transfer/v1/query.swagger.json"
+    },
+    {
+      "url": "./tmp-swagger-gen/chainmain/supply/v1/query.swagger.json",
       "operationIds": {
         "rename": {
           "TotalSupply": "TotalSupply_"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/chainmain/icaauth/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "IcaauthParams"
         }
       }
     }

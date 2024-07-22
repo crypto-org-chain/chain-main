@@ -168,8 +168,7 @@ def test_periodic_fee_allowance(cluster):
         block_info = query_block_info(cluster, tx["height"])
         wait_for_block_time(
             cluster,
-            isoparse(block_info["block"]["header"]["time"])
-            + datetime.timedelta(seconds=period),
+            isoparse(block_info["header"]["time"]) + datetime.timedelta(seconds=period),
         )
 
     assert (
@@ -236,8 +235,7 @@ def test_exceed_period_limit_should_not_affect_the_next_period(cluster):
     block_info = query_block_info(cluster, tx["height"])
     wait_for_block_time(
         cluster,
-        isoparse(block_info["block"]["header"]["time"])
-        + datetime.timedelta(seconds=period),
+        isoparse(block_info["header"]["time"]) + datetime.timedelta(seconds=period),
     )
 
     transfer(

@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -108,7 +109,7 @@ func (k Keeper) GetTotalSupply(ctx sdk.Context, denomID string) uint64 {
 // GetTotalSupplyOfOwner returns the amount of NFTs by the specified conditions
 func (k Keeper) GetTotalSupplyOfOwner(ctx sdk.Context, id string, owner sdk.AccAddress) (supply uint64) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyOwner(owner, id, ""))
+	iterator := storetypes.KVStorePrefixIterator(store, types.KeyOwner(owner, id, ""))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
 		supply++
