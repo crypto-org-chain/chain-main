@@ -741,13 +741,8 @@ func New(
 	app.MountTransientStores(tkeys)
 	app.MountMemoryStores(memKeys)
 
-	// load state streaming if enabled
-	if err := app.RegisterStreamingServices(appOpts, keys); err != nil {
-		fmt.Printf("failed to load state streaming: %s", err)
-		os.Exit(1)
-	}
-
 	// wire up the versiondb's `StreamingService` and `MultiStore`.
+	// we don't support other streaming service, versiondb will override the streaming manager.
 	if cast.ToBool(appOpts.Get("versiondb.enable")) {
 		qms, err := app.setupVersionDB(homePath, keys, tkeys, memKeys)
 		if err != nil {
