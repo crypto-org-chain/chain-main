@@ -63,7 +63,6 @@ func GetCmdQuerySupply() *cobra.Command {
 				}
 			}
 
-			//nolint: govet
 			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
 				return err
 			}

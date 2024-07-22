@@ -16,9 +16,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 )
 
-var (
-	ModuleCdc = codec.NewLegacyAmino()
-)
+var ModuleCdc = codec.NewLegacyAmino()
 
 func init() {
 	RegisterLegacyAminoCodec(ModuleCdc)
