@@ -418,6 +418,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         cluster.migrate_keystore(i=i)
     upgrade(cluster, "v4.3.0", target_height, propose_legacy=True)
 
+    target_height = cluster.block_height() + 15
+    upgrade(cluster, "v5.0", target_height, propose_legacy=True)
+    cli = cluster.cosmos_cli()
+    with pytest.raises(AssertionError):
+        cli.query_params("icaauth")
+
 
 def test_cancel_upgrade(cluster):
     """
