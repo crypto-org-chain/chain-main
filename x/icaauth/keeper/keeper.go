@@ -9,7 +9,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	"github.com/cosmos/gogoproto/proto"
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	icacontrollerkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/keeper"
@@ -62,11 +61,7 @@ func (k *Keeper) DoSubmitTx(ctx sdk.Context, connectionID, owner string, msgs []
 		return err
 	}
 
-	protoMsgs := make([]proto.Message, len(msgs))
-	for i, msg := range msgs {
-		protoMsgs[i] = msg.(proto.Message)
-	}
-	data, err := icatypes.SerializeCosmosTx(k.cdc, protoMsgs, icatypes.EncodingProtobuf)
+	data, err := icatypes.SerializeCosmosTx(k.cdc, msgs, icatypes.EncodingProtobuf)
 	if err != nil {
 		return err
 	}

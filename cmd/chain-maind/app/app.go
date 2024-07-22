@@ -9,7 +9,6 @@ import (
 	"time"
 
 	clientcfg "github.com/cosmos/cosmos-sdk/client/config"
-	conf "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -85,7 +84,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 			if err != nil {
 				return err
 			}
-			initClientCtx, err = conf.ReadFromClientConfig(initClientCtx)
+			initClientCtx, err = clientcfg.ReadFromClientConfig(initClientCtx)
 			if err != nil {
 				return err
 			}
