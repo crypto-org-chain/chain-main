@@ -14,7 +14,6 @@ func (app *ChainApp) setupVersionDB(
 	keys map[string]*storetypes.KVStoreKey,
 	tkeys map[string]*storetypes.TransientStoreKey,
 	memKeys map[string]*storetypes.MemoryStoreKey,
-	okeys map[string]*storetypes.ObjectStoreKey,
-) (storetypes.RootMultiStore, error) {
+) (storetypes.MultiStore, error) {
 	return nil, errors.New("versiondb is not supported in this binary")
 }
