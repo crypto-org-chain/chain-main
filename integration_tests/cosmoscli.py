@@ -31,6 +31,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         event_query_tx=True,
         **kwargs,
     ):
+        mode = kwargs.get("broadcast_mode")
         if kind == "software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -57,7 +58,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0 and event_query_tx:
+            if rsp["code"] == 0 and event_query_tx and mode == "sync":
                 rsp = self.event_query_tx_for(rsp["txhash"])
             return rsp
         elif kind == "cancel-software-upgrade":
