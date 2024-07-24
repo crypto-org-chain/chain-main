@@ -114,14 +114,6 @@
           "TotalSupply": "TotalSupply_"
         }
       }
-    },
-    {
-      "url": "./tmp-swagger-gen/chainmain/icaauth/v1/query.swagger.json",
-      "operationIds": {
-        "rename": {
-          "Params": "IcaauthParams"
-        }
-      }
     }
   ]
 }
