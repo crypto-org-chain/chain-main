@@ -158,8 +158,14 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def upgrade(cluster, plan_name, target_height, propose_legacy=True):
-    print("upgrade height", target_height)
+def upgrade(
+    cluster,
+    plan_name,
+    target_height,
+    propose_legacy=True,
+    broadcast_mode="block",
+):
+    print("upgrade height", target_height, plan_name)
     kind = "software-upgrade"
     proposal = {
         "name": plan_name,
@@ -168,13 +174,15 @@ def upgrade(cluster, plan_name, target_height, propose_legacy=True):
         "upgrade-height": target_height,
         "deposit": "0.1cro",
     }
+    event_query_tx = broadcast_mode == "sync"
     if propose_legacy:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
             no_validate=True,
-            event_query_tx=False,
+            event_query_tx=event_query_tx,
+            broadcast_mode=broadcast_mode,
         )
     else:
         rsp = cluster.gov_propose(
@@ -198,7 +206,8 @@ def upgrade(cluster, plan_name, target_height, propose_legacy=True):
             proposal_id,
             "yes",
             i=i,
-            event_query_tx=False,
+            event_query_tx=event_query_tx,
+            broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -416,7 +425,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # test migrate keystore
     for i in range(2):
         cluster.migrate_keystore(i=i)
-    upgrade(cluster, "v4.3.0", target_height, propose_legacy=True)
+    upgrade(cluster, "v4.3.0", target_height)
+
+    target_height = cluster.block_height() + 15
+    upgrade(cluster, "v5.0", target_height, broadcast_mode="sync")
+    cli = cluster.cosmos_cli()
+    with pytest.raises(AssertionError):
+        cli.query_params("icaauth")
 
 
 def test_cancel_upgrade(cluster):

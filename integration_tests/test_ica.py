@@ -107,7 +107,7 @@ def test_ica(cluster, tmp_path):
 
     # create interchain account
     v = json.dumps({"fee_version": "ics29-1", "app_version": ""})
-    rsp = cli_controller.icaauth_register_account(
+    rsp = cli_controller.ica_register_account(
         controller_connection,
         from_=addr_controller,
         gas="400000",
@@ -122,7 +122,7 @@ def test_ica(cluster, tmp_path):
     ica_address = cli_controller.ica_query_account(
         controller_connection,
         addr_controller,
-    )["interchainAccountAddress"]
+    )["address"]
     # initial balance of interchain account should be zero
     assert cli_host.balance(ica_address) == 0
 
@@ -132,25 +132,25 @@ def test_ica(cluster, tmp_path):
     # check if the funds are received in interchain account
     assert cli_host.balance(ica_address) == 100000000
 
-    def generated_tx_txt(amt):
-        # generate a transaction to send to host chain
-        generated_tx = tmp_path / "generated_tx.txt"
-        generated_tx_msg = cli_host.transfer(
-            ica_address, addr_host, f"{amt}cro", generate_only=True
-        )
-        print(json.dumps(generated_tx_msg))
-        with open(generated_tx, "w") as opened_file:
-            json.dump(generated_tx_msg, opened_file)
-        return generated_tx
+    def gen_send_msg(sender, receiver, denom, amount):
+        return {
+            "@type": "/cosmos.bank.v1beta1.MsgSend",
+            "from_address": sender,
+            "to_address": receiver,
+            "amount": [{"denom": denom, "amount": f"{amount}"}],
+        }
 
     no_timeout = 60
     num_txs = len(cli_host.query_all_txs(ica_address)["txs"])
 
     def submit_msgs(amt, timeout_in_s=no_timeout, gas="200000"):
+        # generate a transaction to send to host chain
+        data = json.dumps([gen_send_msg(ica_address, addr_host, "basecro", amt)])
+        packet = cli_controller.ica_generate_packet_data(data)
         # submit transaction on host chain on behalf of interchain account
-        rsp = cli_controller.icaauth_submit_tx(
+        rsp = cli_controller.ica_submit_tx(
             controller_connection,
-            generated_tx_txt(amt),
+            json.dumps(packet),
             timeout_duration=f"{timeout_in_s}s",
             gas=gas,
             from_=addr_controller,
@@ -160,12 +160,12 @@ def test_ica(cluster, tmp_path):
         wait_for_check_tx(cli_host, ica_address, num_txs, timeout)
         return rsp["height"]
 
-    submit_msgs(0.5)
+    submit_msgs(50000000)
     # check if the transaction is submitted
     assert len(cli_host.query_all_txs(ica_address)["txs"]) == num_txs + 1
     # check if the funds are reduced in interchain account
     assert cli_host.balance(ica_address) == 50000000
-    height = int(submit_msgs(10000000))
+    height = int(submit_msgs(1000000000000000))
 
     ev = None
     type = "ibccallbackerror-ics27_packet"

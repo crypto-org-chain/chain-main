@@ -138,9 +138,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/chainmain"
 	chainmainkeeper "github.com/crypto-org-chain/chain-main/v4/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
-	icaauthmodule "github.com/crypto-org-chain/chain-main/v4/x/icaauth"
-	icaauthmodulekeeper "github.com/crypto-org-chain/chain-main/v4/x/icaauth/keeper"
-	icaauthmoduletypes "github.com/crypto-org-chain/chain-main/v4/x/icaauth/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft"
 	nfttransfer "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer"
 	nfttransferkeeper "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
@@ -234,7 +231,6 @@ type ChainApp struct {
 	IBCFeeKeeper          ibcfeekeeper.Keeper
 	ICAControllerKeeper   icacontrollerkeeper.Keeper
 	ICAHostKeeper         icahostkeeper.Keeper
-	ICAAuthKeeper         icaauthmodulekeeper.Keeper
 	AuthzKeeper           authzkeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	FeeGrantKeeper        feegrantkeeper.Keeper
@@ -253,7 +249,6 @@ type ChainApp struct {
 	ScopedIBCFeeKeeper        capabilitykeeper.ScopedKeeper
 	ScopedICAControllerKeeper capabilitykeeper.ScopedKeeper
 	ScopedICAHostKeeper       capabilitykeeper.ScopedKeeper
-	ScopedICAAuthKeeper       capabilitykeeper.ScopedKeeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -345,7 +340,6 @@ func New(
 	scopedNFTTransferKeeper := app.CapabilityKeeper.ScopeToModule(nfttransfertypes.ModuleName)
 	scopedICAControllerKeeper := app.CapabilityKeeper.ScopeToModule(icacontrollertypes.SubModuleName)
 	scopedICAHostKeeper := app.CapabilityKeeper.ScopeToModule(icahosttypes.SubModuleName)
-	scopedICAAuthKeeper := app.CapabilityKeeper.ScopeToModule(icaauthmoduletypes.ModuleName)
 	app.CapabilityKeeper.Seal()
 
 	// add keepers
@@ -519,17 +513,11 @@ func New(
 		app.AccountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
 		authAddr,
 	)
+	app.ICAHostKeeper.WithQueryRouter(app.GRPCQueryRouter())
 	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
 
-	app.ICAAuthKeeper = *icaauthmodulekeeper.NewKeeper(appCodec, keys[icaauthmoduletypes.StoreKey],
-		keys[icaauthmoduletypes.MemStoreKey], app.GetSubspace(icaauthmoduletypes.ModuleName), app.ICAControllerKeeper,
-		scopedICAAuthKeeper)
-
-	icaAuthModule := icaauthmodule.NewAppModule(appCodec, app.ICAAuthKeeper)
-
 	var icaControllerStack porttypes.IBCModule
-	icaControllerStack = icaauthmodule.NewIBCModule(app.ICAAuthKeeper)
-	icaControllerStack = icacontroller.NewIBCMiddleware(icaControllerStack, app.ICAControllerKeeper)
+	icaControllerStack = icacontroller.NewIBCMiddleware(nil, app.ICAControllerKeeper)
 	icaControllerStack = ibcfee.NewIBCMiddleware(icaControllerStack, app.IBCFeeKeeper)
 
 	var icaHostStack porttypes.IBCModule
@@ -542,7 +530,6 @@ func New(
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
 	ibcRouter.AddRoute(nfttransfertypes.ModuleName, nftTransferStack)
-	ibcRouter.AddRoute(icaauthmoduletypes.ModuleName, icaControllerStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 
 	// create evidence keeper with router
@@ -593,7 +580,6 @@ func New(
 		nfttransfer.NewAppModule(app.NFTTransferKeeper),
 		feeModule,
 		icaModule,
-		icaAuthModule,
 		chainmain.NewAppModule(app.chainmainKeeper),
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
@@ -640,7 +626,6 @@ func New(
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
-		icaauthmoduletypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
@@ -668,7 +653,6 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
-		icaauthmoduletypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
@@ -699,7 +683,6 @@ func New(
 		group.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
-		icaauthmoduletypes.ModuleName,
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
@@ -808,7 +791,6 @@ func New(
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedICAControllerKeeper = scopedICAControllerKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
-	app.ScopedICAAuthKeeper = scopedICAAuthKeeper
 
 	return app
 }
@@ -1044,7 +1026,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName).WithKeyTable(ibctransfertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icacontrollertypes.SubModuleName).WithKeyTable(icacontrollertypes.ParamKeyTable())
 	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
-	paramsKeeper.Subspace(icaauthmoduletypes.ModuleName)
 
 	return paramsKeeper
 }
@@ -1076,7 +1057,6 @@ func StoreKeys() (
 		nfttransfertypes.StoreKey,
 		group.StoreKey,
 		ibcfeetypes.StoreKey,
-		icaauthmoduletypes.StoreKey,
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
 		nfttypes.StoreKey,

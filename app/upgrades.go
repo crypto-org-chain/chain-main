@@ -22,7 +22,10 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, clientKeeper
 		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
 	}
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		storeUpgrades := storetypes.StoreUpgrades{
+			Deleted: []string{"icaauth"},
+		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storetypes.StoreUpgrades{}))
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
 }
