@@ -106,13 +106,13 @@ $ cachix use crypto-org-chain
 
 ## 6. Start a local Development Network and Node
 
-Please follow this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#devnet-running-latest-development-node) to run a local devnet.
+Please follow this [documentation](https://docs.cronos-pos.org/for-node-hosts/getting-started) to run a local devnet.
 
 <a id="send-first-transaction" />
 
 ## 7. Send Your First Transaction
 
-After setting the local devnet, you may interact with your local blockchain by following this [documentation](https://crypto.org/docs/getting-started/local-devnet.html#interact-with-the-chain).
+After setting the local devnet, you may interact with your local blockchain by following this [documentation](https://docs.cronos-pos.org/for-node-hosts/getting-started/local-devnet#interact-with-the-chain).
 
 <a id="testing" />
 
@@ -185,9 +185,9 @@ pystarport supervisorctl stop all
 
 ## 10. Useful links
 
-- [Project Website](http://crypto.org/)
-- [Technical Documentation](http://crypto.org/docs)
-- Community chatrooms (non-technical): [Discord](https://discord.gg/nsp9JTC) [Telegram](https://t.me/CryptoComOfficial)
+- [Project Website](https://cronos-pos.org/)
+- [Technical Documentation](https://docs.cronos-pos.org/)
+- Community chatrooms (non-technical): [Discord](https://discord.gg/MkvPzvP5) [Telegram](**Update Telegram Link**)
 - Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org%20Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
 
 - [Cosmos SDK documentation](https://docs.cosmos.network)
