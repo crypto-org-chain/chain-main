@@ -35,7 +35,7 @@
 
 ## 1. Description
 
-**Crypto.org Chain** is a blockchain application built using Cosmos SDK and Tendermint,
+**Cronos Chain** is a blockchain application built using Cosmos SDK and Tendermint,
 intended as a backbone for some of the existing and future Crypto.org ecosystem.
 
 <a id="contributing" />
