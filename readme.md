@@ -1,6 +1,6 @@
 <br />
 <p align="center">
-  <img src="assets/logo.svg" alt="Crypto.org Chain" width="400">
+  <img src="assets/logo.svg" alt="Cronos POS Chain" width="400">
 </p>
 <br />
 
