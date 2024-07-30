@@ -55,7 +55,7 @@ and the [contributing guidelines](CONTRIBUTING.md) when submitting code.
 
 ## 4. Documentation
 
-Technical documentation can be found in this [Github repository](https://github.com/crypto-org-chain/chain-docs) (you can read it in [this hosted version](https://crypto.org/docs)).
+Technical documentation can be found in this [Github repository](https://github.com/crypto-org-chain/chain-docs) (you can read it in [this hosted version](https://docs.cronos-pos.org/)).
 
 <a id="build" />
 
