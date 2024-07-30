@@ -36,7 +36,7 @@
 ## 1. Description
 
 **Cronos Chain** is a blockchain application built using Cosmos SDK and Tendermint,
-intended as a backbone for some of the existing and future Crypto.org ecosystem.
+intended as a backbone for some of the existing and future Cronos ecosystem.
 
 <a id="contributing" />
 
