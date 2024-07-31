@@ -71,8 +71,8 @@ jobs:
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_DATE: ${{ github.event.comment.created_at }}
-          PR_PUSHED_AT: ${{ fromJson(steps.request.outputs.data).pushed_at }}
         run: |
+          PR_PUSHED_AT="${{ fromJson(steps.request.outputs.data).pushed_at }}"
           comment_hash=`echo "$COMMENT_BODY" | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
             # use default head ref, if the PR hasn't changed since the comment
