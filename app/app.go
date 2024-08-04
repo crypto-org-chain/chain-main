@@ -782,7 +782,7 @@ func New(
 			v1 := app.qms.LatestVersion()
 			v2 := app.LastBlockHeight()
 			if v1 > 0 && v1 != v2 {
-				tmos.Exit(fmt.Sprintf("versiondb lastest version %d don't match iavl latest version %d", v1, v2))
+				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", v1, v2))
 			}
 		}
 	}
