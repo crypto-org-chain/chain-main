@@ -53,7 +53,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -112,7 +112,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -147,7 +147,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -182,7 +182,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -217,7 +217,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -252,7 +252,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -287,7 +287,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -322,7 +322,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
@@ -358,7 +358,7 @@ jobs:
            nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt

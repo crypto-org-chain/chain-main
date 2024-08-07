@@ -31,6 +31,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         event_query_tx=True,
         **kwargs,
     ):
+        mode = kwargs.get("broadcast_mode")
         if kind == "software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -57,7 +58,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0 and event_query_tx:
+            if rsp["code"] == 0 and event_query_tx and mode == "sync":
                 rsp = self.event_query_tx_for(rsp["txhash"])
             return rsp
         elif kind == "cancel-software-upgrade":
@@ -108,6 +109,62 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 if rsp["code"] == 0 and event_query_tx:
                     rsp = self.event_query_tx_for(rsp["txhash"])
                 return rsp
+
+    def gov_propose_new(
+        self,
+        proposer,
+        kind,
+        proposal,
+        **kwargs,
+    ):
+        if kind == "software-upgrade":
+            rsp = json.loads(
+                self.raw(
+                    "tx",
+                    "upgrade",
+                    kind,
+                    proposal["name"],
+                    "-y",
+                    "--no-validate",
+                    from_=proposer,
+                    # content
+                    title=proposal.get("title"),
+                    summary=proposal.get("summary"),
+                    upgrade_height=proposal.get("upgrade-height"),
+                    upgrade_time=proposal.get("upgrade-time"),
+                    upgrade_info=proposal.get("upgrade-info", "info"),
+                    deposit=proposal.get("deposit"),
+                    # basic
+                    home=self.data_dir,
+                    node=self.node_rpc,
+                    keyring_backend="test",
+                    chain_id=self.chain_id,
+                    **kwargs,
+                )
+            )
+        else:
+            rsp = json.loads(
+                self.raw(
+                    "tx",
+                    "upgrade",
+                    kind,
+                    "-y",
+                    from_=proposer,
+                    # content
+                    title=proposal.get("title"),
+                    summary=proposal.get("summary"),
+                    deposit=proposal.get("deposit"),
+                    # basic
+                    home=self.data_dir,
+                    node=self.node_rpc,
+                    keyring_backend="test",
+                    chain_id=self.chain_id,
+                    **kwargs,
+                )
+            )
+        if rsp["code"] == 0:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
 
     def transfer(
         self,
@@ -285,6 +342,21 @@ class ClusterCLI(cluster.ClusterCLI):
             proposal,
             no_validate,
             event_query_tx,
+            **kwargs,
+        )
+
+    def gov_propose_new(
+        self,
+        proposer,
+        kind,
+        proposal,
+        i=0,
+        **kwargs,
+    ):
+        return self.cosmos_cli(i).gov_propose_new(
+            proposer,
+            kind,
+            proposal,
             **kwargs,
         )
 

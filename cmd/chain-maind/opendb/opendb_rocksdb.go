@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	dbm "github.com/cometbft/cometbft-db"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/linxGnu/grocksdb"
 )
 

@@ -4,8 +4,8 @@ package keeper
 
 import (
 	sdkerrors "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
@@ -64,7 +64,7 @@ func (k Keeper) GetDenomByName(ctx sdk.Context, name string) (denom types.Denom,
 // GetDenoms returns all the denoms
 func (k Keeper) GetDenoms(ctx sdk.Context) (denoms []types.Denom) {
 	store := ctx.KVStore(k.storeKey)
-	iterator := sdk.KVStorePrefixIterator(store, types.KeyDenomID(""))
+	iterator := storetypes.KVStorePrefixIterator(store, types.KeyDenomID(""))
 	defer iterator.Close()
 
 	for ; iterator.Valid(); iterator.Next() {

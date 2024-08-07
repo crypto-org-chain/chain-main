@@ -17,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-org-chain/chain-main/v4/app"
+	"github.com/crypto-org-chain/chain-main/v4/testutil"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
@@ -60,10 +61,10 @@ type KeeperSuite struct {
 }
 
 func (suite *KeeperSuite) SetupTest() {
-	a := app.Setup(suite.T(), isCheckTx)
+	a := testutil.Setup(isCheckTx, nil)
 	suite.app = a
 	suite.legacyAmino = a.LegacyAmino()
-	suite.ctx = a.BaseApp.NewContext(isCheckTx, tmproto.Header{ChainID: app.TestAppChainID})
+	suite.ctx = a.BaseApp.NewContext(isCheckTx).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	suite.keeper = a.NFTKeeper
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, a.InterfaceRegistry())

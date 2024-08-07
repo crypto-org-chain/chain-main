@@ -1,11 +1,12 @@
 package types
 
 import (
+	context "context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v7/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	nftexported "github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
@@ -51,9 +52,9 @@ type PortKeeper interface {
 
 // AccountKeeper defines the contract required for account APIs.
 type AccountKeeper interface {
-	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	// Set an account in the store.
-	SetAccount(sdk.Context, types.AccountI)
-	HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool
-	GetModuleAddress(name string) sdk.AccAddress
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	HasAccount(ctx context.Context, addr sdk.AccAddress) bool
+	SetAccount(ctx context.Context, acc sdk.AccountI)
 }

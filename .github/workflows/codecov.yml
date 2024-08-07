@@ -31,7 +31,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
 
       # - name: Upload coverage report
-      #   uses: codecov/codecov-action@v3
+      #   uses: codecov/codecov-action@v4
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #     file: ./coverage.txt

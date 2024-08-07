@@ -4,6 +4,7 @@ import json
 import socket
 import sys
 import time
+from datetime import timedelta
 
 import bech32
 from dateutil.parser import isoparse
@@ -87,6 +88,10 @@ def module_address(name):
     return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
 
+def get_sync_info(s):
+    return s.get("SyncInfo") or s.get("sync_info")
+
+
 def wait_for_block(cli, height, timeout=240):
     for i in range(timeout * 2):
         try:
@@ -94,7 +99,7 @@ def wait_for_block(cli, height, timeout=240):
         except AssertionError as e:
             print(f"get sync status failed: {e}", file=sys.stderr)
         else:
-            current_height = int(status["SyncInfo"]["latest_block_height"])
+            current_height = int(get_sync_info(status)["latest_block_height"])
             if current_height >= height:
                 break
             print("current block height", current_height)
@@ -104,10 +109,10 @@ def wait_for_block(cli, height, timeout=240):
 
 
 def wait_for_new_blocks(cli, n, sleep=0.5):
-    begin_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+    begin_height = int(get_sync_info((cli.status()))["latest_block_height"])
     while True:
         time.sleep(sleep)
-        cur_height = int((cli.status())["SyncInfo"]["latest_block_height"])
+        cur_height = int(get_sync_info((cli.status()))["latest_block_height"])
         if cur_height - begin_height >= n:
             break
 
@@ -115,7 +120,7 @@ def wait_for_new_blocks(cli, n, sleep=0.5):
 def wait_for_block_time(cli, t):
     print("wait for block time", t)
     while True:
-        now = isoparse((cli.status())["SyncInfo"]["latest_block_time"])
+        now = isoparse(get_sync_info(cli.status())["latest_block_time"])
         print("block time now:", now)
         if now >= t:
             break
@@ -187,15 +192,8 @@ def get_ledger():
     return ledger.Ledger()
 
 
-def parse_events(logs):
-    return {
-        ev["type"]: {attr["key"]: attr["value"] for attr in ev["attributes"]}
-        for ev in logs[0]["events"]
-    }
-
-
-def find_log_event_attrs(logs, ev_type, cond=None):
-    for ev in logs[0]["events"]:
+def find_log_event_attrs(events, ev_type, cond=None):
+    for ev in events:
         if ev["type"] == ev_type:
             attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
             if cond is None or cond(attrs):
@@ -207,9 +205,54 @@ def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
     def cb(attrs):
         return "proposal_id" in attrs
 
-    ev = find_log_event_attrs(rsp["logs"], "submit_proposal", cb)
+    ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
     assert ev["proposal_messages"] == msg, rsp
     return ev["proposal_id"]
+
+
+def approve_proposal(
+    cluster,
+    rsp,
+    vote_option="yes",
+    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+):
+    proposal_id = get_proposal_id(rsp, msg)
+    proposal = cluster.query_proposal(proposal_id)
+    if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
+        assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
+    amount = cluster.balance(cluster.address("ecosystem"))
+    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
+
+    if vote_option is not None:
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
+        assert rsp["code"] == 0, rsp["raw_log"]
+        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
+        assert rsp["code"] == 0, rsp["raw_log"]
+        assert (
+            int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
+            == cluster.staking_pool()
+        ), "all voted"
+    else:
+        assert cluster.query_tally(proposal_id) == {
+            "yes_count": "0",
+            "no_count": "0",
+            "abstain_count": "0",
+            "no_with_veto_count": "0",
+        }
+
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
+    )
+    proposal = cluster.query_proposal(proposal_id)
+    if vote_option == "yes":
+        assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+    else:
+        assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal
+    return amount
 
 
 _next_unique = 0
@@ -413,6 +456,7 @@ def query_block_info(cli, height, i=0):
             "query",
             "block",
             height,
+            type="height",
             home=cli.cosmos_cli(i).data_dir,
         )
     )
@@ -493,8 +537,7 @@ def query_delegation_amount(cluster, delegator_address, validator_address):
         )
     except AssertionError:
         return {"denom": BASECRO_DENOM, "amount": "0"}
-
-    return delegation_amount["balance"]
+    return delegation_amount["delegation_response"]["balance"]
 
 
 def query_total_reward_amount(cluster, delegator_address, validator_address=""):

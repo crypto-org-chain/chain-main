@@ -47,7 +47,7 @@ def test_slashing(cluster):
     print("tokens after slashing", tokens2)
     assert tokens2 == int(tokens1 * 0.99), "slash amount is not correct"
 
-    assert val["jailed"], "validator is jailed"
+    assert val.get("jailed"), "validator is jailed"
 
     # try to unjail
     rsp = cluster.unjail(addr, i=2)

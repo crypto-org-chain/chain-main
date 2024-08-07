@@ -16,15 +16,12 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 )
 
-var (
-	amino     = codec.NewLegacyAmino()
-	ModuleCdc = codec.NewAminoCodec(amino)
-)
+var ModuleCdc = codec.NewLegacyAmino()
 
 func init() {
-	RegisterLegacyAminoCodec(amino)
-	cryptocodec.RegisterCrypto(amino)
-	amino.Seal()
+	RegisterLegacyAminoCodec(ModuleCdc)
+	cryptocodec.RegisterCrypto(ModuleCdc)
+	ModuleCdc.Seal()
 }
 
 // RegisterLegacyAminoCodec concrete types on codec

@@ -4,6 +4,7 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -294,8 +296,10 @@ func InitTestnet(
 		baseAccount := authtypes.NewBaseAccount(addr, nil, 0, 0)
 
 		if !vestingCoins.IsZero() {
-			baseVestingAccount := authvesting.NewBaseVestingAccount(baseAccount, vestingCoins.Sort(), int64(vestingEnd))
-
+			baseVestingAccount, err := authvesting.NewBaseVestingAccount(baseAccount, vestingCoins.Sort(), int64(vestingEnd))
+			if err != nil {
+				return fmt.Errorf("failed to create base vesting account: %w", err)
+			}
 			if (genbalance.Coins.IsZero() && !baseVestingAccount.OriginalVesting.IsZero()) ||
 				baseVestingAccount.OriginalVesting.IsAnyGT(genbalance.Coins) {
 				return errors.New("vesting amount cannot be greater than total amount")
@@ -323,12 +327,12 @@ func InitTestnet(
 		genAccounts = append(genAccounts, genAccount)
 
 		createValMsg, err2 := stakingtypes.NewMsgCreateValidator(
-			sdk.ValAddress(addr),
+			addr.String(),
 			valPubKeys[i],
 			stakingCoin,
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
-			stakingtypes.NewCommissionRates(sdk.NewDecWithPrec(1, 1), sdk.NewDecWithPrec(2, 1), sdk.NewDecWithPrec(1, 2)),
-			sdk.OneInt(),
+			stakingtypes.NewCommissionRates(sdkmath.LegacyNewDecWithPrec(1, 1), sdkmath.LegacyNewDecWithPrec(2, 1), sdkmath.LegacyNewDecWithPrec(1, 2)),
+			sdkmath.OneInt(),
 		)
 		if err2 != nil {
 			return err2
@@ -348,7 +352,7 @@ func InitTestnet(
 			WithKeybase(kb).
 			WithTxConfig(clientCtx.TxConfig)
 
-		if err = tx.Sign(txFactory, nodeDirName, txBuilder, true); err != nil {
+		if err = tx.Sign(context.Background(), txFactory, nodeDirName, txBuilder, true); err != nil {
 			return err
 		}
 
@@ -373,6 +377,7 @@ func InitTestnet(
 	err = collectGenFiles(
 		clientCtx, nodeConfig, chainID, nodeIDs, valPubKeys, numValidators,
 		outputDir, nodeDirPrefix, nodeDaemonHome, genBalIterator,
+		clientCtx.InterfaceRegistry.SigningContext().ValidatorAddressCodec(),
 	)
 	if err != nil {
 		return err
@@ -458,6 +463,7 @@ func collectGenFiles(
 	clientCtx client.Context, nodeConfig *tmconfig.Config, chainID string,
 	nodeIDs []string, valPubKeys []crypto.PubKey, numValidators int,
 	outputDir, nodeDirPrefix, nodeDaemonHome string, genBalIterator banktypes.GenesisBalancesIterator,
+	valAddrCodec runtime.ValidatorAddressCodec,
 ) error {
 	var appState json.RawMessage
 	genTime := tmtime.Now()
@@ -473,14 +479,16 @@ func collectGenFiles(
 		nodeID, valPubKey := nodeIDs[i], valPubKeys[i]
 		initCfg := genutiltypes.NewInitConfig(chainID, gentxsDir, nodeID, valPubKey)
 
-		genDoc, err := tmtypes.GenesisDocFromFile(nodeConfig.GenesisFile())
+		genDoc, err := genutiltypes.AppGenesisFromFile(nodeConfig.GenesisFile())
 		if err != nil {
 			return err
 		}
 
 		nodeAppState, err := genutil.GenAppStateFromConfig(
 			clientCtx.Codec, clientCtx.TxConfig,
-			nodeConfig, initCfg, *genDoc, genBalIterator, genutiltypes.DefaultMessageValidator)
+			nodeConfig, initCfg, genDoc, genBalIterator, genutiltypes.DefaultMessageValidator,
+			valAddrCodec,
+		)
 		if err != nil {
 			return err
 		}
@@ -548,7 +556,7 @@ func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 	}
 	stakingCoin := sdk.Coin{
 		Denom:  baseDenom,
-		Amount: sdk.ZeroInt(),
+		Amount: sdkmath.ZeroInt(),
 	}
 	if stakingAmount == "" {
 		stakingCoin.Amount = halfCoins(coins)

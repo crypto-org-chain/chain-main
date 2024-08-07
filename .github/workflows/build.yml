@@ -70,12 +70,17 @@ jobs:
         if: github.event_name == 'issue_comment'
         env:
           COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_DATE: ${{ github.event.comment.created_at }}
         run: |
-          echo "repo_name=${{ fromJson(steps.request.outputs.data).head.repo.full_name }}" >> $GITHUB_OUTPUT
+          PR_PUSHED_AT="${{ fromJson(steps.request.outputs.data).pushed_at }}"
           comment_hash=`echo "$COMMENT_BODY" | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
-            # use default head ref
-            echo "ref=${{ fromJson(steps.request.outputs.data).head.ref }}" >> $GITHUB_OUTPUT
+            # use default head ref, if the PR hasn't changed since the comment
+            if [[ $(date -d "$PR_PUSHED_AT" +%s) -gt $(date -d "$COMMENT_AT" +%s) ]]; then
+              echo "The PR has changed since the comment, and is therefore not safe to use. Exiting."
+              exit 1
+            fi
+            echo "ref=${{ fromJson(steps.request.outputs.data).head.sha }}" >> $GITHUB_OUTPUT
           else
             # use comment provided ref
             echo "ref=${comment_hash}" >> $GITHUB_OUTPUT
@@ -90,7 +95,6 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -115,7 +119,7 @@ jobs:
         run: make test
         if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
@@ -137,6 +141,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v23
@@ -206,7 +214,6 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -253,7 +260,6 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -300,7 +306,6 @@ jobs:
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3

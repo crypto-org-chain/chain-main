@@ -38,3 +38,6 @@ pystarport/proto_python/cosmos_proto
 pystarport/proto_python/gogoproto
 pystarport/proto_python/google
 pystarport/proto_python/tendermint
+
+# direnv
+/.direnv
