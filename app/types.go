@@ -16,7 +16,7 @@ type App interface {
 	Name() string
 
 	// The application types codec.
-	// NOTE: This shoult be sealed before being returned.
+	// NOTE: This should be sealed before being returned.
 	LegacyAmino() *codec.LegacyAmino
 
 	// Application updates every begin block.
@@ -36,6 +36,6 @@ type App interface {
 		forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
 	) (servertypes.ExportedApp, error)
 
-	// All the registered module account addreses.
+	// All the registered module account addresses.
 	ModuleAccountAddrs() map[string]bool
 }

@@ -301,7 +301,7 @@ paths:
       parameters:
         - in: body
           name: txBroadcast
-          description: The tx must be a signed StdTx. The supported broadcast modes include `"block"`(return after tx commit), `"sync"`(return afer CheckTx) and `"async"`(return right away).
+          description: The tx must be a signed StdTx. The supported broadcast modes include `"block"`(return after tx commit), `"sync"`(return after CheckTx) and `"async"`(return right away).
           required: true
           schema:
             type: object
@@ -524,7 +524,7 @@ paths:
                   sequence:
                     type: string
         500:
-          description: Server internel error
+          description: Server internal error
   /staking/delegators/{delegatorAddr}/delegations:
     parameters:
       - in: path
