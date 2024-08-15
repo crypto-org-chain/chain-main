@@ -63,7 +63,6 @@ func GetCmdQuerySupply() *cobra.Command {
 				}
 			}
 
-			// nolint: govet
 			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
 				return err
 			}
@@ -97,8 +96,6 @@ func GetCmdQueryOwner() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// nolint: govet
 			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
 				return err
 			}
@@ -141,8 +138,6 @@ func GetCmdQueryCollection() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// nolint: govet
 			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
 				return err
 			}
@@ -211,8 +206,6 @@ func GetCmdQueryDenom() *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			// nolint: govet
 			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
 				return err
 			}
@@ -246,7 +239,6 @@ func GetCmdQueryDenomByName() *cobra.Command {
 				return err
 			}
 
-			// nolint: govet
 			if err := types.ValidateDenomName(args[0]); err != nil {
 				return err
 			}
@@ -280,12 +272,10 @@ func GetCmdQueryNFT() *cobra.Command {
 				return err
 			}
 
-			// nolint: govet
 			if err := types.ValidateDenomIDWithIBC(args[0]); err != nil {
 				return err
 			}
 
-			// nolint: govet
 			if err := types.ValidateTokenID(args[1]); err != nil {
 				return err
 			}

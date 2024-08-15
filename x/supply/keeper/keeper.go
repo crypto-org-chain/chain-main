@@ -2,8 +2,8 @@ package keeper
 
 import (
 	newsdkerrors "cosmossdk.io/errors"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/crypto-org-chain/chain-main/v4/config"
@@ -17,17 +17,15 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var (
-	// ModuleAccounts defines the module accounts which will be queried to get liquid supply
-	ModuleAccounts = []string{
-		authtypes.FeeCollectorName,
-		distrtypes.ModuleName,
-		stakingtypes.BondedPoolName,
-		stakingtypes.NotBondedPoolName,
-		minttypes.ModuleName,
-		govtypes.ModuleName,
-	}
-)
+// ModuleAccounts defines the module accounts which will be queried to get liquid supply
+var ModuleAccounts = []string{
+	authtypes.FeeCollectorName,
+	distrtypes.ModuleName,
+	stakingtypes.BondedPoolName,
+	stakingtypes.NotBondedPoolName,
+	minttypes.ModuleName,
+	govtypes.ModuleName,
+}
 
 // Keeper for supply module
 type Keeper struct {
@@ -56,7 +54,7 @@ func NewKeeper(
 func (k Keeper) FetchVestingAccounts(ctx sdk.Context) types.VestingAccounts {
 	var addresses []string
 
-	k.accountKeeper.IterateAccounts(ctx, func(account authtypes.AccountI) bool {
+	k.accountKeeper.IterateAccounts(ctx, func(account sdk.AccountI) bool {
 		vacc, ok := account.(vestexported.VestingAccount)
 		if ok {
 			addresses = append(addresses, vacc.GetAddress().String())

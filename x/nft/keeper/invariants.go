@@ -32,7 +32,6 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 		count := 0
 
 		owners, err := k.GetOwners(ctx)
-
 		if err != nil {
 			return sdk.FormatInvariant(types.ModuleName, "supply", "unable to fetch owners"), true
 		}

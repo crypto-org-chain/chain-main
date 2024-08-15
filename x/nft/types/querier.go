@@ -44,7 +44,7 @@ type QueryOwnerParams struct {
 	Owner sdk.AccAddress
 }
 
-// NewQuerySupplyParams creates a new instance of QuerySupplyParams
+// NewQueryOwnerParams creates a new instance of QueryOwnerParams
 func NewQueryOwnerParams(denom string, owner sdk.AccAddress) QueryOwnerParams {
 	return QueryOwnerParams{
 		Denom: denom,

@@ -1,0 +1,10 @@
+syntax = "proto3";
+package chainmain.supply.v1;
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/supply/types";
+
+// VestingAccounts stored in keeper
+message VestingAccounts {
+  // addresses defines addresses of all the vesting accounts at genesis
+  repeated string addresses = 1;
+}

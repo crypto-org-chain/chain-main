@@ -68,12 +68,19 @@ jobs:
       - name: Get Comment PR informations
         id: pr_data
         if: github.event_name == 'issue_comment'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_DATE: ${{ github.event.comment.created_at }}
         run: |
-          echo "repo_name=${{ fromJson(steps.request.outputs.data).head.repo.full_name }}" >> $GITHUB_OUTPUT
-          comment_hash=`echo ${{ github.event.comment.body }} | cut -d' ' -f2` # get commit hash if any
+          PR_PUSHED_AT="${{ fromJson(steps.request.outputs.data).pushed_at }}"
+          comment_hash=`echo "$COMMENT_BODY" | cut -d' ' -f2` # get commit hash if any
           if [[ "${comment_hash}" == "/runsim" ]]; then 
-            # use default head ref
-            echo "ref=${{ fromJson(steps.request.outputs.data).head.ref }}" >> $GITHUB_OUTPUT
+            # use default head ref, if the PR hasn't changed since the comment
+            if [[ $(date -d "$PR_PUSHED_AT" +%s) -gt $(date -d "$COMMENT_AT" +%s) ]]; then
+              echo "The PR has changed since the comment, and is therefore not safe to use. Exiting."
+              exit 1
+            fi
+            echo "ref=${{ fromJson(steps.request.outputs.data).head.sha }}" >> $GITHUB_OUTPUT
           else
             # use comment provided ref
             echo "ref=${comment_hash}" >> $GITHUB_OUTPUT
@@ -81,14 +88,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -96,7 +102,7 @@ jobs:
           submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -113,7 +119,7 @@ jobs:
         run: make test
         if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt
@@ -135,18 +141,19 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -175,7 +182,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: install runsim
         run: |
           export GO111MODULE="on" && go install github.com/cosmos/tools/cmd/runsim@v1.0.0
@@ -200,14 +207,13 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -215,7 +221,7 @@ jobs:
         with:
           submodules: true
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -247,14 +253,13 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -262,7 +267,7 @@ jobs:
         with:
           submodules: true
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -294,14 +299,13 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - name: Checkout Comment PR Branch
         uses: actions/checkout@v3
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v3
@@ -309,7 +313,7 @@ jobs:
         with:
           submodules: true
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -405,17 +409,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             go.mod
             go.sum
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         if: steps.changed-files.outputs.any_changed == 'true'
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: update gomod2nix

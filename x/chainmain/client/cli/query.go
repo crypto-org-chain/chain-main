@@ -15,7 +15,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	disttypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	ibctypes "github.com/cosmos/ibc-go/v5/modules/apps/transfer/types"
+	ibctypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/crypto-org-chain/chain-main/v4/config"
 	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 )
@@ -80,7 +80,7 @@ func QueryAllTxCmd() *cobra.Command {
 			txsResult := sdk.SearchTxsResult{}
 			txsMap := map[string]*sdk.TxResponse{}
 			for _, event := range events {
-				txs, err := authtx.QueryTxsByEvents(clientCtx, []string{event}, page, limit, "")
+				txs, err := authtx.QueryTxsByEvents(clientCtx, page, limit, event, "")
 				if err != nil {
 					return nil
 				}
@@ -138,7 +138,7 @@ Example:
 				return clientErr
 			}
 
-			params := banktypes.NewQueryAllBalancesRequest(addr, pageReq)
+			params := banktypes.NewQueryAllBalancesRequest(addr, pageReq, false)
 			res, allBalancesErr := queryClient.AllBalances(context.Background(), params)
 			if allBalancesErr != nil {
 				return allBalancesErr

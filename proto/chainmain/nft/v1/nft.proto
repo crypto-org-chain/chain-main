@@ -1,0 +1,57 @@
+// Copyright (c) 2016-2021 Shanghai Bianjie AI Technology Inc. (licensed under the Apache License, Version 2.0)
+// Modifications Copyright (c) 2021-present Crypto.org (licensed under the Apache License, Version 2.0)
+syntax = "proto3";
+package chainmain.nft.v1;
+
+import "gogoproto/gogo.proto";
+
+option go_package                      = "github.com/crypto-org-chain/chain-main/x/nft/types";
+option (gogoproto.goproto_getters_all) = false;
+
+// BaseNFT defines a non-fungible token
+message BaseNFT {
+  option (gogoproto.equal) = true;
+
+  string id    = 1;
+  string name  = 2;
+  string uri   = 3 [(gogoproto.customname) = "URI"];
+  string data  = 4;
+  string owner = 5;
+}
+
+// Denom defines a type of NFT
+message Denom {
+  option (gogoproto.equal) = true;
+
+  string id      = 1;
+  string name    = 2;
+  string schema  = 3;
+  string creator = 4;
+  string uri     = 5; // This was added because Cosmos SDK's native NFT module has uri as a parameter for class which is
+                      // needed for nft transfers
+}
+
+// IDCollection defines a type of collection with specified ID
+message IDCollection {
+  option (gogoproto.equal) = true;
+
+  string          denom_id  = 1 [(gogoproto.moretags) = "yaml:\"denom_id\""];
+  repeated string token_ids = 2 [(gogoproto.moretags) = "yaml:\"token_ids\""];
+}
+
+// Owner defines a type of owner
+message Owner {
+  option (gogoproto.equal) = true;
+
+  string                address        = 1;
+  repeated IDCollection id_collections = 2
+      [(gogoproto.moretags) = "yaml:\"idcs\"", (gogoproto.customname) = "IDCollections", (gogoproto.nullable) = false];
+}
+
+// Collection defines a type of collection
+message Collection {
+  option (gogoproto.equal) = true;
+
+  Denom            denom = 1 [(gogoproto.nullable) = false];
+  repeated BaseNFT nfts  = 2 [(gogoproto.customname) = "NFTs", (gogoproto.nullable) = false];
+}

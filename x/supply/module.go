@@ -8,6 +8,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/client/cli"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -16,7 +17,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-	abci "github.com/tendermint/tendermint/abci/types"
 )
 
 var (
@@ -43,7 +43,6 @@ func (AppModuleBasic) Name() string {
 
 // RegisterLegacyAminoCodec does nothing. IBC does not support amino.
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
 
 // RegisterInterfaces registers the module's interface types
@@ -59,7 +58,8 @@ func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 
 // ValidateGenesis performs genesis state validation for the capability module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
-	config client.TxEncodingConfig, bz json.RawMessage) error {
+	config client.TxEncodingConfig, bz json.RawMessage,
+) error {
 	var genState types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &genState); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -69,9 +69,8 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the capability module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	// nolint: staticcheck
+	//nolint: staticcheck
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
-
 	if err != nil {
 		panic(err)
 	}
@@ -109,33 +108,17 @@ func NewAppModule(keeper keeper.Keeper) AppModule {
 // RegisterInvariants registers the capability module's invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// Route returns the capability module's message routing key.
-func (AppModule) Route() sdk.Route { return sdk.Route{} }
-
-// QuerierRoute returns the capability module's query routing key.
-func (AppModule) QuerierRoute() string { return types.RouterKey }
-
-// LegacyQuerierHandler returns the capability module's Querier.
-// (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
-func (am AppModule) LegacyQuerierHandler(legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
-	return nil
-}
-
 // RegisterServices registers query server.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	// nolint: staticcheck
+	//nolint: staticcheck
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// BeginBlock executes all ABCI BeginBlock logic respective to the capability module.
-func (am AppModule) BeginBlock(_ sdk.Context, _ abci.RequestBeginBlock) {}
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
 
-// EndBlock executes all ABCI EndBlock logic respective to the capability module. It
-// returns no validator updates.
-func (am AppModule) EndBlock(_ sdk.Context, _ abci.RequestEndBlock) []abci.ValidatorUpdate {
-	return []abci.ValidatorUpdate{}
-}
+// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
+func (am AppModule) IsOnePerModuleType() {}
 
 // InitGenesis performs the capability module's genesis initialization It returns
 // no validator updates.

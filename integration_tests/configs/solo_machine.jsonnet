@@ -38,7 +38,9 @@
           },
         },
         gov: {
-          deposit_params: {
+          params: {
+            expedited_voting_period: '1s',
+            voting_period: '21600000000000ns',
             max_deposit_period: '21600000000000ns',
             min_deposit: [
               {
@@ -46,9 +48,6 @@
                 amount: '2000000000000',
               },
             ],
-          },
-          voting_params: {
-            voting_period: '21600000000000ns',
           },
         },
         mint: {

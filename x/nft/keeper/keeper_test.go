@@ -10,13 +10,14 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/crypto-org-chain/chain-main/v4/app"
+	"github.com/crypto-org-chain/chain-main/v4/testutil"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
@@ -40,15 +41,14 @@ var (
 	address   = CreateTestAddrs(1)[0]
 	address2  = CreateTestAddrs(2)[1]
 	address3  = CreateTestAddrs(3)[2]
-	tokenURI  = "https://google.com/token-1.json" // nolint: gosec
-	tokenURI2 = "https://google.com/token-2.json" // nolint: gosec
-	tokenData = "{a:a,b:b}"                       // nolint: gosec
+	tokenURI  = "https://google.com/token-1.json" //nolint: gosec
+	tokenURI2 = "https://google.com/token-2.json" //nolint: gosec
+	tokenData = "{a:a,b:b}"                       //nolint: gosec
 
 	isCheckTx = false
 )
 
 // (Amino is still needed for Ledger at the moment)
-// nolint: staticcheck
 type KeeperSuite struct {
 	suite.Suite
 
@@ -61,16 +61,14 @@ type KeeperSuite struct {
 }
 
 func (suite *KeeperSuite) SetupTest() {
+	a := testutil.Setup(isCheckTx, nil)
+	suite.app = a
+	suite.legacyAmino = a.LegacyAmino()
+	suite.ctx = a.BaseApp.NewContext(isCheckTx).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
+	suite.keeper = a.NFTKeeper
 
-	app := app.Setup(suite.T(), isCheckTx)
-
-	suite.app = app
-	suite.legacyAmino = app.LegacyAmino()
-	suite.ctx = app.BaseApp.NewContext(isCheckTx, tmproto.Header{})
-	suite.keeper = app.NFTKeeper
-
-	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, app.NFTKeeper)
+	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, a.InterfaceRegistry())
+	types.RegisterQueryServer(queryHelper, a.NFTKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 
 	err := suite.keeper.IssueDenom(suite.ctx, denomID, denomNm, schema, "", address)
@@ -144,7 +142,6 @@ func (suite *KeeperSuite) TestUpdateNFT() {
 }
 
 func (suite *KeeperSuite) TestTransferOwner() {
-
 	// MintNFT shouldn't fail when collection does not exist
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
@@ -203,7 +200,7 @@ func (suite *KeeperSuite) TestBurnNFT() {
 
 // CreateTestAddrs creates test addresses
 func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
-	var addresses []sdk.AccAddress // nolint: prealloc
+	var addresses []sdk.AccAddress //nolint: prealloc
 	var buffer bytes.Buffer
 
 	// start at 100 so we can make up to 999 test addresses with valid test addresses
@@ -212,7 +209,7 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
 		buffer.WriteString(numString)                          // adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String()) // nolint: errcheck
+		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String()) //nolint: errcheck
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()

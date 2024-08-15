@@ -1,18 +1,27 @@
 package types
 
 import (
+	context "context"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/x/auth/types"
-	capabilitytypes "github.com/cosmos/cosmos-sdk/x/capability/types"
-	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v5/modules/core/exported"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	nftexported "github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // ICS4Wrapper defines the expected ICS4Wrapper for middleware
 type ICS4Wrapper interface {
-	SendPacket(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet ibcexported.PacketI) error
+	SendPacket(
+		ctx sdk.Context,
+		chanCap *capabilitytypes.Capability,
+		sourcePort string,
+		sourceChannel string,
+		timeoutHeight clienttypes.Height,
+		timeoutTimestamp uint64,
+		data []byte,
+	) (uint64, error)
 }
 
 // ChannelKeeper defines the expected IBC channel keeper
@@ -43,9 +52,9 @@ type PortKeeper interface {
 
 // AccountKeeper defines the contract required for account APIs.
 type AccountKeeper interface {
-	NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) types.AccountI
+	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	// Set an account in the store.
-	SetAccount(sdk.Context, types.AccountI)
-	HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool
-	GetModuleAddress(name string) sdk.AccAddress
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	HasAccount(ctx context.Context, addr sdk.AccAddress) bool
+	SetAccount(ctx context.Context, acc sdk.AccountI)
 }

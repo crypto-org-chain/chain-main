@@ -12,8 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/spf13/cobra"
 
-	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
-	channelutils "github.com/cosmos/ibc-go/v5/modules/core/04-channel/client/utils"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channelutils "github.com/cosmos/ibc-go/v8/modules/core/04-channel/client/utils"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
@@ -93,7 +93,6 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 					now := time.Now().UnixNano()
 					consensusStateTimestamp := consensusState.GetTimestamp()
 					if now > 0 {
-						// nolint: gosec
 						now := uint64(now)
 						if now > consensusStateTimestamp {
 							timeoutTimestamp = now + timeoutTimestamp

@@ -44,7 +44,11 @@ def test_staking_vesting_redelegate(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
     rsp = cluster.delegate_amount(
-        validator2_operator_address, "1basecro", signer1_address, 0, "0.025basecro"
+        validator2_operator_address,
+        "1basecro",
+        signer1_address,
+        0,
+        "0.025basecro",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999499
@@ -60,8 +64,8 @@ def test_staking_vesting_redelegate(cluster):
     # output = delegation_info["delegation_responses"][0]["balance"]["amount"]
     # assert int(old_output) + 2 == int(output)
     assert cluster.staking_pool() == old_bonded + 2009999499
-    account = cluster.account(signer1_address)
-    assert account["@type"] == "/cosmos.vesting.v1beta1.DelayedVestingAccount"
-    assert account["base_vesting_account"]["original_vesting"] == [
+    account = cluster.account(signer1_address)["account"]
+    assert account["type"] == "cosmos-sdk/DelayedVestingAccount"
+    assert account["value"]["base_vesting_account"]["original_vesting"] == [
         {"denom": "basecro", "amount": "20000000000"}
     ]

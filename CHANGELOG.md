@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
+
+- [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
+- [#1044](https://github.com/crypto-org-chain/chain-main/pull/1044) Revert the protobuf package name changes introduced in #1023.
+- [#1060](https://github.com/crypto-org-chain/chain-main/pull/1060) Upgrade rocksdb to `v9.2.1` and bump versiondb.
+- [#1061](https://github.com/crypto-org-chain/chain-main/pull/1061) Integrate sdk 0.50.
+- [#1068](https://github.com/crypto-org-chain/chain-main/pull/1068) Upgrade ibc-go to `v8.3.2` and remove icaauth module.
+
+*Dec 6, 2023*
+
+## v4.2.8
 
 - [#991](https://github.com/crypto-org-chain/chain-main/pull/991) Update cometbft `v0.34.29` with several minor bug fixes and low-severity security-fixes.
 - [#998](https://github.com/crypto-org-chain/chain-main/pull/998) Port halt-height fix from sdk
@@ -8,8 +18,7 @@
 - [#1004](https://github.com/crypto-org-chain/chain-main/pull/1004) Update rocksdb dependency to 8.1.1.
 - [#1009](https://github.com/crypto-org-chain/chain-main/pull/1009) Update memiavl to c575f4797ca4, update cosmos-sdk to v0.46.15.
 - [#1010](https://github.com/crypto-org-chain/chain-main/pull/1010) Bump librocksdb to 8.5.3
-
-### Bug Fixes
+- [#1019](https://github.com/crypto-org-chain/chain-main/pull/1019) Limit the length of NFTTransfer fields.
 
 *Jun 14, 2023*
 

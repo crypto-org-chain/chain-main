@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/store/prefix"
+	"cosmossdk.io/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 
@@ -55,7 +55,6 @@ func (k Keeper) Owner(c context.Context, request *types.QueryOwnerRequest) (*typ
 		tokenID := string(key)
 		if len(request.DenomId) == 0 {
 			denomID, tokenID, err = types.SplitKeyDenom(key)
-
 			if err != nil {
 				return err
 			}
@@ -71,7 +70,6 @@ func (k Keeper) Owner(c context.Context, request *types.QueryOwnerRequest) (*typ
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}

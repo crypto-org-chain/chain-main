@@ -15,12 +15,12 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.20.3
+          go-version: 1.22
       - uses: actions/checkout@v3
         with:
           submodules: true
       - id: changed-files
-        uses: tj-actions/changed-files@v35
+        uses: tj-actions/changed-files@v41
         with:
           files: |
             **/*.go
@@ -31,7 +31,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
 
       # - name: Upload coverage report
-      #   uses: codecov/codecov-action@v3
+      #   uses: codecov/codecov-action@v4
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #     file: ./coverage.txt

@@ -50,7 +50,7 @@ Example:
 				return err
 			}
 
-			// nolint: staticcheck
+			//nolint: staticcheck
 			queryClient := types.NewQueryClient(clientCtx)
 			res, err := queryClient.TotalSupply(cmd.Context(), types.NewSupplyRequest())
 			if err != nil {
@@ -85,7 +85,7 @@ Example:
 				return err
 			}
 
-			// nolint: staticcheck
+			//nolint: staticcheck
 			queryClient := types.NewQueryClient(clientCtx)
 			res, err := queryClient.LiquidSupply(cmd.Context(), types.NewSupplyRequest())
 			if err != nil {

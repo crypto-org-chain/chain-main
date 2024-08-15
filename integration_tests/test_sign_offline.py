@@ -20,6 +20,10 @@ def get_network_config(grpc_port, chain_id):
     )
 
 
+# FIXME
+@pytest.mark.skip(
+    reason="chainlibpy is not maintained, need to refactor this test case"
+)
 def test_sign_offline(cluster):
     """
     check simple transfer tx success
@@ -82,7 +86,7 @@ def test_sign_offline(cluster):
 
         signature_offline = offline_wallet.sign(tx.sign_doc.SerializeToString())
         signed_tx = tx.set_signatures(signature_offline).signed_tx
-        grpc_client.broadcast_transaction(signed_tx.SerializeToString())
+        grpc_client.broadcast_transaction(signed_tx.SerializeToString(), "sync")
         wait_for_new_blocks(cluster, 3)
 
         sender_balance_aft = grpc_client.query_account_balance(offline_addr)

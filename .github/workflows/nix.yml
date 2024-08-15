@@ -9,6 +9,9 @@ on:
     tags:
       - "*"
 
+env:
+  NIXPKGS_ALLOW_INSECURE: 1
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -16,11 +19,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -36,11 +36,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -53,17 +50,17 @@ jobs:
         run: make nix-integration-test
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files.tar.gz -C "$TMPDIR/pytest-of-runner" .
+        run: tar cfz debug_files.tar.gz -C "${TMPDIR-/tmp}/pytest-of-runner" .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -82,11 +79,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -104,11 +98,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -118,17 +109,17 @@ jobs:
         run: make nix-integration-test-upgrade
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_upgrade
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_upgrade.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_upgrade.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -142,11 +133,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -156,17 +144,17 @@ jobs:
         run: make nix-integration-test-ledger
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_ledger
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_ledger.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_ledger.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -180,11 +168,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -194,17 +179,17 @@ jobs:
         run: make nix-integration-test-solomachine
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_solomachine
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_solomachine.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_solomachine.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -218,11 +203,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -232,17 +214,17 @@ jobs:
         run: make nix-integration-test-slow
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_slow
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_slow.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_slow.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -256,11 +238,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -270,17 +249,17 @@ jobs:
         run: make nix-integration-test-ibc
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_ibc
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_ibc.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_ibc.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -294,11 +273,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -308,17 +284,17 @@ jobs:
         run: make nix-integration-test-byzantine
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_byzantine
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_byzantine.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_byzantine.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -332,11 +308,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -346,17 +319,17 @@ jobs:
         run: make nix-integration-test-gov
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_gov
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_gov.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_gov.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
@@ -371,11 +344,8 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@v12
@@ -385,17 +355,17 @@ jobs:
         run: make nix-integration-test-grpc
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_20
+           nix profile install nixpkgs#go_1_22
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_grpc
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_grpc.tar.gz -C /tmp/pytest-of-runner .
+        run: tar cfz debug_files_grpc.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

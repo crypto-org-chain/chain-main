@@ -5,31 +5,34 @@ package testutil
 import (
 	"fmt"
 
-	"github.com/tendermint/tendermint/libs/cli"
+	"github.com/cometbft/cometbft/libs/cli"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/simapp"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 
-	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	pruningtypes "cosmossdk.io/store/pruning/types"
+	dbm "github.com/cosmos/cosmos-db"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	dbm "github.com/tendermint/tm-db"
+	apptestutil "github.com/crypto-org-chain/chain-main/v4/testutil"
 )
 
-func GetApp(val network.Validator) servertypes.Application {
+func GetApp(val network.ValidatorI) servertypes.Application {
+	ctx := val.GetCtx()
+	appConfig := val.GetAppConfig()
 	return app.New(
-		val.Ctx.Logger, dbm.NewMemDB(), nil, true, make(map[int64]bool), val.Ctx.Config.RootDir, 0,
-		app.MakeEncodingConfig(),
-		simapp.EmptyAppOptions{},
-		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(val.AppConfig.Pruning)),
-		baseapp.SetMinGasPrices(val.AppConfig.MinGasPrices),
+		ctx.Logger, dbm.NewMemDB(), nil, true,
+		simtestutil.EmptyAppOptions{},
+		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
+		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
+		baseapp.SetChainID(apptestutil.ChainID),
 	)
 }
 

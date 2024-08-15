@@ -1,0 +1,35 @@
+syntax = "proto3";
+package chainmain.supply.v1;
+
+import "cosmos/base/v1beta1/coin.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/supply/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  option deprecated = true;
+
+  // TotalSupply queries the total supply of all coins.
+  rpc TotalSupply(SupplyRequest) returns (SupplyResponse) {
+    option (google.api.http).get = "/chainmain/supply/v1/total";
+  }
+
+  // LiquidSupply queries the liquid supply of all coins.
+  rpc LiquidSupply(SupplyRequest) returns (SupplyResponse) {
+    option (google.api.http).get = "/chainmain/supply/v1/liquid";
+  }
+}
+
+// SupplyRequest is the request type for the Query/TotalSupply RPC
+// method.
+message SupplyRequest {}
+
+// SupplyResponse is the response type for the Query/TotalSupply RPC
+// method
+message SupplyResponse {
+  // supply is the supply of the coins
+  repeated cosmos.base.v1beta1.Coin supply = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
