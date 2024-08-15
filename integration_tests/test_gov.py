@@ -256,7 +256,7 @@ def test_gov_voting(cluster):
     cli = cluster.cosmos_cli()
 
     def assert_voting_period(voting_period_in_ns):
-        p = cli.query_gov_params()
+        p = cli.query_params("gov")
         assert p["voting_params"]["voting_period"] == voting_period_in_ns
 
     assert_voting_period("10000000000")
