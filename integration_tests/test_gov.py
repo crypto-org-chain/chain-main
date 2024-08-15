@@ -249,33 +249,33 @@ def test_host_enabled(cluster, tmp_path):
     assert not p["host_enabled"]
 
 
-def test_gov_voting(cluster):
+def test_gov_voting(cluster, tmp_path):
     """
-    - change voting_period from default 10s to 216s
+    - change voting_period from default 10s to 3m36s
     """
     cli = cluster.cosmos_cli()
-
-    def assert_voting_period(voting_period_in_ns):
-        p = cli.query_params("gov")
-        assert p["voting_params"]["voting_period"] == voting_period_in_ns
-
-    assert_voting_period("10000000000")
-    voting_period_in_ns = "216000000000"
-    rsp = cluster.gov_propose_legacy(
-        "community",
-        "param-change",
-        {
-            "title": "Update gov voting",
-            "description": "ditto",
-            "changes": [
-                {
-                    "subspace": "gov",
-                    "key": "votingparams",
-                    "value": {"voting_period": voting_period_in_ns},
-                }
-            ],
-        },
-    )
+    p = cli.query_params("gov")
+    assert p["params"]["voting_period"] == "10s"
+    updated = "3m36s"
+    p["params"]["voting_period"] = updated
+    proposal = tmp_path / "proposal.json"
+    authority = module_address("gov")
+    type = "/cosmos.gov.v1.MsgUpdateParams"
+    proposal_src = {
+        "messages": [
+            {
+                "@type": type,
+                "authority": authority,
+                "params": p["params"],
+            }
+        ],
+        "deposit": "10000000basecro",
+        "title": "title",
+        "summary": "summary",
+    }
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp)
-    assert_voting_period(voting_period_in_ns)
+    approve_proposal(cluster, rsp, msg=f",{type}")
+    p = cli.query_params("gov")
+    assert p["params"]["voting_period"] == updated
