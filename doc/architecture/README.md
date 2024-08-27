@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This is a location to record all high-level architecture decisions in the Crypto.org Chain implementation.
+This is a location to record all high-level architecture decisions in the Cronos.org Chain implementation.
 
 You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
@@ -31,4 +31,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [002](./adr-002.md) | Subscriptions in CosmWasm | Accepted |
 | [003](./adr-003.md) | Canis Major (1st Network Upgrade Scope of Breaking Changes) | Accepted |
 | [004](./adr-004.md) | Transition to Cosmos SDK's NFT module | Proposed |
-| [005](./adr-005.md) | Deprecate Crypto.org Chain's custom `x/supply` module | Proposed |
+| [005](./adr-005.md) | Deprecate Cronos.org Chain's custom `x/supply` module | Proposed |

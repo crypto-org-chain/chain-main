@@ -135,7 +135,7 @@ A small fix on top of `v4.0.0` and upgrade to Cosmos SDK v0.46.4.
 
 ## v4.0.0
 
-This is the release of Crypto.org Chain's `v4.0.0`. It contains following changes (when compared with `v3`):
+This is the release of Cronos.org Chain's `v4.0.0`. It contains following changes (when compared with `v3`):
 
 ## Added
 
