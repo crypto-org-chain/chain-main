@@ -72,7 +72,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 	rootCmd := &cobra.Command{
 		Use:   "chain-maind",
-		Short: "Cronos.org Chain app",
+		Short: "Crypto.org Chain app",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs
 			cmd.SetOut(cmd.OutOrStdout())
@@ -165,9 +165,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 				"bank": map[string]interface{}{
 					"denom_metadata": []interface{}{
 						map[string]interface{}{
-							"name":        "Cronos.org Chain",
+							"name":        "Crypto.org Chain",
 							"symbol":      "CRO",
-							"description": "The native token of Cronos.org Chain.",
+							"description": "The native token of Crypto.org Chain.",
 							"denom_units": []interface{}{
 								map[string]interface{}{
 									"denom":    config.BaseCoinUnit,
