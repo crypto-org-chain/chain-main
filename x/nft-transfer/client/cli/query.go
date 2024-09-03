@@ -11,7 +11,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
-// GetCmdQueryClassTrace defines the command to query a a class trace from a given trace hash or ibc class.
+// GetCmdQueryClassTrace defines the command to query a class trace from a given trace hash or ibc class.
 func GetCmdQueryClassTrace() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "class-trace [hash/class]",
