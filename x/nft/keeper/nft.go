@@ -10,7 +10,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
-// GetNFT gets the the specified NFT
+// GetNFT gets the specified NFT
 func (k Keeper) GetNFT(ctx sdk.Context, denomID, tokenID string) (nft exported.NFT, err error) {
 	store := ctx.KVStore(k.storeKey)
 
