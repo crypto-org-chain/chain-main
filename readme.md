@@ -188,7 +188,7 @@ pystarport supervisorctl stop all
 - [Project Website](https://cronos-pos.org/)
 - [Technical Documentation](https://docs.cronos-pos.org/)
 - Community chatrooms (non-technical): [Discord](https://discord.gg/MkvPzvP5) [Telegram](**Update Telegram Link**)
-- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Crypto.org%20Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
+- Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Cronos.org%20Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
 
 - [Cosmos SDK documentation](https://docs.cosmos.network)
 - [Cosmos Discord](https://discord.gg/W8trcGV)
