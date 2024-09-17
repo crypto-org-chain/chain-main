@@ -130,7 +130,7 @@ jobs:
           echo ${{ job.status }} > status_build.txt
       - name: Upload file status_build.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_build
           path: status_build.txt
@@ -196,7 +196,7 @@ jobs:
           echo ${{ job.status }} > status_install.txt
       - name: Upload file status_install.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_install
           path: status_install.txt
@@ -242,7 +242,7 @@ jobs:
           echo ${{ job.status }} > status_sim1.txt
       - name: Upload file status_sim1.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim1
           path: status_sim1.txt
@@ -288,7 +288,7 @@ jobs:
           echo ${{ job.status }} > status_sim2.txt
       - name: Upload file status_sim2.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim2
           path: status_sim2.txt
@@ -334,7 +334,7 @@ jobs:
           echo ${{ job.status }} > status_sim3.txt
       - name: Upload file status_sim3.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim3
           path: status_sim3.txt
@@ -428,7 +428,7 @@ jobs:
           set +e
           (git diff --no-ext-diff --exit-code)
           echo "changed=$?" >> $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: steps.changes.outputs.changed == 1
         with:
           name: gomod2nix.toml
