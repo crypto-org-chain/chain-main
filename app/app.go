@@ -771,7 +771,7 @@ func New(
 	// upgrade.
 	app.setPostHandler()
 
-	app.RegisterUpgradeHandlers(app.appCodec, app.IBCKeeper.ClientKeeper)
+	app.RegisterUpgradeHandlers(app.appCodec)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {

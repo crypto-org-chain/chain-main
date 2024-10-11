@@ -7,6 +7,7 @@
 - [#1060](https://github.com/crypto-org-chain/chain-main/pull/1060) Upgrade rocksdb to `v9.2.1` and bump versiondb.
 - [#1061](https://github.com/crypto-org-chain/chain-main/pull/1061) Integrate sdk 0.50.
 - [#1068](https://github.com/crypto-org-chain/chain-main/pull/1068) Upgrade ibc-go to `v8.3.2` and remove icaauth module.
+- [#1084](https://github.com/crypto-org-chain/chain-main/pull/1084) Add MsgModuleQuerySafe in allowed messages for ica host param.
 
 *Dec 6, 2023*
 
