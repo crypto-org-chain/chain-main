@@ -25,8 +25,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			var params types.Params
 			params = app.ICAHostKeeper.GetParams(sdkCtx)
 			msg := "/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe"
-			if (len(params.AllowMessages) > 1 || params.AllowMessages[0] != "*") &&
-				!slices.Contains(params.AllowMessages, msg) {
+			if !slices.ContainsFunc(params.AllowMessages, func(allowMsg string) bool {
+				return allowMsg == "*" || allowMsg == msg
+			}) {
 				params.AllowMessages = append(params.AllowMessages, msg)
 				app.ICAHostKeeper.SetParams(sdkCtx, params)
 			}
