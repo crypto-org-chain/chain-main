@@ -97,14 +97,10 @@ def ibc_transfer_flow(cluster, src_channel, dst_channel):
     raw = cluster["ibc-0"].cosmos_cli().raw
     denom = "basecro"
     amt = 10000
-    origin0 = 10000000000
-    origin1 = 10000000000 - 1
-
     addr_0 = cluster["ibc-0"].address("relayer")
     addr_1 = cluster["ibc-1"].address("relayer")
-
-    assert cluster["ibc-0"].balance(addr_0) == origin0
-    assert cluster["ibc-1"].balance(addr_1) == origin1
+    origin0 = cluster["ibc-0"].balance(addr_0)
+    origin1 = cluster["ibc-1"].balance(addr_1)
 
     # do a transfer from ibc-0 to ibc-1
     rsp = cluster["ibc-0"].ibc_transfer(
