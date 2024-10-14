@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
 )
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
@@ -22,8 +21,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		{
-			var params types.Params
-			params = app.ICAHostKeeper.GetParams(sdkCtx)
+			params := app.ICAHostKeeper.GetParams(sdkCtx)
 			msg := "/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe"
 			if !slices.ContainsFunc(params.AllowMessages, func(allowMsg string) bool {
 				return allowMsg == "*" || allowMsg == msg
