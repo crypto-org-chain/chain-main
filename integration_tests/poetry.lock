@@ -90,7 +90,7 @@ files = [
 [[package]]
 name = "chainlibpy"
 version = "2.2.0"
-description = "Tools for Cronos.org Chain wallet management and offline transaction signing"
+description = "Tools for Crypto.org Chain wallet management and offline transaction signing"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
@@ -799,7 +799,7 @@ tomlkit = "^0"
 type = "git"
 url = "https://github.com/crypto-com/pystarport.git"
 reference = "main"
-resolved_reference = "ef603d05ccd6fd66459c9879d5c1be21d2665844"
+resolved_reference = "a7dac7f485b9acef30540d803b53fadaf1a1850a"
 
 [[package]]
 name = "pytest"

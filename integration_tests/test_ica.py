@@ -4,9 +4,16 @@ from pathlib import Path
 
 import pytest
 import requests
+from pystarport import cluster as c
 
 from .ibc_utils import search_target, wait_relayer_ready
-from .utils import cluster_fixture, wait_for_fn, wait_for_new_blocks
+from .utils import (
+    approve_proposal,
+    cluster_fixture,
+    module_address,
+    wait_for_fn,
+    wait_for_new_blocks,
+)
 
 pytestmark = pytest.mark.ibc
 
@@ -99,10 +106,11 @@ def start_and_wait_relayer(cluster):
 def test_ica(cluster, tmp_path):
     controller_connection, host_connection = start_and_wait_relayer(cluster)
     # call chain-maind directly
-    cli_controller = cluster["ica-controller-1"].cosmos_cli()
+    controller = cluster["ica-controller-1"]
+    cli_controller = controller.cosmos_cli()
     cli_host = cluster["ica-host-1"].cosmos_cli()
 
-    addr_controller = cluster["ica-controller-1"].address("signer")
+    addr_controller = controller.address("signer")
     addr_host = cluster["ica-host-1"].address("signer")
 
     # create interchain account
@@ -112,11 +120,41 @@ def test_ica(cluster, tmp_path):
         from_=addr_controller,
         gas="400000",
         version=v,
+        ordering=c.ChannelOrder.ORDERED.value,
     )
-
     assert rsp["code"] == 0, rsp["raw_log"]
-    _, channel_id = assert_channel_open_init(rsp)
+    port_id, channel_id = assert_channel_open_init(rsp)
     wait_for_check_channel_ready(cli_controller, controller_connection, channel_id)
+
+    # upgrade to unordered channel
+    authority = module_address("gov")
+    channel = cli_controller.ibc_query_channel(port_id, channel_id)
+    deposit = "0.1cro"
+    version_data = json.loads(channel["channel"]["version"])
+    signer = "signer"
+    proposal_src = cli_controller.ibc_upgrade_channels(
+        json.loads(version_data["app_version"]),
+        signer,
+        deposit=deposit,
+        title="channel-upgrade-title",
+        summary="summary",
+        port_pattern=port_id,
+        channel_ids=channel_id,
+    )
+    proposal_src["deposit"] = deposit
+    proposal_src["messages"][0]["signer"] = authority
+    proposal_src["messages"][0]["fields"]["ordering"] = c.ChannelOrder.UNORDERED.value
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cli_controller.submit_gov_proposal(proposal, from_=signer)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(controller, rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit")
+    wait_for_check_channel_ready(
+        cli_controller, controller_connection, channel_id, "STATE_FLUSHCOMPLETE"
+    )
+    wait_for_check_channel_ready(cli_controller, controller_connection, channel_id)
+    channel = cli_controller.ibc_query_channel(port_id, channel_id)
+    assert channel["channel"]["ordering"] == c.ChannelOrder.UNORDERED.value, channel
 
     # get interchain account address
     ica_address = cli_controller.ica_query_account(
