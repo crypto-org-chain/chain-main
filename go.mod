@@ -22,8 +22,8 @@ require (
 	github.com/cosmos/cosmos-db v1.0.3-0.20240408151834-e75f6e4b28d8
 	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/cosmos/ibc-go/modules/capability v1.0.1
-	github.com/cosmos/ibc-go/v8 v8.5.1
+	github.com/cosmos/ibc-go/modules/capability v1.0.0
+	github.com/cosmos/ibc-go/v8 v8.4.0
 	github.com/cosmos/rosetta v0.50.3-1
 	github.com/crypto-org-chain/cronos/store v0.0.5-0.20240716081818-7f581a697f6d
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20240716081818-7f581a697f6d

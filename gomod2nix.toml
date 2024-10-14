@@ -170,11 +170,11 @@ schema = 3
     version = "v1.1.2"
     hash = "sha256-fhh5fN1BMDxbF4PobERMQdIb9vIrxaSl0tRXas0WKmc="
   [mod."github.com/cosmos/ibc-go/modules/capability"]
-    version = "v1.0.1"
-    hash = "sha256-iRhj2WTr99DgAl80h25pxtkO6iHYjyHflwpxKKG5b6E="
+    version = "v1.0.0"
+    hash = "sha256-xOeHJWUj6fTc2EUGiE4dgfY2WkvrqTg/FWewoUvQcvg="
   [mod."github.com/cosmos/ibc-go/v8"]
-    version = "v8.5.1"
-    hash = "sha256-F4VZbKo1n9fLSxLSR+/ZaisbJ2v+EHjpXVpCovGTiyQ="
+    version = "v8.4.0"
+    hash = "sha256-c4EWR/F23cRc+mwdIZsjrxwyELGf82jKXfdUtxJIjSA="
   [mod."github.com/cosmos/ics23/go"]
     version = "v0.11.0"
     hash = "sha256-mgU/pqp4kASmW/bP0z6PzssfjRp7GU9ioyvNlDdGC+E="
