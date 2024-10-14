@@ -6,7 +6,7 @@ import pytest
 import requests
 from pystarport import cluster as c
 
-from .ibc_utils import search_target, wait_relayer_ready
+from .ibc_utils import search_target, wait_for_check_channel_ready, wait_relayer_ready
 from .utils import (
     approve_proposal,
     cluster_fixture,
@@ -26,24 +26,6 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         worker_index,
         tmp_path_factory.mktemp("data"),
     )
-
-
-def wait_for_check_channel_ready(cli, connid, channel_id, target="STATE_OPEN"):
-    print("wait for channel ready", channel_id, target)
-
-    def check_channel_ready():
-        channels = cli.ibc_query_channels(connid)["channels"]
-        try:
-            state = next(
-                channel["state"]
-                for channel in channels
-                if channel["channel_id"] == channel_id
-            )
-        except StopIteration:
-            return False
-        return state == target
-
-    wait_for_fn("channel ready", check_channel_ready)
 
 
 def assert_channel_open_init(rsp):

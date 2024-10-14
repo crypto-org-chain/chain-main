@@ -264,3 +264,21 @@ def ibc_incentivized_transfer(cluster):
     current = chains[1].balance(receiver, "basecro")
     assert current == old_amt_receiver_base - fee_amount
     return amount, packet_seq
+
+
+def wait_for_check_channel_ready(cli, connid, channel_id, target="STATE_OPEN"):
+    print("wait for channel ready", channel_id, target)
+
+    def check_channel_ready():
+        channels = cli.ibc_query_channels(connid)["channels"]
+        try:
+            state = next(
+                channel["state"]
+                for channel in channels
+                if channel["channel_id"] == channel_id
+            )
+        except StopIteration:
+            return False
+        return state == target
+
+    wait_for_fn("channel ready", check_channel_ready)

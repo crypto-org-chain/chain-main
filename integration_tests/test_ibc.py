@@ -11,9 +11,11 @@ import yaml
 from .ibc_utils import (
     ibc_incentivized_transfer,
     ibc_transfer_flow,
+    register_fee_payee,
     start_and_wait_relayer,
+    wait_for_check_channel_ready,
 )
-from .utils import cluster_fixture
+from .utils import approve_proposal, cluster_fixture, module_address
 
 pytestmark = pytest.mark.ibc
 
@@ -28,9 +30,39 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-def test_ibc(cluster):
-    src_channel, dst_channel = start_and_wait_relayer(cluster, incentivized=True)
+def test_ibc(cluster, tmp_path):
+    src_channel, dst_channel = start_and_wait_relayer(cluster)
     ibc_transfer_flow(cluster, src_channel, dst_channel)
+    # upgrade to incentivized
+    src_chain = cluster["ibc-0"].cosmos_cli()
+    dst_chain = cluster["ibc-1"].cosmos_cli()
+    version = {"fee_version": "ics29-1", "app_version": "ics20-1"}
+    community = "community"
+    authority = module_address("gov")
+    connid = "connection-0"
+    channel_id = "channel-0"
+    deposit = "0.1cro"
+    proposal_src = src_chain.ibc_upgrade_channels(
+        version,
+        community,
+        deposit=deposit,
+        title="channel-upgrade-title",
+        summary="summary",
+        port_pattern="transfer",
+        channel_ids=channel_id,
+    )
+    proposal_src["deposit"] = deposit
+    proposal_src["messages"][0]["signer"] = authority
+    proposal = tmp_path / "proposal.json"
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = src_chain.submit_gov_proposal(proposal, from_=community)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(
+        cluster["ibc-0"], rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit"
+    )
+    wait_for_check_channel_ready(src_chain, connid, channel_id, "STATE_FLUSHCOMPLETE")
+    wait_for_check_channel_ready(src_chain, connid, channel_id)
+    register_fee_payee(src_chain, dst_chain)
     ibc_incentivized_transfer(cluster)
 
 

@@ -14,6 +14,10 @@ local default = {
       coins: '200cro',
     },
     {
+      name: 'community',
+      coins: '100cro',
+    },
+    {
       name: 'signer2',
       coins: '2000cro,100000000000ibcfee',
     },
@@ -39,5 +43,28 @@ local validator = import 'validator.jsonnet';
   'ibc-1': default {
     validators: [validator { base_port: port } for port in [26750, 26760]],
   },
-  relayer: {},
+  relayer: {
+    mode: {
+      clients: {
+        enabled: true,
+        refresh: true,
+        misbehaviour: true,
+      },
+      connections: {
+        enabled: true,
+      },
+      channels: {
+        enabled: true,
+      },
+      packets: {
+        enabled: true,
+        tx_confirmation: true,
+      },
+    },
+    rest: {
+      enabled: true,
+      host: '127.0.0.1',
+      port: 3000,
+    },
+  },
 }
