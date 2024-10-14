@@ -65,8 +65,6 @@ func (s *IntegrationTestSuite) eventQueryTxFor(val *network.Validator, hash stri
 	bz, err := clitestutil.ExecTestCLICmd(val.ClientCtx, rpc.QueryEventForTxCmd(), []string{hash, fmt.Sprintf("--%s=json", flags.FlagOutput)})
 	s.Require().NoError(err)
 	respType := proto.Message(&sdk.TxResponse{})
-	fmt.Println("mm-bz", bz.String())
-	fmt.Println("mm-respType", respType)
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), respType), bz.String())
 	return respType.(*sdk.TxResponse)
 }

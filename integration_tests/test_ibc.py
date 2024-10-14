@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from .ibc_utils import ibc_transfer_flow, start_and_wait_relayer
+from .ibc_utils import (
+    ibc_incentivized_transfer,
+    ibc_transfer_flow,
+    start_and_wait_relayer,
+)
 from .utils import cluster_fixture
 
 pytestmark = pytest.mark.ibc
@@ -25,8 +29,9 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 
 def test_ibc(cluster):
-    src_channel, dst_channel = start_and_wait_relayer(cluster)
+    src_channel, dst_channel = start_and_wait_relayer(cluster, incentivized=True)
     ibc_transfer_flow(cluster, src_channel, dst_channel)
+    ibc_incentivized_transfer(cluster)
 
 
 @pytest.mark.skip(reason="chain-id change don't has effect")

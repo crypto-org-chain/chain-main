@@ -1,7 +1,7 @@
 local ibc = import 'ibc.jsonnet';
 local genesis = {
-  genesis+: {
-    app_state+: {
+  genesis: {
+    app_state: {
       interchainaccounts: {
         host_genesis_state: {
           params: {

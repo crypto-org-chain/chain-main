@@ -10,23 +10,23 @@ local default = {
       coins: '200cro',
     },
     {
+      name: 'ecosystem',
+      coins: '200cro',
+    },
+    {
       name: 'signer2',
       coins: '2000cro,100000000000ibcfee',
     },
   ],
-  genesis: genesis {
-    app_state+: {
-      staking: {
-        params: {
-          unbonding_time: '1814400s',
-        },
-      },
+  genesis: {
+    app_state: {
       transfer: {
         params: {
           receive_enabled: true,
           send_enabled: true,
         },
       },
+      gov: genesis.app_state.gov,
     },
   },
 };
