@@ -229,10 +229,9 @@ def approve_proposal(
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
     if vote_option is not None:
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option)
-        assert rsp["code"] == 0, rsp["raw_log"]
-        rsp = cluster.gov_vote("validator", proposal_id, vote_option, i=1)
-        assert rsp["code"] == 0, rsp["raw_log"]
+        for i in range(len(cluster.config["validators"])):
+            rsp = cluster.cosmos_cli(i).gov_vote("validator", proposal_id, vote_option)
+            assert rsp["code"] == 0, rsp["raw_log"]
         assert (
             int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
             == cluster.staking_pool()
