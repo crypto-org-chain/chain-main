@@ -12,6 +12,10 @@ on:
 env:
   NIXPKGS_ALLOW_INSECURE: 1
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest

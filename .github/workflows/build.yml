@@ -10,6 +10,10 @@ on:
   issue_comment:
     types: [created, edited]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   member:
     name: Check whether it is triggered by team members with issue_comment or push or pull_request
