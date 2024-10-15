@@ -5,6 +5,7 @@ import socket
 import sys
 import time
 from datetime import timedelta
+from decimal import Decimal
 
 import bech32
 from dateutil.parser import isoparse
@@ -587,3 +588,31 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         time.sleep(interval)
     else:
         raise TimeoutError(f"wait for {name} timeout")
+
+
+def get_expedited_params(param):
+    min_deposit = param["min_deposit"][0]
+    voting_period = param["voting_period"]
+    tokens_ratio = 5
+    threshold_ratio = 1.334
+    period_ratio = 0.5
+    expedited_threshold = float(param["threshold"]) * threshold_ratio
+    expedited_threshold = Decimal(f"{expedited_threshold}")
+    expedited_voting_period = int(int(voting_period[:-1]) * period_ratio)
+    return {
+        "expedited_min_deposit": [
+            {
+                "denom": min_deposit["denom"],
+                "amount": str(int(min_deposit["amount"]) * tokens_ratio),
+            }
+        ],
+        "expedited_threshold": f"{expedited_threshold:.18f}",
+        "expedited_voting_period": f"{expedited_voting_period}s",
+    }
+
+
+def assert_gov_params(cli, old_param):
+    param = cli.query_params("gov")
+    expedited_param = get_expedited_params(old_param)
+    for key, value in expedited_param.items():
+        assert param[key] == value, param
