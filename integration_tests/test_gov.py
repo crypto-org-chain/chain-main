@@ -286,9 +286,9 @@ def test_gov_voting(cluster, tmp_path):
     """
     cli = cluster.cosmos_cli()
     p = cli.query_params("gov")
-    assert p["params"]["voting_period"] == "10s"
+    assert p["voting_period"] == "10s"
     updated = "3m36s"
-    p["params"]["voting_period"] = updated
+    p["voting_period"] = updated
     proposal = tmp_path / "proposal.json"
     authority = module_address("gov")
     type = "/cosmos.gov.v1.MsgUpdateParams"
@@ -297,7 +297,7 @@ def test_gov_voting(cluster, tmp_path):
             {
                 "@type": type,
                 "authority": authority,
-                "params": p["params"],
+                "params": p,
             }
         ],
         "deposit": "10000000basecro",
@@ -309,4 +309,4 @@ def test_gov_voting(cluster, tmp_path):
     assert rsp["code"] == 0, rsp["raw_log"]
     approve_proposal(cluster, rsp, msg=f",{type}")
     p = cli.query_params("gov")
-    assert p["params"]["voting_period"] == updated
+    assert p["voting_period"] == updated
