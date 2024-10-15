@@ -13,6 +13,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     approve_proposal,
+    assert_gov_params,
     cluster_fixture,
     wait_for_block,
     wait_for_block_time,
@@ -428,10 +429,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     upgrade(cluster, "v4.3.0", target_height)
 
     target_height = cluster.block_height() + 15
+    gov_param = cli.query_params("gov")
     upgrade(cluster, "v5.0", target_height, broadcast_mode="sync")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
+    assert_gov_params(cli, gov_param)
 
 
 def test_cancel_upgrade(cluster):

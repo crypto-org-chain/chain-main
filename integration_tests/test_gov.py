@@ -6,6 +6,8 @@ from dateutil.parser import isoparse
 
 from .utils import (
     approve_proposal,
+    assert_gov_params,
+    get_expedited_params,
     get_proposal_id,
     module_address,
     wait_for_block,
@@ -222,6 +224,35 @@ def test_inherit_vote(cluster, tmp_path):
 
 def test_host_enabled(cluster, tmp_path):
     cli = cluster.cosmos_cli()
+    param0 = cli.query_params("gov")
+    param1 = get_expedited_params(param0)
+    # governance module account as signer
+    authority = module_address("gov")
+    proposal = tmp_path / "proposal.json"
+    type = "/cosmos.gov.v1.MsgUpdateParams"
+    deposit = "0.1cro"
+    proposal_src = {
+        "title": "title",
+        "summary": "summary",
+        "deposit": deposit,
+        "messages": [
+            {
+                "@type": type,
+                "authority": authority,
+                "params": {
+                    **param0,
+                    **param1,
+                },
+            }
+        ],
+    }
+    proposal.write_text(json.dumps(proposal_src))
+    rsp = cli.submit_gov_proposal(proposal, from_="community")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    approve_proposal(cluster, rsp, msg=f",{type}")
+    print("check params have been updated now")
+    assert_gov_params(cli, param0)
+
     p = cli.query_host_params()
     assert p["host_enabled"]
     p["host_enabled"] = False
@@ -236,7 +267,7 @@ def test_host_enabled(cluster, tmp_path):
                 "params": p,
             }
         ],
-        "deposit": "10000000basecro",
+        "deposit": deposit,
         "title": "title",
         "summary": "summary",
     }
@@ -255,9 +286,9 @@ def test_gov_voting(cluster, tmp_path):
     """
     cli = cluster.cosmos_cli()
     p = cli.query_params("gov")
-    assert p["params"]["voting_period"] == "10s"
+    assert p["voting_period"] == "10s"
     updated = "3m36s"
-    p["params"]["voting_period"] = updated
+    p["voting_period"] = updated
     proposal = tmp_path / "proposal.json"
     authority = module_address("gov")
     type = "/cosmos.gov.v1.MsgUpdateParams"
@@ -266,7 +297,7 @@ def test_gov_voting(cluster, tmp_path):
             {
                 "@type": type,
                 "authority": authority,
-                "params": p["params"],
+                "params": p,
             }
         ],
         "deposit": "10000000basecro",
@@ -278,4 +309,4 @@ def test_gov_voting(cluster, tmp_path):
     assert rsp["code"] == 0, rsp["raw_log"]
     approve_proposal(cluster, rsp, msg=f",{type}")
     p = cli.query_params("gov")
-    assert p["params"]["voting_period"] == updated
+    assert p["voting_period"] == updated
