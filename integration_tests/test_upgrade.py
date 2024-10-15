@@ -427,7 +427,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     for i in range(2):
         cluster.migrate_keystore(i=i)
     upgrade(cluster, "v4.3.0", target_height)
-
+    cli = cluster.cosmos_cli()
     target_height = cluster.block_height() + 15
     gov_param = cli.query_params("gov")
     upgrade(cluster, "v5.0", target_height, broadcast_mode="sync")
