@@ -9,6 +9,7 @@
 - [#1068](https://github.com/crypto-org-chain/chain-main/pull/1068) Upgrade ibc-go to `v8.3.2` and remove icaauth module.
 - [#1084](https://github.com/crypto-org-chain/chain-main/pull/1084) Add MsgModuleQuerySafe in allowed messages for ica host param.
 - [#1086](https://github.com/crypto-org-chain/chain-main/pull/1086) Upgrade ibc-go to `v8.4.0`.
+- [#1087](https://github.com/crypto-org-chain/chain-main/pull/1087) Ensure expedited related gov params pass the basic validation.
 
 *Dec 6, 2023*
 
