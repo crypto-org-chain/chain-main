@@ -10,6 +10,7 @@
 - [#1084](https://github.com/crypto-org-chain/chain-main/pull/1084) Add MsgModuleQuerySafe in allowed messages for ica host param.
 - [#1086](https://github.com/crypto-org-chain/chain-main/pull/1086) Upgrade ibc-go to `v8.4.0`.
 - [#1087](https://github.com/crypto-org-chain/chain-main/pull/1087) Ensure expedited related gov params pass the basic validation.
+- [#1088](https://github.com/crypto-org-chain/chain-main/pull/1088) Upgrade solomachine to `v0.1.4` and ibc-go to `v8.5.1`.
 
 *Dec 6, 2023*
 
