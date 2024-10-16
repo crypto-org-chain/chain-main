@@ -5,7 +5,7 @@ let
     x86_64-linux = {
       url =
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/ubuntu-latest-${version}.tar.gz";
-      sha256 = "";
+      sha256 = "sha256-wQix7ZeYTVD+yIWGr4F+XXnHbvXe2WZeNxG2lIDtmJ4=";
     };
     x86_64-darwin = {
       url =
