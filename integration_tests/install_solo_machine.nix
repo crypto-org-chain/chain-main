@@ -1,21 +1,21 @@
 { stdenv, fetchurl, lib }:
 let
-  version = "v0.1.3";
+  version = "v0.1.4";
   srcUrl = {
     x86_64-linux = {
       url =
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/ubuntu-latest-${version}.tar.gz";
-      sha256 = "sha256-Ui92r8J0I3jWGUvaI83rf9PMNyBW4yfnq98lcJ+1fkg=";
+      sha256 = "";
     };
     x86_64-darwin = {
       url =
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/macos-latest-${version}.tar.gz";
-      sha256 = "sha256-zx4342stMYzgQDXAKwnZKSfdLynGIApOFKZ+CjRCyaE=";
+      sha256 = "sha256-NYmm44l5exQiG9DbwUM/UZiEmxc0JriXM8/l/xpc+q4=";
     };
     aarch64-darwin = {
       url =
         "https://github.com/crypto-com/ibc-solo-machine/releases/download/${version}/macos-latest-${version}.tar.gz";
-      sha256 = "sha256-vVgsng5jpmKRODUvjDja/dTvysXSg14O0oVqRswlFts=";
+      sha256 = "sha256-NYmm44l5exQiG9DbwUM/UZiEmxc0JriXM8/l/xpc+q4=";
     };
   }.${stdenv.system} or (throw
     "Unsupported system: ${stdenv.system}");
