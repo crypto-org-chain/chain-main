@@ -98,11 +98,13 @@ jobs:
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - id: changed-files
@@ -151,6 +153,8 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: cachix/install-nix-action@v23
         with:
           nix_path: nixpkgs=channel:nixos-22.11
@@ -217,6 +221,7 @@ jobs:
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
@@ -224,6 +229,7 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v41
         with:
@@ -263,6 +269,7 @@ jobs:
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
@@ -270,6 +277,7 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v41
         with:
@@ -309,6 +317,7 @@ jobs:
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
@@ -316,6 +325,7 @@ jobs:
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v41
         with:
@@ -412,6 +422,8 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v41
         with:
