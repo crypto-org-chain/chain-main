@@ -22,6 +22,8 @@ jobs:
       GO111MODULE: on
     steps:
       - uses: actions/checkout@v3
+        with:
+          persist-credentials: true
       - id: changed-files
         uses: tj-actions/changed-files@v41
         with:
