@@ -38,8 +38,8 @@ schema = 3
     version = "v1.0.1"
     hash = "sha256-MgTocXkBzri9FKkNtkARJXPmxRrRO/diQJS5ZzvYrJY="
   [mod."cosmossdk.io/log"]
-    version = "v1.4.0"
-    hash = "sha256-f5Ljyr18Dtqj37EwtIIM0QUzVKU/XkBJ8ApnKIZIli8="
+    version = "v1.4.1"
+    hash = "sha256-pgI770MdI/OfZcK6UFmQ9iyPBgapz/ErrUe8WVO3iBg="
   [mod."cosmossdk.io/math"]
     version = "v1.3.0"
     hash = "sha256-EEFK43Cr0g0ndhQhkIKher0FqV3mvkmE9z0sP7uVSHg="
@@ -47,8 +47,8 @@ schema = 3
     version = "v0.0.0-20240721175357-eb71828960f3"
     hash = "sha256-ZhEvsT1yE+PbCivriS7hk4TI37VsEB/VFn0AYlbZOhY="
   [mod."cosmossdk.io/store"]
-    version = "v1.1.0"
-    hash = "sha256-CMV+5pn1BP5ixj9pICPlbIQ9Ezy6uP7mwG7SSTXkb3k="
+    version = "v1.1.1"
+    hash = "sha256-S6aIACkdod8r5oXSbaL4DvtXTTQrDJNq1hzE7NWzdcw="
   [mod."cosmossdk.io/tools/confix"]
     version = "v0.1.2"
     hash = "sha256-1VhdIdBDG7jaSiRTNYtoQ3WGaGm+vQ1Qf671zSiWAek="
@@ -65,8 +65,8 @@ schema = 3
     version = "v0.1.1"
     hash = "sha256-6Nbgmpwx70Jr3S8f4A6imCsdEAxPdVQpmJQTW2RuzKo="
   [mod."cosmossdk.io/x/tx"]
-    version = "v0.13.4"
-    hash = "sha256-he4CClUgFUAXoB826Pn7QMDW5sbVgXbngkdUYNu5keE="
+    version = "v0.13.5"
+    hash = "sha256-Wk4n4Kb4y66JvmqXkk3dhSTkCSF9Hu43vW632263+lU="
   [mod."cosmossdk.io/x/upgrade"]
     version = "v0.1.4"
     hash = "sha256-lm0Ccc9zWs1ldWv1cArXuzRxq45zMir1ZNvoPY+9n7o="
@@ -155,8 +155,8 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.9"
-    hash = "sha256-qBdgUFyUWFQRrunoBsLyMRbwOaJNOir1hLIRwbvuyyg="
+    version = "v0.50.10"
+    hash = "sha256-0/DPGtPr+8UYsYE9UUoLrAfMiMvDUgAhyTWl+VGFUi0="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -167,8 +167,8 @@ schema = 3
     version = "v1.7.0"
     hash = "sha256-ZkEUImxBBo8Q/6c7tVR0rybpLbtlplzvgfLl5xvtV00="
   [mod."github.com/cosmos/iavl"]
-    version = "v1.1.2"
-    hash = "sha256-fhh5fN1BMDxbF4PobERMQdIb9vIrxaSl0tRXas0WKmc="
+    version = "v1.2.0"
+    hash = "sha256-NYSt6LOGyspP6eZXo9e5+2MFwyrWxD/rp2dRTtlWg2E="
   [mod."github.com/cosmos/ibc-go/modules/capability"]
     version = "v1.0.1"
     hash = "sha256-iRhj2WTr99DgAl80h25pxtkO6iHYjyHflwpxKKG5b6E="
