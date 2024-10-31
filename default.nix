@@ -39,7 +39,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "v5.0.0";
-  go = buildPackages.go_1_22;
+  go = buildPackages.go_1_23;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
