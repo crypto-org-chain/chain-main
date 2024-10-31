@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -91,6 +92,9 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 					return fmt.Errorf("failed to parse vesting start: %w", errstart)
 				}
 			} else {
+				if vestingStartUint > math.MaxInt64 {
+					return fmt.Errorf("vestingStartUint: %d exceeds int64 maximum value", vestingStartUint)
+				}
 				vestingStart = int64(vestingStartUint)
 			}
 
@@ -106,6 +110,9 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 					return fmt.Errorf("failed to parse vesting end: %w", errend)
 				}
 			} else {
+				if vestingEndUint > math.MaxInt64 {
+					return fmt.Errorf("vestingEndUint: %d exceeds int64 maximum value", vestingEndUint)
+				}
 				vestingEnd = int64(vestingEndUint)
 			}
 

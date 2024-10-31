@@ -18,7 +18,7 @@ func (suite *KeeperSuite) TestSupply() {
 	})
 
 	suite.NoError(err)
-	suite.Equal(1, int(response.Amount))
+	suite.Equal(1, int(response.Amount)) //nolint:gosec // test only
 }
 
 func (suite *KeeperSuite) TestOwner() {
