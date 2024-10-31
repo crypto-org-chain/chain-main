@@ -11,6 +11,8 @@
 - [#1086](https://github.com/crypto-org-chain/chain-main/pull/1086) Upgrade ibc-go to `v8.4.0`.
 - [#1087](https://github.com/crypto-org-chain/chain-main/pull/1087) Ensure expedited related gov params pass the basic validation.
 - [#1088](https://github.com/crypto-org-chain/chain-main/pull/1088) Upgrade solomachine to `v0.1.4` and ibc-go to `v8.5.1`.
+* [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Update cometbft to `0.38.13`, sdk to `v0.50.10` and memiavl to latest.
+- [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Upgrade cometbft to v0.38.13, cosmos-sdk to `v0.50.10`.
 
 *Dec 6, 2023*
 
