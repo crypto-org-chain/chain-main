@@ -38,11 +38,7 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 
 		for _, owner := range owners {
 			for _, idCollection := range owner.IDCollections {
-				supply := idCollection.Supply()
-				if supply < 0 {
-					return sdk.FormatInvariant(types.ModuleName, "supply", fmt.Sprintf("invalid supply: %d", supply)), true
-				}
-				ownersCollectionsSupply[idCollection.DenomId] += uint64(supply)
+				ownersCollectionsSupply[idCollection.DenomId] += uint64(idCollection.Supply())
 			}
 		}
 

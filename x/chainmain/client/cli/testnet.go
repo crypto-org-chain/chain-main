@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -105,9 +104,6 @@ Example:
 			numValidators, numValidatorsErr := cmd.Flags().GetUint(flagNumValidators)
 			if numValidatorsErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flagNumValidators, numValidatorsErr)
-			}
-			if numValidators > uint(math.MaxInt64) {
-				return fmt.Errorf("numValidators %v cannot exceed %v", numValidators, math.MaxInt64)
 			}
 			algo, algoErr := cmd.Flags().GetString(flags.FlagKeyType)
 			if algoErr != nil {
