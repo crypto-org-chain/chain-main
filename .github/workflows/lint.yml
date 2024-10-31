@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   golangci:
-    name: Run golangci-lint
+    name: golangci-lint
     runs-on: macos-latest
     timeout-minutes: 120
     steps:
@@ -33,7 +33,7 @@ jobs:
             **/*.go
             *.mod
             *.sum
-      - name: run golangci-lint
+      - name: golangci-lint
         run: |
           nix profile install -f ./nix golangci-lint
           nix profile install -f ./nix rocksdb
