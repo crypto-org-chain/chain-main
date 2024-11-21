@@ -41,8 +41,8 @@ schema = 3
     version = "v1.4.1"
     hash = "sha256-pgI770MdI/OfZcK6UFmQ9iyPBgapz/ErrUe8WVO3iBg="
   [mod."cosmossdk.io/math"]
-    version = "v1.3.0"
-    hash = "sha256-EEFK43Cr0g0ndhQhkIKher0FqV3mvkmE9z0sP7uVSHg="
+    version = "v1.4.0"
+    hash = "sha256-qMGiZh9GJg/5b8o7qe0dKoukB/XM+lxDC00MhCfGv28="
   [mod."cosmossdk.io/simapp"]
     version = "v0.0.0-20240721175357-eb71828960f3"
     hash = "sha256-ZhEvsT1yE+PbCivriS7hk4TI37VsEB/VFn0AYlbZOhY="
