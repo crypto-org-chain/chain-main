@@ -52,7 +52,7 @@ jobs:
     needs: ["release"]
     strategy:
       matrix:
-        runner: [macos-latest, macos-14]
+        runner: [macos-13, macos-14]
     runs-on: ${{ matrix.runner }}
     environment: release
     steps:
