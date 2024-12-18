@@ -14,11 +14,8 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -53,15 +50,15 @@ jobs:
   release-macos:
     # runs sequentially to avoid creating duplicated release
     needs: ["release"]
-    runs-on: macos-latest
+    strategy:
+      matrix:
+        runner: [macos-latest, macos-14]
+    runs-on: ${{ matrix.runner }}
     environment: release
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v22
+      - uses: cachix/install-nix-action@v23
         with:
-          # pin to nix-2.13 to workaround compability issue of 2.14,
-          # see: https://github.com/cachix/install-nix-action/issues/161
-          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
@@ -95,10 +92,11 @@ jobs:
           done
 
           # update checksum and upload
-          sha256sum *.tar.gz > "checksums-darwin.txt"
+          CHKFILE="checksums-darwin-$(uname -p).txt"
+          sha256sum *.tar.gz > "$CHKFILE"
           echo 'FILES<<EOF' >> $GITHUB_ENV
           ls -1 *.tar.gz >> $GITHUB_ENV
-          echo "checksums-darwin.txt" >> $GITHUB_ENV
+          echo "$CHKFILE" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
           cat $GITHUB_ENV
       - name: upload binaries
