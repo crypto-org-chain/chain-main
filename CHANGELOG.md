@@ -1,5 +1,13 @@
 # Changelog
 
+*Dec 18, 2024*
+
+## v4.2.10
+
+### Bug Fixes
+
+* [#1097](https://github.com/crypto-org-chain/chain-main/pull/1097) Include a security patch from cosmos sdk.
+
 *Mar 29, 2024*
 
 ## v4.2.9

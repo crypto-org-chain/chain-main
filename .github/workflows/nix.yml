@@ -13,7 +13,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v22
@@ -33,7 +33,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v22
@@ -63,7 +63,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files.tar.gz -C "$TMPDIR/pytest-of-runner" .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files
@@ -78,7 +78,7 @@ jobs:
         os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v22
@@ -100,7 +100,7 @@ jobs:
   test-upgrade:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v22
@@ -127,7 +127,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_upgrade.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_upgrade
@@ -137,7 +137,7 @@ jobs:
   test-ledger:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -164,7 +164,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ledger.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_ledger
@@ -174,7 +174,7 @@ jobs:
   test-solomachine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -201,7 +201,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_solomachine.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_solomachine
@@ -211,7 +211,7 @@ jobs:
   test-slow:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -238,7 +238,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_slow.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_slow
@@ -248,7 +248,7 @@ jobs:
   test-ibc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -275,7 +275,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ibc.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_ibc
@@ -285,7 +285,7 @@ jobs:
   test-byzantine:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -312,7 +312,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_byzantine.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_byzantine
@@ -322,7 +322,7 @@ jobs:
   test-gov:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -349,7 +349,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_gov.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_gov
@@ -360,7 +360,7 @@ jobs:
   test-grpc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - uses: cachix/install-nix-action@v18
@@ -387,7 +387,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_grpc.tar.gz -C /tmp/pytest-of-runner .
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: debug_files_grpc

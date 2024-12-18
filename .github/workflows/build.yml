@@ -83,16 +83,18 @@ jobs:
         with:
           go-version: 1.20.3
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ steps.pr_data.outputs.repo_name }}
           ref: ${{ steps.pr_data.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
+          persist-credentials: false
           submodules: true
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
       - id: changed-files
@@ -124,7 +126,7 @@ jobs:
           echo ${{ job.status }} > status_build.txt
       - name: Upload file status_build.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_build
           path: status_build.txt
@@ -136,8 +138,10 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v22
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v23
         with:
           # pin to nix-2.13 to workaround compability issue of 2.14,
           # see: https://github.com/cachix/install-nix-action/issues/161
@@ -189,7 +193,7 @@ jobs:
           echo ${{ job.status }} > status_install.txt
       - name: Upload file status_install.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_install
           path: status_install.txt
@@ -202,18 +206,20 @@ jobs:
         with:
           go-version: 1.20.3
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -236,7 +242,7 @@ jobs:
           echo ${{ job.status }} > status_sim1.txt
       - name: Upload file status_sim1.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim1
           path: status_sim1.txt
@@ -249,18 +255,20 @@ jobs:
         with:
           go-version: 1.20.3
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -283,7 +291,7 @@ jobs:
           echo ${{ job.status }} > status_sim2.txt
       - name: Upload file status_sim2.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim2
           path: status_sim2.txt
@@ -296,18 +304,20 @@ jobs:
         with:
           go-version: 1.20.3
       - name: Checkout Comment PR Branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'issue_comment'
         with:
           submodules: true
+          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ needs.build.outputs.repo_name }}
           ref: ${{ needs.build.outputs.ref }}
       - name: Normal check out code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         if: github.event_name == 'push' || github.event_name == 'pull_request' 
         with:
           submodules: true
+          persist-credentials: false
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -330,7 +340,7 @@ jobs:
           echo ${{ job.status }} > status_sim3.txt
       - name: Upload file status_sim3.txt as an artifact
         if: github.event_name == 'issue_comment'
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v3
         with:
           name: pass_status_sim3
           path: status_sim3.txt
@@ -403,7 +413,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v3
+<<<<<<< HEAD
+      - uses: actions/checkout@v4
+=======
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+>>>>>>> c23a527 (Problem: persist-credentials might leak github token unintentionally (#1090))
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
@@ -427,7 +443,7 @@ jobs:
           set +e
           (git diff --no-ext-diff --exit-code)
           echo "changed=$?" >> $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: steps.changes.outputs.changed == 1
         with:
           name: gomod2nix.toml
