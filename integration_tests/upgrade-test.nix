@@ -15,6 +15,11 @@ let
       (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v3.3.4.tar.gz")
       { }
     ).chain-maind;
+  released4 =
+    (import
+      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v4.2.11.tar.gz")
+      { }
+    ).chain-maind;
   current = pkgs.callPackage ../. { };
 in
 pkgs.linkFarm "upgrade-test-package" [
@@ -32,6 +37,10 @@ pkgs.linkFarm "upgrade-test-package" [
   }
   {
     name = "v4.2.0";
+    path = released4;
+  }
+  {
+    name = "v5.0.0";
     path = current;
   }
 ]
