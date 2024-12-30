@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Bug Fixes
+
+- [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
+
 *Dec 18, 2024*
 
 ## v4.2.10

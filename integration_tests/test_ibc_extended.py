@@ -21,6 +21,26 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
+def fund_community_pool(self, amt, event_query_tx=True, **kwargs):
+    rsp = json.loads(
+        self.raw(
+            "tx",
+            "distribution",
+            "fund-community-pool",
+            amt,
+            "-y",
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+            **kwargs,
+        )
+    )
+    if rsp["code"] == 0 and event_query_tx:
+        rsp = self.event_query_tx_for(rsp["txhash"])
+    return rsp
+
+
 # 3 accounts ibc test
 # ibc-0 (A,B)   ibc-1 (C)
 # EscrowAddress: sha256-hash of ibc-version,port-id,channel-id
@@ -34,6 +54,8 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
 
 def test_ibc_extended(cluster):
     src_channel, dst_channel = start_and_wait_relayer(cluster)
+    denom = "basecro"
+    amt = 10000
     raw = cluster["ibc-0"].cosmos_cli().raw
 
     addr_1 = cluster["ibc-1"].address("relayer")
@@ -55,17 +77,17 @@ def test_ibc_extended(cluster):
         )
     )
     denom_hash = hashlib.sha256(denom_string.encode()).hexdigest().upper()
+    ibc_denom = f"ibc/{denom_hash}"
     assert rsp["code"] == 0, rsp["raw_log"]
     assert res["balances"] == [
-        {"denom": "basecro", "amount": "10000000000"},
-        {
-            "denom": f"ibc/{denom_hash}",
-            "amount": "10000",
-        },
+        {"denom": denom, "amount": "10000000000"},
+        {"denom": ibc_denom, "amount": f"{amt}"},
     ]
+
+    amt2 = 55
     # send B <- C
     rsp = cluster["ibc-1"].ibc_transfer(
-        "relayer", addr_0_signer, f"55ibc/{denom_hash}", dst_channel, 0
+        "relayer", addr_0_signer, f"{amt2}{ibc_denom}", dst_channel, 0
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     time.sleep(10)
@@ -79,4 +101,16 @@ def test_ibc_extended(cluster):
             node=cluster["ibc-0"].node_rpc(0),
         )
     )
-    assert res["balances"] == [{"denom": "basecro", "amount": "20000000055"}]
+    assert res["balances"] == [{"denom": denom, "amount": "20000000055"}]
+
+    amt3 = 1
+    fund_community_pool(
+        cluster["ibc-1"].cosmos_cli(), f"{amt3}{ibc_denom}", from_=addr_1
+    )
+    assert cluster["ibc-1"].supply("liquid") == {
+        "supply": [
+            {"denom": denom, "amount": "260000000000"},
+            {"denom": ibc_denom, "amount": f"{amt - amt2 - amt3}"},
+            {"denom": "ibcfee", "amount": "100000000000"},
+        ]
+    }
