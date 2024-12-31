@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,26 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         worker_index,
         tmp_path_factory.mktemp("data"),
     )
+
+
+def fund_community_pool(self, amt, event_query_tx=True, **kwargs):
+    rsp = json.loads(
+        self.raw(
+            "tx",
+            "distribution",
+            "fund-community-pool",
+            amt,
+            "-y",
+            home=self.data_dir,
+            keyring_backend="test",
+            chain_id=self.chain_id,
+            node=self.node_rpc,
+            **kwargs,
+        )
+    )
+    if rsp["code"] == 0 and event_query_tx:
+        rsp = self.event_query_tx_for(rsp["txhash"])
+    return rsp
 
 
 # 3 accounts ibc test
@@ -74,3 +95,17 @@ def test_ibc_extended(cluster):
 
     wait_for_fn("balance change", check_balance_change)
     assert new_src_balance == amt2 + old_src_balance, new_src_balance
+
+    amt3 = 1
+    fund_community_pool(
+        cluster["ibc-1"].cosmos_cli(), f"{amt3}{ibc_denom}", from_=addr_1
+    )
+    cluster["ibc-1"].distribution_community()
+    res = cluster["ibc-1"].supply("liquid")
+    assert res == {
+        "supply": [
+            {"denom": denom, "amount": "260000000000"},
+            {"denom": ibc_denom, "amount": f"{amt - amt2 - amt3}"},
+            {"denom": "ibcfee", "amount": "100000000000"},
+        ]
+    }
