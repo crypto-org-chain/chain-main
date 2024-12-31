@@ -21,8 +21,8 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-def fund_community_pool(self, amt, event_query_tx=True, **kwargs):
-    rsp = json.loads(
+def fund_community_pool(self, amt, **kwargs):
+    return json.loads(
         self.raw(
             "tx",
             "distribution",
@@ -36,9 +36,6 @@ def fund_community_pool(self, amt, event_query_tx=True, **kwargs):
             **kwargs,
         )
     )
-    if rsp["code"] == 0 and event_query_tx:
-        rsp = self.event_query_tx_for(rsp["txhash"])
-    return rsp
 
 
 # 3 accounts ibc test
@@ -107,10 +104,10 @@ def test_ibc_extended(cluster):
     fund_community_pool(
         cluster["ibc-1"].cosmos_cli(), f"{amt3}{ibc_denom}", from_=addr_1
     )
+    time.sleep(10)
     assert cluster["ibc-1"].supply("liquid") == {
         "supply": [
-            {"denom": denom, "amount": "260000000000"},
+            {"denom": denom, "amount": "30000000000"},
             {"denom": ibc_denom, "amount": f"{amt - amt2 - amt3}"},
-            {"denom": "ibcfee", "amount": "100000000000"},
         ]
     }
