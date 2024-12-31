@@ -6,7 +6,6 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/crypto-org-chain/chain-main/v4/config"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
 
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -94,7 +93,12 @@ func (k Keeper) GetVestingAccounts(ctx sdk.Context) types.VestingAccounts {
 
 // GetTotalSupply returns the current total supply in the system
 func (k Keeper) GetTotalSupply(ctx sdk.Context) sdk.Coins {
-	return sdk.NewCoins(k.bankKeeper.GetSupply(ctx, config.BaseCoinUnit))
+	var totalSupply sdk.Coins
+	k.bankKeeper.IterateTotalSupply(ctx, func(coin sdk.Coin) bool {
+		totalSupply = totalSupply.Add(coin)
+		return false
+	})
+	return totalSupply
 }
 
 // GetUnvestedSupply returns total unvested supply

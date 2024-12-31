@@ -9,7 +9,7 @@ import (
 // creating a x/supply keeper.
 type BankKeeper interface {
 	GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
-	GetSupply(ctx sdk.Context, denom string) sdk.Coin
+	IterateTotalSupply(ctx sdk.Context, cb func(sdk.Coin) bool)
 	LockedCoins(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins
 }
 
