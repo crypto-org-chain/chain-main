@@ -236,7 +236,7 @@ def ibc_incentivized_transfer(cluster):
     path = f"transfer/{dst_channel}/{base_denom}"
     denom_hash = hashlib.sha256(path.encode()).hexdigest().upper()
     denom_trace = chains[0].ibc_denom_trace(path, cluster["ibc-1"].node_rpc(0))
-    assert denom_trace == {"path": f"transfer/{dst_channel}", "base_denom": base_denom}
+    assert denom_trace == {"denom":{"base":base_denom, "trace":[{"port_id":"transfer","channel_id": dst_channel}]}}
 
     current = chains[1].balances(receiver)
     assert current == [

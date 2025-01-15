@@ -4,10 +4,10 @@ import (
 	sdkerrors "cosmossdk.io/errors"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	coretypes "github.com/cosmos/ibc-go/v8/modules/core/types"
+	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
+	coremetrics "github.com/cosmos/ibc-go/v9/modules/core/metrics"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 	"github.com/hashicorp/go-metrics"
 )
@@ -54,8 +54,8 @@ func (k Keeper) SendTransfer(
 		return sdkerrors.Wrapf(channeltypes.ErrChannelNotFound, "port ID (%s) channel ID (%s)", sourcePort, sourceChannel)
 	}
 
-	destinationPort := sourceChannelEnd.GetCounterparty().GetPortID()
-	destinationChannel := sourceChannelEnd.GetCounterparty().GetChannelID()
+	destinationPort := sourceChannelEnd.Counterparty.PortId
+	destinationChannel := sourceChannelEnd.Counterparty.ChannelId
 
 	// get the next sequence
 	sequence, found := k.channelKeeper.GetNextSequenceSend(ctx, sourcePort, sourceChannel)
@@ -95,8 +95,8 @@ func (k Keeper) SendTransfer(
 
 	defer func() {
 		labels := []metrics.Label{
-			telemetry.NewLabel(coretypes.LabelDestinationPort, destinationPort),
-			telemetry.NewLabel(coretypes.LabelDestinationChannel, destinationChannel),
+			telemetry.NewLabel(coremetrics.LabelDestinationPort, destinationPort),
+			telemetry.NewLabel(coremetrics.LabelDestinationChannel, destinationChannel),
 		}
 
 		telemetry.SetGaugeWithLabels(
@@ -119,7 +119,7 @@ func (k Keeper) SendTransfer(
 // and sent to the receiving address. Otherwise if the sender chain is sending
 // back tokens this chain originally transferred to it, the tokens are
 // unescrowed and sent to the receiving address.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet,
+func (k Keeper) OnRecvPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
 	// validate packet data upon receiving
@@ -135,7 +135,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, packet channeltypes.Packet,
 // acknowledgement written on the receiving chain. If the acknowledgement
 // was a success then nothing occurs. If the acknowledgement failed, then
 // the sender is refunded their tokens using the refundPacketToken function.
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
 	switch ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
 		return k.refundPacketToken(ctx, packet, data)
@@ -148,6 +148,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, packet channeltypes.Pac
 
 // OnTimeoutPacket refunds the sender since the original packet sent was
 // never received and has been timed out.
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
 	return k.refundPacketToken(ctx, packet, data)
 }
