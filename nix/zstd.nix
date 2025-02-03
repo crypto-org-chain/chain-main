@@ -7,7 +7,6 @@
   gnugrep,
   fixDarwinDylibNames,
   file,
-  fetchpatch,
   legacySupport ? false,
   static ? stdenv.hostPlatform.isStatic,
   # these need to be ran on the host, thus disable when cross-compiling
@@ -94,18 +93,13 @@ stdenv.mkDerivation rec {
       ''
     );
 
-  outputs =
-    [
-      "bin"
-      "dev"
-    ]
-    ++ lib.optional stdenv.hostPlatform.isUnix "man"
-    ++ [ "out" ];
+  outputs = [
+    "bin"
+    "dev"
+  ] ++ lib.optional stdenv.hostPlatform.isUnix "man" ++ [ "out" ];
 
   passthru = {
-    updateScript = nix-update-script {
-      attrPath = pname;
-    };
+    updateScript = nix-update-script { attrPath = pname; };
   };
 
   meta = with lib; {
