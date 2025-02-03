@@ -53,15 +53,14 @@
         };
         defaultPackage = packages.chain-maind;
         defaultApp = apps.chain-maind;
-        devShells = {
-          chain-maind = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              go_1_20
-              rocksdb
-            ];
-          };
+        devShells.default = pkgs.mkShell {
+          buildInputs = [
+            defaultPackage.go
+            pkgs.rocksdb
+            pkgs.gomod2nix
+            pkgs.nixfmt-rfc-style
+          ];
         };
-        devShell = devShells.chain-maind;
         legacyPackages = pkgs;
       }
     ))
