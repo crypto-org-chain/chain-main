@@ -7,7 +7,7 @@
 ### Bug Fixes
 
 - [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
-- [#]() Update cometbft to v0.34.x.
+- [#1103](https://github.com/crypto-org-chain/chain-main/pull/1103) Update cometbft to v0.34.x.
 
 *Dec 18, 2024*
 
