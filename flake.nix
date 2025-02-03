@@ -9,7 +9,7 @@
     gomod2nix = {
       url = "github:nix-community/gomod2nix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.utils.follows = "flake-utils";
+      inputs.flake-utils.follows = "flake-utils";
     };
   };
 
@@ -112,9 +112,7 @@
                   );
                   value =
                     let
-                      chain-maind = callPackage ./. {
-                        inherit rev network;
-                      };
+                      chain-maind = callPackage ./. { inherit rev network; };
                       bundle =
                         if stdenv.hostPlatform.isWindows then bundle-win-exe chain-maind else bundle-exe chain-maind;
                     in
