@@ -38,7 +38,7 @@ let
 in
 buildGoApplication rec {
   pname = "chain-maind";
-  version = "4.2.10";
+  version = "4.2.11";
   go = buildPackages.go_1_20;
   src = lib.cleanSourceWith {
     name = "src";

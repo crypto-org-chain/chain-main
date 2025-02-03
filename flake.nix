@@ -51,7 +51,7 @@
               buildInputs = with pkgs; [
                 go_1_20
                 rocksdb
-              ];
+              ] ++ [pkgs.gomod2nix];
             };
           };
           devShell = devShells.chain-maind;
