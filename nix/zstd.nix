@@ -1,18 +1,19 @@
-{ lib
-, stdenv
-, fetchFromGitHub
-, cmake
-, bash
-, gnugrep
-, fixDarwinDylibNames
-, file
-, fetchpatch
-, legacySupport ? false
-, static ? stdenv.hostPlatform.isStatic
+{
+  lib,
+  stdenv,
+  fetchFromGitHub,
+  cmake,
+  bash,
+  gnugrep,
+  fixDarwinDylibNames,
+  file,
+  fetchpatch,
+  legacySupport ? false,
+  static ? stdenv.hostPlatform.isStatic,
   # these need to be ran on the host, thus disable when cross-compiling
-, buildContrib ? stdenv.hostPlatform == stdenv.buildPlatform
-, doCheck ? stdenv.hostPlatform == stdenv.buildPlatform
-, nix-update-script
+  buildContrib ? stdenv.hostPlatform == stdenv.buildPlatform,
+  doCheck ? stdenv.hostPlatform == stdenv.buildPlatform,
+  nix-update-script,
 }:
 
 stdenv.mkDerivation rec {
@@ -26,8 +27,7 @@ stdenv.mkDerivation rec {
     sha256 = "sha256-yJvhcysxcbUGuDOqe/TQ3Y5xyM2AUw6r1THSHOqmUy0=";
   };
 
-  nativeBuildInputs = [ cmake ]
-    ++ lib.optional stdenv.isDarwin fixDarwinDylibNames;
+  nativeBuildInputs = [ cmake ] ++ lib.optional stdenv.isDarwin fixDarwinDylibNames;
   buildInputs = lib.optional stdenv.hostPlatform.isUnix bash;
 
   patches = [
@@ -48,16 +48,16 @@ stdenv.mkDerivation rec {
 
   LDFLAGS = lib.optionalString stdenv.hostPlatform.isRiscV "-latomic";
 
-  cmakeFlags = lib.attrsets.mapAttrsToList
-    (name: value: "-DZSTD_${name}:BOOL=${if value then "ON" else "OFF"}")
-    {
-      BUILD_SHARED = !static;
-      BUILD_STATIC = static;
-      BUILD_CONTRIB = buildContrib;
-      PROGRAMS_LINK_SHARED = !static;
-      LEGACY_SUPPORT = legacySupport;
-      BUILD_TESTS = doCheck;
-    };
+  cmakeFlags =
+    lib.attrsets.mapAttrsToList (name: value: "-DZSTD_${name}:BOOL=${if value then "ON" else "OFF"}")
+      {
+        BUILD_SHARED = !static;
+        BUILD_STATIC = static;
+        BUILD_CONTRIB = buildContrib;
+        PROGRAMS_LINK_SHARED = !static;
+        LEGACY_SUPPORT = legacySupport;
+        BUILD_TESTS = doCheck;
+      };
 
   cmakeDir = "../build/cmake";
   dontUseCmakeBuildDir = true;
@@ -75,23 +75,30 @@ stdenv.mkDerivation rec {
     runHook postCheck
   '';
 
-  preInstall = ''
-    mkdir -p $bin/bin
-    substituteInPlace ../programs/zstdgrep \
-      --replace ":-grep" ":-${gnugrep}/bin/grep" \
-      --replace ":-zstdcat" ":-$bin/bin/zstdcat"
-
-    substituteInPlace ../programs/zstdless \
-      --replace "zstdcat" "$bin/bin/zstdcat"
-  '' + lib.optionalString buildContrib (
+  preInstall =
     ''
-      cp contrib/pzstd/pzstd $bin/bin/pzstd
-    '' + lib.optionalString stdenv.isDarwin ''
-      install_name_tool -change @rpath/libzstd.1.dylib $out/lib/libzstd.1.dylib $bin/bin/pzstd
-    ''
-  );
+      mkdir -p $bin/bin
+      substituteInPlace ../programs/zstdgrep \
+        --replace ":-grep" ":-${gnugrep}/bin/grep" \
+        --replace ":-zstdcat" ":-$bin/bin/zstdcat"
 
-  outputs = [ "bin" "dev" ]
+      substituteInPlace ../programs/zstdless \
+        --replace "zstdcat" "$bin/bin/zstdcat"
+    ''
+    + lib.optionalString buildContrib (
+      ''
+        cp contrib/pzstd/pzstd $bin/bin/pzstd
+      ''
+      + lib.optionalString stdenv.isDarwin ''
+        install_name_tool -change @rpath/libzstd.1.dylib $out/lib/libzstd.1.dylib $bin/bin/pzstd
+      ''
+    );
+
+  outputs =
+    [
+      "bin"
+      "dev"
+    ]
     ++ lib.optional stdenv.hostPlatform.isUnix "man"
     ++ [ "out" ];
 
