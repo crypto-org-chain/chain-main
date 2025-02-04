@@ -31,9 +31,7 @@ import sources.nixpkgs {
         exit $EXIT_STATUS
       '';
       solomachine = pkgs.callPackage ../integration_tests/install_solo_machine.nix { };
-      chain-maind-zemu = pkgs.callPackage ../. {
-        ledger_zemu = true;
-      };
+      chain-maind-zemu = pkgs.callPackage ../. { ledger_zemu = true; };
       # chain-maind for integration test
       chain-maind-test = pkgs.callPackage ../. {
         ledger_zemu = true;

@@ -59,6 +59,7 @@
               defaultPackage.go
               pkgs.gomod2nix
               pkgs.rocksdb
+              pkgs.nixfmt-rfc-style
             ];
           };
         };
@@ -114,9 +115,7 @@
                   );
                   value =
                     let
-                      chain-maind = callPackage ./. {
-                        inherit rev network;
-                      };
+                      chain-maind = callPackage ./. { inherit rev network; };
                       bundle =
                         if stdenv.hostPlatform.isWindows then bundle-win-exe chain-maind else bundle-exe chain-maind;
                     in
