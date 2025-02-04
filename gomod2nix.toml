@@ -36,7 +36,7 @@ schema = 3
     hash = "sha256-ZDRZ8OthHOjiRfcvSVnw28j8SLOuQT3t7BEel92JcVI="
   [mod."cosmossdk.io/errors"]
     version = "v1.0.1"
-    hash = "sha256-MgTocXkBzri9FKkNtkARJXPmxRrRO/diQJS5ZzvYrJY="
+    hash = "sha256-u0TlqbhEJZZcwbXBVQYyYsjt8+Pq/bEzqjljjwTaFhU="
   [mod."cosmossdk.io/log"]
     version = "v1.4.1"
     hash = "sha256-pgI770MdI/OfZcK6UFmQ9iyPBgapz/ErrUe8WVO3iBg="
@@ -267,8 +267,8 @@ schema = 3
     version = "v1.3.2"
     hash = "sha256-pogILFrrk+cAtb0ulqn9+gRZJ7sGnnLLdtqITvxvG6c="
   [mod."github.com/golang/glog"]
-    version = "v1.2.3"
-    hash = "sha256-AiUZJWeBFalJAuOR0BrA/QRvV5U24VcVo488joJjz+k="
+    version = "v1.2.4"
+    hash = "sha256-ovspUpJCMcxHi6qvcdCuWHJniFwb9bmRwsYF7AtDndo="
   [mod."github.com/golang/groupcache"]
     version = "v0.0.0-20210331224755-41bb18bfe9da"
     hash = "sha256-7Gs7CS9gEYZkbu5P4hqPGBpeGZWC64VDwraSKFF+VR0="
