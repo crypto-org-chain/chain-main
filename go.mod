@@ -1,7 +1,8 @@
 module github.com/crypto-org-chain/chain-main/v4
 
-go 1.22.7
-toolchain go1.23.1
+go 1.22.11
+
+toolchain go1.23.4
 
 require (
 	cosmossdk.io/api v0.7.6
