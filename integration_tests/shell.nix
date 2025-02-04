@@ -20,7 +20,6 @@ pkgs.mkShell {
   ];
   shellHook = ''
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
-    export SOLO_MACHINE_HOME="${pkgs.solomachine}/solomachine"
     mkdir -p "$PWD/coverage"
     export GOCOVERDIR="$PWD/coverage"
   '';
