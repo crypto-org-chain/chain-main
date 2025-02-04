@@ -24,15 +24,15 @@
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "ibc-rs": {
-        "branch": "v1.10.3",
+        "branch": "v1.1.0",
         "description": "IBC modules and relayer - Formal specifications and Rust implementation",
         "homepage": "",
         "owner": "informalsystems",
         "repo": "ibc-rs",
-        "rev": "e26d356abe23be2d401d1ba3d6ebb2768f77ebd5",
-        "sha256": "1jzhlgx2jj1pfs6v7bvcijwrhmlgvm15mxc4mmidnnm123nww7yb",
+        "rev": "0daa3e16431e748c96a3fa4ad5e9698074e09060",
+        "sha256": "1fp4hz390fd4nlkrkzdmypy9i83i57l21hg7l0d9xi8h1hjginam",
         "type": "tarball",
-        "url": "https://github.com/informalsystems/hermes/archive/e26d356abe23be2d401d1ba3d6ebb2768f77ebd5.tar.gz",
+        "url": "https://github.com/informalsystems/ibc-rs/archive/0daa3e16431e748c96a3fa4ad5e9698074e09060.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "nixpkgs": {
