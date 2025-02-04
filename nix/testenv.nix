@@ -13,6 +13,8 @@ poetry2nix.mkPoetryEnv {
         flake8-black = [ "setuptools" ];
         flake8-isort = [ "hatchling" ];
         docker = [ "hatchling" "hatch-vcs" ];
+        click = [ "flit-core" ];
+        isort  = [ "hatchling" ];
       };
     in
     lib.mapAttrs
