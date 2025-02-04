@@ -1,4 +1,7 @@
-{ sources ? import ./sources.nix, system ? builtins.currentSystem }:
+{
+  sources ? import ./sources.nix,
+  system ? builtins.currentSystem,
+}:
 import sources.nixpkgs {
   overlays = [
     (_: pkgs: {
@@ -11,6 +14,7 @@ import sources.nixpkgs {
         doCheck = false;
       };
       hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
+      solomachine = pkgs.callPackage ./solomachine.nix { };
     })
     (import "${sources.poetry2nix}/overlay.nix")
     (import "${sources.gomod2nix}/overlay.nix")
@@ -24,13 +28,10 @@ import sources.nixpkgs {
         ${pkgs.test-env}/bin/flake8 --show-source --count --statistics \
           --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
           || EXIT_STATUS=$?
-        find . -name "*.nix" -type f | xargs ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check || EXIT_STATUS=$?
+        find . -name "*.nix" -type f | xargs ${pkgs.nixfmt-rfc-style}/bin/nixfmt -c || EXIT_STATUS=$?
         exit $EXIT_STATUS
       '';
-      solomachine = pkgs.callPackage ../integration_tests/install_solo_machine.nix { };
-      chain-maind-zemu = pkgs.callPackage ../. {
-        ledger_zemu = true;
-      };
+      chain-maind-zemu = pkgs.callPackage ../. { ledger_zemu = true; };
       # chain-maind for integration test
       chain-maind-test = pkgs.callPackage ../. {
         ledger_zemu = true;

@@ -1,3 +1,4 @@
-{ pkgs ? import <nixpkgs> { }
+{
+  pkgs ? import <nixpkgs> { },
 }:
 pkgs.poetry2nix.mkPoetryEnv { projectDir = ./.; }
