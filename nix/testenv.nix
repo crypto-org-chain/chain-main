@@ -21,6 +21,8 @@ poetry2nix.mkPoetryEnv {
           "hatchling"
           "hatch-vcs"
         ];
+        click = [ "flit-core" ];
+        isort = [ "hatchling" ];
       };
     in
     lib.mapAttrs (
