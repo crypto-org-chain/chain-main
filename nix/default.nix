@@ -14,6 +14,7 @@ import sources.nixpkgs {
         doCheck = false;
       };
       hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
+      solomachine = pkgs.callPackage ./solomachine.nix { };
     })
     (import "${sources.poetry2nix}/overlay.nix")
     (import "${sources.gomod2nix}/overlay.nix")
@@ -30,7 +31,6 @@ import sources.nixpkgs {
         find . -name "*.nix" -type f | xargs ${pkgs.nixfmt-rfc-style}/bin/nixfmt -c || EXIT_STATUS=$?
         exit $EXIT_STATUS
       '';
-      solomachine = pkgs.callPackage ../integration_tests/install_solo_machine.nix { };
       chain-maind-zemu = pkgs.callPackage ../. { ledger_zemu = true; };
       # chain-maind for integration test
       chain-maind-test = pkgs.callPackage ../. {
