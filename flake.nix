@@ -55,11 +55,14 @@
         defaultApp = apps.chain-maind;
         devShells = {
           chain-maind = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              go_1_22
-              rocksdb
-              nixfmt-rfc-style
-            ];
+            buildInputs =
+              with pkgs;
+              [
+                defaultPackage.go
+                rocksdb
+                nixfmt-rfc-style
+              ]
+              ++ [ pkgs.gomod2nix ];
           };
         };
         devShell = devShells.chain-maind;
