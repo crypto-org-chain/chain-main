@@ -1,11 +1,11 @@
-{ fetchFromGitHub
-, lib
-, stdenv
-, darwin
-, rustPlatform
-, protobuf
-, rustfmt
-,
+{
+  fetchFromGitHub,
+  lib,
+  stdenv,
+  darwin,
+  rustPlatform,
+  protobuf,
+  rustfmt,
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
