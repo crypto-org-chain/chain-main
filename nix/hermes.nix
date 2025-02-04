@@ -1,10 +1,11 @@
-{ src
-, lib
-, stdenv
-, darwin
-, rustPlatform
-, symlinkJoin
-, openssl
+{
+  src,
+  lib,
+  stdenv,
+  darwin,
+  rustPlatform,
+  symlinkJoin,
+  openssl,
 }:
 rustPlatform.buildRustPackage rec {
   name = "hermes";
@@ -20,6 +21,9 @@ rustPlatform.buildRustPackage rec {
   OPENSSL_NO_VENDOR = "1";
   OPENSSL_DIR = symlinkJoin {
     name = "openssl";
-    paths = with openssl; [ out dev ];
+    paths = with openssl; [
+      out
+      dev
+    ];
   };
 }
