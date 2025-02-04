@@ -36,7 +36,7 @@ schema = 3
     hash = "sha256-ZDRZ8OthHOjiRfcvSVnw28j8SLOuQT3t7BEel92JcVI="
   [mod."cosmossdk.io/errors"]
     version = "v1.0.1"
-    hash = "sha256-u0TlqbhEJZZcwbXBVQYyYsjt8+Pq/bEzqjljjwTaFhU="
+    hash = "sha256-MgTocXkBzri9FKkNtkARJXPmxRrRO/diQJS5ZzvYrJY="
   [mod."cosmossdk.io/log"]
     version = "v1.4.1"
     hash = "sha256-pgI770MdI/OfZcK6UFmQ9iyPBgapz/ErrUe8WVO3iBg="
