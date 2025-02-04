@@ -1,8 +1,13 @@
-{ poetry2nix, python311, lib }:
+{
+  poetry2nix,
+  python311,
+  lib,
+}:
 poetry2nix.mkPoetryEnv {
   python = python311;
   projectDir = ../integration_tests;
-  overrides = poetry2nix.overrides.withDefaults (self: super:
+  overrides = poetry2nix.overrides.withDefaults (
+    self: super:
     let
       buildSystems = {
         pystarport = [ "poetry-core" ];
@@ -12,14 +17,17 @@ poetry2nix.mkPoetryEnv {
         pytest-github-actions-annotate-failures = [ "setuptools" ];
         flake8-black = [ "setuptools" ];
         flake8-isort = [ "hatchling" ];
-        docker = [ "hatchling" "hatch-vcs" ];
+        docker = [
+          "hatchling"
+          "hatch-vcs"
+        ];
       };
     in
-    lib.mapAttrs
-      (attr: systems: super.${attr}.overridePythonAttrs
-        (old: {
-          nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ map (a: self.${a}) systems;
-        }))
-      buildSystems
+    lib.mapAttrs (
+      attr: systems:
+      super.${attr}.overridePythonAttrs (old: {
+        nativeBuildInputs = (old.nativeBuildInputs or [ ]) ++ map (a: self.${a}) systems;
+      })
+    ) buildSystems
   );
 }

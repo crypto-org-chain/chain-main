@@ -14,12 +14,12 @@
   };
 
   outputs =
-    { self
-    , nixpkgs
-    , nix-bundle-exe
-    , gomod2nix
-    , flake-utils
-    ,
+    {
+      self,
+      nixpkgs,
+      nix-bundle-exe,
+      gomod2nix,
+      flake-utils,
     }:
     let
       rev = self.shortRev or "dirty";
@@ -104,32 +104,30 @@
               ];
             };
             binaries = builtins.listToAttrs (
-              builtins.map
-                (
-                  { network, pkgtype }:
-                  {
-                    name = builtins.concatStringsSep "-" (
-                      [ "chain-maind" ]
-                      ++ lib.optional (network != "mainnet") network
-                      ++ lib.optional (pkgtype != "nix") pkgtype
-                    );
-                    value =
-                      let
-                        chain-maind = callPackage ./. {
-                          inherit rev network;
-                        };
-                        bundle =
-                          if stdenv.hostPlatform.isWindows then bundle-win-exe chain-maind else bundle-exe chain-maind;
-                      in
-                      if pkgtype == "bundle" then
-                        bundle
-                      else if pkgtype == "tarball" then
-                        make-tarball bundle
-                      else
-                        chain-maind;
-                  }
-                )
-                matrix
+              builtins.map (
+                { network, pkgtype }:
+                {
+                  name = builtins.concatStringsSep "-" (
+                    [ "chain-maind" ]
+                    ++ lib.optional (network != "mainnet") network
+                    ++ lib.optional (pkgtype != "nix") pkgtype
+                  );
+                  value =
+                    let
+                      chain-maind = callPackage ./. {
+                        inherit rev network;
+                      };
+                      bundle =
+                        if stdenv.hostPlatform.isWindows then bundle-win-exe chain-maind else bundle-exe chain-maind;
+                    in
+                    if pkgtype == "bundle" then
+                      bundle
+                    else if pkgtype == "tarball" then
+                      make-tarball bundle
+                    else
+                      chain-maind;
+                }
+              ) matrix
             );
           in
           {
