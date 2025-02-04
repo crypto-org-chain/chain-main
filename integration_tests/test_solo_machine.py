@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from pathlib import Path
+import shutil
 
 import pytest
 import requests
@@ -52,8 +53,8 @@ class SoloMachine(object):
         self.chain_id = chain_id
         self.grpc_port = ports.grpc_port(base_port)
         self.rpc_port = ports.rpc_port(base_port)
-        self.solomachine_home = os.path.join(os.environ["SOLO_MACHINE_HOME"])
-        self.bin_file = os.path.join(self.solomachine_home, "solo-machine")
+        self.solomachine_home = Path(shutil.which("solo-machine")).parent.parent / "lib"
+        self.bin_file = "solo-machine"
         self.mnemonic = mnemonic
 
         os_platform = platform.system()
