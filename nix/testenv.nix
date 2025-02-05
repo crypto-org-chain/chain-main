@@ -5,6 +5,7 @@
 }:
 poetry2nix.mkPoetryEnv {
   python = python311;
+  preferWheels = true;
   projectDir = ../integration_tests;
   overrides = poetry2nix.overrides.withDefaults (
     self: super:
