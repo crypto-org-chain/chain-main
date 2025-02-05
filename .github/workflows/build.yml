@@ -431,7 +431,7 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - name: update gomod2nix
-        run: nix run .#update-gomod2nix
+        run: nix develop -c gomod2nix
         if: steps.changed-files.outputs.any_changed == 'true'
       - name: check working directory is clean
         id: changes
