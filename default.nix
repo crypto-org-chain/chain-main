@@ -1,17 +1,14 @@
-{ lib
-, stdenv
-, buildGoApplication
-, nix-gitignore
-, writeShellScript
-, buildPackages
-, coverage ? false # https://tip.golang.org/doc/go1.20#cover
-, gomod2nix
-, rocksdb ? null
-, network ? "mainnet"  # mainnet|testnet
-, rev ? "dirty"
-, ledger_zemu ? false
-, static ? stdenv.hostPlatform.isStatic
-, nativeByteOrder ? true # nativeByteOrder mode will panic on big endian machines
+{
+  lib,
+  stdenv,
+  buildGoApplication,
+  coverage ? false, # https://tip.golang.org/doc/go1.20#cover
+  rocksdb ? null,
+  network ? "mainnet", # mainnet|testnet
+  rev ? "dirty",
+  ledger_zemu ? false,
+  static ? stdenv.hostPlatform.isStatic,
+  nativeByteOrder ? true, # nativeByteOrder mode will panic on big endian machines
 }:
 let
   inherit (lib) concatStringsSep;
@@ -39,7 +36,6 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "4.2.10";
-  go = buildPackages.go_1_20;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
@@ -50,18 +46,26 @@ buildGoApplication rec {
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
   CGO_LDFLAGS =
-    if static then "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
-    else if stdenv.hostPlatform.isWindows then "-lrocksdb-shared"
-    else "-lrocksdb -pthread -lstdc++ -ldl";
-  tags = [
-    "cgo"
-    "ledger"
-    "!test_ledger_mock"
-    "!ledger_mock"
-    (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
-    network
-  ] ++ lib.optionals (rocksdb != null) [ "rocksdb" "grocksdb_no_link" ]
-  ++ lib.optionals nativeByteOrder [ "nativebyteorder" ];
+    if static then
+      "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
+    else if stdenv.hostPlatform.isWindows then
+      "-lrocksdb-shared"
+    else
+      "-lrocksdb -pthread -lstdc++ -ldl";
+  tags =
+    [
+      "cgo"
+      "ledger"
+      "!test_ledger_mock"
+      "!ledger_mock"
+      (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
+      network
+    ]
+    ++ lib.optionals (rocksdb != null) [
+      "rocksdb"
+      "grocksdb_no_link"
+    ]
+    ++ lib.optionals nativeByteOrder [ "nativebyteorder" ];
   ldflags = ''
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}
@@ -72,15 +76,6 @@ buildGoApplication rec {
   postFixup = lib.optionalString stdenv.isDarwin ''
     ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/librocksdb.8.dylib" "${rocksdb}/lib/librocksdb.dylib" $out/bin/chain-maind
   '';
-  passthru = {
-    # update script use the same golang version as the project
-    updateScript =
-      let helper = gomod2nix.override { inherit go; };
-      in
-      writeShellScript "${pname}-updater" ''
-        exec ${helper}/bin/gomod2nix
-      '';
-  };
 
   doCheck = false;
   meta = with lib; {
