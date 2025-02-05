@@ -106,15 +106,15 @@ schema = 3
     version = "v1.0.0-beta.1"
     hash = "sha256-oATkuj+fM5eBn+ywO+w/tL0AFSIEkx0J3Yz+VhVe0QA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.3-0.20241218065916-928830128a80"
-    hash = "sha256-ekmhTIIfTosqdjUV+DDZCVTWcPlFUU/8TjcVjVYZsFk="
-    replaced = "github.com/crypto-org-chain/cosmos-sdk"
+    version = "v0.46.0-rc3.0.20250205103737-84815a2b1da6"
+    hash = "sha256-55QXk1i/SHYO9dPRGvEkcopLC3rdVXMMY7hyx9v8qXI="
+    replaced = "github.com/mmsqe/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
   [mod."github.com/cosmos/gogoproto"]
-    version = "v1.4.7"
-    hash = "sha256-JGSKV4CMgBGQYR7kZt6QQsVjgLEyAjNzKrtLalJqqVo="
+    version = "v1.7.0"
+    hash = "sha256-ZkEUImxBBo8Q/6c7tVR0rybpLbtlplzvgfLl5xvtV00="
   [mod."github.com/cosmos/iavl"]
     version = "v0.19.6"
     hash = "sha256-0Om7nXftrgVkCpRTGNTGnc2lUJsFQ9aihwgtkUkwleg="
@@ -212,9 +212,6 @@ schema = 3
   [mod."github.com/google/go-cmp"]
     version = "v0.6.0"
     hash = "sha256-qgra5jze4iPGP0JSTVeY5qV5AvEnEu39LYAuUCIkMtg="
-  [mod."github.com/google/gofuzz"]
-    version = "v1.2.0"
-    hash = "sha256-T6Gz741l45L3F6Dt7fiAuQvQQg59Qtap3zG05M2cfqU="
   [mod."github.com/google/orderedcode"]
     version = "v0.0.1"
     hash = "sha256-KrExYovtUQrHGI1mPQf57jGw8soz7eWOC2xqEaV0uGk="

@@ -393,8 +393,8 @@ github.com/cosmos/cosmos-proto v1.0.0-beta.1 h1:iDL5qh++NoXxG8hSy93FdYJut4XfgbSh
 github.com/cosmos/cosmos-proto v1.0.0-beta.1/go.mod h1:8k2GNZghi5sDRFw/scPL8gMSowT1vDA+5ouxL8GjaUE=
 github.com/cosmos/go-bip39 v1.0.0 h1:pcomnQdrdH22njcAatO0yWojsUnCO3y2tNoV1cb6hHY=
 github.com/cosmos/go-bip39 v1.0.0/go.mod h1:RNJv0H/pOIVgxw6KS7QeX2a0Uo0aKUlfhZ4xuwvCdJw=
-github.com/cosmos/gogoproto v1.4.7 h1:RzYKVnsEC7UIkDnhTIkqEB7LnIQbsySvmNEqPCiPevk=
-github.com/cosmos/gogoproto v1.4.7/go.mod h1:gxGePp9qedovvl/StQL2BIJ6qlIBn1+9YxR0IulGBKA=
+github.com/cosmos/gogoproto v1.7.0 h1:79USr0oyXAbxg3rspGh/m4SWNyoz/GLaAh0QlCe2fro=
+github.com/cosmos/gogoproto v1.7.0/go.mod h1:yWChEv5IUEYURQasfyBW5ffkMHR/90hiHgbNgrtp4j0=
 github.com/cosmos/iavl v0.19.6 h1:XY78yEeNPrEYyNCKlqr9chrwoeSDJ0bV2VjocTk//OU=
 github.com/cosmos/iavl v0.19.6/go.mod h1:X9PKD3J0iFxdmgNLa7b2LYWdsGd90ToV5cAONApkEPw=
 github.com/cosmos/ibc-go/v5 v5.2.1 h1:i8Kl9KZfPJVYuihjbGPnjTQWecXQfRLz+QrjJGhzY9o=
@@ -414,8 +414,6 @@ github.com/crypto-org-chain/cometbft v0.0.0-20250203074611-413db99f819d h1:o3VTf
 github.com/crypto-org-chain/cometbft v0.0.0-20250203074611-413db99f819d/go.mod h1:Odd7GxmuyLf7ARo9fzuZXV6J9DlfN7UtsBAD41i6700=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4h4Ki1UE/LF6CKwYEm3OZ+HIBCrzSmOokG1vce0O98=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
-github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20241218065916-928830128a80 h1:eMb3mXw4+tRC+mPej6CHcGiC04AroU3BS5QAC1mWdjM=
-github.com/crypto-org-chain/cosmos-sdk v0.46.3-0.20241218065916-928830128a80/go.mod h1:05U50tAsOzQ8JOAePshJCbJQw5ib1YJR6IXcqyVI1Xg=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4 h1:TXArRgse2/3r1FxFbbukJhQpE5HHxJaOI3YAwz4Zu00=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4/go.mod h1:sCbJoEppeM3/7+Ox1heGlbVt+eWBcTmLb9UEjuotXIc=
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4 h1:9jlbWwXuuoWCOxBJX3MqtyBuK8YA2Tnmp9QBQVl79Uk=
@@ -961,6 +959,8 @@ github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/pointerstructure v1.2.0/go.mod h1:BRAsLI5zgXmw97Lf6s25bs8ohIXc3tViBH44KcwB2g4=
+github.com/mmsqe/cosmos-sdk v0.46.0-rc3.0.20250205103737-84815a2b1da6 h1:qGRv37oPF+Z/ibhfj/LRfNQvUa2Dfq2QqbYnL3gZXy4=
+github.com/mmsqe/cosmos-sdk v0.46.0-rc3.0.20250205103737-84815a2b1da6/go.mod h1:ShveistGZHeyPFHFiZsjlEH6uL5E0ouev2GApJ57E8w=
 github.com/moby/sys/user v0.1.0 h1:WmZ93f5Ux6het5iituh9x2zAG7NFY9Aqi49jjE1PaQg=
 github.com/moby/sys/user v0.1.0/go.mod h1:fKJhFOnsCN6xZ5gSfbM6zaHGgDJMrqt9/reuj4T7MmU=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
