@@ -1,13 +1,16 @@
-{ system ? builtins.currentSystem, pkgs ? import ../nix { inherit system; } }:
+{
+  system ? builtins.currentSystem,
+  pkgs ? import ../nix { inherit system; },
+}:
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # build tools
-    go_1_20
+    go_1_22
     rocksdb
 
     # lint tools
     test-env
-    nixpkgs-fmt
+    nixfmt
     lint-ci
 
     # tools

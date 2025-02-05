@@ -150,7 +150,7 @@ def test_join_validator(cluster):
     # wait for the new node to sync
     wait_for_block(cluster.cosmos_cli(i), cluster.block_height(0))
     # create validator tx
-    assert cluster.create_validator("1cro", i)["code"] == 0
+    assert cluster.create_validator_legacy("1cro", i)["code"] == 0
     time.sleep(2)
 
     count2 = len(cluster.validators())
