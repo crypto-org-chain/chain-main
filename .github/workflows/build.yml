@@ -413,13 +413,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
-<<<<<<< HEAD
-      - uses: actions/checkout@v4
-=======
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
->>>>>>> c23a527 (Problem: persist-credentials might leak github token unintentionally (#1090))
       - id: changed-files
         uses: tj-actions/changed-files@v35
         with:
