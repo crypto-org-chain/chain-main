@@ -9,13 +9,13 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
-  version = "0.1.4";
+  version = "0.1.2";
 
   src = fetchFromGitHub {
     owner = "crypto-com";
     repo = pname;
     rev = "v${version}";
-    sha256 = "sha256-+jfRbPm31/pBuseUS89cuYSAPw2l/509MVTaUcuyaGY=";
+    sha256 = "sha256-9eUyljX0Sh/jbM7uiNo78vUevnTBP/MxvpDiiJLZ8Hk=";
   };
 
   cargoSha256 = "sha256-9Mx70yBoNy711PFC5y2VoXD3kqmcMvDsjP9AaC1VfCM=";
