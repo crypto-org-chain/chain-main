@@ -27,12 +27,10 @@ import sources.nixpkgs {
         ${pkgs.test-env}/bin/flake8 --show-source --count --statistics \
           --format="::error file=%(path)s,line=%(row)d,col=%(col)d::%(path)s:%(row)d:%(col)d: %(code)s %(text)s" \
           || EXIT_STATUS=$?
-        find . -name "*.nix" -type f | xargs ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check || EXIT_STATUS=$?
+        find . -name "*.nix" -type f | xargs ${pkgs.nixfmt-rfc-style}/bin/nixfmt -c || EXIT_STATUS=$?
         exit $EXIT_STATUS
       '';
-      chain-maind-zemu = pkgs.callPackage ../. {
-        ledger_zemu = true;
-      };
+      chain-maind-zemu = pkgs.callPackage ../. { ledger_zemu = true; };
       # chain-maind for integration test
       chain-maind-test = pkgs.callPackage ../. {
         ledger_zemu = true;
