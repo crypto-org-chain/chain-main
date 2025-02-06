@@ -48,7 +48,7 @@ func (suite *KeeperSuite) TestQuerySupply() {
 	res, err = querier(suite.ctx, []string{"supply"}, query)
 	suite.NoError(err)
 	supplyResp := binary.LittleEndian.Uint64(res)
-	suite.Equal(0, int(supplyResp))
+	suite.Equal(uint64(0), supplyResp)
 
 	queryCollectionParams = types.NewQuerySupplyParams(denomID, nil)
 	bz, errRes = suite.legacyAmino.MarshalJSON(queryCollectionParams)
@@ -60,7 +60,7 @@ func (suite *KeeperSuite) TestQuerySupply() {
 	suite.NotNil(res)
 
 	supplyResp = binary.LittleEndian.Uint64(res)
-	suite.Equal(1, int(supplyResp))
+	suite.Equal(uint64(1), supplyResp)
 }
 
 func (suite *KeeperSuite) TestQueryCollection() {

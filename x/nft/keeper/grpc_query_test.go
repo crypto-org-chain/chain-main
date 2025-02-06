@@ -18,7 +18,7 @@ func (suite *KeeperSuite) TestSupply() {
 	})
 
 	suite.NoError(err)
-	suite.Equal(1, int(response.Amount))
+	suite.Equal(uint64(1), response.Amount)
 }
 
 func (suite *KeeperSuite) TestOwner() {

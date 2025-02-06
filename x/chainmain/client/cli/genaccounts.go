@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"time"
 
@@ -27,6 +28,15 @@ const (
 	flagVestingEnd   = "vesting-end-time"
 	flagVestingAmt   = "vesting-amount"
 )
+
+// SafeInt64 checks for overflows while casting a uint64 to int64 value.
+func SafeInt64(value uint64) (int64, error) {
+	if value > uint64(math.MaxInt64) {
+		return 0, fmt.Errorf("uint64 value %v cannot exceed %v", value, math.MaxInt64)
+	}
+
+	return int64(value), nil //nolint:gosec // checked
+}
 
 // AddGenesisAccountCmd returns add-genesis-account cobra Command.
 func AddGenesisAccountCmd(defaultNodeHome string) *cobra.Command {
@@ -91,8 +101,8 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				if errstart != nil {
 					return fmt.Errorf("failed to parse vesting start: %w", errstart)
 				}
-			} else {
-				vestingStart = int64(vestingStartUint)
+			} else if vestingStart, err = SafeInt64(vestingStartUint); err != nil {
+				return err
 			}
 
 			vestingEndStr, errend := cmd.Flags().GetString(flagVestingEnd)
@@ -106,8 +116,8 @@ contain valid denominations. Accounts may optionally be supplied with vesting pa
 				if errend != nil {
 					return fmt.Errorf("failed to parse vesting end: %w", errend)
 				}
-			} else {
-				vestingEnd = int64(vestingEndUint)
+			} else if vestingEnd, err = SafeInt64(vestingEndUint); err != nil {
+				return err
 			}
 
 			vestingAmtStr, erramt := cmd.Flags().GetString(flagVestingAmt)
