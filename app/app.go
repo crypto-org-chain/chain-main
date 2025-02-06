@@ -742,7 +742,7 @@ func (app *ChainApp) BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock) a
 	case app.haltHeight > 0 && uint64(req.Header.Height) > app.haltHeight:
 		halt = true
 
-	case app.haltTime > 0 && req.Header.Time.Unix() > int64(app.haltTime):
+	case app.haltTime > 0 && uint64(req.Header.Time.Unix()) > app.haltTime:
 		halt = true
 	}
 

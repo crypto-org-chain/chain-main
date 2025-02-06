@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"path/filepath"
@@ -103,6 +104,9 @@ Example:
 			if numValidatorsErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flagNumValidators, numValidatorsErr)
 			}
+			if numValidators > uint(math.MaxInt64) {
+				return fmt.Errorf("uint value %v cannot exceed %v", numValidators, math.MaxInt64)
+			}
 			algo, algoErr := cmd.Flags().GetString(flags.FlagKeyAlgorithm)
 			if algoErr != nil {
 				return fmt.Errorf("failed to parse %v: %w", flags.FlagKeyAlgorithm, algoErr)
@@ -118,7 +122,7 @@ Example:
 
 			return InitTestnet(
 				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
-				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, int(numValidators),
+				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, int(numValidators), //nolint:gosec // checked
 			)
 		},
 	}
