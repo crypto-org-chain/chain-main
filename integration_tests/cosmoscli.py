@@ -3,6 +3,7 @@ import tempfile
 
 import requests
 from pystarport import cluster, cosmoscli
+import durations
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
