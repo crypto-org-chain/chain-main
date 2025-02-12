@@ -128,7 +128,7 @@ def ibc_transfer_flow(cluster, src_channel, dst_channel):
         raw(
             "query",
             "ibc-transfer",
-            "denom-trace",
+            "denom",
             denom_hash,
             node=cluster["ibc-1"].node_rpc(0),
             output="json",
