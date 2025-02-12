@@ -1,4 +1,7 @@
-{ system ? builtins.currentSystem, pkgs ? import ../nix { inherit system; } }:
+{
+  system ? builtins.currentSystem,
+  pkgs ? import ../nix { inherit system; },
+}:
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # build tools
@@ -7,7 +10,7 @@ pkgs.mkShell {
 
     # lint tools
     test-env
-    nixpkgs-fmt
+    nixfmt
     lint-ci
 
     # tools
@@ -20,7 +23,6 @@ pkgs.mkShell {
   ];
   shellHook = ''
     export PYTHONPATH=$PWD/pystarport/proto_python/:$PYTHONPATH
-    export SOLO_MACHINE_HOME="${pkgs.solomachine}/solomachine"
     mkdir -p "$PWD/coverage"
     export GOCOVERDIR="$PWD/coverage"
   '';

@@ -65,7 +65,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files.tar.gz -C "${TMPDIR-/tmp}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files
@@ -126,7 +126,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_upgrade.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_upgrade
@@ -161,7 +161,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ledger.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_ledger
@@ -196,7 +196,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_solomachine.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_solomachine
@@ -231,7 +231,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_slow.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_slow
@@ -266,7 +266,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ibc.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_ibc
@@ -301,7 +301,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_byzantine.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_byzantine
@@ -336,7 +336,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_gov.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_gov
@@ -372,7 +372,7 @@ jobs:
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_grpc.tar.gz -C ${TMPDIR-/tmp}/pytest-of-runner .
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: debug_files_grpc
