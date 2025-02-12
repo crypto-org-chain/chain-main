@@ -1,9 +1,9 @@
 import json
 import tempfile
 
+import durations
 import requests
 from pystarport import cluster, cosmoscli
-import durations
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
@@ -345,6 +345,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         if rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
