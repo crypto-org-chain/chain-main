@@ -3,14 +3,16 @@
 package keeper
 
 import (
+	"context"
+
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // GetOwner gets all the ID collections owned by an address and denom ID
-func (k Keeper) GetOwner(ctx sdk.Context, address sdk.AccAddress, denom string) (types.Owner, error) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetOwner(ctx context.Context, address sdk.AccAddress, denom string) (types.Owner, error) {
+	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyOwner(address, denom, ""))
 	defer iterator.Close()
 
@@ -45,8 +47,8 @@ func (k Keeper) GetOwner(ctx sdk.Context, address sdk.AccAddress, denom string) 
 }
 
 // GetOwners gets all the ID collections
-func (k Keeper) GetOwners(ctx sdk.Context) (owners types.Owners, err error) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) GetOwners(ctx context.Context) (owners types.Owners, err error) {
+	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
 	iterator := storetypes.KVStoreReversePrefixIterator(store, types.KeyOwner(nil, "", ""))
 	defer iterator.Close()
 
@@ -76,22 +78,22 @@ func (k Keeper) GetOwners(ctx sdk.Context) (owners types.Owners, err error) {
 	return owners, nil
 }
 
-func (k Keeper) deleteOwner(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) deleteOwner(ctx context.Context, denomID, tokenID string, owner sdk.AccAddress) {
+	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
 	store.Delete(types.KeyOwner(owner, denomID, tokenID))
 }
 
-func (k Keeper) setOwner(ctx sdk.Context,
+func (k Keeper) setOwner(ctx context.Context,
 	denomID, tokenID string,
 	owner sdk.AccAddress,
 ) {
-	store := ctx.KVStore(k.storeKey)
+	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
 
 	bz := types.MustMarshalTokenID(k.cdc, tokenID)
 	store.Set(types.KeyOwner(owner, denomID, tokenID), bz)
 }
 
-func (k Keeper) swapOwner(ctx sdk.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress) {
+func (k Keeper) swapOwner(ctx context.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress) {
 	// delete old owner key
 	k.deleteOwner(ctx, denomID, tokenID, srcOwner)
 

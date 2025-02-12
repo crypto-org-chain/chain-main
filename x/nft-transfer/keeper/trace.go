@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"context"
+
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
@@ -10,8 +12,8 @@ import (
 )
 
 // GetClassTrace retrieves the full identifiers trace and base classId from the store.
-func (k Keeper) GetClassTrace(ctx sdk.Context, classTraceHash tmbytes.HexBytes) (types.ClassTrace, bool) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ClassTraceKey)
+func (k Keeper) GetClassTrace(ctx context.Context, classTraceHash tmbytes.HexBytes) (types.ClassTrace, bool) {
+	store := prefix.NewStore(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey), types.ClassTraceKey)
 	bz := store.Get(classTraceHash)
 	if bz == nil {
 		return types.ClassTrace{}, false
@@ -48,7 +50,7 @@ func (k Keeper) IterateClassTraces(ctx sdk.Context, cb func(denomTrace types.Cla
 
 // ClassPathFromHash returns the full class path prefix from an ibc classId with a hash
 // component.
-func (k Keeper) ClassPathFromHash(ctx sdk.Context, classID string) (string, error) {
+func (k Keeper) ClassPathFromHash(ctx context.Context, classID string) (string, error) {
 	// trim the class prefix, by default "ibc/"
 	hexHash := classID[len(types.ClassPrefix+"/"):]
 
@@ -65,14 +67,14 @@ func (k Keeper) ClassPathFromHash(ctx sdk.Context, classID string) (string, erro
 }
 
 // HasClassTrace checks if a the key with the given denomination trace hash exists on the store.
-func (k Keeper) HasClassTrace(ctx sdk.Context, denomTraceHash tmbytes.HexBytes) bool {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ClassTraceKey)
+func (k Keeper) HasClassTrace(ctx context.Context, denomTraceHash tmbytes.HexBytes) bool {
+	store := prefix.NewStore(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey), types.ClassTraceKey)
 	return store.Has(denomTraceHash)
 }
 
 // SetClassTrace sets a new {trace hash -> class trace} pair to the store.
-func (k Keeper) SetClassTrace(ctx sdk.Context, denomTrace types.ClassTrace) {
-	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.ClassTraceKey)
+func (k Keeper) SetClassTrace(ctx context.Context, denomTrace types.ClassTrace) {
+	store := prefix.NewStore(sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey), types.ClassTraceKey)
 	bz := k.MustMarshalClassTrace(denomTrace)
 	store.Set(denomTrace.Hash(), bz)
 }

@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"strings"
 
 	newsdkerrors "cosmossdk.io/errors"
@@ -15,7 +16,7 @@ import (
 // if the sending chain was the source chain. Otherwise, the sent tokens
 // were burnt in the original send so new tokens are minted and sent to
 // the sending address.
-func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
+func (k Keeper) refundPacketToken(ctx context.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
 	sender, err := sdk.AccAddressFromBech32(data.Sender)
 	if err != nil {
 		return err
@@ -52,7 +53,7 @@ func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, d
 // if the token was away from origin chain . Otherwise, the sent tokens
 // were burnt in the sending chain and will unescrow the token to receiver
 // in the destination chain
-func (k Keeper) createOutgoingPacket(ctx sdk.Context,
+func (k Keeper) createOutgoingPacket(ctx context.Context,
 	sourcePort,
 	sourceChannel,
 	destinationPort,
@@ -134,7 +135,7 @@ func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 // if the token was away from origin chain . Otherwise, the sent tokens
 // were burnt in the sending chain and will unescrow the token to receiver
 // in the destination chain
-func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packet,
+func (k Keeper) processReceivedPacket(ctx context.Context, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
 	receiver, err := sdk.AccAddressFromBech32(data.Receiver)
@@ -166,8 +167,8 @@ func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packe
 				return err
 			}
 		}
-
-		ctx.EventManager().EmitEvent(
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypeClassTrace,
 				sdk.NewAttribute(types.AttributeKeyTraceHash, classTrace.Hash().String()),

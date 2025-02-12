@@ -1,15 +1,13 @@
 package keeper
 
 import (
+	"context"
+
 	sdkerrors "cosmossdk.io/errors"
-	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
-	coremetrics "github.com/cosmos/ibc-go/v9/modules/core/metrics"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
-	"github.com/hashicorp/go-metrics"
 )
 
 // SendTransfer handles nft-transfer sending logic.
@@ -39,7 +37,7 @@ import (
 // |    C    |       p4/c4/p2/c2/nftClass |    (p4,c4)     |    (p3,c3)     |             p2/c2/nftClass |    B    |
 // |    B    |             p2/c2/nftClass |    (p2,c2)     |    (p1,c1)     |                   nftClass |    A    |
 func (k Keeper) SendTransfer(
-	ctx sdk.Context,
+	ctx context.Context,
 	sourcePort,
 	sourceChannel,
 	classID string,
@@ -66,11 +64,6 @@ func (k Keeper) SendTransfer(
 		)
 	}
 
-	channelCap, ok := k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePort, sourceChannel))
-	if !ok {
-		return sdkerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, "module does not own channel capability")
-	}
-
 	// See spec for this logic: https://github.com/cosmos/ibc/blob/master/spec/app/ics-721-nft-transfer/README.md#packet-relay
 	packet, err := k.createOutgoingPacket(ctx,
 		sourcePort,
@@ -89,28 +82,10 @@ func (k Keeper) SendTransfer(
 		return err
 	}
 
-	if _, err := k.ics4Wrapper.SendPacket(ctx, channelCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, packet.GetData()); err != nil {
+	if _, err := k.ics4Wrapper.SendPacket(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, packet.GetData()); err != nil {
 		return err
 	}
 
-	defer func() {
-		labels := []metrics.Label{
-			telemetry.NewLabel(coremetrics.LabelDestinationPort, destinationPort),
-			telemetry.NewLabel(coremetrics.LabelDestinationChannel, destinationChannel),
-		}
-
-		telemetry.SetGaugeWithLabels(
-			[]string{"tx", "msg", "ibc", "nft-transfer"},
-			float32(len(tokenIDs)),
-			[]metrics.Label{telemetry.NewLabel("class_id", classID)},
-		)
-
-		telemetry.IncrCounterWithLabels(
-			[]string{"ibc", types.ModuleName, "send"},
-			1,
-			labels,
-		)
-	}()
 	return nil
 }
 
@@ -119,7 +94,7 @@ func (k Keeper) SendTransfer(
 // and sent to the receiving address. Otherwise if the sender chain is sending
 // back tokens this chain originally transferred to it, the tokens are
 // unescrowed and sent to the receiving address.
-func (k Keeper) OnRecvPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet,
+func (k Keeper) OnRecvPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
 	// validate packet data upon receiving
@@ -135,7 +110,7 @@ func (k Keeper) OnRecvPacket(ctx sdk.Context, channelVersion string, packet chan
 // acknowledgement written on the receiving chain. If the acknowledgement
 // was a success then nothing occurs. If the acknowledgement failed, then
 // the sender is refunded their tokens using the refundPacketToken function.
-func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
 	switch ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
 		return k.refundPacketToken(ctx, packet, data)
@@ -148,6 +123,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, channelVersion string, 
 
 // OnTimeoutPacket refunds the sender since the original packet sent was
 // never received and has been timed out.
-func (k Keeper) OnTimeoutPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
+func (k Keeper) OnTimeoutPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
 	return k.refundPacketToken(ctx, packet, data)
 }

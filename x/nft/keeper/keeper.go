@@ -3,6 +3,7 @@
 package keeper
 
 import (
+	"context"
 	"fmt"
 
 	"cosmossdk.io/log"
@@ -35,7 +36,7 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // IssueDenom issues a denom according to the given params
-func (k Keeper) IssueDenom(ctx sdk.Context,
+func (k Keeper) IssueDenom(ctx context.Context,
 	id, name, schema, uri string,
 	creator sdk.AccAddress,
 ) error {
@@ -44,7 +45,7 @@ func (k Keeper) IssueDenom(ctx sdk.Context,
 
 // MintNFTUnverified mints an NFT without verifying if the owner is the creator of denom
 // Needed during genesis initialization
-func (k Keeper) MintNFTUnverified(ctx sdk.Context, denomID, tokenID, tokenNm, tokenURI, tokenData string, owner sdk.AccAddress) error {
+func (k Keeper) MintNFTUnverified(ctx context.Context, denomID, tokenID, tokenNm, tokenURI, tokenData string, owner sdk.AccAddress) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
@@ -71,7 +72,7 @@ func (k Keeper) MintNFTUnverified(ctx sdk.Context, denomID, tokenID, tokenNm, to
 
 // MintNFT mints an NFT and manages the NFT's existence within Collections and Owners
 func (k Keeper) MintNFT(
-	ctx sdk.Context, denomID, tokenID, tokenNm,
+	ctx context.Context, denomID, tokenID, tokenNm,
 	tokenURI, tokenData string, sender, owner sdk.AccAddress,
 ) error {
 	_, err := k.IsDenomCreator(ctx, denomID, sender)
@@ -84,7 +85,7 @@ func (k Keeper) MintNFT(
 
 // EditNFT updates an already existing NFT
 func (k Keeper) EditNFT(
-	ctx sdk.Context, denomID, tokenID, tokenNm,
+	ctx context.Context, denomID, tokenID, tokenNm,
 	tokenURI, tokenData string, owner sdk.AccAddress,
 ) error {
 	if !k.HasDenomID(ctx, denomID) {
@@ -120,7 +121,7 @@ func (k Keeper) EditNFT(
 
 // TransferOwner transfers the ownership of the given NFT to the new owner
 func (k Keeper) TransferOwner(
-	ctx sdk.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress,
+	ctx context.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress,
 ) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
@@ -139,7 +140,7 @@ func (k Keeper) TransferOwner(
 }
 
 // BurnNFT deletes a specified NFT
-func (k Keeper) BurnNFT(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) error {
+func (k Keeper) BurnNFT(ctx context.Context, denomID, tokenID string, owner sdk.AccAddress) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}
@@ -163,7 +164,7 @@ func (k Keeper) BurnNFT(ctx sdk.Context, denomID, tokenID string, owner sdk.AccA
 
 // BurnNFTUnverified deletes a specified NFT without verifying if the owner is the creator of denom
 // Needed for IBC transfer of NFT
-func (k Keeper) BurnNFTUnverified(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) error {
+func (k Keeper) BurnNFTUnverified(ctx context.Context, denomID, tokenID string, owner sdk.AccAddress) error {
 	if !k.HasDenomID(ctx, denomID) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denom ID %s not exists", denomID)
 	}

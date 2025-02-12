@@ -31,7 +31,7 @@ require (
 	github.com/google/renameio v1.0.0
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/hashicorp/go-metrics v0.5.3
+	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.13
 	github.com/linxGnu/grocksdb v1.9.2
 	github.com/spf13/cast v1.7.0

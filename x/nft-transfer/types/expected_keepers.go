@@ -4,7 +4,6 @@ import (
 	context "context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
 	nftexported "github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
@@ -14,8 +13,7 @@ import (
 // ICS4Wrapper defines the expected ICS4Wrapper for middleware
 type ICS4Wrapper interface {
 	SendPacket(
-		ctx sdk.Context,
-		chanCap *capabilitytypes.Capability,
+		ctx context.Context,
 		sourcePort string,
 		sourceChannel string,
 		timeoutHeight clienttypes.Height,
@@ -26,28 +24,23 @@ type ICS4Wrapper interface {
 
 // ChannelKeeper defines the expected IBC channel keeper
 type ChannelKeeper interface {
-	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
-	GetNextSequenceSend(ctx sdk.Context, portID, channelID string) (uint64, bool)
+	GetChannel(ctx context.Context, srcPort, srcChan string) (channel channeltypes.Channel, found bool)
+	GetNextSequenceSend(ctx context.Context, portID, channelID string) (uint64, bool)
 }
 
 // NFTKeeper defines the expected nft keeper
 type NFTKeeper interface {
-	HasDenomID(ctx sdk.Context, id string) bool
-	GetDenom(ctx sdk.Context, id string) (denom nfttypes.Denom, err error)
-	IssueDenom(ctx sdk.Context, id, name, schema, uri string, creator sdk.AccAddress) error
+	HasDenomID(ctx context.Context, id string) bool
+	GetDenom(ctx context.Context, id string) (denom nfttypes.Denom, err error)
+	IssueDenom(ctx context.Context, id, name, schema, uri string, creator sdk.AccAddress) error
 
-	GetNFT(ctx sdk.Context, denomID, tokenID string) (nft nftexported.NFT, err error)
+	GetNFT(ctx context.Context, denomID, tokenID string) (nft nftexported.NFT, err error)
 	MintNFT(
-		ctx sdk.Context, denomID, tokenID, tokenNm,
+		ctx context.Context, denomID, tokenID, tokenNm,
 		tokenURI, tokenData string, sender, owner sdk.AccAddress,
 	) error
-	BurnNFTUnverified(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) error
-	TransferOwner(ctx sdk.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress) error
-}
-
-// PortKeeper defines the expected IBC port keeper
-type PortKeeper interface {
-	BindPort(ctx sdk.Context, portID string) *capabilitytypes.Capability
+	BurnNFTUnverified(ctx context.Context, denomID, tokenID string, owner sdk.AccAddress) error
+	TransferOwner(ctx context.Context, denomID, tokenID string, srcOwner, dstOwner sdk.AccAddress) error
 }
 
 // AccountKeeper defines the contract required for account APIs.
