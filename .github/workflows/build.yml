@@ -59,7 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Github API Request
         id: request
-        uses: octokit/request-action@v2.0.0
+        uses: octokit/request-action@main
         if: github.event_name == 'issue_comment'
         with:
           route: ${{ github.event.issue.pull_request.url }}
