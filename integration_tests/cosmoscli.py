@@ -342,7 +342,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 **(default_kwargs | kwargs),
             )
         )
-        if rsp["code"] == 0 and event_query_tx and self.has_event_query_tx_for:
+        if rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
