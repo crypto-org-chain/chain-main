@@ -7,7 +7,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	host "github.com/cosmos/ibc-go/v9/modules/core/24-host"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
@@ -21,7 +20,6 @@ type Keeper struct {
 	channelKeeper types.ChannelKeeper
 	nftKeeper     types.NFTKeeper
 	authKeeper    types.AccountKeeper
-	scopedKeeper  capabilitykeeper.ScopedKeeper
 }
 
 // NewKeeper creates a new IBC nft-transfer Keeper instance
@@ -32,7 +30,6 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper,
 	nftKeeper types.NFTKeeper,
 	authKeeper types.AccountKeeper,
-	scopedKeeper capabilitykeeper.ScopedKeeper,
 ) Keeper {
 	return Keeper{
 		cdc:           cdc,
@@ -41,13 +38,13 @@ func NewKeeper(
 		channelKeeper: channelKeeper,
 		nftKeeper:     nftKeeper,
 		authKeeper:    authKeeper,
-		scopedKeeper:  scopedKeeper,
 	}
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", "x/"+host.SubModuleName+"-"+types.ModuleName)
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return sdkCtx.Logger().With("module", "x/"+host.SubModuleName+"-"+types.ModuleName)
 }
 
 // SetPort sets the portID for the nft-transfer module. Used in InitGenesis

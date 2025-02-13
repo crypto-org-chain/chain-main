@@ -31,8 +31,9 @@ func NewKeeper(cdc codec.Codec, storeKey storetypes.StoreKey) Keeper {
 }
 
 // Logger returns a module-specific logger.
-func (k Keeper) Logger(ctx sdk.Context) log.Logger {
-	return ctx.Logger().With("module", fmt.Sprintf("chainmain/%s", types.ModuleName))
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return sdkCtx.Logger().With("module", fmt.Sprintf("chainmain/%s", types.ModuleName))
 }
 
 // IssueDenom issues a denom according to the given params
