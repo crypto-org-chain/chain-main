@@ -70,8 +70,8 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 				return err
 			}
 
-			// if the timeouts are not absolute, retrieve latest block height and block timestamp
-			// for the consensus state connected to the destination port/channel
+			// NOTE: relative timeouts using block height are not supported.
+			// if the timeouts are not absolute, CLI users rely solely on local clock time in order to calculate relative timestamps.
 			if !absoluteTimeouts {
 				if !timeoutHeight.IsZero() {
 					return errors.New("relative timeouts using block height is not supported")
@@ -97,7 +97,7 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 		},
 	}
 
-	cmd.Flags().String(flagPacketTimeoutHeight, types.DefaultRelativePacketTimeoutHeight, "Packet timeout block height. The timeout is disabled when set to 0-0.")
+	cmd.Flags().String(flagPacketTimeoutHeight, "0-0", "Packet timeout block height. The timeout is disabled when set to 0-0.")
 	cmd.Flags().Uint64(flagPacketTimeoutTimestamp, types.DefaultRelativePacketTimeoutTimestamp, "Packet timeout timestamp in nanoseconds from now. Default is 10 minutes. The timeout is disabled when set to 0.")
 	cmd.Flags().Bool(flagAbsoluteTimeouts, false, "Timeout flags are used as absolute timeouts.")
 	flags.AddTxFlagsToCmd(cmd)
