@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 
@@ -345,6 +346,19 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         if rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
+
+    def ibc_denom_trace(self, path, node):
+        denom_hash = hashlib.sha256(path.encode()).hexdigest().upper()
+        return json.loads(
+            self.raw(
+                "q",
+                "ibc-transfer",
+                "denom",
+                denom_hash,
+                node=node,
+                output="json",
+            )
+        )["denom"]
 
 
 class ClusterCLI(cluster.ClusterCLI):
