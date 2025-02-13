@@ -504,7 +504,7 @@ func New(
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerStack)
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
-	ibcRouter.AddRoute(nfttransfertypes.ModuleName, nftTransferStack)
+	ibcRouter.AddRoute(nfttransfertypes.PortID, nftTransferStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 	clientKeeper := app.IBCKeeper.ClientKeeper
 	storeProvider := clientKeeper.GetStoreProvider()
