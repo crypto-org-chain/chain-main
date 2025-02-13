@@ -16,7 +16,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
-	nfttransfertypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
 var _ porttypes.IBCModule = IBCModule{}
@@ -57,7 +56,7 @@ func ValidateTransferChannelParams(
 	}
 
 	// Require portID is the portID transfer module is bound to
-	boundPort := nfttransfertypes.PortID
+	boundPort := types.PortID
 	if boundPort != portID {
 		return newsdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
 	}
