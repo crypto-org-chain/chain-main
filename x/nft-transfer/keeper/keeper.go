@@ -47,18 +47,6 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdkCtx.Logger().With("module", "x/"+host.SubModuleName+"-"+types.ModuleName)
 }
 
-// SetPort sets the portID for the nft-transfer module. Used in InitGenesis
-func (k Keeper) SetPort(ctx context.Context, portID string) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
-	store.Set(types.PortKey, []byte(portID))
-}
-
-// GetPort returns the portID for the nft-transfer module.
-func (k Keeper) GetPort(ctx context.Context) string {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
-	return string(store.Get(types.PortKey))
-}
-
 // SetEscrowAddress attempts to save a account to auth module
 func (k Keeper) SetEscrowAddress(ctx context.Context, portID, channelID string) {
 	// create the escrow address for the tokens
