@@ -3,8 +3,6 @@
 package keeper
 
 import (
-	"context"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -20,7 +18,7 @@ import (
 
 // SetGenesisCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32
 // account address is invalid
-func (k Keeper) SetGenesisCollection(ctx context.Context, collection types.Collection) error {
+func (k Keeper) SetGenesisCollection(ctx sdk.Context, collection types.Collection) error {
 	for _, nft := range collection.NFTs {
 		if err := k.MintNFTUnverified(
 			ctx,
@@ -39,7 +37,7 @@ func (k Keeper) SetGenesisCollection(ctx context.Context, collection types.Colle
 
 // SetCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32 account
 // address is invalid or any NFT's owner is not the creator of denomination
-func (k Keeper) SetCollection(ctx context.Context, collection types.Collection, sender sdk.AccAddress) error {
+func (k Keeper) SetCollection(ctx sdk.Context, collection types.Collection, sender sdk.AccAddress) error {
 	for _, nft := range collection.NFTs {
 		if err := k.MintNFT(
 			ctx,
@@ -58,7 +56,7 @@ func (k Keeper) SetCollection(ctx context.Context, collection types.Collection, 
 }
 
 // GetCollection returns the collection by the specified denom ID
-func (k Keeper) GetCollection(ctx context.Context, denomID string) (types.Collection, error) {
+func (k Keeper) GetCollection(ctx sdk.Context, denomID string) (types.Collection, error) {
 	denom, err := k.GetDenom(ctx, denomID)
 	if err != nil {
 		return types.Collection{}, sdkerrors.Wrapf(types.ErrInvalidDenom, "denomID %s not existed ", denomID)
@@ -69,13 +67,13 @@ func (k Keeper) GetCollection(ctx context.Context, denomID string) (types.Collec
 }
 
 // GetPaginateCollection returns the collection by the specified denom ID
-func (k Keeper) GetPaginateCollection(ctx context.Context, request *types.QueryCollectionRequest, denomID string) (types.Collection, *query.PageResponse, error) {
+func (k Keeper) GetPaginateCollection(ctx sdk.Context, request *types.QueryCollectionRequest, denomID string) (types.Collection, *query.PageResponse, error) {
 	denom, err := k.GetDenom(ctx, denomID)
 	if err != nil {
 		return types.Collection{}, nil, sdkerrors.Wrapf(types.ErrInvalidDenom, "denomID %s not existed ", denomID)
 	}
 	var nfts []exported.NFT
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+	store := ctx.KVStore(k.storeKey)
 	nftStore := prefix.NewStore(store, types.KeyNFT(denomID, ""))
 	pageRes, err := query.Paginate(nftStore, request.Pagination, func(key []byte, value []byte) error {
 		var baseNFT types.BaseNFT
@@ -90,7 +88,7 @@ func (k Keeper) GetPaginateCollection(ctx context.Context, request *types.QueryC
 }
 
 // GetCollections returns all the collections
-func (k Keeper) GetCollections(ctx context.Context) (cs []types.Collection) {
+func (k Keeper) GetCollections(ctx sdk.Context) (cs []types.Collection) {
 	for _, denom := range k.GetDenoms(ctx) {
 		nfts := k.GetNFTs(ctx, denom.Id)
 		cs = append(cs, types.NewCollection(denom, nfts))
@@ -99,8 +97,8 @@ func (k Keeper) GetCollections(ctx context.Context) (cs []types.Collection) {
 }
 
 // GetTotalSupply returns the number of NFTs by the specified denom ID
-func (k Keeper) GetTotalSupply(ctx context.Context, denomID string) uint64 {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetTotalSupply(ctx sdk.Context, denomID string) uint64 {
+	store := ctx.KVStore(k.storeKey)
 	bz := store.Get(types.KeyCollection(denomID))
 	if len(bz) == 0 {
 		return 0
@@ -109,8 +107,8 @@ func (k Keeper) GetTotalSupply(ctx context.Context, denomID string) uint64 {
 }
 
 // GetTotalSupplyOfOwner returns the amount of NFTs by the specified conditions
-func (k Keeper) GetTotalSupplyOfOwner(ctx context.Context, id string, owner sdk.AccAddress) (supply uint64) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetTotalSupplyOfOwner(ctx sdk.Context, id string, owner sdk.AccAddress) (supply uint64) {
+	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyOwner(owner, id, ""))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -119,20 +117,20 @@ func (k Keeper) GetTotalSupplyOfOwner(ctx context.Context, id string, owner sdk.
 	return supply
 }
 
-func (k Keeper) increaseSupply(ctx context.Context, denomID string) {
+func (k Keeper) increaseSupply(ctx sdk.Context, denomID string) {
 	supply := k.GetTotalSupply(ctx, denomID)
 	supply++
 
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+	store := ctx.KVStore(k.storeKey)
 	bz := types.MustMarshalSupply(k.cdc, supply)
 	store.Set(types.KeyCollection(denomID), bz)
 }
 
-func (k Keeper) decreaseSupply(ctx context.Context, denomID string) {
+func (k Keeper) decreaseSupply(ctx sdk.Context, denomID string) {
 	supply := k.GetTotalSupply(ctx, denomID)
 	supply--
 
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+	store := ctx.KVStore(k.storeKey)
 	if supply == 0 {
 		store.Delete(types.KeyCollection(denomID))
 		return

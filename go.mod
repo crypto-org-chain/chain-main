@@ -17,12 +17,12 @@ require (
 	cosmossdk.io/x/tx v0.13.7
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/cometbft/cometbft v0.38.17
-	github.com/cosmos/cosmos-db v1.1.0
+	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/cosmos-sdk v0.50.11
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
+	github.com/cosmos/ibc-go/v10 v10.0.0-beta.0
 	// release/v10.0.x
-	github.com/cosmos/ibc-go/v9 v9.0.0-20250211202654-9c448bbbe4ab
 	github.com/cosmos/rosetta v0.50.3-1
 	github.com/crypto-org-chain/cronos/store v0.0.5-0.20240716081818-7f581a697f6d
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20240716081818-7f581a697f6d
@@ -34,7 +34,7 @@ require (
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.13
 	github.com/linxGnu/grocksdb v1.9.2
-	github.com/spf13/cast v1.7.0
+	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0

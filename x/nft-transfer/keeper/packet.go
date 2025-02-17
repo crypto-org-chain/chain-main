@@ -1,14 +1,13 @@
 package keeper
 
 import (
-	"context"
 	"strings"
 
 	newsdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
@@ -16,7 +15,7 @@ import (
 // if the sending chain was the source chain. Otherwise, the sent tokens
 // were burnt in the original send so new tokens are minted and sent to
 // the sending address.
-func (k Keeper) refundPacketToken(ctx context.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
+func (k Keeper) refundPacketToken(ctx sdk.Context, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
 	sender, err := sdk.AccAddressFromBech32(data.Sender)
 	if err != nil {
 		return err
@@ -53,7 +52,7 @@ func (k Keeper) refundPacketToken(ctx context.Context, packet channeltypes.Packe
 // if the token was away from origin chain . Otherwise, the sent tokens
 // were burnt in the sending chain and will unescrow the token to receiver
 // in the destination chain
-func (k Keeper) createOutgoingPacket(ctx context.Context,
+func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 	sourcePort,
 	sourceChannel,
 	destinationPort,
@@ -135,7 +134,7 @@ func (k Keeper) createOutgoingPacket(ctx context.Context,
 // if the token was away from origin chain . Otherwise, the sent tokens
 // were burnt in the sending chain and will unescrow the token to receiver
 // in the destination chain
-func (k Keeper) processReceivedPacket(ctx context.Context, packet channeltypes.Packet,
+func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
 	receiver, err := sdk.AccAddressFromBech32(data.Receiver)

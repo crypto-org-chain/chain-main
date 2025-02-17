@@ -1,7 +1,6 @@
 package nfttransfer
 
 import (
-	"context"
 	"fmt"
 	"math"
 	"strings"
@@ -11,9 +10,9 @@ import (
 	newsdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v9/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v9/modules/core/exported"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
@@ -36,7 +35,7 @@ func NewIBCModule(k keeper.Keeper) IBCModule {
 // channel must be UNORDERED, use the correct port (by default 'nft'), and use the current
 // supported version. Only 2^32 channels are allowed to be created.
 func ValidateTransferChannelParams(
-	ctx context.Context,
+	ctx sdk.Context,
 	keeper keeper.Keeper,
 	order channeltypes.Order,
 	portID string,
@@ -66,7 +65,7 @@ func ValidateTransferChannelParams(
 
 // OnChanOpenInit implements the IBCModule interface
 func (im IBCModule) OnChanOpenInit(
-	ctx context.Context,
+	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID string,
@@ -91,7 +90,7 @@ func (im IBCModule) OnChanOpenInit(
 
 // OnChanOpenTry implements the IBCModule interface.
 func (im IBCModule) OnChanOpenTry(
-	ctx context.Context,
+	ctx sdk.Context,
 	order channeltypes.Order,
 	connectionHops []string,
 	portID,
@@ -112,7 +111,7 @@ func (im IBCModule) OnChanOpenTry(
 
 // OnChanOpenAck implements the IBCModule interface
 func (im IBCModule) OnChanOpenAck(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 	_ string,
@@ -127,7 +126,7 @@ func (im IBCModule) OnChanOpenAck(
 
 // OnChanOpenConfirm implements the IBCModule interface
 func (im IBCModule) OnChanOpenConfirm(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
@@ -137,7 +136,7 @@ func (im IBCModule) OnChanOpenConfirm(
 
 // OnChanCloseInit implements the IBCModule interface
 func (im IBCModule) OnChanCloseInit(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
@@ -147,7 +146,7 @@ func (im IBCModule) OnChanCloseInit(
 
 // OnChanCloseConfirm implements the IBCModule interface
 func (im IBCModule) OnChanCloseConfirm(
-	ctx context.Context,
+	ctx sdk.Context,
 	portID,
 	channelID string,
 ) error {
@@ -158,7 +157,7 @@ func (im IBCModule) OnChanCloseConfirm(
 // is returned if the packet data is successfully decoded and the receive application
 // logic returns without error.
 func (im IBCModule) OnRecvPacket(
-	ctx context.Context,
+	ctx sdk.Context,
 	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
@@ -196,7 +195,7 @@ func (im IBCModule) OnRecvPacket(
 
 // OnAcknowledgementPacket implements the IBCModule interface
 func (im IBCModule) OnAcknowledgementPacket(
-	ctx context.Context,
+	ctx sdk.Context,
 	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
@@ -249,7 +248,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 // OnTimeoutPacket implements the IBCModule interface
 func (im IBCModule) OnTimeoutPacket(
-	ctx context.Context,
+	ctx sdk.Context,
 	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,

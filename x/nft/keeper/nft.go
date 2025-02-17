@@ -3,8 +3,6 @@
 package keeper
 
 import (
-	"context"
-
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -13,8 +11,8 @@ import (
 )
 
 // GetNFT gets the specified NFT
-func (k Keeper) GetNFT(ctx context.Context, denomID, tokenID string) (nft exported.NFT, err error) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetNFT(ctx sdk.Context, denomID, tokenID string) (nft exported.NFT, err error) {
+	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.KeyNFT(denomID, tokenID))
 	if bz == nil {
@@ -28,8 +26,8 @@ func (k Keeper) GetNFT(ctx context.Context, denomID, tokenID string) (nft export
 }
 
 // GetNFTs returns all NFTs by the specified denom ID
-func (k Keeper) GetNFTs(ctx context.Context, denom string) (nfts []exported.NFT) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetNFTs(ctx sdk.Context, denom string) (nfts []exported.NFT) {
+	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyNFT(denom, ""))
 	defer iterator.Close()
 	for ; iterator.Valid(); iterator.Next() {
@@ -43,7 +41,7 @@ func (k Keeper) GetNFTs(ctx context.Context, denom string) (nfts []exported.NFT)
 
 // IsOwner checks if the sender is the owner of the given NFT
 // Return the NFT if true, an error otherwise
-func (k Keeper) IsOwner(ctx context.Context, denomID, tokenID string, owner sdk.AccAddress) (types.BaseNFT, error) {
+func (k Keeper) IsOwner(ctx sdk.Context, denomID, tokenID string, owner sdk.AccAddress) (types.BaseNFT, error) {
 	nft, err := k.GetNFT(ctx, denomID, tokenID)
 	if err != nil {
 		return types.BaseNFT{}, err
@@ -57,20 +55,20 @@ func (k Keeper) IsOwner(ctx context.Context, denomID, tokenID string, owner sdk.
 }
 
 // HasNFT checks if the specified NFT exists
-func (k Keeper) HasNFT(ctx context.Context, denomID, tokenID string) bool {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) HasNFT(ctx sdk.Context, denomID, tokenID string) bool {
+	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.KeyNFT(denomID, tokenID))
 }
 
-func (k Keeper) setNFT(ctx context.Context, denomID string, nft types.BaseNFT) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) setNFT(ctx sdk.Context, denomID string, nft types.BaseNFT) {
+	store := ctx.KVStore(k.storeKey)
 
 	bz := k.cdc.MustMarshal(&nft)
 	store.Set(types.KeyNFT(denomID, nft.GetID()), bz)
 }
 
 // deleteNFT deletes an existing NFT from store
-func (k Keeper) deleteNFT(ctx context.Context, denomID string, nft exported.NFT) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) deleteNFT(ctx sdk.Context, denomID string, nft exported.NFT) {
+	store := ctx.KVStore(k.storeKey)
 	store.Delete(types.KeyNFT(denomID, nft.GetID()))
 }

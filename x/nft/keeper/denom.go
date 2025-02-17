@@ -3,8 +3,6 @@
 package keeper
 
 import (
-	"context"
-
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -12,19 +10,19 @@ import (
 )
 
 // HasDenomID returns whether the specified denom ID exists
-func (k Keeper) HasDenomID(ctx context.Context, id string) bool {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) HasDenomID(ctx sdk.Context, id string) bool {
+	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.KeyDenomID(id))
 }
 
 // HasDenomNm returns whether the specified denom name exists
-func (k Keeper) HasDenomNm(ctx context.Context, name string) bool {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) HasDenomNm(ctx sdk.Context, name string) bool {
+	store := ctx.KVStore(k.storeKey)
 	return store.Has(types.KeyDenomName(name))
 }
 
 // SetDenom is responsible for saving the definition of denom
-func (k Keeper) SetDenom(ctx context.Context, denom types.Denom) error {
+func (k Keeper) SetDenom(ctx sdk.Context, denom types.Denom) error {
 	if k.HasDenomID(ctx, denom.Id) {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denomID %s has already exists", denom.Id)
 	}
@@ -33,7 +31,7 @@ func (k Keeper) SetDenom(ctx context.Context, denom types.Denom) error {
 		return sdkerrors.Wrapf(types.ErrInvalidDenom, "denomName %s has already exists", denom.Name)
 	}
 
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+	store := ctx.KVStore(k.storeKey)
 	bz := k.cdc.MustMarshal(&denom)
 	store.Set(types.KeyDenomID(denom.Id), bz)
 	store.Set(types.KeyDenomName(denom.Name), []byte(denom.Id))
@@ -41,8 +39,8 @@ func (k Keeper) SetDenom(ctx context.Context, denom types.Denom) error {
 }
 
 // GetDenom returns the denom by id
-func (k Keeper) GetDenom(ctx context.Context, id string) (denom types.Denom, err error) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetDenom(ctx sdk.Context, id string) (denom types.Denom, err error) {
+	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.KeyDenomID(id))
 	if len(bz) == 0 {
@@ -54,8 +52,8 @@ func (k Keeper) GetDenom(ctx context.Context, id string) (denom types.Denom, err
 }
 
 // GetDenom returns the denom by name
-func (k Keeper) GetDenomByName(ctx context.Context, name string) (denom types.Denom, err error) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetDenomByName(ctx sdk.Context, name string) (denom types.Denom, err error) {
+	store := ctx.KVStore(k.storeKey)
 
 	bz := store.Get(types.KeyDenomName(name))
 	denomID := string(bz)
@@ -64,8 +62,8 @@ func (k Keeper) GetDenomByName(ctx context.Context, name string) (denom types.De
 }
 
 // GetDenoms returns all the denoms
-func (k Keeper) GetDenoms(ctx context.Context) (denoms []types.Denom) {
-	store := sdk.UnwrapSDKContext(ctx).KVStore(k.storeKey)
+func (k Keeper) GetDenoms(ctx sdk.Context) (denoms []types.Denom) {
+	store := ctx.KVStore(k.storeKey)
 	iterator := storetypes.KVStorePrefixIterator(store, types.KeyDenomID(""))
 	defer iterator.Close()
 
@@ -79,7 +77,7 @@ func (k Keeper) GetDenoms(ctx context.Context) (denoms []types.Denom) {
 
 // IsDenomCreator checks if address is the creator of Denom
 // Return the Denom if true, an error otherwise
-func (k Keeper) IsDenomCreator(ctx context.Context, denomID string, address sdk.AccAddress) (types.Denom, error) {
+func (k Keeper) IsDenomCreator(ctx sdk.Context, denomID string, address sdk.AccAddress) (types.Denom, error) {
 	denom, err := k.GetDenom(ctx, denomID)
 	if err != nil {
 		return types.Denom{}, err

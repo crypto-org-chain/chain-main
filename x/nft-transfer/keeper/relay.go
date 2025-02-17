@@ -1,12 +1,10 @@
 package keeper
 
 import (
-	"context"
-
 	sdkerrors "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v9/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v9/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
@@ -37,7 +35,7 @@ import (
 // |    C    |       p4/c4/p2/c2/nftClass |    (p4,c4)     |    (p3,c3)     |             p2/c2/nftClass |    B    |
 // |    B    |             p2/c2/nftClass |    (p2,c2)     |    (p1,c1)     |                   nftClass |    A    |
 func (k Keeper) SendTransfer(
-	ctx context.Context,
+	ctx sdk.Context,
 	sourcePort,
 	sourceChannel,
 	classID string,
@@ -94,7 +92,7 @@ func (k Keeper) SendTransfer(
 // and sent to the receiving address. Otherwise if the sender chain is sending
 // back tokens this chain originally transferred to it, the tokens are
 // unescrowed and sent to the receiving address.
-func (k Keeper) OnRecvPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet,
+func (k Keeper) OnRecvPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet,
 	data types.NonFungibleTokenPacketData,
 ) error {
 	// validate packet data upon receiving
@@ -110,7 +108,7 @@ func (k Keeper) OnRecvPacket(ctx context.Context, channelVersion string, packet 
 // acknowledgement written on the receiving chain. If the acknowledgement
 // was a success then nothing occurs. If the acknowledgement failed, then
 // the sender is refunded their tokens using the refundPacketToken function.
-func (k Keeper) OnAcknowledgementPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData, ack channeltypes.Acknowledgement) error {
 	switch ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
 		return k.refundPacketToken(ctx, packet, data)
@@ -123,6 +121,6 @@ func (k Keeper) OnAcknowledgementPacket(ctx context.Context, channelVersion stri
 
 // OnTimeoutPacket refunds the sender since the original packet sent was
 // never received and has been timed out.
-func (k Keeper) OnTimeoutPacket(ctx context.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
+func (k Keeper) OnTimeoutPacket(ctx sdk.Context, channelVersion string, packet channeltypes.Packet, data types.NonFungibleTokenPacketData) error {
 	return k.refundPacketToken(ctx, packet, data)
 }
