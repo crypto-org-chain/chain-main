@@ -1,6 +1,8 @@
+import hashlib
 import json
 import tempfile
 
+import durations
 import requests
 from pystarport import cluster, cosmoscli
 
@@ -308,6 +310,55 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         )
         res = res.get("params") or res
         return res
+
+    def ica_submit_tx(
+        self,
+        connid,
+        tx,
+        timeout_duration="1h",
+        event_query_tx=True,
+        **kwargs,
+    ):
+        default_kwargs = {
+            "home": self.data_dir,
+            "node": self.node_rpc,
+            "chain_id": self.chain_id,
+            "keyring_backend": "test",
+        }
+        args = ["ica", "controller", "send-tx"]
+
+        duration_args = []
+        if timeout_duration:
+            timeout = int(durations.Duration(timeout_duration).to_seconds() * 1e9)
+            duration_args = ["--packet-timeout-timestamp", timeout]
+
+        rsp = json.loads(
+            self.raw(
+                "tx",
+                *args,
+                connid,
+                tx,
+                *duration_args,
+                "-y",
+                **(default_kwargs | kwargs),
+            )
+        )
+        if rsp["code"] == 0 and event_query_tx:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+
+    def ibc_denom_trace(self, path, node):
+        denom_hash = hashlib.sha256(path.encode()).hexdigest().upper()
+        return json.loads(
+            self.raw(
+                "q",
+                "ibc-transfer",
+                "denom",
+                denom_hash,
+                node=node,
+                output="json",
+            )
+        )["denom"]
 
 
 class ClusterCLI(cluster.ClusterCLI):
