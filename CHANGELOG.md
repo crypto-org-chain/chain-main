@@ -1,5 +1,13 @@
 # Changelog
 
+*Feb 21, 2025*
+
+## v4.2.12
+
+### Bug Fixes
+
+- [#1117](https://github.com/crypto-org-chain/chain-main/pull/1117) Merge commit from fork.
+
 *Feb 6, 2025*
 
 ## v4.2.11
