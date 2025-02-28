@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage rec {
     sha256 = "sha256-jeh0ZO91cME3AaePujn0T7MG3Hsoy4qLWwIbYCspyac=";
   };
 
-  cargoSha256 = "sha256-cuDc8h0Hb6fiizvhMKe3v2nPXkaIXx+1mgCH68KsB4g=";
+  cargoSha256 = "sha256-bFusoI2vmQcjrELn1Kj252NHaWwbVymSuhE2B3M5QiU=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf
