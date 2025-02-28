@@ -6,7 +6,7 @@
 
 ### Bug Fixes
 
-- [#1117](https://github.com/crypto-org-chain/chain-main/pull/1117) Merge commit from fork.
+- [#1121](https://github.com/crypto-org-chain/chain-main/pull/1121) Merge commit from fork.
 
 *Feb 21, 2025*
 
