@@ -397,8 +397,6 @@ github.com/cosmos/gogoproto v1.7.0 h1:79USr0oyXAbxg3rspGh/m4SWNyoz/GLaAh0QlCe2fr
 github.com/cosmos/gogoproto v1.7.0/go.mod h1:yWChEv5IUEYURQasfyBW5ffkMHR/90hiHgbNgrtp4j0=
 github.com/cosmos/iavl v0.19.6 h1:XY78yEeNPrEYyNCKlqr9chrwoeSDJ0bV2VjocTk//OU=
 github.com/cosmos/iavl v0.19.6/go.mod h1:X9PKD3J0iFxdmgNLa7b2LYWdsGd90ToV5cAONApkEPw=
-github.com/cosmos/ibc-go/v5 v5.2.1 h1:i8Kl9KZfPJVYuihjbGPnjTQWecXQfRLz+QrjJGhzY9o=
-github.com/cosmos/ibc-go/v5 v5.2.1/go.mod h1:eH18ghfqGGT9gDCTMDLWg1zPLXplSnPxXRNWPx98xhU=
 github.com/cosmos/keyring v1.2.0 h1:8C1lBP9xhImmIabyXW4c3vFjjLiBdGCmfLUfeZlV1Yo=
 github.com/cosmos/keyring v1.2.0/go.mod h1:fc+wB5KTk9wQ9sDx0kFXB3A0MaeGHM9AwRStKOQ5vOA=
 github.com/cosmos/ledger-cosmos-go v0.12.4 h1:drvWt+GJP7Aiw550yeb3ON/zsrgW0jgh5saFCr7pDnw=
@@ -422,6 +420,8 @@ github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4 h1
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4/go.mod h1:KC9cV7VK8BNIJySzztw2nWSqPqVGcffsumMl3sORPCM=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230904032434-c575f4797ca4 h1:V88JCIhw059oKuFanb8WbKW1o1TezG3uGRvzL7/VQKI=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230904032434-c575f4797ca4/go.mod h1:i9e8vrU54C/JvSM+rX/jUidFRBcyXZ8FgNX+EvrasQc=
+github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228015013-c036d6517373 h1:7doxh2I95h1TyR4RZmiuoRLr3m76msVMgZr/weyiuiU=
+github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228015013-c036d6517373/go.mod h1:eH18ghfqGGT9gDCTMDLWg1zPLXplSnPxXRNWPx98xhU=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61 h1:Y5OuzOkZtjCfO53Jgzl+H8re6pOU4X205a1VMkDcUdk=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61/go.mod h1:BA6bNc7haulu2IjMy/I2SJiKWjQzfIb7LEAMsnIoLWU=
 github.com/cyberdelia/templates v0.0.0-20141128023046-ca7fffd4298c/go.mod h1:GyV+0YP4qX0UQ7r2MoYZ+AvYDp12OF5yg4q8rGnyNh4=
