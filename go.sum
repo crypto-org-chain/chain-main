@@ -420,8 +420,8 @@ github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4 h1
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4/go.mod h1:KC9cV7VK8BNIJySzztw2nWSqPqVGcffsumMl3sORPCM=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230904032434-c575f4797ca4 h1:V88JCIhw059oKuFanb8WbKW1o1TezG3uGRvzL7/VQKI=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20230904032434-c575f4797ca4/go.mod h1:i9e8vrU54C/JvSM+rX/jUidFRBcyXZ8FgNX+EvrasQc=
-github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228015013-c036d6517373 h1:7doxh2I95h1TyR4RZmiuoRLr3m76msVMgZr/weyiuiU=
-github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228015013-c036d6517373/go.mod h1:eH18ghfqGGT9gDCTMDLWg1zPLXplSnPxXRNWPx98xhU=
+github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228042756-4cb8fbb89fa4 h1:seSseg+uGWWqTgwY5TrgZOBkLi9+PmptUtYtPNWGges=
+github.com/crypto-org-chain/ibc-go/v5 v5.2.2-0.20250228042756-4cb8fbb89fa4/go.mod h1:eH18ghfqGGT9gDCTMDLWg1zPLXplSnPxXRNWPx98xhU=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61 h1:Y5OuzOkZtjCfO53Jgzl+H8re6pOU4X205a1VMkDcUdk=
 github.com/crypto-org-chain/tm-db v0.6.8-0.20230424032152-87c7e7f4fb61/go.mod h1:BA6bNc7haulu2IjMy/I2SJiKWjQzfIb7LEAMsnIoLWU=
 github.com/cyberdelia/templates v0.0.0-20141128023046-ca7fffd4298c/go.mod h1:GyV+0YP4qX0UQ7r2MoYZ+AvYDp12OF5yg4q8rGnyNh4=

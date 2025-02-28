@@ -119,8 +119,8 @@ schema = 3
     version = "v0.19.6"
     hash = "sha256-0Om7nXftrgVkCpRTGNTGnc2lUJsFQ9aihwgtkUkwleg="
   [mod."github.com/cosmos/ibc-go/v5"]
-    version = "v5.2.2-0.20250228015013-c036d6517373"
-    hash = "sha256-GsTjvG1yVr7AcqLnkE8ySx7SC2kf49w4D7Ye/m4nAFs="
+    version = "v5.2.2-0.20250228042756-4cb8fbb89fa4"
+    hash = "sha256-+VYlGG99rE0pu3I2Zggmxp/LOOar5McpWnKbGVUDCAA="
     replaced = "github.com/crypto-org-chain/ibc-go/v5"
   [mod."github.com/cosmos/ledger-cosmos-go"]
     version = "v0.12.4"
