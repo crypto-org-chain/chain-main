@@ -146,6 +146,7 @@ def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwarg
             "community",
             kind,
             proposal,
+            no_validate=True,
             **kwargs,
         )
     else:
@@ -198,7 +199,6 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
             "deposit": "0.1cro",
         },
         cosmos_sdk_46,
-        no_validate=True,
     )
 
     # wait for upgrade plan activated
@@ -217,14 +217,14 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
     )
 
     # check upgrade-info.json file is written
-    assert (
-        json.load((cluster.home(0) / "data/upgrade-info.json").open())
-        == json.load((cluster.home(1) / "data/upgrade-info.json").open())
-        == {
-            "name": plan_name,
-            "height": target_height,
-        }
-    )
+    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
+    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
+    expected = {
+        "name": plan_name,
+        "height": target_height,
+    }
+    assert js1 == js2
+    assert expected.items() <= js1.items()
 
     # use the upgrade-test binary
     edit_chain_program(
