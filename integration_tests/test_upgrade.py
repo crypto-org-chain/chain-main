@@ -421,6 +421,10 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, min_commission_rate)
     assert_commission(validator2_operator_address, default_rate)
 
+    # test migrate keystore
+    for i in range(2):
+        cluster.migrate_keystore(i=i)
+
     target_height = cluster.block_height() + 30
     upgrade(cluster, "v5.0.0", target_height)
     cli = cluster.cosmos_cli()
