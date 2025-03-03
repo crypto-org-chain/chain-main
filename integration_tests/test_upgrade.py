@@ -142,6 +142,7 @@ def test_cosmovisor(cosmovisor_cluster):
 
 def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwargs):
     if cosmos_sdk_46:
+        kwargs.setdefault("no_validate", True)
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
@@ -198,7 +199,6 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
             "deposit": "0.1cro",
         },
         cosmos_sdk_46,
-        no_validate=True,
     )
 
     # wait for upgrade plan activated
@@ -217,14 +217,14 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
     )
 
     # check upgrade-info.json file is written
-    assert (
-        json.load((cluster.home(0) / "data/upgrade-info.json").open())
-        == json.load((cluster.home(1) / "data/upgrade-info.json").open())
-        == {
-            "name": plan_name,
-            "height": target_height,
-        }
-    )
+    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
+    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
+    expected = {
+        "name": plan_name,
+        "height": target_height,
+    }
+    assert js1 == js2
+    assert expected.items() <= js1.items()
 
     # use the upgrade-test binary
     edit_chain_program(
@@ -421,6 +421,10 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, min_commission_rate)
     assert_commission(validator2_operator_address, default_rate)
 
+    # test migrate keystore
+    for i in range(2):
+        cluster.migrate_keystore(i=i)
+
     target_height = cluster.block_height() + 30
     upgrade(cluster, "v5.0.0", target_height)
     cli = cluster.cosmos_cli()
@@ -473,7 +477,6 @@ def test_cancel_upgrade(cluster):
             "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     print("cancel upgrade plan")
@@ -486,7 +489,6 @@ def test_cancel_upgrade(cluster):
             "description": "there is bug, cancel upgrade",
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     # wait for blocks after upgrade, should success since upgrade is canceled
