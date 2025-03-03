@@ -12,10 +12,10 @@ rustPlatform.buildRustPackage rec {
   version = "0.1.4";
 
   src = fetchFromGitHub {
-    owner = "crypto-com";
+    owner = "yihuang";
     repo = pname;
-    rev = "v${version}";
-    sha256 = "sha256-+jfRbPm31/pBuseUS89cuYSAPw2l/509MVTaUcuyaGY=";
+    rev = "3a1d8a769edb47c5b665a7b618b940510c0f1283";
+    sha256 = "sha256-slo1RTICKzrci0YFUgr/OMtg2VprxlWcZgL+zT6s65k=";
   };
 
   cargoSha256 = "sha256-9Mx70yBoNy711PFC5y2VoXD3kqmcMvDsjP9AaC1VfCM=";
