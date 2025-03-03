@@ -1,5 +1,13 @@
 # Changelog
 
+*Mar 3, 2025*
+
+## v5.0.0
+
+### State Machine Breaking
+
+- [#1125](https://github.com/crypto-org-chain/chain-main/pull/1125) Cronos New Golden Age.
+
 *Feb 28, 2025*
 
 ## v4.2.13
