@@ -15,6 +15,15 @@ let
       (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v3.3.4.tar.gz")
       { }
     ).chain-maind;
+  fetchFlake =
+    repo: rev:
+    (pkgs.flake-compat {
+      src = {
+        outPath = builtins.fetchTarball "https://github.com/${repo}/archive/${rev}.tar.gz";
+        inherit rev;
+        shortRev = builtins.substring 0 7 rev;
+      };
+    }).defaultNix;
   released4 =
     (import
       (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v4.2.13.tar.gz")
