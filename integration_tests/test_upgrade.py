@@ -421,7 +421,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator2_operator_address, default_rate)
 
     target_height = cluster.block_height() + 30
-    upgrade(cluster, "v5.0.0", target_height, cosmos_sdk_46=False)
+    upgrade(cluster, "v5.0.0", target_height)
     cli = cluster.cosmos_cli()
 
     acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
