@@ -24,11 +24,9 @@ let
         shortRev = builtins.substring 0 7 rev;
       };
     }).defaultNix;
+  # v4.2.13
   released4 =
-    (import
-      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v4.2.13.tar.gz")
-      { }
-    ).chain-maind;
+    (fetchFlake "crypto-org-chain/chain-main" "18d675a0a0a61a7e2b265d90c51959f4888e925e").default;
   current = pkgs.callPackage ../. { };
 in
 pkgs.linkFarm "upgrade-test-package" [
