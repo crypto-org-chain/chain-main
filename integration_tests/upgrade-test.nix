@@ -15,6 +15,18 @@ let
       (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v3.3.4.tar.gz")
       { }
     ).chain-maind;
+  fetchFlake =
+    repo: rev:
+    (pkgs.flake-compat {
+      src = {
+        outPath = builtins.fetchTarball "https://github.com/${repo}/archive/${rev}.tar.gz";
+        inherit rev;
+        shortRev = builtins.substring 0 7 rev;
+      };
+    }).defaultNix;
+  # v4.2.13
+  released4 =
+    (fetchFlake "crypto-org-chain/chain-main" "18d675a0a0a61a7e2b265d90c51959f4888e925e").default;
   current = pkgs.callPackage ../. { };
 in
 pkgs.linkFarm "upgrade-test-package" [
@@ -32,6 +44,10 @@ pkgs.linkFarm "upgrade-test-package" [
   }
   {
     name = "v4.2.0";
+    path = released4;
+  }
+  {
+    name = "v5.0.0";
     path = current;
   }
 ]
