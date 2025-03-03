@@ -17,7 +17,7 @@ let
     ).chain-maind;
   released4 =
     (import
-      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v4.2.11.tar.gz")
+      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v4.2.13.tar.gz")
       { }
     ).chain-maind;
   current = pkgs.callPackage ../. { };
