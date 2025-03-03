@@ -142,11 +142,11 @@ def test_cosmovisor(cosmovisor_cluster):
 
 def propose_and_pass(cluster, kind, title, proposal, cosmos_sdk_46=True, **kwargs):
     if cosmos_sdk_46:
+        kwargs.setdefault("no_validate", True)
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
-            no_validate=True,
             **kwargs,
         )
     else:
@@ -473,7 +473,6 @@ def test_cancel_upgrade(cluster):
             "upgrade-height": upgrade_height,
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     print("cancel upgrade plan")
@@ -486,7 +485,6 @@ def test_cancel_upgrade(cluster):
             "description": "there is bug, cancel upgrade",
             "deposit": "0.1cro",
         },
-        no_validate=True,
     )
 
     # wait for blocks after upgrade, should success since upgrade is canceled
