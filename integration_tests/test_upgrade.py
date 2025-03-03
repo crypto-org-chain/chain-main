@@ -198,6 +198,7 @@ def upgrade(cluster, plan_name, target_height, cosmos_sdk_46=True):
             "deposit": "0.1cro",
         },
         cosmos_sdk_46,
+        no_validate=True,
     )
 
     # wait for upgrade plan activated
