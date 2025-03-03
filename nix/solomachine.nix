@@ -14,11 +14,11 @@ rustPlatform.buildRustPackage rec {
   src = fetchFromGitHub {
     owner = "yihuang";
     repo = pname;
-    rev = "3a1d8a769edb47c5b665a7b618b940510c0f1283";
-    sha256 = "sha256-slo1RTICKzrci0YFUgr/OMtg2VprxlWcZgL+zT6s65k=";
+    rev = "49de8071fac70ce03db3088dc52b5f8b00f323d9";
+    sha256 = "sha256-j5u5YMslULunqFb9t2TAGNVJ95S1F4GYEprgcajRlBQ=";
   };
 
-  cargoSha256 = "sha256-9Mx70yBoNy711PFC5y2VoXD3kqmcMvDsjP9AaC1VfCM=";
+  cargoSha256 = "sha256-tJQG4buDfa86g55UazqZVuNpOA09YE/dFSgrA9HopHU=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf

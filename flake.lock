@@ -1,12 +1,15 @@
 {
   "nodes": {
     "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
       "locked": {
-        "lastModified": 1667395993,
-        "narHash": "sha256-nuEHfE/LcWyuSWnS8t12N1wc105Qtau+/OdUAjtQ0rA=",
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "5aed5285a952e0b949eb3ba02c12fa4fcfef535f",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       },
       "original": {
@@ -25,11 +28,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1705314449,
-        "narHash": "sha256-yfQQ67dLejP0FLK76LKHbkzcQqNIrux6MFe32MMFGNQ=",
+        "lastModified": 1733668782,
+        "narHash": "sha256-tPsqU00FhgdFr0JiQUiBMgPVbl1jbPCY5gbFiJycL3I=",
         "owner": "nix-community",
         "repo": "gomod2nix",
-        "rev": "30e3c3a9ec4ac8453282ca7f67fca9e1da12c3e6",
+        "rev": "514283ec89c39ad0079ff2f3b1437404e4cba608",
         "type": "github"
       },
       "original": {
@@ -41,11 +44,11 @@
     "nix-bundle-exe": {
       "flake": false,
       "locked": {
-        "lastModified": 1660176694,
-        "narHash": "sha256-cJGZ/3CjVkoyk1W9mFVs6P/5LbJ8C+42chGYiB/wB/A=",
+        "lastModified": 1727401894,
+        "narHash": "sha256-NKdglYdwN4M7/UOZ8Ml3fuJT1MYXAb6aU4ccU920BjM=",
         "owner": "3noch",
         "repo": "nix-bundle-exe",
-        "rev": "91416cec283a33ae3448aacdc5cabdece9c08793",
+        "rev": "7f61fe91a73119e1e39d821f0d215d6186d01363",
         "type": "github"
       },
       "original": {
@@ -56,16 +59,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1730229398,
-        "narHash": "sha256-CPpl65Jkk8JydvGLJQnTpkuWBgpxWd1ZC3FNXA2lKzE=",
+        "lastModified": 1740987373,
+        "narHash": "sha256-/GyfcrO3HdMRh0apkTF6B2r/qQV9YdO5wpXF1/RfC8U=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "f958a520264b5a50ec586c281888da59d118e4b3",
+        "rev": "2ed05307126868415c7a530f288e3bbcad186352",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "release-24.05",
+        "ref": "release-24.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -76,6 +79,21 @@
         "gomod2nix": "gomod2nix",
         "nix-bundle-exe": "nix-bundle-exe",
         "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     }
   },
