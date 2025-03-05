@@ -95,7 +95,7 @@
         // (
           with final;
           let
-            matrix = lib.cartesianProductOfSets {
+            matrix = lib.cartesianProduct {
               network = [
                 "mainnet"
                 "testnet"
