@@ -9,16 +9,16 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
-  version = "0.1.4";
+  version = "main";
 
   src = fetchFromGitHub {
-    owner = "yihuang";
+    owner = "crypto-com";
     repo = pname;
-    rev = "49de8071fac70ce03db3088dc52b5f8b00f323d9";
-    sha256 = "sha256-j5u5YMslULunqFb9t2TAGNVJ95S1F4GYEprgcajRlBQ=";
+    rev = "18c80bf993c8715551793c0d881af16f1ed9958a";
+    sha256 = "sha256-f9WSerHGT2L6ervgNg2l9LPHwvNxTPvXydcODZ3P2p8=";
   };
 
-  cargoSha256 = "sha256-tJQG4buDfa86g55UazqZVuNpOA09YE/dFSgrA9HopHU=";
+  cargoSha256 = "sha256-0A61jlQuJoci7SXh7fEW1dyKr4huDM9teh2ead2vFTI=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf
