@@ -32,6 +32,7 @@ frontend/.cache
 /bot.*.yaml
 /config.yaml
 pystarport/tendermint
+pystarport/proto_python/amino
 pystarport/proto_python/confio
 pystarport/proto_python/cosmos
 pystarport/proto_python/cosmos_proto
