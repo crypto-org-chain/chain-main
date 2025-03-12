@@ -12,9 +12,9 @@ rustPlatform.buildRustPackage rec {
   version = "main";
 
   src = fetchFromGitHub {
-    owner = "devashishdxt";
+    owner = "crypto-com";
     repo = pname;
-    rev = "fae6e0cb3f49da9da460cc7200378e10d1fd63ce";
+    rev = "d80b776f631c6a1a641931cac7a9a5fe3d802176";
     hash = "sha256-3s0mGDzuEZZLLo3jxpu7U2N6VfiuRHCceqwCGOfS6yw=";
   };
 
