@@ -10,7 +10,7 @@ pkgs.mkShell {
 
     # lint tools
     test-env
-    nixfmt
+    nixfmt-rfc-style
     lint-ci
 
     # tools
