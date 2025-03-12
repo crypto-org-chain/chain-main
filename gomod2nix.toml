@@ -106,8 +106,8 @@ schema = 3
     version = "v1.0.0-beta.1"
     hash = "sha256-oATkuj+fM5eBn+ywO+w/tL0AFSIEkx0J3Yz+VhVe0QA="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.46.16-0.20250220173250-5ab318c11638"
-    hash = "sha256-Y2lrCD8KibkUBCXkR6Hq0SgiC8lqyLj7lltUFdJkNP4="
+    version = "v0.46.16-0.20250312155614-629f87307283"
+    hash = "sha256-Ni1o4EE6U/HQsNgDyIEQcZg32tBfBhlB6T7P0ZKpoVk="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
@@ -119,8 +119,8 @@ schema = 3
     version = "v0.19.6"
     hash = "sha256-0Om7nXftrgVkCpRTGNTGnc2lUJsFQ9aihwgtkUkwleg="
   [mod."github.com/cosmos/ibc-go/v5"]
-    version = "v5.2.2-0.20250228042756-4cb8fbb89fa4"
-    hash = "sha256-+VYlGG99rE0pu3I2Zggmxp/LOOar5McpWnKbGVUDCAA="
+    version = "v5.2.2-0.20250312161521-f6964623c015"
+    hash = "sha256-qrn8HBLsj6Cpy7gpzWRlOyY90U+0VHiyu3mKHgqW6Zk="
     replaced = "github.com/crypto-org-chain/ibc-go/v5"
   [mod."github.com/cosmos/ledger-cosmos-go"]
     version = "v0.12.4"
