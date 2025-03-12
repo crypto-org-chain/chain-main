@@ -1,5 +1,13 @@
 # Changelog
 
+*Mar 13, 2025*
+
+## v5.0.1
+
+### Bug Fixes
+
+- [#1134](https://github.com/crypto-org-chain/chain-main/pull/1134) Merge commit from fork.
+
 *Mar 3, 2025*
 
 ## v5.0.0
