@@ -1,6 +1,7 @@
 module github.com/crypto-org-chain/chain-main/v4
 
-go 1.22.11
+go 1.23.0
+
 toolchain go1.23.4
 
 require (
