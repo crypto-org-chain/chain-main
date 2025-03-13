@@ -25,7 +25,7 @@ func (c Collection) Supply() int {
 	return len(c.NFTs)
 }
 
-// NewCollection creates a new NFT Collection
+// NewCollections creates a new NFT Collection
 func NewCollections(c ...Collection) []Collection {
 	return append([]Collection{}, c...)
 }
