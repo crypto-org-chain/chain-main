@@ -71,7 +71,7 @@ func NewOwner(owner sdk.AccAddress, idCollections ...IDCollection) Owner {
 
 type Owners []Owner
 
-// NewOwner creates a new Owner
+// NewOwners creates a new Owner
 func NewOwners(owner ...Owner) Owners {
 	return append([]Owner{}, owner...)
 }
