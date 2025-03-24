@@ -6,14 +6,14 @@ import sources.nixpkgs {
   overlays = [
     (_: pkgs: {
       flake-compat = import sources.flake-compat;
-      cosmovisor = pkgs.buildGoModule rec {
+      cosmovisor = pkgs.buildGoModule {
         name = "cosmovisor";
         src = sources.cosmos-sdk + "/cosmovisor";
         subPackages = [ "./cmd/cosmovisor" ];
         vendorHash = "sha256-OAXWrwpartjgSP7oeNvDJ7cTR9lyYVNhEM8HUnv3acE=";
         doCheck = false;
       };
-      hermes = pkgs.callPackage ./hermes.nix { src = sources.ibc-rs; };
+      hermes = pkgs.callPackage ./hermes.nix { src = sources.hermes; };
       solomachine = pkgs.callPackage ./solomachine.nix { };
     })
     (import "${sources.poetry2nix}/overlay.nix")
