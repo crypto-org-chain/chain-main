@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	// Module name defines IBC nft-transfer moduel name
+	// Module name defines IBC nft-transfer module name
 	ModuleName = "nonfungibletokentransfer"
 
 	// StoreKey is the store key string for IBC nft-transfer
