@@ -44,7 +44,7 @@ func GetCmdQueryClassTrace() *cobra.Command {
 }
 
 // GetCmdQueryClassTraces defines the command to query all the class trace infos
-// that this chain mantains.
+// that this chain maintains.
 func GetCmdQueryClassTraces() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "class-traces",
