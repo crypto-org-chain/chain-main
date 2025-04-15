@@ -125,7 +125,7 @@ jobs:
         run: make test
         if: "steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'issue_comment'"
       - name: Upload coverage report
-        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.txt

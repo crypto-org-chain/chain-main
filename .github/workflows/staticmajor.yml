@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Staticmajor action
         id: staticmajor
-        uses: orijtech/staticmajor-action@2d54e3da8247957f4c0f810e437fec50cbe71d2b # v0.1.1
+        uses: orijtech/staticmajor-action@d5117dc38bb2af109904bcc59976cdab33ab488b # main
         with:
             packages: ./...
             resleak: true
