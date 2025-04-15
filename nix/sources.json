@@ -35,12 +35,12 @@
         "url": "https://github.com/nix-community/gomod2nix/archive/5d387097aa716f35dd99d848dc26d8d5b62a104c.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
-    "ibc-rs": {
+    "hermes": {
         "branch": "v1.10.3",
         "description": "IBC modules and relayer - Formal specifications and Rust implementation",
         "homepage": "",
         "owner": "informalsystems",
-        "repo": "ibc-rs",
+        "repo": "hermes",
         "rev": "e26d356abe23be2d401d1ba3d6ebb2768f77ebd5",
         "sha256": "1jzhlgx2jj1pfs6v7bvcijwrhmlgvm15mxc4mmidnnm123nww7yb",
         "type": "tarball",

@@ -17,7 +17,7 @@ from .cosmoscli import ClusterCLI
 
 #################
 # CONSTANTS
-# Reponse code
+# Response code
 SUCCESS_CODE = 0
 
 # Denomination
