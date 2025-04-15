@@ -23,14 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: changed-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@716b1e13042866565e00e85fd4ec490e186c4a2f # v0.1.1
         with:
           files: |
             **/*.go
             go.mod
             go.sum
       - name: Run Gosec Security Scanner
-        uses: informalsystems/gosec@master
+        uses: informalsystems/gosec@f3d05e8e90198e1d4823cf4e8cb36ad490df8677 # v0.10.4
         with:
           # we let the report trigger content trigger a failure using the GitHub Security features.
           args: '-no-fail -fmt sarif -out results.sarif ./...'

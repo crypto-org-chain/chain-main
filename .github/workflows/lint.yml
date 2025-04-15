@@ -21,13 +21,13 @@ jobs:
         with:
           go-version: '1.22.7'
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v23
+      - uses: cachix/install-nix-action@6a9a9e84a173d90b3ffb42c5ddaf9ea033fad011 # v23
         with:
           nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - id: changed-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@716b1e13042866565e00e85fd4ec490e186c4a2f # v0.1.1
         with:
           files: |
             **/*.go
