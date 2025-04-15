@@ -24,7 +24,7 @@ jobs:
         with:
           submodules: true
       - id: changed-files
-        uses: tj-actions/changed-files@716b1e13042866565e00e85fd4ec490e186c4a2f # v0.1.1
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
           files: |
             **/*.go
@@ -35,7 +35,7 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
 
       # - name: Upload coverage report
-      #   uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+      #   uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
       #   with:
       #     token: ${{ secrets.CODECOV_TOKEN }}
       #     file: ./coverage.txt
