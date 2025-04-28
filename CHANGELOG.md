@@ -1,5 +1,13 @@
 # Changelog
 
+*April 28, 2025*
+
+## v5.0.2
+
+### Bug Fixes
+
+* [#1150](https://github.com/crypto-org-chain/chain-main/pull/1150) Upgrade math and cosmos sdk to latest to include bug fix.
+
 *Mar 13, 2025*
 
 ## v5.0.1
