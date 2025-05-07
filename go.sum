@@ -412,8 +412,6 @@ github.com/crypto-org-chain/cometbft v0.0.0-20250203074611-413db99f819d h1:o3VTf
 github.com/crypto-org-chain/cometbft v0.0.0-20250203074611-413db99f819d/go.mod h1:Odd7GxmuyLf7ARo9fzuZXV6J9DlfN7UtsBAD41i6700=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6 h1:d4h4Ki1UE/LF6CKwYEm3OZ+HIBCrzSmOokG1vce0O98=
 github.com/crypto-org-chain/cometbft-db v0.0.0-20230412133340-ac70df4b45f6/go.mod h1:hF5aclS++7WrW8USOA3zPeKI0CuzwUD2TPYug25ANlQ=
-github.com/crypto-org-chain/cosmos-sdk v0.46.16-0.20250427082916-64225a3d6c81 h1:ys+W4PBoWtQfIxGv34Ma51be7lkhULfqSYWFGKfZjHE=
-github.com/crypto-org-chain/cosmos-sdk v0.46.16-0.20250427082916-64225a3d6c81/go.mod h1:ShveistGZHeyPFHFiZsjlEH6uL5E0ouev2GApJ57E8w=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4 h1:TXArRgse2/3r1FxFbbukJhQpE5HHxJaOI3YAwz4Zu00=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20230904032434-c575f4797ca4/go.mod h1:sCbJoEppeM3/7+Ox1heGlbVt+eWBcTmLb9UEjuotXIc=
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20230904032434-c575f4797ca4 h1:9jlbWwXuuoWCOxBJX3MqtyBuK8YA2Tnmp9QBQVl79Uk=
@@ -961,6 +959,8 @@ github.com/mitchellh/mapstructure v1.4.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RR
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/pointerstructure v1.2.0/go.mod h1:BRAsLI5zgXmw97Lf6s25bs8ohIXc3tViBH44KcwB2g4=
+github.com/mmsqe/cosmos-sdk v0.46.0-rc3.0.20250506103608-cd5fca0e2321 h1:BCEZPAN2Vvb4EWoWvXwesRxUjp2IBxOrKxvo8hDelQo=
+github.com/mmsqe/cosmos-sdk v0.46.0-rc3.0.20250506103608-cd5fca0e2321/go.mod h1:v9CjVTnsqHeas3BIetTPfGBiS3kC1FfUnYiKYFfn5Xg=
 github.com/moby/sys/user v0.1.0 h1:WmZ93f5Ux6het5iituh9x2zAG7NFY9Aqi49jjE1PaQg=
 github.com/moby/sys/user v0.1.0/go.mod h1:fKJhFOnsCN6xZ5gSfbM6zaHGgDJMrqt9/reuj4T7MmU=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
