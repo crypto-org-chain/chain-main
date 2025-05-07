@@ -6,7 +6,7 @@
 
 ### Bug Fixes
 
-* [#1150](https://github.com/crypto-org-chain/chain-main/pull/1150) Upgrade math and cosmos sdk to latest to include bug fix.
+* [#1150](https://github.com/crypto-org-chain/chain-main/pull/1150), [#1151](https://github.com/crypto-org-chain/chain-main/pull/1151) Upgrade math and cosmos sdk to latest to include bug fix.
 
 *Mar 13, 2025*
 
