@@ -16,7 +16,7 @@
 * [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Update cometbft to `0.38.13`, sdk to `v0.50.10` and memiavl to latest.
 - [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Upgrade cometbft to v0.38.13, cosmos-sdk to `v0.50.10`.
 - [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
-- [#](https://github.com/crypto-org-chain/chain-main/pull/) Cronos POS v6.0.0.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Cronos POS v6 is not released.
 
 *April 28, 2025*
 
