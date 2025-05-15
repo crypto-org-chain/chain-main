@@ -457,7 +457,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_max"] == "0.010000000000000000"
     assert params["inflation_min"] == "0.008500000000000000"
 
-
     target_height = cluster.block_height() + 15
     gov_param = cli.query_params("gov")
     upgrade(cluster, "v6.0", target_height, broadcast_mode="sync")
