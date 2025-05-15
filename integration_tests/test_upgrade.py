@@ -281,7 +281,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
-    target_height = cluster.block_height() + 30
+    target_height = cluster.block_height() + 15
 
     upgrade(cluster, "v2.0.0", target_height, propose_legacy=False)
     cli = cluster.cosmos_cli()
