@@ -1,6 +1,8 @@
 # Changelog
 
-## UNRELEASED
+*May 16, 2025*
+
+## v6.0.0
 
 - [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
 - [#1044](https://github.com/crypto-org-chain/chain-main/pull/1044) Revert the protobuf package name changes introduced in #1023.
@@ -14,6 +16,31 @@
 * [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Update cometbft to `0.38.13`, sdk to `v0.50.10` and memiavl to latest.
 - [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Upgrade cometbft to v0.38.13, cosmos-sdk to `v0.50.10`.
 - [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
+- [#](https://github.com/crypto-org-chain/chain-main/pull/) Cronos POS v6.0.0.
+
+*April 28, 2025*
+
+## v5.0.2
+
+### Bug Fixes
+
+* [#1150](https://github.com/crypto-org-chain/chain-main/pull/1150) Upgrade math and cosmos sdk to latest to include bug fix.
+
+*Mar 13, 2025*
+
+## v5.0.1
+
+### Bug Fixes
+
+- [#1134](https://github.com/crypto-org-chain/chain-main/pull/1134) Merge commit from fork.
+
+*Mar 3, 2025*
+
+## v5.0.0
+
+### State Machine Breaking
+
+- [#1125](https://github.com/crypto-org-chain/chain-main/pull/1125) Cronos New Golden Age.
 
 *Dec 6, 2023*
 
