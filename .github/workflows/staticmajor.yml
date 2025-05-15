@@ -12,6 +12,10 @@ jobs:
     name: Scan for resource leaks
     runs-on: ubuntu-latest
     steps:
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.22
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Staticmajor action
