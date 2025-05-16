@@ -164,7 +164,7 @@ def upgrade(
     plan_name,
     target_height,
     propose_legacy=True,
-    broadcast_mode="block",
+    broadcast_mode="sync",
 ):
     print("upgrade height", target_height, plan_name)
     kind = "software-upgrade"
