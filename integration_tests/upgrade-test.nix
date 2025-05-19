@@ -28,7 +28,7 @@ let
     (fetchFlake "crypto-org-chain/chain-main" "b3226f06fd2a236f9957304c4d83b0ea06ed2604").default;
   released4_3 =
     (fetchFlake "crypto-org-chain/chain-main" "7598bc46226a1b58116da2e6bd3903aca5b5313b").default;
-  released5 =
+  released5_0_2 =
     (fetchFlake "crypto-org-chain/chain-main" "f81a19a618a7f7c5981c63261ca3241d41ca0f4b").default;
   current = pkgs.callPackage ../. { };
 in
@@ -54,11 +54,11 @@ pkgs.linkFarm "upgrade-test-package" [
     path = released4_3;
   }
   {
-    name = "v5.0";
-    path = released5;
+    name = "v5.0.2";
+    path = released5_0_2;
   }
   {
-    name = "v6.0";
+    name = "v6.0.0";
     path = current;
   }
 ]
