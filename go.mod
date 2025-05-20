@@ -27,7 +27,6 @@ require (
 	github.com/cosmos/rosetta v0.50.3-1
 	github.com/crypto-org-chain/cronos/store v0.0.5-0.20240716081818-7f581a697f6d
 	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20240716081818-7f581a697f6d
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/renameio v1.0.0
 	github.com/gorilla/mux v1.8.1
@@ -108,6 +107,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
