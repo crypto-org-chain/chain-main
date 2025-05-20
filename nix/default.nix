@@ -8,9 +8,9 @@ import sources.nixpkgs {
       flake-compat = import sources.flake-compat;
       cosmovisor = pkgs.buildGoModule {
         name = "cosmovisor";
-        src = sources.cosmos-sdk + "/cosmovisor";
+        src = sources.cosmos-sdk + "/tools/cosmovisor";
         subPackages = [ "./cmd/cosmovisor" ];
-        vendorHash = "sha256-OAXWrwpartjgSP7oeNvDJ7cTR9lyYVNhEM8HUnv3acE=";
+        vendorHash = "sha256-f6I8q4YKF7LKw8qBDVjD/JMXfuobrg9uODEUFmer2/Y=";
         doCheck = false;
       };
       hermes = pkgs.callPackage ./hermes.nix { src = sources.hermes; };
