@@ -100,12 +100,10 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 
 		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		cp := baseapp.GetConsensusParams(sdkCtx, baseAppLegacySS)
-		if cp != nil {
-			if err := app.ConsensusParamsKeeper.ParamsStore.Set(ctx, *cp); err != nil {
+		err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusParamsKeeper.ParamsStore)
+		if err != nil {
 				return nil, err
 			}
-		}
 		sdkCtx.Logger().Info("start to run module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
