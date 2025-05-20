@@ -457,7 +457,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     target_height = cluster.block_height() + 15
     gov_param = cli.query_params("gov")
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="sync")
+    upgrade(cluster, "v6.0.0", target_height)
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
