@@ -107,7 +107,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 					EnabledSignModes:           enabledSignModes,
 					TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
 				}
-				txConfig, err := tx.NewTxConfigWithOptions(
+				_, err := tx.NewTxConfigWithOptions(
 					initClientCtx.Codec,
 					txConfigOpts,
 				)
@@ -115,7 +115,6 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 					return err
 				}
 
-				initClientCtx = initClientCtx.WithTxConfig(txConfig)
 			}
 			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
 				return err
