@@ -8,6 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,7 +20,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -102,8 +102,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
 		err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusParamsKeeper.ParamsStore)
 		if err != nil {
-				return nil, err
-			}
+			return nil, err
+		}
 		sdkCtx.Logger().Info("start to run module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
@@ -132,8 +132,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
+				circuittypes.ModuleName,
 				consensusparamtypes.StoreKey,
-				crisistypes.StoreKey,
 			},
 			Deleted: []string{"icaauth"},
 		}

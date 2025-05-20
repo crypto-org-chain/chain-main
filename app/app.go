@@ -28,6 +28,9 @@ import (
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
 	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/x/circuit"
+	circuitkeeper "cosmossdk.io/x/circuit/keeper"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	"cosmossdk.io/x/evidence"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	evidencetypes "cosmossdk.io/x/evidence/types"
@@ -232,6 +235,7 @@ type ChainApp struct {
 	AuthzKeeper           authzkeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	FeeGrantKeeper        feegrantkeeper.Keeper
+	CircuitKeeper         circuitkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	GroupKeeper           groupkeeper.Keeper
 	TransferKeeper        ibctransferkeeper.Keeper
@@ -398,6 +402,14 @@ func New(
 		runtime.NewKVStoreService(keys[feegrant.StoreKey]),
 		app.AccountKeeper,
 	)
+
+	app.CircuitKeeper = circuitkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[circuittypes.StoreKey]),
+		authAddr,
+		app.AccountKeeper.AddressCodec(),
+	)
+	app.SetCircuitBreaker(&app.CircuitKeeper)
 
 	// get skipUpgradeHeights from the app options
 	skipUpgradeHeights := map[int64]bool{}
@@ -583,6 +595,7 @@ func New(
 		chainmain.NewAppModule(app.chainmainKeeper),
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
+		circuit.NewAppModule(appCodec, app.CircuitKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -632,6 +645,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
@@ -659,6 +673,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -692,6 +707,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
@@ -747,7 +763,8 @@ func New(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCKeeper: app.IBCKeeper,
+			IBCKeeper:     app.IBCKeeper,
+			Circuitkeeper: &app.CircuitKeeper,
 		},
 	)
 	if err != nil {
