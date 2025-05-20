@@ -430,8 +430,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     target_height = cluster.block_height() + 15
     upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v4.3.0", target_height, broadcast_mode="block")
-    cli = cluster.cosmos_cli()
 
     acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
     assert acct["@type"] == "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
@@ -459,11 +457,15 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     gov_param = cli.query_params("gov")
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="sync")
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
-    assert_gov_params(cli, gov_param)
+    assert_gov_params(cli, gov_param, is_legacy=True)
+    ibc_params = json.loads(
+        cli.raw("q", "ibc", "client", "params", output="json", node=cli.node_rpc)
+    ).get("allowed_clients")
+    assert ibc_params == ["06-solomachine", "07-tendermint", "09-localhost"]
 
 
 def test_cancel_upgrade(cluster):

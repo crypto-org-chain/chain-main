@@ -589,13 +589,20 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         raise TimeoutError(f"wait for {name} timeout")
 
 
-def get_expedited_params(param):
-    min_deposit = param["min_deposit"][0]
-    voting_period = param["voting_period"]
+def get_expedited_params(param, is_legacy=False):
+    if is_legacy:
+        min_deposit = param["deposit_params"]["min_deposit"][0]
+        voting_period = param["voting_params"]["voting_period"]
+        voting_period = f"{int(int(voting_period) / 1e9)}s"
+        threshold = param["tally_params"]["threshold"]
+    else:
+        min_deposit = param["min_deposit"][0]
+        voting_period = param["voting_period"]
+        threshold = param["threshold"]
     tokens_ratio = 5
     threshold_ratio = 1.334
     period_ratio = 0.5
-    expedited_threshold = float(param["threshold"]) * threshold_ratio
+    expedited_threshold = float(threshold) * threshold_ratio
     expedited_threshold = Decimal(f"{expedited_threshold}")
     expedited_voting_period = int(int(voting_period[:-1]) * period_ratio)
     return {
@@ -610,8 +617,8 @@ def get_expedited_params(param):
     }
 
 
-def assert_gov_params(cli, old_param):
+def assert_gov_params(cli, old_param, is_legacy=False):
     param = cli.query_params("gov")
-    expedited_param = get_expedited_params(old_param)
+    expedited_param = get_expedited_params(old_param, is_legacy)
     for key, value in expedited_param.items():
         assert param[key] == value, param
