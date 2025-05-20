@@ -31,7 +31,6 @@ import (
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 )
@@ -48,7 +47,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		case banktypes.ModuleName:
 			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
 		case stakingtypes.ModuleName:
-			keyTable = stakingtypes.ParamKeyTable()
+			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
 		case minttypes.ModuleName:
 			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
 		case distrtypes.ModuleName:
@@ -84,10 +83,10 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return nil, err
 		}
 		// explicitly update the IBC 02-client params, adding the localhost client type
-		ibcParamSpace := app.ParamsKeeper.Subspace(ibcexported.ModuleName)
-		allowedClients := []string{}
+		var allowedClients []string
+		ibcParamSpace := app.GetSubspace(ibcexported.ModuleName)
 		ibcParamSpace.Get(sdkCtx, ibcclienttypes.KeyAllowedClients, &allowedClients)
-		allowedClients = append(allowedClients, exported.Localhost)
+		allowedClients = append(allowedClients, ibcexported.Localhost)
 		ibcParamSpace.SetParamSet(sdkCtx, &ibcclienttypes.Params{
 			AllowedClients: allowedClients,
 		})
