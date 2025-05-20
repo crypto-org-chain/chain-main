@@ -67,7 +67,7 @@ def post_init(chain_id, data):
         home = data / f"node{i}"
         (home / "cosmovisor").symlink_to("../../cosmovisor")
         return {
-            "command": f"cosmovisor start --home %(here)s/node{i}",
+            "command": f"cosmovisor run start --home %(here)s/node{i}",
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
         }
 
