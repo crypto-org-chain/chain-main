@@ -426,11 +426,40 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # test migrate keystore
     for i in range(2):
         cluster.migrate_keystore(i=i)
-    upgrade(cluster, "v4.3.0", target_height)
-    cli = cluster.cosmos_cli()
+
     target_height = cluster.block_height() + 15
+    upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
+    target_height = cluster.block_height() + 15
+    upgrade(cluster, "v4.3.0", target_height, broadcast_mode="block")
+    cli = cluster.cosmos_cli()
+
+    acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
+    assert acct["@type"] == "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
+    print(acct)
+    vesting_acct = acct["base_vesting_account"]
+    assert vesting_acct["original_vesting"] == [
+        {"denom": "basecro", "amount": "7000000000000000000"}
+    ]
+    assert len(acct["vesting_periods"]) == 60
+    for period in acct["vesting_periods"][:-1]:
+        assert period == {
+            "length": "60",
+            "amount": [{"denom": "basecro", "amount": "116666666666666666"}],
+        }
+    assert acct["vesting_periods"][-1] == {
+        "length": "60",
+        "amount": [{"denom": "basecro", "amount": "116666666666666706"}],
+    }
+
+    params = json.loads(
+        cli.raw("query", "mint", "params", output="json", node=cli.node_rpc)
+    )
+    assert params["inflation_max"] == "0.010000000000000000"
+    assert params["inflation_min"] == "0.008500000000000000"
+
     gov_param = cli.query_params("gov")
-    upgrade(cluster, "v5.0", target_height, broadcast_mode="sync")
+    target_height = cluster.block_height() + 15
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="sync")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")

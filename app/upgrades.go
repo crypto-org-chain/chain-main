@@ -17,7 +17,7 @@ import (
 )
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	planName := "v5.0"
+	planName := "v6.0.0"
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
