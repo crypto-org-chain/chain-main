@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+import requests
 from dateutil.parser import isoparse
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
@@ -278,7 +279,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     )
     cluster.reload_supervisor()
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
-    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
+    base_port = rpc_port(cluster.config["validators"][0]["base_port"])
+    wait_for_port(base_port)
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
@@ -456,7 +458,11 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_min"] == "0.008500000000000000"
 
     gov_param = cli.query_params("gov")
-    target_height = cluster.block_height() + 15
+    current = cluster.block_height()
+    target_height = current + 15
+    url = f"http://127.0.0.1:{base_port}/consensus_params?height={current}"
+    consensus_params0 = requests.get(url).json()["result"]["consensus_params"]
+
     upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
@@ -466,6 +472,21 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         cli.raw("q", "ibc", "client", "params", output="json", node=cli.node_rpc)
     ).get("allowed_clients")
     assert ibc_params == ["06-solomachine", "07-tendermint", "09-localhost"]
+    consensus_params1 = cli.query_params("consensus")
+    for c in (consensus_params0, consensus_params1):
+        if "evidence" in c and "max_age_duration" in c["evidence"]:
+            c["evidence"]["max_age_duration"] = duration_to_nanoseconds(
+                c["evidence"]["max_age_duration"]
+            )
+    for key in consensus_params1:
+        assert consensus_params1[key].items() <= consensus_params0[key].items()
+
+
+def duration_to_nanoseconds(duration):
+    if duration.endswith("h0m0s"):
+        hours = int(duration.split("h")[0])
+        return hours * 60 * 60 * 1_000_000_000
+    return int(duration)
 
 
 def test_cancel_upgrade(cluster):
