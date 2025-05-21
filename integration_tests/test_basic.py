@@ -104,3 +104,14 @@ def test_statesync(cluster):
     # discovery_time is set to 5 seconds, add extra seconds for processing
     wait_for_block(cluster.cosmos_cli(i), 10)
     print("successfully syncing")
+
+
+def test_textual(cluster):
+    cli = cluster.cosmos_cli()
+    rsp = cli.transfer(
+        cli.address("community"),
+        cli.address("signer2"),
+        "1cro",
+        sign_mode="textual",
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
