@@ -15,7 +15,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	circuittypes "github.com/cosmos/cosmos-sdk/x/circuit/types"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -122,25 +121,6 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 				return map[string]uint64{}, err
 			}
 		}
-
-		// Set up circuit breaker super admin based on chain ID
-		chainID := sdkCtx.ChainID()
-		var superAdminAddr sdk.AccAddress
-		switch chainID {
-		case "chain-a":
-			// For chain-a, use a specific address
-			superAdminAddr = sdk.MustAccAddressFromBech32("cro1mk2s4tuztgykzanyzlz2y8r5nr025ps6d75ukg")
-		case "chain-b":
-			// For chain-b, use a different address
-			superAdminAddr = sdk.MustAccAddressFromBech32("cro1qkv2fl0e80nvc79shtgz0vf70gd2r4xhfk804f")
-		default:
-			return nil, fmt.Errorf("unsupported chain ID for circuit breaker setup: %s", chainID)
-		}
-
-		app.CircuitKeeper.SetPermissions(sdkCtx, superAdminAddr, &circuittypes.Permissions{
-			Level: circuittypes.Permissions_SUPER_ADMIN,
-		})
-
 		return m, nil
 	})
 
