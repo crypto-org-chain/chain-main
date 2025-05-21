@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
+import requests
 from dateutil.parser import isoparse
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
@@ -67,7 +68,7 @@ def post_init(chain_id, data):
         home = data / f"node{i}"
         (home / "cosmovisor").symlink_to("../../cosmovisor")
         return {
-            "command": f"cosmovisor start --home %(here)s/node{i}",
+            "command": f"cosmovisor run start --home %(here)s/node{i}",
             "environment": f"DAEMON_NAME=chain-maind,DAEMON_HOME={home.absolute()}",
         }
 
@@ -278,7 +279,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     )
     cluster.reload_supervisor()
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
-    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
+    base_port = rpc_port(cluster.config["validators"][0]["base_port"])
+    wait_for_port(base_port)
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
     target_height = cluster.block_height() + 15
@@ -426,15 +428,65 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # test migrate keystore
     for i in range(2):
         cluster.migrate_keystore(i=i)
-    upgrade(cluster, "v4.3.0", target_height)
-    cli = cluster.cosmos_cli()
+
     target_height = cluster.block_height() + 15
+    upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
+    target_height = cluster.block_height() + 15
+
+    acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
+    assert acct["@type"] == "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
+    print(acct)
+    vesting_acct = acct["base_vesting_account"]
+    assert vesting_acct["original_vesting"] == [
+        {"denom": "basecro", "amount": "7000000000000000000"}
+    ]
+    assert len(acct["vesting_periods"]) == 60
+    for period in acct["vesting_periods"][:-1]:
+        assert period == {
+            "length": "60",
+            "amount": [{"denom": "basecro", "amount": "116666666666666666"}],
+        }
+    assert acct["vesting_periods"][-1] == {
+        "length": "60",
+        "amount": [{"denom": "basecro", "amount": "116666666666666706"}],
+    }
+
+    params = json.loads(
+        cli.raw("query", "mint", "params", output="json", node=cli.node_rpc)
+    )
+    assert params["inflation_max"] == "0.010000000000000000"
+    assert params["inflation_min"] == "0.008500000000000000"
+
     gov_param = cli.query_params("gov")
-    upgrade(cluster, "v5.0", target_height, broadcast_mode="sync")
+    current = cluster.block_height()
+    target_height = current + 15
+    url = f"http://127.0.0.1:{base_port}/consensus_params?height={current}"
+    consensus_params0 = requests.get(url).json()["result"]["consensus_params"]
+
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
-    assert_gov_params(cli, gov_param)
+    assert_gov_params(cli, gov_param, is_legacy=True)
+    ibc_params = json.loads(
+        cli.raw("q", "ibc", "client", "params", output="json", node=cli.node_rpc)
+    ).get("allowed_clients")
+    assert ibc_params == ["06-solomachine", "07-tendermint", "09-localhost"]
+    consensus_params1 = cli.query_params("consensus")
+    for c in (consensus_params0, consensus_params1):
+        if "evidence" in c and "max_age_duration" in c["evidence"]:
+            c["evidence"]["max_age_duration"] = duration_to_nanoseconds(
+                c["evidence"]["max_age_duration"]
+            )
+    for key in consensus_params1:
+        assert consensus_params1[key].items() <= consensus_params0[key].items()
+
+
+def duration_to_nanoseconds(duration):
+    if duration.endswith("h0m0s"):
+        hours = int(duration.split("h")[0])
+        return hours * 60 * 60 * 1_000_000_000
+    return int(duration)
 
 
 def test_cancel_upgrade(cluster):
