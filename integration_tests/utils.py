@@ -588,21 +588,28 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
     else:
         raise TimeoutError(f"wait for {name} timeout")
 
+def get_default_expedited_params(gov_param, is_legacy=False):
+    default_min_expedited_deposit_token_ratio = 5
+    default_threshold_ratio = 1.334
+    default_period_ratio = 0.5
+    if is_legacy:
+        min_deposit = gov_param["deposit_params"]["min_deposit"][0]
+        voting_period = gov_param["voting_params"]["voting_period"]
+        voting_period = f"{int(int(voting_period) / 1e9)}s"
+        threshold = gov_param["tally_params"]["threshold"]
+    else:
+        min_deposit = gov_param["min_deposit"][0]
+        voting_period = gov_param["voting_period"]
+        threshold = gov_param["threshold"]
 
-def get_expedited_params(param):
-    min_deposit = param["min_deposit"][0]
-    voting_period = param["voting_period"]
-    tokens_ratio = 5
-    threshold_ratio = 1.334
-    period_ratio = 0.5
-    expedited_threshold = float(param["threshold"]) * threshold_ratio
+    expedited_threshold = float(threshold) * default_threshold_ratio
     expedited_threshold = Decimal(f"{expedited_threshold}")
-    expedited_voting_period = int(int(voting_period[:-1]) * period_ratio)
+    expedited_voting_period = int(int(voting_period[:-1]) * default_period_ratio)
     return {
         "expedited_min_deposit": [
             {
                 "denom": min_deposit["denom"],
-                "amount": str(int(min_deposit["amount"]) * tokens_ratio),
+                "amount": str(int(min_deposit["amount"]) * default_min_expedited_deposit_token_ratio),
             }
         ],
         "expedited_threshold": f"{expedited_threshold:.18f}",
@@ -610,8 +617,8 @@ def get_expedited_params(param):
     }
 
 
-def assert_gov_params(cli, old_param):
+def assert_expedited_gov_params(cli, old_param, is_legacy=False):
     param = cli.query_params("gov")
-    expedited_param = get_expedited_params(old_param)
+    expedited_param = get_default_expedited_params(old_param, is_legacy)
     for key, value in expedited_param.items():
         assert param[key] == value, param

@@ -6,8 +6,8 @@ from dateutil.parser import isoparse
 
 from .utils import (
     approve_proposal,
-    assert_gov_params,
-    get_expedited_params,
+    assert_expedited_gov_params,
+    get_default_expedited_params,
     get_proposal_id,
     module_address,
     wait_for_block,
@@ -225,7 +225,7 @@ def test_inherit_vote(cluster, tmp_path):
 def test_host_enabled(cluster, tmp_path):
     cli = cluster.cosmos_cli()
     param0 = cli.query_params("gov")
-    param1 = get_expedited_params(param0)
+    param1 = get_default_expedited_params(param0)
     # governance module account as signer
     authority = module_address("gov")
     proposal = tmp_path / "proposal.json"
@@ -251,7 +251,7 @@ def test_host_enabled(cluster, tmp_path):
     assert rsp["code"] == 0, rsp["raw_log"]
     approve_proposal(cluster, rsp, msg=f",{type}")
     print("check params have been updated now")
-    assert_gov_params(cli, param0)
+    assert_expedited_gov_params(cli, param0)
 
     p = cli.query_host_params()
     assert p["host_enabled"]

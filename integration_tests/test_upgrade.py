@@ -13,7 +13,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     approve_proposal,
-    assert_gov_params,
+    assert_expedited_gov_params,
     cluster_fixture,
     wait_for_block,
     wait_for_block_time,
@@ -456,12 +456,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_min"] == "0.008500000000000000"
 
     target_height = cluster.block_height() + 15
-    gov_param = cli.query_params("gov")
+    gov_param_before_v6 = cli.query_params("gov")
     upgrade(cluster, "v6.0.0", target_height)
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
-    assert_gov_params(cli, gov_param)
+    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
 
 
 def test_cancel_upgrade(cluster):
