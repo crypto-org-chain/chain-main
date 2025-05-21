@@ -493,23 +493,28 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # assert consensus params are updated
     consensus_params = cli.query_params("consensus")
+    block_params = consensus_params["params"]["block"]
+    evidence_params = consensus_params["params"]["evidence"]
+    validator_params = consensus_params["params"]["validator"]
 
-    assert consensus_params["params"]["block"]["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
-    assert consensus_params["params"]["block"]["max_gas"] == consensus_block_param_before_v6["max_gas"]
+    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
+    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
 
-    assert consensus_params["params"]["evidence"]["max_age_num_blocks"] == consensus_evidence_param_before_v6["max_age_num_blocks"]
-    assert consensus_params["params"]["evidence"]["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
+    assert evidence_params["max_age_num_blocks"] == consensus_evidence_param_before_v6["max_age_num_blocks"]
+    assert evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
+    
     max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
     max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
     max_age_duration_hours = max_age_duration_seconds // 3600
     max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
     max_age_duration_seconds = max_age_duration_seconds % 60
     expected_duration = (
-        f"{max_age_duration_hours}h{max_age_duration_minutes}m{max_age_duration_seconds}s"
+        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
+        f"{max_age_duration_seconds}s"
     )
-    assert consensus_params["params"]["evidence"]["max_age_duration"] == expected_duration
+    assert evidence_params["max_age_duration"] == expected_duration
 
-    assert consensus_params["params"]["validator"]["pub_key_types"] == consensus_validator_param_before_v6["pub_key_types"]
+    assert validator_params["pub_key_types"] == consensus_validator_param_before_v6["pub_key_types"]
 
     # assert deprecated x/params module no longer has consensus params
     with pytest.raises(AssertionError):

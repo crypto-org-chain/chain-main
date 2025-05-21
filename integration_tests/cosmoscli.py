@@ -326,6 +326,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
 
+
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
