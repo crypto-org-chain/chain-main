@@ -473,7 +473,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
 
     # assert IBC client has localhost client type appended
-    ibc_params = json.loads(
+    ibc_client_params = json.loads(
         cli.raw(
             "query",
             "ibc",
@@ -483,7 +483,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             node=cli.node_rpc
         )
     )
-    assert ibc_params == ["06-solomachine", "07-tendermint", "09-localhost"]
+    assert ibc_client_params == {
+        "allowed_clients": [
+            "06-solomachine",
+            "07-tendermint",
+            "09-localhost"
+        ]
+    }
 
     # assert consensus params are updated
     consensus_params = cli.query_params("consensus")
