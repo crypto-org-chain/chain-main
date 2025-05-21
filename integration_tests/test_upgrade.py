@@ -473,16 +473,14 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
 
     # assert IBC client has localhost client type appended
-    ibc_client_params = json.loads(
-        cli.raw(
-            "query",
-            "ibc",
-            "client",
-            "params",
-            output="json",
-            node=cli.node_rpc
-        )
-    )
+    ibc_client_params = json.loads(cli.raw(
+        "query",
+        "ibc",
+        "client",
+        "params",
+        output="json",
+        node=cli.node_rpc,
+    ))
     assert ibc_client_params == {
         "allowed_clients": [
             "06-solomachine",
@@ -527,7 +525,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # assert deprecated x/params module no longer has consensus params
     with pytest.raises(AssertionError):
-        cli.query_params_subspace("baseapp", "ConsensusParams")
+        res = cli.query_params_subspace("baseapp", "ConsensusParams")
+        print(res)
 
 
 def test_cancel_upgrade(cluster):
