@@ -146,6 +146,9 @@ import (
 	supplykeeper "github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v4/x/supply/types"
 
+	"cosmossdk.io/x/circuit"
+	circuitkeeper "cosmossdk.io/x/circuit/keeper"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	"github.com/crypto-org-chain/chain-main/v4/app/docs"
 	memiavlstore "github.com/crypto-org-chain/cronos/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
@@ -239,6 +242,7 @@ type ChainApp struct {
 	chainmainKeeper       chainmainkeeper.Keeper
 	SupplyKeeper          supplykeeper.Keeper
 	NFTKeeper             nftkeeper.Keeper
+	CircuitKeeper         circuitkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -542,6 +546,14 @@ func New(
 	// If evidence needs to be handled for the app, set routes in router here and seal
 	app.EvidenceKeeper = *evidenceKeeper
 
+	app.CircuitKeeper = circuitkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[circuittypes.StoreKey]),
+		authAddr,
+		app.MsgServiceRouter(),
+	)
+	app.BaseApp.SetCircuitBreaker(app.CircuitKeeper)
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.ModuleManager = module.NewManager(
@@ -583,6 +595,7 @@ func New(
 		chainmain.NewAppModule(app.chainmainKeeper),
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
+		circuit.NewAppModule(appCodec, app.CircuitKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -632,6 +645,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
@@ -659,6 +673,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
@@ -692,6 +707,7 @@ func New(
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
@@ -747,7 +763,8 @@ func New(
 				SignModeHandler: encodingConfig.TxConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
-			IBCKeeper: app.IBCKeeper,
+			IBCKeeper:     app.IBCKeeper,
+			CircuitKeeper: &app.CircuitKeeper,
 		},
 	)
 	if err != nil {
@@ -1059,6 +1076,7 @@ func StoreKeys() (
 		supplytypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
+		circuittypes.StoreKey,
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)

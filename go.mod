@@ -14,6 +14,7 @@ require (
 	cosmossdk.io/simapp v0.0.0-20240721175357-eb71828960f3
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.2
+	cosmossdk.io/x/circuit v0.1.1
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/tx v0.13.7
@@ -51,7 +52,6 @@ require (
 	cloud.google.com/go/storage v1.41.0 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
 	cosmossdk.io/depinject v1.1.0 // indirect
-	cosmossdk.io/x/circuit v0.1.1 // indirect
 	cosmossdk.io/x/nft v0.1.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect

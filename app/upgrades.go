@@ -8,6 +8,7 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
+	circuittypes "cosmossdk.io/x/circuit/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -34,6 +35,14 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
 )
+
+// CircuitSuperAdmins maps chain IDs to their super admin addresses
+var CircuitSuperAdmins = map[string][]string{
+	"chaintest": {
+		"cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+		"cro198pra975lcj526974r80fflr6retphnl3l7f4h",
+	},
+}
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	planName := "v6.0.0"
@@ -101,7 +110,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 
 		// Migrate Tendermint consensus parameters from x/params module to a dedicated x/consensus module.
-		baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusParamsKeeper.ParamsStore)
+		if err := baseapp.MigrateParams(sdkCtx, baseAppLegacySS, &app.ConsensusParamsKeeper.ParamsStore); err != nil {
+			return nil, err
+		}
 		sdkCtx.Logger().Info("start to run module migrations...")
 
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
@@ -119,6 +130,19 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			}
 			if err := UpdateExpeditedParams(ctx, app.GovKeeper); err != nil {
 				return map[string]uint64{}, err
+			}
+		}
+
+		chainID := sdkCtx.ChainID()
+		if superAdmins, exists := CircuitSuperAdmins[chainID]; exists {
+			for _, adminAddr := range superAdmins {
+				addr, err := sdk.AccAddressFromBech32(adminAddr)
+				if err != nil {
+					return nil, fmt.Errorf("invalid super admin address %s: %w", adminAddr, err)
+				}
+				app.CircuitKeeper.Permissions.Set(sdkCtx, addr, circuittypes.Permissions{
+					Level: circuittypes.Permissions_LEVEL_SUPER_ADMIN,
+				})
 			}
 		}
 		return m, nil

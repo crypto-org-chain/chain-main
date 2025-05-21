@@ -473,14 +473,16 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
 
     # assert IBC client has localhost client type appended
-    ibc_client_params = json.loads(cli.raw(
-        "query",
-        "ibc",
-        "client",
-        "params",
-        output="json",
-        node=cli.node_rpc,
-    ))
+    ibc_client_params = json.loads(
+        cli.raw(
+            "query",
+            "ibc",
+            "client",
+            "params",
+            output="json",
+            node=cli.node_rpc,
+        )
+    )
     assert ibc_client_params == {
         "allowed_clients": [
             "06-solomachine",
@@ -525,8 +527,25 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # assert deprecated x/params module no longer has consensus params
     with pytest.raises(AssertionError):
-        res = cli.query_params_subspace("baseapp", "ConsensusParams")
+        res = cli.query_params_subspace("baseapp", "BlockParams")
         print(res)
+
+    # assert circuit breaker super admin accounts are set
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    print(rsp)
+    assert rsp["accounts"] == [
+        "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+        "cro198pra975lcj526974r80fflr6retphnl3l7f4h",
+    ]
 
 
 def test_cancel_upgrade(cluster):
