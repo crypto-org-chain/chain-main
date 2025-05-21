@@ -588,6 +588,7 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
     else:
         raise TimeoutError(f"wait for {name} timeout")
 
+
 def get_default_expedited_params(gov_param, is_legacy=False):
     default_min_expedited_deposit_token_ratio = 5
     default_threshold_ratio = 1.334
@@ -605,11 +606,14 @@ def get_default_expedited_params(gov_param, is_legacy=False):
     expedited_threshold = float(threshold) * default_threshold_ratio
     expedited_threshold = Decimal(f"{expedited_threshold}")
     expedited_voting_period = int(int(voting_period[:-1]) * default_period_ratio)
+
+    expedited_amount = int(min_deposit["amount"]) * default_min_expedited_deposit_token_ratio
+
     return {
         "expedited_min_deposit": [
             {
                 "denom": min_deposit["denom"],
-                "amount": str(int(min_deposit["amount"]) * default_min_expedited_deposit_token_ratio),
+                "amount": str(expedited_amount),
             }
         ],
         "expedited_threshold": f"{expedited_threshold:.18f}",
