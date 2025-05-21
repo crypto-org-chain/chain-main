@@ -315,7 +315,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             "node": self.node_rpc,
             "output": "json",
         }
-        return json.loads(
+        res = json.loads(
             self.raw(
                 "q",
                 "params",
@@ -325,6 +325,9 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 **kwargs,
             )
         )
+
+        res = res.get("value") or res
+        return res
 
 
 class ClusterCLI(cluster.ClusterCLI):

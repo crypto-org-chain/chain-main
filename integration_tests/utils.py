@@ -609,9 +609,7 @@ def get_default_expedited_params(gov_param, is_legacy=False):
 
     # Calculate expedited amount with proper line breaks
     min_deposit_amount = int(min_deposit["amount"])
-    expedited_amount = (
-        min_deposit_amount * default_min_expedited_deposit_token_ratio
-    )
+    expedited_amount = min_deposit_amount * default_min_expedited_deposit_token_ratio
 
     return {
         "expedited_min_deposit": [
