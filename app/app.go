@@ -764,7 +764,7 @@ func New(
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
 			IBCKeeper:     app.IBCKeeper,
-			Circuitkeeper: &app.CircuitKeeper,
+			CircuitKeeper: &app.CircuitKeeper,
 		},
 	)
 	if err != nil {
@@ -1076,6 +1076,7 @@ func StoreKeys() (
 		supplytypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
+		circuittypes.StoreKey,
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)

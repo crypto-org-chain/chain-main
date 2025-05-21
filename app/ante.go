@@ -3,7 +3,6 @@ package app
 import (
 	newsdkerrors "cosmossdk.io/errors"
 	circuitante "cosmossdk.io/x/circuit/ante"
-	circuitkeeper "cosmossdk.io/x/circuit/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -18,7 +17,7 @@ type HandlerOptions struct {
 	ante.HandlerOptions
 
 	IBCKeeper     *keeper.Keeper
-	Circuitkeeper *circuitkeeper.Keeper
+	CircuitKeeper circuitante.CircuitBreaker
 }
 
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
@@ -39,6 +38,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 
 	anteDecorators := []sdk.AnteDecorator{
 		ante.NewSetUpContextDecorator(), // outermost AnteDecorator. SetUpContext must be called first
+		circuitante.NewCircuitBreakerDecorator(options.CircuitKeeper),
 		ante.NewExtensionOptionsDecorator(options.ExtensionOptionChecker),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
@@ -53,7 +53,6 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-		circuitante.NewCircuitBreakerDecorator(options.Circuitkeeper),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
