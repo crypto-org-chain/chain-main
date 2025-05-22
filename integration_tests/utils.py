@@ -628,3 +628,161 @@ def assert_expedited_gov_params(cli, old_param, is_legacy=False):
     expedited_param = get_default_expedited_params(old_param, is_legacy)
     for key, value in expedited_param.items():
         assert param[key] == value, param
+
+
+def assert_v6_circuit_is_working(cli, cluster):
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
+            'permissions': {
+                'level': 'LEVEL_SUPER_ADMIN',
+            },
+        },
+        {
+            'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+            'permissions': {
+                'level': 'LEVEL_SUPER_ADMIN',
+            },
+        }
+    ]
+
+    community_addr = cluster.address("community")
+    ecosystem_addr = cluster.address("ecosystem")
+    signer1_addr = cluster.address("signer1")
+    signer2_addr = cluster.address("signer2")
+
+    # use unauthorized account to disable MsgSend should fail
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "disable",
+            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=signer1_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] != 0, "unauthorized account shouldn't be able to disable message"
+    print(rsp["raw_log"])
+
+    # use unauthorized to authorize another account should fail
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "authorize",
+            community_addr,
+            "--level=LEVEL_SUPER_ADMIN",
+            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=signer1_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] != 0, "non-admin account should not be able to authorize others"
+    print(rsp["raw_log"])
+
+    # use super admin account to authorize any account should work
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "authorize",
+            signer1_addr,
+            "--level=SOME_MSGS",
+            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=ecosystem_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # use newly authorized account to disable MsgSend should work
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "disable",
+            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=signer1_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # use any account to send MsgSend should fail
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        event_query_tx=False,
+    )
+    assert rsp["code"] != 0, "transfer should fail when message is disabled"
+    print(rsp["raw_log"])
+
+    # use super admin account to unauthorize signer1 (should work)
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "authorize",
+            signer1_addr,
+            "--level=NONE_UNSPECIFIED",
+            "-y",
+            from_=ecosystem_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # use newly unauthorized account to disable MsgSend should fail
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "disable",
+            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=signer1_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] != 0, (
+        "unauthorized account should not be able to disable messages"
+    )
+    print(rsp["raw_log"])
+
+    # re-enable MsgSend for cleanup
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "circuit",
+            "reset",
+            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=community_addr,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+        )
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+

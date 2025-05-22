@@ -13,6 +13,7 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     approve_proposal,
+    assert_v6_circuit_is_working,
     assert_expedited_gov_params,
     cluster_fixture,
     wait_for_block,
@@ -264,140 +265,6 @@ def upgrade(
     wait_for_block(cluster, target_height + 2, 600)
 
 
-def assert_v6_circuit_is_working(cli, cluster):
-    community_addr = cluster.address("community")
-    ecosystem_addr = cluster.address("ecosystem")
-    signer1_addr = cluster.address("signer1")
-    signer2_addr = cluster.address("signer2")
-
-    # use unauthorized account to disable MsgSend should fail
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "trip",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=signer1_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] != 0, (
-        "unauthorized account should not be able to disable messages"
-    )
-    print(rsp["raw_log"])
-
-    # use unauthorized to authorize another account should fail
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "authorize",
-            community_addr,
-            "--level=LEVEL_SUPER_ADMIN",
-            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=signer1_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] != 0, "non-admin account should not be able to authorize others"
-    print(rsp["raw_log"])
-
-    # use super admin account to authorize any account should work
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "authorize",
-            signer1_addr,
-            "--level=SOME_MSGS",
-            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=ecosystem_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # use newly authorized account to disable MsgSend should work
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "trip",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=signer1_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # use any account to send MsgSend should fail
-    rsp = cli.transfer(
-        signer2_addr,
-        community_addr,
-        "1basecro",
-        event_query_tx=False,
-    )
-    assert rsp["code"] != 0, "transfer should fail when message is disabled"
-    print(rsp["raw_log"])
-
-    # use super admin account to unauthorize signer1 (should work)
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "authorize",
-            signer1_addr,
-            "--level=NONE_UNSPECIFIED",
-            "-y",
-            from_=ecosystem_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # use newly unauthorized account to disable MsgSend should fail
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "trip",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=signer1_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] != 0, (
-        "unauthorized account should not be able to disable messages"
-    )
-    print(rsp["raw_log"])
-
-    # re-enable MsgSend for cleanup
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "circuit",
-            "reset",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
-            "-y",
-            from_=community_addr,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-
 def test_manual_upgrade_all(cosmovisor_cluster):
     # test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
@@ -625,7 +492,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         ]
     }
 
-    # assert consensus params are updated
+    # assert consensus params are migrated
     consensus_params = cli.query_params("consensus")
     block_params = consensus_params["block"]
     evidence_params = consensus_params["evidence"]
@@ -658,31 +525,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         validator_params["pub_key_types"]
         == consensus_validator_param_before_v6["pub_key_types"]
     )
-
-    rsp = json.loads(
-        cli.raw(
-            "query",
-            "circuit",
-            "accounts",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            output="json",
-        )
-    )
-    assert rsp["accounts"] == [
-        {
-            'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
-            'permissions': {
-                'level': 'LEVEL_SUPER_ADMIN',
-            },
-        },
-        {
-            'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
-            'permissions': {
-                'level': 'LEVEL_SUPER_ADMIN',
-            },
-        }
-    ]
 
     assert_v6_circuit_is_working(cli, cluster)
 
