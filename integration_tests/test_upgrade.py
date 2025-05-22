@@ -525,11 +525,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         == consensus_validator_param_before_v6["pub_key_types"]
     )
 
-    print(cluster.address("community"))
-    print(cluster.address("ecosystem"))
-    print(cluster.address("launch"))
-    print(cluster.address("signer1"))
-    print(cluster.address("signer2"))
+    print(cluster.address("reserve"))
+
     rsp = json.loads(
         cli.raw(
             "query",
@@ -540,10 +537,19 @@ def test_manual_upgrade_all(cosmovisor_cluster):
             output="json",
         )
     )
-    print(rsp)
     assert rsp["accounts"] == [
-        "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
-        "cro198pra975lcj526974r80fflr6retphnl3l7f4h",
+        {
+            'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
+            'permissions': {
+                'level': 'LEVEL_SUPER_ADMIN',
+            },
+        },
+        {
+            'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+            'permissions': {
+                'level': 'LEVEL_SUPER_ADMIN',
+            },
+        }
     ]
 
 
