@@ -13,8 +13,8 @@ from pystarport.ports import rpc_port
 
 from .utils import (
     approve_proposal,
-    assert_v6_circuit_is_working,
     assert_expedited_gov_params,
+    assert_v6_circuit_is_working,
     cluster_fixture,
     wait_for_block,
     wait_for_block_time,

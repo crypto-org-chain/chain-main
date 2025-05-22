@@ -641,20 +641,17 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
-    assert rsp["accounts"] == [
-        {
-            'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
-            'permissions': {
-                'level': 'LEVEL_SUPER_ADMIN',
-            },
+    assert rsp["accounts"] == [{
+        'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
+        'permissions': {
+            'level': 'LEVEL_SUPER_ADMIN',
         },
-        {
-            'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
-            'permissions': {
-                'level': 'LEVEL_SUPER_ADMIN',
-            },
-        }
-    ]
+    }, {
+        'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+        'permissions': {
+            'level': 'LEVEL_SUPER_ADMIN',
+        },
+    }]
 
     community_addr = cluster.address("community")
     ecosystem_addr = cluster.address("ecosystem")
@@ -667,7 +664,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "tx",
             "circuit",
             "disable",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "cosmos.bank.v1beta1.MsgSend",
             "-y",
             from_=signer1_addr,
             home=cli.data_dir,
@@ -684,8 +681,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "authorize",
             community_addr,
-            "--level=LEVEL_SUPER_ADMIN",
-            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "{\"level\":3}",
             "-y",
             from_=signer1_addr,
             home=cli.data_dir,
@@ -702,8 +698,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "authorize",
             signer1_addr,
-            "--level=SOME_MSGS",
-            "--limit-type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "{\"level\":3}",
             "-y",
             from_=ecosystem_addr,
             home=cli.data_dir,
@@ -718,7 +713,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "tx",
             "circuit",
             "disable",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "cosmos.bank.v1beta1.MsgSend",
             "-y",
             from_=signer1_addr,
             home=cli.data_dir,
@@ -744,7 +739,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "authorize",
             signer1_addr,
-            "--level=NONE_UNSPECIFIED",
+            "{\"level\":0}",
             "-y",
             from_=ecosystem_addr,
             home=cli.data_dir,
@@ -759,7 +754,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "tx",
             "circuit",
             "disable",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "cosmos.bank.v1beta1.MsgSend",
             "-y",
             from_=signer1_addr,
             home=cli.data_dir,
@@ -777,7 +772,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "tx",
             "circuit",
             "reset",
-            "--type-urls=/cosmos.bank.v1beta1.MsgSend",
+            "cosmos.bank.v1beta1.MsgSend",
             "-y",
             from_=community_addr,
             home=cli.data_dir,
