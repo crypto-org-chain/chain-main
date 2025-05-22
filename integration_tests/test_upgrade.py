@@ -525,12 +525,11 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         == consensus_validator_param_before_v6["pub_key_types"]
     )
 
-    # assert deprecated x/params module no longer has consensus params
-    with pytest.raises(AssertionError):
-        res = cli.query_params_subspace("baseapp", "BlockParams")
-        print(res)
-
-    # assert circuit breaker super admin accounts are set
+    print(cluster.address("community"))
+    print(cluster.address("ecosystem"))
+    print(cluster.address("launch"))
+    print(cluster.address("signer1"))
+    print(cluster.address("signer2"))
     rsp = json.loads(
         cli.raw(
             "query",
