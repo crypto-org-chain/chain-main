@@ -550,9 +550,9 @@ func New(
 		appCodec,
 		runtime.NewKVStoreService(keys[circuittypes.StoreKey]),
 		authAddr,
-		app.MsgServiceRouter(),
+		app.AccountKeeper.AddressCodec(),
 	)
-	app.BaseApp.SetCircuitBreaker(app.CircuitKeeper)
+	app.BaseApp.SetCircuitBreaker(&app.CircuitKeeper)
 
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
