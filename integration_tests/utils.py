@@ -590,7 +590,7 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
 
 
 # tx command that wait for block inclusion
-# After Cosmos SDK v0.50.0, the tx command no longer supports block mode
+# After Cosmos SDK v0.50.0, tx command no longer supports block mode
 def tx_wait_for_block(cli, *args, i=0, output="json", **kwargs):
     cli = cli.cosmos_cli(i)
     kwargs.setdefault("node", cli.node_rpc)

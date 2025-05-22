@@ -3,7 +3,6 @@ import tempfile
 
 import requests
 from pystarport import cluster, cosmoscli
-from utils import wait_for_block
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
