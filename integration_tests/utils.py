@@ -612,7 +612,7 @@ def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
         raise Exception(rsp["raw_log"])
 
     txhash = rsp["txhash"]
-    wait_for_block(cli, 1)
+    wait_for_block(cli, cluster.block_height() + 1)
     rsp = cli.raw(
         "q",
         "tx",
