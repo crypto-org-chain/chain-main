@@ -591,8 +591,8 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
 
 # tx command that wait for block inclusion
 # After Cosmos SDK v0.50.0, tx command no longer supports block mode
-def tx_wait_for_block(cli, *args, i=0, output="json", **kwargs):
-    cli = cli.cosmos_cli(i)
+def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
+    cli = cluster.cosmos_cli(i)
     kwargs.setdefault("node", cli.node_rpc)
 
     rsp = json.loads(
@@ -697,7 +697,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use unauthorized account to disable MsgSend should fail
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "disable",
             "cosmos.bank.v1beta1.MsgSend",
@@ -711,7 +711,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use unauthorized to authorize another account should fail
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "authorize",
             community_addr,
@@ -725,7 +725,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use super admin account to authorize any account should work
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "authorize",
             signer1_addr,
@@ -738,7 +738,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use newly authorized account to disable MsgSend should work
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "disable",
             "cosmos.bank.v1beta1.MsgSend",
@@ -760,7 +760,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use super admin account to unauthorize signer1 (should work)
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "authorize",
             signer1_addr,
@@ -773,7 +773,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # use newly unauthorized account to disable MsgSend should fail
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "disable",
             "cosmos.bank.v1beta1.MsgSend",
@@ -788,7 +788,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     # re-enable MsgSend for cleanup
     rsp = json.loads(
         tx_wait_for_block(
-            cli,
+            cluster,
             "circuit",
             "reset",
             "cosmos.bank.v1beta1.MsgSend",
