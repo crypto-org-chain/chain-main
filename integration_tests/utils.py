@@ -750,6 +750,12 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     assert rsp["accounts"] == [
         {
+            "address": signer1_addr,
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
             "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
             "permissions": {
                 "level": "LEVEL_SUPER_ADMIN",
@@ -757,12 +763,6 @@ def assert_v6_circuit_is_working(cli, cluster):
         },
         {
             "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
-            "permissions": {
-                "level": "LEVEL_SUPER_ADMIN",
-            },
-        },
-        {
-            "address": signer1_addr,
             "permissions": {
                 "level": "LEVEL_SUPER_ADMIN",
             },
