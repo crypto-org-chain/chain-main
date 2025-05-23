@@ -5,7 +5,7 @@
     coins: '100cro',
     mnemonic: 'shine blade problem hint you section hazard number skill congress harsh actress wasp hero under hair stand affair work cherry amused silver segment donor',
   }, {
-    name: 'ecosystem', // cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg
+    name: 'ecosystem', // cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m
     coins: '200cro',
     mnemonic: 'obvious more expand sell ozone dream emerge charge decade unable trigger able beyond ghost humble figure absorb other rebel shy corn manage club flock'
   }, {

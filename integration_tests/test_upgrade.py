@@ -485,11 +485,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         )
     )
     assert ibc_client_params == {
-        "allowed_clients": [
-            "06-solomachine",
-            "07-tendermint",
-            "09-localhost"
-        ]
+        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
     }
 
     # assert consensus params are migrated
@@ -506,8 +502,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         == consensus_evidence_param_before_v6["max_age_num_blocks"]
     )
     assert (
-        evidence_params["max_bytes"]
-        == consensus_evidence_param_before_v6["max_bytes"]
+        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
     )
 
     max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])

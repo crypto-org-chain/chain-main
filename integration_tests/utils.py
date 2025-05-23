@@ -609,7 +609,7 @@ def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
     )
     print(rsp)
     if rsp["code"] != 0:
-        raise Exception(rsp["raw_log"])
+        raise Exception(f"broadcast failed: {rsp['raw_log']}")
 
     txhash = rsp["txhash"]
     wait_for_block(cli, cluster.block_height() + 1)
@@ -683,7 +683,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             'level': 'LEVEL_SUPER_ADMIN',
         },
     }, {
-        'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+        'address': 'cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m',
         'permissions': {
             'level': 'LEVEL_SUPER_ADMIN',
         },
@@ -751,7 +751,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             'level': 'LEVEL_SUPER_ADMIN',
         },
     }, {
-        'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+        'address': 'cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m',
         'permissions': {
             'level': 'LEVEL_SUPER_ADMIN',
         },
@@ -784,7 +784,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
     print(rsp["raw_log"])
 
-    # use super admin account to unauthorize signer1 (should work)
+    # use super admin account to unauthorize signer1 should work
     rsp = json.loads(
         tx_wait_for_block(
             cluster,

@@ -39,7 +39,7 @@ import (
 var CircuitSuperAdmins = map[string][]string{
 	"chaintest": {
 		"cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
-		"cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg", // ecosystem
+		"cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m", // ecosystem
 	},
 }
 
