@@ -711,7 +711,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
         )
     )
-    assert rsp["code"] != 0, "unauthorized account shouldn't be able to disable message"
+    assert (
+        rsp["code"] != 0
+    ), "unauthorized account should not be able to disable message"
     print(rsp["raw_log"])
 
     # use unauthorized account to authorize another account should fail
@@ -793,7 +795,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         broadcast_mode="sync",
     )
     print(rsp)
-    rsp = query_tx_wait_for_block(cluster, rsp["txhash"], output="json")
+    rsp = json.loads(query_tx_wait_for_block(cluster, rsp["txhash"], output="json"))
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
     print(rsp["raw_log"])
 
