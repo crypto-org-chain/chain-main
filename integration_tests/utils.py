@@ -677,17 +677,20 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
-    assert rsp["accounts"] == [{
-        'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
-        'permissions': {
-            'level': 'LEVEL_SUPER_ADMIN',
+    assert rsp["accounts"] == [
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
         },
-    }, {
-        'address': 'cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m',
-        'permissions': {
-            'level': 'LEVEL_SUPER_ADMIN',
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
         },
-    }]
+    ], rsp["accounts"]
 
     community_addr = cluster.address("community")
     ecosystem_addr = cluster.address("ecosystem")
@@ -745,22 +748,26 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
-    assert rsp["accounts"] == [{
-        'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
-        'permissions': {
-            'level': 'LEVEL_SUPER_ADMIN',
+    assert rsp["accounts"] == [
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
         },
-    }, {
-        'address': 'cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m',
-        'permissions': {
-            'level': 'LEVEL_SUPER_ADMIN',
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
         },
-    }, {
-        'address': signer1_addr,
-        'permissions': {
-            'level': 'LEVEL_SUPER_ADMIN',
+        {
+            "address": signer1_addr,
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
         },
-    }]
+    ], rsp["accounts"]
 
     # use newly authorized account to disable MsgSend should work
     rsp = json.loads(
@@ -807,9 +814,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
         )
     )
-    assert rsp["code"] != 0, (
-        "unauthorized account should not be able to disable messages"
-    )
+    assert (
+        rsp["code"] != 0
+    ), "unauthorized account should not be able to disable messages"
     print(rsp["raw_log"])
 
     # re-enable MsgSend for cleanup
