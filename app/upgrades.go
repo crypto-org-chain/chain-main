@@ -73,8 +73,6 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			keyTable = icacontrollertypes.ParamKeyTable()
 		case icahosttypes.SubModuleName:
 			keyTable = icahosttypes.ParamKeyTable()
-		// case icaauthmoduletypes.ModuleName:
-		// 	keyTable = icaauthmoduletypes.ParamKeyTable()
 		default:
 			continue
 		}

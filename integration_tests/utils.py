@@ -708,14 +708,14 @@ def assert_v6_circuit_is_working(cli, cluster):
     assert rsp["code"] != 0, "unauthorized account shouldn't be able to disable message"
     print(rsp["raw_log"])
 
-    # use unauthorized to authorize another account should fail
+    # use unauthorized account to authorize another account should fail
     rsp = json.loads(
         tx_wait_for_block(
             cluster,
             "circuit",
             "authorize",
             community_addr,
-            "{\"level\":3}",
+            "'{\"level\":3}'",
             from_=signer1_addr,
         )
     )
@@ -729,11 +729,38 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "authorize",
             signer1_addr,
-            "{\"level\":3}",
+            "'{\"level\":3}'",
             from_=ecosystem_addr,
         )
     )
     assert rsp["code"] == 0, rsp["raw_log"]
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [{
+        'address': 'cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65',
+        'permissions': {
+            'level': 'LEVEL_SUPER_ADMIN',
+        },
+    }, {
+        'address': 'cro16re30f3jz69dh7f92aazvs42sdfw5l8fcnuwrg',
+        'permissions': {
+            'level': 'LEVEL_SUPER_ADMIN',
+        },
+    }, {
+        'address': signer1_addr,
+        'permissions': {
+            'level': 'LEVEL_SUPER_ADMIN',
+        },
+    }]
 
     # use newly authorized account to disable MsgSend should work
     rsp = json.loads(
@@ -764,7 +791,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "authorize",
             signer1_addr,
-            "{\"level\":0}",
+            "'{\"level\":0}'",
             from_=ecosystem_addr,
         )
     )
