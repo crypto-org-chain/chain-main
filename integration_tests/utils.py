@@ -589,29 +589,9 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         raise TimeoutError(f"wait for {name} timeout")
 
 
-# tx command that wait for block inclusion
-# After Cosmos SDK v0.50.0, tx command no longer supports block mode
-def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
+def query_tx_wait_for_block(cluster, txhash, i=0, output="json"):
     cli = cluster.cosmos_cli(i)
-    kwargs.setdefault("node", cli.node_rpc)
 
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            *args,
-            "-y",
-            **kwargs,
-            home=cli.data_dir,
-            keyring_backend="test",
-            output="json",
-            broadcast_mode="sync",
-        )
-    )
-    print(rsp)
-    if rsp["code"] != 0:
-        raise Exception(f"broadcast failed: {rsp['raw_log']}")
-
-    txhash = rsp["txhash"]
     wait_for_block(cli, cluster.block_height() + 1)
     rsp = cli.raw(
         "q",
@@ -621,8 +601,31 @@ def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
         node=cli.node_rpc,
         output=output,
     )
-    print(rsp)
     return rsp
+
+
+# tx command that wait for block inclusion
+# After Cosmos SDK v0.50.0, tx command no longer supports block mode
+def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
+    cli = cluster.cosmos_cli(i)
+
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            *args,
+            "-y",
+            **kwargs,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            output="json",
+            broadcast_mode="sync",
+        )
+    )
+    if rsp["code"] != 0:
+        raise Exception(f"broadcast failed: {rsp['raw_log']}")
+
+    return query_tx_wait_for_block(cluster, rsp["txhash"], i, output)
 
 
 def get_default_expedited_params(gov_param, is_legacy=False):
@@ -787,7 +790,10 @@ def assert_v6_circuit_is_working(cli, cluster):
         community_addr,
         "1basecro",
         event_query_tx=False,
+        broadcast_mode="sync",
     )
+    print(rsp)
+    rsp = query_tx_wait_for_block(cluster, rsp["txhash"], output="json")
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
     print(rsp["raw_log"])
 
