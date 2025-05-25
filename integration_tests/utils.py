@@ -786,6 +786,19 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
+    # query list of disabled messages
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == ["cosmos.bank.v1beta1.MsgSend"]
+
     # use any account to send MsgSend should fail
     rsp = cli.transfer(
         signer2_addr,
@@ -796,6 +809,7 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     print(rsp)
     rsp = json.loads(query_tx_wait_for_block(cluster, rsp["txhash"], output="json"))
+    print(rsp)
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
     print(rsp["raw_log"])
 
