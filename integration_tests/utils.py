@@ -807,11 +807,8 @@ def assert_v6_circuit_is_working(cli, cluster):
         event_query_tx=False,
         broadcast_mode="sync",
     )
-    print(rsp)
-    rsp = json.loads(query_tx_wait_for_block(cluster, rsp["txhash"], output="json"))
-    print(rsp)
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
-    print(rsp["raw_log"])
+    assert rsp["raw_log"] == "tx type not allowed"
 
     # use super admin account to unauthorize signer1 should work
     rsp = json.loads(
@@ -847,7 +844,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             cluster,
             "circuit",
             "reset",
-            "cosmos.bank.v1beta1.MsgSend",
+            "/cosmos.bank.v1beta1.MsgSend",
             from_=community_addr,
         )
     )
