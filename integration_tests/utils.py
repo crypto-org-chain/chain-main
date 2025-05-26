@@ -796,6 +796,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
+    print(rsp)
     assert rsp["disabled_list"] == ["/cosmos.bank.v1beta1.MsgSend"]
 
     # use any account to send MsgSend should fail
