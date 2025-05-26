@@ -96,10 +96,12 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 		// OPTIONAL: prune expired tendermint consensus states to save storage space
 		if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, app.IBCKeeper.ClientKeeper); err != nil {
 			return nil, err
 		}
+
 		// explicitly update the IBC 02-client params, adding the localhost client type
 		var allowedClients []string
 		ibcParamSpace := app.GetSubspace(ibcexported.ModuleName)
