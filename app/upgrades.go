@@ -42,7 +42,8 @@ var CircuitSuperAdmins = map[string][]string{
 		"cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m", // ecosystem
 	},
 	"testnet-croeseid-4": {
-		"tcro1h704kvqdh48jzge7vvxpej9d6r9usvsshzjzaf",
+		"tcro14thaw89nlpp8hjm83z6zp3w5ymlpgg2zejncw7",
+		"tcro19uhea66tnx78r5258sq5vdad8msk47w6vn8f06",
 	},
 	"crypto-org-chain-mainnet-dryrun-1": {
 		"cro1h704kvqdh48jzge7vvxpej9d6r9usvssehmxac",

@@ -815,35 +815,6 @@ def assert_v6_circuit_is_working(cli, cluster):
     assert rsp["code"] != 0, "transfer should fail when message is disabled"
     assert rsp["raw_log"] == "tx type not allowed"
 
-    # use super admin account to unauthorize signer1 should work
-    rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
-            "circuit",
-            "authorize",
-            signer1_addr,
-            "'{\"level\":0}'",
-            from_=ecosystem_addr,
-        )
-    )
-    assert rsp["code"] == 0, (
-        "super admin account should be able to unauthorize others: " + rsp["raw_log"]
-    )
-
-    # use newly unauthorized account to disable MsgSend should fail
-    rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
-            "circuit",
-            "disable",
-            "cosmos.bank.v1beta1.MsgSend",
-            from_=signer1_addr,
-        )
-    )
-    assert rsp["code"] != 0, (
-        "newly authorized account should be able to disable messages: " + rsp["raw_log"]
-    )
-
     # re-enable MsgSend for cleanup
     rsp = json.loads(
         tx_wait_for_block(
@@ -869,6 +840,18 @@ def assert_v6_circuit_is_working(cli, cluster):
         )
     )
     assert rsp == {}, "disabled list should be empty after reset: " + str(rsp)
+
+    # use any account to send MsgSend should work now
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        event_query_tx=False,
+        broadcast_mode="sync",
+    )
+    assert rsp["code"] == 0, (
+        "transfer should work after message is re-enabled" + rsp["raw_log"]
+    )
 
     # reset signer1's permissions back to LEVEL_NONE_UNSPECIFIED
     rsp = json.loads(
@@ -896,6 +879,10 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     assert rsp["accounts"] == [
         {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
             "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
             "permissions": {"level": "LEVEL_SUPER_ADMIN"},
         },
@@ -907,3 +894,29 @@ def assert_v6_circuit_is_working(cli, cluster):
         "newly unauthorized account should be removed from the circuit accounts list: "
         + str(rsp["accounts"])
     )
+
+    # use newly unauthorized account to disable MsgSend should fail
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "disable",
+            "cosmos.bank.v1beta1.MsgSend",
+            from_=signer1_addr,
+        )
+    )
+    assert rsp["code"] != 0, (
+        "newly unauthorized account should not be able to disable messages: "
+        + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "disabled list should still be empty: " + str(rsp)
