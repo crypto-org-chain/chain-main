@@ -41,6 +41,17 @@ var CircuitSuperAdmins = map[string][]string{
 		"cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
 		"cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m", // ecosystem
 	},
+	"testnet-croeseid-4": {
+		"tcro1h704kvqdh48jzge7vvxpej9d6r9usvsshzjzaf",
+	},
+	"crypto-org-chain-mainnet-dryrun-1": {
+		"cro1h704kvqdh48jzge7vvxpej9d6r9usvssehmxac",
+		"cro1gv6e77tq7l06904g9nuu4nvnwcynaannwjpuaj",
+		"cro160rhmah7kmfy9vg9jklkdqyv6nu9j7jnjpun9j",
+	},
+	"crypto-org-chain-mainnet-1": {
+		"cro160rhmah7kmfy9vg9jklkdqyv6nu9j7jnjpun9j",
+	},
 }
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {

@@ -1,6 +1,6 @@
 # Changelog
 
-*May 16, 2025*
+*May 26, 2025*
 
 ## v6.0.0
 
@@ -17,6 +17,8 @@
 - [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Upgrade cometbft to v0.38.13, cosmos-sdk to `v0.50.10`.
 - [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
 - [#1157](https://github.com/crypto-org-chain/chain-main/pull/1157) Cache index/filters in rocksdb application.db to reduce ram usage.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add x/circuit module.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add Cosmos SDK v0.47 and v0.50 upgrade.
 - [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Cronos POS v6 is not released.
 
 *April 28, 2025*
