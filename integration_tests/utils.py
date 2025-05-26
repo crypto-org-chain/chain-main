@@ -670,6 +670,7 @@ def assert_expedited_gov_params(cli, old_param, is_legacy=False):
 
 
 def assert_v6_circuit_is_working(cli, cluster):
+    # verify upgrade handler has added super admin accounts
     rsp = json.loads(
         cli.raw(
             "query",
@@ -845,7 +846,51 @@ def assert_v6_circuit_is_working(cli, cluster):
             "circuit",
             "reset",
             "/cosmos.bank.v1beta1.MsgSend",
-            from_=community_addr,
+            from_=ecosystem_addr,
         )
     )
     assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == []
+
+    # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "authorize",
+            signer1_addr,
+            "'{\"level\":0}'",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], rsp["accounts"]
