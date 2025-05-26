@@ -434,7 +434,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
     assert acct["@type"] == "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
-    print(acct)
     vesting_acct = acct["base_vesting_account"]
     assert vesting_acct["original_vesting"] == [
         {"denom": "basecro", "amount": "7000000000000000000"}
