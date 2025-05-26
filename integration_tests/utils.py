@@ -786,8 +786,6 @@ def assert_v6_circuit_is_working(cli, cluster):
         )
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-
-    # query list of disabled messages
     rsp = json.loads(
         cli.raw(
             "query",
@@ -860,6 +858,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
+    print(861, rsp)
     assert rsp["disabled_list"] == []
 
     # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
