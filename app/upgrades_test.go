@@ -54,7 +54,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedThreshold when DefaultExpeditedThreshold >= Threshold",
+			name: "update ExpeditedThreshold when DefaultExpeditedThreshold < Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = "0.99"
 			},
@@ -63,7 +63,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedThreshold when DefaultExpeditedThreshold >= Threshold",
+			name: "update ExpeditedThreshold when DefaultExpeditedThreshold = Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = govv1.DefaultExpeditedThreshold.String()
 			},
@@ -73,7 +73,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "no update ExpeditedThreshold when DefaultExpeditedThreshold < Threshold",
+			name: "no update ExpeditedThreshold when DefaultExpeditedThreshold > Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = govv1.DefaultExpeditedThreshold.Quo(math.LegacyMustNewDecFromStr("1.1")).String()
 			},
@@ -82,7 +82,20 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod >= VotingPeriod",
+			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod > VotingPeriod",
+			malleate: func() {
+				period := govv1.DefaultExpeditedPeriod
+				votingPeriod := period - 1*time.Second
+				suite.govParams.VotingPeriod = &votingPeriod
+			},
+			exp: func(params govv1.Params) {
+				votingPeriod := app.DurationToDec(*suite.govParams.VotingPeriod)
+				expected := app.DecToDuration(app.DefaultPeriodRatio().Mul(votingPeriod))
+				suite.Require().Equal(expected, *params.ExpeditedVotingPeriod)
+			},
+		},
+		{
+			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod = VotingPeriod",
 			malleate: func() {
 				period := govv1.DefaultExpeditedPeriod
 				suite.govParams.VotingPeriod = &period
