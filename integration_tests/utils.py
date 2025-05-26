@@ -712,9 +712,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
         )
     )
-    assert rsp["code"] != 0, (
-        "unauthorized account should not be able to disable message: " + rsp["raw_log"]
-    )
+    assert (
+        rsp["code"] != 0
+    ), "unauthorized account should not be able to disable message"
 
     # use unauthorized account to authorize another account should fail
     rsp = json.loads(
@@ -727,9 +727,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
         )
     )
-    assert rsp["code"] != 0, (
-        "non-admin account should not be able to authorize others: " + rsp["raw_log"]
-    )
+    assert (
+        rsp["code"] != 0
+    ), "non-super-admin account should not be able to authorize others"
 
     # use super admin account to authorize any account should work
     rsp = json.loads(
@@ -905,10 +905,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
         )
     )
-    assert rsp["code"] != 0, (
-        "newly unauthorized account should not be able to disable messages: "
-        + rsp["raw_log"]
-    )
+    assert (
+        rsp["code"] != 0
+    ), "newly unauthorized account should not be able to disable messages"
     rsp = json.loads(
         cli.raw(
             "query",
