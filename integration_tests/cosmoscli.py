@@ -115,6 +115,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         proposer,
         kind,
         proposal,
+        event_query_tx=True,
         **kwargs,
     ):
         if kind == "software-upgrade":
@@ -142,7 +143,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-        else:
+        elif kind == "cancel-software-upgrade":
             rsp = json.loads(
                 self.raw(
                     "tx",
@@ -162,7 +163,28 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-        if rsp["code"] == 0:
+        else:
+            with tempfile.NamedTemporaryFile("w") as fp:
+                json.dump(proposal, fp)
+                fp.flush()
+                rsp = json.loads(
+                    self.raw(
+                        "tx",
+                        "gov",
+                        "submit-proposal",
+                        kind,
+                        fp.name,
+                        "-y",
+                        from_=proposer,
+                        # basic
+                        home=self.data_dir,
+                        node=self.node_rpc,
+                        keyring_backend="test",
+                        chain_id=self.chain_id,
+                        **kwargs,
+                    )
+                )
+        if rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
