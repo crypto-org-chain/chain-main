@@ -1,14 +1,14 @@
 {
     "cosmos-sdk": {
-        "branch": "v0.45.0",
+        "branch": "v0.50.13",
         "description": ":chains: A Framework for Building High Value Public Blockchains :sparkles:",
         "homepage": "https://cosmos.network/",
         "owner": "cosmos",
         "repo": "cosmos-sdk",
-        "rev": "b6c77e6c819f8a51166649eaef125d1bfb276f04",
-        "sha256": "09ns4yfxyfi7c7n5g69zv32m1rdssdl48c1akmv1y2vz6ayz4v02",
+        "rev": "7b9d2ff98d02bd5a7edd3b153dd577819cc1d777",
+        "sha256": "18wjcpww35bq21ywxnpjgirv3sqip4bwrlk50bw3lx5rz99aih4n",
         "type": "tarball",
-        "url": "https://github.com/cosmos/cosmos-sdk/archive/b6c77e6c819f8a51166649eaef125d1bfb276f04.tar.gz",
+        "url": "https://github.com/cosmos/cosmos-sdk/archive/7b9d2ff98d02bd5a7edd3b153dd577819cc1d777.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     },
     "flake-compat": {

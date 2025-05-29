@@ -115,6 +115,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         proposer,
         kind,
         proposal,
+        event_query_tx=True,
         **kwargs,
     ):
         if kind == "software-upgrade":
@@ -142,7 +143,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-        else:
+        elif kind == "cancel-software-upgrade":
             rsp = json.loads(
                 self.raw(
                     "tx",
@@ -162,7 +163,28 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-        if rsp["code"] == 0:
+        else:
+            with tempfile.NamedTemporaryFile("w") as fp:
+                json.dump(proposal, fp)
+                fp.flush()
+                rsp = json.loads(
+                    self.raw(
+                        "tx",
+                        "gov",
+                        "submit-proposal",
+                        kind,
+                        fp.name,
+                        "-y",
+                        from_=proposer,
+                        # basic
+                        home=self.data_dir,
+                        node=self.node_rpc,
+                        keyring_backend="test",
+                        chain_id=self.chain_id,
+                        **kwargs,
+                    )
+                )
+        if rsp["code"] == 0 and event_query_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -309,6 +331,27 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         res = res.get("params") or res
         return res
 
+    # This method is deprecated after Cosmos SDK v0.50.0
+    # x/params query subspace is deprecated after Cosmos SDK v0.50.0
+    def query_params_subspace(self, subspace, param):
+        kwargs = {
+            "node": self.node_rpc,
+            "output": "json",
+        }
+        res = json.loads(
+            self.raw(
+                "q",
+                "params",
+                "subspace",
+                subspace,
+                param,
+                **kwargs,
+            )
+        )
+
+        res = res.get("value") or res
+        return res
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -373,3 +416,8 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def query_params(self, mod, i=0):
         return self.cosmos_cli(i).query_params(mod)
+
+    # This method is deprecated after Cosmos SDK v0.50.0
+    # x/params query subspace is deprecated after Cosmos SDK v0.50.0
+    def query_params_subspace(self, subspace, param, i=0):
+        return self.cosmos_cli(i).query_params_subspace(subspace, param)

@@ -589,20 +589,71 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         raise TimeoutError(f"wait for {name} timeout")
 
 
-def get_expedited_params(param):
-    min_deposit = param["min_deposit"][0]
-    voting_period = param["voting_period"]
-    tokens_ratio = 5
-    threshold_ratio = 1.334
-    period_ratio = 0.5
-    expedited_threshold = float(param["threshold"]) * threshold_ratio
+def query_tx_wait_for_block(cluster, txhash, i=0, output="json"):
+    cli = cluster.cosmos_cli(i)
+
+    wait_for_block(cli, cluster.block_height() + 1)
+    rsp = cli.raw(
+        "q",
+        "tx",
+        txhash,
+        home=cli.data_dir,
+        node=cli.node_rpc,
+        output=output,
+    )
+    return rsp
+
+
+# tx command that wait for block inclusion
+# After Cosmos SDK v0.50.0, tx command no longer supports block mode
+def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
+    cli = cluster.cosmos_cli(i)
+
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            *args,
+            "-y",
+            **kwargs,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+            output="json",
+            broadcast_mode="sync",
+        )
+    )
+    if rsp["code"] != 0:
+        raise Exception(f"broadcast failed: {rsp['raw_log']}")
+
+    return query_tx_wait_for_block(cluster, rsp["txhash"], i, output)
+
+
+def get_default_expedited_params(gov_param, is_legacy=False):
+    default_min_expedited_deposit_token_ratio = 5
+    default_threshold_ratio = 1.334
+    default_period_ratio = 0.5
+    if is_legacy:
+        min_deposit = gov_param["deposit_params"]["min_deposit"][0]
+        voting_period = gov_param["voting_params"]["voting_period"]
+        voting_period = f"{int(int(voting_period) / 1e9)}s"
+        threshold = gov_param["tally_params"]["threshold"]
+    else:
+        min_deposit = gov_param["min_deposit"][0]
+        voting_period = gov_param["voting_period"]
+        threshold = gov_param["threshold"]
+
+    expedited_threshold = float(threshold) * default_threshold_ratio
     expedited_threshold = Decimal(f"{expedited_threshold}")
-    expedited_voting_period = int(int(voting_period[:-1]) * period_ratio)
+    expedited_voting_period = int(int(voting_period[:-1]) * default_period_ratio)
+
+    min_deposit_amount = int(min_deposit["amount"])
+    expedited_amount = min_deposit_amount * default_min_expedited_deposit_token_ratio
+
     return {
         "expedited_min_deposit": [
             {
                 "denom": min_deposit["denom"],
-                "amount": str(int(min_deposit["amount"]) * tokens_ratio),
+                "amount": str(expedited_amount),
             }
         ],
         "expedited_threshold": f"{expedited_threshold:.18f}",
@@ -610,8 +661,365 @@ def get_expedited_params(param):
     }
 
 
-def assert_gov_params(cli, old_param):
+def assert_expedited_gov_params(cli, old_param, is_legacy=False):
     param = cli.query_params("gov")
-    expedited_param = get_expedited_params(old_param)
+    expedited_param = get_default_expedited_params(old_param, is_legacy)
     for key, value in expedited_param.items():
         assert param[key] == value, param
+
+
+def assert_v6_circuit_is_working(cli, cluster):
+    # verify upgrade handler has added super admin accounts
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+    ], "x/circuit super admin accounts should be added during upgrade" + str(
+        rsp["accounts"]
+    )
+
+    community_addr = cluster.address("community")
+    ecosystem_addr = cluster.address("ecosystem")
+    signer1_addr = cluster.address("signer1")
+    signer2_addr = cluster.address("signer2")
+
+    # use unauthorized account to disable MsgSend should fail
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "disable",
+            "cosmos.bank.v1beta1.MsgSend",
+            "-y",
+            from_=signer1_addr,
+        )
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit unauthorized account should not be able to disable message"
+
+    # use unauthorized account to authorize another account should fail
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "authorize",
+            community_addr,
+            "'{\"level\":3}'",
+            from_=signer1_addr,
+        )
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit non-super-admin account should not be able to authorize others"
+
+    # use super admin account to authorize any account should work
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "authorize",
+            signer1_addr,
+            "'{\"level\":3}'",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to authorize signer1: "
+        + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+    ], "x/circuit newly authorized account should be in the accounts list: " + str(
+        rsp["accounts"]
+    )
+
+    # use newly authorized account to disable MsgSend should work
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "disable",
+            "/cosmos.bank.v1beta1.MsgSend",
+            from_=signer1_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit newly authorized account should be able to disable message: "
+        + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == [
+        "/cosmos.bank.v1beta1.MsgSend"
+    ], "MsgBank should be in the x/circuit disabled list: " + str(rsp["disabled_list"])
+
+    # use any account to send MsgSend should fail
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        event_query_tx=False,
+        broadcast_mode="sync",
+    )
+    assert (
+        rsp["code"] != 0
+    ), "transfer should fail when message is disabled in x/circuit"
+    assert rsp["raw_log"] == "tx type not allowed"
+
+    # re-enable MsgSend for cleanup
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "reset",
+            "/cosmos.bank.v1beta1.MsgSend",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to reset the disabled list: "
+        + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should be empty after reset: " + str(rsp)
+
+    # use any account to send MsgSend should work now
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        event_query_tx=False,
+        broadcast_mode="sync",
+    )
+    assert rsp["code"] == 0, (
+        "transfer should work after message is re-enabled in x/circuit" + rsp["raw_log"]
+    )
+
+    # reset signer1's permissions back to LEVEL_NONE_UNSPECIFIED
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "authorize",
+            signer1_addr,
+            "'{\"level\":0}'",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to unauthorize: " + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], "x/circuit account should be unauthorized after reset: " + str(rsp["accounts"])
+
+    # use newly unauthorized account to disable MsgSend should fail
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "disable",
+            "cosmos.bank.v1beta1.MsgSend",
+            from_=signer1_addr,
+        )
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit newly unauthorized account should not be able to disable messages"
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should remain empty: " + str(rsp)
+
+    # test governance proposal for circuit breaker authorization
+    # create a proposal to authorize signer2 as super admin
+    proposal = {
+        "messages": [
+            {
+                "@type": "/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker",
+                "granter": module_address(ModuleAccount.Gov.value),
+                "grantee": signer2_addr,
+                "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+            }
+        ],
+        "deposit": "1cro",
+        "title": "Authorize Circuit Breaker",
+        "summary": "Authorize signer2 as circuit breaker super admin",
+    }
+    rsp = cluster.gov_propose_new(
+        "community", "submit-proposal", proposal, broadcast_mode="sync"
+    )
+    assert rsp["code"] == 0, (
+        "should be able to submit x/circuit authorization proposal: " + rsp["raw_log"]
+    )
+
+    approve_proposal(cluster, rsp, msg=",/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": signer2_addr,
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], (
+        "x/circuit newly authorized account should be in the accounts list after "
+        + "proposal execution"
+    )
+
+    # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "authorize",
+            signer2_addr,
+            "'{\"level\":0}'",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin should be able to unauthorize: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": signer2_addr,
+            "permissions": {},
+        },
+    ], "x/circuit account should be unauthorized after reset" + str(rsp["accounts"])
