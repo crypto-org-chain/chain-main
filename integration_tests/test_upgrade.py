@@ -360,6 +360,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
+        broadcast_mode="block",
         event_query_tx=False,
     )
     # vesting bug fixed
