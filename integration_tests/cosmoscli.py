@@ -172,7 +172,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         "tx",
                         "gov",
                         "submit-proposal",
-                        kind,
                         fp.name,
                         "-y",
                         from_=proposer,
