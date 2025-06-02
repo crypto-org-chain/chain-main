@@ -963,7 +963,12 @@ def assert_v6_circuit_is_working(cli, cluster):
             output="json",
         )
     )
+
     assert rsp["accounts"] == [
+        {
+            "address": signer2_addr,
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
         {
             "address": signer1_addr,
             "permissions": {},
@@ -976,13 +981,9 @@ def assert_v6_circuit_is_working(cli, cluster):
             "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
             "permissions": {"level": "LEVEL_SUPER_ADMIN"},
         },
-        {
-            "address": signer2_addr,
-            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
-        },
     ], (
         "x/circuit newly authorized account should be in the accounts list after "
-        + "proposal execution"
+        + "proposal execution: "
         + str(rsp["accounts"])
     )
 
@@ -1013,6 +1014,10 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     assert rsp["accounts"] == [
         {
+            "address": signer2_addr,
+            "permissions": {},
+        },
+        {
             "address": signer1_addr,
             "permissions": {},
         },
@@ -1023,9 +1028,5 @@ def assert_v6_circuit_is_working(cli, cluster):
         {
             "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
             "permissions": {"level": "LEVEL_SUPER_ADMIN"},
-        },
-        {
-            "address": signer2_addr,
-            "permissions": {},
         },
     ], "x/circuit account should be unauthorized after reset" + str(rsp["accounts"])
