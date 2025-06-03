@@ -210,7 +210,7 @@ def upgrade(
             proposal_id,
             "yes",
             i=i,
-            wait_for_block=wait_for_block,
+            event_query_tx=wait_for_block,
             broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
@@ -350,7 +350,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
-        wait_for_block=False,
+        event_query_tx=False,
         broadcast_mode="block",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -361,7 +361,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
-        wait_for_block=False,
+        event_query_tx=False,
         broadcast_mode="block",
     )
     # vesting bug
@@ -384,8 +384,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
+        event_query_tx=False,
         broadcast_mode="block",
-        wait_for_block=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
