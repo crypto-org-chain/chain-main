@@ -187,14 +187,14 @@ def upgrade(
             broadcast_mode=broadcast_mode,
         )
     else:
-        rsp = cluster.gov_propose(
+        rsp = cluster.gov_propose_new(
             "community",
             kind,
             proposal,
             event_query_tx=event_query_tx,
             broadcast_mode=broadcast_mode,
         )
-    assert rsp["code"] == 0, "error submitting upgrade gov proposal: " + rsp["raw_log"]
+    assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
     # get proposal_id
     if gte_cosmos_sdk_v46:
         proposal_id = get_proposal_id_legacy(rsp)
