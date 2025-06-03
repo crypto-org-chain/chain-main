@@ -213,7 +213,7 @@ def upgrade(
             event_query_tx=event_query_tx,
             broadcast_mode=broadcast_mode,
         )
-        assert rsp["code"] == 0, rsp["raw_log"]
+        assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
     wait_for_block_time(

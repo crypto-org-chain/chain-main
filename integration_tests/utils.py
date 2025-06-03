@@ -955,8 +955,8 @@ def assert_v6_circuit_is_working(cli, cluster):
         )
     )
     assert rsp["disabled_list"] == [
-        "/cosmos.bank.v1beta1.MsgSend",
         "/cosmos.bank.v1beta1.MsgMultiSend",
+        "/cosmos.bank.v1beta1.MsgSend",
     ], "MsgSend and MsgMultiSend should be in the x/circuit disabled list: " + str(
         rsp["disabled_list"]
     )
