@@ -6,6 +6,17 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
+    def tx(self, *args, wait_for_block=True, **kwargs):
+        output = kwargs.get("output", "json")
+        if output != "json" and wait_for_block:
+            raise Exception("wait_for_block only works with output=\"json\"")
+
+        rsp = self.raw("tx", *args, **kwargs)
+        if wait_for_block:
+            rsp = json.loads(rsp)
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+
     def submit_gov_proposal(self, proposal, **kwargs):
         rsp = json.loads(
             self.raw(
@@ -367,6 +378,9 @@ class ClusterCLI(cluster.ClusterCLI):
             zemu_address=self.zemu_address,
             zemu_button_port=self.zemu_button_port,
         )
+
+    def tx(self, *args, i=0, wait_for_block=True, **kwargs):
+        return self.cosmos_cli(i).tx(*args, wait_for_block, **kwargs)
 
     def submit_gov_proposal(self, proposer, i=0, **kwargs):
         return self.cosmos_cli(i).submit_gov_proposal(proposer, **kwargs)

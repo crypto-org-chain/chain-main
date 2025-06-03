@@ -594,45 +594,6 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         raise TimeoutError(f"wait for {name} timeout")
 
 
-def query_tx_wait_for_block(cluster, txhash, i=0, output="json"):
-    cli = cluster.cosmos_cli(i)
-
-    wait_for_block(cli, cluster.block_height() + 1)
-    rsp = cli.raw(
-        "q",
-        "tx",
-        txhash,
-        home=cli.data_dir,
-        node=cli.node_rpc,
-        output=output,
-    )
-    return rsp
-
-
-# tx command that wait for block inclusion
-# After Cosmos SDK v0.50.0, tx command no longer supports block mode
-def tx_wait_for_block(cluster, *args, i=0, output="json", **kwargs):
-    cli = cluster.cosmos_cli(i)
-
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            *args,
-            "-y",
-            **kwargs,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            keyring_backend="test",
-            output="json",
-            broadcast_mode="sync",
-        )
-    )
-    if rsp["code"] != 0:
-        raise Exception(f"broadcast failed: {rsp['raw_log']}")
-
-    return query_tx_wait_for_block(cluster, rsp["txhash"], i, output)
-
-
 def get_default_expedited_params(gov_param, is_legacy=False):
     default_min_expedited_deposit_token_ratio = 5
     default_threshold_ratio = 1.334
@@ -709,13 +670,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # use unauthorized account to disable MsgSend should fail
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "disable",
-            "cosmos.bank.v1beta1.MsgSend",
+            "/cosmos.bank.v1beta1.MsgSend",
             "-y",
             from_=signer1_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert (
@@ -724,13 +687,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # use unauthorized account to authorize another account should fail
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "authorize",
             community_addr,
             "'{\"level\":3}'",
             from_=signer1_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert (
@@ -739,13 +704,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # use super admin account to authorize any account should work
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "authorize",
             signer1_addr,
             "'{\"level\":3}'",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -788,12 +755,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # use newly authorized account to disable MsgSend should work
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "disable",
             "/cosmos.bank.v1beta1.MsgSend",
+            "-y",
             from_=signer1_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -829,12 +799,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # re-enable MsgSend for cleanup
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "reset",
             "/cosmos.bank.v1beta1.MsgSend",
+            "-y",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -867,13 +840,16 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # reset signer1's permissions back to LEVEL_NONE_UNSPECIFIED
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "authorize",
             signer1_addr,
             "'{\"level\":0}'",
+            "-y",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -906,12 +882,15 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # use newly unauthorized account to disable MsgSend should fail
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "disable",
-            "cosmos.bank.v1beta1.MsgSend",
+            "/cosmos.bank.v1beta1.MsgSend",
+            "-y",
             from_=signer1_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert (
@@ -931,13 +910,16 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # test disable 2 messages in CLI
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "disable",
             "/cosmos.bank.v1beta1.MsgSend",
             "/cosmos.bank.v1beta1.MsgMultiSend",
+            "-y",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -962,13 +944,16 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
 
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "reset",
             "/cosmos.bank.v1beta1.MsgSend",
             "/cosmos.bank.v1beta1.MsgMultiSend",
+            "-y",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -1047,13 +1032,16 @@ def assert_v6_circuit_is_working(cli, cluster):
 
     # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
     rsp = json.loads(
-        tx_wait_for_block(
-            cluster,
+        cli.tx(
             "circuit",
             "authorize",
             signer2_addr,
             "'{\"level\":0}'",
+            "-y",
             from_=ecosystem_addr,
+            broadcast_mode="sync",
+            output="json",
+            wait_for_block=True,
         )
     )
     assert rsp["code"] == 0, (
