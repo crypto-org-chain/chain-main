@@ -176,14 +176,14 @@ def upgrade(
         "upgrade-height": target_height,
         "deposit": "0.1cro",
     }
-    wait_for_block = broadcast_mode == "sync"
+    tx_wait_for_block = broadcast_mode == "sync"
     if gte_cosmos_sdk_v0_46:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
             no_validate=True,
-            wait_for_block=wait_for_block,
+            wait_for_block=tx_wait_for_block,
             broadcast_mode=broadcast_mode,
         )
     else:
@@ -191,7 +191,7 @@ def upgrade(
             "community",
             kind,
             proposal,
-            wait_for_block=wait_for_block,
+            wait_for_block=tx_wait_for_block,
             broadcast_mode=broadcast_mode,
         )
     assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
@@ -210,7 +210,7 @@ def upgrade(
             proposal_id,
             "yes",
             i=i,
-            event_query_tx=wait_for_block,
+            event_query_tx=tx_wait_for_block,
             broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
@@ -264,7 +264,7 @@ def upgrade(
     cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
 
     # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2, 600)
+    tx_wait_for_block(cluster, target_height + 2, 600)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
