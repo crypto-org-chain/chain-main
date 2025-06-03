@@ -39,7 +39,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         event_query_tx=True,
         **kwargs,
     ):
-        mode = kwargs.get("broadcast_mode")
         if kind == "software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -66,9 +65,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0 and event_query_tx and mode == "sync":
-                rsp = self.event_query_tx_for(rsp["txhash"])
-            return rsp
         elif kind == "cancel-software-upgrade":
             rsp = json.loads(
                 self.raw(
@@ -90,9 +86,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     **kwargs,
                 )
             )
-            if rsp["code"] == 0 and event_query_tx:
-                rsp = self.event_query_tx_for(rsp["txhash"])
-            return rsp
         else:
             with tempfile.NamedTemporaryFile("w") as fp:
                 json.dump(proposal, fp)
@@ -114,9 +107,9 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         **kwargs,
                     )
                 )
-                if rsp["code"] == 0 and event_query_tx:
-                    rsp = self.event_query_tx_for(rsp["txhash"])
-                return rsp
+        if rsp["code"] == 0 and event_query_tx:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
 
     def gov_propose_since_cosmos_sdk_v0_50(
         self,

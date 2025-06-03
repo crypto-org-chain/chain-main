@@ -502,7 +502,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     consensus_validator_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "ValidatorParams")
     )
-    upgrade(cluster, "v6.0.0", target_height)
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
