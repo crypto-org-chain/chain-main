@@ -929,6 +929,64 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
     assert rsp == {}, "x/circuit disabled list should remain empty: " + str(rsp)
 
+    # test disable 2 messages in CLI
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "disable",
+            "/cosmos.bank.v1beta1.MsgSend",
+            "/cosmos.bank.v1beta1.MsgMultiSend",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit CLI should be able to disable 2 messages: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == [
+        "/cosmos.bank.v1beta1.MsgSend",
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+    ], "MsgSend and MsgMultiSend should be in the x/circuit disabled list: " + str(
+        rsp["disabled_list"]
+    )
+
+    rsp = json.loads(
+        tx_wait_for_block(
+            cluster,
+            "circuit",
+            "reset",
+            "/cosmos.bank.v1beta1.MsgSend",
+            "/cosmos.bank.v1beta1.MsgMultiSend",
+            from_=ecosystem_addr,
+        )
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit CLI should be able to reset 2 messages: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should be empty after reset: " + str(rsp)
+
     # test governance proposal for circuit breaker authorization
     # create a proposal to authorize signer2 as super admin
     proposal = {
