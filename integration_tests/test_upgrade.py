@@ -176,14 +176,14 @@ def upgrade(
         "upgrade-height": target_height,
         "deposit": "0.1cro",
     }
-    event_query_tx = broadcast_mode == "sync"
+    wait_for_block = broadcast_mode == "sync"
     if gte_cosmos_sdk_v0_46:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
             no_validate=True,
-            event_query_tx=event_query_tx,
+            wait_for_block=wait_for_block,
             broadcast_mode=broadcast_mode,
         )
     else:
@@ -191,7 +191,7 @@ def upgrade(
             "community",
             kind,
             proposal,
-            event_query_tx=event_query_tx,
+            wait_for_block=wait_for_block,
             broadcast_mode=broadcast_mode,
         )
     assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
@@ -210,7 +210,7 @@ def upgrade(
             proposal_id,
             "yes",
             i=i,
-            event_query_tx=event_query_tx,
+            wait_for_block=wait_for_block,
             broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
@@ -334,7 +334,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         community_addr,
         reserve_addr,
         "10000basecro",
-        event_query_tx=False,
+        wait_for_block=False,
         broadcast_mode="block",
     )
 
@@ -350,7 +350,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
-        event_query_tx=False,
+        wait_for_block=False,
         broadcast_mode="block",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -361,7 +361,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         signer1_address,
         0,
         "0.025basecro",
-        event_query_tx=False,
+        wait_for_block=False,
         broadcast_mode="block",
     )
     # vesting bug
@@ -385,7 +385,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         0,
         "0.025basecro",
         broadcast_mode="block",
-        event_query_tx=False,
+        wait_for_block=False,
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -400,7 +400,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomname = "testdenomname"
     creator = cluster.address("community")
     rsp = cluster.create_nft(
-        creator, denomid, denomname, event_query_tx=False, broadcast_mode="block"
+        creator, denomid, denomname, wait_for_block=False, broadcast_mode="block"
     )
     ev = find_log_event_attrs_legacy(rsp["logs"], "issue_denom")
     assert ev == {

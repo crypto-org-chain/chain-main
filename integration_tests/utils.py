@@ -789,7 +789,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         signer2_addr,
         community_addr,
         "1basecro",
-        event_query_tx=False,
+        wait_for_block=False,
         broadcast_mode="sync",
     )
     assert (
@@ -831,7 +831,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         signer2_addr,
         community_addr,
         "1basecro",
-        event_query_tx=False,
+        wait_for_block=False,
         broadcast_mode="sync",
     )
     assert rsp["code"] == 0, (
