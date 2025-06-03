@@ -1002,7 +1002,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         "title": "Authorize Circuit Breaker",
         "summary": "Authorize signer2 as circuit breaker super admin",
     }
-    rsp = cluster.gov_propose_new(
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
         "community", "submit-proposal", proposal, broadcast_mode="sync"
     )
     assert rsp["code"] == 0, (

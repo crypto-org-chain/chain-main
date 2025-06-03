@@ -128,7 +128,7 @@ def test_cosmovisor(cosmovisor_cluster):
     target_height = height + 15
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
-    rsp = cluster.gov_gte_cosmos_sdk_v46(
+    rsp = cluster.gov_propose_legacy(
         "community",
         "software-upgrade",
         {
@@ -164,7 +164,7 @@ def upgrade(
     cluster,
     plan_name,
     target_height,
-    gte_cosmos_sdk_v46=True,
+    gte_cosmos_sdk_v0_46=True,
     broadcast_mode="sync",
 ):
     print("upgrade height", target_height, plan_name)
@@ -177,7 +177,7 @@ def upgrade(
         "deposit": "0.1cro",
     }
     event_query_tx = broadcast_mode == "sync"
-    if gte_cosmos_sdk_v46:
+    if gte_cosmos_sdk_v0_46:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
@@ -187,7 +187,7 @@ def upgrade(
             broadcast_mode=broadcast_mode,
         )
     else:
-        rsp = cluster.gov_propose_new(
+        rsp = cluster.gov_propose_before_cosmos_sdk_v0_46(
             "community",
             kind,
             proposal,
@@ -196,7 +196,7 @@ def upgrade(
         )
     assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
     # get proposal_id
-    if gte_cosmos_sdk_v46:
+    if gte_cosmos_sdk_v0_46:
         proposal_id = get_proposal_id_legacy(rsp)
     else:
         ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
@@ -291,7 +291,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         cluster,
         "v2.0.0",
         target_height,
-        gte_cosmos_sdk_v46=False,
+        gte_cosmos_sdk_v0_46=False,
         broadcast_mode="block",
     )
     cli = cluster.cosmos_cli()
@@ -374,7 +374,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         cluster,
         "v3.0.0",
         target_height,
-        gte_cosmos_sdk_v46=False,
+        gte_cosmos_sdk_v0_46=False,
         broadcast_mode="block",
     )
 
@@ -415,7 +415,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         cluster,
         "v4.2.0",
         target_height,
-        gte_cosmos_sdk_v46=False,
+        gte_cosmos_sdk_v0_46=False,
         broadcast_mode="block",
     )
 
@@ -570,7 +570,7 @@ def test_cancel_upgrade(cluster):
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     upgrade_height = cluster.block_height() + 30
     print("propose upgrade plan at", upgrade_height)
-    rsp = cluster.gov_propose_new(
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
         "community",
         "software-upgrade",
         {
@@ -585,7 +585,7 @@ def test_cancel_upgrade(cluster):
     approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     print("cancel upgrade plan")
-    rsp = cluster.gov_propose_new(
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
         "community",
         "cancel-software-upgrade",
         {

@@ -22,6 +22,14 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
+    def gov_propose_before_cosmos_sdk_v0_46(
+        self, proposer, kind, proposal, event_query_tx=True, **kwargs
+    ):
+        rsp = self.gov_propose(proposer, kind, proposal, **kwargs)
+        if rsp["code"] == 0 and event_query_tx:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+
     def gov_propose_legacy(
         self,
         proposer,
@@ -110,7 +118,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     rsp = self.event_query_tx_for(rsp["txhash"])
                 return rsp
 
-    def gov_propose_new(
+    def gov_propose_since_cosmos_sdk_v0_50(
         self,
         proposer,
         kind,
@@ -370,6 +378,13 @@ class ClusterCLI(cluster.ClusterCLI):
     def submit_gov_proposal(self, proposer, i=0, **kwargs):
         return self.cosmos_cli(i).submit_gov_proposal(proposer, **kwargs)
 
+    def gov_propose_before_cosmos_sdk_v0_46(
+        self, proposer, kind, proposal, i=0, event_query_tx=True, **kwargs
+    ):
+        return self.cosmos_cli(i).gov_propose_before_cosmos_sdk_v0_46(
+            proposer, kind, proposal, event_query_tx, **kwargs
+        )
+
     def gov_propose_legacy(
         self,
         proposer,
@@ -389,7 +404,7 @@ class ClusterCLI(cluster.ClusterCLI):
             **kwargs,
         )
 
-    def gov_propose_new(
+    def gov_propose_since_cosmos_sdk_v0_50(
         self,
         proposer,
         kind,
@@ -397,7 +412,7 @@ class ClusterCLI(cluster.ClusterCLI):
         i=0,
         **kwargs,
     ):
-        return self.cosmos_cli(i).gov_propose_new(
+        return self.cosmos_cli(i).gov_propose_since_cosmos_sdk_v0_50(
             proposer,
             kind,
             proposal,
