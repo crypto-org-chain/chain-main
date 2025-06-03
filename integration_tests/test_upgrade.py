@@ -128,7 +128,7 @@ def test_cosmovisor(cosmovisor_cluster):
     target_height = height + 15
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
-    rsp = cluster.gov_propose_legacy(
+    rsp = cluster.gov_gte_cosmos_sdk_v46(
         "community",
         "software-upgrade",
         {
@@ -164,7 +164,7 @@ def upgrade(
     cluster,
     plan_name,
     target_height,
-    propose_legacy=True,
+    gte_cosmos_sdk_v46=True,
     broadcast_mode="sync",
 ):
     print("upgrade height", target_height, plan_name)
@@ -177,7 +177,7 @@ def upgrade(
         "deposit": "0.1cro",
     }
     event_query_tx = broadcast_mode == "sync"
-    if propose_legacy:
+    if gte_cosmos_sdk_v46:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
@@ -191,10 +191,12 @@ def upgrade(
             "community",
             kind,
             proposal,
+            event_query_tx=event_query_tx,
+            broadcast_mode=broadcast_mode,
         )
-    assert rsp["code"] == 0, rsp["raw_log"]
+    assert rsp["code"] == 0, "error submitting upgrade gov proposal: " + rsp["raw_log"]
     # get proposal_id
-    if propose_legacy:
+    if gte_cosmos_sdk_v46:
         proposal_id = get_proposal_id_legacy(rsp)
     else:
         ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
@@ -285,7 +287,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v2 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v2.0.0", target_height, propose_legacy=False, broadcast_mode="block")
+    upgrade(
+        cluster,
+        "v2.0.0",
+        target_height,
+        gte_cosmos_sdk_v46=False,
+        broadcast_mode="block",
+    )
     cli = cluster.cosmos_cli()
 
     [validator1_operator_address, validator2_operator_address] = list(
@@ -362,7 +370,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v3 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v3.0.0", target_height, propose_legacy=False, broadcast_mode="block")
+    upgrade(
+        cluster,
+        "v3.0.0",
+        target_height,
+        gte_cosmos_sdk_v46=False,
+        broadcast_mode="block",
+    )
 
     rsp = cluster.delegate_amount(
         validator2_operator_address,
@@ -395,9 +409,15 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         "creator": creator,
     }, ev
 
-    # v4 upgrade
+    # v4.2 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v4.2.0", target_height, propose_legacy=False, broadcast_mode="block")
+    upgrade(
+        cluster,
+        "v4.2.0",
+        target_height,
+        gte_cosmos_sdk_v46=False,
+        broadcast_mode="block",
+    )
 
     cli = cluster.cosmos_cli()
 
