@@ -20,7 +20,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-def fund_community_pool(self, amt, wait_for_block=True, **kwargs):
+def fund_community_pool(self, amt, wait_tx=True, **kwargs):
     rsp = json.loads(
         self.raw(
             "tx",
@@ -35,7 +35,7 @@ def fund_community_pool(self, amt, wait_for_block=True, **kwargs):
             **kwargs,
         )
     )
-    if rsp["code"] == 0 and wait_for_block:
+    if rsp["code"] == 0 and wait_tx:
         rsp = self.event_query_tx_for(rsp["txhash"])
     return rsp
 

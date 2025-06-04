@@ -6,13 +6,13 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
-    def tx(self, *args, wait_for_block=True, **kwargs):
+    def tx(self, *args, wait_tx=True, **kwargs):
         output = kwargs.get("output", "json")
-        if output != "json" and wait_for_block:
-            raise Exception('wait_for_block only works with output="json"')
+        if output != "json" and wait_tx:
+            raise Exception('wait_tx only works with output="json"')
 
         rsp = self.raw("tx", *args, **kwargs)
-        if wait_for_block:
+        if wait_tx:
             rsp = json.loads(rsp)
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
@@ -34,10 +34,10 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         return rsp
 
     def gov_propose_before_cosmos_sdk_v0_46(
-        self, proposer, kind, proposal, wait_for_block=True, **kwargs
+        self, proposer, kind, proposal, wait_tx=True, **kwargs
     ):
         rsp = self.gov_propose(proposer, kind, proposal, **kwargs)
-        if rsp["code"] == 0 and wait_for_block:
+        if rsp["code"] == 0 and wait_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -47,7 +47,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         kind,
         proposal,
         no_validate=False,
-        wait_for_block=True,
+        wait_tx=True,
         **kwargs,
     ):
         if kind == "software-upgrade":
@@ -118,7 +118,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         **kwargs,
                     )
                 )
-        if rsp["code"] == 0 and wait_for_block:
+        if rsp["code"] == 0 and wait_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -127,7 +127,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         proposer,
         kind,
         proposal,
-        wait_for_block=True,
+        wait_tx=True,
         **kwargs,
     ):
         if kind == "software-upgrade":
@@ -195,7 +195,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                         **kwargs,
                     )
                 )
-        if rsp["code"] == 0 and wait_for_block:
+        if rsp["code"] == 0 and wait_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -205,7 +205,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         to,
         coins,
         generate_only=False,
-        wait_for_block=True,
+        wait_tx=True,
         **kwargs,
     ):
         default_kwargs = {
@@ -227,7 +227,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 **(default_kwargs | kwargs),
             )
         )
-        if not generate_only and rsp["code"] == 0 and wait_for_block:
+        if not generate_only and rsp["code"] == 0 and wait_tx:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
@@ -258,21 +258,21 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             fp.flush()
             return self.sign_tx(fp.name, signer)
 
-    def broadcast_tx(self, tx_file, wait_for_block=True, **kwargs):
+    def broadcast_tx(self, tx_file, wait_tx=True, **kwargs):
         kwargs.setdefault("broadcast_mode", "sync")
         kwargs.setdefault("output", "json")
         rsp = json.loads(
             self.raw("tx", "broadcast", tx_file, node=self.node_rpc, **kwargs)
         )
-        if wait_for_block and rsp["code"] == 0:
+        if wait_tx and rsp["code"] == 0:
             rsp = self.event_query_tx_for(rsp["txhash"])
         return rsp
 
-    def broadcast_tx_json(self, tx, wait_for_block=True, **kwargs):
+    def broadcast_tx_json(self, tx, wait_tx=True, **kwargs):
         with tempfile.NamedTemporaryFile("w") as fp:
             json.dump(tx, fp)
             fp.flush()
-            return self.broadcast_tx(fp.name, wait_for_block, **kwargs)
+            return self.broadcast_tx(fp.name, wait_tx, **kwargs)
 
     def tx_search_rpc(self, events: str):
         node_rpc_http = "http" + self.node_rpc.removeprefix("tcp")
@@ -379,17 +379,17 @@ class ClusterCLI(cluster.ClusterCLI):
             zemu_button_port=self.zemu_button_port,
         )
 
-    def tx(self, *args, i=0, wait_for_block=True, **kwargs):
-        return self.cosmos_cli(i).tx(*args, wait_for_block, **kwargs)
+    def tx(self, *args, i=0, wait_tx=True, **kwargs):
+        return self.cosmos_cli(i).tx(*args, wait_tx, **kwargs)
 
     def submit_gov_proposal(self, proposer, i=0, **kwargs):
         return self.cosmos_cli(i).submit_gov_proposal(proposer, **kwargs)
 
     def gov_propose_before_cosmos_sdk_v0_46(
-        self, proposer, kind, proposal, i=0, wait_for_block=True, **kwargs
+        self, proposer, kind, proposal, i=0, wait_tx=True, **kwargs
     ):
         return self.cosmos_cli(i).gov_propose_before_cosmos_sdk_v0_46(
-            proposer, kind, proposal, wait_for_block, **kwargs
+            proposer, kind, proposal, wait_tx, **kwargs
         )
 
     def gov_propose_legacy(
@@ -399,7 +399,7 @@ class ClusterCLI(cluster.ClusterCLI):
         proposal,
         i=0,
         no_validate=False,
-        wait_for_block=True,
+        wait_tx=True,
         **kwargs,
     ):
         return self.cosmos_cli(i).gov_propose_legacy(
@@ -407,7 +407,7 @@ class ClusterCLI(cluster.ClusterCLI):
             kind,
             proposal,
             no_validate,
-            wait_for_block,
+            wait_tx,
             **kwargs,
         )
 

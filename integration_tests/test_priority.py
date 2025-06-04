@@ -74,7 +74,7 @@ def test_priority(cluster: ClusterCLI):
 
     txhashes = []
     for tx in txs:
-        rsp = cli.broadcast_tx_json(tx, wait_for_block=False)
+        rsp = cli.broadcast_tx_json(tx, wait_tx=False)
         txhashes.append(rsp["txhash"])
 
     print("wait for two new blocks, so the sent txs are all included")

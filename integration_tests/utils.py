@@ -678,7 +678,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert (
@@ -695,7 +695,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert (
@@ -712,7 +712,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -763,7 +763,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -789,7 +789,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         signer2_addr,
         community_addr,
         "1basecro",
-        wait_for_block=False,
+        wait_tx=False,
         broadcast_mode="sync",
     )
     assert (
@@ -807,7 +807,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -831,7 +831,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         signer2_addr,
         community_addr,
         "1basecro",
-        wait_for_block=False,
+        wait_tx=False,
         broadcast_mode="sync",
     )
     assert rsp["code"] == 0, (
@@ -849,7 +849,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -890,7 +890,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=signer1_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert (
@@ -919,7 +919,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -953,7 +953,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
@@ -1041,7 +1041,7 @@ def assert_v6_circuit_is_working(cli, cluster):
             from_=ecosystem_addr,
             broadcast_mode="sync",
             output="json",
-            wait_for_block=True,
+            wait_tx=True,
         )
     )
     assert rsp["code"] == 0, (
