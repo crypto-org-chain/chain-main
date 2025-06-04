@@ -400,7 +400,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomname = "testdenomname"
     creator = cluster.address("community")
     rsp = cluster.create_nft(
-        creator, denomid, denomname, broadcast_mode="block"
+        creator, denomid, denomname, event_query_tx=False, broadcast_mode="block"
     )
     ev = find_log_event_attrs_legacy(rsp["logs"], "issue_denom")
     assert ev == {
