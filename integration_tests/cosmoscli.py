@@ -11,7 +11,15 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         if output != "json" and wait_tx:
             raise Exception('wait_tx only works with output="json"')
 
-        rsp = self.raw("tx", *args, **kwargs)
+        rsp = self.raw(
+            "tx",
+            *args,
+            "-y",
+            home=self.data_dir,
+            node=self.node_rpc,
+            keyring_backend="test",
+            **kwargs,
+        )
         if wait_tx:
             rsp = json.loads(rsp)
             rsp = self.event_query_tx_for(rsp["txhash"])
