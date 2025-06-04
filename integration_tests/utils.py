@@ -216,6 +216,7 @@ def approve_proposal(
     rsp,
     vote_option="yes",
     msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+    wait_tx=True,
     broadcast_mode="sync",
 ):
     proposal_id = get_proposal_id(rsp, msg)
@@ -224,7 +225,11 @@ def approve_proposal(
         assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
     amount = cluster.balance(cluster.address("ecosystem"))
     rsp = cluster.gov_deposit(
-        "ecosystem", proposal_id, "1cro", broadcast_mode=broadcast_mode
+        "ecosystem",
+        proposal_id,
+        "1cro",
+        event_query_tx=wait_tx,
+        broadcast_mode=broadcast_mode,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
@@ -234,7 +239,11 @@ def approve_proposal(
     if vote_option is not None:
         for i in range(len(cluster.config["validators"])):
             rsp = cluster.cosmos_cli(i).gov_vote(
-                "validator", proposal_id, vote_option, broadcast_mode=broadcast_mode
+                "validator",
+                proposal_id,
+                vote_option,
+                event_query_tx=wait_tx,
+                broadcast_mode=broadcast_mode,
             )
             assert rsp["code"] == 0, rsp["raw_log"]
         assert (

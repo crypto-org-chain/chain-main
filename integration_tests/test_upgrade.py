@@ -264,7 +264,7 @@ def upgrade(
     cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
 
     # wait for it to generate new blocks
-    tx_wait_for_block(cluster, target_height + 2, 600)
+    wait_for_block(cluster, target_height + 2, 600)
 
 
 def test_manual_upgrade_all(cosmovisor_cluster):
