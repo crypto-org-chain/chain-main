@@ -309,6 +309,27 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         res = res.get("params") or res
         return res
 
+    # This method is deprecated after Cosmos SDK v0.50.0
+    # x/params query subspace is deprecated after Cosmos SDK v0.50.0
+    def query_params_subspace(self, subspace, param):
+        kwargs = {
+            "node": self.node_rpc,
+            "output": "json",
+        }
+        res = json.loads(
+            self.raw(
+                "q",
+                "params",
+                "subspace",
+                subspace,
+                param,
+                **kwargs,
+            )
+        )
+
+        res = res.get("value") or res
+        return res
+
 
 class ClusterCLI(cluster.ClusterCLI):
     def __init__(self, *args, **kwargs):
@@ -373,3 +394,8 @@ class ClusterCLI(cluster.ClusterCLI):
 
     def query_params(self, mod, i=0):
         return self.cosmos_cli(i).query_params(mod)
+
+    # This method is deprecated after Cosmos SDK v0.50.0
+    # x/params query subspace is deprecated after Cosmos SDK v0.50.0
+    def query_params_subspace(self, subspace, param, i=0):
+        return self.cosmos_cli(i).query_params_subspace(subspace, param)
