@@ -678,50 +678,44 @@ def assert_v6_circuit_is_working(cli, cluster):
     signer2_addr = cluster.address("signer2")
 
     # use unauthorized account to disable MsgSend should fail
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "disable",
-            "/cosmos.bank.v1beta1.MsgSend",
-            from_=signer1_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert (
         rsp["code"] != 0
     ), "x/circuit unauthorized account should not be able to disable message"
 
     # use unauthorized account to authorize another account should fail
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "authorize",
-            community_addr,
-            "'{\"level\":3}'",
-            from_=signer1_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        community_addr,
+        "'{\"level\":3}'",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert (
         rsp["code"] != 0
     ), "x/circuit non-super-admin account should not be able to authorize others"
 
     # use super admin account to authorize any account should work
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "authorize",
-            signer1_addr,
-            "'{\"level\":3}'",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer1_addr,
+        "'{\"level\":3}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit super admin account should be able to authorize signer1: "
@@ -762,16 +756,14 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
 
     # use newly authorized account to disable MsgSend should work
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "disable",
-            "/cosmos.bank.v1beta1.MsgSend",
-            from_=signer1_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit newly authorized account should be able to disable message: "
@@ -805,16 +797,14 @@ def assert_v6_circuit_is_working(cli, cluster):
     assert rsp["raw_log"] == "tx type not allowed"
 
     # re-enable MsgSend for cleanup
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "reset",
-            "/cosmos.bank.v1beta1.MsgSend",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "reset",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit super admin account should be able to reset the disabled list: "
@@ -845,17 +835,15 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
 
     # reset signer1's permissions back to LEVEL_NONE_UNSPECIFIED
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "authorize",
-            signer1_addr,
-            "'{\"level\":0}'",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer1_addr,
+        "'{\"level\":0}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit super admin account should be able to unauthorize: " + rsp["raw_log"]
@@ -886,16 +874,14 @@ def assert_v6_circuit_is_working(cli, cluster):
     ], "x/circuit account should be unauthorized after reset: " + str(rsp["accounts"])
 
     # use newly unauthorized account to disable MsgSend should fail
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "disable",
-            "/cosmos.bank.v1beta1.MsgSend",
-            from_=signer1_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert (
         rsp["code"] != 0
@@ -913,17 +899,15 @@ def assert_v6_circuit_is_working(cli, cluster):
     assert rsp == {}, "x/circuit disabled list should remain empty: " + str(rsp)
 
     # test disable 2 messages in CLI
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "disable",
-            "/cosmos.bank.v1beta1.MsgSend",
-            "/cosmos.bank.v1beta1.MsgMultiSend",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit CLI should be able to disable 2 messages: " + rsp["raw_log"]
@@ -946,17 +930,15 @@ def assert_v6_circuit_is_working(cli, cluster):
         rsp["disabled_list"]
     )
 
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "reset",
-            "/cosmos.bank.v1beta1.MsgSend",
-            "/cosmos.bank.v1beta1.MsgMultiSend",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "reset",
+        "/cosmos.bank.v1beta1.MsgSend",
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit CLI should be able to reset 2 messages: " + rsp["raw_log"]
@@ -1033,17 +1015,15 @@ def assert_v6_circuit_is_working(cli, cluster):
     )
 
     # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
-    rsp = json.loads(
-        cli.tx(
-            "circuit",
-            "authorize",
-            signer2_addr,
-            "'{\"level\":0}'",
-            from_=ecosystem_addr,
-            broadcast_mode="sync",
-            output="json",
-            wait_tx=True,
-        )
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer2_addr,
+        "'{\"level\":0}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
     )
     assert rsp["code"] == 0, (
         "x/circuit super admin should be able to unauthorize: " + rsp["raw_log"]
