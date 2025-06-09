@@ -20,6 +20,8 @@
 - [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add x/circuit module.
 - [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add Cosmos SDK v0.47 and v0.50 upgrade.
 - [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Cronos POS v6 is not released.
+- [#1160](https://github.com/crypto-org-chain/chain-main/pull/1160) Add x/circuit test cases in upgrade test
+- [#1160](https://github.com/crypto-org-chain/chain-main/pull/1160) Refactor integration tests to use more meaningful name
 
 *April 28, 2025*
 

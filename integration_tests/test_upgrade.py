@@ -164,8 +164,8 @@ def upgrade(
     cluster,
     plan_name,
     target_height,
-    propose_legacy=True,
-    broadcast_mode="block",
+    gte_cosmos_sdk_v0_46=True,
+    broadcast_mode="sync",
 ):
     print("upgrade height", target_height, plan_name)
     kind = "software-upgrade"
@@ -176,25 +176,27 @@ def upgrade(
         "upgrade-height": target_height,
         "deposit": "0.1cro",
     }
-    event_query_tx = broadcast_mode == "sync"
-    if propose_legacy:
+    wait_tx = broadcast_mode == "sync"
+    if gte_cosmos_sdk_v0_46:
         rsp = cluster.gov_propose_legacy(
             "community",
             kind,
             proposal,
             no_validate=True,
-            event_query_tx=event_query_tx,
+            wait_tx=wait_tx,
             broadcast_mode=broadcast_mode,
         )
     else:
-        rsp = cluster.gov_propose(
+        rsp = cluster.gov_propose_before_cosmos_sdk_v0_46(
             "community",
             kind,
             proposal,
+            wait_tx=wait_tx,
+            broadcast_mode=broadcast_mode,
         )
-    assert rsp["code"] == 0, rsp["raw_log"]
+    assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
     # get proposal_id
-    if propose_legacy:
+    if gte_cosmos_sdk_v0_46:
         proposal_id = get_proposal_id_legacy(rsp)
     else:
         ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
@@ -208,10 +210,10 @@ def upgrade(
             proposal_id,
             "yes",
             i=i,
-            event_query_tx=event_query_tx,
+            event_query_tx=wait_tx,
             broadcast_mode=broadcast_mode,
         )
-        assert rsp["code"] == 0, rsp["raw_log"]
+        assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
 
     proposal = cluster.query_proposal(proposal_id)
     wait_for_block_time(
@@ -282,9 +284,16 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
-    target_height = cluster.block_height() + 15
 
-    upgrade(cluster, "v2.0.0", target_height, propose_legacy=False)
+    # v2 upgrade
+    target_height = cluster.block_height() + 15
+    upgrade(
+        cluster,
+        "v2.0.0",
+        target_height,
+        gte_cosmos_sdk_v0_46=False,
+        broadcast_mode="block",
+    )
     cli = cluster.cosmos_cli()
 
     [validator1_operator_address, validator2_operator_address] = list(
@@ -321,7 +330,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     community_addr = cluster.address("community")
     reserve_addr = cluster.address("reserve")
     # for the fee payment
-    cluster.transfer(community_addr, reserve_addr, "10000basecro", event_query_tx=False)
+    cluster.transfer(
+        community_addr,
+        reserve_addr,
+        "10000basecro",
+        wait_tx=False,
+        broadcast_mode="block",
+    )
 
     signer1_address = cluster.address("reserve", i=0)
     staking_validator1 = cluster.validator(validator1_operator_address, i=0)
@@ -336,6 +351,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         0,
         "0.025basecro",
         event_query_tx=False,
+        broadcast_mode="block",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
@@ -346,13 +362,21 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         0,
         "0.025basecro",
         event_query_tx=False,
+        broadcast_mode="block",
     )
     # vesting bug
     assert rsp["code"] != 0, rsp["raw_log"]
     assert cluster.staking_pool() == old_bonded + 2009999498
 
+    # v3 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v3.0.0", target_height, propose_legacy=False)
+    upgrade(
+        cluster,
+        "v3.0.0",
+        target_height,
+        gte_cosmos_sdk_v0_46=False,
+        broadcast_mode="block",
+    )
 
     rsp = cluster.delegate_amount(
         validator2_operator_address,
@@ -361,6 +385,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         0,
         "0.025basecro",
         event_query_tx=False,
+        broadcast_mode="block",
     )
     # vesting bug fixed
     assert rsp["code"] == 0, rsp["raw_log"]
@@ -374,7 +399,9 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     denomid = "testdenomid"
     denomname = "testdenomname"
     creator = cluster.address("community")
-    rsp = cluster.create_nft(creator, denomid, denomname, event_query_tx=False)
+    rsp = cluster.create_nft(
+        creator, denomid, denomname, event_query_tx=False, broadcast_mode="block"
+    )
     ev = find_log_event_attrs_legacy(rsp["logs"], "issue_denom")
     assert ev == {
         "denom_id": denomid,
@@ -382,8 +409,15 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         "creator": creator,
     }, ev
 
+    # v4.2 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v4.2.0", target_height, propose_legacy=False)
+    upgrade(
+        cluster,
+        "v4.2.0",
+        target_height,
+        gte_cosmos_sdk_v0_46=False,
+        broadcast_mode="block",
+    )
 
     cli = cluster.cosmos_cli()
 
@@ -428,8 +462,9 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     for i in range(2):
         cluster.migrate_keystore(i=i)
 
+    # v5 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v5.0.0", target_height)
+    upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
 
     acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
@@ -455,6 +490,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_max"] == "0.010000000000000000"
     assert params["inflation_min"] == "0.008500000000000000"
 
+    # v6 upgrade
     target_height = cluster.block_height() + 15
     gov_param_before_v6 = cli.query_params("gov")
     consensus_block_param_before_v6 = json.loads(
@@ -466,7 +502,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     consensus_validator_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "ValidatorParams")
     )
-    upgrade(cluster, "v6.0.0", target_height)
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
@@ -534,7 +570,7 @@ def test_cancel_upgrade(cluster):
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     upgrade_height = cluster.block_height() + 30
     print("propose upgrade plan at", upgrade_height)
-    rsp = cluster.gov_propose_new(
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
         "community",
         "software-upgrade",
         {
@@ -549,7 +585,7 @@ def test_cancel_upgrade(cluster):
     approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     print("cancel upgrade plan")
-    rsp = cluster.gov_propose_new(
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
         "community",
         "cancel-software-upgrade",
         {
