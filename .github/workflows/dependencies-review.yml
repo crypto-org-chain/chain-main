@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   dependency-review:
-    runs-on: depot-ubuntu-22.04-4
+    runs-on: ubuntu-latest
     steps:
       - name: "Checkout Repository"
         uses: actions/checkout@v4
