@@ -1,10 +1,16 @@
 # Checks if a changelog is missing in the PR diff
 name: Changelog Reminder
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths: ["**/*.go"]
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+      - ready_for_review
+    paths: [ "**/*.go" ]
 permissions:
+  contents: read
   pull-requests: write
 jobs:
   remind:
