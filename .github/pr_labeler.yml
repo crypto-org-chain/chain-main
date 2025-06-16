@@ -1,0 +1,33 @@
+"C:CLI":
+  - client/**/*
+  - x/*/client/**/*
+"C:Nix":
+  - nix/**
+  - default.nix
+  - docker.nix
+  - flake.nix
+"C:Simulations":
+  - types/simulation/**/*
+  - x/simulation/**/*
+  - x/*/simulation/**/*
+  - simsx/**/*
+  - tools/benchmark/**/*
+"C:x/chainmain":
+  - x/chainmain/**/*
+"C:x/nft":
+  - x/nft/**/*
+"C:x/nft-transfer":
+  - x/nft-transfer/**/*
+"C:x/supply":
+  - x/supply/**/*
+"Type: ADR":
+  - docs/architecture/**/*
+"Type: Build":
+  - Makefile
+  - Dockerfile
+  - docker-compose.yml
+  - scripts/*
+"Type: CI":
+  - .github/**
+  - buf.work.yaml
+  - .golangci.yml

@@ -20,7 +20,7 @@ jobs:
       - name: "Dependency Review"
         uses: actions/dependency-review-action@v4
         with:
-          base-ref: ${{ github.event.pull_request.base.sha || 'main' }}
+          base-ref: ${{ github.event.pull_request.base.sha || 'master' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fail-on-severity: high
       - name: "Dependency audit"

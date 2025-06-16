@@ -257,6 +257,10 @@ nix-build-%: check-network check-os
 	nix-build -o $* -A $* docker.nix;
 	docker load < $*;
 
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
+
 chaindImage: nix-build-chaindImage
 pystarportImage: nix-build-pystarportImage
 
