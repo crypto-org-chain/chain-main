@@ -158,6 +158,10 @@ lint-ci:
 	@echo "--> Running linter for CI"
 	@nix-shell --pure -E "with (import ./nix {}); mkShell { buildInputs = [lint-ci]; }" --run lint-ci
 
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
+
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
 	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
@@ -256,10 +260,6 @@ nix-build-%: check-network check-os
 	fi && \
 	nix-build -o $* -A $* docker.nix;
 	docker load < $*;
-
-vulncheck: $(BUILDDIR)/
-	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
-	$(BUILDDIR)/govulncheck ./...
 
 chaindImage: nix-build-chaindImage
 pystarportImage: nix-build-pystarportImage

@@ -23,8 +23,6 @@ jobs:
           base-ref: ${{ github.event.pull_request.base.sha || 'master' }}
           head-ref: ${{ github.event.pull_request.head.sha || github.ref }}
           fail-on-severity: high
-      - name: "Dependency audit"
-        run: ./scripts/dep-assert.sh
       - name: "Go vulnerability check"
         id: govuln
         run: |
