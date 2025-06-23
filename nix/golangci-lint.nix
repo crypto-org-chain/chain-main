@@ -7,7 +7,7 @@
 
 buildGo123Module rec {
   pname = "golangci-lint";
-  version = "1.60.1";
+  version = "2.1.6";
 
   src = fetchFromGitHub {
     owner = "golangci";
