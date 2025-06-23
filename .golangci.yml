@@ -137,7 +137,6 @@ formatters:
     gofumpt:
       extra-rules: true
   exclusions:
-
     generated: lax
     paths:
       - server/grpc/gogoreflection/fix_registration.go
@@ -145,11 +144,8 @@ formatters:
       - .*\.pb\.go$
       - .*\.pb\.gw\.go$
       - .*\.pulsar\.go$
-      - crypto/keys/secp256k1/internal/*
       - types/coin_regex.go
-      - testutil/testdata
-      - x/params
-      - x/crisis
+      - proto/*
       - third_party$
       - builtin$
       - examples$

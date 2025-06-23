@@ -27,7 +27,6 @@ func (idc IDCollection) AddID(tokenID string) IDCollection {
 	return idc
 }
 
-// ----------------------------------------------------------------------------
 // IDCollections is an array of ID Collections
 type IDCollections []IDCollection
 

@@ -4,6 +4,7 @@ package types
 
 import (
 	newsdkerrors "cosmossdk.io/errors"
+
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 

@@ -33,7 +33,7 @@ type App interface {
 
 	// Exports the state of the application for a genesis file.
 	ExportAppStateAndValidators(
-		forZeroHeight bool, jailAllowedAddrs []string, modulesToExport []string,
+		forZeroHeight bool, jailAllowedAddrs, modulesToExport []string,
 	) (servertypes.ExportedApp, error)
 
 	// All the registered module account addresses.
