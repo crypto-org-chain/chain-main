@@ -13,10 +13,10 @@ buildGo123Module rec {
     owner = "golangci";
     repo = "golangci-lint";
     rev = "v${version}";
-    hash = "sha256-0000000000000000000000000000000000000000000000000000";
+    hash = "sha256-L0TsVOUSU+nfxXyWsFLe+eU4ZxWbW3bHByQVatsTpXA=";
   };
 
-  vendorHash = "sha256-0000000000000000000000000000000000000000000000000000";
+  vendorHash = "sha256-tYoAUumnHgA8Al3jKjS8P/ZkUlfbmmmBcJYUR7+5u9w=";
 
   subPackages = [ "cmd/golangci-lint" ];
 
