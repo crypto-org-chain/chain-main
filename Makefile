@@ -144,10 +144,22 @@ test: check-network
 	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
+lint-install:
+	@echo "--> Installing golangci-lint $(golangci_version)"
+	@nix profile install -f ./nix golangci-lint
+
 # look into .golangci.yml for enabling / disabling linters
 lint:
 	@echo "--> Running linter"
 	@golangci-lint run
+	@go mod verify
+	@flake8 --show-source --count --statistics
+	@find . -name "*.nix" -type f | xargs nixfmt -c
+
+
+lint-fix:
+	@echo "--> Running linter"
+	@golangci-lint run --fix
 	@go mod verify
 	@flake8 --show-source --count --statistics
 	@find . -name "*.nix" -type f | xargs nixfmt -c
