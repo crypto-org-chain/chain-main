@@ -2,13 +2,10 @@ version: "2"
 run:
   tests: true
   timeout: 10m
-  sort-results: true
   allow-parallel-runners: true
-  exclude-dir: testutil/testdata_pulsar
   concurrency: 4
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - copyloopvar
     - dogsled
@@ -46,7 +43,6 @@ linters:
       locale: US
     nolintlint:
       allow-unused: false
-      allow-leading-space: true
       require-explanation: false
       require-specific: false
     revive:
@@ -106,19 +102,14 @@ linters:
           - nolintlint
         text: leading space
     paths:
-      - server/grpc/gogoreflection/fix_registration.go
-      - fix_registration.go
       - .*\.pb\.go$
       - .*\.pb\.gw\.go$
       - .*\.pulsar\.go$
-      - crypto/keys/secp256k1/internal/*
-      - types/coin_regex.go
-      - testutil/testdata
-      - x/params
-      - x/crisis
       - third_party$
       - builtin$
       - examples$
+      - ./pystarport/*
+      - testutil/testdata_pulsar
 issues:
   max-issues-per-linter: 10000
   max-same-issues: 10000
@@ -150,10 +141,3 @@ formatters:
       - builtin$
       - examples$
       - ./pystarport/*
-  errcheck:
-    # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
-    # default is false: such cases aren't reported by default.
-    check-blank: true
-  maligned:
-    # print struct with more effective memory layout or not, false by default
-    suggest-new: true
