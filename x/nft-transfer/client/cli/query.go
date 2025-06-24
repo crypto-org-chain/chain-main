@@ -3,12 +3,12 @@ package cli
 import (
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/spf13/cobra"
+
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/version"
-	"github.com/spf13/cobra"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 )
 
 // GetCmdQueryClassTrace defines the command to query a class trace from a given trace hash or ibc class.

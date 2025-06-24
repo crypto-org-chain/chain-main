@@ -5,14 +5,16 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/simulation"
+	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/stretchr/testify/require"
+
 	sdkmath "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/simulation"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
-	"github.com/stretchr/testify/require"
 )
 
 // TestRandomizedGenState tests the normal scenario of applying RandomizedGenState.
@@ -22,7 +24,7 @@ func TestRandomizedGenState(t *testing.T) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	s := rand.NewSource(1)
-	//nolint: gosec
+
 	r := rand.New(s)
 
 	simState := module.SimulationState{
@@ -50,7 +52,7 @@ func TestRandomizedGenState1(t *testing.T) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	s := rand.NewSource(1)
-	//nolint: gosec
+
 	r := rand.New(s)
 	// all these tests will panic
 	tests := []struct {

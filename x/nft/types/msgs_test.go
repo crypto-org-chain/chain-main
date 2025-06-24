@@ -5,9 +5,8 @@ package types_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------- Msgs --------------------------------------------------

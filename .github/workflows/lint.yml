@@ -43,6 +43,6 @@ jobs:
 
           BUILD_TAGS=rocksdb,grocksdb_clean_link
           go build -tags $BUILD_TAGS ./cmd/chain-maind
-          golangci-lint run --out-format=github-actions --path-prefix=./ --timeout 30m --build-tags $BUILD_TAGS
+          golangci-lint run --output.text.path stdout --path-prefix=./ --timeout 30m --build-tags $BUILD_TAGS
         # Check only if there are differences in the source code
         if: steps.changed-files.outputs.any_changed == 'true'

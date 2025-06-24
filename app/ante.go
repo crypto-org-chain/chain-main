@@ -1,14 +1,16 @@
 package app
 
 import (
-	newsdkerrors "cosmossdk.io/errors"
-	circuitante "cosmossdk.io/x/circuit/ante"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
 	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+
+	newsdkerrors "cosmossdk.io/errors"
+	circuitante "cosmossdk.io/x/circuit/ante"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -59,7 +61,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 }
 
 const (
-	// values chosen arbitrarily
+	// MaxClassIDLength values chosen arbitrarily
 	MaxClassIDLength      = 2048
 	MaxTokenIds           = 256
 	MaxTokenIDLength      = 2048

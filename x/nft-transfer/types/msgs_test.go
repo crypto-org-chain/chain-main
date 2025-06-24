@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (

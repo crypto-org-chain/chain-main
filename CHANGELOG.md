@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+### Improvements
+- [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
+
 *May 26, 2025*
 
 ## v6.0.0
