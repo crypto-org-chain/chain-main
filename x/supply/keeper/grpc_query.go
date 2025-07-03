@@ -3,8 +3,9 @@ package keeper
 import (
 	"context"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // TotalSupply implements the Query/TotalSupply gRPC method

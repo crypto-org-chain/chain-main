@@ -52,7 +52,7 @@ func NewQueryOwnerParams(denom string, owner sdk.AccAddress) QueryOwnerParams {
 	}
 }
 
-// QuerySupplyParams defines the params for queries:
+// QueryCollectionParams QuerySupplyParams defines the params for queries:
 type QueryCollectionParams struct {
 	Denom string
 }

@@ -3,9 +3,9 @@ package types
 import (
 	"fmt"
 
-	sdkerrors "cosmossdk.io/errors"
-
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+
+	sdkerrors "cosmossdk.io/errors"
 )
 
 const (

@@ -1,53 +1,144 @@
+version: "2"
 run:
   tests: true
   timeout: 10m
-  sort-results: true
   allow-parallel-runners: true
-  exclude-dir: testutil/testdata_pulsar
   concurrency: 4
-
 linters:
-  disable-all: true
+  default: none
   enable:
+    - copyloopvar
     - dogsled
-    - exportloopref
+    - errcheck
+    - errorlint
     - goconst
     - gocritic
-    - gofumpt
-    - goimports
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
     - nolintlint
+    - revive
     - staticcheck
-    - stylecheck
-    - typecheck
+    - thelper
     - unconvert
     - unused
+    - tagalign
 
+  settings:
+    dogsled:
+      max-blank-identifiers: 3
+    gocritic:
+      disabled-checks:
+        - regexpMust
+        - appendAssign
+        - ifElseChain
+    gosec:
+      excludes:
+        - G101
+        - G107
+        - G404
+      confidence: medium
+    misspell:
+      locale: US
+    nolintlint:
+      allow-unused: false
+      require-explanation: false
+      require-specific: false
+    revive:
+      rules:
+        - name: redefines-builtin-id
+          disabled: true
+        - name: exported
+          severity: error
+          disabled: false
+    staticcheck:
+      checks:
+        - all
+    unused:
+      local-variables-are-used: false
+  exclusions:
+    generated: lax
+    presets:
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: 'ST1000:'
+      - linters:
+          - revive
+        text: 'or be unexported' # don't report types that have no comments at all. there are way too many of these.
+      - linters:
+          - staticcheck
+        text: 'ST1003:'
+      - linters:
+          - staticcheck
+        text: 'ST1016:'
+      - linters:
+          - staticcheck
+        path: migrations
+        text: 'SA1019:'
+      - linters:
+          - staticcheck
+        text: 'SA1019: codec.NewAminoCodec is deprecated'
+      - linters:
+          - staticcheck
+        text: 'SA1019: legacybech32.MustMarshalPubKey'
+      - linters:
+          - staticcheck
+        text: 'SA1019: legacybech32.MarshalPubKey'
+      - linters:
+          - staticcheck
+        text: 'SA1019: legacybech32.UnmarshalPubKey'
+      - linters:
+          - staticcheck
+        text: 'SA1019: params.SendEnabled is deprecated'
+      - linters:
+          - gosec
+        text: 'G115: integer overflow conversion'
+      - linters:
+          - nolintlint
+        text: leading space
+    paths:
+      - .*\.pb\.go$
+      - .*\.pb\.gw\.go$
+      - .*\.pulsar\.go$
+      - third_party$
+      - builtin$
+      - examples$
+      - ./pystarport/*
+      - testutil/testdata_pulsar
 issues:
-  exclude-rules:
-    # fixed in go 1.22
-    - text: "G601:"
-      linters:
-        - gosec
-
-linters-settings:
-  exclude: ./pystarport/*
-  errcheck:
-    # report about assignment of errors to blank identifier: `num, _ := strconv.Atoi(numStr)`;
-    # default is false: such cases aren't reported by default.
-    check-blank: true
-  dogsled:
-    max-blank-identifiers: 3
-  maligned:
-    # print struct with more effective memory layout or not, false by default
-    suggest-new: true
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: true
-    require-explanation: false
-    require-specific: false
+  max-issues-per-linter: 10000
+  max-same-issues: 10000
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(cosmossdk.io)
+        - prefix(github.com/cosmos/cosmos-sdk)
+      custom-order: true
+    gofumpt:
+      extra-rules: true
+  exclusions:
+    generated: lax
+    paths:
+      - server/grpc/gogoreflection/fix_registration.go
+      - fix_registration.go
+      - .*\.pb\.go$
+      - .*\.pb\.gw\.go$
+      - .*\.pulsar\.go$
+      - types/coin_regex.go
+      - proto/*
+      - third_party$
+      - builtin$
+      - examples$
+      - ./pystarport/*

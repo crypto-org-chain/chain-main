@@ -76,7 +76,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-	-X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION) \
+	-X github.com/cometbft/cometbft/version.TMCoreSemVer=$(TMVERSION) \
 	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
@@ -144,10 +144,22 @@ test: check-network
 	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
+lint-install:
+	@echo "--> Installing golangci-lint $(golangci_version)"
+	@nix profile install -f ./nix golangci-lint
+
 # look into .golangci.yml for enabling / disabling linters
 lint:
 	@echo "--> Running linter"
 	@golangci-lint run
+	@go mod verify
+	@flake8 --show-source --count --statistics
+	@find . -name "*.nix" -type f | xargs nixfmt -c
+
+
+lint-fix:
+	@echo "--> Running linter"
+	@golangci-lint run --fix
 	@go mod verify
 	@flake8 --show-source --count --statistics
 	@find . -name "*.nix" -type f | xargs nixfmt -c
@@ -157,6 +169,10 @@ lint:
 lint-ci:
 	@echo "--> Running linter for CI"
 	@nix-shell --pure -E "with (import ./nix {}); mkShell { buildInputs = [lint-ci]; }" --run lint-ci
+
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."

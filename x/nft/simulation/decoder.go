@@ -6,13 +6,13 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/kv"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
-// DecodeStore unmarshals the KVPair's Value to the corresponding gov type
+// NewDecodeStore DecodeStore unmarshals the KVPair's Value to the corresponding gov type
 func NewDecodeStore(cdc codec.Codec) func(kvA, kvB kv.Pair) string {
 	return func(kvA, kvB kv.Pair) string {
 		switch {

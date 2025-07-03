@@ -5,7 +5,7 @@ config {
     validators: [validator {
       'app-config':: super['app-config'],
       client_config: {
-        'broadcast-mode': 'block',
+        'broadcast-mode': 'sync',
       },
     } for validator in super.validators],
     genesis+: {

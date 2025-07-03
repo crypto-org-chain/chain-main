@@ -7,9 +7,9 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // RegisterInvariants registers all supply invariants

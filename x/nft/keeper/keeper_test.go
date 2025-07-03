@@ -8,18 +8,16 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
-
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/chain-main/v4/testutil"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/stretchr/testify/suite"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
@@ -41,9 +39,9 @@ var (
 	address   = CreateTestAddrs(1)[0]
 	address2  = CreateTestAddrs(2)[1]
 	address3  = CreateTestAddrs(3)[2]
-	tokenURI  = "https://google.com/token-1.json" //nolint: gosec
-	tokenURI2 = "https://google.com/token-2.json" //nolint: gosec
-	tokenData = "{a:a,b:b}"                       //nolint: gosec
+	tokenURI  = "https://google.com/token-1.json"
+	tokenURI2 = "https://google.com/token-2.json"
+	tokenData = "{a:a,b:b}"
 
 	isCheckTx = false
 )
@@ -208,8 +206,8 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 		numString := strconv.Itoa(i)
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString)                          // adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String()) //nolint: errcheck
+		buffer.WriteString(numString) // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String())
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()
@@ -219,7 +217,7 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 }
 
 // for incode address generation
-func testAddr(addr string, bech string) sdk.AccAddress {
+func testAddr(addr, bech string) sdk.AccAddress {
 	res, err := sdk.AccAddressFromHexUnsafe(addr)
 	if err != nil {
 		panic(err)

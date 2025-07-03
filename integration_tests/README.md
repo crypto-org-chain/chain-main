@@ -68,7 +68,7 @@ cluster.address('validator', i=2, bech='val')
 cluster.transfer('from addr', 'to addr', '1cro', i=2)
 ```
 
-### Temparary directory
+### Temporary directory
 
 We use the [`tmp_path_factory`](https://docs.pytest.org/en/stable/tmpdir.html#the-tmp-path-factory-fixture) to create
 the data directory of test chain, pytest will take care of it's cleanup, particularly:

@@ -16,9 +16,9 @@ var (
 	nftName  = "report"
 	address  = CreateTestAddrs(1)[0]
 	address2 = CreateTestAddrs(2)[1]
-	//nolint: gosec
+
 	tokenURI = "https://google.com/token-1.json"
-	//nolint: gosec
+
 	tokenData = "https://google.com/token-1.json"
 )
 
@@ -32,8 +32,8 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 		numString := strconv.Itoa(i)
 		buffer.WriteString("A58856F0FD53BF058B4909A21AEC019107BA6") // base address string
 
-		buffer.WriteString(numString)                          // adding on final two digits to make addresses unique
-		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String()) //nolint: errcheck
+		buffer.WriteString(numString) // adding on final two digits to make addresses unique
+		res, _ := sdk.AccAddressFromHexUnsafe(buffer.String())
 		bech := res.String()
 		addresses = append(addresses, testAddr(buffer.String(), bech))
 		buffer.Reset()
@@ -42,7 +42,7 @@ func CreateTestAddrs(numAddrs int) []sdk.AccAddress {
 }
 
 // for incode address generation
-func testAddr(addr string, bech string) sdk.AccAddress {
+func testAddr(addr, bech string) sdk.AccAddress {
 	res, err := sdk.AccAddressFromHexUnsafe(addr)
 	if err != nil {
 		panic(err)
