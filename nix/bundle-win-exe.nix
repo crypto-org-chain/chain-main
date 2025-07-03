@@ -16,7 +16,7 @@ runCommand "tarball-${chain-maind.name}"
     deps = [
       "${rocksdb}/bin/librocksdb-shared.dll"
       "${snappy}/bin/libsnappy.dll"
-      "${lz4.out}/lib/liblz4.dll"
+      "${lz4.out}/bin/liblz4.dll"
       "${bzip2.bin}/bin/libbz2-1.dll"
       "${zlib}/bin/zlib1.dll"
       "${zstd.bin}/bin/libzstd.dll"

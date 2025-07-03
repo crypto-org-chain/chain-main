@@ -7,9 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	storetypes "cosmossdk.io/store/types"
 	"github.com/crypto-org-chain/cronos/versiondb"
 	"github.com/crypto-org-chain/cronos/versiondb/tsrocksdb"
+
+	storetypes "cosmossdk.io/store/types"
 )
 
 func (app *ChainApp) setupVersionDB(

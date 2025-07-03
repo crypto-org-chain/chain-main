@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -40,12 +41,12 @@ func (parser *FakeCoinParser) GetBaseUnit() string {
 	return parser.baseUnit
 }
 
-// FIXME: NOT IMPLEMENTED
+// MustSprintBaseCoin FIXME: NOT IMPLEMENTED
 func (parser *FakeCoinParser) MustSprintBaseCoin(baseCoin sdkmath.Int, denom string) string {
 	return ""
 }
 
-// FIXME: NOT IMPLEMENTED
+// SprintBaseCoin FIXME: NOT IMPLEMENTED
 func (parser *FakeCoinParser) SprintBaseCoin(baseCoin sdkmath.Int, denom string) (string, error) {
 	return "", nil
 }

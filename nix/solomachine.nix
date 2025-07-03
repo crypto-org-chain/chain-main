@@ -9,7 +9,7 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
-  version = "0.1.4";
+  version = "main";
 
   src = fetchFromGitHub {
     owner = "yihuang";
@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-fxH2gGVCYe1GAGwNJXeAf1QBZftNCuWG4TCJSiV/mCs=";
   };
 
-  cargoHash = "sha256-9Mx70yBoNy711PFC5y2VoXD3kqmcMvDsjP9AaC1VfCM=";
+  cargoHash = "sha256-AHK0aGCr2tQpdGhVo61drNnsGjusa6VycXs2neJZQp8=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf

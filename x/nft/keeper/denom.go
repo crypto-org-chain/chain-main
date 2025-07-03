@@ -3,10 +3,12 @@
 package keeper
 
 import (
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // HasDenomID returns whether the specified denom ID exists
@@ -51,7 +53,7 @@ func (k Keeper) GetDenom(ctx sdk.Context, id string) (denom types.Denom, err err
 	return denom, nil
 }
 
-// GetDenom returns the denom by name
+// GetDenomByName returns the denom by name
 func (k Keeper) GetDenomByName(ctx sdk.Context, name string) (denom types.Denom, err error) {
 	store := ctx.KVStore(k.storeKey)
 

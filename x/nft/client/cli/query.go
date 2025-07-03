@@ -6,14 +6,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // GetQueryCmd returns the cli query commands for this module

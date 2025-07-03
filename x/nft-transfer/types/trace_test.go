@@ -64,9 +64,9 @@ func TestClassTrace_GetFullClassPath(t *testing.T) {
 		want string
 	}{
 		{"native class", types.ClassTrace{Path: "", BaseClassId: "kitty"}, "kitty"},
-		{"first  tranfer", types.ClassTrace{Path: "p2/c2", BaseClassId: "kitty"}, "p2/c2/kitty"},
-		{"second tranfer", types.ClassTrace{Path: "p4/c4/p2/c2", BaseClassId: "kitty"}, "p4/c4/p2/c2/kitty"},
-		{"third  tranfer", types.ClassTrace{Path: "p6/c6/p4/c4/p2/c2", BaseClassId: "kitty"}, "p6/c6/p4/c4/p2/c2/kitty"},
+		{"first  transfer", types.ClassTrace{Path: "p2/c2", BaseClassId: "kitty"}, "p2/c2/kitty"},
+		{"second transfer", types.ClassTrace{Path: "p4/c4/p2/c2", BaseClassId: "kitty"}, "p4/c4/p2/c2/kitty"},
+		{"third  transfer", types.ClassTrace{Path: "p6/c6/p4/c4/p2/c2", BaseClassId: "kitty"}, "p6/c6/p4/c4/p2/c2/kitty"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
