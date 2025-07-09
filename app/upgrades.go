@@ -178,7 +178,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	// Dummy upgrade handler for testnet as it has already been upgraded
 	testnetPlanName := "v6.0.0-testnet"
 	app.UpgradeKeeper.SetUpgradeHandler(testnetPlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		return fromVM, nil
+		// All the module should be at their latest version already, this method should return without doing anything
+		return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 	})
 }
 
