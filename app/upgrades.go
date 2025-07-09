@@ -174,6 +174,12 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
+
+	// Dummy upgrade handler for testnet as it has already been upgraded
+	testnetPlanName := "v6.0.0-testnet"
+	app.UpgradeKeeper.SetUpgradeHandler(testnetPlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		return fromVM, nil
+	})
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
