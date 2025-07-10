@@ -52,7 +52,7 @@ pkgs.linkFarm "upgrade-test-package" [
     path = released5_0;
   }
   {
-    name = "v6.0.0-2";
+    name = "v6.0.0";
     path = current;
   }
 ]
