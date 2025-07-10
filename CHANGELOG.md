@@ -1,5 +1,10 @@
 # Changelog
 
+*July 9, 2025*
+
+## v6.0.0-2
+- [#1173](https://github.com/crypto-org-chain/chain-main/pull/1173) Replace cosmos sdk fork with official version.
+
 *May 26, 2025*
 
 ## v6.0.0
