@@ -1,0 +1,73 @@
+package keeper
+
+import (
+	"context"
+
+	"cosmossdk.io/core/store"
+	"cosmossdk.io/log"
+	"github.com/cosmos/cosmos-sdk/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/crypto-org-chain/chain-main/v4/x/mintsupply/types"
+)
+
+type Keeper struct {
+	cdc          codec.BinaryCodec
+	storeService store.KVStoreService
+	logger       log.Logger
+}
+
+// NewKeeper creates a new mint-supply Keeper instance
+func NewKeeper(
+	cdc codec.BinaryCodec,
+	storeService store.KVStoreService,
+	logger log.Logger,
+) Keeper {
+	return Keeper{
+		cdc:          cdc,
+		storeService: storeService,
+		logger:       logger,
+	}
+}
+
+// Logger returns a module-specific logger.
+func (k Keeper) Logger(ctx context.Context) log.Logger {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return k.logger.With("module", "x/"+types.ModuleName, "height", sdkCtx.BlockHeight())
+}
+
+// GetParams get all parameters as types.Params
+func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get([]byte(types.ParamsKey))
+	if err != nil {
+		panic(err)
+	}
+	if bz == nil {
+		return params
+	}
+
+	k.cdc.MustUnmarshal(bz, &params)
+	return params
+}
+
+// SetParams set the params
+func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
+	store := k.storeService.OpenKVStore(ctx)
+	bz := k.cdc.MustMarshal(&params)
+	return store.Set([]byte(types.ParamsKey), bz)
+}
+
+// InitGenesis initializes the module's state from a provided genesis state.
+func (k Keeper) InitGenesis(ctx context.Context, genState types.GenesisState) {
+	if err := k.SetParams(ctx, genState.Params); err != nil {
+		panic(err)
+	}
+}
+
+// ExportGenesis returns the module's exported genesis
+func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
+	genesis := types.DefaultGenesis()
+	genesis.Params = k.GetParams(ctx)
+	return genesis
+}

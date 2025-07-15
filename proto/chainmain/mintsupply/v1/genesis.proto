@@ -1,0 +1,13 @@
+syntax = "proto3";
+package chainmain.mintsupply.v1;
+
+import "chainmain/mintsupply/v1/params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/mintsupply/types";
+
+// GenesisState defines the mintsupply module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}
