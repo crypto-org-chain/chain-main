@@ -5,6 +5,7 @@ import (
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -12,21 +13,27 @@ import (
 )
 
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	logger       log.Logger
+	cdc           codec.BinaryCodec
+	storeService  store.KVStoreService
+	logger        log.Logger
+	bankKeeper    types.BankKeeper
+	stakingKeeper types.StakingKeeper
 }
 
-// NewKeeper creates a new mint-supply Keeper instance
+// NewKeeper creates a new mintsupply Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	logger log.Logger,
+	bankKeeper types.BankKeeper,
+	stakingKeeper types.StakingKeeper,
 ) Keeper {
 	return Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		logger:       logger,
+		cdc:           cdc,
+		storeService:  storeService,
+		logger:        logger,
+		bankKeeper:    bankKeeper,
+		stakingKeeper: stakingKeeper,
 	}
 }
 
@@ -44,7 +51,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
 		panic(err)
 	}
 	if bz == nil {
-		return params
+		return types.DefaultParams()
 	}
 
 	k.cdc.MustUnmarshal(bz, &params)
@@ -70,4 +77,18 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	genesis := types.DefaultGenesis()
 	genesis.Params = k.GetParams(ctx)
 	return genesis
+}
+
+// GetMaxSupply returns the maximum supply from the module's parameters.
+func (k Keeper) GetMaxSupply(ctx context.Context) math.Int {
+	return k.GetParams(ctx).MaxSupply
+}
+
+// GetSupply returns the current supply of the bond token
+func (k Keeper) GetSupply(ctx context.Context) math.Int {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		panic("mintsupply: failed to get bond denomination")
+	}
+	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount
 }
