@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
-	"github.com/crypto-org-chain/chain-main/v4/x/mintsupply/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 // BeginBlocker will check the total supply does not exceed the maximum supply and returns an error if it does.

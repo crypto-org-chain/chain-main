@@ -9,7 +9,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/mintsupply/types"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 type Keeper struct {
@@ -20,7 +20,7 @@ type Keeper struct {
 	stakingKeeper types.StakingKeeper
 }
 
-// NewKeeper creates a new mintsupply Keeper instance
+// NewKeeper creates a new maxsupply Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
@@ -88,7 +88,7 @@ func (k Keeper) GetMaxSupply(ctx context.Context) math.Int {
 func (k Keeper) GetSupply(ctx context.Context) math.Int {
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
-		panic("mintsupply: failed to get bond denomination")
+		panic("maxsupply: failed to get bond denomination")
 	}
 	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount
 }

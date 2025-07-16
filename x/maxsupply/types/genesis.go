@@ -1,6 +1,6 @@
 package types
 
-// DefaultGenesis returns the default mintsupply genesis state
+// DefaultGenesis returns the default maxsupplysupply genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		Params: DefaultParams(),
