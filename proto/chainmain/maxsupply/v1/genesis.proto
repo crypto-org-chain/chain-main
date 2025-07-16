@@ -1,0 +1,13 @@
+syntax = "proto3";
+package chainmain.maxsupply.v1;
+
+import "chainmain/maxsupply/v1/params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/maxsupply/types";
+
+// GenesisState defines the maxsupply module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+}

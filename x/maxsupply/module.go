@@ -1,4 +1,4 @@
-package mintsupply
+package maxsupply
 
 import (
 	"context"
@@ -15,9 +15,9 @@ import (
 	"github.com/spf13/cobra"
 
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/mintsupply/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/mintsupply/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/client/cli"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 	_ module.AppModuleBasic = AppModuleBasic{}
 )
 
-// AppModuleBasic defines the basic application module used by the mintsupply module.
+// AppModuleBasic defines the basic application module used by the maxsupply module.
 type AppModuleBasic struct {
 	cdc codec.Codec
 }
@@ -34,7 +34,7 @@ func NewAppModuleBasic() AppModuleBasic {
 	return AppModuleBasic{}
 }
 
-// Name returns the mint-supply module's name.
+// Name returns the maxsupply module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
@@ -49,12 +49,12 @@ func (a AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (a AppModuleBasic) ConsensusVersion() uint64 { return 1 }
 
-// DefaultGenesis returns the mintsupply module's default genesis state.
+// DefaultGenesis returns the maxsupply module's default genesis state.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesis())
 }
 
-// ValidateGenesis performs genesis state validation for the mintsupply module.
+// ValidateGenesis performs genesis state validation for the maxsupply module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 	config client.TxEncodingConfig, bz json.RawMessage,
 ) error {
@@ -65,7 +65,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 	return genState.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the mintsupply module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the maxsupply module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	//nolint: staticcheck
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
@@ -74,17 +74,17 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *r
 	}
 }
 
-// GetTxCmd returns the mintsupply module's root tx command.
+// GetTxCmd returns the maxsupply module's root tx command.
 func (a AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
 }
 
-// GetQueryCmd returns the mintsupply module's root query command.
+// GetQueryCmd returns the maxsupply module's root query command.
 func (a AppModuleBasic) GetQueryCmd() *cobra.Command {
 	return cli.GetQueryCmd()
 }
 
-// AppModule implements the AppModule interface for the mintsupply module.
+// AppModule implements the AppModule interface for the maxsupply module.
 type AppModule struct {
 	AppModuleBasic
 
@@ -105,7 +105,7 @@ func (am AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
-// Name returns the mintsupply module's name.
+// Name returns the maxsupply module's name.
 func (am AppModule) Name() string {
 	return am.AppModuleBasic.Name()
 }
@@ -116,10 +116,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	//types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// RegisterInvariants registers the mintsupply module invariants.
+// RegisterInvariants registers the maxsupply module invariants.
 func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
 
-// InitGenesis performs genesis initialization for the mintsupply module. It returns
+// InitGenesis performs genesis initialization for the maxsupply module. It returns
 // no validator updates.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.RawMessage) []abci.ValidatorUpdate {
 	var genState types.GenesisState
@@ -130,7 +130,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, gs json.Ra
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the mintsupply
+// ExportGenesis returns the exported genesis state as raw bytes for the maxsupply
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	genState := am.keeper.ExportGenesis(ctx)
