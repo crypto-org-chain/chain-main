@@ -552,6 +552,7 @@ func New(
 		logger,
 		app.BankKeeper,
 		app.StakingKeeper,
+		authAddr,
 	)
 
 	// NOTE: Any module instantiated in the module manager that is later modified

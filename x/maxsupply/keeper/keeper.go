@@ -18,6 +18,10 @@ type Keeper struct {
 	logger        log.Logger
 	bankKeeper    types.BankKeeper
 	stakingKeeper types.StakingKeeper
+
+	// the address capable of executing a MsgUpdateParams message. Typically, this
+	// should be the x/gov module account.
+	authority string
 }
 
 // NewKeeper creates a new maxsupply Keeper instance
@@ -27,6 +31,7 @@ func NewKeeper(
 	logger log.Logger,
 	bankKeeper types.BankKeeper,
 	stakingKeeper types.StakingKeeper,
+	authority string,
 ) Keeper {
 	return Keeper{
 		cdc:           cdc,
@@ -34,6 +39,7 @@ func NewKeeper(
 		logger:        logger,
 		bankKeeper:    bankKeeper,
 		stakingKeeper: stakingKeeper,
+		authority:     authority,
 	}
 }
 
@@ -91,4 +97,9 @@ func (k Keeper) GetSupply(ctx context.Context) math.Int {
 		panic("maxsupply: failed to get bond denomination")
 	}
 	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount
+}
+
+// GetAuthority returns the maxsupply module's authority.
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
