@@ -1,10 +1,28 @@
+from pathlib import Path
+
 import pytest
 
-from .utils import approve_proposal, module_address, query_command, wait_for_new_blocks
+from .utils import (
+    approve_proposal,
+    cluster_fixture,
+    module_address,
+    query_command,
+    wait_for_new_blocks,
+)
 
 MAXSUPPLY = "maxsupply"
 PARAM = "max-supply"
 pytestmark = pytest.mark.normal
+
+
+@pytest.fixture(scope="class")
+def cluster(worker_index, pytestconfig, tmp_path_factory):
+    "override cluster fixture for this test module"
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/default.jsonnet",
+        worker_index,
+        tmp_path_factory.mktemp("data"),
+    )
 
 
 class TestMaxSupply:
@@ -61,6 +79,32 @@ class TestMaxSupply:
             "community", "submit-proposal", proposal_src
         )
         assert rsp["code"] == 0, rsp["raw_log"]
+
+        def find_log_event_attrs_legacy(events, ev_type):
+            for ev in events:
+                if ev["type"] == ev_type:
+                    attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+                    return attrs
+            return None
+
+        # Extract proposal ID from the response
+        ev = find_log_event_attrs_legacy(rsp["events"], "submit_proposal")
+        proposal_id = ev["proposal_id"]
+
+        assert proposal_id is not None, "Could not extract proposal ID from response"
+        print(f"Proposal ID: {proposal_id}")
+
+        # Wait for proposal to be available
+        wait_for_new_blocks(cluster, 2)
+
+        # Check if proposal exists before voting
+        try:
+            proposal_info = cluster.query_proposal(proposal_id)
+            print(f"Proposal info: {proposal_info}")
+        except Exception as e:
+            print(f"Error querying proposal: {e}")
+            # If we can't query the proposal, it might not exist yet
+            wait_for_new_blocks(cluster, 3)
 
         approve_proposal(cluster, rsp, msg=f",{msg}")
         print("check params have been updated now")
