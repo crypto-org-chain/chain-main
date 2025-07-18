@@ -39,12 +39,15 @@ func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec does nothing. IBC does not support amino.
-// (Amino is still needed for Ledger at the moment)
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {}
+// RegisterLegacyAminoCodec registers the maxsupply module's types on the LegacyAmino codec.
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
 
 // RegisterInterfaces registers the module's interface types
-func (a AppModuleBasic) RegisterInterfaces(_ cdctypes.InterfaceRegistry) {}
+func (a AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (a AppModuleBasic) ConsensusVersion() uint64 { return 1 }
@@ -113,7 +116,8 @@ func (am AppModule) Name() string {
 // RegisterServices registers a gRPC query service to respond to the
 // module-specific gRPC queries.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	//types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 }
 
 // RegisterInvariants registers the maxsupply module invariants.
