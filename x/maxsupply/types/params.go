@@ -3,13 +3,12 @@ package types
 import (
 	"fmt"
 
-	sdkmath "cosmossdk.io/math"
 	"gopkg.in/yaml.v2"
+
+	sdkmath "cosmossdk.io/math"
 )
 
-var (
-	KeyMaxSupply = []byte("MaxSupply")
-)
+var KeyMaxSupply = []byte("MaxSupply")
 
 // NewParams creates a new Params instance
 func NewParams(maxSupply sdkmath.Int) Params {

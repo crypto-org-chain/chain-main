@@ -3,11 +3,12 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+
 	"cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 var _ types.MsgServer = msgServer{}

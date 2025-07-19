@@ -6,19 +6,19 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-
-	"cosmossdk.io/core/appmodule"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
-
-	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/client/cli"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
+	"cosmossdk.io/core/appmodule"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
 var (
@@ -73,7 +73,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec,
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the maxsupply module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
-	//nolint: staticcheck
 	err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 	if err != nil {
 		panic(err)

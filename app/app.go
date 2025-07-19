@@ -42,6 +42,9 @@ import (
 	"github.com/crypto-org-chain/chain-main/v4/x/chainmain"
 	chainmainkeeper "github.com/crypto-org-chain/chain-main/v4/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
+	maxsupply "github.com/crypto-org-chain/chain-main/v4/x/maxsupply"
+	maxsupplykeeper "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
+	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft"
 	nfttransfer "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer"
 	nfttransferkeeper "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
@@ -140,9 +143,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	maxsupply "github.com/crypto-org-chain/chain-main/v4/x/maxsupply"
-	maxsupplykeeper "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
-	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 // FIXME remove this line, dummy

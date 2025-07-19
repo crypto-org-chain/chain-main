@@ -3,11 +3,11 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 var _ types.QueryServer = Keeper{}
