@@ -211,12 +211,12 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
             time.sleep(1)
 
         print("Chain has been halted")
-
-        print("home", cluster.home(0))
+        time.sleep(1)
         # Check the node's log for errors matches the expected message
         log_file = f"{cluster.home(0)}/../node0.log"
         with open(log_file, "r") as f:
             log_content = f.read()
+            print("log_content:", log_content)
             assert ERROR in log_content, "Expected error message not found in log"
 
         pass
