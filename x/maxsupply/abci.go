@@ -1,18 +1,20 @@
-package keeper
+package maxsupply
 
 import (
 	"context"
 	"errors"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
+	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 // BeginBlocker will check the total supply does not exceed the maximum supply and returns an error if it does.
-func (k *Keeper) BeginBlocker(ctx context.Context) error {
+func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, telemetry.Now(), telemetry.MetricKeyBeginBlocker)
-
-	if k.GetSupply(ctx).GT(k.GetMaxSupply(ctx)) {
+	maxsupply := k.GetMaxSupply(ctx)
+	totolsupply := k.GetSupply(ctx)
+	if maxsupply.IsPositive() && totolsupply.GT(maxsupply) {
 		return errors.New("the total supply has exceeded the maximum supply")
 	}
 
