@@ -140,6 +140,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	maxsupply "github.com/crypto-org-chain/chain-main/v4/x/maxsupply"
+	maxsupplykeeper "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
+	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 )
 
 // FIXME remove this line, dummy
@@ -231,6 +234,7 @@ type ChainApp struct {
 	SupplyKeeper          supplykeeper.Keeper
 	NFTKeeper             nftkeeper.Keeper
 	CircuitKeeper         circuitkeeper.Keeper
+	MaxSupplyKeeper       maxsupplykeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper           capabilitykeeper.ScopedKeeper
@@ -542,6 +546,15 @@ func New(
 	)
 	app.SetCircuitBreaker(&app.CircuitKeeper)
 
+	app.MaxSupplyKeeper = maxsupplykeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[maxsupplytypes.StoreKey]),
+		logger,
+		app.BankKeeper,
+		app.StakingKeeper,
+		authAddr,
+	)
+
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.ModuleManager = module.NewManager(
@@ -584,6 +597,7 @@ func New(
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 		circuit.NewAppModule(appCodec, app.CircuitKeeper),
+		maxsupply.NewAppModule(appCodec, app.MaxSupplyKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -632,6 +646,7 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
+		maxsupplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -660,6 +675,7 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
+		// maxsupplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -689,6 +705,7 @@ func New(
 		ibcfeetypes.ModuleName,
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
+		maxsupplytypes.ModuleName,
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		paramstypes.ModuleName,
@@ -1065,6 +1082,7 @@ func StoreKeys() (
 		ibcfeetypes.StoreKey,
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
+		maxsupplytypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
 		circuittypes.StoreKey,
