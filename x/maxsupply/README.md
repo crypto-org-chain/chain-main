@@ -13,13 +13,13 @@ The MaxSupply module is a custom module for the Chain-main blockchain that manag
 
 ## Module Structure
 
-x/maxsupply/
-├── client/cli/          # CLI commands
-├── keeper/              # Business logic and state management
-├── types/               # Type definitions and codecs
-├── abci.go             # ABCI lifecycle handling
-├── genesis.go          # Genesis state handling
-├── module.go           # Module definition
+x/maxsupply/\
+├── client/cli/          # CLI commands\
+├── keeper/              # Business logic and state management\
+├── types/               # Type definitions and codecs\
+├── abci.go             # ABCI lifecycle handling\
+├── genesis.go          # Genesis state handling\
+├── module.go           # Module definition\
 └── README.md           # This file
 
 ## API Interface
