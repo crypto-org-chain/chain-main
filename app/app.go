@@ -675,7 +675,7 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
-		// maxsupplytypes.ModuleName,
+		maxsupplytypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
