@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 
@@ -58,7 +59,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
 		panic(err)
 	}
 	if bz == nil {
-		return types.DefaultParams()
+		panic(errors.New("failed to fetch params from store"))
 	}
 
 	k.cdc.MustUnmarshal(bz, &params)
