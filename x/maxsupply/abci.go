@@ -14,8 +14,8 @@ import (
 func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, telemetry.Now(), telemetry.MetricKeyBeginBlocker)
 	maxsupply := k.GetMaxSupply(ctx)
-	totolsupply := k.GetSupply(ctx)
-	if maxsupply.IsPositive() && totolsupply.GT(maxsupply) {
+	totalsupply := k.GetSupply(ctx)
+	if maxsupply.IsPositive() && totalsupply.GT(maxsupply) {
 		return errors.New("the total supply has exceeded the maximum supply")
 	}
 

@@ -8,8 +8,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 )
 
-var KeyMaxSupply = []byte("MaxSupply")
-
 // NewParams creates a new Params instance
 func NewParams(maxSupply sdkmath.Int) Params {
 	return Params{
