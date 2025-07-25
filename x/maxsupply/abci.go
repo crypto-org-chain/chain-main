@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"cosmossdk.io/math"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 
@@ -14,7 +15,16 @@ import (
 func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, telemetry.Now(), telemetry.MetricKeyBeginBlocker)
 	maxsupply := k.GetMaxSupply(ctx)
-	totalsupply := k.GetSupply(ctx)
+	totalsupply, denom := k.GetSupplyAndDenom(ctx)
+
+	totalBurnedDenom := math.NewInt(0)
+	for _, ba := range k.GetBurnedAddresses(ctx) {
+		balance := k.GetAddressBalance(ctx, ba, denom)
+		totalBurnedDenom.Add(balance)
+	}
+
+	totalsupply = totalsupply.Sub(totalBurnedDenom)
+
 	if maxsupply.IsPositive() && totalsupply.GT(maxsupply) {
 		return errors.New("the total supply has exceeded the maximum supply")
 	}

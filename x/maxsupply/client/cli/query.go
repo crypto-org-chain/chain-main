@@ -24,6 +24,7 @@ func GetQueryCmd() *cobra.Command {
 
 	cmd.AddCommand(
 		GetCmdQueryMaxSupply(),
+		GetCmdQueryBurnedAddresses(),
 	)
 
 	return cmd
@@ -51,6 +52,41 @@ $ %s query maxsupply max-supply
 			queryClient := types.NewQueryClient(clientCtx)
 
 			res, err := queryClient.MaxSupply(context.Background(), &types.QueryMaxSupplyRequest{})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+
+	return cmd
+}
+
+// GetCmdQueryBurnedAddresses implements the burned addresses query command.
+func GetCmdQueryBurnedAddresses() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "burned-addresses",
+		Args:  cobra.NoArgs,
+		Short: "Query the list of burned addresses",
+		Long: fmt.Sprintf(`Query the list of addresses that hold burned tokens.
+
+Example:
+$ %s query maxsupply burned-addresses
+`,
+			version.AppName,
+		),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+
+			res, err := queryClient.BurnedAddresses(context.Background(), &types.QueryBurnedAddressesRequest{})
 			if err != nil {
 				return err
 			}
