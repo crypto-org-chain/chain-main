@@ -7,7 +7,7 @@ import (
 	"math/rand"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/client/cli"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/simulation"
