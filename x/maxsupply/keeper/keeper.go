@@ -97,8 +97,8 @@ func (k Keeper) GetBurnedAddresses(ctx context.Context) []string {
 	return k.GetParams(ctx).BurnedAddresses
 }
 
-// GetAccountBalance returns the balance of the given address in the specified denomination.
-func (k Keeper) GetAddressBalance(ctx context.Context, address string, demon string) math.Int {
+// GetAddressBalance returns the balance of the given address in the specified denomination.
+func (k Keeper) GetAddressBalance(ctx context.Context, address, demon string) math.Int {
 	return k.bankKeeper.GetBalance(ctx, sdk.AccAddress(address), demon).Amount
 }
 

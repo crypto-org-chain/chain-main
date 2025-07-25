@@ -6,6 +6,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -73,7 +74,7 @@ func validateBurnedAddresses(v interface{}) error {
 
 	for i, addr := range burnedAddresses {
 		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
-			return fmt.Errorf("invalid burned address at index %d: %s, error: %v", i, addr, err)
+			return fmt.Errorf("invalid burned address at index %d: %s, error: %w", i, addr, err)
 		}
 
 		if addressMap[addr] {

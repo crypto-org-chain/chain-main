@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"cosmossdk.io/math"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/keeper"
 	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
 )
