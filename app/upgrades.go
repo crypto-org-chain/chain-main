@@ -88,7 +88,6 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			Added: []string{
 				maxsupplytypes.StoreKey,
 			},
-			Deleted: []string{"icaauth"},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
