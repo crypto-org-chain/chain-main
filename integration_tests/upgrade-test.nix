@@ -57,7 +57,8 @@ pkgs.linkFarm "upgrade-test-package" [
     name = "v6.0.0";
     path = released6_0;
   }
-  { name = "v7.0.0";
+  { 
+    name = "v7.0.0";
     path = current;
   }
 ]
