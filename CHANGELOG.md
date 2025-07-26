@@ -4,6 +4,7 @@
 
 ### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
+- [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
 
 *July 9, 2025*
 
