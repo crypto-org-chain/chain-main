@@ -6,12 +6,15 @@ import (
 	"gopkg.in/yaml.v2"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // NewParams creates a new Params instance
-func NewParams(maxSupply sdkmath.Int) Params {
+func NewParams(maxSupply sdkmath.Int, burnedAddresses []string) Params {
 	return Params{
-		MaxSupply: maxSupply,
+		MaxSupply:       maxSupply,
+		BurnedAddresses: burnedAddresses,
 	}
 }
 
@@ -19,6 +22,7 @@ func NewParams(maxSupply sdkmath.Int) Params {
 func DefaultParams() Params {
 	return NewParams(
 		sdkmath.NewInt(0),
+		[]string{},
 	)
 }
 
@@ -27,6 +31,11 @@ func (p Params) Validate() error {
 	if err := validateMaxSupply(p.MaxSupply); err != nil {
 		return err
 	}
+
+	if err := validateBurnedAddresses(p.BurnedAddresses); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -49,6 +58,33 @@ func validateMaxSupply(v interface{}) error {
 
 	if maxSupply.IsNegative() {
 		return fmt.Errorf("max supply cannot be negative: %s", maxSupply)
+	}
+
+	return nil
+}
+
+// validateBurnedAddresses validates the BurnedAddresses param
+func validateBurnedAddresses(v interface{}) error {
+	burnedAddresses, ok := v.([]string)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", v)
+	}
+
+	addressMap := make(map[string]bool)
+
+	for i, addr := range burnedAddresses {
+		if _, err := sdk.AccAddressFromBech32(addr); err != nil {
+			return fmt.Errorf("invalid burned address at index %d: %s, error: %w", i, addr, err)
+		}
+
+		if addressMap[addr] {
+			return fmt.Errorf("duplicate burned address found: %s", addr)
+		}
+		addressMap[addr] = true
+
+		if addr == "" {
+			return fmt.Errorf("burned address cannot be empty at index %d", i)
+		}
 	}
 
 	return nil

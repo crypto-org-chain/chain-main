@@ -25,3 +25,17 @@ func (k Keeper) MaxSupply(ctx context.Context, req *types.QueryMaxSupplyRequest)
 		MaxSupply: params.MaxSupply.String(),
 	}, nil
 }
+
+// BurnedAddresses returns the list of burned addresses
+func (k Keeper) BurnedAddresses(ctx context.Context, req *types.QueryBurnedAddressesRequest) (*types.QueryBurnedAddressesResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid request")
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	params := k.GetParams(sdkCtx)
+
+	return &types.QueryBurnedAddressesResponse{
+		BurnedAddresses: params.BurnedAddresses,
+	}, nil
+}

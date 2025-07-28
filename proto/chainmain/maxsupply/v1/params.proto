@@ -16,4 +16,7 @@ message Params {
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable)   = false
   ];
+
+  // burned_addresses is a list of addresses that hold burned tokens
+  repeated string burned_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
