@@ -11,6 +11,26 @@ The MaxSupply module is a custom module for the Chain-main blockchain that manag
 - **Governance Integration**: Supports updating module parameters through governance proposals
 - **Genesis State Management**: Supports initializing module state in the genesis block
 
+## Supply Calculation
+
+The module implements a comprehensive supply calculation system:
+
+### Maximum Supply
+
+- **Definition**: The absolute maximum number of tokens that can ever exist
+- **Purpose**: Sets an upper bound for the chain base token supply operations
+- **Format**: Stored as `cosmossdk.io/math.Int` for precise large number handling
+
+### Burned Addresses
+
+- **Definition**: A list of addresses that hold tokens considered "burned" or permanently removed from circulation
+- **Purpose**: Exclude burned tokens from circulating supply calculations
+- **Format**: Array of bech32-encoded addresses (e.g., `["cro1abc...", "cro1def..."]`)
+
+### Circulating Supply Calculation
+
+Circulating Supply = Total Supply - Sum(Balances of Burned Addresses)
+
 ## Module Structure
 
 x/maxsupply/\
@@ -38,13 +58,9 @@ service Query {
 }
 ```
 
-#### Request Format
-
 ```(go)
     message QueryMaxSupplyRequest {}
 ```
-
-#### Response Format
 
 ```(go)
 message QueryMaxSupplyResponse {
@@ -52,13 +68,33 @@ message QueryMaxSupplyResponse {
 }
 ```
 
+#### Query Burned Addresses
+
+```(go)
+  rpc BurnedAddresses(QueryBurnedAddressesRequest) returns (QueryBurnedAddressesResponse) {
+    option (google.api.http).get = "/chainmain/maxsupply/v1/params/burned_addresses";
+  }
+```
+
+```(go)
+    message QueryBurnedAddressesRequest {}
+```
+
+```(go)
+message QueryBurnedAddressesResponse {
+  repeated string burned_addresses = 1;
+}
+```
+
 ### REST API (gRPC Gateway)
 
-#### Query Maximum Supply Example
+#### Query Example
 
 ```(bash)
 # GET request
 curl http://localhost:1317/chainmain/maxsupply/v1/params/max_supply
+
+curl http://localhost:1317/chainmain/maxsupply/v1/params/burned_addresses
 ```
 
 #### Response Example
@@ -66,6 +102,12 @@ curl http://localhost:1317/chainmain/maxsupply/v1/params/max_supply
 ```(bash)
 {
   "max_supply": "1000000000000000000000000000"
+}
+
+{
+  "burned_addresses": [
+    "cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"
+  ]
 }
 ```
 
@@ -76,6 +118,10 @@ curl http://localhost:1317/chainmain/maxsupply/v1/params/max_supply
 ```(bash)
 # Query current maximum supply
 ./build/chain-maind query maxsupply max-supply
+
+# Query burned addresses list
+./build/chain-maind query maxsupply burned-addresses
+
 
 # Using specific node
 ./build/chain-maind query maxsupply max-supply --node tcp://localhost:26657
