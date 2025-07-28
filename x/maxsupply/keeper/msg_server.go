@@ -17,7 +17,7 @@ type msgServer struct {
 	Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the slashing MsgServer interface
+// NewMsgServerImpl returns an implementation of the maxsupply MsgServer interface
 // for the provided Keeper.
 func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
