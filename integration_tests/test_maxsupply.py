@@ -87,7 +87,7 @@ def test_max_supply_cli_query(cluster):
     # Query max supply parameters
     rsp = query_command(cluster, MAXSUPPLY, PARAM)
     assert "max_supply" in rsp
-    assert int(rsp["max_supply"]) == 0  # Initial max supply is 0
+    assert int(rsp["max_supply"]) == 0  # the max supply is 0 by default
 
 
 def test_max_supply_persistence(cluster):

@@ -19,7 +19,10 @@ func (k Keeper) MaxSupply(ctx context.Context, req *types.QueryMaxSupplyRequest)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params := k.GetParams(sdkCtx)
+	params, err := k.GetParams(sdkCtx)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "failed to get params: "+err.Error())
+	}
 
 	return &types.QueryMaxSupplyResponse{
 		MaxSupply: params.MaxSupply.String(),
@@ -33,7 +36,10 @@ func (k Keeper) BurnedAddresses(ctx context.Context, req *types.QueryBurnedAddre
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params := k.GetParams(sdkCtx)
+	params, err := k.GetParams(sdkCtx)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, "failed to get params: "+err.Error())
+	}
 
 	return &types.QueryBurnedAddressesResponse{
 		BurnedAddresses: params.BurnedAddresses,

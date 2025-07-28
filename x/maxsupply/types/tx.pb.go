@@ -33,7 +33,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
-	// authority is the address that controls the module (defaults to x/gov unless overwritten).
+	// authority is the address that controls the module (defaults to x/maxsupply unless overwritten).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
 	// params defines the x/maxsupply parameters to update.
 	//
@@ -173,7 +173,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
 	// UpdateParams defines a governance operation for updating the x/maxsupply module
-	// parameters. The authority is hard-coded to the x/gov module account.
+	// parameters. The authority is hard-coded to the x/maxsupply module account.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
@@ -197,7 +197,7 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
 	// UpdateParams defines a governance operation for updating the x/maxsupply module
-	// parameters. The authority is hard-coded to the x/gov module account.
+	// parameters. The authority is hard-coded to the x/maxsupply module account.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
 

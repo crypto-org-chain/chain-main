@@ -10,6 +10,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	UNLIMITED_SUPPLY = 0
+)
+
 // NewParams creates a new Params instance
 func NewParams(maxSupply sdkmath.Int, burnedAddresses []string) Params {
 	return Params{
@@ -18,10 +22,10 @@ func NewParams(maxSupply sdkmath.Int, burnedAddresses []string) Params {
 	}
 }
 
-// DefaultParams returns a default set of parameters, with max supply set to 0 meaning unlimited supply
+// DefaultParams returns a default set of parameters
 func DefaultParams() Params {
 	return NewParams(
-		sdkmath.NewInt(0),
+		sdkmath.NewInt(UNLIMITED_SUPPLY),
 		[]string{},
 	)
 }

@@ -52,18 +52,18 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // GetParams get all parameters as types.Params
-func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
+func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get([]byte(types.ParamsKey))
 	if err != nil {
-		panic(err)
+		return types.Params{}, err
 	}
 	if bz == nil {
-		panic(errors.New("failed to fetch params from store"))
+		return types.Params{}, errors.New("params not found in store")
 	}
 
 	k.cdc.MustUnmarshal(bz, &params)
-	return params
+	return params, nil
 }
 
 // SetParams set the params
@@ -83,32 +83,27 @@ func (k Keeper) InitGenesis(ctx context.Context, genState types.GenesisState) {
 // ExportGenesis returns the module's exported genesis
 func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	genesis := types.DefaultGenesis()
-	genesis.Params = k.GetParams(ctx)
+	var err error
+	genesis.Params, err = k.GetParams(ctx)
+	if err != nil {
+		panic("fail to get params:" + err.Error())
+	}
+
 	return genesis
 }
 
-// GetMaxSupply returns the maximum supply from the module's parameters.
-func (k Keeper) GetMaxSupply(ctx context.Context) math.Int {
-	return k.GetParams(ctx).MaxSupply
-}
-
-// GetBurnedAddresses returns the addresses that have been burned in the module's parameters.
-func (k Keeper) GetBurnedAddresses(ctx context.Context) []string {
-	return k.GetParams(ctx).BurnedAddresses
-}
-
 // GetAddressBalance returns the balance of the given address in the specified denomination.
-func (k Keeper) GetAddressBalance(ctx context.Context, address, demon string) math.Int {
-	return k.bankKeeper.GetBalance(ctx, sdk.AccAddress(address), demon).Amount
+func (k Keeper) GetAddressBalance(ctx context.Context, address, denom string) math.Int {
+	return k.bankKeeper.GetBalance(ctx, sdk.AccAddress(address), denom).Amount
 }
 
 // GetSupplyAndDenom returns the total supply and the bond denomination.
-func (k Keeper) GetSupplyAndDenom(ctx context.Context) (math.Int, string) {
+func (k Keeper) GetSupplyAndDenom(ctx context.Context) (math.Int, string, error) {
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
-		panic("maxsupply: failed to get bond denomination")
+		return math.ZeroInt(), "", err
 	}
-	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount, bondDenom
+	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount, bondDenom, nil
 }
 
 // GetAuthority returns the maxsupply module's authority.
