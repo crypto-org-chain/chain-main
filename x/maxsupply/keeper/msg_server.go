@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 }
 
 // UpdateParams implements MsgServer.UpdateParams method.
-// It defines a method to update the x/slashing module parameters.
+// It defines a method to update the x/maxsupply module parameters.
 func (k msgServer) UpdateParams(goCtx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	if k.authority != msg.Authority {
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
