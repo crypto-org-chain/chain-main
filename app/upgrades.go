@@ -61,16 +61,20 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, fmt.Errorf("invalid max supply")
 		}
 
-		if strings.Contains(planName, "testnet") {
+		chainID := sdkCtx.ChainID()
+
+		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
+			// For mainnet or the integration test
+			maxSupplyParams.BurnedAddresses = []string{
+				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+			}
+		} else if strings.Contains(chainID, "testnet") {
 			// For testnet, use different burned addresses or configuration
 			maxSupplyParams.BurnedAddresses = []string{
 				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
 			}
 		} else {
-			// For mainnet
-			maxSupplyParams.BurnedAddresses = []string{
-				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
-			}
+			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
 		}
 
 		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
