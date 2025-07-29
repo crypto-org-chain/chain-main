@@ -598,6 +598,7 @@ def assert_v7_maxsupply_module_is_working(cluster):
 
 
 def propose_n_execute_v7_upgrade(cluster):
+    plan_name = "v7.0.0"
     target_height = cluster.block_height() + 15
     print("propose v7 upgrade plan at", target_height)
 
@@ -605,7 +606,7 @@ def propose_n_execute_v7_upgrade(cluster):
         "community",
         "software-upgrade",
         {
-            "name": "v7.0.0",
+            "name": plan_name,
             "title": "v7.0.0 upgrade",
             "summary": "Upgrade to v7.0.0 with maxsupply module",
             "upgrade-height": target_height,
@@ -635,6 +636,25 @@ def propose_n_execute_v7_upgrade(cluster):
     }
     assert js1 == js2
     assert expected.items() <= js1.items()
+
+    # use the upgrade-test binary
+    edit_chain_program(
+        cluster.chain_id,
+        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
+        lambda i, _: {
+            "command": (
+                f"%(here)s/node{i}/cosmovisor/upgrades/{plan_name}/bin/chain-maind "
+                f"start --home %(here)s/node{i}"
+            )
+        },
+    )
+    cluster.reload_supervisor()
+
+    # update the cli cmd to correct binary
+    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
+
+    # wait for it to generate new blocks
+    wait_for_block(cluster, target_height + 2, 600)
 
     return target_height
 

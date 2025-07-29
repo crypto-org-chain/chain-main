@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
@@ -39,6 +40,7 @@ var CircuitSuperAdmins = map[string][]string{
 }
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
+	// Register upgrade plan name for mainnet v7.0.0. If it's for testnet, add postfix "-testnet" to the plan name.
 	planName := "v7.0.0"
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
@@ -58,8 +60,17 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		if !_ok {
 			return map[string]uint64{}, fmt.Errorf("invalid max supply")
 		}
-		maxSupplyParams.BurnedAddresses = []string{
-			"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+
+		if strings.Contains(planName, "testnet") {
+			// For testnet, use different burned addresses or configuration
+			maxSupplyParams.BurnedAddresses = []string{
+				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+			}
+		} else {
+			// For mainnet
+			maxSupplyParams.BurnedAddresses = []string{
+				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+			}
 		}
 
 		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
