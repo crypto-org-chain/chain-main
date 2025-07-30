@@ -55,8 +55,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 
 		var _ok bool
 		maxSupplyParams := maxsupplytypes.DefaultParams()
-		// update max supply to 100B * 10^18 basecro
-		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("100000000000000000000000000000")
+		// update max supply to 100B * 10^8 basecro
+		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("10000000000000000000")
 		if !_ok {
 			return map[string]uint64{}, fmt.Errorf("invalid max supply")
 		}

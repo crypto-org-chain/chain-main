@@ -577,7 +577,7 @@ def assert_v7_maxsupply_module_is_working(cluster):
         )
     )
 
-    expected_max_supply = "100000000000000000000000000000"  # 100B * 10^18
+    expected_max_supply = "10000000000000000000"  # 100B * 10^8
     assert params["max_supply"] == expected_max_supply, params
 
     expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
