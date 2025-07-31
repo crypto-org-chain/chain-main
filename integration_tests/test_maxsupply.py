@@ -5,7 +5,9 @@ import pytest
 
 from .utils import (
     approve_proposal,
+    check_proposal_exist,
     cluster_fixture,
+    find_event_proposal_id,
     module_address,
     query_command,
     wait_for_new_blocks,
@@ -49,37 +51,6 @@ def _create_max_supply_proposal(params):
         "summary": "Increase maximum supply limit",
     }
     return proposal_src
-
-
-def _find_event_proposal_id(events):
-    for ev in events:
-        if ev["type"] == "submit_proposal":
-            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
-            p_id = attrs["proposal_id"]
-            assert p_id is not None, "Could not extract proposal ID from response"
-            print(f"Proposal ID: {p_id}")
-            return p_id
-    return None
-
-
-def _check_proposal_exist(cluster, proposal_id, timeout_seconds=60):
-    """Check if proposal exists with timeout mechanism"""
-    start_time = time.time()
-
-    while time.time() - start_time < timeout_seconds:
-        try:
-            proposal_info = cluster.query_proposal(proposal_id)
-            print(f"Proposal info: {proposal_info}")
-            return True
-        except Exception as e:
-            print(f"Error querying proposal: {e}")
-            # If we can't query the proposal, it might not exist yet
-            time.sleep(1)
-    # If we reach here, timeout occurred
-    raise TimeoutError(
-        f"Timeout waiting for proposal {proposal_id} to become available "
-        f"after {timeout_seconds} seconds"
-    )
 
 
 def test_max_supply_cli_query(cluster):
@@ -126,13 +97,13 @@ def test_max_supply_update_via_governance(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # Extract proposal ID from the response
-    proposal_id = _find_event_proposal_id(rsp["events"])
+    proposal_id = find_event_proposal_id(rsp["events"])
 
     # Wait for proposal to be available
     wait_for_new_blocks(cluster, 1)
 
     # Check if proposal exists before voting
-    _check_proposal_exist(cluster, proposal_id)
+    check_proposal_exist(cluster, proposal_id)
 
     # Vote on proposal
     approve_proposal(cluster, rsp, msg=f",{MSG}")
@@ -170,13 +141,13 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # Extract proposal ID from the response
-    proposal_id = _find_event_proposal_id(rsp["events"])
+    proposal_id = find_event_proposal_id(rsp["events"])
 
     # Wait for proposal to be available
     wait_for_new_blocks(cluster, 1)
 
     # Check if proposal exists before voting
-    _check_proposal_exist(cluster, proposal_id)
+    check_proposal_exist(cluster, proposal_id)
 
     # Vote on proposal
     approve_proposal(cluster, rsp, msg=f",{MSG}")

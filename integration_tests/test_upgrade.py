@@ -567,23 +567,20 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
 def assert_v7_maxsupply_module_is_working(cluster):
     cli = cluster.cosmos_cli()
-    params = json.loads(
+    max_supply = json.loads(
         cli.raw(
             "query",
             "maxsupply",
-            "params",
+            "max-supply",
             output="json",
             node=cli.node_rpc,
         )
     )
 
     expected_max_supply = "10000000000000000000"  # 100B * 10^8
-    assert params["max_supply"] == expected_max_supply, params
+    assert max_supply == expected_max_supply, max_supply
 
-    expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
-    assert params["burned_addresses"] == expected_burned_addresses, params
-
-    burned_addresses_response = json.loads(
+    burned_addresses = json.loads(
         cli.raw(
             "query",
             "maxsupply",
@@ -592,14 +589,16 @@ def assert_v7_maxsupply_module_is_working(cluster):
             node=cli.node_rpc,
         )
     )
-    assert burned_addresses_response["burned_addresses"] == expected_burned_addresses
+
+    expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
+    assert burned_addresses == expected_burned_addresses, burned_addresses
 
     print("v7.0.0 upgrade completed successfully")
 
 
 def propose_n_execute_v7_upgrade(cluster):
     plan_name = "v7.0.0"
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 30
     print("propose v7 upgrade plan at", target_height)
 
     rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
@@ -614,10 +613,11 @@ def propose_n_execute_v7_upgrade(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
+
     approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
-    wait_for_block(cluster, target_height, 600)
-    time.sleep(0.5)
+    wait_for_block(cluster, target_height)
+    time.sleep(1)
 
     assert (
         cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
@@ -654,7 +654,7 @@ def propose_n_execute_v7_upgrade(cluster):
     cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
 
     # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2, 600)
+    wait_for_block(cluster, target_height + 2)
 
     return target_height
 
