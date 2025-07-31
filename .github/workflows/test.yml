@@ -1,0 +1,52 @@
+name: Tests
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - release/**
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-versiondb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.21
+          check-latest: true
+      - uses: actions/checkout@v4
+      - name: Install RocksDB Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install -y build-essential libsnappy-dev zlib1g-dev libbz2-dev libgflags-dev liblz4-dev libzstd-dev cmake
+      - name: Build and Install RocksDB
+        run: |
+          git clone https://github.com/facebook/rocksdb.git
+          cd rocksdb
+          git checkout v9.2.1
+          mkdir build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_SNAPPY=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON -DWITH_ZSTD=ON
+          sudo make -j4
+          sudo make install
+      - uses: technote-space/get-diff-action@v6.1.2
+        with:
+          PATTERNS: |
+            **/**.sol
+            **/**.go
+            go.mod
+            go.sum
+      - name: Test and Create Coverage Report
+        run: |
+          export COSMOS_BUILD_OPTIONS=rocksdb
+          make test-versiondb
+        if: env.GIT_DIFF
+      - uses: codecov/codecov-action@v5
+        with:
+          file: ./coverage.txt
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+        if: env.GIT_DIFF
