@@ -567,7 +567,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
 def assert_v7_maxsupply_module_is_working(cluster):
     cli = cluster.cosmos_cli()
-    max_supply = json.loads(
+    rsp = json.loads(
         cli.raw(
             "query",
             "maxsupply",
@@ -578,9 +578,9 @@ def assert_v7_maxsupply_module_is_working(cluster):
     )
 
     expected_max_supply = "10000000000000000000"  # 100B * 10^8
-    assert max_supply == expected_max_supply, max_supply
+    assert rsp["max_supply"] == expected_max_supply, rsp["max_supply"]
 
-    burned_addresses = json.loads(
+    rsp = json.loads(
         cli.raw(
             "query",
             "maxsupply",
@@ -591,7 +591,7 @@ def assert_v7_maxsupply_module_is_working(cluster):
     )
 
     expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
-    assert burned_addresses == expected_burned_addresses, burned_addresses
+    assert rsp["burned_addresses"] == expected_burned_addresses, rsp["burned_addresses"]
 
     print("v7.0.0 upgrade completed successfully")
 
