@@ -56,9 +56,6 @@ func (a AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// ConsensusVersion implements AppModule/ConsensusVersion.
-func (a AppModuleBasic) ConsensusVersion() uint64 { return 1 }
-
 // DefaultGenesis returns the maxsupply module's default genesis state.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesis())
