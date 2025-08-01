@@ -401,6 +401,7 @@ jobs:
             *.sum
       - name: test-versiondb
         run: |
+          nix profile install nixpkgs#snappy
           nix profile install -f ./nix rocksdb
           
           export PKG_CONFIG_PATH=~/.nix-profile/lib/pkgconfig
