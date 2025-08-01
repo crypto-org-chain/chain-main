@@ -4,14 +4,17 @@
 package app_test
 
 import (
-	"cosmossdk.io/log"
+	"testing"
+
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/crypto-org-chain/chain-main/v4/app"
+
+	"cosmossdk.io/log"
+
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"testing"
 )
 
 func TestVersionDB(t *testing.T) {
