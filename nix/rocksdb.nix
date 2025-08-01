@@ -108,6 +108,7 @@ stdenv.mkDerivation rec {
       if [ -f "$out"/lib/pkgconfig/rocksdb.pc ]; then
         substituteInPlace "$out"/lib/pkgconfig/rocksdb.pc \
           --replace '="''${prefix}//' '="/'
+        echo "Requires.private: bzip2 jemalloc lz4 snappy zlib zstd" >> "$out"/lib/pkgconfig/rocksdb.pc
       fi
     ''
     + lib.optionalString stdenv.isDarwin ''
