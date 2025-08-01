@@ -14,9 +14,9 @@ jobs:
   test-versiondb:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.21
+          go-version: 1.22
           check-latest: true
       - uses: actions/checkout@v4
       - name: Install RocksDB Dependencies
@@ -43,10 +43,4 @@ jobs:
         run: |
           export COSMOS_BUILD_OPTIONS=rocksdb
           make test-versiondb
-        if: env.GIT_DIFF
-      - uses: codecov/codecov-action@v5
-        with:
-          file: ./coverage.txt
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
         if: env.GIT_DIFF
