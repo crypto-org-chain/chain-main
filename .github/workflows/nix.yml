@@ -405,7 +405,11 @@ jobs:
           nix profile install -f ./nix rocksdb
           export PKG_CONFIG_PATH=$HOME/.nix-profile/lib/pkgconfig
           export CGO_CFLAGS="$(pkg-config --cflags rocksdb)" CGO_LDFLAGS="$(pkg-config --libs rocksdb)"
-          export CGO_LDFLAGS="$CGO_LDFLAGS -L$HOME/.nix-profile/lib"  
+          
+          BUILD_TAGS=rocksdb,grocksdb_clean_link
+          go build -tags $BUILD_TAGS ./cmd/chain-maind
+          
+          make test-versiondb
           
           make test-versiondb
         # Check only if there are differences in the source code
