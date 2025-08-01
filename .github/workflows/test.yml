@@ -43,10 +43,3 @@ jobs:
         run: |
           export COSMOS_BUILD_OPTIONS=rocksdb
           make test-versiondb
-        if: env.GIT_DIFF
-      - uses: codecov/codecov-action@v5
-        with:
-          file: ./coverage.txt
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-        if: env.GIT_DIFF
