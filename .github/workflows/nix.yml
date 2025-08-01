@@ -381,7 +381,7 @@ jobs:
 
 
   test-versiondb:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -401,15 +401,13 @@ jobs:
             *.sum
       - name: test-versiondb
         run: |
-          nix profile install nixpkgs#snappy
           nix profile install -f ./nix rocksdb
-          export PKG_CONFIG_PATH=$HOME/.nix-profile/lib/pkgconfig
-          export CGO_CFLAGS="$(pkg-config --cflags rocksdb)" CGO_LDFLAGS="$(pkg-config --libs rocksdb)"
           
-          BUILD_TAGS=rocksdb,grocksdb_clean_link
-          go build -tags $BUILD_TAGS ./cmd/chain-maind
-          
-          make test-versiondb
+          export PKG_CONFIG_PATH=~/.nix-profile/lib/pkgconfig
+          export CGO_CFLAGS=$(pkg-config --cflags rocksdb)
+          export CGO_CPPFLAGS=$CGO_CFLAGS
+          export CGO_CXXFLAGS=$CGO_CFLAGS
+          export CGO_LDFLAGS=$(pkg-config --libs rocksdb)
           
           make test-versiondb
         # Check only if there are differences in the source code
