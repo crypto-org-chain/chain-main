@@ -14,32 +14,28 @@ jobs:
   test-versiondb:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.21
-          check-latest: true
-      - uses: actions/checkout@v4
-      - name: Install RocksDB Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install -y build-essential libsnappy-dev zlib1g-dev libbz2-dev libgflags-dev liblz4-dev libzstd-dev cmake
-      - name: Build and Install RocksDB
-        run: |
-          git clone https://github.com/facebook/rocksdb.git
-          cd rocksdb
-          git checkout v9.2.1
-          mkdir build && cd build
-          cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_SNAPPY=ON -DWITH_LZ4=ON -DWITH_ZLIB=ON -DWITH_ZSTD=ON
-          sudo make -j4
-          sudo make install
-      - uses: technote-space/get-diff-action@v6.1.2
+          go-version: '1.22.7'
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@6a9a9e84a173d90b3ffb42c5ddaf9ea033fad011 #v23
         with:
-          PATTERNS: |
-            **/**.sol
-            **/**.go
-            go.mod
-            go.sum
-      - name: Test and Create Coverage Report
+          nix_path: nixpkgs=channel:nixos-22.11
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - id: changed-files
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        with:
+          files: |
+            **/*.go
+            *.mod
+            *.sum
+      - name: test-versiondb
         run: |
-          export COSMOS_BUILD_OPTIONS=rocksdb
+          nix profile install -f ./nix rocksdb
+          export PKG_CONFIG_PATH=$HOME/.nix-profile/lib/pkgconfig
+          export CGO_CFLAGS="$(pkg-config --cflags rocksdb)" CGO_LDFLAGS="$(pkg-config --libs rocksdb)"
+          
           make test-versiondb
+        # Check only if there are differences in the source code
+        if: steps.changed-files.outputs.any_changed == 'true'
