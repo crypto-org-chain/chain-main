@@ -193,10 +193,12 @@ var (
 	_ servertypes.Application = (*ChainApp)(nil)
 )
 
+// RootMultiStore this is source from https://github.com/crypto-org-chain/cosmos-sdk/blob/release/v0.50.x/store/types/store.go
 type RootMultiStore interface {
 	storetypes.MultiStore
 
-	LoadLatestVersion() error
+	// LatestVersion returns the latest version in the store
+	LatestVersion() int64
 }
 
 // ChainApp extends an ABCI application, but with most of its parameters exported.
@@ -460,7 +462,7 @@ func New(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
