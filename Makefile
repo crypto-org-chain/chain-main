@@ -193,6 +193,10 @@ test-sim-after-import:
 	@echo "Running application simulation-after-import. This may take several minutes..."
 	@$(BINDIR)/runsim -Jobs=4 -SimAppPkg=$(SIMAPP) -ExitOnFail 50 5 TestAppSimulationAfterImport
 
+test-versiondb:
+	@echo "Running test-versiondb..."
+	@go test -tags "rocksdb $(test_tags)" -mod=readonly $(SIMAPP) -run TestVersionDB
+
 ###############################################################################
 ###                                Localnet                                 ###
 ###############################################################################
