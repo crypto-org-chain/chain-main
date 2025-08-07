@@ -286,7 +286,7 @@ endif
 
 check-os:
 ifeq ($(OS), Darwin)
-ifneq ("$(wildcard ~/.nix/remote-build-env))","")
+ifneq ($(wildcard $(HOME)/.nix/remote-build-env),)
 	@echo "installed nix-remote-builder before" && \
 	docker run --restart always --name nix-docker -d -p 3022:22 lnl7/nix:ssh 2> /dev/null || echo "nix-docker is already running"
 else
