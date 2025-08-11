@@ -258,6 +258,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 	if changeSetCmd != nil {
 		rootCmd.AddCommand(changeSetCmd)
 	}
+
+	// versiondb Get version changeset commands
+	getChangeSetCmd := GetChangeSetCmd()
+	if getChangeSetCmd != nil {
+		rootCmd.AddCommand(GetChangeSetCmd())
+	}
 }
 
 // genesisCommand builds genesis-related `simd genesis` command. Users may provide application specific commands as a parameter

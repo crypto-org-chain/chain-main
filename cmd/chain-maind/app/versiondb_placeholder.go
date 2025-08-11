@@ -10,3 +10,7 @@ import (
 func ChangeSetCmd() *cobra.Command {
 	return nil
 }
+
+func GetChangeSetCmd() *cobra.Command {
+	return nil
+}
