@@ -461,6 +461,9 @@ github.com/crypto-org-chain/cronos/store v0.0.5-0.20241028093154-0f94930c27ce h1
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20241028093154-0f94930c27ce/go.mod h1:p+VxW2n9j8ojLreWScnqoDHyxGPRjI0ytkMMG5xh9o0=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20241028093154-0f94930c27ce h1:d2TZ+oXM6+qpQhM0800lUKrK5p/BmcDXUi1/Xo2LIho=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20241028093154-0f94930c27ce/go.mod h1:Y1uyFhZn/8jZkZfr3W/alzrO3DfcfWPuA3UwCM0Ah0g=
+github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250812224418-9aaae07cc77e h1:WFyk5N27KwSt/hlACpkPrZVUkc8lgl0wR6yNvyvZNg4=
+github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250812224418-9aaae07cc77e/go.mod h1:Y1uyFhZn/8jZkZfr3W/alzrO3DfcfWPuA3UwCM0Ah0g=
+github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250812231322-8108ac117bae/go.mod h1:Y1uyFhZn/8jZkZfr3W/alzrO3DfcfWPuA3UwCM0Ah0g=
 github.com/cyberdelia/templates v0.0.0-20141128023046-ca7fffd4298c/go.mod h1:GyV+0YP4qX0UQ7r2MoYZ+AvYDp12OF5yg4q8rGnyNh4=
 github.com/danieljoos/wincred v1.1.2 h1:QLdCxFs1/Yl4zduvBdcHB8goaYk9RARS2SgLLRuAyr0=
 github.com/danieljoos/wincred v1.1.2/go.mod h1:GijpziifJoIBfYh+S7BbkdUTU4LfM+QnGqR5Vl2tAx0=
