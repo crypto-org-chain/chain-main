@@ -55,7 +55,7 @@ var CircuitSuperAdmins = map[string][]string{
 	},
 }
 
-func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
+func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec, maxVersion int64) bool {
 	planName := "v6.0.0"
 
 	// Set param key table for params module migration
@@ -172,7 +172,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			Deleted: []string{"icaauth"},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+		app.SetStoreLoader(MaxVersionUpgradeStoreLoader(maxVersion, upgradeInfo.Height, &storeUpgrades))
+		return true
 	}
 
 	// Dummy upgrade handler for testnet as it has already been upgraded
@@ -181,6 +182,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		// All the module should be at their latest version already, this method should return without doing anything
 		return app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 	})
+
+	return false
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {

@@ -752,6 +752,11 @@ func New(
 		app.qms = qms.(RootMultiStore)
 	}
 
+	var qmsVersion int64
+	if app.qms != nil {
+		qmsVersion = app.qms.LatestVersion()
+	}
+
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -790,18 +795,23 @@ func New(
 	// upgrade.
 	app.setPostHandler()
 
-	app.RegisterUpgradeHandlers(app.appCodec)
+	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
+	// Make sure it's called after `app.mm` and `app.configurator` are set.
+	storeLoaderOverritten := app.RegisterUpgradeHandlers(app.appCodec, qmsVersion)
+	if !storeLoaderOverritten {
+		// Register the default store loader
+		app.SetStoreLoader(MaxVersionStoreLoader(qmsVersion))
+	}
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
 		}
 
-		if app.qms != nil {
-			v1 := app.qms.LatestVersion()
-			v2 := app.LastBlockHeight()
-			if v1 > 0 && v1 != v2 {
-				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", v1, v2))
+		if qmsVersion > 0 {
+			iavlVersion := app.LastBlockHeight()
+			if qmsVersion < iavlVersion {
+				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", qmsVersion, iavlVersion))
 			}
 		}
 	}
