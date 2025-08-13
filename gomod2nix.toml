@@ -201,8 +201,8 @@ schema = 3
     hash = "sha256-S5INWggeFs1vBrcuVyWyS34C5I2ux+NLJ+czqQqKzUc="
     replaced = "github.com/crypto-org-chain/cronos/store"
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.5-0.20250813072749-443b4d59b72d"
-    hash = "sha256-ZKcfQ1sQq0xFHHVDGBgraSDZdHCiKMso75zswDpwI0Y="
+    version = "v0.0.0-20250813072749-443b4d59b72d"
+    hash = "sha256-dVXYagl8K+JMrIt6dqcoQTjUwwMCqrMmAfpIZimWlyE="
     replaced = "github.com/crypto-org-chain/cronos/versiondb"
   [mod."github.com/danieljoos/wincred"]
     version = "v1.1.2"
