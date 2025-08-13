@@ -86,7 +86,7 @@ require (
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
 	github.com/creachadair/atomicfile v0.3.1 // indirect
 	github.com/creachadair/tomledit v0.0.24 // indirect
-	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20231225065237-42f2597fca49 // indirect
+	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813002843-e057dae89ba1 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
@@ -221,9 +221,9 @@ require (
 )
 
 replace (
-	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20241028093154-0f94930c27ce
+	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813002843-e057dae89ba1
 	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20241028093154-0f94930c27ce
-	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250812231322-8108ac117bae
+	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20241028093154-0f94930c27ce
 )
 
 replace (
