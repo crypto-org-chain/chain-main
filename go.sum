@@ -457,6 +457,7 @@ github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7Do
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813072749-443b4d59b72d h1:rFsEHR94iOCie3+aSUSWwe5XkNuXdqimAY0mAhS3q78=
 github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813072749-443b4d59b72d/go.mod h1:IyRvgFKOQPC/Qdx543PGl6WgeDOU+hWdv+xLz3stotc=
+github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813090242-dd8f081ab77c/go.mod h1:IyRvgFKOQPC/Qdx543PGl6WgeDOU+hWdv+xLz3stotc=
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20250813072749-443b4d59b72d h1:YubNdqpDPJQvw6IJs7WmvY/PHY3XPoDNVLLdhTToyhQ=
 github.com/crypto-org-chain/cronos/store v0.0.5-0.20250813072749-443b4d59b72d/go.mod h1:p+VxW2n9j8ojLreWScnqoDHyxGPRjI0ytkMMG5xh9o0=
 github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250813072749-443b4d59b72d h1:YzjyibBNG3DWogPKLLmBmZPJcQjgLf3cUQFQ45EEMz4=
