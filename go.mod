@@ -23,6 +23,7 @@ require (
 	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/cosmos-sdk v0.50.14
 	github.com/cosmos/gogoproto v1.7.0
+	github.com/cosmos/iavl v1.2.2
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
 	github.com/cosmos/ibc-go/v8 v8.7.0
 	github.com/cosmos/rosetta v0.50.3-1
@@ -80,7 +81,6 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
-	github.com/cosmos/iavl v1.2.2 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
 	github.com/cosmos/ledger-cosmos-go v0.14.0 // indirect
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
@@ -221,9 +221,9 @@ require (
 )
 
 replace (
-	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813010355-8bf18b2bf746
-	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20250813010355-8bf18b2bf746
-	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250813010355-8bf18b2bf746
+	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813013644-d2edb88fe8eb
+	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20250813013644-d2edb88fe8eb
+	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250813013644-d2edb88fe8eb
 )
 
 replace (
