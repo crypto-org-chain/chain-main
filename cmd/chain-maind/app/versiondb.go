@@ -57,7 +57,6 @@ func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 		Short: "dump versiondb changeset at version [dir] [outDir]",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			dir := args[0]
 			outDir := args[1]
 
