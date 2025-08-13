@@ -221,9 +221,9 @@ require (
 )
 
 replace (
-	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813002843-e057dae89ba1
-	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20241028093154-0f94930c27ce
-	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20241028093154-0f94930c27ce
+	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20250813010355-8bf18b2bf746
+	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20250813010355-8bf18b2bf746
+	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20250813010355-8bf18b2bf746
 )
 
 replace (
