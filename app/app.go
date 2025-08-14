@@ -755,6 +755,7 @@ func New(
 	var qmsVersion int64
 	if app.qms != nil {
 		qmsVersion = app.qms.LatestVersion()
+		logger.Info("YSG qms version: %d", qmsVersion)
 	}
 
 	// initialize BaseApp
