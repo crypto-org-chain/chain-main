@@ -188,14 +188,14 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				it.Close()
 				versionDB.PutAtVersion(version, delSet)
 
-				kvsFile := filepath.Join(dir, entry.Name())
+				kvsFile := filepath.Join(fileDir, entry.Name())
 				fpKvs, err := os.OpenFile(kvsFile, os.O_RDONLY, 0o600)
 				if err != nil {
 					fmt.Errorf("open illegal file %s\n %v", entry.Name(), err.Error())
 					continue
 				}
 				kvsReader := bufio.NewReader(fpKvs)
-				ver, _, addchangeset, err := versiondbclient.ReadChangeSet(kvsReader, true)
+				ver, _, addChangeset, err := versiondbclient.ReadChangeSet(kvsReader, true)
 				if err != nil || ver != version {
 					fmt.Errorf("readchangeset illegal file %s\n %d %d%v", entry.Name(), err.Error(), ver, version)
 					continue
@@ -203,8 +203,8 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				fpKvs.Close()
 
 				var addSet []*types.StoreKVPair
-				addSet = make([]*types.StoreKVPair, 0, len(addchangeset))
-				for _, kv := range addchangeset.Pairs {
+				addSet = make([]*types.StoreKVPair, 0, len(addChangeset.Pairs))
+				for _, kv := range addChangeset.Pairs {
 					key := make([]byte, len(kv.Key))
 					copy(key, kv.Key)
 					if kv.Delete {
