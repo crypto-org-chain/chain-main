@@ -197,7 +197,7 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				kvsReader := bufio.NewReader(fpKvs)
 				ver, _, addChangeset, err := versiondbclient.ReadChangeSet(kvsReader, true)
 				if err != nil || ver != version {
-					fmt.Errorf("readchangeset illegal file %s\n %d %d%v", entry.Name(), err.Error(), ver, version)
+					fmt.Errorf("readchangeset illegal file %s %s\n %d %d%v", entry.Name(), err.Error(), ver, version)
 					continue
 				}
 				fpKvs.Close()
