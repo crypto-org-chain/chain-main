@@ -189,7 +189,7 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				kvsFile := filepath.Join(fileDir, entry.Name())
 				fpKvs, err := os.OpenFile(kvsFile, os.O_RDONLY, 0o600)
 				if err != nil {
-					fmt.Errorf("open illegal file %s %s %v\n", entry.Name(), err.Error())
+					fmt.Errorf("open illegal file %s %s\n", entry.Name(), err.Error())
 					continue
 				}
 				kvsReader := bufio.NewReader(fpKvs)
@@ -216,6 +216,7 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 
 				versionDB.PutAtVersion(version, addSet)
 			}
+			versionDB.Flush()
 			return nil
 		},
 	}

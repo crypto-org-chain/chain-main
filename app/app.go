@@ -462,7 +462,7 @@ func New(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -755,7 +755,7 @@ func New(
 	var qmsVersion int64
 	if app.qms != nil {
 		qmsVersion = app.qms.LatestVersion()
-		logger.Info("qms version:", qmsVersion)
+		logger.Info("qms version:", "qmsVersion", qmsVersion)
 	}
 
 	// initialize BaseApp
