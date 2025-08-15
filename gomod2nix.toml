@@ -193,8 +193,8 @@ schema = 3
     version = "v0.0.24"
     hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.5-0.20250815145336-7acf3c574255"
-    hash = "sha256-lZbVGlSn4O9HAVNjyk9WQkobFQaU0242VxJZGbfs+8s="
+    version = "v0.0.5-0.20250815152921-881f74e1286a"
+    hash = "sha256-l5r9UVwRC71MQDvfPhoSg5J2ZhuxKoXcQgZLStjdiqs="
     replaced = "github.com/crypto-org-chain/cronos/memiavl"
   [mod."github.com/crypto-org-chain/cronos/store"]
     version = "v0.0.5-0.20250815145336-7acf3c574255"
