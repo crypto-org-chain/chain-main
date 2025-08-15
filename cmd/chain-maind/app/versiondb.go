@@ -55,7 +55,7 @@ func VersionDBChangeSetCmd() *cobra.Command {
 
 func VersionDBChangeSetGroupCmd(opts versiondbclient.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "versoindb-changeset",
+		Use:   "versiondb-changeset",
 		Short: "dump and manage versiondb change sets and fix versiondb",
 	}
 	cmd.AddCommand(
@@ -67,7 +67,7 @@ func VersionDBChangeSetGroupCmd(opts versiondbclient.Options) *cobra.Command {
 
 func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dump-versiondb",
+		Use:   "dump-versiondb [dir] [outDir]",
 		Short: "dump versiondb changeset at version [dir] [outDir]",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -140,7 +140,7 @@ func createFile(name string) (*os.File, error) {
 
 func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "fix-versiondb",
+		Use:   "fix-versiondb [versiondb-dir] [file-dir]",
 		Short: "fix versiondb changeset at version [versiondb-dir] [file-dir]",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -189,13 +189,13 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				kvsFile := filepath.Join(fileDir, entry.Name())
 				fpKvs, err := os.OpenFile(kvsFile, os.O_RDONLY, 0o600)
 				if err != nil {
-					fmt.Errorf("open illegal file %s\n %v", entry.Name(), err.Error())
+					fmt.Errorf("open illegal file %s %s %v\n", entry.Name(), err.Error())
 					continue
 				}
 				kvsReader := bufio.NewReader(fpKvs)
 				ver, _, addChangeset, err := versiondbclient.ReadChangeSet(kvsReader, true)
 				if err != nil || ver != version {
-					fmt.Errorf("readchangeset illegal file %s %s\n %d %d%v", entry.Name(), err.Error(), ver, version)
+					fmt.Errorf("readchangeset illegal file %s %s %d %d\n", entry.Name(), err.Error(), ver, version)
 					continue
 				}
 				fpKvs.Close()
