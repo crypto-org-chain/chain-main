@@ -5,11 +5,12 @@ package app
 
 import (
 	"bufio"
-	"cosmossdk.io/store/types"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
+
+	"cosmossdk.io/store/types"
 
 	"github.com/cosmos/iavl"
 	"github.com/crypto-org-chain/chain-main/v4/app"
@@ -169,7 +170,7 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 
 			for _, entry := range entries {
 				if _, ok := set[entry.Name()]; !ok {
-					fmt.Errorf("illegal file %s\n", entry.Name())
+					fmt.Printf("illegal file %s\n", entry.Name())
 					continue
 				}
 				it, err := versionDB.IteratorAtVersion(entry.Name(), nil, nil, &version)
@@ -185,17 +186,24 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 
 				it.Close()
 				versionDB.PutAtVersion(version, delSet)
+				versionDB.Flush()
+			}
 
+			for _, entry := range entries {
+				if _, ok := set[entry.Name()]; !ok {
+					fmt.Printf("illegal file %s\n", entry.Name())
+					continue
+				}
 				kvsFile := filepath.Join(fileDir, entry.Name())
 				fpKvs, err := os.OpenFile(kvsFile, os.O_RDONLY, 0o600)
 				if err != nil {
-					fmt.Errorf("open illegal file %s %s\n", entry.Name(), err.Error())
+					fmt.Printf("open illegal file %s %s\n", entry.Name(), err.Error())
 					continue
 				}
 				kvsReader := bufio.NewReader(fpKvs)
 				ver, _, addChangeset, err := versiondbclient.ReadChangeSet(kvsReader, true)
 				if err != nil || ver != version {
-					fmt.Errorf("readchangeset illegal file %s %s %d %d\n", entry.Name(), err.Error(), ver, version)
+					fmt.Printf("readchangeset illegal file %s %s %d %d\n", entry.Name(), err.Error(), ver, version)
 					continue
 				}
 				fpKvs.Close()
@@ -215,8 +223,8 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				}
 
 				versionDB.PutAtVersion(version, addSet)
+				versionDB.Flush()
 			}
-			versionDB.Flush()
 			return nil
 		},
 	}
