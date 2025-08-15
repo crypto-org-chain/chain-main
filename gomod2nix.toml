@@ -193,15 +193,15 @@ schema = 3
     version = "v0.0.24"
     hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
   [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.5-0.20250815122943-22b46adafc90"
-    hash = "sha256-FVihd07lp7bs8w4U+xOcrqskeDhZ2wUZQ2LCUZo7Jy4="
+    version = "v0.0.5-0.20250815133108-19e319824a11"
+    hash = "sha256-bZoufti756x4/af4NSThAiQStZVJv5RnIUBNzD+MFnk="
     replaced = "github.com/crypto-org-chain/cronos/memiavl"
   [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.5-0.20250815122943-22b46adafc90"
+    version = "v0.0.5-0.20250815133108-19e319824a11"
     hash = "sha256-S5INWggeFs1vBrcuVyWyS34C5I2ux+NLJ+czqQqKzUc="
     replaced = "github.com/crypto-org-chain/cronos/store"
   [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.0-20250815122943-22b46adafc90"
+    version = "v0.0.0-20250815133108-19e319824a11"
     hash = "sha256-b6UGYk4Q/lM4Gs/W5/nV4iSX+6QtgIQGl7zWe6orvQU="
     replaced = "github.com/crypto-org-chain/cronos/versiondb"
   [mod."github.com/danieljoos/wincred"]
