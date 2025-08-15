@@ -46,11 +46,23 @@ func VersionDBChangeSetCmd() *cobra.Command {
 	}
 	sort.Strings(storeNames)
 
-	return DumpVersionDBChangeSet(versiondbclient.Options{
+	return VersionDBChangeSetGroupCmd(versiondbclient.Options{
 		DefaultStores:     storeNames,
 		OpenReadOnlyDB:    opendb.OpenReadOnlyDB,
 		AppRocksDBOptions: opendb.NewRocksdbOptions,
 	})
+}
+
+func VersionDBChangeSetGroupCmd(opts versiondbclient.Options) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "versoindb-changeset",
+		Short: "dump and manage versiondb change sets and fix versiondb",
+	}
+	cmd.AddCommand(
+		DumpVersionDBChangeSet(opts),
+		FixVersionDB(opts),
+	)
+	return cmd
 }
 
 func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
@@ -124,20 +136,6 @@ func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 
 func createFile(name string) (*os.File, error) {
 	return os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
-}
-
-func FixVersionDBCmd() *cobra.Command {
-	keys, _, _ := app.StoreKeys()
-	storeNames := make([]string, 0, len(keys))
-	for name := range keys {
-		storeNames = append(storeNames, name)
-	}
-	sort.Strings(storeNames)
-	return FixVersionDB(versiondbclient.Options{
-		DefaultStores:     storeNames,
-		OpenReadOnlyDB:    opendb.OpenReadOnlyDB,
-		AppRocksDBOptions: opendb.NewRocksdbOptions,
-	})
 }
 
 func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
