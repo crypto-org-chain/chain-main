@@ -143,16 +143,13 @@ func FixVersionDBCmd() *cobra.Command {
 func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fix-versiondb",
-		Short: "fix versiondb changeset at version [dir]",
-		Args:  cobra.ExactArgs(1),
+		Short: "fix versiondb changeset at version [versiondb-dir] [file-dir]",
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dir := args[0]
+			versoinDBDir := args[0]
+			fileDir := args[1]
 
 			version, err := cmd.Flags().GetInt64(flagVersion)
-			if err != nil {
-				return err
-			}
-			versionDB, err := tsrocksdb.NewStore(dir)
 			if err != nil {
 				return err
 			}
@@ -162,12 +159,12 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				set[storeKey] = struct{}{}
 			}
 
-			entries, err := os.ReadDir(dir)
+			entries, err := os.ReadDir(fileDir)
 			if err != nil {
 				return err
 			}
 
-			versionDB, err := tsrocksdb.NewStore(dir)
+			versionDB, err := tsrocksdb.NewStore(versoinDBDir)
 			if err != nil {
 				return err
 			}
@@ -191,8 +188,8 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				it.Close()
 				versionDB.PutAtVersion(version, delSet)
 
-				filePath := filepath.Join(dir, entry.Name())
-				kvsFile, err := os.OpenFile(filePath, os.O_RDONLY, 0o600)
+				kvsFile := filepath.Join(dir, entry.Name())
+				fpKvs, err := os.OpenFile(kvsFile, os.O_RDONLY, 0o600)
 				if err != nil {
 					fmt.Errorf("open illegal file %s\n %v", entry.Name(), err.Error())
 					continue
@@ -205,18 +202,18 @@ func FixVersionDB(opts versiondbclient.Options) *cobra.Command {
 				}
 				kvsFile.Close()
 
-				var addSet []*iavl.StoreKVPair
-				addSet := make([]*iavl.StoreKVPair, 0, len(addchangeset))
+				var addSet []*types.StoreKVPair
+				addSet := make([]*types.StoreKVPair, 0, len(addchangeset))
 				for _, kv := range addchangeset.Pairs {
 					key := make([]byte, len(kv.Key()))
 					copy(key, kv.Key())
 					if kv.Delete {
-						addSet = append(addSet, &iavl.StoreKVPair{Key: key, Delete: false})
+						addSet = append(addSet, &types.StoreKVPair{Key: key, Delete: false})
 						continue
 					}
 					value := make([]byte, len(kv.Value()))
 					copy(value, kv.Value())
-					addSet = append(addSet, &iavl.StoreKVPair{Key: key, Value: value})
+					addSet = append(addSet, &types.StoreKVPair{Key: key, Value: value})
 				}
 
 				versionDB.PutAtVersion(version, addSet)
