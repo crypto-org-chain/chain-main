@@ -69,11 +69,13 @@ func NewStore(dir string, logger log.Logger, sdk46Compact bool, supportExportNon
 // flush writes all the pending change sets to memiavl tree.
 func (rs *Store) flush() error {
 	var changeSets []*memiavl.NamedChangeSet
+	count := 0
 	for key := range rs.stores {
 		// it'll unwrap the inter-block cache
 		store := rs.GetCommitStore(key)
 		if memiavlStore, ok := store.(*memiavlstore.Store); ok {
 			cs := memiavlStore.PopChangeSet()
+			count += len(cs.Pairs)
 			if len(cs.Pairs) > 0 {
 				changeSets = append(changeSets, &memiavl.NamedChangeSet{
 					Name:      key.Name(),
@@ -82,6 +84,7 @@ func (rs *Store) flush() error {
 			}
 		}
 	}
+	fmt.Printf("YSG debug total flush count %d\n", count)
 	sort.SliceStable(changeSets, func(i, j int) bool {
 		return changeSets[i].Name < changeSets[j].Name
 	})
@@ -93,6 +96,7 @@ func (rs *Store) flush() error {
 //
 // Implements interface Committer.
 func (rs *Store) WorkingHash() []byte {
+	panic("YSG debug multi store WorkingHash")
 	if err := rs.flush(); err != nil {
 		panic(err)
 	}
@@ -105,7 +109,6 @@ func (rs *Store) WorkingHash() []byte {
 
 // Implements interface Committer
 func (rs *Store) Commit() types.CommitID {
-	panic("YSG debug Commit() not yet implemented")
 	if err := rs.flush(); err != nil {
 		panic(err)
 	}
@@ -130,6 +133,8 @@ func (rs *Store) Commit() types.CommitID {
 	}
 
 	rs.lastCommitInfo = convertCommitInfo(rs.db.LastCommitInfo())
+	fmt.Printf("YSG debug last commit version %d\n", rs.lastCommitInfo.Version)
+	panic("YSG debug Commit() not yet implemented")
 	if rs.sdk46Compact {
 		rs.lastCommitInfo = amendCommitInfo(rs.lastCommitInfo, rs.storesParams)
 	}
