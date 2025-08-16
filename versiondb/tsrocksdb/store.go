@@ -1,14 +1,18 @@
 package tsrocksdb
 
 import (
+	"bufio"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 
 	"cosmossdk.io/store/types"
 	"github.com/cosmos/iavl"
 	"github.com/crypto-org-chain/cronos/versiondb"
+	versiondbclient "github.com/crypto-org-chain/cronos/versiondb/client"
 	"github.com/linxGnu/grocksdb"
 )
 
@@ -69,11 +73,14 @@ func (s Store) SetLatestVersion(version int64) error {
 	return s.db.Put(defaultWriteOpts, []byte(latestVersionKey), ts[:])
 }
 
+func createFile(name string) (*os.File, error) {
+	return os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+}
+
 // PutAtVersion implements VersionStore interface
 func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error {
 	if version == UpgradeHeight {
 		fmt.Printf("PutAtVersion UpgradeHeight %d\n", len(changeSet))
-		panic("PutAtVersion UpgradeHeight")
 	}
 	var ts [TimestampSize]byte
 	binary.LittleEndian.PutUint64(ts[:], uint64(version))
@@ -81,6 +88,45 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 	batch := grocksdb.NewWriteBatch()
 	defer batch.Destroy()
 	batch.Put([]byte(latestVersionKey), ts[:])
+
+	set := make(map[string]*iavl.ChangeSet)
+	for _, pair := range changeSet {
+		kvPair := &iavl.KVPair{Key: []byte(pair.Key), Value: []byte(pair.Value)}
+		set[pair.StoreKey].Pairs = append(set[pair.StoreKey].Pairs, kvPair)
+	}
+
+	for name, cs := range set {
+		fp, err := createFile(name)
+		if err != nil {
+			return err
+		}
+		fpWrite := bufio.NewWriter(fp)
+
+		for _, pair := range cs.Pairs {
+			js, err := json.Marshal(pair)
+			if err != nil {
+				return err
+			}
+			_, err = fpWrite.Write(js)
+			if err != nil {
+				return err
+			}
+			_, err = fpWrite.Write([]byte("\n"))
+			if err != nil {
+				return err
+			}
+		}
+
+		err = fpWrite.Flush()
+		if err != nil {
+			return err
+		}
+		err = fp.Close()
+		if err != nil {
+			return err
+		}
+	}
+	panic("YSG Debug PutAtVersion")
 
 	for _, pair := range changeSet {
 		key := prependStoreKey(pair.StoreKey, pair.Key)
