@@ -16,36 +16,11 @@
 }:
 let
   inherit (lib) concatStringsSep;
-  src_regexes = [
-    "^x$"
-    "^x/.*"
-    "^app$"
-    "^app/.*"
-    "^config$"
-    "^config/.*"
-    "^cmd$"
-    "^cmd/.*"
-    "^proto$"
-    "^proto/.*"
-    "^test$"
-    "^test/.*"
-    "^go.mod$"
-    "^go.sum$"
-    "^third_party$"
-    "^third_party/cosmos-sdk$"
-    "^third_party/cosmos-sdk/.*"
-    "^gomod2nix.toml$"
-    "^memiavl$"
-    "^memiavl/.*"
-    "^store$"
-    "^store/.*"
-    "^versiondb$"
-    "^versiondb/.*"
-  ];
-in
-buildGoApplication rec {
   pname = "chain-maind";
   version = "v6.0.1";
+in
+buildGoApplication rec {
+  inherit pname version;
   go = buildPackages.go_1_23;
   src = (nix-gitignore.gitignoreSourcePure [
     "/*" # ignore all, then add whitelists
@@ -61,8 +36,8 @@ buildGoApplication rec {
     "!gomod2nix.toml"
   ] ./.);
   modules = ./gomod2nix.toml;
-  subPackages = [ "cmd/chain-maind" ];
   pwd = src; # needed to support replace
+  subPackages = [ "cmd/chain-maind" ];
   buildFlags = lib.optionalString coverage "-cover";
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
