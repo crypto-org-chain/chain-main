@@ -91,6 +91,9 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 	set := make(map[string]*iavl.ChangeSet)
 	for _, pair := range changeSet {
 		kvPair := &iavl.KVPair{Key: []byte(pair.Key), Value: []byte(pair.Value)}
+		if _, ok := set[pair.StoreKey]; !ok {
+			set[pair.StoreKey] = &iavl.ChangeSet{}
+		}
 		set[pair.StoreKey].Pairs = append(set[pair.StoreKey].Pairs, kvPair)
 	}
 
