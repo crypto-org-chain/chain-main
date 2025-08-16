@@ -35,18 +35,34 @@ let
     "^third_party/cosmos-sdk$"
     "^third_party/cosmos-sdk/.*"
     "^gomod2nix.toml$"
+    "^memiavl$"
+    "^memiavl/.*"
+    "^store$"
+    "^store/.*"
+    "^versiondb$"
+    "^versiondb/.*"
   ];
 in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "v6.0.1";
   go = buildPackages.go_1_23;
-  src = lib.cleanSourceWith {
-    name = "src";
-    src = lib.sourceByRegex ./. src_regexes;
-  };
+  src = (nix-gitignore.gitignoreSourcePure [
+    "/*" # ignore all, then add whitelists
+    "!/x/"
+    "!/app/"
+    "!/cmd/"
+    "!/config"
+    "!/versiondb/"
+    "!/memiavl/"
+    "!/store/"
+    "!go.mod"
+    "!go.sum"
+    "!gomod2nix.toml"
+  ] ./.);
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
+  pwd = src; # needed to support replace
   buildFlags = lib.optionalString coverage "-cover";
   buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
   CGO_ENABLED = "1";
