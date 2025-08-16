@@ -95,6 +95,9 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 		value := make([]byte, len(pair.Value))
 		copy(value, pair.Value)
 		kvPair := &iavl.KVPair{Key: key, Value: value}
+		if len(pair.Value) == 0 {
+			kvPair.Delete = true
+		}
 		if _, ok := set[pair.StoreKey]; !ok {
 			set[pair.StoreKey] = &iavl.ChangeSet{}
 		}

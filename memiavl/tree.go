@@ -6,20 +6,8 @@ import (
 	"fmt"
 	"math"
 
-	"sync/atomic"
-
 	"github.com/cosmos/iavl/cache"
-
-	"cosmossdk.io/log"
 )
-
-var treeCounter atomic.Int32
-
-var logger log.Logger
-
-func init() {
-	logger = log.NewNopLogger()
-}
 
 var emptyHash = sha256.New().Sum(nil)
 
@@ -143,17 +131,16 @@ func (t *Tree) Copy(cacheSize int) *Tree {
 
 // ApplyChangeSet apply the change set of a whole version, and update hashes.
 func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
-	if t.name == "nonfungibletokentransfer" {
-		panic("YSG debug nonfungibletokentransfer")
-	}
 	for _, pair := range changeSet.Pairs {
+		if t.name == "bank" && bytes.Equal(pair.Key, []byte("AhTcbxe77IJP/4+GWHlmsgR9tqtzZ2Jhc2Vjcm8=")) {
+			panic("YSG debug get")
+		}
 		if pair.Delete {
 			t.remove(pair.Key)
 		} else {
 			t.set(pair.Key, pair.Value)
 		}
 	}
-	logger.Info("YSG debug", "treeCounter", treeCounter.Add(1))
 }
 
 func (t *Tree) set(key, value []byte) {
@@ -186,7 +173,6 @@ func (t *Tree) SaveVersion(updateHash bool) ([]byte, int64, error) {
 	}
 
 	t.version++
-	logger.Info("YSG debug", "treeVersion", t.version)
 	return hash, int64(t.version), nil
 }
 
@@ -233,6 +219,11 @@ func (t *Tree) GetByIndex(index int64) ([]byte, []byte) {
 }
 
 func (t *Tree) Get(key []byte) []byte {
+
+	if t.name == "bank" && bytes.Equal(key, []byte("AhTcbxe77IJP/4+GWHlmsgR9tqtzZ2Jhc2Vjcm8=")) {
+		panic("YSG debug get")
+	}
+
 	if t.cache != nil {
 		if node := t.cache.Get(key); node != nil {
 			return node.(*cacheNode).value
