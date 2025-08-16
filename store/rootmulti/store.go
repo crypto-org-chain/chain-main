@@ -96,7 +96,6 @@ func (rs *Store) flush() error {
 //
 // Implements interface Committer.
 func (rs *Store) WorkingHash() []byte {
-	panic("YSG debug multi store WorkingHash")
 	if err := rs.flush(); err != nil {
 		panic(err)
 	}
