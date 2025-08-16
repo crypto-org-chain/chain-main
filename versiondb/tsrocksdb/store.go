@@ -12,7 +12,6 @@ import (
 	"cosmossdk.io/store/types"
 	"github.com/cosmos/iavl"
 	"github.com/crypto-org-chain/cronos/versiondb"
-	versiondbclient "github.com/crypto-org-chain/cronos/versiondb/client"
 	"github.com/linxGnu/grocksdb"
 )
 
