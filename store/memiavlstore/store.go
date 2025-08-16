@@ -1,6 +1,7 @@
 package memiavlstore
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 
@@ -15,11 +16,7 @@ import (
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"cosmossdk.io/store/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
-	"sync/atomic"
 )
-
-var upCount atomic.Int32
 
 var (
 	_ types.KVStore       = (*Store)(nil)
@@ -86,8 +83,9 @@ func (st *Store) CacheWrapWithTrace(w io.Writer, tc types.TraceContext) types.Ca
 //
 // we assume Set is only called in `Commit`, so the written state is only visible after commit.
 func (st *Store) Set(key, value []byte) {
-	if upCount.Add(1) > 20000 {
-		panic("YSG debug set changeset")
+	testKey := []byte("AQAAAAAAAAAAAAAAAAAAAAAAAAAA")
+	if bytes.Equal(testKey, key) {
+		panic("YSG debug find special key")
 	}
 	st.changeSet.Pairs = append(st.changeSet.Pairs, &memiavl.KVPair{
 		Key: key, Value: value,
@@ -108,9 +106,6 @@ func (st *Store) Has(key []byte) bool {
 //
 // we assume Delete is only called in `Commit`, so the written state is only visible after commit.
 func (st *Store) Delete(key []byte) {
-	if upCount.Add(1) > 20000 {
-		panic("YSG debug set changeset")
-	}
 	st.changeSet.Pairs = append(st.changeSet.Pairs, &memiavl.KVPair{
 		Key: key, Delete: true,
 	})
