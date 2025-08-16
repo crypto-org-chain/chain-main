@@ -193,6 +193,7 @@ func Load(dir string, opts Options) (*DB, error) {
 	}
 
 	if opts.TargetVersion == 0 || int64(opts.TargetVersion) > mtree.Version() {
+		opts.Logger.Info("YSG debug CatchupWAL", "targetVersion", opts.TargetVersion, "version", mtree.Version())
 		if err := mtree.CatchupWAL(wal, int64(opts.TargetVersion)); err != nil {
 			return nil, errors.Join(err, wal.Close())
 		}
@@ -315,7 +316,7 @@ func (db *DB) SetInitialVersion(initialVersion int64) error {
 // which will be persisted to the WAL in next Commit call.
 func (db *DB) ApplyUpgrades(upgrades []*TreeNameUpgrade) error {
 
-	logger.Info("YSG Debug", "dbCounter", dbCounter.Add(1), "len", len(upgrades))
+	db.logger.Info("YSG Debug", "dbCounter", dbCounter.Add(1), "len", len(upgrades))
 	db.mtx.Lock()
 	defer db.mtx.Unlock()
 

@@ -421,6 +421,10 @@ func (t *MultiTree) Close() error {
 	return errors.Join(errs...)
 }
 
+func (t *MultiTree) GetInitialVersion() uint32 {
+	return t.initialVersion
+}
+
 func nextVersion(v int64, initialVersion uint32) int64 {
 	if v == 0 && initialVersion > 1 {
 		return int64(initialVersion)
