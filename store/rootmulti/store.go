@@ -370,16 +370,15 @@ func (rs *Store) LoadVersionAndUpgrade(version int64, upgrades *types.StoreUpgra
 
 	rs.logger.Info("YSG debug", "initial stores", initialStores, "treeUpgrades", treeUpgrades)
 
-	rs.logger.Info("YSG debug", "storesKeys", storesKeys)
-
 	newStores := make(map[types.StoreKey]types.CommitStore, len(storesKeys))
 	for _, key := range storesKeys {
+		rs.logger.Info("ysG debug", "store key", key)
 		newStores[key], err = rs.loadCommitStoreFromParams(db, key, rs.storesParams[key])
 		if err != nil {
 			return err
 		}
 	}
-
+	rs.logger.Info("YSG debug", "db version", db.Version(), "db snapshot", db.SnapshotVersion())
 	rs.db = db
 	rs.stores = newStores
 	// to keep the root hash compatible with cosmos-sdk 0.46
@@ -391,6 +390,7 @@ func (rs *Store) LoadVersionAndUpgrade(version int64, upgrades *types.StoreUpgra
 	} else {
 		rs.lastCommitInfo = &types.CommitInfo{}
 	}
+	rs.logger.Info("YSG debug", "lastcommitinfo", rs.lastCommitInfo)
 
 	return nil
 }
