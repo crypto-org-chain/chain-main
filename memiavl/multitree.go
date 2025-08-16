@@ -93,6 +93,7 @@ func LoadMultiTree(dir string, zeroCopy bool, cacheSize int) (*MultiTree, error)
 	treesByName := make(map[string]int, len(trees))
 	for i, name := range treeNames {
 		tree := treeMap[name]
+		tree.SetName(name)
 		trees[i] = NamedTree{Tree: tree, Name: name}
 		treesByName[name] = i
 	}

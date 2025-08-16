@@ -42,6 +42,8 @@ type Tree struct {
 
 	// when true, the get and iterator methods could return a slice pointing to mmaped blob files.
 	zeroCopy bool
+
+	name string
 }
 
 type cacheNode struct {
@@ -141,6 +143,9 @@ func (t *Tree) Copy(cacheSize int) *Tree {
 
 // ApplyChangeSet apply the change set of a whole version, and update hashes.
 func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
+	if t.name == "nonfungibletokentransfer" {
+		panic("YSG debug nonfungibletokentransfer")
+	}
 	for _, pair := range changeSet.Pairs {
 		if pair.Delete {
 			t.remove(pair.Key)
@@ -310,4 +315,8 @@ func (t *Tree) Close() error {
 	}
 	t.root = nil
 	return err
+}
+
+func (t *Tree) SetName(name string) {
+	t.name = name
 }

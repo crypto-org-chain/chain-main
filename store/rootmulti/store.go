@@ -133,7 +133,6 @@ func (rs *Store) Commit() types.CommitID {
 
 	rs.lastCommitInfo = convertCommitInfo(rs.db.LastCommitInfo())
 	fmt.Printf("YSG debug last commit version %d\n", rs.lastCommitInfo.Version)
-	panic("YSG debug Commit() not yet implemented")
 	if rs.sdk46Compact {
 		rs.lastCommitInfo = amendCommitInfo(rs.lastCommitInfo, rs.storesParams)
 	}

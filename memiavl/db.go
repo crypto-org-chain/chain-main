@@ -562,7 +562,6 @@ func (db *DB) Commit() (int64, error) {
 
 	// write logs if enabled
 	if db.wal != nil {
-		panic("YSG debug wal log")
 		entry := walEntry{index: walIndex(v, db.initialVersion), data: db.pendingLog}
 		if db.walChanSize >= 0 {
 			if db.walChan == nil {
