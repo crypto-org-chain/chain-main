@@ -105,6 +105,7 @@ func (rs *Store) WorkingHash() []byte {
 
 // Implements interface Committer
 func (rs *Store) Commit() types.CommitID {
+	panic("YSG debug Commit() not yet implemented")
 	if err := rs.flush(); err != nil {
 		panic(err)
 	}
