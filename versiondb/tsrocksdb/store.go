@@ -135,7 +135,6 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 			return err
 		}
 	}
-	panic("YSG Debug PutAtVersion")
 
 	for _, pair := range changeSet {
 		key := prependStoreKey(pair.StoreKey, pair.Key)

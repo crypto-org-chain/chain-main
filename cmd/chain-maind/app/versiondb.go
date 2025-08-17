@@ -5,6 +5,7 @@ package app
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -103,6 +104,9 @@ func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 
 				var pairs []*iavl.KVPair
 				for ; it.Valid(); it.Next() {
+					if binary.LittleEndian.Uint64(it.Timestamp()) != uint64(version) {
+						continue
+					}
 					key := make([]byte, len(it.Key()))
 					copy(key, it.Key())
 					value := make([]byte, len(it.Value()))
