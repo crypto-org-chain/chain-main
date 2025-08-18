@@ -113,9 +113,6 @@ func DumpVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 					value := make([]byte, len(it.Value()))
 					copy(value, it.Value())
 					pair := &iavl.KVPair{Key: key, Value: value}
-					if len(pair.Value) == 0 {
-						pair.Delete = true
-					}
 					pairs = append(pairs, pair)
 				}
 				changeset := &iavl.ChangeSet{Pairs: pairs}
@@ -283,9 +280,6 @@ func DumpZeroVersionDBChangeSet(opts versiondbclient.Options) *cobra.Command {
 					value := make([]byte, len(it.Value()))
 					copy(value, it.Value())
 					pair := &iavl.KVPair{Key: key, Value: value}
-					if len(pair.Value) == 0 {
-						pair.Delete = true
-					}
 					pairs = append(pairs, pair)
 				}
 				changeset := &iavl.ChangeSet{Pairs: pairs}
