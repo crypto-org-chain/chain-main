@@ -227,9 +227,15 @@ func (t *Tree) GetByIndex(index int64) ([]byte, []byte) {
 }
 
 func (t *Tree) Get(key []byte) []byte {
+	delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
+	var delBank iavl.KVPair
+	err := json.Unmarshal(delBankStr, &delBank)
+	if err != nil {
+		panic("failed to unmarshal delBank")
+	}
 
-	if t.name == "bank" && bytes.Equal(key, []byte("AhTcbxe77IJP/4+GWHlmsgR9tqtzZ2Jhc2Vjcm8=")) {
-		panic("YSG debug get")
+	if t.name == "bank" && bytes.Equal(key, delBankStr) {
+		panic("YSG debug Get in Tree")
 	}
 
 	if t.cache != nil {

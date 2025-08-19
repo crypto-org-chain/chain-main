@@ -2,8 +2,10 @@ package memiavl
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/cosmos/iavl"
 	"math"
 	"os"
 	"path/filepath"
@@ -200,7 +202,12 @@ func (t *MultiTree) ApplyUpgrades(upgrades []*TreeNameUpgrade) error {
 	if len(upgrades) == 0 {
 		return nil
 	}
-
+	delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
+	var delBank iavl.KVPair
+	err := json.Unmarshal(delBankStr, &delBank)
+	if err != nil {
+		panic("failed to unmarshal delBank")
+	}
 	t.treesByName = nil // rebuild in the end
 
 	for _, upgrade := range upgrades {
@@ -214,6 +221,10 @@ func (t *MultiTree) ApplyUpgrades(upgrades []*TreeNameUpgrade) error {
 			}
 			// swap deletion
 			t.trees[i], t.trees[len(t.trees)-1] = t.trees[len(t.trees)-1], t.trees[i]
+			delTree := t.trees[i]
+			if delTree.Name == "bank" && delTree.Has(delBank.Key) {
+				panic("YSG debug in MultiTree.ApplyUpgrades")
+			}
 			t.trees = t.trees[:len(t.trees)-1]
 		case upgrade.RenameFrom != "":
 			// rename tree
