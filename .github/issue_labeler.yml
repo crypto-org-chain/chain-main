@@ -1,0 +1,64 @@
+bug:
+  - 'bug'
+  - 'error'
+  - 'issue'
+  - 'crash'
+  - 'panic'
+  - 'fail'
+  - 'broken'
+  - 'not work'
+  - 'exception'
+
+enhancement:
+  - 'feature'
+  - 'enhancement'
+  - 'improve'
+  - 'add'
+  - 'support'
+  - 'request'
+  - 'proposal'
+  - 'rfc'
+
+documentation:
+  - 'docs'
+  - 'documentation'
+  - 'readme'
+  - 'guide'
+  - 'tutorial'
+  - 'example'
+  - 'spec'
+  - 'specification'
+
+cli:
+  - 'cli'
+  - 'command'
+  - 'chain-maind'
+  - 'flag'
+  - 'argument'
+  - 'terminal'
+
+cronos:
+  - 'cronos'
+
+e2ee:
+  - 'encryption'
+  - 'e2ee'
+
+dependencies:
+  - 'dependency'
+  - 'dependencies'
+  - 'go.mod'
+  - 'cosmos-sdk'
+  - 'tendermint'
+  - 'cometbft'
+
+build:
+  - 'build'
+  - 'compile'
+  - 'makefile'
+  - 'docker'
+
+ci:
+  - 'ci'
+  - 'github actions'
+  - 'workflow'
