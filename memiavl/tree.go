@@ -140,12 +140,9 @@ func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
 		panic("failed to unmarshal delBank")
 	}
 	for _, pair := range changeSet.Pairs {
-		if t.name == "bank" && bytes.Equal(pair.Key, delBank.Key) && pair.Delete {
-			panic("YSG debug delBank in Tree")
-		}
-		if t.name == "bank" {
+		if t.name == "bank" && bytes.Equal(pair.Key, delBank.Key) {
 			str, _ := json.Marshal(pair)
-			fmt.Printf("YSG debug in Tree bank key %s\n", str)
+			fmt.Printf("YSG debug ApplyChangeSet key %s\n", str)
 		}
 		if pair.Delete {
 			t.remove(pair.Key)
@@ -185,6 +182,17 @@ func (t *Tree) SaveVersion(updateHash bool) ([]byte, int64, error) {
 	}
 
 	t.version++
+	if t.name == "bank" {
+		delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
+		var delBank iavl.KVPair
+		err := json.Unmarshal(delBankStr, &delBank)
+		if err != nil {
+			panic("failed to unmarshal delBank")
+		}
+		val := t.Get(delBank.Key)
+		pair := KVPair{Key: delBank.Key, Value: val}
+		fmt.Printf("YSG debug in SaveVersion version %d bank key %s\n", t.version, pair)
+	}
 	return hash, int64(t.version), nil
 }
 
@@ -236,10 +244,6 @@ func (t *Tree) Get(key []byte) []byte {
 	err := json.Unmarshal(delBankStr, &delBank)
 	if err != nil {
 		panic("failed to unmarshal delBank")
-	}
-
-	if t.name == "bank" && bytes.Equal(key, delBank.Key) {
-		panic("YSG debug Get in Tree")
 	}
 
 	if t.cache != nil {
