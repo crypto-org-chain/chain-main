@@ -299,7 +299,7 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 
 	// Update the app hash and save the state.
 	state.AppHash = abciResponse.AppHash
-	blockExec.logger.Info("YSG debug applyBlock", "state AppHash", state.AppHash)
+	blockExec.logger.Info("YSG debug applyBlock", "state AppHash", fmt.Sprintf("%X", state.AppHash))
 	if err := blockExec.store.Save(state); err != nil {
 		return state, err
 	}
