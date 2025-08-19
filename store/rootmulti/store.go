@@ -376,7 +376,7 @@ func (rs *Store) LoadVersionAndUpgrade(version int64, upgrades *types.StoreUpgra
 
 	newStores := make(map[types.StoreKey]types.CommitStore, len(storesKeys))
 	for _, key := range storesKeys {
-		rs.logger.Info("YSG debug", "store key", key.Name(), "type", rs.storesParams[key].typ)
+		// rs.logger.Info("YSG debug", "store key", key.Name(), "type", rs.storesParams[key].typ)
 		newStores[key], err = rs.loadCommitStoreFromParams(db, key, rs.storesParams[key])
 		if err != nil {
 			return err

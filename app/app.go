@@ -197,6 +197,10 @@ var (
 type RootMultiStore interface {
 	storetypes.MultiStore
 
+	// CacheMultiStoreWithVersion branches the underlying MultiStore where
+	// each stored is loaded at a specific version (height).
+	CacheMultiStoreWithVersion(version int64) (storetypes.CacheMultiStore, error)
+
 	// LatestVersion returns the latest version in the store
 	LatestVersion() int64
 }
