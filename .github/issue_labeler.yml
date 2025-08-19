@@ -7,7 +7,6 @@ bug:
   - 'fail'
   - 'broken'
   - 'not work'
-  - 'doesn\'t work'
   - 'exception'
 
 enhancement:
@@ -30,41 +29,6 @@ documentation:
   - 'spec'
   - 'specification'
 
-performance:
-  - 'performance'
-  - 'slow'
-  - 'speed'
-  - 'optimization'
-  - 'memory'
-  - 'cpu'
-  - 'latency'
-  - 'throughput'
-
-security:
-  - 'security'
-  - 'vulnerability'
-  - 'exploit'
-  - 'authentication'
-  - 'authorization'
-
-consensus:
-  - 'consensus'
-  - 'validator'
-  - 'block'
-  - 'chain'
-  - 'fork'
-  - 'sync'
-  - 'byzantine'
-
-rpc:
-  - 'rpc'
-  - 'api'
-  - 'grpc'
-  - 'rest'
-  - 'endpoint'
-  - 'query'
-  - 'client'
-
 cli:
   - 'cli'
   - 'command'
@@ -73,61 +37,28 @@ cli:
   - 'argument'
   - 'terminal'
 
-ibc:
-  - 'ibc'
-  - 'inter-blockchain'
-  - 'cross-chain'
-  - 'relayer'
-  - 'channel'
-  - 'connection'
-  - 'packet'
+cronos:
+  - 'cronos'
 
-nft:
-  - 'nft'
-  - 'non-fungible'
-  - 'token'
-  - 'collection'
-  - 'mint'
-  - 'transfer nft'
-  - 'nft transfer'
-
-staking:
-  - 'staking'
-  - 'stake'
-  - 'delegation'
-  - 'unbonding'
-  - 'reward'
-  - 'commission'
-  - 'slash'
-
-upgrade:
-  - 'upgrade'
-  - 'migration'
-  - 'version'
-  - 'breaking change'
-  - 'compatibility'
-
-testing:
-  - 'test'
-  - 'testing'
-  - 'unit test'
-  - 'integration test'
-  - 'e2e'
-  - 'coverage'
+e2ee:
+  - 'encryption'
+  - 'e2ee'
 
 dependencies:
   - 'dependency'
   - 'dependencies'
   - 'go.mod'
-  - 'update'
   - 'cosmos-sdk'
   - 'tendermint'
+  - 'cometbft'
 
 build:
   - 'build'
   - 'compile'
   - 'makefile'
   - 'docker'
+
+ci:
   - 'ci'
   - 'github actions'
   - 'workflow'
