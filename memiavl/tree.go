@@ -182,7 +182,7 @@ func (t *Tree) SaveVersion(updateHash bool) ([]byte, int64, error) {
 	}
 
 	t.version++
-	if t.name == "bank" {
+	if t.name == "bank" && t.version > 24836000-5 {
 		delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
 		var delBank iavl.KVPair
 		err := json.Unmarshal(delBankStr, &delBank)
@@ -191,7 +191,8 @@ func (t *Tree) SaveVersion(updateHash bool) ([]byte, int64, error) {
 		}
 		val := t.Get(delBank.Key)
 		pair := KVPair{Key: delBank.Key, Value: val}
-		fmt.Printf("YSG debug in SaveVersion version %d bank key %s\n", t.version, pair)
+		js, _ := json.Marshal(pair)
+		fmt.Printf("YSG debug in SaveVersion version %d bank key %s\n", t.version, js)
 	}
 	return hash, int64(t.version), nil
 }
