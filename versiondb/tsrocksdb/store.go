@@ -92,6 +92,13 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 		panic(err)
 	}
 
+	delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
+	var delBank iavl.KVPair
+	err = json.Unmarshal(delBankStr, &delBank)
+	if err != nil {
+		panic("failed to unmarshal delBank")
+	}
+
 	if version == UpgradeHeight {
 		fmt.Printf("PutAtVersion UpgradeHeight %d\n", len(changeSet))
 		set := make(map[string]*iavl.ChangeSet)
@@ -142,9 +149,12 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 
 	for _, pair := range changeSet {
 		if version == UpgradeHeight && pair.StoreKey == "staking" && bytes.Equal(pair.Key, fixPair.Key) && !bytes.Equal(pair.Value, fixPair.Value) {
-			fmt.Printf("YSG debug hack")
+			fmt.Println("YSG debug hack staking")
 			pair.Value = make([]byte, len(fixPair.Value))
 			copy(pair.Value, fixPair.Value)
+		}
+		if pair.StoreKey == "bank" && bytes.Equal(pair.Key, delBank.Key) {
+			fmt.Println("YSG debug delBank")
 		}
 		key := prependStoreKey(pair.StoreKey, pair.Key)
 		if pair.Delete {
