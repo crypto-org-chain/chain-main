@@ -1,0 +1,133 @@
+bug:
+  - 'bug'
+  - 'error'
+  - 'issue'
+  - 'crash'
+  - 'panic'
+  - 'fail'
+  - 'broken'
+  - 'not work'
+  - 'doesn\'t work'
+  - 'exception'
+
+enhancement:
+  - 'feature'
+  - 'enhancement'
+  - 'improve'
+  - 'add'
+  - 'support'
+  - 'request'
+  - 'proposal'
+  - 'rfc'
+
+documentation:
+  - 'docs'
+  - 'documentation'
+  - 'readme'
+  - 'guide'
+  - 'tutorial'
+  - 'example'
+  - 'spec'
+  - 'specification'
+
+performance:
+  - 'performance'
+  - 'slow'
+  - 'speed'
+  - 'optimization'
+  - 'memory'
+  - 'cpu'
+  - 'latency'
+  - 'throughput'
+
+security:
+  - 'security'
+  - 'vulnerability'
+  - 'exploit'
+  - 'authentication'
+  - 'authorization'
+
+consensus:
+  - 'consensus'
+  - 'validator'
+  - 'block'
+  - 'chain'
+  - 'fork'
+  - 'sync'
+  - 'byzantine'
+
+rpc:
+  - 'rpc'
+  - 'api'
+  - 'grpc'
+  - 'rest'
+  - 'endpoint'
+  - 'query'
+  - 'client'
+
+cli:
+  - 'cli'
+  - 'command'
+  - 'chain-maind'
+  - 'flag'
+  - 'argument'
+  - 'terminal'
+
+ibc:
+  - 'ibc'
+  - 'inter-blockchain'
+  - 'cross-chain'
+  - 'relayer'
+  - 'channel'
+  - 'connection'
+  - 'packet'
+
+nft:
+  - 'nft'
+  - 'non-fungible'
+  - 'token'
+  - 'collection'
+  - 'mint'
+  - 'transfer nft'
+  - 'nft transfer'
+
+staking:
+  - 'staking'
+  - 'stake'
+  - 'delegation'
+  - 'unbonding'
+  - 'reward'
+  - 'commission'
+  - 'slash'
+
+upgrade:
+  - 'upgrade'
+  - 'migration'
+  - 'version'
+  - 'breaking change'
+  - 'compatibility'
+
+testing:
+  - 'test'
+  - 'testing'
+  - 'unit test'
+  - 'integration test'
+  - 'e2e'
+  - 'coverage'
+
+dependencies:
+  - 'dependency'
+  - 'dependencies'
+  - 'go.mod'
+  - 'update'
+  - 'cosmos-sdk'
+  - 'tendermint'
+
+build:
+  - 'build'
+  - 'compile'
+  - 'makefile'
+  - 'docker'
+  - 'ci'
+  - 'github actions'
+  - 'workflow'
