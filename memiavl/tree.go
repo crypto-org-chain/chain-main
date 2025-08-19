@@ -143,6 +143,9 @@ func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
 		if t.name == "bank" && bytes.Equal(pair.Key, delBank.Key) && pair.Delete {
 			panic("YSG debug delBank in Tree")
 		}
+		if t.name == "bank" {
+			fmt.Printf("YSG debug in Tree bank key %s\n", string(pair.Key))
+		}
 		if pair.Delete {
 			t.remove(pair.Key)
 		} else {
@@ -234,7 +237,7 @@ func (t *Tree) Get(key []byte) []byte {
 		panic("failed to unmarshal delBank")
 	}
 
-	if t.name == "bank" && bytes.Equal(key, delBankStr) {
+	if t.name == "bank" && bytes.Equal(key, delBank.Key) {
 		panic("YSG debug Get in Tree")
 	}
 
