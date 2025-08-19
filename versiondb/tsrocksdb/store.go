@@ -153,8 +153,8 @@ func (s Store) PutAtVersion(version int64, changeSet []*types.StoreKVPair) error
 			pair.Value = make([]byte, len(fixPair.Value))
 			copy(pair.Value, fixPair.Value)
 		}
-		if pair.StoreKey == "bank" && bytes.Equal(pair.Key, delBank.Key) {
-			fmt.Println("YSG debug delBank")
+		if pair.StoreKey == "bank" && bytes.Equal(pair.Key, delBank.Key) && pair.Delete {
+			fmt.Printf("YSG debug delBank %d\n", len(changeSet))
 		}
 		key := prependStoreKey(pair.StoreKey, pair.Key)
 		if pair.Delete {

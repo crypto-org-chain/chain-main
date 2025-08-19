@@ -3,7 +3,9 @@ package memiavl
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
+	"github.com/cosmos/iavl"
 	"math"
 
 	"github.com/cosmos/iavl/cache"
@@ -131,9 +133,15 @@ func (t *Tree) Copy(cacheSize int) *Tree {
 
 // ApplyChangeSet apply the change set of a whole version, and update hashes.
 func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
+	delBankStr := []byte(`{"key":"AhRzZV2Z9T6DW/MsgMcb9NF3tgXHXWJhc2Vjcm8=","value":"MzUwMTQ4NTE0OTg0MjE="}`)
+	var delBank iavl.KVPair
+	err := json.Unmarshal(delBankStr, &delBank)
+	if err != nil {
+		panic("failed to unmarshal delBank")
+	}
 	for _, pair := range changeSet.Pairs {
-		if t.name == "bank" && bytes.Equal(pair.Key, []byte("AhTcbxe77IJP/4+GWHlmsgR9tqtzZ2Jhc2Vjcm8=")) {
-			panic("YSG debug get")
+		if t.name == "bank" && bytes.Equal(pair.Key, delBank.Key) && pair.Delete {
+			panic("YSG debug delBank in Tree")
 		}
 		if pair.Delete {
 			t.remove(pair.Key)
