@@ -144,7 +144,8 @@ func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
 			panic("YSG debug delBank in Tree")
 		}
 		if t.name == "bank" {
-			fmt.Printf("YSG debug in Tree bank key %s\n", string(pair.Key))
+			str, _ := json.Marshal(pair)
+			fmt.Printf("YSG debug in Tree bank key %s\n", str)
 		}
 		if pair.Delete {
 			t.remove(pair.Key)
