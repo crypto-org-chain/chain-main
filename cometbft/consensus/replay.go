@@ -246,6 +246,7 @@ func (h *Handshaker) Handshake(proxyApp proxy.AppConns) error {
 // HandshakeWithContext is cancellable version of Handshake
 func (h *Handshaker) HandshakeWithContext(ctx context.Context, proxyApp proxy.AppConns) error {
 
+	// XXX FIXME YSG this is right
 	// Handshake is done via ABCI Info on the query conn.
 	res, err := proxyApp.Query().Info(ctx, proxy.RequestInfo)
 	if err != nil {

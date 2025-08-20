@@ -394,6 +394,7 @@ func (rs *Store) LoadVersionAndUpgrade(version int64, upgrades *types.StoreUpgra
 	} else {
 		rs.lastCommitInfo = &types.CommitInfo{}
 	}
+	// XXX FIXME YSG this is right
 	rs.logger.Info("YSG debug", "lastcommitinfo version", rs.lastCommitInfo.Version)
 
 	return nil
