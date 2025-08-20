@@ -919,6 +919,7 @@ func (app *BaseApp) checkHalt(height int64, time time.Time) error {
 // height.
 func (app *BaseApp) Commit() (*abci.ResponseCommit, error) {
 	header := app.finalizeBlockState.Context().BlockHeader()
+	app.logger.Info("YSG debug Commit finalizeBlockState header apphash", fmt.Sprintf("%X", header.AppHash))
 	retainHeight := app.GetBlockRetentionHeight(header.Height)
 
 	if app.precommiter != nil {
@@ -929,7 +930,7 @@ func (app *BaseApp) Commit() (*abci.ResponseCommit, error) {
 	if ok {
 		rms.SetCommitHeader(header)
 	}
-
+	app.logger.Info("YSG debug Commit", "cms type", fmt.Sprintf("%T", app.cms), "succ", ok)
 	app.cms.Commit()
 
 	resp := &abci.ResponseCommit{
