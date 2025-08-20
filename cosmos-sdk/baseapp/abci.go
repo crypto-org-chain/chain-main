@@ -137,8 +137,6 @@ func (app *BaseApp) InitChain(req *abci.RequestInitChain) (*abci.ResponseInitCha
 func (app *BaseApp) Info(_ *abci.RequestInfo) (*abci.ResponseInfo, error) {
 	lastCommitID := app.cms.LastCommitID()
 
-	panic(fmt.Errorf("YSG debug BaseApp Info %d", lastCommitID.Version))
-
 	return &abci.ResponseInfo{
 		Data:             app.name,
 		Version:          app.version,

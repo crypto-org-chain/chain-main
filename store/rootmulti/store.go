@@ -145,6 +145,7 @@ func (rs *Store) Close() error {
 
 // Implements interface Committer
 func (rs *Store) LastCommitID() types.CommitID {
+	fmt.Printf("YSG debug  store/rootmulti/store last commit version %d\n", rs.lastCommitInfo.Version)
 	if rs.lastCommitInfo == nil {
 		v, err := memiavl.GetLatestVersion(rs.dir)
 		if err != nil {
