@@ -28,7 +28,7 @@ jobs:
           NETWORK: mainnet
         run: |
           # install sha256sum
-          nix-env -i coreutils -f '<nixpkgs>'
+          nix profile install nixpkgs#coreutils
 
           # build binaries
           ./scripts/release.sh
@@ -77,7 +77,7 @@ jobs:
           NETWORK: mainnet
         run: |
           # install sha256sum
-          nix-env -i coreutils -f '<nixpkgs>'
+          nix profile install nixpkgs#coreutils
 
           # build binaries
           ./scripts/release.sh
