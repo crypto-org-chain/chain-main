@@ -258,6 +258,8 @@ def approve_proposal(
             "no_with_veto_count": "0",
         }
 
+    print("proposal:", proposal)
+
     wait_for_block_time(
         cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
     )
@@ -1057,3 +1059,34 @@ def assert_v6_circuit_is_working(cli, cluster):
             "permissions": {"level": "LEVEL_SUPER_ADMIN"},
         },
     ], "x/circuit account should be unauthorized after reset" + str(rsp["accounts"])
+
+
+def find_event_proposal_id(events):
+    for ev in events:
+        if ev["type"] == "submit_proposal":
+            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+            p_id = attrs["proposal_id"]
+            assert p_id is not None, "Could not extract proposal ID from response"
+            print(f"Proposal ID: {p_id}")
+            return p_id
+    return None
+
+
+def check_proposal_exist(cluster, proposal_id, timeout_seconds=60):
+    """Check if proposal exists with timeout mechanism"""
+    start_time = time.time()
+
+    while time.time() - start_time < timeout_seconds:
+        try:
+            proposal_info = cluster.query_proposal(proposal_id)
+            print(f"Proposal info: {proposal_info}")
+            return True
+        except Exception as e:
+            print(f"Error querying proposal: {e}")
+            # If we can't query the proposal, it might not exist yet
+            time.sleep(1)
+    # If we reach here, timeout occurred
+    raise TimeoutError(
+        f"Timeout waiting for proposal {proposal_id} to become available "
+        f"after {timeout_seconds} seconds"
+    )

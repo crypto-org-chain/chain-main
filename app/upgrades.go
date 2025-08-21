@@ -3,15 +3,10 @@ package app
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
-	icacontrollertypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/controller/types"
-	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
-	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
-	ibctmmigrations "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint/migrations"
+	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -20,16 +15,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // CircuitSuperAdmins maps chain IDs to their super admin addresses
@@ -53,50 +40,11 @@ var CircuitSuperAdmins = map[string][]string{
 }
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
+	// Register upgrade plan name for mainnet v7.0.0. If it's for testnet, add postfix "-testnet" to the plan name.
 	planName := "v7.0.0"
-
-	// Set param key table for params module migration
-	for _, subspace := range app.ParamsKeeper.GetSubspaces() {
-		var keyTable paramstypes.KeyTable
-		switch subspace.Name() {
-		case authtypes.ModuleName:
-			keyTable = authtypes.ParamKeyTable() //nolint:staticcheck
-		case banktypes.ModuleName:
-			keyTable = banktypes.ParamKeyTable() //nolint:staticcheck
-		case stakingtypes.ModuleName:
-			keyTable = stakingtypes.ParamKeyTable() //nolint:staticcheck
-		case minttypes.ModuleName:
-			keyTable = minttypes.ParamKeyTable() //nolint:staticcheck
-		case distrtypes.ModuleName:
-			keyTable = distrtypes.ParamKeyTable() //nolint:staticcheck
-		case slashingtypes.ModuleName:
-			keyTable = slashingtypes.ParamKeyTable() //nolint:staticcheck
-		case govtypes.ModuleName:
-			keyTable = govv1.ParamKeyTable() //nolint:staticcheck
-		case ibcexported.ModuleName:
-			keyTable = ibcclienttypes.ParamKeyTable()
-			keyTable.RegisterParamSet(&ibcconnectiontypes.Params{})
-		case ibctransfertypes.ModuleName:
-			keyTable = ibctransfertypes.ParamKeyTable()
-		case icacontrollertypes.SubModuleName:
-			keyTable = icacontrollertypes.ParamKeyTable()
-		case icahosttypes.SubModuleName:
-			keyTable = icahosttypes.ParamKeyTable()
-		default:
-			continue
-		}
-		if !subspace.HasKeyTable() {
-			subspace.WithKeyTable(keyTable)
-		}
-	}
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-		// OPTIONAL: prune expired tendermint consensus states to save storage space
-		if _, err := ibctmmigrations.PruneExpiredConsensusStates(sdkCtx, cdc, app.IBCKeeper.ClientKeeper); err != nil {
-			return nil, err
-		}
 
 		sdkCtx.Logger().Info("start to run module migrations...")
 
@@ -104,6 +52,44 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		if err != nil {
 			return map[string]uint64{}, err
 		}
+
+		var _ok bool
+		maxSupplyParams := maxsupplytypes.DefaultParams()
+		// update max supply to 100B * 10^8 basecro
+		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("10000000000000000000")
+		if !_ok {
+			return map[string]uint64{}, fmt.Errorf("invalid max supply")
+		}
+
+		chainID := sdkCtx.ChainID()
+
+		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
+			// For mainnet or the integration test
+			maxSupplyParams.BurnedAddresses = []string{
+				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+			}
+		} else if strings.Contains(chainID, "testnet") {
+			// For testnet, use different burned addresses or configuration
+			maxSupplyParams.BurnedAddresses = []string{
+				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+			}
+		} else {
+			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
+		}
+
+		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		sdkCtx.Logger().Info("maxsupply module initialized with params",
+			"max_supply", maxSupplyParams.MaxSupply.String(),
+			"burned_addresses", maxSupplyParams.BurnedAddresses)
+
+		m[maxsupplytypes.ModuleName] = 1
+
+		sdkCtx.Logger().Info("upgrade completed",
+			"plan", plan.Name,
+			"version_map", m)
 
 		return m, nil
 	})
@@ -114,7 +100,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	}
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Deleted: []string{"capability"},
+			Added: []string{
+				maxsupplytypes.StoreKey,
+			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))

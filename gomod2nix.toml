@@ -156,9 +156,8 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.6-0.20250515092613-f67eec43305b"
-    hash = "sha256-l+hjQshLCgptTxAxZWXAN6lZ02mjMifEHkaDmElkukg="
-    replaced = "github.com/crypto-org-chain/cosmos-sdk"
+    version = "v0.50.14"
+    hash = "sha256-IChk3/9KRGlUFPRJvA3fFBsGkKDKImE5FSv4jRlJyFg="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -590,8 +589,8 @@ schema = 3
     version = "v0.38.0"
     hash = "sha256-iHmyxkZQLw1PsUZaXHMt84GrjbXPvkEc92sLoK3W++c="
   [mod."golang.org/x/oauth2"]
-    version = "v0.24.0"
-    hash = "sha256-808F4hzvNOQNoQZehOlIyPgwQG3L5aANiNPLLhaL9NQ="
+    version = "v0.27.0"
+    hash = "sha256-TBKV2c/m0SgPqrJSE0ltJXfImrYPafNuziLN25jgsYY="
   [mod."golang.org/x/sync"]
     version = "v0.12.0"
     hash = "sha256-lPIbI6aXx+iKtFjPaXKNLEnuNfhHCVl7EQiE7alUvlM="

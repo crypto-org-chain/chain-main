@@ -1,0 +1,38 @@
+syntax = "proto3";
+package chainmain.maxsupply.v1;
+
+import "chainmain/maxsupply/v1/params.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/maxsupply/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  rpc MaxSupply(QueryMaxSupplyRequest) returns (QueryMaxSupplyResponse) {
+    option (google.api.http).get = "/chainmain/maxsupply/v1/params/max_supply";
+  }
+
+  // BurnedAddresses queries the list of burned addresses
+  rpc BurnedAddresses(QueryBurnedAddressesRequest) returns (QueryBurnedAddressesResponse) {
+    option (google.api.http).get = "/chainmain/maxsupply/v1/params/burned_addresses";
+  }
+}
+
+// QueryMaxSupplyRequest is request type for the Query/MaxSupply RPC method.
+message QueryMaxSupplyRequest {}
+
+// QueryMaxSupplyResponse is response type for the Query/MaxSupply RPC method.
+message QueryMaxSupplyResponse {
+  // max_supply holds the maximum supply of the module.
+  string max_supply = 1;
+}
+
+// QueryBurnedAddressesRequest is request type for the Query/BurnedAddresses RPC method.
+message QueryBurnedAddressesRequest {}
+
+// QueryBurnedAddressesResponse is response type for the Query/BurnedAddresses RPC method.
+message QueryBurnedAddressesResponse {
+  // burned_addresses holds the list of addresses that hold burned tokens.
+  repeated string burned_addresses = 1;
+}
