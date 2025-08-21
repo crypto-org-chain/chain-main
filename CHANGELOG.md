@@ -1,5 +1,10 @@
 # Changelog
 
+
+## Unreleased
+- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185)  Error deleting legacy versions bug.
+- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+
 *July 9, 2025*
 
 ## v6.0.0-2
