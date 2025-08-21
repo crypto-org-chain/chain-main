@@ -128,12 +128,17 @@ def ibc_transfer_flow(cluster, src_channel, dst_channel):
         raw(
             "query",
             "ibc-transfer",
-            "denom-trace",
+            "denom",
             denom_hash,
             node=cluster["ibc-1"].node_rpc(0),
             output="json",
         )
-    ) == {"denom_trace": {"path": f"transfer/{dst_channel}", "base_denom": denom}}
+    ) == {
+        "denom": {
+            "base": denom,
+            "trace": [{"port_id": "transfer", "channel_id": dst_channel}],
+        }
+    }
 
     # transfer back
     rsp = cluster["ibc-1"].ibc_transfer(
@@ -236,7 +241,10 @@ def ibc_incentivized_transfer(cluster):
     path = f"transfer/{dst_channel}/{base_denom}"
     denom_hash = hashlib.sha256(path.encode()).hexdigest().upper()
     denom_trace = chains[0].ibc_denom_trace(path, cluster["ibc-1"].node_rpc(0))
-    assert denom_trace == {"path": f"transfer/{dst_channel}", "base_denom": base_denom}
+    assert denom_trace == {
+        "base": base_denom,
+        "trace": [{"port_id": "transfer", "channel_id": dst_channel}],
+    }
 
     current = chains[1].balances(receiver)
     assert current == [

@@ -12,13 +12,13 @@ rustPlatform.buildRustPackage rec {
   version = "main";
 
   src = fetchFromGitHub {
-    owner = "crypto-com";
+    owner = "yihuang";
     repo = pname;
-    rev = "d80b776f631c6a1a641931cac7a9a5fe3d802176";
-    hash = "sha256-3s0mGDzuEZZLLo3jxpu7U2N6VfiuRHCceqwCGOfS6yw=";
+    rev = "d34c17e6f79ae1fbb6d02f25ec55ceef426854fd";
+    hash = "sha256-fxH2gGVCYe1GAGwNJXeAf1QBZftNCuWG4TCJSiV/mCs=";
   };
 
-  cargoHash = "sha256-1SqK8OkaUJ7UHM/w5v0NDb4L7NZzpwy17F11rkXMlJw=";
+  cargoHash = "sha256-AHK0aGCr2tQpdGhVo61drNnsGjusa6VycXs2neJZQp8=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf
