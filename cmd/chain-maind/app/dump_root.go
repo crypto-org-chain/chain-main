@@ -1,12 +1,17 @@
 package app
 
 import (
-	"cosmossdk.io/store/types"
 	"fmt"
+	"sort"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/rootmulti"
+	"cosmossdk.io/store/types"
+
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/spf13/cobra"
-	"sort"
 )
 
 func DumpRootCmd() *cobra.Command {
@@ -26,13 +31,14 @@ func DumpRootGroupCmd(storeNames []string) *cobra.Command {
 	}
 	cmd.AddCommand(
 		DumpMemIavlRoot(storeNames),
+		DumpIavlRoot(storeNames),
 	)
 	return cmd
 }
 
 func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dump-memiav-root",
+		Use:   "dump-memiavl-root",
 		Short: "dump mem-iavl root at version [dir]",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -118,4 +124,71 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 		Version:    commitInfo.Version,
 		StoreInfos: storeInfos,
 	}
+}
+
+func DumpIavlRoot(storeNames []string) *cobra.Command {
+
+	cmd := &cobra.Command{
+		Use:   "dump-iavl-root",
+		Short: "dump iavl root at version [dir]",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dir := args[0]
+			version, err := cmd.Flags().GetInt64("version")
+			if err != nil {
+				return err
+			}
+			db, err := dbm.NewGoLevelDB("application", dir, nil)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+			logger := log.NewNopLogger()
+			rs := rootmulti.NewStore(db, logger, nil)
+			for _, storeName := range storeNames {
+				rs.MountStoreWithDB(types.NewKVStoreKey(storeName), types.StoreTypeIAVL, nil)
+
+			}
+
+			err = rs.LoadVersion(version)
+			if err != nil {
+				return err
+			}
+			for _, storeName := range storeNames {
+				sk := types.NewKVStoreKey(storeName)
+				store := rs.GetCommitKVStore(sk)
+				if store == nil {
+					fmt.Printf("module %s not load\n", storeName)
+					continue
+				}
+				cid := store.LastCommitID()
+				fmt.Printf("module %s version %d RootHash %X\n", storeName, cid.Version, cid.Hash)
+			}
+			// construct commit info for multi root hash
+			var infos []types.StoreInfo
+			for _, storeName := range storeNames {
+				sk := types.NewKVStoreKey(storeName)
+				store := rs.GetCommitKVStore(sk)
+				if store == nil {
+					continue
+				}
+				cid := store.LastCommitID()
+				infos = append(infos, types.StoreInfo{
+					Name:     storeName,
+					CommitId: cid,
+				})
+			}
+			sort.SliceStable(infos, func(i, j int) bool {
+				return infos[i].Name < infos[j].Name
+			})
+			commitInfo := &types.CommitInfo{
+				Version:    version,
+				StoreInfos: infos,
+			}
+			fmt.Printf("Version %d RootHash %X\n", commitInfo.Version, commitInfo.Hash())
+			return nil
+		},
+	}
+	cmd.Flags().Int64("version", 0, "the version to dump")
+	return cmd
 }
