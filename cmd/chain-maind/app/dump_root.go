@@ -59,8 +59,8 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 				}
 			}
 
-			commitInfo := db.MultiTree.WorkingCommitInfo()
-			lastCommitInfo := convertCommitInfo(commitInfo)
+			db.MultiTree.UpdateCommitInfo()
+			lastCommitInfo := convertCommitInfo(db.MultiTree.LastCommitInfo())
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 			return nil

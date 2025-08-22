@@ -982,6 +982,8 @@ func (app *BaseApp) workingHash() []byte {
 	// Get the hash of all writes in order to return the apphash to the comet in finalizeBlock.
 	commitHash := app.cms.WorkingHash()
 	app.logger.Debug("hash of all writes", "workingHash", fmt.Sprintf("%X", commitHash))
+	commitID := app.cms.LastCommitID()
+	app.logger.Info("hash of all writes", "commitID.version", commitID.Version, "commitID.hash", fmt.Sprintf("%X", commitID.Hash))
 
 	return commitHash
 }
