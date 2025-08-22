@@ -259,10 +259,16 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		rootCmd.AddCommand(changeSetCmd)
 	}
 
-	// versiondb changeset commands
+	// versiondb dumpchangeset commands
 	versionDBChangeSet := VersionDBChangeSetCmd()
 	if versionDBChangeSet != nil {
 		rootCmd.AddCommand(versionDBChangeSet)
+	}
+
+	// dump root hash commands
+	dumpRootCmd := DumpRootCmd()
+	if dumpRootCmd != nil {
+		rootCmd.AddCommand(dumpRootCmd)
 	}
 }
 
