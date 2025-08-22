@@ -54,6 +54,8 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 				tree := db.TreeByName(storeName)
 				if tree != nil {
 					fmt.Printf("module %s version %d RootHash %X\n", storeName, tree.Version(), tree.RootHash())
+				} else {
+					fmt.Printf("module %s not load\n", storeName)
 				}
 			}
 
