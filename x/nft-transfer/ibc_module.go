@@ -54,12 +54,6 @@ func ValidateTransferChannelParams(
 		return newsdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
 	}
 
-	// Require portID is the portID transfer module is bound to
-	boundPort := types.PortID
-	if boundPort != portID {
-		return newsdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
-	}
-
 	return nil
 }
 
@@ -228,6 +222,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	switch resp := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Result:
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
@@ -235,6 +230,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 			),
 		)
 	case *channeltypes.Acknowledgement_Error:
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
