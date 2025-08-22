@@ -2,16 +2,19 @@ package app
 
 import (
 	"fmt"
+	"os"
 	"sort"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/store/rootmulti"
 	"cosmossdk.io/store/types"
 
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/spf13/cobra"
+
+	"github.com/cosmos/iavl"
+	idbm "github.com/cosmos/iavl/db"
 )
 
 func DumpRootCmd() *cobra.Command {
@@ -127,7 +130,9 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 }
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
-
+	storeNames = []string{"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
+		"feeibc", "gov", "group", "ibc", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
+		"params", "slashing", "staking", "supply", "transfer", "upgrade"}
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-root",
 		Short: "dump iavl root at version [dir]",
@@ -143,49 +148,9 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				return err
 			}
 			defer db.Close()
-			logger := log.NewNopLogger()
-			rs := rootmulti.NewStore(db, logger, nil)
-			for _, storeName := range storeNames {
-				rs.MountStoreWithDB(types.NewKVStoreKey(storeName), types.StoreTypeIAVL, nil)
-
-			}
-
-			err = rs.LoadVersion(version)
-			if err != nil {
-				return err
-			}
-			for _, storeName := range storeNames {
-				sk := types.NewKVStoreKey(storeName)
-				store := rs.GetCommitKVStore(sk)
-				if store == nil {
-					fmt.Printf("module %s not load\n", storeName)
-					continue
-				}
-				cid := store.LastCommitID()
-				fmt.Printf("module %s version %d RootHash %X\n", storeName, cid.Version, cid.Hash)
-			}
-			// construct commit info for multi root hash
-			var infos []types.StoreInfo
-			for _, storeName := range storeNames {
-				sk := types.NewKVStoreKey(storeName)
-				store := rs.GetCommitKVStore(sk)
-				if store == nil {
-					continue
-				}
-				cid := store.LastCommitID()
-				infos = append(infos, types.StoreInfo{
-					Name:     storeName,
-					CommitId: cid,
-				})
-			}
-			sort.SliceStable(infos, func(i, j int) bool {
-				return infos[i].Name < infos[j].Name
-			})
-			commitInfo := &types.CommitInfo{
-				Version:    version,
-				StoreInfos: infos,
-			}
-			fmt.Printf("Version %d RootHash %X\n", commitInfo.Version, commitInfo.Hash())
+			tree := iavl.NewMutableTree(idbm.NewWrapper(db), 10000, false, log.NewLogger(os.Stdout))
+			ver, err := tree.LoadVersion(version)
+			fmt.Printf("Version %d RootHash %X\n", ver, tree.Hash())
 			return nil
 		},
 	}
