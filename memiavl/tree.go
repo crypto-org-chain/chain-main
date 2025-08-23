@@ -141,8 +141,8 @@ func (t *Tree) ApplyChangeSet(changeSet ChangeSet) {
 	}
 	for _, pair := range changeSet.Pairs {
 		if t.name == "bank" && bytes.Equal(pair.Key, delBank.Key) {
-			str, _ := json.Marshal(pair)
-			fmt.Printf("YSG debug ApplyChangeSet key %s\n", str)
+			_, _ = json.Marshal(pair)
+			//fmt.Printf("YSG debug ApplyChangeSet key %s\n", str)
 		}
 		if pair.Delete {
 			t.remove(pair.Key)
@@ -191,8 +191,8 @@ func (t *Tree) SaveVersion(updateHash bool) ([]byte, int64, error) {
 		}
 		val := t.Get(delBank.Key)
 		pair := KVPair{Key: delBank.Key, Value: val}
-		js, _ := json.Marshal(pair)
-		fmt.Printf("YSG debug in SaveVersion version %d bank key %s\n", t.version, js)
+		_, _ = json.Marshal(pair)
+		//fmt.Printf("YSG debug in SaveVersion version %d bank key %s\n", t.version, js)
 	}
 	return hash, int64(t.version), nil
 }
