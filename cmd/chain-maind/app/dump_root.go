@@ -155,6 +155,15 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 
 			if len(infos) != len(cInfo.StoreInfos) {
 				fmt.Printf("Warning: Partial commit info (loaded %d stores, found %d)\n", len(cInfo.StoreInfos), len(infos))
+				storeMaps := make(map[string]struct{})
+				for _, storeName := range storeNames {
+					storeMaps[storeName] = struct{}{}
+				}
+				for _, info := range cInfo.StoreInfos {
+					if _, ok := storeMaps[info.Name]; !ok {
+						fmt.Printf("module %s missed\n", info.Name)
+					}
+				}
 			}
 
 			commitInfo := &types.CommitInfo{
