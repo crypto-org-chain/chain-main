@@ -69,6 +69,11 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 			db.MultiTree.UpdateCommitInfo()
 			lastCommitInfo := convertCommitInfo(db.MultiTree.LastCommitInfo())
 
+			fmt.Printf("dump commit info")
+			for _, storeInfo := range lastCommitInfo.StoreInfos {
+				fmt.Printf("dump module %s version %d Hash %X\n", storeInfo.Name, storeInfo.CommitId.Version, storeInfo.CommitId.Hash)
+			}
+
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 			return nil
 		},
@@ -161,6 +166,11 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				Version:    version,
 				StoreInfos: infos,
 			}
+			fmt.Printf("dump commit info")
+			for _, storeInfo := range commitInfo.StoreInfos {
+				fmt.Printf("dump module %s version %d Hash %X\n", storeInfo.Name, storeInfo.CommitId.Version, storeInfo.CommitId.Hash)
+			}
+
 			if rs.LastCommitID().Version != commitInfo.Version || !bytes.Equal(rs.LastCommitID().Hash, commitInfo.Hash()) {
 				return fmt.Errorf("failed to calculate %d commit info, rs Hash %X, commit Hash %X", rs.LastCommitID().Version, rs.LastCommitID().Hash, commitInfo.Hash())
 			}
