@@ -69,11 +69,6 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 			db.MultiTree.UpdateCommitInfo()
 			lastCommitInfo := convertCommitInfo(db.MultiTree.LastCommitInfo())
 
-			fmt.Printf("dump commit info")
-			for _, storeInfo := range lastCommitInfo.StoreInfos {
-				fmt.Printf("dump module %s version %d Hash %X\n", storeInfo.Name, storeInfo.CommitId.Version, storeInfo.CommitId.Hash)
-			}
-
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 			return nil
 		},
@@ -101,7 +96,7 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
 	storeNames = []string{"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
-		"feeibc", "gov", "group", "ibc", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
+		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
 		"params", "slashing", "staking", "supply", "transfer", "upgrade"}
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-root",
