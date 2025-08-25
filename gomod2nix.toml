@@ -137,9 +137,6 @@ schema = 3
   [mod."github.com/coinbase/rosetta-sdk-go"]
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
-  [mod."github.com/cometbft/cometbft"]
-    version = "v0.38.17"
-    hash = "sha256-JjFTmg7v+4vk+r50BJ/dXi6Oz7Lcoxr6koW/DvmaQSI="
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.14.1"
     hash = "sha256-QvWMRGsdgCsSfL+DHp3w1Bm4jXa14SeT7oRK3PiNGV0="
@@ -152,9 +149,6 @@ schema = 3
   [mod."github.com/cosmos/cosmos-proto"]
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
-  [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.14"
-    hash = "sha256-IChk3/9KRGlUFPRJvA3fFBsGkKDKImE5FSv4jRlJyFg="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -192,18 +186,6 @@ schema = 3
   [mod."github.com/creachadair/tomledit"]
     version = "v0.0.24"
     hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
-  [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.5-0.20241028093154-0f94930c27ce"
-    hash = "sha256-F7tPkSvfW8ZbURrK5uvQ9kB1h3uKRfiQyEYql3J1Q6k="
-    replaced = "github.com/crypto-org-chain/cronos/memiavl"
-  [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.5-0.20241028093154-0f94930c27ce"
-    hash = "sha256-S5INWggeFs1vBrcuVyWyS34C5I2ux+NLJ+czqQqKzUc="
-    replaced = "github.com/crypto-org-chain/cronos/store"
-  [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.0-20241028093154-0f94930c27ce"
-    hash = "sha256-dVXYagl8K+JMrIt6dqcoQTjUwwMCqrMmAfpIZimWlyE="
-    replaced = "github.com/crypto-org-chain/cronos/versiondb"
   [mod."github.com/danieljoos/wincred"]
     version = "v1.1.2"
     hash = "sha256-Nnklfg12vmWCOhELGyoRqEF4w4srp0WbPwreaChYLKs="

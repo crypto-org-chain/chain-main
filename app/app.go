@@ -197,6 +197,10 @@ var (
 type RootMultiStore interface {
 	storetypes.MultiStore
 
+	// CacheMultiStoreWithVersion branches the underlying MultiStore where
+	// each stored is loaded at a specific version (height).
+	CacheMultiStoreWithVersion(version int64) (storetypes.CacheMultiStore, error)
+
 	// LatestVersion returns the latest version in the store
 	LatestVersion() int64
 }
@@ -462,7 +466,7 @@ func New(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -752,6 +756,12 @@ func New(
 		app.qms = qms.(RootMultiStore)
 	}
 
+	var qmsVersion int64
+	if app.qms != nil {
+		qmsVersion = app.qms.LatestVersion()
+		logger.Info("qms version:", "qmsVersion", qmsVersion)
+	}
+
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -790,18 +800,23 @@ func New(
 	// upgrade.
 	app.setPostHandler()
 
-	app.RegisterUpgradeHandlers(app.appCodec)
+	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
+	// Make sure it's called after `app.mm` and `app.configurator` are set.
+	storeLoaderOverritten := app.RegisterUpgradeHandlers(app.appCodec, qmsVersion)
+	if !storeLoaderOverritten {
+		// Register the default store loader
+		app.SetStoreLoader(MaxVersionStoreLoader(qmsVersion))
+	}
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(err.Error())
 		}
 
-		if app.qms != nil {
-			v1 := app.qms.LatestVersion()
-			v2 := app.LastBlockHeight()
-			if v1 > 0 && v1 != v2 {
-				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", v1, v2))
+		if qmsVersion > 0 {
+			iavlVersion := app.LastBlockHeight()
+			if qmsVersion < iavlVersion {
+				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", qmsVersion, iavlVersion))
 			}
 		}
 	}
@@ -1082,7 +1097,8 @@ func StoreKeys() (
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
-	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
+	oldMemkStoreKey := "mem_capability"
+	memKeys := storetypes.NewMemoryStoreKeys(oldMemkStoreKey)
 
 	return keys, memKeys, tkeys
 }
