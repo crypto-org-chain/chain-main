@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"fmt"
 	"sort"
 
@@ -15,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func DumpRootCmd() *cobra.Command {
+func DumpStoreCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
 	storeNames := make([]string, 0, len(keys))
 	for name := range keys {
@@ -25,19 +24,19 @@ func DumpRootCmd() *cobra.Command {
 	return DumpRootGroupCmd(storeNames)
 }
 
-func DumpRootGroupCmd(storeNames []string) *cobra.Command {
+func DumpStoreGroupCmd(storeNames []string) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "dump-root",
-		Short: "dump module root",
+		Use:   "dump-store",
+		Short: "dump module store",
 	}
 	cmd.AddCommand(
-		DumpMemIavlRoot(storeNames),
-		DumpIavlRoot(storeNames),
+		DumpMemIavlStore(storeNames),
+		DumpIavlStore(storeNames),
 	)
 	return cmd
 }
 
-func DumpMemIavlRoot(storeNames []string) *cobra.Command {
+func DumpMemIavlStore(storeNames []string) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump-memiavl-root",
 		Short: "dump mem-iavl root at version [dir]",
@@ -85,32 +84,16 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 	return cmd
 }
 
-func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
-	storeInfos := make([]types.StoreInfo, len(commitInfo.StoreInfos))
-	for i, storeInfo := range commitInfo.StoreInfos {
-		storeInfos[i] = types.StoreInfo{
-			Name: storeInfo.Name,
-			CommitId: types.CommitID{
-				Version: storeInfo.CommitId.Version,
-				Hash:    storeInfo.CommitId.Hash,
-			},
-		}
-	}
-	return &types.CommitInfo{
-		Version:    commitInfo.Version,
-		StoreInfos: storeInfos,
-	}
-}
-
-func DumpIavlRoot(storeNames []string) *cobra.Command {
+func DumpIavlStore(storeNames []string) *cobra.Command {
 	storeNames = []string{
 		"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
 		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
 		"params", "slashing", "staking", "supply", "transfer", "upgrade",
 	}
+	capaMemStoreKey := "mem_capability"
 	cmd := &cobra.Command{
-		Use:   "dump-iavl-root",
-		Short: "dump iavl root at version [dir]",
+		Use:   "dump-iavl-store",
+		Short: "dump iavl store at version [dir]",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := args[0]
@@ -138,52 +121,16 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				fmt.Printf("failed to load  version %d %s\n", version, err.Error())
 				return err
 			}
+			kvStore := rs.GetKVStore(types.NewKVStoreKey(capaMemStoreKey))
+			it := kvStore.Iterator(nil, nil)
+			defer it.Close()
 
-			var cInfo *types.CommitInfo
-			cInfo, err = rs.GetCommitInfo(version)
-			if err != nil {
-				fmt.Printf("failed to load version %d commit info: %s\n", version, err.Error())
-				return err
+			fmt.Printf("version %d RootHash %X\n", version, it.Key())
+			for ; it.Valid(); it.Next() {
+				key := it.Key()
+				value := it.Value()
+				fmt.Printf("%s: %s\n", string(key), string(value))
 			}
-			infoMaps := make(map[string]types.StoreInfo)
-			for _, storeInfo := range cInfo.StoreInfos {
-				infoMaps[storeInfo.Name] = storeInfo
-			}
-
-			var infos []types.StoreInfo
-			for _, storeName := range storeNames {
-				info, ok := infoMaps[storeName]
-				if !ok {
-					fmt.Printf("module %s not loaded\n", storeName)
-					continue
-				}
-				commitID := info.CommitId
-				fmt.Printf("module %s version %d RootHash %X\n", storeName, commitID.Version, commitID.Hash)
-				infos = append(infos, info)
-			}
-
-			if len(infos) != len(cInfo.StoreInfos) {
-				fmt.Printf("Warning: Partial commit info (loaded %d stores, found %d)\n", len(cInfo.StoreInfos), len(infos))
-				storeMaps := make(map[string]struct{})
-				for _, storeName := range storeNames {
-					storeMaps[storeName] = struct{}{}
-				}
-				for _, info := range cInfo.StoreInfos {
-					if _, ok := storeMaps[info.Name]; !ok {
-						fmt.Printf("module %s missed\n", info.Name)
-					}
-				}
-			}
-
-			commitInfo := &types.CommitInfo{
-				Version:    version,
-				StoreInfos: infos,
-			}
-
-			if rs.LastCommitID().Version != commitInfo.Version || !bytes.Equal(rs.LastCommitID().Hash, commitInfo.Hash()) {
-				return fmt.Errorf("failed to calculate %d commit info, rs Hash %X, commit Hash %X", rs.LastCommitID().Version, rs.LastCommitID().Hash, commitInfo.Hash())
-			}
-			fmt.Printf("Version %d RootHash %X\n", commitInfo.Version, commitInfo.Hash())
 			return nil
 		},
 	}
