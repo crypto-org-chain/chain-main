@@ -21,7 +21,7 @@ func DumpStoreCmd() *cobra.Command {
 		storeNames = append(storeNames, name)
 	}
 	sort.Strings(storeNames)
-	return DumpRootGroupCmd(storeNames)
+	return DumpStoreGroupCmd(storeNames)
 }
 
 func DumpStoreGroupCmd(storeNames []string) *cobra.Command {
