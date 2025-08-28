@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"sort"
 
-	"cosmossdk.io/log"
-	"cosmossdk.io/store/types"
-
-	"cosmossdk.io/store/rootmulti"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/spf13/cobra"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/rootmulti"
+	"cosmossdk.io/store/types"
 )
+
+const capaMemStoreKey = "mem_capability"
 
 func DumpRootCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
@@ -71,10 +73,12 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
+			// if you want to hash the same with iavl node
 			var specialInfo types.StoreInfo
 			specialInfo.Name = "mem_capability"
 			lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
-			fmt.Printf("calculate again Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
+
+			fmt.Printf("calculate again Last Commit Infos: %v\n", lastCommitInfo)
 
 			tree := db.TreeByName(capaMemStoreKey)
 			if tree != nil {
@@ -107,7 +111,7 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 }
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
-	// consensus circuit
+	// this is need to change in different height
 	storeNames = []string{
 		"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
 		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
@@ -133,11 +137,6 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				rs.MountStoreWithDB(types.NewKVStoreKey(storeKey), types.StoreTypeIAVL, nil)
 			}
 
-			err = rs.LoadLatestVersion()
-			if err != nil {
-				fmt.Printf("failed to load latest version: %s\n", err.Error())
-				return err
-			}
 			err = rs.LoadVersion(version)
 			if err != nil {
 				fmt.Printf("failed to load  version %d %s\n", version, err.Error())
@@ -175,7 +174,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				}
 				for _, info := range cInfo.StoreInfos {
 					if _, ok := storeMaps[info.Name]; !ok {
-						fmt.Printf("module %s missed version %d RootHash %X\n", info.Name, info.CommitId.Version, info.CommitId.Hash)
+						fmt.Printf("module %s missed\n", info.Name)
 					}
 				}
 			}
@@ -184,11 +183,6 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				Version:    version,
 				StoreInfos: infos,
 			}
-
-			fmt.Printf("cInfo hash %X\n", cInfo.Hash())
-			var specialInfo types.StoreInfo
-			specialInfo.Name = "mem_capability"
-			commitInfo.StoreInfos = append(commitInfo.StoreInfos, specialInfo)
 
 			if rs.LastCommitID().Version != commitInfo.Version || !bytes.Equal(rs.LastCommitID().Hash, commitInfo.Hash()) {
 				return fmt.Errorf("failed to calculate %d commit info, rs Hash %X, commit Hash %X", rs.LastCommitID().Version, rs.LastCommitID().Hash, commitInfo.Hash())
