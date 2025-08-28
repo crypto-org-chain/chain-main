@@ -102,6 +102,7 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 }
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
+	// consensus circuit
 	storeNames = []string{
 		"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
 		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
@@ -169,7 +170,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				}
 				for _, info := range cInfo.StoreInfos {
 					if _, ok := storeMaps[info.Name]; !ok {
-						fmt.Printf("module %s missed\n", info.Name)
+						fmt.Printf("module %s missed version %d RootHash %X\n", info.Name, info.CommitId.Version, info.CommitId.Hash)
 					}
 				}
 			}
