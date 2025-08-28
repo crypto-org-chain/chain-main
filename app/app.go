@@ -197,6 +197,10 @@ var (
 type RootMultiStore interface {
 	storetypes.MultiStore
 
+	// CacheMultiStoreWithVersion branches the underlying MultiStore where
+	// each stored is loaded at a specific version (height).
+	CacheMultiStoreWithVersion(version int64) (storetypes.CacheMultiStore, error)
+
 	// LatestVersion returns the latest version in the store
 	LatestVersion() int64
 }
@@ -752,6 +756,12 @@ func New(
 		app.qms = qms.(RootMultiStore)
 	}
 
+	var qmsVersion int64
+	if app.qms != nil {
+		qmsVersion = app.qms.LatestVersion()
+		logger.Info("qms version:", "qmsVersion", qmsVersion)
+	}
+
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -790,6 +800,8 @@ func New(
 	// upgrade.
 	app.setPostHandler()
 
+	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
+	// Make sure it's called after `app.mm` and `app.configurator` are set.
 	app.RegisterUpgradeHandlers(app.appCodec)
 
 	if loadLatest {
@@ -797,11 +809,10 @@ func New(
 			tmos.Exit(err.Error())
 		}
 
-		if app.qms != nil {
-			v1 := app.qms.LatestVersion()
-			v2 := app.LastBlockHeight()
-			if v1 > 0 && v1 != v2 {
-				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", v1, v2))
+		if qmsVersion > 0 {
+			iavlVersion := app.LastBlockHeight()
+			if qmsVersion < iavlVersion {
+				tmos.Exit(fmt.Sprintf("versiondb latest version %d don't match iavl latest version %d", qmsVersion, iavlVersion))
 			}
 		}
 	}
@@ -1082,6 +1093,8 @@ func StoreKeys() (
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+	// store.go:167: test panicked: kv store with key <nil> has not been registered in stores
+	// oldMemkStoreKey := "mem_capability"
 	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	return keys, memKeys, tkeys
