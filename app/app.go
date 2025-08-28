@@ -466,7 +466,7 @@ func New(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -1097,8 +1097,9 @@ func StoreKeys() (
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
-	oldMemkStoreKey := "mem_capability"
-	memKeys := storetypes.NewMemoryStoreKeys(oldMemkStoreKey)
+	// store.go:167: test panicked: kv store with key <nil> has not been registered in stores
+	// oldMemkStoreKey := "mem_capability"
+	memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
 
 	return keys, memKeys, tkeys
 }

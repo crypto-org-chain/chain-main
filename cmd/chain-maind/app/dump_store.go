@@ -14,6 +14,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const capaMemStoreKey = "mem_capability"
+
 func DumpStoreCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
 	storeNames := make([]string, 0, len(keys))
@@ -70,7 +72,6 @@ func DumpMemIavlStore(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
-			capaMemStoreKey := "mem_capability"
 			tree := db.TreeByName(capaMemStoreKey)
 			if tree != nil {
 				fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
@@ -90,7 +91,7 @@ func DumpIavlStore(storeNames []string) *cobra.Command {
 		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
 		"params", "slashing", "staking", "supply", "transfer", "upgrade",
 	}
-	capaMemStoreKey := "mem_capability"
+
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-store",
 		Short: "dump iavl store at version [dir]",

@@ -71,7 +71,6 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
-			capaMemStoreKey := "mem_capability"
 			tree := db.TreeByName(capaMemStoreKey)
 			if tree != nil {
 				fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
