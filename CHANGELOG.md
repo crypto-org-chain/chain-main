@@ -5,6 +5,7 @@
 ## Unreleased
 
 ### Improvements
+- [#1191](https://github.com/crypto-org-chain/chain-main/pull/1191) feat: add dump iavl root and memiavl root
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
 - [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
 - [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
