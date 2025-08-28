@@ -71,6 +71,11 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
+			var specialInfo types.StoreInfo
+			specialInfo.Name = "mem_capability"
+			lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
+			fmt.Printf("calculate again Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
+
 			tree := db.TreeByName(capaMemStoreKey)
 			if tree != nil {
 				fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
@@ -181,6 +186,9 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 			}
 
 			fmt.Printf("cInfo hash %X\n", cInfo.Hash())
+			var specialInfo types.StoreInfo
+			specialInfo.Name = "mem_capability"
+			commitInfo.StoreInfos = append(commitInfo.StoreInfos, specialInfo)
 
 			if rs.LastCommitID().Version != commitInfo.Version || !bytes.Equal(rs.LastCommitID().Hash, commitInfo.Hash()) {
 				return fmt.Errorf("failed to calculate %d commit info, rs Hash %X, commit Hash %X", rs.LastCommitID().Version, rs.LastCommitID().Hash, commitInfo.Hash())

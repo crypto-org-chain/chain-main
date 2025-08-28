@@ -2,8 +2,6 @@ package types
 
 import (
 	"crypto/sha256"
-	"fmt"
-
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 
 	"cosmossdk.io/store/internal/maps"
@@ -21,13 +19,13 @@ func (si StoreInfo) GetHash() []byte {
 }
 
 func (ci CommitInfo) toMap() map[string][]byte {
-	fmt.Println("toMap start")
+	//	fmt.Println("toMap start")
 	m := make(map[string][]byte, len(ci.StoreInfos))
 	for _, storeInfo := range ci.StoreInfos {
-		fmt.Printf("toMap name %s Hash %X\n", storeInfo.Name, storeInfo.GetHash())
+		//	fmt.Printf("toMap name %s Hash %X\n", storeInfo.Name, storeInfo.GetHash())
 		m[storeInfo.Name] = storeInfo.GetHash()
 	}
-	fmt.Println("toMap end")
+	//	fmt.Println("toMap end")
 	return m
 }
 
