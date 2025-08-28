@@ -313,9 +313,11 @@ func (t *MultiTree) buildCommitInfo(version int64) *CommitInfo {
 		})
 	}
 
-	var specialInfo StoreInfo
-	specialInfo.Name = "mem_capability"
-	infos = append(infos, specialInfo)
+	if version < 24836000 {
+		var specialInfo StoreInfo
+		specialInfo.Name = "mem_capability"
+		infos = append(infos, specialInfo)
+	}
 	return &CommitInfo{
 		Version:    version,
 		StoreInfos: infos,
