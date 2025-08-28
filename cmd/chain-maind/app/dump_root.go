@@ -73,19 +73,22 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
-			// if you want to hash the same with iavl node
-			var specialInfo types.StoreInfo
-			specialInfo.Name = "mem_capability"
-			lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
+			if version < 24836000 {
+				// if you want to hash the same with iavl node
+				var specialInfo types.StoreInfo
+				specialInfo.Name = "mem_capability"
+				lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
 
-			fmt.Printf("calculate again Last Commit Infos: %v\n", lastCommitInfo)
+				fmt.Printf("calculate again Last Commit Infos: %v\n", lastCommitInfo)
 
-			tree := db.TreeByName(capaMemStoreKey)
-			if tree != nil {
-				fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
-			} else {
-				fmt.Printf("module %s not loaded\n", capaMemStoreKey)
+				tree := db.TreeByName(capaMemStoreKey)
+				if tree != nil {
+					fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
+				} else {
+					fmt.Printf("module %s not loaded\n", capaMemStoreKey)
+				}
 			}
+
 			return nil
 		},
 	}
@@ -174,7 +177,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				}
 				for _, info := range cInfo.StoreInfos {
 					if _, ok := storeMaps[info.Name]; !ok {
-						fmt.Printf("module %s missed\n", info.Name)
+						fmt.Printf("module %s missed\n", info.Name, info.CommitId.Version, info.CommitId.Hash)
 					}
 				}
 			}
