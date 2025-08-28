@@ -31,7 +31,6 @@ buildGoApplication rec {
     "!/versiondb/"
     "!/memiavl/"
     "!/store/"
-    "!/cometbft"
     "!/cosmos-sdk"
     "!go.mod"
     "!go.sum"

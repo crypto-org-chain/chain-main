@@ -137,6 +137,9 @@ schema = 3
   [mod."github.com/coinbase/rosetta-sdk-go"]
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
+  [mod."github.com/cometbft/cometbft"]
+    version = "v0.38.17"
+    hash = "sha256-JjFTmg7v+4vk+r50BJ/dXi6Oz7Lcoxr6koW/DvmaQSI="
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.14.1"
     hash = "sha256-QvWMRGsdgCsSfL+DHp3w1Bm4jXa14SeT7oRK3PiNGV0="
