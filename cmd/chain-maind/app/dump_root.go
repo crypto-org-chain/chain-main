@@ -137,11 +137,6 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				rs.MountStoreWithDB(types.NewKVStoreKey(storeKey), types.StoreTypeIAVL, nil)
 			}
 
-			err = rs.LoadLatestVersion()
-			if err != nil {
-				fmt.Printf("failed to load latest version: %s\n", err.Error())
-				return err
-			}
 			err = rs.LoadVersion(version)
 			if err != nil {
 				fmt.Printf("failed to load  version %d %s\n", version, err.Error())
