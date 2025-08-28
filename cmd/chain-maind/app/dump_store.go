@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store/types"
@@ -92,12 +93,15 @@ func DumpIavlStore(storeNames []string) *cobra.Command {
 		"params", "slashing", "staking", "supply", "transfer", "upgrade",
 	}
 
+	short := fmt.Sprintf("dump iavl store at version [dir] [storeKey], use these storeKey %s", strings.Join(storeNames, ","))
+
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-store",
-		Short: "dump iavl store at version [dir]",
-		Args:  cobra.ExactArgs(1),
+		Short: short,
+		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := args[0]
+			storeKey := args[1]
 			version, err := cmd.Flags().GetInt64("version")
 			if err != nil {
 				return err
@@ -122,7 +126,7 @@ func DumpIavlStore(storeNames []string) *cobra.Command {
 				fmt.Printf("failed to load  version %d %s\n", version, err.Error())
 				return err
 			}
-			kvStore := rs.GetKVStore(types.NewKVStoreKey(capaMemStoreKey))
+			kvStore := rs.GetKVStore(types.NewKVStoreKey(storeKey))
 			it := kvStore.Iterator(nil, nil)
 			defer it.Close()
 
