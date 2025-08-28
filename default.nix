@@ -31,7 +31,6 @@ buildGoApplication rec {
     "!/versiondb/"
     "!/memiavl/"
     "!/store/"
-    "!/cosmos-sdk"
     "!go.mod"
     "!go.sum"
     "!gomod2nix.toml"

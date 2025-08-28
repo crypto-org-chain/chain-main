@@ -221,7 +221,6 @@ require (
 )
 
 replace (
-	github.com/cosmos/cosmos-sdk => ./cosmos-sdk
 	github.com/crypto-org-chain/cronos/memiavl => ./memiavl
 	github.com/crypto-org-chain/cronos/store => ./store
 	github.com/crypto-org-chain/cronos/versiondb => ./versiondb
