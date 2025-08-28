@@ -180,6 +180,8 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				StoreInfos: infos,
 			}
 
+			fmt.Printf("cInfo hash %X\n", cInfo.Hash())
+
 			if rs.LastCommitID().Version != commitInfo.Version || !bytes.Equal(rs.LastCommitID().Hash, commitInfo.Hash()) {
 				return fmt.Errorf("failed to calculate %d commit info, rs Hash %X, commit Hash %X", rs.LastCommitID().Version, rs.LastCommitID().Hash, commitInfo.Hash())
 			}
