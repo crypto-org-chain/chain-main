@@ -177,7 +177,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 				}
 				for _, info := range cInfo.StoreInfos {
 					if _, ok := storeMaps[info.Name]; !ok {
-						fmt.Printf("module %s missed\n", info.Name, info.CommitId.Version, info.CommitId.Hash)
+						fmt.Printf("module %s missed version %d RootHash %X\n", info.Name, info.CommitId.Version, info.CommitId.Hash)
 					}
 				}
 			}
