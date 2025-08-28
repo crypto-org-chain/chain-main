@@ -2,20 +2,16 @@ package app
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-
-	"cosmossdk.io/log"
-	"cosmossdk.io/store/types"
-
-	"cosmossdk.io/store/rootmulti"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/spf13/cobra"
-)
+	"sort"
 
-const capaMemStoreKey = "mem_capability"
+	"cosmossdk.io/log"
+	"cosmossdk.io/store/rootmulti"
+	"cosmossdk.io/store/types"
+)
 
 func DumpStoreCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
@@ -93,11 +89,9 @@ func DumpIavlStore(storeNames []string) *cobra.Command {
 		"params", "slashing", "staking", "supply", "transfer", "upgrade",
 	}
 
-	short := fmt.Sprintf("dump iavl store at version [dir] [storeKey], use these storeKey %s", strings.Join(storeNames, ","))
-
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-store",
-		Short: short,
+		Short: "dump iavl store at version [dir] [storeKey]",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := args[0]
