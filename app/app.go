@@ -466,7 +466,7 @@ func New(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// register the governance hooks
+		// register the governance hooks
 		),
 	)
 
@@ -802,11 +802,7 @@ func New(
 
 	// RegisterUpgradeHandlers is used for registering any on-chain upgrades.
 	// Make sure it's called after `app.mm` and `app.configurator` are set.
-	storeLoaderOverritten := app.RegisterUpgradeHandlers(app.appCodec, qmsVersion)
-	if !storeLoaderOverritten {
-		// Register the default store loader
-		app.SetStoreLoader(MaxVersionStoreLoader(qmsVersion))
-	}
+	app.RegisterUpgradeHandlers(app.appCodec)
 
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
