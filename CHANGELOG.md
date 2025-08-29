@@ -4,6 +4,7 @@
 ## Unreleased
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185)  Error deleting legacy versions bug.
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+- [#1195](https://github.com/crypto-org-chain/chain-main/pull/1195) fix update cosmos-sdk v0.50 mismatch apphash. 
 
 *July 9, 2025*
 
