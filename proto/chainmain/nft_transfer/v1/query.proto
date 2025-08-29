@@ -45,7 +45,7 @@ message QueryClassTraceResponse {
   ClassTrace class_trace = 1;
 }
 
-// QueryConnectionsRequest is the request type for the Query/ClassTraces RPC
+// QueryClassTracesRequest is the request type for the Query/ClassTraces RPC
 // method
 message QueryClassTracesRequest {
   // pagination defines an optional pagination for the request.
