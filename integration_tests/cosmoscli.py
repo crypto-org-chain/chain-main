@@ -352,7 +352,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         res = res.get("params") or res
         return res
 
-<<<<<<< HEAD
     def ica_submit_tx(
         self,
         connid,
@@ -401,7 +400,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 output="json",
             )
         )["denom"]
-=======
+
     # This method is deprecated after Cosmos SDK v0.50.0
     # x/params query subspace is deprecated after Cosmos SDK v0.50.0
     def query_params_subspace(self, subspace, param):
@@ -422,7 +421,6 @@ class CosmosCLI(cosmoscli.CosmosCLI):
 
         res = res.get("value") or res
         return res
->>>>>>> origin/master
 
 
 class ClusterCLI(cluster.ClusterCLI):
