@@ -52,7 +52,7 @@ def start_and_wait_relayer(
     incentivized=False,
 ):
     relayer = wait_relayer_ready(cluster)
-    version = {"fee_version": "ics29-1", "app_version": "ics20-1"}
+    version = "ics20-1"
     if init_relayer:
         # create connection and channel
         subprocess.run(
