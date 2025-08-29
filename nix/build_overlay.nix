@@ -15,8 +15,6 @@ in
       url = "https://go.dev/dl/go${version}.src.tar.gz";
       hash = "sha256-A5xbBOZSedrO7opvcecL0Fz1uAF4K293xuGeLtBREiI=";
     };
-    # https://github.com/NixOS/nixpkgs/pull/372367
-    patches = replaceLast ./go_no_vendor_checks-1.23.patch old.patches;
   });
   rocksdb = final.callPackage ./rocksdb.nix { };
   golangci-lint = final.callPackage ./golangci-lint.nix { };
