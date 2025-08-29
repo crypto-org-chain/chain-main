@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     nix-bundle-exe = {
       url = "github:3noch/nix-bundle-exe";
@@ -93,7 +93,7 @@
         // (
           with final;
           let
-            matrix = lib.cartesianProductOfSets {
+            matrix = lib.cartesianProduct {
               network = [
                 "mainnet"
                 "testnet"

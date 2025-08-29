@@ -5,9 +5,9 @@ package keeper
 import (
 	"context"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type msgServer struct {
@@ -139,7 +139,7 @@ func (m msgServer) TransferNFT(goCtx context.Context, msg *types.MsgTransferNFT)
 	}
 
 	ctx := sdk.UnwrapSDKContext(goCtx)
-	if err := m.Keeper.TransferOwner(ctx, msg.DenomId, msg.Id,
+	if err := m.TransferOwner(ctx, msg.DenomId, msg.Id,
 		sender,
 		recipient,
 	); err != nil {

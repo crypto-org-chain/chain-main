@@ -4,13 +4,15 @@ import (
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/chain-main/v4/testutil"
 	"github.com/stretchr/testify/suite"
+
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 type AppTestSuite struct {
@@ -54,7 +56,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedThreshold when DefaultExpeditedThreshold >= Threshold",
+			name: "update ExpeditedThreshold when DefaultExpeditedThreshold < Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = "0.99"
 			},
@@ -63,7 +65,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedThreshold when DefaultExpeditedThreshold >= Threshold",
+			name: "update ExpeditedThreshold when DefaultExpeditedThreshold = Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = govv1.DefaultExpeditedThreshold.String()
 			},
@@ -73,7 +75,7 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "no update ExpeditedThreshold when DefaultExpeditedThreshold < Threshold",
+			name: "no update ExpeditedThreshold when DefaultExpeditedThreshold > Threshold",
 			malleate: func() {
 				suite.govParams.Threshold = govv1.DefaultExpeditedThreshold.Quo(math.LegacyMustNewDecFromStr("1.1")).String()
 			},
@@ -82,7 +84,20 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			},
 		},
 		{
-			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod >= VotingPeriod",
+			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod > VotingPeriod",
+			malleate: func() {
+				period := govv1.DefaultExpeditedPeriod
+				votingPeriod := period - 1*time.Second
+				suite.govParams.VotingPeriod = &votingPeriod
+			},
+			exp: func(params govv1.Params) {
+				votingPeriod := app.DurationToDec(*suite.govParams.VotingPeriod)
+				expected := app.DecToDuration(app.DefaultPeriodRatio().Mul(votingPeriod))
+				suite.Require().Equal(expected, *params.ExpeditedVotingPeriod)
+			},
+		},
+		{
+			name: "update ExpeditedVotingPeriod when DefaultExpeditedPeriod = VotingPeriod",
 			malleate: func() {
 				period := govv1.DefaultExpeditedPeriod
 				suite.govParams.VotingPeriod = &period

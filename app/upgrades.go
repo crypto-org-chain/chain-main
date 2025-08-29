@@ -3,12 +3,15 @@ package app
 import (
 	"context"
 	"fmt"
-	"slices"
+	"strings"
 	"time"
+
+	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -16,27 +19,78 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
+// CircuitSuperAdmins maps chain IDs to their super admin addresses
+var CircuitSuperAdmins = map[string][]string{
+	"chaintest": {
+		"cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+		"cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m", // ecosystem
+	},
+	"testnet-croeseid-4": {
+		"tcro14thaw89nlpp8hjm83z6zp3w5ymlpgg2zejncw7",
+		"tcro19uhea66tnx78r5258sq5vdad8msk47w6vn8f06",
+	},
+	"crypto-org-chain-mainnet-dryrun-1": {
+		"cro1h704kvqdh48jzge7vvxpej9d6r9usvssehmxac",
+		"cro1gv6e77tq7l06904g9nuu4nvnwcynaannwjpuaj",
+		"cro160rhmah7kmfy9vg9jklkdqyv6nu9j7jnjpun9j",
+	},
+	"crypto-org-chain-mainnet-1": {
+		"cro160rhmah7kmfy9vg9jklkdqyv6nu9j7jnjpun9j",
+	},
+}
+
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	planName := "v5.0"
+	// Register upgrade plan name for mainnet v7.0.0. If it's for testnet, add postfix "-testnet" to the plan name.
+	planName := "v7.0.0"
+
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+		sdkCtx.Logger().Info("start to run module migrations...")
+
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
-			return m, err
+			return map[string]uint64{}, err
 		}
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
-		{
-			params := app.ICAHostKeeper.GetParams(sdkCtx)
-			msg := "/ibc.applications.interchain_accounts.host.v1.MsgModuleQuerySafe"
-			if !slices.ContainsFunc(params.AllowMessages, func(allowMsg string) bool {
-				return allowMsg == "*" || allowMsg == msg
-			}) {
-				params.AllowMessages = append(params.AllowMessages, msg)
-				app.ICAHostKeeper.SetParams(sdkCtx, params)
-			}
-			if err := UpdateExpeditedParams(ctx, app.GovKeeper); err != nil {
-				return m, err
-			}
+
+		var _ok bool
+		maxSupplyParams := maxsupplytypes.DefaultParams()
+		// update max supply to 100B * 10^8 basecro
+		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("10000000000000000000")
+		if !_ok {
+			return map[string]uint64{}, fmt.Errorf("invalid max supply")
 		}
+
+		chainID := sdkCtx.ChainID()
+
+		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
+			// For mainnet or the integration test
+			maxSupplyParams.BurnedAddresses = []string{
+				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+			}
+		} else if strings.Contains(chainID, "testnet") {
+			// For testnet, use different burned addresses or configuration
+			maxSupplyParams.BurnedAddresses = []string{
+				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+			}
+		} else {
+			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
+		}
+
+		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		sdkCtx.Logger().Info("maxsupply module initialized with params",
+			"max_supply", maxSupplyParams.MaxSupply.String(),
+			"burned_addresses", maxSupplyParams.BurnedAddresses)
+
+		m[maxsupplytypes.ModuleName] = 1
+
+		sdkCtx.Logger().Info("upgrade completed",
+			"plan", plan.Name,
+			"version_map", m)
+
 		return m, nil
 	})
 
@@ -46,7 +100,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	}
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Deleted: []string{"icaauth"},
+			Added: []string{
+				maxsupplytypes.StoreKey,
+			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))

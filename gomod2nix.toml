@@ -156,8 +156,8 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.50.11"
-    hash = "sha256-ujVD4m81KfPtzxElWhlyOqtjZnklu/xz6mcwqlOR4ZE="
+    version = "v0.50.14"
+    hash = "sha256-IChk3/9KRGlUFPRJvA3fFBsGkKDKImE5FSv4jRlJyFg="
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
     hash = "sha256-Qm2aC2vaS8tjtMUbHmlBSagOSqbduEEDwc51qvQaBmA="
@@ -168,20 +168,24 @@ schema = 3
     version = "v1.7.0"
     hash = "sha256-ZkEUImxBBo8Q/6c7tVR0rybpLbtlplzvgfLl5xvtV00="
   [mod."github.com/cosmos/iavl"]
-    version = "v1.2.2"
-    hash = "sha256-Cq5iSwFj88udB51nRxodOizrBdxKVmm6ES5cp0HoKds="
+    version = "v1.2.6"
+    hash = "sha256-9kLtVepU5b3m2Sne8pBQNvF9LxM374LEmvuLWeYBfFU="
+    replaced = "github.com/cosmos/iavl"
   [mod."github.com/cosmos/ibc-go/modules/capability"]
     version = "v1.0.1"
     hash = "sha256-iRhj2WTr99DgAl80h25pxtkO6iHYjyHflwpxKKG5b6E="
   [mod."github.com/cosmos/ibc-go/v10"]
     version = "v10.0.0-beta.0"
     hash = "sha256-K2v9E7MY52sqKQlhT6Bm5ClRi/uDU5Ilg9JCl/3dEdk="
+  [mod."github.com/cosmos/ibc-go/v8"]
+    version = "v8.7.0"
+    hash = "sha256-axMi6WoRyrtIGpZ24XQ1N0e2gUQ4ZbqnPVpYsqwmUmU="
   [mod."github.com/cosmos/ics23/go"]
     version = "v0.11.0"
     hash = "sha256-mgU/pqp4kASmW/bP0z6PzssfjRp7GU9ioyvNlDdGC+E="
   [mod."github.com/cosmos/ledger-cosmos-go"]
-    version = "v0.13.3"
-    hash = "sha256-4f73odipfgWku0/gK2UtXbrBXvj8kT9sg4IhnfAP/S0="
+    version = "v0.14.0"
+    hash = "sha256-AKtzonymKOsC63pdsQvb0qn1WO/2X5m66YkmG140Clk="
   [mod."github.com/cosmos/rosetta"]
     version = "v0.50.3-1"
     hash = "sha256-lmB2W6b4cmyGHLh3OpOLnGy2Q75QONLtrWwp/Pvnf6k="
@@ -336,8 +340,8 @@ schema = 3
     version = "v0.5.2"
     hash = "sha256-N9GOKYo7tK6XQUFhvhImtL7PZW/mr4C4Manx/yPVvcQ="
   [mod."github.com/hashicorp/go-getter"]
-    version = "v1.7.5"
-    hash = "sha256-oXUvMoee8GT69MA0E2JHxYm1Q2q8BtmwlfxFshDKXmI="
+    version = "v1.7.9"
+    hash = "sha256-wWMsgh5pxMdSDqUy2A0z6CT+kxmJwypieL0SLnPtBw8="
   [mod."github.com/hashicorp/go-hclog"]
     version = "v1.6.3"
     hash = "sha256-BK2s+SH1tQyUaXCH4kC0/jgqiSu638UFbwamfKjFOYg="
@@ -580,29 +584,29 @@ schema = 3
     version = "v1.11.0"
     hash = "sha256-Lb6rHHfR62Ozg2j2JZy3MKOMKdsfzd1IYTR57r3Mhp0="
   [mod."golang.org/x/crypto"]
-    version = "v0.32.0"
-    hash = "sha256-4l8XyVfpunL7d03otqfx3ouG3qkSF+LT7VuH1K3oo2I="
+    version = "v0.36.0"
+    hash = "sha256-Np+suvZdMOXALDm4m8nDNa+QsvUV0rE0PEINuxCoKGM="
   [mod."golang.org/x/exp"]
     version = "v0.0.0-20240719175910-8a7402abbf56"
     hash = "sha256-mHEPy0vbd/pFwq5ZAEKaehCeYVQLEFDGnXAoVgkCLPo="
   [mod."golang.org/x/net"]
-    version = "v0.34.0"
-    hash = "sha256-AZOLY4MUNxxDw5ZQtO9dmY/YRo1gFW87YvpX/eLTy4Q="
+    version = "v0.38.0"
+    hash = "sha256-iHmyxkZQLw1PsUZaXHMt84GrjbXPvkEc92sLoK3W++c="
   [mod."golang.org/x/oauth2"]
-    version = "v0.24.0"
-    hash = "sha256-808F4hzvNOQNoQZehOlIyPgwQG3L5aANiNPLLhaL9NQ="
+    version = "v0.27.0"
+    hash = "sha256-TBKV2c/m0SgPqrJSE0ltJXfImrYPafNuziLN25jgsYY="
   [mod."golang.org/x/sync"]
-    version = "v0.10.0"
-    hash = "sha256-HWruKClrdoBKVdxKCyoazxeQV4dIYLdkHekQvx275/o="
+    version = "v0.12.0"
+    hash = "sha256-lPIbI6aXx+iKtFjPaXKNLEnuNfhHCVl7EQiE7alUvlM="
   [mod."golang.org/x/sys"]
-    version = "v0.29.0"
-    hash = "sha256-qfsodJQ1H1CBI8yQWOvsXJgY5qHmiuw566HrrIseYHI="
+    version = "v0.33.0"
+    hash = "sha256-wlOzIOUgAiGAtdzhW/KPl/yUVSH/lvFZfs5XOuJ9LOQ="
   [mod."golang.org/x/term"]
-    version = "v0.28.0"
-    hash = "sha256-1/iWqndBRFgDL+/tVokkaGHpO/jdyjZ0dN2YWuBdiXQ="
+    version = "v0.30.0"
+    hash = "sha256-bgN4cMED7P2SqFZQZPNRPJL2Px35chNoWaqNhLDEoZM="
   [mod."golang.org/x/text"]
-    version = "v0.21.0"
-    hash = "sha256-QaMwddBRnoS2mv9Y86eVC2x2wx/GZ7kr2zAJvwDeCPc="
+    version = "v0.23.0"
+    hash = "sha256-TiYX1K4DYpP1dEV06whOm43xyOntjrPFi+VAdncoeCY="
   [mod."golang.org/x/time"]
     version = "v0.5.0"
     hash = "sha256-W6RgwgdYTO3byIPOFxrP2IpAZdgaGowAaVfYby7AULU="

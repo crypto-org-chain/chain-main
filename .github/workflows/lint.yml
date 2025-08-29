@@ -21,13 +21,12 @@ jobs:
         with:
           go-version: '1.22.7'
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v23
+      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
         with:
-          nix_path: nixpkgs=channel:nixos-22.11
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - id: changed-files
-        uses: tj-actions/changed-files@v41
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
           files: |
             **/*.go
@@ -43,6 +42,6 @@ jobs:
 
           BUILD_TAGS=rocksdb,grocksdb_clean_link
           go build -tags $BUILD_TAGS ./cmd/chain-maind
-          golangci-lint run --out-format=github-actions --path-prefix=./ --timeout 30m --build-tags $BUILD_TAGS
+          golangci-lint run --output.text.path stdout --path-prefix=./ --timeout 30m --build-tags $BUILD_TAGS
         # Check only if there are differences in the source code
         if: steps.changed-files.outputs.any_changed == 'true'

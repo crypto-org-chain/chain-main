@@ -17,7 +17,7 @@ from .cosmoscli import ClusterCLI
 
 #################
 # CONSTANTS
-# Reponse code
+# Response code
 SUCCESS_CODE = 0
 
 # Denomination
@@ -216,13 +216,21 @@ def approve_proposal(
     rsp,
     vote_option="yes",
     msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+    wait_tx=True,
+    broadcast_mode="sync",
 ):
     proposal_id = get_proposal_id(rsp, msg)
     proposal = cluster.query_proposal(proposal_id)
     if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
         assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
     amount = cluster.balance(cluster.address("ecosystem"))
-    rsp = cluster.gov_deposit("ecosystem", proposal_id, "1cro")
+    rsp = cluster.gov_deposit(
+        "ecosystem",
+        proposal_id,
+        "1cro",
+        event_query_tx=wait_tx,
+        broadcast_mode=broadcast_mode,
+    )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
     proposal = cluster.query_proposal(proposal_id)
@@ -230,7 +238,13 @@ def approve_proposal(
 
     if vote_option is not None:
         for i in range(len(cluster.config["validators"])):
-            rsp = cluster.cosmos_cli(i).gov_vote("validator", proposal_id, vote_option)
+            rsp = cluster.cosmos_cli(i).gov_vote(
+                "validator",
+                proposal_id,
+                vote_option,
+                event_query_tx=wait_tx,
+                broadcast_mode=broadcast_mode,
+            )
             assert rsp["code"] == 0, rsp["raw_log"]
         assert (
             int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
@@ -243,6 +257,8 @@ def approve_proposal(
             "abstain_count": "0",
             "no_with_veto_count": "0",
         }
+
+    print("proposal:", proposal)
 
     wait_for_block_time(
         cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
@@ -589,20 +605,32 @@ def wait_for_fn(name, fn, *, timeout=240, interval=1):
         raise TimeoutError(f"wait for {name} timeout")
 
 
-def get_expedited_params(param):
-    min_deposit = param["min_deposit"][0]
-    voting_period = param["voting_period"]
-    tokens_ratio = 5
-    threshold_ratio = 1.334
-    period_ratio = 0.5
-    expedited_threshold = float(param["threshold"]) * threshold_ratio
+def get_default_expedited_params(gov_param, is_legacy=False):
+    default_min_expedited_deposit_token_ratio = 5
+    default_threshold_ratio = 1.334
+    default_period_ratio = 0.5
+    if is_legacy:
+        min_deposit = gov_param["deposit_params"]["min_deposit"][0]
+        voting_period = gov_param["voting_params"]["voting_period"]
+        voting_period = f"{int(int(voting_period) / 1e9)}s"
+        threshold = gov_param["tally_params"]["threshold"]
+    else:
+        min_deposit = gov_param["min_deposit"][0]
+        voting_period = gov_param["voting_period"]
+        threshold = gov_param["threshold"]
+
+    expedited_threshold = float(threshold) * default_threshold_ratio
     expedited_threshold = Decimal(f"{expedited_threshold}")
-    expedited_voting_period = int(int(voting_period[:-1]) * period_ratio)
+    expedited_voting_period = int(int(voting_period[:-1]) * default_period_ratio)
+
+    min_deposit_amount = int(min_deposit["amount"])
+    expedited_amount = min_deposit_amount * default_min_expedited_deposit_token_ratio
+
     return {
         "expedited_min_deposit": [
             {
                 "denom": min_deposit["denom"],
-                "amount": str(int(min_deposit["amount"]) * tokens_ratio),
+                "amount": str(expedited_amount),
             }
         ],
         "expedited_threshold": f"{expedited_threshold:.18f}",
@@ -610,8 +638,455 @@ def get_expedited_params(param):
     }
 
 
-def assert_gov_params(cli, old_param):
+def assert_expedited_gov_params(cli, old_param, is_legacy=False):
     param = cli.query_params("gov")
-    expedited_param = get_expedited_params(old_param)
+    expedited_param = get_default_expedited_params(old_param, is_legacy)
     for key, value in expedited_param.items():
         assert param[key] == value, param
+
+
+def assert_v6_circuit_is_working(cli, cluster):
+    # verify upgrade handler has added super admin accounts
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+    ], "x/circuit super admin accounts should be added during upgrade" + str(
+        rsp["accounts"]
+    )
+
+    community_addr = cluster.address("community")
+    ecosystem_addr = cluster.address("ecosystem")
+    signer1_addr = cluster.address("signer1")
+    signer2_addr = cluster.address("signer2")
+
+    # use unauthorized account to disable MsgSend should fail
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit unauthorized account should not be able to disable message"
+
+    # use unauthorized account to authorize another account should fail
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        community_addr,
+        "'{\"level\":3}'",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit non-super-admin account should not be able to authorize others"
+
+    # use super admin account to authorize any account should work
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer1_addr,
+        "'{\"level\":3}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to authorize signer1: "
+        + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {
+                "level": "LEVEL_SUPER_ADMIN",
+            },
+        },
+    ], "x/circuit newly authorized account should be in the accounts list: " + str(
+        rsp["accounts"]
+    )
+
+    # use newly authorized account to disable MsgSend should work
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit newly authorized account should be able to disable message: "
+        + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == [
+        "/cosmos.bank.v1beta1.MsgSend"
+    ], "MsgBank should be in the x/circuit disabled list: " + str(rsp["disabled_list"])
+
+    # use any account to send MsgSend should fail
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        wait_tx=False,
+        broadcast_mode="sync",
+    )
+    assert (
+        rsp["code"] != 0
+    ), "transfer should fail when message is disabled in x/circuit"
+    assert rsp["raw_log"] == "tx type not allowed"
+
+    # re-enable MsgSend for cleanup
+    rsp = cli.tx(
+        "circuit",
+        "reset",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to reset the disabled list: "
+        + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should be empty after reset: " + str(rsp)
+
+    # use any account to send MsgSend should work now
+    rsp = cli.transfer(
+        signer2_addr,
+        community_addr,
+        "1basecro",
+        wait_tx=False,
+        broadcast_mode="sync",
+    )
+    assert rsp["code"] == 0, (
+        "transfer should work after message is re-enabled in x/circuit" + rsp["raw_log"]
+    )
+
+    # reset signer1's permissions back to LEVEL_NONE_UNSPECIFIED
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer1_addr,
+        "'{\"level\":0}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin account should be able to unauthorize: " + rsp["raw_log"]
+    )
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], "x/circuit account should be unauthorized after reset: " + str(rsp["accounts"])
+
+    # use newly unauthorized account to disable MsgSend should fail
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        from_=signer1_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert (
+        rsp["code"] != 0
+    ), "x/circuit newly unauthorized account should not be able to disable messages"
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should remain empty: " + str(rsp)
+
+    # test disable 2 messages in CLI
+    rsp = cli.tx(
+        "circuit",
+        "disable",
+        "/cosmos.bank.v1beta1.MsgSend",
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit CLI should be able to disable 2 messages: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["disabled_list"] == [
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+        "/cosmos.bank.v1beta1.MsgSend",
+    ], "MsgSend and MsgMultiSend should be in the x/circuit disabled list: " + str(
+        rsp["disabled_list"]
+    )
+
+    rsp = cli.tx(
+        "circuit",
+        "reset",
+        "/cosmos.bank.v1beta1.MsgSend",
+        "/cosmos.bank.v1beta1.MsgMultiSend",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit CLI should be able to reset 2 messages: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "disabled-list",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp == {}, "x/circuit disabled list should be empty after reset: " + str(rsp)
+
+    # test governance proposal for circuit breaker authorization
+    # create a proposal to authorize signer2 as super admin
+    proposal = {
+        "messages": [
+            {
+                "@type": "/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker",
+                "granter": module_address(ModuleAccount.Gov.value),
+                "grantee": signer2_addr,
+                "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+            }
+        ],
+        "deposit": "1cro",
+        "title": "Authorize Circuit Breaker",
+        "summary": "Authorize signer2 as circuit breaker super admin",
+    }
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
+        "community", "submit-proposal", proposal, broadcast_mode="sync"
+    )
+    assert rsp["code"] == 0, (
+        "should be able to submit x/circuit authorization proposal: " + rsp["raw_log"]
+    )
+
+    approve_proposal(cluster, rsp, msg=",/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+
+    assert rsp["accounts"] == [
+        {
+            "address": signer2_addr,
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], (
+        "x/circuit newly authorized account should be in the accounts list after "
+        + "proposal execution: "
+        + str(rsp["accounts"])
+    )
+
+    # reset signer2's permissions back to LEVEL_NONE_UNSPECIFIED
+    rsp = cli.tx(
+        "circuit",
+        "authorize",
+        signer2_addr,
+        "'{\"level\":0}'",
+        from_=ecosystem_addr,
+        broadcast_mode="sync",
+        output="json",
+        wait_tx=True,
+    )
+    assert rsp["code"] == 0, (
+        "x/circuit super admin should be able to unauthorize: " + rsp["raw_log"]
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "query",
+            "circuit",
+            "accounts",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    assert rsp["accounts"] == [
+        {
+            "address": signer2_addr,
+            "permissions": {},
+        },
+        {
+            "address": signer1_addr,
+            "permissions": {},
+        },
+        {
+            "address": "cro1sjcrmp0ngft2n2r3r4gcva4llfj8vjdnefdg4m",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+        {
+            "address": "cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65",
+            "permissions": {"level": "LEVEL_SUPER_ADMIN"},
+        },
+    ], "x/circuit account should be unauthorized after reset" + str(rsp["accounts"])
+
+
+def find_event_proposal_id(events):
+    for ev in events:
+        if ev["type"] == "submit_proposal":
+            attrs = {attr["key"]: attr["value"] for attr in ev["attributes"]}
+            p_id = attrs["proposal_id"]
+            assert p_id is not None, "Could not extract proposal ID from response"
+            print(f"Proposal ID: {p_id}")
+            return p_id
+    return None
+
+
+def check_proposal_exist(cluster, proposal_id, timeout_seconds=60):
+    """Check if proposal exists with timeout mechanism"""
+    start_time = time.time()
+
+    while time.time() - start_time < timeout_seconds:
+        try:
+            proposal_info = cluster.query_proposal(proposal_id)
+            print(f"Proposal info: {proposal_info}")
+            return True
+        except Exception as e:
+            print(f"Error querying proposal: {e}")
+            # If we can't query the proposal, it might not exist yet
+            time.sleep(1)
+    # If we reach here, timeout occurred
+    raise TimeoutError(
+        f"Timeout waiting for proposal {proposal_id} to become available "
+        f"after {timeout_seconds} seconds"
+    )

@@ -9,7 +9,7 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
-  version = "0.1.4";
+  version = "main";
 
   src = fetchFromGitHub {
     owner = "yihuang";

@@ -27,7 +27,6 @@ func (idc IDCollection) AddID(tokenID string) IDCollection {
 	return idc
 }
 
-// ----------------------------------------------------------------------------
 // IDCollections is an array of ID Collections
 type IDCollections []IDCollection
 
@@ -71,7 +70,7 @@ func NewOwner(owner sdk.AccAddress, idCollections ...IDCollection) Owner {
 
 type Owners []Owner
 
-// NewOwner creates a new Owner
+// NewOwners creates a new Owner
 func NewOwners(owner ...Owner) Owners {
 	return append([]Owner{}, owner...)
 }

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,8 +16,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/version"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // NewTxCmd returns the transaction commands for this module

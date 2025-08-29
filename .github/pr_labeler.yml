@@ -1,0 +1,33 @@
+cli:
+  - client/**/*
+  - x/*/client/**/*
+nix:
+  - nix/**
+  - default.nix
+  - docker.nix
+  - flake.nix
+simulations:
+  - types/simulation/**/*
+  - x/simulation/**/*
+  - x/*/simulation/**/*
+  - simsx/**/*
+  - tools/benchmark/**/*
+chainmain:
+  - x/chainmain/**/*
+nft:
+  - x/nft/**/*
+nft-transfer:
+  - x/nft-transfer/**/*
+supply:
+  - x/supply/**/*
+adr:
+  - docs/architecture/**/*
+build:
+  - Makefile
+  - Dockerfile
+  - docker-compose.yml
+  - scripts/*
+ci:
+  - .github/**
+  - buf.work.yaml
+  - .golangci.yml
