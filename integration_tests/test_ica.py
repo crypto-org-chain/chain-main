@@ -7,13 +7,7 @@ import requests
 from pystarport import cluster as c
 
 from .ibc_utils import search_target, wait_for_check_channel_ready, wait_relayer_ready
-from .utils import (
-    approve_proposal,
-    cluster_fixture,
-    module_address,
-    wait_for_fn,
-    wait_for_new_blocks,
-)
+from .utils import cluster_fixture, wait_for_fn, wait_for_new_blocks
 
 pytestmark = pytest.mark.ibc
 
@@ -96,7 +90,16 @@ def test_ica(cluster, tmp_path):
     addr_host = cluster["ica-host-1"].address("signer")
 
     # create interchain account
-    v = json.dumps({"fee_version": "ics29-1", "app_version": ""})
+    v = json.dumps(
+        {
+            "version": "ics27-1",
+            "encoding": "proto3",
+            "tx_type": "sdk_multi_msg",
+            "controller_connection_id": controller_connection,
+            "host_connection_id": host_connection,
+        }
+    )
+
     rsp = cli_controller.ica_register_account(
         controller_connection,
         from_=addr_controller,
@@ -108,35 +111,39 @@ def test_ica(cluster, tmp_path):
     port_id, channel_id = assert_channel_open_init(rsp)
     wait_for_check_channel_ready(cli_controller, controller_connection, channel_id)
 
+    # ibc upgrade channel does not work for the ibc-go-v10.1.1 implementation
+
     # upgrade to unordered channel
-    authority = module_address("gov")
-    channel = cli_controller.ibc_query_channel(port_id, channel_id)
-    deposit = "0.1cro"
-    version_data = json.loads(channel["channel"]["version"])
-    signer = "signer"
-    proposal_src = cli_controller.ibc_upgrade_channels(
-        json.loads(version_data["app_version"]),
-        signer,
-        deposit=deposit,
-        title="channel-upgrade-title",
-        summary="summary",
-        port_pattern=port_id,
-        channel_ids=channel_id,
-    )
-    proposal_src["deposit"] = deposit
-    proposal_src["messages"][0]["signer"] = authority
-    proposal_src["messages"][0]["fields"]["ordering"] = c.ChannelOrder.UNORDERED.value
-    proposal = tmp_path / "proposal.json"
-    proposal.write_text(json.dumps(proposal_src))
-    rsp = cli_controller.submit_gov_proposal(proposal, from_=signer)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(controller, rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit")
-    wait_for_check_channel_ready(
-        cli_controller, controller_connection, channel_id, "STATE_FLUSHCOMPLETE"
-    )
-    wait_for_check_channel_ready(cli_controller, controller_connection, channel_id)
-    channel = cli_controller.ibc_query_channel(port_id, channel_id)
-    assert channel["channel"]["ordering"] == c.ChannelOrder.UNORDERED.value, channel
+    # authority = module_address("gov")
+    # channel = cli_controller.ibc_query_channel(port_id, channel_id)
+    # deposit = "0.1cro"
+    # version_data = json.loads(channel["channel"]["version"])
+    # signer = "signer"
+    # proposal_src = cli_controller.ibc_upgrade_channels(
+    #     version_data["version"],
+    #     signer,
+    #     deposit=deposit,
+    #     title="channel-upgrade-title",
+    #     summary="summary",
+    #     port_pattern=port_id,
+    #     channel_ids=channel_id,
+    # )
+    # proposal_src["deposit"] = deposit
+    # proposal_src["messages"][0]["signer"] = authority
+    # proposal_src["messages"][0]["fields"]["ordering"] = c.ChannelOrder.UNORDERED.value
+    # proposal = tmp_path / "proposal.json"
+    # proposal.write_text(json.dumps(proposal_src))
+    # rsp = cli_controller.submit_gov_proposal(proposal, from_=signer)
+    # assert rsp["code"] == 0, rsp["raw_log"]
+    # approve_proposal(
+    #     controller, rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit"
+    # )
+    # wait_for_check_channel_ready(
+    #     cli_controller, controller_connection, channel_id, "STATE_FLUSHCOMPLETE"
+    # )
+    # wait_for_check_channel_ready(cli_controller, controller_connection, channel_id)
+    # channel = cli_controller.ibc_query_channel(port_id, channel_id)
+    # assert channel["channel"]["ordering"] == c.ChannelOrder.UNORDERED.value, channel
 
     # get interchain account address
     ica_address = cli_controller.ica_query_account(

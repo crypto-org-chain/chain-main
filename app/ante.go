@@ -1,8 +1,8 @@
 package app
 
 import (
-	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
-	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
+	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
+	"github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 
 	newsdkerrors "cosmossdk.io/errors"

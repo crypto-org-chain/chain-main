@@ -487,6 +487,22 @@ def test_nft_transfer(cluster):
     # transfer nft on mid chain (with very less timeout so that the packet times out)
     rsp = json.loads(
         cli_src.raw(
+            "q",
+            "ibc",
+            "client",
+            "consensus-state-heights",
+            "07-tendermint-0",
+            home=cli_src.data_dir,
+            node=cli_src.node_rpc,
+            output="json",
+        )
+    )["consensus_state_heights"]
+    latest = sorted(rsp, key=lambda x: int(x["revision_height"]), reverse=True)[0]
+    packet_timeout_height = (
+        latest["revision_number"] + "-" + str(int(latest["revision_height"]) + 1)
+    )
+    rsp = json.loads(
+        cli_src.raw(
             "tx",
             "nft-transfer",
             "transfer",
@@ -496,7 +512,9 @@ def test_nft_transfer(cluster):
             denomid,
             tokenid,
             "-y",
-            packet_timeout_height="0-1",
+            "--absolute-timeouts",
+            packet_timeout_height=packet_timeout_height,
+            packet_timeout_timestamp=time.time_ns(),
             home=cli_src.data_dir,
             from_=addr_src,
             keyring_backend="test",
