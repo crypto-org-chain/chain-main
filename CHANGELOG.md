@@ -5,13 +5,13 @@
 ## Unreleased
 
 ### Improvements
-- [#1191](https://github.com/crypto-org-chain/chain-main/pull/1191) feat: add dump iavl root and memiavl root commands
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
 - [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
 - [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
 - [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+- [#1191](https://github.com/crypto-org-chain/chain-main/pull/1191) feat: add dump iavl root and memiavl root commands.
 
 
 *July 9, 2025*
