@@ -1,10 +1,18 @@
 # Changelog
 
 
-## Unreleased
-- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185)  Error deleting legacy versions bug.
+
+*September 1, 2025*
+
+## v6.0.2
+- [#1195](https://github.com/crypto-org-chain/chain-main/pull/1195) fix update cosmos-sdk v0.50 mismatch apphash.
+
+*August 21, 2025*
+
+## v6.0.1
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
-- [#1195](https://github.com/crypto-org-chain/chain-main/pull/1195) fix update cosmos-sdk v0.50 mismatch apphash. 
+- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
+
 
 *July 9, 2025*
 
