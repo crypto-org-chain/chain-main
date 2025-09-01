@@ -15,7 +15,11 @@ import (
 	"cosmossdk.io/store/types"
 )
 
-const capaMemStoreKey = "mem_capability"
+const (
+	capaMemStoreKey = "mem_capability"
+
+	ChainMainV6UpgradeHeight = 24836000
+)
 
 func DumpRootCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
@@ -59,6 +63,7 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			defer db.Close()
 			for _, storeName := range storeNames {
 				tree := db.TreeByName(storeName)
 				if tree != nil {
@@ -73,10 +78,11 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
 
-			if version < 24836000 {
-				// if you want to hash the same with iavl node
+			if version < ChainMainV6UpgradeHeight {
+				// if you want to calculate hash same with iavl node
+				// It has an issue as described in cosmos/cosmos-sdk#14916, so we need to apply a hacky solution to it.
 				var specialInfo types.StoreInfo
-				specialInfo.Name = "mem_capability"
+				specialInfo.Name = capaMemStoreKey
 				lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
 
 				fmt.Printf("calculate again Last Commit Infos: %v\n", lastCommitInfo)
