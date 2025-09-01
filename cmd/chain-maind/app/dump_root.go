@@ -5,6 +5,30 @@ import (
 	"fmt"
 	"sort"
 
+	evidencetypes "cosmossdk.io/x/evidence/types"
+	"cosmossdk.io/x/feegrant"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/cosmos-sdk/x/group"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
+	icacontrollertypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/controller/types"
+	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
+	ibcfeetypes "github.com/cosmos/ibc-go/v8/modules/apps/29-fee/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
+	chainmaintypes "github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
+	nfttransfertypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	supplytypes "github.com/crypto-org-chain/chain-main/v4/x/supply/types"
+
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	"github.com/crypto-org-chain/cronos/memiavl"
@@ -120,11 +144,38 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
 	// this is need to change in different height
+	// because some StoreKey version are zero
+	// such as consensusparamtypes, circuittypes
 	storeNames = []string{
-		"acc", "authz", "bank", "capability", "chainmain", "distribution", "evidence", "feegrant",
-		"feeibc", "gov", "group", "ibc", "icaauth", "icacontroller", "icahost", "mint", "nft", "nonfungibletokentransfer",
-		"params", "slashing", "staking", "supply", "transfer", "upgrade",
+		authtypes.StoreKey,
+		banktypes.StoreKey,
+		stakingtypes.StoreKey,
+		minttypes.StoreKey,
+		distrtypes.StoreKey,
+		slashingtypes.StoreKey,
+		govtypes.StoreKey,
+		paramstypes.StoreKey,
+		ibcexported.StoreKey,
+		upgradetypes.StoreKey,
+		feegrant.StoreKey,
+		evidencetypes.StoreKey,
+		ibctransfertypes.StoreKey,
+		icacontrollertypes.StoreKey,
+		icahosttypes.StoreKey,
+		capabilitytypes.StoreKey,
+		authzkeeper.StoreKey,
+		nfttransfertypes.StoreKey,
+		group.StoreKey,
+		ibcfeetypes.StoreKey,
+		chainmaintypes.StoreKey,
+		supplytypes.StoreKey,
+		// maxsupplytypes.StoreKey,
+		nfttypes.StoreKey,
+		// consensusparamtypes.StoreKey,
+		// circuittypes.StoreKey,
+		"icaauth",
 	}
+
 	cmd := &cobra.Command{
 		Use:   "dump-iavl-root",
 		Short: "dump iavl root at version [dir]",
