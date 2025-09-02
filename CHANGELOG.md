@@ -11,6 +11,7 @@
 - [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+- [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
 
 
 *July 9, 2025*
