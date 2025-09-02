@@ -1,8 +1,6 @@
 package keeper
 
 import (
-	"fmt"
-
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,17 +12,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state types.GenesisState) {
 
 	for _, trace := range state.Traces {
 		k.SetClassTrace(ctx, trace)
-	}
-
-	// Only try to bind to port if it is not already bound, since we may already own
-	// port capability from capability InitGenesis
-	if !k.IsBound(ctx, state.PortId) {
-		// nft-transfer module binds to the nft-transfer port on InitChain
-		// and claims the returned capability
-		err := k.BindPort(ctx, state.PortId)
-		if err != nil {
-			panic(fmt.Sprintf("could not claim port capability: %v", err))
-		}
 	}
 }
 

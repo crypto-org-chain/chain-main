@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	ibctypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
+	ibctypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	"github.com/crypto-org-chain/chain-main/v4/config"
 	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 	"github.com/spf13/cobra"
