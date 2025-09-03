@@ -113,7 +113,7 @@ func DumpMemIavlRoot(storeNames []string) *cobra.Command {
 
 				tree := db.TreeByName(capaMemStoreKey)
 				if tree != nil {
-					fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.Version())
+					fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.RootHash())
 				} else {
 					fmt.Printf("module %s not loaded\n", capaMemStoreKey)
 				}
@@ -143,7 +143,7 @@ func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
 }
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
-	// this is need to change in different height
+	// this needs to change in different height
 	// because some StoreKey version are zero
 	// such as consensusparamtypes, circuittypes
 	storeNames = []string{
