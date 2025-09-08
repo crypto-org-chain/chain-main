@@ -84,28 +84,26 @@ def test_versiondb_migration(cluster):
     shutil.rmtree(app_db1)
     print(node1.changeset_restore_app_db(snapshot_dir, app_db1))
 
-    print("restore versiondb for node0")
+    # rebuild versiondb to verify the versiondb can be rebuilt from the changeset
+    print("rebuilding versiondb for node0 from changeset")
     sst_dir = tempfile.mkdtemp(dir=cluster.data_root)
     print(node0.changeset_build_versiondb_sst(changeset_dir, sst_dir))
 
     # ingest-versiondb-sst expects an empty database
     versiondb_path = node0.data_dir / "data/versiondb"
     if versiondb_path.exists():
-        shutil.rmtree(node0.data_dir / "data/versiondb")
+        shutil.rmtree(versiondb_path)
     print(
         node0.changeset_ingest_versiondb_sst(
-            node0.data_dir / "data/versiondb", sst_dir, maximum_version=latest_version
+            versiondb_path, sst_dir, maximum_version=latest_version
         )
     )
 
     # force node1's app-db-backend to be rocksdb
-    patch_app_db_backend(node1.data_dir / "config/app.toml", "rocksdb")
+    app_toml_path = node1.data_dir / "config/app.toml"
+    patch_app_db_backend(app_toml_path, "rocksdb")
 
-    print("start all nodes")
-    cluster.supervisor.startProcess(f"{cluster.chain_id}-node{0}")
-    cluster.supervisor.startProcess(f"{cluster.chain_id}-node{1}")
-    wait_for_port(rpc_port(cluster.base_port(0)))
-    wait_for_port(rpc_port(cluster.base_port(1)))
+    start_all_nodes(cluster)
 
     # node0 supports historical queries with versiondb
     assert node0.balance(community_addr, height=block0) == cm_balance0
@@ -130,8 +128,38 @@ def test_versiondb_migration(cluster):
     assert cm_balance2 == cm_balance1 - cro_1
     assert rs_balance2 == rs_balance1 + cro_1
 
+    # now we restore node1's db again and test it with memiavl enabled
+    cluster.supervisor.stopAllProcesses()
+
+    # restore application.db from the snapshot
+    print("replace node db:", app_db1)
+    shutil.rmtree(app_db1)
+    print(node1.changeset_restore_app_db(snapshot_dir, app_db1))
+
+    patch_app_memiavl_enabled(app_toml_path, "true")
+
+    start_all_nodes(cluster)
+    # should be able to query node1's balance with memiavl
+    assert node1.balance(community_addr, height=block0) == cm_balance0
+    assert node1.balance(community_addr, height=block1) == cm_balance1
+
+
+def start_all_nodes(cluster, validator_count=2):
+    print("start all nodes")
+    for i in range(validator_count):
+        cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
+
+    for i in range(validator_count):
+        wait_for_port(rpc_port(cluster.base_port(i)))
+
 
 def patch_app_db_backend(path, backend):
     cfg = tomlkit.parse(path.read_text())
     cfg["app-db-backend"] = backend
+    path.write_text(tomlkit.dumps(cfg))
+
+
+def patch_app_memiavl_enabled(path, enabled):
+    cfg = tomlkit.parse(path.read_text())
+    cfg["memiavl"]["enable"] = enabled
     path.write_text(tomlkit.dumps(cfg))
