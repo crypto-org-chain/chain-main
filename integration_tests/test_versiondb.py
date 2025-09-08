@@ -11,7 +11,6 @@ from .utils import cluster_fixture, wait_for_new_blocks, wait_for_port
 pytestmark = pytest.mark.normal
 
 
-
 def cluster(worker_index, tmp_path_factory):
     "override cluster fixture for this test module"
     yield from cluster_fixture(
