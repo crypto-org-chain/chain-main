@@ -49,10 +49,10 @@ def test_versiondb_migration(cluster):
     cm_balance1 = cluster.balance(community_addr)
     rs_balance1 = cluster.balance(reserve_addr)
 
-    CRO_1 = 100000000
+    cro_1 = 100000000
 
-    assert cm_balance1 == cm_balance0 - CRO_1
-    assert rs_balance1 == rs_balance0 + CRO_1
+    assert cm_balance1 == cm_balance0 - cro_1
+    assert rs_balance1 == rs_balance0 + cro_1
 
     # wait for a few blocks
     wait_for_new_blocks(cluster, 2)
@@ -128,8 +128,8 @@ def test_versiondb_migration(cluster):
     cm_balance2 = cluster.balance(community_addr)
     rs_balance2 = cluster.balance(reserve_addr)
 
-    assert cm_balance2 == cm_balance1 - CRO_1
-    assert rs_balance2 == rs_balance1 + CRO_1
+    assert cm_balance2 == cm_balance1 - cro_1
+    assert rs_balance2 == rs_balance1 + cro_1
 
 
 def patch_app_db_backend(path, backend):
