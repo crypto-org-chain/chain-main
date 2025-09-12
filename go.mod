@@ -24,15 +24,15 @@ require (
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-go/v10 v10.1.1
 	github.com/cosmos/rosetta v0.50.3-1
-	github.com/crypto-org-chain/cronos/store v0.0.5-0.20240716081818-7f581a697f6d
-	github.com/crypto-org-chain/cronos/versiondb v0.0.0-20240716081818-7f581a697f6d
+	github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912041750-fe90daebb120
+	github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-20250912041750-fe90daebb120
 	github.com/golang/protobuf v1.5.4
 	github.com/google/renameio v1.0.0
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.13
-	github.com/linxGnu/grocksdb v1.9.2
+	github.com/linxGnu/grocksdb v1.9.10-0.20250331012329-9d5f074653d1
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
@@ -86,8 +86,8 @@ require (
 	github.com/cosmos/rosetta-sdk-go v0.10.0 // indirect
 	github.com/creachadair/atomicfile v0.3.1 // indirect
 	github.com/creachadair/tomledit v0.0.24 // indirect
-	github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20231225065237-42f2597fca49 // indirect
-	github.com/danieljoos/wincred v1.2.1 // indirect
+	github.com/crypto-org-chain/cronos-store/memiavl v0.0.4 // indirect
+	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/desertbit/timer v1.0.1 // indirect
@@ -223,15 +223,15 @@ require (
 )
 
 replace (
-	github.com/crypto-org-chain/cronos/memiavl => github.com/crypto-org-chain/cronos/memiavl v0.0.5-0.20241028093154-0f94930c27ce
-	github.com/crypto-org-chain/cronos/store => github.com/crypto-org-chain/cronos/store v0.0.5-0.20241028093154-0f94930c27ce
-	github.com/crypto-org-chain/cronos/versiondb => github.com/crypto-org-chain/cronos/versiondb v0.0.0-20241028093154-0f94930c27ce
+	github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912041750-fe90daebb120
+	github.com/crypto-org-chain/cronos-store/store => github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912041750-fe90daebb120
+	github.com/crypto-org-chain/cronos-store/versiondb => github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-20250912041750-fe90daebb120
 )
 
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	// Fix https://github.com/crypto-org-chain/cronos/issues/1672
+	// Fix https://github.com/crypto-org-chain/cronos-store/issues/1672
 	github.com/cosmos/iavl => github.com/cosmos/iavl v1.2.6
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.

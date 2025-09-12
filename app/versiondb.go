@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/crypto-org-chain/cronos/versiondb"
-	"github.com/crypto-org-chain/cronos/versiondb/tsrocksdb"
+	"github.com/crypto-org-chain/cronos-store/versiondb"
+	"github.com/crypto-org-chain/cronos-store/versiondb/tsrocksdb"
 
 	storetypes "cosmossdk.io/store/types"
 )
