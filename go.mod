@@ -24,8 +24,8 @@ require (
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-go/v10 v10.1.1
 	github.com/cosmos/rosetta v0.50.3-1
-	github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912041750-fe90daebb120
-	github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-20250912041750-fe90daebb120
+	github.com/crypto-org-chain/cronos-store/store v0.0.0-00010101000000-000000000000
+	github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-00010101000000-000000000000
 	github.com/golang/protobuf v1.5.4
 	github.com/google/renameio v1.0.0
 	github.com/gorilla/mux v1.8.1
@@ -223,9 +223,9 @@ require (
 )
 
 replace (
-	github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912041750-fe90daebb120
-	github.com/crypto-org-chain/cronos-store/store => github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912041750-fe90daebb120
-	github.com/crypto-org-chain/cronos-store/versiondb => github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-20250912041750-fe90daebb120
+	github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881
+	github.com/crypto-org-chain/cronos-store/store => github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912125026-c998a90e2881
+	github.com/crypto-org-chain/cronos-store/versiondb => github.com/crypto-org-chain/cronos-store/versiondb v0.0.0-20250912125026-c998a90e2881
 )
 
 replace (

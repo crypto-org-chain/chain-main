@@ -270,7 +270,7 @@ func New(
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 	cacheSize := cast.ToInt(appOpts.Get(memiavlstore.FlagCacheSize))
 	chainId := cast.ToString(appOpts.Get(flags.FlagChainID))
-	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, cacheSize, chainId,baseAppOptions)
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, cacheSize, chainId, baseAppOptions)
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	// Setup Mempool and Proposal Handlers
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
