@@ -12,6 +12,7 @@
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
 - [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
+- [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
 
 
 *July 9, 2025*
