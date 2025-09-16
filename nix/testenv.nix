@@ -24,7 +24,11 @@ poetry2nix.mkPoetryEnv {
         ];
         click = [ "flit-core" ];
         isort = [ "hatchling" ];
-        attrs = ["hatchling" "hatch-fancy-pypi-readme" "hatch-vcs"];
+        attrs = [
+          "hatchling"
+          "hatch-fancy-pypi-readme"
+          "hatch-vcs"
+        ];
       };
     in
     lib.mapAttrs (
