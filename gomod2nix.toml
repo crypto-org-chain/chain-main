@@ -171,9 +171,6 @@ schema = 3
     version = "v1.2.6"
     hash = "sha256-9kLtVepU5b3m2Sne8pBQNvF9LxM374LEmvuLWeYBfFU="
     replaced = "github.com/cosmos/iavl"
-  [mod."github.com/cosmos/ibc-go/modules/capability"]
-    version = "v1.0.0"
-    hash = "sha256-xOeHJWUj6fTc2EUGiE4dgfY2WkvrqTg/FWewoUvQcvg="
   [mod."github.com/cosmos/ibc-go/v10"]
     version = "v10.1.1"
     hash = "sha256-dYqLbQROlFKn+kXzTVmRyp8VD+mHOLuU1DdEj2+H+4k="
