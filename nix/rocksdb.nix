@@ -86,7 +86,10 @@ stdenv.mkDerivation rec {
     (lib.optional enableLite "-DROCKSDB_LITE=1")
     "-DFAIL_ON_WARNINGS=${if stdenv.hostPlatform.isMinGW then "NO" else "YES"}"
   ]
-  ++ lib.optional stdenv.hostPlatform.isWindows "-DCMAKE_CXX_FLAGS=-D_WIN32_WINNT=0x0601"
+  ++ lib.optionals stdenv.hostPlatform.isWindows [
+    "-DCMAKE_C_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
+    "-DCMAKE_CXX_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
+  ]
   ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
