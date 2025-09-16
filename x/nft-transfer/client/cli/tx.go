@@ -6,8 +6,7 @@ import (
 	"strings"
 	"time"
 
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channelutils "github.com/cosmos/ibc-go/v8/modules/core/04-channel/client/utils"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 	"github.com/spf13/cobra"
 
@@ -71,38 +70,24 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 				return err
 			}
 
-			// if the timeouts are not absolute, retrieve latest block height and block timestamp
-			// for the consensus state connected to the destination port/channel
+			// NOTE: relative timeouts using block height are not supported.
+			// if the timeouts are not absolute, CLI users rely solely on local clock time in order to calculate relative timestamps.
 			if !absoluteTimeouts {
-				consensusState, height, _, err := channelutils.QueryLatestConsensusState(clientCtx, srcPort, srcChannel)
-				if err != nil {
-					return err
-				}
-
 				if !timeoutHeight.IsZero() {
-					absoluteHeight := height
-					absoluteHeight.RevisionNumber += timeoutHeight.RevisionNumber
-					absoluteHeight.RevisionHeight += timeoutHeight.RevisionHeight
-					timeoutHeight = absoluteHeight
+					return errors.New("relative timeouts using block height is not supported")
 				}
 
-				if timeoutTimestamp != 0 {
-					// use local clock time as reference time if it is later than the
-					// consensus state timestamp of the counter party chain, otherwise
-					// still use consensus state timestamp as reference
-					now := time.Now().UnixNano()
-					consensusStateTimestamp := consensusState.GetTimestamp()
-					if now > 0 {
-						now := uint64(now)
-						if now > consensusStateTimestamp {
-							timeoutTimestamp = now + timeoutTimestamp
-						} else {
-							timeoutTimestamp = consensusStateTimestamp + timeoutTimestamp
-						}
-					} else {
-						return errors.New("local clock time is not greater than Jan 1st, 1970 12:00 AM")
-					}
+				if timeoutTimestamp == 0 {
+					return errors.New("relative timeouts must provide a non zero value timestamp")
 				}
+
+				// use local clock time as reference time for calculating timeout timestamp.
+				now := time.Now().UnixNano()
+				if now <= 0 {
+					return errors.New("local clock time is not greater than Jan 1st, 1970 12:00 AM")
+				}
+
+				timeoutTimestamp = uint64(now) + timeoutTimestamp
 			}
 
 			msg := types.NewMsgTransfer(
@@ -112,7 +97,7 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 		},
 	}
 
-	cmd.Flags().String(flagPacketTimeoutHeight, types.DefaultRelativePacketTimeoutHeight, "Packet timeout block height. The timeout is disabled when set to 0-0.")
+	cmd.Flags().String(flagPacketTimeoutHeight, "0-0", "Packet timeout block height. The timeout is disabled when set to 0-0.")
 	cmd.Flags().Uint64(flagPacketTimeoutTimestamp, types.DefaultRelativePacketTimeoutTimestamp, "Packet timeout timestamp in nanoseconds from now. Default is 10 minutes. The timeout is disabled when set to 0.")
 	cmd.Flags().Bool(flagAbsoluteTimeouts, false, "Timeout flags are used as absolute timeouts.")
 	flags.AddTxFlagsToCmd(cmd)
