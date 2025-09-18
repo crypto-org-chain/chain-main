@@ -230,7 +230,7 @@ replace (
 replace (
 	// use cosmos fork of keyring
 	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-	// Fix https://github.com/crypto-org-chain/cronos-store/issues/1672
+	// Fix https://github.com/crypto-org-chain/cronos/issues/1672
 	github.com/cosmos/iavl => github.com/cosmos/iavl v1.2.6
 
 	// dgrijalva/jwt-go is deprecated and doesn't receive security updates.
