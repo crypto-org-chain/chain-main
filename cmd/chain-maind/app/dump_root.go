@@ -17,7 +17,6 @@ import (
 	nfttransfertypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 	supplytypes "github.com/crypto-org-chain/chain-main/v4/x/supply/types"
-	"github.com/crypto-org-chain/cronos/memiavl"
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/log"
@@ -61,85 +60,9 @@ func DumpRootGroupCmd(storeNames []string) *cobra.Command {
 		Short: "dump module root",
 	}
 	cmd.AddCommand(
-		DumpMemIavlRoot(storeNames),
 		DumpIavlRoot(storeNames),
 	)
 	return cmd
-}
-
-func DumpMemIavlRoot(storeNames []string) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dump-memiavl-root",
-		Short: "dump mem-iavl root at version [dir]",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			dir := args[0]
-			version, err := cmd.Flags().GetUint32("version")
-			if err != nil {
-				return err
-			}
-			opts := memiavl.Options{
-				InitialStores:   storeNames,
-				CreateIfMissing: false,
-				TargetVersion:   version,
-			}
-			db, err := memiavl.Load(dir, opts)
-			if err != nil {
-				return err
-			}
-			defer db.Close()
-			for _, storeName := range storeNames {
-				tree := db.TreeByName(storeName)
-				if tree != nil {
-					fmt.Printf("module %s version %d RootHash %X\n", storeName, tree.Version(), tree.RootHash())
-				} else {
-					fmt.Printf("module %s not loaded\n", storeName)
-				}
-			}
-
-			db.MultiTree.UpdateCommitInfo()
-			lastCommitInfo := convertCommitInfo(db.MultiTree.LastCommitInfo())
-
-			fmt.Printf("Version %d RootHash %X\n", lastCommitInfo.Version, lastCommitInfo.Hash())
-
-			if version < ChainMainV6UpgradeHeight {
-				// if you want to calculate hash same with iavl node
-				// It has an issue as described in cosmos/cosmos-sdk#14916, so we need to apply a hacky solution to it.
-				var specialInfo types.StoreInfo
-				specialInfo.Name = capaMemStoreKey
-				lastCommitInfo.StoreInfos = append(lastCommitInfo.StoreInfos, specialInfo)
-
-				fmt.Printf("calculate again Last Commit Infos: %v\n", lastCommitInfo)
-
-				tree := db.TreeByName(capaMemStoreKey)
-				if tree != nil {
-					fmt.Printf("module %s Version %d RootHash %X\n", capaMemStoreKey, tree.Version(), tree.RootHash())
-				} else {
-					fmt.Printf("module %s not loaded\n", capaMemStoreKey)
-				}
-			}
-			return nil
-		},
-	}
-	cmd.Flags().Uint32("version", 0, "the version to dump")
-	return cmd
-}
-
-func convertCommitInfo(commitInfo *memiavl.CommitInfo) *types.CommitInfo {
-	storeInfos := make([]types.StoreInfo, len(commitInfo.StoreInfos))
-	for i, storeInfo := range commitInfo.StoreInfos {
-		storeInfos[i] = types.StoreInfo{
-			Name: storeInfo.Name,
-			CommitId: types.CommitID{
-				Version: storeInfo.CommitId.Version,
-				Hash:    storeInfo.CommitId.Hash,
-			},
-		}
-	}
-	return &types.CommitInfo{
-		Version:    commitInfo.Version,
-		StoreInfos: storeInfos,
-	}
 }
 
 func DumpIavlRoot(storeNames []string) *cobra.Command {
