@@ -40,7 +40,7 @@ in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "v7.0.0";
-  go = buildPackages.go_1_23;
+  go = buildPackages.go_1_24;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
@@ -58,20 +58,19 @@ buildGoApplication rec {
     else
       "-lrocksdb -pthread -lstdc++ -ldl"
   );
-  tags =
-    [
-      "cgo"
-      "ledger"
-      "!test_ledger_mock"
-      "!ledger_mock"
-      (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
-      network
-    ]
-    ++ lib.optionals (rocksdb != null) [
-      "rocksdb"
-      "grocksdb_no_link"
-    ]
-    ++ lib.optionals nativeByteOrder [ "nativebyteorder" ];
+  tags = [
+    "cgo"
+    "ledger"
+    "!test_ledger_mock"
+    "!ledger_mock"
+    (if ledger_zemu then "ledger_zemu" else "!ledger_zemu")
+    network
+  ]
+  ++ lib.optionals (rocksdb != null) [
+    "rocksdb"
+    "grocksdb_no_link"
+  ]
+  ++ lib.optionals nativeByteOrder [ "nativebyteorder" ];
   ldflags = ''
     -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain
     -X github.com/cosmos/cosmos-sdk/version.AppName=${pname}

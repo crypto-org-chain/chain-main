@@ -22,13 +22,13 @@
 
 stdenv.mkDerivation rec {
   pname = "rocksdb";
-  version = "9.2.1";
+  version = "9.11.2";
 
   src = fetchFromGitHub {
     owner = "facebook";
     repo = pname;
     rev = "v${version}";
-    sha256 = "sha256-Zifn5Gu/4h6TaEqSaWQ2mFdryeAarqbHWW3fKUGGFac=";
+    sha256 = "sha256-D/FZJw1zwDXvCRHxCxyNxarHlDi5xtt8MddUOr4Pv2c=";
   };
 
   nativeBuildInputs = [
@@ -85,35 +85,38 @@ stdenv.mkDerivation rec {
     (lib.optional sse42Support "-DFORCE_SSE42=1")
     (lib.optional enableLite "-DROCKSDB_LITE=1")
     "-DFAIL_ON_WARNINGS=${if stdenv.hostPlatform.isMinGW then "NO" else "YES"}"
-  ] ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
+  ]
+  ++ lib.optionals stdenv.hostPlatform.isWindows [
+    "-DCMAKE_C_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
+    "-DCMAKE_CXX_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
+  ]
+  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";
 
-  preInstall =
-    ''
-      mkdir -p $tools/bin
-      cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
-    ''
-    + lib.optionalString stdenv.isDarwin ''
-      ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
-    ''
-    + lib.optionalString (stdenv.isLinux && enableShared) ''
-      ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
-    '';
+  preInstall = ''
+    mkdir -p $tools/bin
+    cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
+  ''
+  + lib.optionalString stdenv.isDarwin ''
+    ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
+  ''
+  + lib.optionalString (stdenv.isLinux && enableShared) ''
+    ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
+  '';
 
   # Old version doesn't ship the .pc file, new version puts wrong paths in there.
-  postFixup =
-    ''
-      if [ -f "$out"/lib/pkgconfig/rocksdb.pc ]; then
-        substituteInPlace "$out"/lib/pkgconfig/rocksdb.pc \
-          --replace '="''${prefix}//' '="/'
-      fi
-    ''
-    + lib.optionalString stdenv.isDarwin ''
-      ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/libsnappy.1.dylib" "${snappy}/lib/libsnappy.1.dylib" $out/lib/librocksdb.dylib
-      ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" "$out/lib/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib
-    '';
+  postFixup = ''
+    if [ -f "$out"/lib/pkgconfig/rocksdb.pc ]; then
+      substituteInPlace "$out"/lib/pkgconfig/rocksdb.pc \
+        --replace '="''${prefix}//' '="/'
+    fi
+  ''
+  + lib.optionalString stdenv.isDarwin ''
+    ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/libsnappy.1.dylib" "${snappy}/lib/libsnappy.1.dylib" $out/lib/librocksdb.dylib
+    ${stdenv.cc.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" "$out/lib/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib
+  '';
 
   meta = with lib; {
     homepage = "https://rocksdb.org";
