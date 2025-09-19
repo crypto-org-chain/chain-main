@@ -1,6 +1,10 @@
+import binascii
+import hashlib
 import json
+import os
 import tempfile
 
+import durations
 import requests
 from pystarport import cluster, cosmoscli
 
@@ -350,6 +354,55 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         res = res.get("params") or res
         return res
 
+    def ica_submit_tx(
+        self,
+        connid,
+        tx,
+        timeout_duration="1h",
+        event_query_tx=True,
+        **kwargs,
+    ):
+        default_kwargs = {
+            "home": self.data_dir,
+            "node": self.node_rpc,
+            "chain_id": self.chain_id,
+            "keyring_backend": "test",
+        }
+        args = ["ica", "controller", "send-tx"]
+
+        duration_args = []
+        if timeout_duration:
+            timeout = int(durations.Duration(timeout_duration).to_seconds() * 1e9)
+            duration_args = ["--packet-timeout-timestamp", timeout]
+
+        rsp = json.loads(
+            self.raw(
+                "tx",
+                *args,
+                connid,
+                tx,
+                *duration_args,
+                "-y",
+                **(default_kwargs | kwargs),
+            )
+        )
+        if rsp["code"] == 0 and event_query_tx:
+            rsp = self.event_query_tx_for(rsp["txhash"])
+        return rsp
+
+    def ibc_denom_trace(self, path, node):
+        denom_hash = hashlib.sha256(path.encode()).hexdigest().upper()
+        return json.loads(
+            self.raw(
+                "q",
+                "ibc-transfer",
+                "denom",
+                denom_hash,
+                node=node,
+                output="json",
+            )
+        )["denom"]
+
     # This method is deprecated after Cosmos SDK v0.50.0
     # x/params query subspace is deprecated after Cosmos SDK v0.50.0
     def query_params_subspace(self, subspace, param):
@@ -370,6 +423,50 @@ class CosmosCLI(cosmoscli.CosmosCLI):
 
         res = res.get("value") or res
         return res
+
+    def changeset_dump(self, changeset_dir, **kwargs):
+        default_kwargs = {
+            "home": self.data_dir,
+        }
+        return self.raw(
+            "changeset", "dump", changeset_dir, **(default_kwargs | kwargs)
+        ).decode()
+
+    def changeset_verify(self, changeset_dir, **kwargs):
+        output = self.raw("changeset", "verify", changeset_dir, **kwargs).decode()
+        hash, commit_info = output.split("\n")
+        return binascii.unhexlify(hash), json.loads(commit_info)
+
+    def changeset_restore_app_db(self, snapshot_dir, app_db, **kwargs):
+        return self.raw(
+            "changeset", "restore-app-db", snapshot_dir, app_db, **kwargs
+        ).decode()
+
+    def changeset_build_versiondb_sst(self, changeset_dir, sst_dir, **kwargs):
+        return self.raw(
+            "changeset", "build-versiondb-sst", changeset_dir, sst_dir, **kwargs
+        ).decode()
+
+    def changeset_ingest_versiondb_sst(self, versiondb_dir, sst_dir, **kwargs):
+        sst_files = [os.path.join(sst_dir, name) for name in os.listdir(sst_dir)]
+        return self.raw(
+            "changeset",
+            "ingest-versiondb-sst",
+            versiondb_dir,
+            *sst_files,
+            "--move-files",
+            **kwargs,
+        ).decode()
+
+    def restore_versiondb(self, height, format=3):
+        return self.raw(
+            "changeset", "restore-versiondb", height, format, home=self.data_dir
+        )
+
+    def changeset_fixdata(self, versiondb_dir, dry_run=False):
+        return self.raw(
+            "changeset", "fixdata", versiondb_dir, "--dry-run" if dry_run else None
+        )
 
 
 class ClusterCLI(cluster.ClusterCLI):
