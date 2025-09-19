@@ -37,12 +37,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-const (
-	capaMemStoreKey = "mem_capability"
-
-	ChainMainV6UpgradeHeight = 24836000
-)
-
 func DumpRootCmd() *cobra.Command {
 	keys, _, _ := app.StoreKeys()
 	storeNames := make([]string, 0, len(keys))
