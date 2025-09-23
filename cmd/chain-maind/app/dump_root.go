@@ -101,7 +101,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			db, err := dbm.NewGoLevelDB("application", dir, nil)
+			db, err := dbm.NewGoLevelDB("application", dir, dbm.OptionsMap{"read_only": true})
 			if err != nil {
 				return err
 			}
