@@ -92,8 +92,9 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "dump-iavl-root",
+		Use:   "dump-iavl-root [dir]",
 		Short: "dump iavl root at version [dir]",
+		Long:  "dump iavl root at version [dir]. To support dumping rocksdb, it should use this https://github.com/cosmos/cosmos-db/blob/9221ee7e2bccf314eff49f89092dd0767588d76e/rocksdb.go#L51.",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dir := args[0]
