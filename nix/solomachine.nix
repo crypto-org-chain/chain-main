@@ -18,7 +18,7 @@ rustPlatform.buildRustPackage rec {
     hash = "sha256-3s0mGDzuEZZLLo3jxpu7U2N6VfiuRHCceqwCGOfS6yw=";
   };
 
-  cargoHash = "sha256-u4dcfrz3rIBY5udElCvxnvJ82F1E6x+PUnbOvSsbHBQ=";
+  cargoHash = "sha256-6QKORwLDBOKUX7lk/HE3K1PaCaoSad7ZnN5US8aQ05c=";
   cargoBuildFlags = "-p solo-machine -p mnemonic-signer";
   nativeBuildInputs = [
     protobuf

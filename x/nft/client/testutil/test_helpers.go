@@ -4,6 +4,7 @@ package testutil
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
@@ -11,6 +12,7 @@ import (
 	apptestutil "github.com/crypto-org-chain/chain-main/v4/testutil"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
 
+	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -21,6 +23,7 @@ import (
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 )
 
 func GetApp(val network.ValidatorI) servertypes.Application {
@@ -33,6 +36,27 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
 		baseapp.SetChainID(apptestutil.ChainID),
 	)
+}
+
+func NewTestNetworkFixture() network.TestFixture {
+	dir, err := os.MkdirTemp("", "chain-main")
+	if err != nil {
+		panic(fmt.Sprintf("failed creating temporary directory: %v", err))
+	}
+	defer os.RemoveAll(dir)
+
+	chainApp := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(dir))
+
+	return network.TestFixture{
+		AppConstructor: GetApp,
+		GenesisState:   chainApp.DefaultGenesis(),
+		EncodingConfig: moduletestutil.TestEncodingConfig{
+			InterfaceRegistry: chainApp.InterfaceRegistry(),
+			Codec:             chainApp.AppCodec(),
+			TxConfig:          chainApp.TxConfig(),
+			Amino:             chainApp.LegacyAmino(),
+		},
+	}
 }
 
 func IssueDenomExec(clientCtx client.Context, from, denom string, extraArgs ...string) (testutil.BufferWriter, error) {
