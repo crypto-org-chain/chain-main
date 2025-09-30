@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"os"
 
-	"cosmossdk.io/log"
-	pruningtypes "cosmossdk.io/store/pruning/types"
-
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v4/app"
 	apptestutil "github.com/crypto-org-chain/chain-main/v4/testutil"
 	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
+
+	"cosmossdk.io/log"
+	pruningtypes "cosmossdk.io/store/pruning/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -47,12 +47,8 @@ func NewTestNetworkFixture() network.TestFixture {
 
 	chainApp := app.New(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(dir))
 
-	appCtr := func(val network.ValidatorI) servertypes.Application {
-		return GetApp(val)
-	}
-
 	return network.TestFixture{
-		AppConstructor: appCtr,
+		AppConstructor: GetApp,
 		GenesisState:   chainApp.DefaultGenesis(),
 		EncodingConfig: moduletestutil.TestEncodingConfig{
 			InterfaceRegistry: chainApp.InterfaceRegistry(),
