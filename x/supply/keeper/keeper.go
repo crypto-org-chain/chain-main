@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/supply/types"
 
 	newsdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"

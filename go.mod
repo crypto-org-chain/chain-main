@@ -1,4 +1,4 @@
-module github.com/crypto-org-chain/chain-main/v4
+module github.com/crypto-org-chain/chain-main/v8
 
 go 1.23.6
 

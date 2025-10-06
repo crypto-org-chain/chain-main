@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/supply/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/x/supply/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/supply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/supply/client/cli"
+	"github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/supply/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 

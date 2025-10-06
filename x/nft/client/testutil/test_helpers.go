@@ -7,9 +7,9 @@ import (
 
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	apptestutil "github.com/crypto-org-chain/chain-main/v4/testutil"
-	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	apptestutil "github.com/crypto-org-chain/chain-main/v8/testutil"
+	nftcli "github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
 
 	pruningtypes "cosmossdk.io/store/pruning/types"
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	maxsupplytypes "github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+	maxsupplytypes "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"

@@ -9,10 +9,10 @@ import (
 	"math/rand"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/simulation"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/simulation"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 

@@ -100,7 +100,7 @@ TEST_FLAGS := -tags "$(test_tags)"
 
 TESTNET_FLAGS ?=
 
-SIMAPP = github.com/crypto-org-chain/chain-main/v4/app
+SIMAPP = github.com/crypto-org-chain/chain-main/v8/app
 BINDIR ?= ~/go/bin
 
 OS := $(shell uname)

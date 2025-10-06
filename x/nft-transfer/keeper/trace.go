@@ -2,7 +2,7 @@ package keeper
 
 import (
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"

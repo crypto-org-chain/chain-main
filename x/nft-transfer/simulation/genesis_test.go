@@ -5,8 +5,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/simulation"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/simulation"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"

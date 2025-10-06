@@ -5,7 +5,7 @@ import (
 	"time"
 
 	tmtypes "github.com/cometbft/cometbft/types"
-	"github.com/crypto-org-chain/chain-main/v4/app"
+	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
