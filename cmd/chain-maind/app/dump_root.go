@@ -108,6 +108,7 @@ func DumpIavlRoot(storeNames []string) *cobra.Command {
 			}
 			defer db.Close()
 			rs := rootmulti.NewStore(db, log.NewNopLogger(), nil)
+			sort.Strings(storeNames)
 			for _, storeKey := range storeNames {
 				rs.MountStoreWithDB(types.NewKVStoreKey(storeKey), types.StoreTypeIAVL, nil)
 			}
