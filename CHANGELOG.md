@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Bugfixes
+- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
+
+
 *July 9, 2025*
 
 ## v7.0.0
