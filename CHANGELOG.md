@@ -5,6 +5,9 @@
 *July 9, 2025*
 
 ## v7.0.0
+- [#1208](https://github.com/crypto-org-chain/chain-main/pull/1208) Patch comet bft (GHSA-hrhf-2vcr-ghch)
+
+## v7.0.0
 
 ### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
