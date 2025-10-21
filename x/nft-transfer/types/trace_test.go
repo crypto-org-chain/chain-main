@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 )
 
 func TestIsAwayFromOrigin(t *testing.T) {

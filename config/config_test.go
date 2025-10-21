@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/config"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/config"
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"

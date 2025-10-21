@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	dbm "github.com/cosmos/cosmos-db"
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/testutil"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/testutil"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/log"

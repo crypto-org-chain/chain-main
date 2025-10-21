@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
 
 	sdkmath "cosmossdk.io/math"
 )

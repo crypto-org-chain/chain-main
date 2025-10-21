@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 

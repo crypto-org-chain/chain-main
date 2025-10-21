@@ -5,7 +5,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

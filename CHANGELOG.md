@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+### Improvements
+- [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 

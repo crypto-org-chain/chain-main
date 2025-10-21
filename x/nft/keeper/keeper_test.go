@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/testutil"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/testutil"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"

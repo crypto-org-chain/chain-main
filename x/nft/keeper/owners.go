@@ -3,7 +3,7 @@
 package keeper
 
 import (
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	storetypes "cosmossdk.io/store/types"
 

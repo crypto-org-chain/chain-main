@@ -1,7 +1,7 @@
 package keeper
 
 import (
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
