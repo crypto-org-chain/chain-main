@@ -20,6 +20,7 @@
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
 - [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
+- [#1191](https://github.com/crypto-org-chain/chain-main/pull/1191) feat: add dump iavl root and memiavl root commands.
 
 
 *July 9, 2025*
