@@ -63,12 +63,12 @@
         "branch": "master",
         "description": "Convert poetry projects to nix automagically [maintainer=@adisbladis] ",
         "homepage": "",
-        "owner": "a-sup",
+        "owner": "crypto-org-chain",
         "repo": "poetry2nix",
         "rev": "554a921d5cb1659880e42c0dccf322fe4b668e93",
         "sha256": "0a40q4ib977d3cxk4lfffmv14i54dl83np630casgz7z1qd4kaij",
         "type": "tarball",
-        "url": "https://github.com/a-sup/poetry2nix/archive/554a921d5cb1659880e42c0dccf322fe4b668e93.tar.gz",
+        "url": "https://github.com/crypto-org-chain/poetry2nix/archive/554a921d5cb1659880e42c0dccf322fe4b668e93.tar.gz",
         "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
     }
 }
