@@ -48,8 +48,8 @@ import (
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v8/x/supply/types"
-	memiavlstore "github.com/crypto-org-chain/cronos/store"
-	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
+	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
+	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cast"
 
