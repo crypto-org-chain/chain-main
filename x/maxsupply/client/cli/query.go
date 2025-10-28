@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"

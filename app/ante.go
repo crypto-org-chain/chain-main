@@ -3,7 +3,7 @@ package app
 import (
 	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
 	"github.com/cosmos/ibc-go/v10/modules/core/keeper"
-	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	newsdkerrors "cosmossdk.io/errors"
 	circuitante "cosmossdk.io/x/circuit/ante"

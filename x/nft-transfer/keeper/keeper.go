@@ -2,7 +2,7 @@ package keeper
 
 import (
 	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"

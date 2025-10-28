@@ -3,7 +3,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/chainmain/types"
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"

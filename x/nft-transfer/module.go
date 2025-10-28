@@ -8,10 +8,10 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/client/cli"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/simulation"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/client/cli"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/simulation"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 

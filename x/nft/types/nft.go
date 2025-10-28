@@ -5,7 +5,7 @@ package types
 import (
 	fmt "fmt"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -5,7 +5,7 @@ package keeper
 import (
 	"fmt"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/log"

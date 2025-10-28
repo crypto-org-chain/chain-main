@@ -6,9 +6,9 @@ package app
 import (
 	"sort"
 
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/cmd/chain-maind/opendb"
-	versiondbclient "github.com/crypto-org-chain/cronos-store/versiondb/client"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/cmd/chain-maind/opendb"
+	versiondbclient "github.com/crypto-org-chain/cronos/versiondb/client"
 	"github.com/spf13/cobra"
 )
 
