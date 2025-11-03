@@ -16,7 +16,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/app/params"
 	"github.com/crypto-org-chain/chain-main/v8/config"
 	chainmaincli "github.com/crypto-org-chain/chain-main/v8/x/chainmain/client/cli"
-	memiavlcfg "github.com/crypto-org-chain/cronos/store/config"
+	memiavlcfg "github.com/crypto-org-chain/cronos-store/store/config"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"

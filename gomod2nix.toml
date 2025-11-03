@@ -171,9 +171,6 @@ schema = 3
     version = "v1.2.6"
     hash = "sha256-9kLtVepU5b3m2Sne8pBQNvF9LxM374LEmvuLWeYBfFU="
     replaced = "github.com/cosmos/iavl"
-  [mod."github.com/cosmos/ibc-go/modules/capability"]
-    version = "v1.0.0"
-    hash = "sha256-xOeHJWUj6fTc2EUGiE4dgfY2WkvrqTg/FWewoUvQcvg="
   [mod."github.com/cosmos/ibc-go/v10"]
     version = "v10.1.1"
     hash = "sha256-dYqLbQROlFKn+kXzTVmRyp8VD+mHOLuU1DdEj2+H+4k="
@@ -195,18 +192,16 @@ schema = 3
   [mod."github.com/creachadair/tomledit"]
     version = "v0.0.24"
     hash = "sha256-4vUukHONOjNn0qfQr4esK6TWfPWsIp+rbdz65og84lw="
-  [mod."github.com/crypto-org-chain/cronos/memiavl"]
-    version = "v0.0.5-0.20241028093154-0f94930c27ce"
-    hash = "sha256-F7tPkSvfW8ZbURrK5uvQ9kB1h3uKRfiQyEYql3J1Q6k="
-    replaced = "github.com/crypto-org-chain/cronos/memiavl"
-  [mod."github.com/crypto-org-chain/cronos/store"]
-    version = "v0.0.5-0.20241028093154-0f94930c27ce"
-    hash = "sha256-S5INWggeFs1vBrcuVyWyS34C5I2ux+NLJ+czqQqKzUc="
-    replaced = "github.com/crypto-org-chain/cronos/store"
-  [mod."github.com/crypto-org-chain/cronos/versiondb"]
-    version = "v0.0.0-20241028093154-0f94930c27ce"
-    hash = "sha256-dVXYagl8K+JMrIt6dqcoQTjUwwMCqrMmAfpIZimWlyE="
-    replaced = "github.com/crypto-org-chain/cronos/versiondb"
+  [mod."github.com/crypto-org-chain/cronos-store/memiavl"]
+    version = "v0.0.0-20250912125026-c998a90e2881"
+    hash = "sha256-gzSQO8tCGfV5epBtwBxQf+iQoD1ni1oGgDa271LWcYo="
+    replaced = "github.com/crypto-org-chain/cronos-store/memiavl"
+  [mod."github.com/crypto-org-chain/cronos-store/store"]
+    version = "v0.0.0-20250912125026-c998a90e2881"
+    hash = "sha256-Nbvk58Xc7A+rCRlqV/IBaTmtHd6YeHOzKdgfbemE00E="
+  [mod."github.com/crypto-org-chain/cronos-store/versiondb"]
+    version = "v0.0.0-20250912125026-c998a90e2881"
+    hash = "sha256-RB49SfhB2H/z93xQQgjU/OzMVgiDBvwakPCIvT6L02c="
   [mod."github.com/danieljoos/wincred"]
     version = "v1.2.1"
     hash = "sha256-hmJediHYMONMEvrRnMs88OXEp4SDt1Pmi8t8eOEk83o="
@@ -412,8 +407,8 @@ schema = 3
     version = "v1.10.9"
     hash = "sha256-Gl6dLtL+yk6UrTTWfas43aM4lP/pNa2l7+ITXnjQyKs="
   [mod."github.com/linxGnu/grocksdb"]
-    version = "v1.9.2"
-    hash = "sha256-ThXtaXx6LvRIFW4xLHsMrVWdsN2qobLPA0InLmlADOM="
+    version = "v1.9.10-0.20250331012329-9d5f074653d1"
+    hash = "sha256-liFv2CO0IM79XRyEvF3zzfpqRmzYrUxlLBffl48kI88="
   [mod."github.com/magiconair/properties"]
     version = "v1.8.7"
     hash = "sha256-XQ2bnc2s7/IH3WxEO4GishZurMyKwEclZy1DXg+2xXc="

@@ -48,8 +48,8 @@ import (
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v8/x/supply/types"
-	memiavlstore "github.com/crypto-org-chain/cronos/store"
-	memiavlrootmulti "github.com/crypto-org-chain/cronos/store/rootmulti"
+	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
+	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
 	"github.com/spf13/cast"
 
@@ -269,7 +269,8 @@ func New(
 
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 	cacheSize := cast.ToInt(appOpts.Get(memiavlstore.FlagCacheSize))
-	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, cacheSize, baseAppOptions)
+	chainId := cast.ToString(appOpts.Get(flags.FlagChainID))
+	baseAppOptions = memiavlstore.SetupMemIAVL(logger, homePath, appOpts, false, false, cacheSize, chainId, baseAppOptions)
 	// NOTE we use custom transaction decoder that supports the sdk.Tx interface instead of sdk.StdTx
 	// Setup Mempool and Proposal Handlers
 	baseAppOptions = append(baseAppOptions, func(app *baseapp.BaseApp) {
