@@ -199,11 +199,9 @@ schema = 3
   [mod."github.com/crypto-org-chain/cronos-store/store"]
     version = "v0.0.0-20250912125026-c998a90e2881"
     hash = "sha256-Nbvk58Xc7A+rCRlqV/IBaTmtHd6YeHOzKdgfbemE00E="
-    replaced = "github.com/crypto-org-chain/cronos-store/store"
   [mod."github.com/crypto-org-chain/cronos-store/versiondb"]
     version = "v0.0.0-20250912125026-c998a90e2881"
     hash = "sha256-RB49SfhB2H/z93xQQgjU/OzMVgiDBvwakPCIvT6L02c="
-    replaced = "github.com/crypto-org-chain/cronos-store/versiondb"
   [mod."github.com/danieljoos/wincred"]
     version = "v1.2.1"
     hash = "sha256-hmJediHYMONMEvrRnMs88OXEp4SDt1Pmi8t8eOEk83o="
