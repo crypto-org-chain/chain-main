@@ -50,7 +50,7 @@ func (p Params) String() string {
 }
 
 // validateMaxSupply validates the MaxSupply param
-func validateMaxSupply(v interface{}) error {
+func validateMaxSupply(v any) error {
 	maxSupply, ok := v.(sdkmath.Int)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)
@@ -68,7 +68,7 @@ func validateMaxSupply(v interface{}) error {
 }
 
 // validateBurnedAddresses validates the BurnedAddresses param
-func validateBurnedAddresses(v interface{}) error {
+func validateBurnedAddresses(v any) error {
 	burnedAddresses, ok := v.([]string)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", v)

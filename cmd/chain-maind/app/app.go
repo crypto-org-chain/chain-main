@@ -110,7 +110,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
-func initAppConfig() (string, interface{}) {
+func initAppConfig() (string, any) {
 	// The following code snippet is just for reference.
 
 	type CustomAppConfig struct {
@@ -143,38 +143,38 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		serverCtx.Config.Consensus.TimeoutCommit = 3 * time.Second
 	}
 	initCmd.PostRunE = func(cmd *cobra.Command, args []string) error {
-		genesisPatch := map[string]interface{}{
-			"app_state": map[string]interface{}{
-				"staking": map[string]interface{}{
+		genesisPatch := map[string]any{
+			"app_state": map[string]any{
+				"staking": map[string]any{
 					"params": map[string]string{
 						"bond_denom": config.BaseCoinUnit,
 					},
 				},
-				"gov": map[string]interface{}{
-					"deposit_params": map[string]interface{}{
+				"gov": map[string]any{
+					"deposit_params": map[string]any{
 						"min_deposit": sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinDepositTokens)),
 					},
 				},
-				"mint": map[string]interface{}{
+				"mint": map[string]any{
 					"params": map[string]string{
 						"mint_denom": config.BaseCoinUnit,
 					},
 				},
-				"bank": map[string]interface{}{
-					"denom_metadata": []interface{}{
-						map[string]interface{}{
+				"bank": map[string]any{
+					"denom_metadata": []any{
+						map[string]any{
 							"name":        "Crypto.org Chain",
 							"symbol":      "CRO",
 							"description": "The native token of Crypto.org Chain.",
-							"denom_units": []interface{}{
-								map[string]interface{}{
+							"denom_units": []any{
+								map[string]any{
 									"denom":    config.BaseCoinUnit,
 									"exponent": 0,
-									"aliases": []interface{}{
+									"aliases": []any{
 										"carson",
 									},
 								},
-								map[string]interface{}{
+								map[string]any{
 									"denom":    config.HumanCoinUnit,
 									"exponent": 8,
 								},
@@ -184,7 +184,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 						},
 					},
 				},
-				"transfer": map[string]interface{}{
+				"transfer": map[string]any{
 					"params": map[string]bool{
 						"send_enabled":    false,
 						"receive_enabled": false,
@@ -209,7 +209,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 				fmt.Printf("Error closing file: %s\n", closeErr)
 			}
 		}()
-		var genesis map[string]interface{}
+		var genesis map[string]any
 		if decodeErr := json.NewDecoder(file).Decode(&genesis); decodeErr != nil {
 			return decodeErr
 		}
