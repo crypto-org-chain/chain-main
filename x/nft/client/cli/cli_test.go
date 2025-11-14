@@ -6,23 +6,23 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/cometbft/cometbft/crypto"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/testutil"
+	nftcli "github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
+	nfttestutil "github.com/crypto-org-chain/chain-main/v8/x/nft/client/testutil"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/simapp"
-	"github.com/cometbft/cometbft/crypto"
+
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/testutil"
-	nftcli "github.com/crypto-org-chain/chain-main/v4/x/nft/client/cli"
-	nfttestutil "github.com/crypto-org-chain/chain-main/v4/x/nft/client/testutil"
-	nfttypes "github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 type IntegrationTestSuite struct {

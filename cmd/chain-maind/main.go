@@ -3,9 +3,10 @@ package main
 import (
 	"os"
 
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	cmd "github.com/crypto-org-chain/chain-main/v8/cmd/chain-maind/app"
+
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	cmd "github.com/crypto-org-chain/chain-main/v4/cmd/chain-maind/app"
 )
 
 func main() {

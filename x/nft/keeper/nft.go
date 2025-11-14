@@ -3,11 +3,13 @@
 package keeper
 
 import (
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
+
 	sdkerrors "cosmossdk.io/errors"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // GetNFT gets the specified NFT

@@ -1,5 +1,4 @@
 //go:build rocksdb
-// +build rocksdb
 
 package opendb
 
@@ -70,6 +69,11 @@ func NewRocksdbOptions(sstFileWriter bool) *grocksdb.Options {
 	bbto.SetIndexType(grocksdb.KTwoLevelIndexSearchIndexType)
 	bbto.SetPartitionFilters(true)
 	bbto.SetOptimizeFiltersForMemory(true)
+
+	// reduce memory usage
+	bbto.SetCacheIndexAndFilterBlocks(true)
+	bbto.SetPinTopLevelIndexAndFilter(true)
+	bbto.SetPinL0FilterAndIndexBlocksInCache(true)
 
 	// hash index is better for iavl tree which mostly do point lookup.
 	bbto.SetDataBlockIndexType(grocksdb.KDataBlockIndexTypeBinarySearchAndHash)

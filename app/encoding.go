@@ -1,8 +1,9 @@
 package app
 
 import (
+	"github.com/crypto-org-chain/chain-main/v8/app/params"
+
 	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/crypto-org-chain/chain-main/v4/app/params"
 )
 
 // MakeEncodingConfig creates an EncodingConfig for testing

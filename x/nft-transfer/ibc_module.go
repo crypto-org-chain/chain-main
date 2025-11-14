@@ -5,18 +5,16 @@ import (
 	"math"
 	"strings"
 
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	newsdkerrors "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/keeper"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft-transfer/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 var _ porttypes.IBCModule = IBCModule{}
@@ -56,12 +54,6 @@ func ValidateTransferChannelParams(
 		return newsdkerrors.Wrapf(channeltypes.ErrInvalidChannelOrdering, "expected %s channel, got %s ", channeltypes.UNORDERED, order)
 	}
 
-	// Require portID is the portID transfer module is bound to
-	boundPort := keeper.GetPort(ctx)
-	if boundPort != portID {
-		return newsdkerrors.Wrapf(porttypes.ErrInvalidPort, "invalid port: %s, expected %s", portID, boundPort)
-	}
-
 	return nil
 }
 
@@ -72,7 +64,6 @@ func (im IBCModule) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
@@ -88,11 +79,6 @@ func (im IBCModule) OnChanOpenInit(
 		return "", newsdkerrors.Wrapf(types.ErrInvalidVersion, "got %s, expected %s", version, types.Version)
 	}
 
-	// Claim channel capability passed back by IBC module
-	if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-		return "", err
-	}
-
 	return version, nil
 }
 
@@ -103,7 +89,6 @@ func (im IBCModule) OnChanOpenTry(
 	connectionHops []string,
 	portID,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
@@ -113,17 +98,6 @@ func (im IBCModule) OnChanOpenTry(
 
 	if counterpartyVersion != types.Version {
 		return "", newsdkerrors.Wrapf(types.ErrInvalidVersion, "invalid counterparty version: %s, expected %s", counterpartyVersion, types.Version)
-	}
-
-	// Module may have already claimed capability in OnChanOpenInit in the case of crossing hellos
-	// (ie chainA and chainB both call ChanOpenInit before one of them calls ChanOpenTry)
-	// If module can already authenticate the capability then module already owns it so we don't need to claim
-	// Otherwise, module does not have channel capability and we must claim it from IBC
-	if !im.keeper.AuthenticateCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)) {
-		// Only claim channel capability passed back by IBC module if we do not already own it
-		if err := im.keeper.ClaimCapability(ctx, chanCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
-			return "", err
-		}
 	}
 
 	return types.Version, nil
@@ -178,6 +152,7 @@ func (im IBCModule) OnChanCloseConfirm(
 // logic returns without error.
 func (im IBCModule) OnRecvPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) ibcexported.Acknowledgement {
@@ -191,12 +166,12 @@ func (im IBCModule) OnRecvPacket(
 	// only attempt the application logic if the packet data
 	// was successfully decoded
 	if ack.Success() {
-		if err := im.keeper.OnRecvPacket(ctx, packet, data); err != nil {
+		if err := im.keeper.OnRecvPacket(ctx, channelVersion, packet, data); err != nil {
 			ack = types.NewErrorAcknowledgement(err)
 		}
 	}
-
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypePacket,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
@@ -215,6 +190,7 @@ func (im IBCModule) OnRecvPacket(
 // OnAcknowledgementPacket implements the IBCModule interface
 func (im IBCModule) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
@@ -228,11 +204,11 @@ func (im IBCModule) OnAcknowledgementPacket(
 		return newsdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-721 transfer packet data: %s", err.Error())
 	}
 
-	if err := im.keeper.OnAcknowledgementPacket(ctx, packet, data, ack); err != nil {
+	if err := im.keeper.OnAcknowledgementPacket(ctx, channelVersion, packet, data, ack); err != nil {
 		return err
 	}
-
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypePacket,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
@@ -246,14 +222,16 @@ func (im IBCModule) OnAcknowledgementPacket(
 
 	switch resp := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Result:
-		ctx.EventManager().EmitEvent(
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
 				sdk.NewAttribute(types.AttributeKeyAckSuccess, string(resp.Result)),
 			),
 		)
 	case *channeltypes.Acknowledgement_Error:
-		ctx.EventManager().EmitEvent(
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		sdkCtx.EventManager().EmitEvent(
 			sdk.NewEvent(
 				types.EventTypePacket,
 				sdk.NewAttribute(types.AttributeKeyAckError, resp.Error),
@@ -267,6 +245,7 @@ func (im IBCModule) OnAcknowledgementPacket(
 // OnTimeoutPacket implements the IBCModule interface
 func (im IBCModule) OnTimeoutPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
@@ -275,11 +254,11 @@ func (im IBCModule) OnTimeoutPacket(
 		return newsdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "cannot unmarshal ICS-721 transfer packet data: %s", err.Error())
 	}
 	// refund tokens
-	if err := im.keeper.OnTimeoutPacket(ctx, packet, data); err != nil {
+	if err := im.keeper.OnTimeoutPacket(ctx, channelVersion, packet, data); err != nil {
 		return err
 	}
-
-	ctx.EventManager().EmitEvent(
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.EventManager().EmitEvent(
 		sdk.NewEvent(
 			types.EventTypeTimeout,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),

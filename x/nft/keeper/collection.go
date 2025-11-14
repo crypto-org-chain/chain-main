@@ -3,17 +3,17 @@
 package keeper
 
 import (
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/exported"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // SetGenesisCollection saves all NFTs and returns an error if there already exists or any one of the owner's bech32
@@ -75,7 +75,7 @@ func (k Keeper) GetPaginateCollection(ctx sdk.Context, request *types.QueryColle
 	var nfts []exported.NFT
 	store := ctx.KVStore(k.storeKey)
 	nftStore := prefix.NewStore(store, types.KeyNFT(denomID, ""))
-	pageRes, err := query.Paginate(nftStore, request.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(nftStore, request.Pagination, func(key, value []byte) error {
 		var baseNFT types.BaseNFT
 		k.cdc.MustUnmarshal(value, &baseNFT)
 		nfts = append(nfts, baseNFT)

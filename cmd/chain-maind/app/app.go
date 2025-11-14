@@ -8,21 +8,24 @@ import (
 	"path/filepath"
 	"time"
 
-	clientcfg "github.com/cosmos/cosmos-sdk/client/config"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	"github.com/cosmos/cosmos-sdk/types/module"
-
-	"cosmossdk.io/log"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
+	rosettaCmd "github.com/cosmos/rosetta/cmd"
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/app/params"
+	"github.com/crypto-org-chain/chain-main/v8/config"
+	chainmaincli "github.com/crypto-org-chain/chain-main/v8/x/chainmain/client/cli"
+	memiavlcfg "github.com/crypto-org-chain/cronos-store/store/config"
 	"github.com/imdario/mergo"
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
+	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+
 	"github.com/cosmos/cosmos-sdk/client"
+	clientcfg "github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/debug"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
@@ -31,21 +34,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
-	rosettaCmd "github.com/cosmos/rosetta/cmd"
-
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/app/params"
-	"github.com/crypto-org-chain/chain-main/v4/config"
-	chainmaincli "github.com/crypto-org-chain/chain-main/v4/x/chainmain/client/cli"
-
-	memiavlcfg "github.com/crypto-org-chain/cronos/store/config"
 )
 
 const EnvPrefix = "CRO"
@@ -112,7 +110,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
-func initAppConfig() (string, interface{}) {
+func initAppConfig() (string, any) {
 	// The following code snippet is just for reference.
 
 	type CustomAppConfig struct {
@@ -145,38 +143,38 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		serverCtx.Config.Consensus.TimeoutCommit = 3 * time.Second
 	}
 	initCmd.PostRunE = func(cmd *cobra.Command, args []string) error {
-		genesisPatch := map[string]interface{}{
-			"app_state": map[string]interface{}{
-				"staking": map[string]interface{}{
+		genesisPatch := map[string]any{
+			"app_state": map[string]any{
+				"staking": map[string]any{
 					"params": map[string]string{
 						"bond_denom": config.BaseCoinUnit,
 					},
 				},
-				"gov": map[string]interface{}{
-					"deposit_params": map[string]interface{}{
+				"gov": map[string]any{
+					"deposit_params": map[string]any{
 						"min_deposit": sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinDepositTokens)),
 					},
 				},
-				"mint": map[string]interface{}{
+				"mint": map[string]any{
 					"params": map[string]string{
 						"mint_denom": config.BaseCoinUnit,
 					},
 				},
-				"bank": map[string]interface{}{
-					"denom_metadata": []interface{}{
-						map[string]interface{}{
+				"bank": map[string]any{
+					"denom_metadata": []any{
+						map[string]any{
 							"name":        "Crypto.org Chain",
 							"symbol":      "CRO",
 							"description": "The native token of Crypto.org Chain.",
-							"denom_units": []interface{}{
-								map[string]interface{}{
+							"denom_units": []any{
+								map[string]any{
 									"denom":    config.BaseCoinUnit,
 									"exponent": 0,
-									"aliases": []interface{}{
+									"aliases": []any{
 										"carson",
 									},
 								},
-								map[string]interface{}{
+								map[string]any{
 									"denom":    config.HumanCoinUnit,
 									"exponent": 8,
 								},
@@ -186,7 +184,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 						},
 					},
 				},
-				"transfer": map[string]interface{}{
+				"transfer": map[string]any{
 					"params": map[string]bool{
 						"send_enabled":    false,
 						"receive_enabled": false,
@@ -211,7 +209,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 				fmt.Printf("Error closing file: %s\n", closeErr)
 			}
 		}()
-		var genesis map[string]interface{}
+		var genesis map[string]any
 		if decodeErr := json.NewDecoder(file).Decode(&genesis); decodeErr != nil {
 			return decodeErr
 		}

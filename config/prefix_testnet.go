@@ -1,5 +1,4 @@
 //go:build testnet
-// +build testnet
 
 package config
 

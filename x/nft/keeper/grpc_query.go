@@ -5,15 +5,15 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	sdkerrors "cosmossdk.io/errors"
 	"cosmossdk.io/store/prefix"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -50,7 +50,7 @@ func (k Keeper) Owner(c context.Context, request *types.QueryOwnerRequest) (*typ
 	idsMap := make(map[string][]string)
 	store := ctx.KVStore(k.storeKey)
 	nftStore := prefix.NewStore(store, types.KeyOwner(ownerAddress, request.DenomId, ""))
-	pageRes, err := query.Paginate(nftStore, request.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(nftStore, request.Pagination, func(key, value []byte) error {
 		denomID := request.DenomId
 		tokenID := string(key)
 		if len(request.DenomId) == 0 {
@@ -118,7 +118,7 @@ func (k Keeper) Denoms(c context.Context, req *types.QueryDenomsRequest) (*types
 	var denoms []types.Denom
 	store := ctx.KVStore(k.storeKey)
 	denomStore := prefix.NewStore(store, types.KeyDenomID(""))
-	pageRes, err := query.Paginate(denomStore, req.Pagination, func(key []byte, value []byte) error {
+	pageRes, err := query.Paginate(denomStore, req.Pagination, func(key, value []byte) error {
 		var denom types.Denom
 		k.cdc.MustUnmarshal(value, &denom)
 		denoms = append(denoms, denom)

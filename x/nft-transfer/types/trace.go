@@ -9,9 +9,9 @@ import (
 
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
 	tmtypes "github.com/cometbft/cometbft/types"
+	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 
 	sdkerrors "cosmossdk.io/errors"
-	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 )
 
 // ParseHexHash parses a hex hash in string format to bytes and validates its correctness.

@@ -6,10 +6,11 @@ package keeper
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/types"
 )
 
 // RegisterInvariants registers all supply invariants
@@ -28,7 +29,7 @@ func AllInvariants(k Keeper) sdk.Invariant {
 func SupplyInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		ownersCollectionsSupply := make(map[string]uint64)
-		var msg string
+		var msg strings.Builder
 		count := 0
 
 		owners, err := k.GetOwners(ctx)
@@ -45,19 +46,19 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 		for denom, supply := range ownersCollectionsSupply {
 			if supply != k.GetTotalSupply(ctx, denom) {
 				count++
-				msg += fmt.Sprintf(
+				msg.WriteString(fmt.Sprintf(
 					"total %s NFTs supply invariance:\n"+
 						"\ttotal %s NFTs supply: %d\n"+
 						"\tsum of %s NFTs by owner: %d\n",
 					denom, denom, supply, denom, ownersCollectionsSupply[denom],
-				)
+				))
 			}
 		}
 		broken := count != 0
 
 		return sdk.FormatInvariant(
 			types.ModuleName, "supply",
-			fmt.Sprintf("%d NFT supply invariants found\n%s", count, msg),
+			fmt.Sprintf("%d NFT supply invariants found\n%s", count, msg.String()),
 		), broken
 	}
 }

@@ -5,15 +5,16 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/crypto-org-chain/chain-main/v8/app"
+	"github.com/crypto-org-chain/chain-main/v8/config"
+	"github.com/stretchr/testify/require"
+
 	sdkmath "cosmossdk.io/math"
+
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	keys "github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/require"
-
-	"github.com/crypto-org-chain/chain-main/v4/app"
-	"github.com/crypto-org-chain/chain-main/v4/config"
 )
 
 func TestMnemonic(t *testing.T) {

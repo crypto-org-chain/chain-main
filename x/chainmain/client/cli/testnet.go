@@ -13,19 +13,20 @@ import (
 	"path/filepath"
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	tmconfig "github.com/cometbft/cometbft/config"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmtypes "github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
-	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/spf13/cobra"
+
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/crypto/hd"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	crypto "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/server"
 	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -53,7 +54,7 @@ var (
 	flagUnbondingTime     = "unbonding-time"
 )
 
-// get cmd to initialize all files for cometbft testnet and application
+// AddTestnetCmd get cmd to initialize all files for cometbft testnet and application
 func AddTestnetCmd(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
@@ -156,7 +157,7 @@ var (
 	genFiles    []string
 )
 
-// Initialize the testnet
+// InitTestnet Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
 	cmd *cobra.Command,
@@ -411,7 +412,7 @@ func initGenFiles(
 	// set gov min_deposit in the genesis state
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
-	govGenState.DepositParams.MinDeposit[0].Denom = baseDenom //nolint:staticcheck
+	govGenState.Params.MinDeposit[0].Denom = baseDenom
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
@@ -533,7 +534,7 @@ func calculateIP(ip string, i int) (string, error) {
 	return ipv4.String(), nil
 }
 
-func writeFile(name string, dir string, contents []byte) error {
+func writeFile(name, dir string, contents []byte) error {
 	file := filepath.Join(dir, name)
 
 	err := tmos.EnsureDir(dir, 0o755)

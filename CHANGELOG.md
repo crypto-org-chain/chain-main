@@ -2,6 +2,36 @@
 
 ## UNRELEASED
 
+### Improvements
+- [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
+### Bugfixes
+- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
+
+
+*July 9, 2025*
+
+## v7.0.0
+
+### Improvements
+- [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
+- [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
+- [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
+- [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
+- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
+- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+- [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
+- [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
+
+
+*July 9, 2025*
+
+## v6.0.0-2
+- [#1174](https://github.com/crypto-org-chain/chain-main/pull/1174) Replace cosmos sdk fork with official version.
+
+*May 26, 2025*
+
+## v6.0.0
+
 - [#1023](https://github.com/crypto-org-chain/chain-main/pull/1023) Integrate sdk 0.47
 - [#1044](https://github.com/crypto-org-chain/chain-main/pull/1044) Revert the protobuf package name changes introduced in #1023.
 - [#1060](https://github.com/crypto-org-chain/chain-main/pull/1060) Upgrade rocksdb to `v9.2.1` and bump versiondb.
@@ -14,6 +44,36 @@
 * [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Update cometbft to `0.38.13`, sdk to `v0.50.10` and memiavl to latest.
 - [#1091](https://github.com/crypto-org-chain/chain-main/pull/1091) Upgrade cometbft to v0.38.13, cosmos-sdk to `v0.50.10`.
 - [#1099](https://github.com/crypto-org-chain/chain-main/pull/1099) Avoid negative coin amount error when query supply liquid of non BaseCoinUnit.
+- [#1157](https://github.com/crypto-org-chain/chain-main/pull/1157) Cache index/filters in rocksdb application.db to reduce ram usage.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add x/circuit module.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Add Cosmos SDK v0.47 and v0.50 upgrade.
+- [#1153](https://github.com/crypto-org-chain/chain-main/pull/1153) Cronos POS v6 is not released.
+- [#1160](https://github.com/crypto-org-chain/chain-main/pull/1160) Add x/circuit test cases in upgrade test
+- [#1160](https://github.com/crypto-org-chain/chain-main/pull/1160) Refactor integration tests to use more meaningful name
+
+*April 28, 2025*
+
+## v5.0.2
+
+### Bug Fixes
+
+* [#1150](https://github.com/crypto-org-chain/chain-main/pull/1150) Upgrade math and cosmos sdk to latest to include bug fix.
+
+*Mar 13, 2025*
+
+## v5.0.1
+
+### Bug Fixes
+
+- [#1134](https://github.com/crypto-org-chain/chain-main/pull/1134) Merge commit from fork.
+
+*Mar 3, 2025*
+
+## v5.0.0
+
+### State Machine Breaking
+
+- [#1125](https://github.com/crypto-org-chain/chain-main/pull/1125) Cronos New Golden Age.
 
 *Dec 6, 2023*
 

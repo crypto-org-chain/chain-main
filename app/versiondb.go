@@ -1,5 +1,4 @@
 //go:build rocksdb
-// +build rocksdb
 
 package app
 
@@ -7,9 +6,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/crypto-org-chain/cronos-store/versiondb"
+	"github.com/crypto-org-chain/cronos-store/versiondb/tsrocksdb"
+
 	storetypes "cosmossdk.io/store/types"
-	"github.com/crypto-org-chain/cronos/versiondb"
-	"github.com/crypto-org-chain/cronos/versiondb/tsrocksdb"
 )
 
 func (app *ChainApp) setupVersionDB(

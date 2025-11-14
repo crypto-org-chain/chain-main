@@ -29,7 +29,8 @@
   - [quick start](#quick-start)
   - [get status](#get-status)
   - [stop all](#stop-all)
-- [10. Useful links](#10-useful-links)
+- [10. Compile with RocksDB](#10-rocksdb)
+- [11. Useful links](#10-useful-links)
 
 <a id="description" />
 
@@ -181,9 +182,31 @@ pystarport supervisorctl stop all
 
 ---
 
+<a id="rocksdb" />
+
+## 10. Compile with RocksDB
+
+Install rocksDB
+```
+nix profile install -f ./nix rocksdb
+```
+
+Set in path
+
+```
+export PKG_CONFIG_PATH=$HOME/.nix-profile/lib/pkgconfig 
+export CGO_CFLAGS="$(pkg-config --cflags rocksdb)" CGO_LDFLAGS="$(pkg-config --libs rocksdb)"
+```
+
+Enable rocksdb in compilation option
+
+```
+export COSMOS_BUILD_OPTIONS=rocksdb
+```
+
 <a id="useful-links" />
 
-## 10. Useful links
+## 11. Useful links
 
 - [Project Website](https://cronos-pos.org/)
 - [Technical Documentation](https://docs.cronos-pos.org/)

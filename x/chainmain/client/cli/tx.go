@@ -3,11 +3,11 @@ package cli
 import (
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/chainmain/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/crypto-org-chain/chain-main/v4/x/chainmain/types"
 )
 
 // GetTxCmd returns the transaction commands for this module

@@ -50,7 +50,7 @@ endif
 # handle rocksdb
 ifeq (rocksdb,$(findstring rocksdb,$(COSMOS_BUILD_OPTIONS)))
   CGO_ENABLED=1
-  BUILD_TAGS += rocksdb
+  BUILD_TAGS += rocksdb grocksdb_clean_link
 endif
 # handle boltdb
 ifeq (boltdb,$(findstring boltdb,$(COSMOS_BUILD_OPTIONS)))
@@ -76,7 +76,7 @@ ldflags = -X github.com/cosmos/cosmos-sdk/version.Name=crypto-org-chain-chain \
 	-X github.com/cosmos/cosmos-sdk/version.AppName=chain-maind \
 	-X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 	-X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT) \
-	-X github.com/tendermint/tendermint/version.TMCoreSemVer=$(TMVERSION) \
+	-X github.com/cometbft/cometbft/version.TMCoreSemVer=$(TMVERSION) \
 	-X "github.com/cosmos/cosmos-sdk/version.BuildTags=$(build_tags_comma_sep)"
 
 ifeq (,$(findstring nostrip,$(COSMOS_BUILD_OPTIONS)))
@@ -100,7 +100,7 @@ TEST_FLAGS := -tags "$(test_tags)"
 
 TESTNET_FLAGS ?=
 
-SIMAPP = github.com/crypto-org-chain/chain-main/v4/app
+SIMAPP = github.com/crypto-org-chain/chain-main/v8/app
 BINDIR ?= ~/go/bin
 
 OS := $(shell uname)
@@ -144,10 +144,22 @@ test: check-network
 	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
+lint-install:
+	@echo "--> Installing golangci-lint $(golangci_version)"
+	@nix profile install -f ./nix golangci-lint
+
 # look into .golangci.yml for enabling / disabling linters
 lint:
 	@echo "--> Running linter"
 	@golangci-lint run
+	@go mod verify
+	@flake8 --show-source --count --statistics
+	@find . -name "*.nix" -type f | xargs nixfmt -c
+
+
+lint-fix:
+	@echo "--> Running linter"
+	@golangci-lint run --fix
 	@go mod verify
 	@flake8 --show-source --count --statistics
 	@find . -name "*.nix" -type f | xargs nixfmt -c
@@ -157,6 +169,10 @@ lint:
 lint-ci:
 	@echo "--> Running linter for CI"
 	@nix-shell --pure -E "with (import ./nix {}); mkShell { buildInputs = [lint-ci]; }" --run lint-ci
+
+vulncheck: $(BUILDDIR)/
+	GOBIN=$(BUILDDIR) go install golang.org/x/vuln/cmd/govulncheck@latest
+	$(BUILDDIR)/govulncheck ./...
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
@@ -270,7 +286,7 @@ endif
 
 check-os:
 ifeq ($(OS), Darwin)
-ifneq ("$(wildcard ~/.nix/remote-build-env))","")
+ifneq ($(wildcard $(HOME)/.nix/remote-build-env),)
 	@echo "installed nix-remote-builder before" && \
 	docker run --restart always --name nix-docker -d -p 3022:22 lnl7/nix:ssh 2> /dev/null || echo "nix-docker is already running"
 else

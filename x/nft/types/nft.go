@@ -5,9 +5,9 @@ package types
 import (
 	fmt "fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/nft/exported"
 
-	"github.com/crypto-org-chain/chain-main/v4/x/nft/exported"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var _ exported.NFT = BaseNFT{}
@@ -37,7 +37,7 @@ func (bnft BaseNFT) GetName() string {
 func (bnft BaseNFT) GetOwner() sdk.AccAddress {
 	owner, err := sdk.AccAddressFromBech32(bnft.Owner)
 	if err != nil {
-		panic(fmt.Errorf("couldn't convert %q to account address: %v", bnft.Owner, err))
+		panic(fmt.Errorf("couldn't convert %q to account address: %w", bnft.Owner, err))
 	}
 
 	return owner
