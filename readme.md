@@ -210,7 +210,7 @@ export COSMOS_BUILD_OPTIONS=rocksdb
 
 - [Project Website](https://cronos-pos.org/)
 - [Technical Documentation](https://docs.cronos-pos.org/)
-- Community chatrooms (non-technical): [Discord](https://discord.gg/MkvPzvP5) [Telegram](**Update Telegram Link**)
+- Community chatrooms (non-technical): [Discord](https://discord.gg/MkvPzvP5), [Telegram](https://t.me/Cronos_Announcements)
 - Developer community channel (technical): [![Support Server](https://img.shields.io/discord/783264383978569728.svg?color=7289da&label=Cronos.org%20Chain&logo=discord&style=flat-square)](https://discord.gg/pahqHz26q4)
 
 - [Cosmos SDK documentation](https://docs.cosmos.network)
