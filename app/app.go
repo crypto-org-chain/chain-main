@@ -579,6 +579,32 @@ func New(
 
 	app.ModuleManager.SetOrderPreBlockers(
 		upgradetypes.ModuleName,
+		minttypes.ModuleName,
+		distrtypes.ModuleName,
+		slashingtypes.ModuleName,
+		evidencetypes.ModuleName,
+		stakingtypes.ModuleName,
+		ibcexported.ModuleName,
+		ibctm.ModuleName,
+		solom.ModuleName,
+		ibctransfertypes.ModuleName,
+		authtypes.ModuleName,
+		banktypes.ModuleName,
+		govtypes.ModuleName,
+		genutiltypes.ModuleName,
+		authz.ModuleName,
+		feegrant.ModuleName,
+		group.ModuleName,
+		paramstypes.ModuleName,
+		vestingtypes.ModuleName,
+		icatypes.ModuleName,
+		chainmaintypes.ModuleName,
+		nfttypes.ModuleName,
+		nfttransfertypes.ModuleName,
+		supplytypes.ModuleName,
+		maxsupplytypes.ModuleName,
+		consensusparamtypes.ModuleName,
+		circuittypes.ModuleName,
 	)
 
 	// During begin block slashing happens after distr.BeginBlocker so that
