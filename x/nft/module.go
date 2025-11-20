@@ -113,7 +113,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterInvariants registers the NFT module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {} //nolint:staticcheck
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (a AppModuleBasic) ConsensusVersion() uint64 { return 1 }

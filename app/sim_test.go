@@ -72,7 +72,7 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 func NewSimApp(logger log.Logger, db dbm.DB, baseAppOptions ...func(*baseapp.BaseApp)) (*app.ChainApp, error) {
 	appOptions := make(simtestutil.AppOptionsMap, 0)
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue //nolint:staticcheck // upstream flag marked deprecated but still required for sim tests
 	app := app.New(logger, db, nil, false, appOptions, baseAppOptions...)
 	if err := app.LoadLatestVersion(); err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func TestFullAppSimulation(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue) //nolint:staticcheck
 	if skip {
 		t.Skip("skipping application simulation")
 	}
@@ -125,7 +125,7 @@ func TestAppImportExport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue) //nolint:staticcheck
 	if skip {
 		t.Skip("skipping application import/export simulation")
 	}
@@ -168,7 +168,7 @@ func TestAppImportExport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue) //nolint:staticcheck
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -241,7 +241,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue) //nolint:staticcheck
 	if skip {
 		t.Skip("skipping application simulation after import")
 	}
@@ -291,7 +291,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue) //nolint:staticcheck
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -326,15 +326,15 @@ func TestAppSimulationAfterImport(t *testing.T) {
 // TODO: Make another test for the fuzzer itself, which just has noOp txs
 // and doesn't depend on the application.
 func TestAppStateDeterminism(t *testing.T) {
-	if !simcli.FlagEnabledValue {
+	if !simcli.FlagEnabledValue { //nolint:staticcheck
 		t.Skip("skipping application simulation")
 	}
 
 	config := simcli.NewConfigFromFlags()
 	config.InitialBlockHeight = 1
 	config.ExportParamsPath = ""
-	config.OnOperation = false
-	config.AllInvariants = false
+	config.OnOperation = false    //nolint:staticcheck
+	config.AllInvariants = false  //nolint:staticcheck
 	config.ChainID = SimAppChainID
 
 	numSeeds := 3

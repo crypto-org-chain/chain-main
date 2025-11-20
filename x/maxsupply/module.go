@@ -124,7 +124,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterInvariants registers the maxsupply module invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {} //nolint:staticcheck
 
 // InitGenesis performs genesis initialization for the maxsupply module. It returns
 // no validator updates.

@@ -106,7 +106,7 @@ func NewAppModule(keeper keeper.Keeper) AppModule {
 }
 
 // RegisterInvariants registers the capability module's invariants.
-func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {}
+func (am AppModule) RegisterInvariants(_ sdk.InvariantRegistry) {} //nolint:staticcheck
 
 // RegisterServices registers query server.
 func (am AppModule) RegisterServices(cfg module.Configurator) {

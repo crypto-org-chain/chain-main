@@ -14,19 +14,19 @@ import (
 )
 
 // RegisterInvariants registers all supply invariants
-func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
+func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) { //nolint:staticcheck
 	ir.RegisterRoute(types.ModuleName, "supply", SupplyInvariant(k))
 }
 
 // AllInvariants runs all invariants of the NFT module.
-func AllInvariants(k Keeper) sdk.Invariant {
+func AllInvariants(k Keeper) sdk.Invariant { //nolint:staticcheck
 	return func(ctx sdk.Context) (string, bool) {
 		return SupplyInvariant(k)(ctx)
 	}
 }
 
 // SupplyInvariant checks that the total amount of NFTs on collections matches the total amount owned by addresses
-func SupplyInvariant(k Keeper) sdk.Invariant {
+func SupplyInvariant(k Keeper) sdk.Invariant { //nolint:staticcheck
 	return func(ctx sdk.Context) (string, bool) {
 		ownersCollectionsSupply := make(map[string]uint64)
 		var msg strings.Builder
@@ -34,7 +34,7 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 
 		owners, err := k.GetOwners(ctx)
 		if err != nil {
-			return sdk.FormatInvariant(types.ModuleName, "supply", "unable to fetch owners"), true
+			return sdk.FormatInvariant(types.ModuleName, "supply", "unable to fetch owners"), true //nolint:staticcheck
 		}
 
 		for _, owner := range owners {
@@ -56,7 +56,7 @@ func SupplyInvariant(k Keeper) sdk.Invariant {
 		}
 		broken := count != 0
 
-		return sdk.FormatInvariant(
+		return sdk.FormatInvariant( //nolint:staticcheck
 			types.ModuleName, "supply",
 			fmt.Sprintf("%d NFT supply invariants found\n%s", count, msg.String()),
 		), broken
