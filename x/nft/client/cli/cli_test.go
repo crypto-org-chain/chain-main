@@ -8,7 +8,6 @@ import (
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cosmos/gogoproto/proto"
-	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
 	nftcli "github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
 	nfttestutil "github.com/crypto-org-chain/chain-main/v8/x/nft/client/testutil"
@@ -16,7 +15,6 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	sdkmath "cosmossdk.io/math"
-	"cosmossdk.io/simapp"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
@@ -36,13 +34,10 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	var err error
 	s.T().Log("setting up integration test suite")
 
-	cfg := network.DefaultConfig(simapp.NewTestNetworkFixture)
+	cfg := network.DefaultConfig(nfttestutil.NewChainMainTestNetworkFixture)
 	cfg.ChainID = testutil.ChainID
 	cfg.AppConstructor = nfttestutil.GetApp
 	cfg.NumValidators = 2
-
-	encCfg := app.MakeEncodingConfig()
-	cfg.GenesisState = app.NewDefaultGenesisState(encCfg.Marshaler)
 
 	s.cfg = cfg
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
