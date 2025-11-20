@@ -333,8 +333,8 @@ func TestAppStateDeterminism(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.InitialBlockHeight = 1
 	config.ExportParamsPath = ""
-	config.OnOperation = false    //nolint:staticcheck
-	config.AllInvariants = false  //nolint:staticcheck
+	config.OnOperation = false   //nolint:staticcheck
+	config.AllInvariants = false //nolint:staticcheck
 	config.ChainID = SimAppChainID
 
 	numSeeds := 3
