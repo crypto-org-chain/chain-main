@@ -13,11 +13,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// RegisterInvariants registers all supply invariants
-func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) { //nolint:staticcheck
-	ir.RegisterRoute(types.ModuleName, "supply", SupplyInvariant(k))
-}
-
 // SupplyInvariant checks that the total amount of NFTs on collections matches the total amount owned by addresses
 func SupplyInvariant(k Keeper) sdk.Invariant { //nolint:staticcheck
 	return func(ctx sdk.Context) (string, bool) {
