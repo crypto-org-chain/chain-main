@@ -18,13 +18,6 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) { //nolint:staticche
 	ir.RegisterRoute(types.ModuleName, "supply", SupplyInvariant(k))
 }
 
-// AllInvariants runs all invariants of the NFT module.
-func AllInvariants(k Keeper) sdk.Invariant { //nolint:staticcheck
-	return func(ctx sdk.Context) (string, bool) {
-		return SupplyInvariant(k)(ctx)
-	}
-}
-
 // SupplyInvariant checks that the total amount of NFTs on collections matches the total amount owned by addresses
 func SupplyInvariant(k Keeper) sdk.Invariant { //nolint:staticcheck
 	return func(ctx sdk.Context) (string, bool) {
