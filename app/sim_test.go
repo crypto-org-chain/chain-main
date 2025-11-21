@@ -84,6 +84,7 @@ func TestFullAppSimulation(t *testing.T) {
 	config.ChainID = SimAppChainID
 
 	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	if skip {
 		t.Skip("skipping application simulation")
 	}
 	require.NoError(t, err, "simulation setup failed")
