@@ -92,9 +92,6 @@ func NewAppModule(k keeper.Keeper) AppModule {
 	}
 }
 
-// RegisterInvariants implements the AppModule interface
-func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), am.keeper)

@@ -11,6 +11,7 @@ import (
 	apptestutil "github.com/crypto-org-chain/chain-main/v8/testutil"
 	nftcli "github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
 
+	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -21,6 +22,7 @@ import (
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 )
 
 func GetApp(val network.ValidatorI) servertypes.Application {
@@ -33,6 +35,26 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
 		baseapp.SetChainID(apptestutil.ChainID),
 	)
+}
+
+func NewChainMainTestNetworkFixture() network.TestFixture {
+	chainApp := app.New(
+		log.NewNopLogger(), dbm.NewMemDB(), nil, true,
+		simtestutil.EmptyAppOptions{},
+		baseapp.SetChainID(apptestutil.ChainID),
+	)
+	encCfg := chainApp.EncodingConfig()
+
+	return network.TestFixture{
+		AppConstructor: GetApp,
+		GenesisState:   chainApp.DefaultGenesis(),
+		EncodingConfig: moduletestutil.TestEncodingConfig{
+			InterfaceRegistry: encCfg.InterfaceRegistry,
+			Codec:             encCfg.Marshaler,
+			TxConfig:          encCfg.TxConfig,
+			Amino:             encCfg.Amino,
+		},
+	}
 }
 
 func IssueDenomExec(clientCtx client.Context, from, denom string, extraArgs ...string) (testutil.BufferWriter, error) {

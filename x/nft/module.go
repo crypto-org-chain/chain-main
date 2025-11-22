@@ -112,9 +112,6 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 }
 
-// RegisterInvariants registers the NFT module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
-
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (a AppModuleBasic) ConsensusVersion() uint64 { return 1 }
 
