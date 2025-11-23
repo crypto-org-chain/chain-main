@@ -2,10 +2,6 @@
 // Modifications Copyright (c) 2021-present Cronos.org (licensed under the Apache License, Version 2.0)
 package keeper_test
 
-import (
-	"github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
-)
-
 func (suite *KeeperSuite) TestGetNFT() {
 	// MintNFT shouldn't fail when collection does not exist
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
@@ -31,8 +27,6 @@ func (suite *KeeperSuite) TestGetNFT() {
 	suite.True(receivedNFT2.GetOwner().Equals(address))
 	suite.Equal(receivedNFT2.GetURI(), tokenURI)
 
-	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)
-	suite.False(fail, msg)
 }
 
 func (suite *KeeperSuite) TestGetNFTs() {

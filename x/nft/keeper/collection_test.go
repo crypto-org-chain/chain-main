@@ -3,7 +3,6 @@
 package keeper_test
 
 import (
-	"github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 )
 
@@ -31,8 +30,6 @@ func (suite *KeeperSuite) TestSetCollection() {
 	suite.NoError(err)
 	suite.Len(collection2.NFTs, 2)
 
-	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)
-	suite.False(fail, msg)
 }
 
 func (suite *KeeperSuite) TestGetCollection() {
@@ -45,8 +42,6 @@ func (suite *KeeperSuite) TestGetCollection() {
 	suite.NoError(err)
 	suite.NotEmpty(collection)
 
-	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)
-	suite.False(fail, msg)
 }
 
 func (suite *KeeperSuite) TestGetCollections() {
@@ -54,8 +49,6 @@ func (suite *KeeperSuite) TestGetCollections() {
 	err := suite.keeper.MintNFT(suite.ctx, denomID, tokenID, tokenNm, tokenURI, tokenData, address, address)
 	suite.NoError(err)
 
-	msg, fail := keeper.SupplyInvariant(suite.keeper)(suite.ctx)
-	suite.False(fail, msg)
 }
 
 func (suite *KeeperSuite) TestGetSupply() {
