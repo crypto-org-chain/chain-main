@@ -191,7 +191,6 @@ func (suite *KeeperSuite) TestBurnNFT() {
 	// NFT should no longer exist
 	isNFT := suite.keeper.HasNFT(suite.ctx, denomID, tokenID)
 	suite.False(isNFT)
-
 }
 
 // CreateTestAddrs creates test addresses

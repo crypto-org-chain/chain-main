@@ -28,5 +28,4 @@ func (suite *KeeperSuite) TestGetOwners() {
 	owners, err = suite.keeper.GetOwners(suite.ctx)
 	suite.NoError(err)
 	suite.Equal(3, len(owners))
-
 }

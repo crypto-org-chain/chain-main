@@ -26,7 +26,6 @@ func (suite *KeeperSuite) TestGetNFT() {
 
 	suite.True(receivedNFT2.GetOwner().Equals(address))
 	suite.Equal(receivedNFT2.GetURI(), tokenURI)
-
 }
 
 func (suite *KeeperSuite) TestGetNFTs() {
