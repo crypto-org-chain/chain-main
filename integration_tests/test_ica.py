@@ -209,10 +209,19 @@ def test_ica(cluster, tmp_path):
                 event_type = event.get("type", "")
                 if "ics27_packet" not in event_type:
                     continue
-                attrs = {attr["key"]: attr["value"] for attr in event.get("attributes", [])}
-                error_msg = attrs.get("ibccallbackerror-error") or attrs.get("error")
-                success = attrs.get("ibccallbackerror-success") or attrs.get("success")
-                is_error_event = event_type.startswith("ibccallbackerror") or success == "false"
+                attrs = {
+                    attr["key"]: attr["value"]
+                    for attr in event.get("attributes", [])
+                }
+                error_msg = (
+                    attrs.get("ibccallbackerror-error") or attrs.get("error")
+                )
+                success = (
+                    attrs.get("ibccallbackerror-success") or attrs.get("success")
+                )
+                is_error_event = (
+                    event_type.startswith("ibccallbackerror") or success == "false"
+                )
                 if is_error_event and error_msg:
                     ev = attrs
                     break
