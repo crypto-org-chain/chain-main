@@ -195,7 +195,6 @@ def test_ica(cluster, tmp_path):
     height = int(submit_msgs(1000000000000000))
 
     ev = None
-    type = "ibccallbackerror-ics27_packet"
     max_retry = 5
     for _ in range(max_retry):
         wait_for_new_blocks(cli_host, 1, sleep=0.1)
@@ -205,11 +204,26 @@ def test_ica(cluster, tmp_path):
         txs_results = res.get("result", {}).get("txs_results")
         if txs_results is None:
             continue
-        for res in txs_results:
-            ev = next((ev for ev in res.get("events", []) if ev["type"] == type), None)
+        for res in txs_results or []:
+            for event in res.get("events", []):
+                event_type = event.get("type", "")
+                if "ics27_packet" not in event_type:
+                    continue
+                attrs = {
+                    attr["key"]: attr["value"] for attr in event.get("attributes", [])
+                }
+                error_msg = attrs.get("ibccallbackerror-error") or attrs.get("error")
+                success = attrs.get("ibccallbackerror-success") or attrs.get("success")
+                is_error_event = (
+                    event_type.startswith("ibccallbackerror") or success == "false"
+                )
+                if is_error_event and error_msg:
+                    ev = attrs
+                    break
             if ev:
-                ev = {attr["key"]: attr["value"] for attr in ev["attributes"]}
                 break
         if ev:
             break
-    assert "insufficient funds" in ev["ibccallbackerror-error"], "no ibccallbackerror"
+    assert ev, "missing ics27 packet error event"
+    err_msg = ev.get("ibccallbackerror-error") or ev.get("error", "")
+    assert "insufficient funds" in err_msg, f"unexpected ics27 error: {err_msg}"

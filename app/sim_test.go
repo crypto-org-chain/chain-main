@@ -2,6 +2,7 @@ package app_test
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
@@ -33,7 +34,6 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -49,6 +49,48 @@ const (
 	appName       = "chain-maind"
 	SimAppChainID = "simulation_777-1"
 )
+
+func getSimulatorBoolFlag(name string) bool {
+	f := flag.Lookup(name)
+	if f == nil {
+		return false
+	}
+
+	getter, ok := f.Value.(flag.Getter)
+	if !ok {
+		return false
+	}
+
+	if v, ok := getter.Get().(bool); ok {
+		return v
+	}
+	return false
+}
+
+func getSimulatorUintFlag(name string) uint {
+	f := flag.Lookup(name)
+	if f == nil {
+		return 0
+	}
+
+	getter, ok := f.Value.(flag.Getter)
+	if !ok {
+		return 0
+	}
+
+	switch v := getter.Get().(type) {
+	case uint:
+		return v
+	case uint64:
+		return uint(v)
+	case int:
+		return uint(v)
+	case int64:
+		return uint(v)
+	}
+
+	return 0
+}
 
 type StoreKeysPrefixes struct {
 	A        storetypes.StoreKey
@@ -72,7 +114,7 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 func NewSimApp(logger log.Logger, db dbm.DB, baseAppOptions ...func(*baseapp.BaseApp)) (*app.ChainApp, error) {
 	appOptions := make(simtestutil.AppOptionsMap, 0)
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
-	appOptions[server.FlagInvCheckPeriod] = simcli.FlagPeriodValue
+	appOptions[server.FlagInvCheckPeriod] = getSimulatorUintFlag("Period")
 	app := app.New(logger, db, nil, false, appOptions, baseAppOptions...)
 	if err := app.LoadLatestVersion(); err != nil {
 		return nil, err
@@ -84,7 +126,7 @@ func TestFullAppSimulation(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, getSimulatorBoolFlag("Enabled"))
 	if skip {
 		t.Skip("skipping application simulation")
 	}
@@ -125,7 +167,7 @@ func TestAppImportExport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, getSimulatorBoolFlag("Enabled"))
 	if skip {
 		t.Skip("skipping application import/export simulation")
 	}
@@ -168,7 +210,7 @@ func TestAppImportExport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, getSimulatorBoolFlag("Enabled"))
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -218,7 +260,6 @@ func TestAppImportExport(t *testing.T) {
 		{simApp.GetKey(minttypes.StoreKey), newApp.GetKey(minttypes.StoreKey), [][]byte{}},
 		{simApp.GetKey(distrtypes.StoreKey), newApp.GetKey(distrtypes.StoreKey), [][]byte{}},
 		{simApp.GetKey(banktypes.StoreKey), newApp.GetKey(banktypes.StoreKey), [][]byte{banktypes.BalancesPrefix}},
-		{simApp.GetKey(paramtypes.StoreKey), newApp.GetKey(paramtypes.StoreKey), [][]byte{}},
 		{simApp.GetKey(govtypes.StoreKey), newApp.GetKey(govtypes.StoreKey), [][]byte{}},
 		{simApp.GetKey(evidencetypes.StoreKey), newApp.GetKey(evidencetypes.StoreKey), [][]byte{}},
 		{simApp.GetKey(authzkeeper.StoreKey), newApp.GetKey(authzkeeper.StoreKey), [][]byte{authzkeeper.GrantKey, authzkeeper.GrantQueuePrefix}},
@@ -241,7 +282,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = SimAppChainID
 
-	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	db, dir, logger, skip, err := simtestutil.SetupSimulation(config, "leveldb-app-sim", "Simulation", simcli.FlagVerboseValue, getSimulatorBoolFlag("Enabled"))
 	if skip {
 		t.Skip("skipping application simulation after import")
 	}
@@ -291,7 +332,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	require.NoError(t, err)
 
 	fmt.Printf("importing genesis...\n")
-	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, simcli.FlagEnabledValue)
+	newDB, newDir, _, _, err := simtestutil.SetupSimulation(config, "leveldb-app-sim-2", "Simulation-2", simcli.FlagVerboseValue, getSimulatorBoolFlag("Enabled"))
 	require.NoError(t, err, "simulation setup failed")
 
 	defer func() {
@@ -326,15 +367,13 @@ func TestAppSimulationAfterImport(t *testing.T) {
 // TODO: Make another test for the fuzzer itself, which just has noOp txs
 // and doesn't depend on the application.
 func TestAppStateDeterminism(t *testing.T) {
-	if !simcli.FlagEnabledValue {
+	if !getSimulatorBoolFlag("Enabled") {
 		t.Skip("skipping application simulation")
 	}
 
 	config := simcli.NewConfigFromFlags()
 	config.InitialBlockHeight = 1
 	config.ExportParamsPath = ""
-	config.OnOperation = false
-	config.AllInvariants = false
 	config.ChainID = SimAppChainID
 
 	numSeeds := 3
