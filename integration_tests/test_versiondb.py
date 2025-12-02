@@ -69,7 +69,7 @@ def test_versiondb_migration(cluster):
     # dump change set from node1's application.db
     changeset_dir = tempfile.mkdtemp(dir=cluster.data_root)
     print("dump to:", changeset_dir)
-    # only restore to an intermidiate version to test version mismatch behavior
+    # only restore to an intermediate version to test version mismatch behavior
     print(node1.changeset_dump(changeset_dir, end_version=block1 + 1))
 
     # verify and save to snapshot
