@@ -32,9 +32,9 @@
         in
         {
           inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
-          gomod2nix =
-            (callPackage "${gomodSrc}/default.nix" { })
-            .overrideAttrs (_: { modRoot = "."; });
+          gomod2nix = (callPackage "${gomodSrc}/default.nix" { }).overrideAttrs (_: {
+            modRoot = ".";
+          });
         };
       mkApp = drv: {
         type = "app";

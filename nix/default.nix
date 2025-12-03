@@ -26,9 +26,9 @@ import sources.nixpkgs {
       in
       {
         inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
-        gomod2nix =
-          (callPackage "${gomodSrc}/default.nix" { })
-          .overrideAttrs (_: { modRoot = "."; });
+        gomod2nix = (callPackage "${gomodSrc}/default.nix" { }).overrideAttrs (_: {
+          modRoot = ".";
+        });
       }
     )
     (import ./build_overlay.nix)
