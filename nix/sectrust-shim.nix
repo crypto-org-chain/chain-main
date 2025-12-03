@@ -101,8 +101,7 @@ stdenv.mkDerivation {
   '';
 
   meta = with lib; {
-    description =
-      "Compatibility shim implementing SecTrustEvaluateWithError for older macOS releases";
+    description = "Compatibility shim implementing SecTrustEvaluateWithError for older macOS releases";
     license = licenses.asl20;
     platforms = platforms.darwin;
   };
