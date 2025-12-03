@@ -17,7 +17,17 @@ import sources.nixpkgs {
       solomachine = pkgs.callPackage ./solomachine.nix { };
     })
     (import "${sources.poetry2nix}/overlay.nix")
-    (import "${sources.gomod2nix}/overlay.nix")
+    (
+      final: prev:
+      let
+        gomodSrc = sources.gomod2nix;
+        callPackage = final.callPackage;
+      in
+      {
+        inherit (callPackage "${gomodSrc}/builder" { }) buildGoApplication mkGoEnv mkVendorEnv;
+        gomod2nix = callPackage "${gomodSrc}/default.nix" { };
+      }
+    )
     (import ./build_overlay.nix)
     (pkgs: prev: {
       go = pkgs.go_1_25;
