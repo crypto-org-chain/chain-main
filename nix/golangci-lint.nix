@@ -4,13 +4,13 @@
   lib,
   installShellFiles,
   go_1_25,
+  sectrustShim,
+  stdenv,
 }:
 
-buildGoModule rec {
+(buildGoModule.override { go = go_1_25; }) rec {
   pname = "golangci-lint";
   version = "2.1.6";
-
-  go = go_1_25;
 
   src = fetchFromGitHub {
     owner = "golangci";
@@ -24,6 +24,10 @@ buildGoModule rec {
   subPackages = [ "cmd/golangci-lint" ];
 
   nativeBuildInputs = [ installShellFiles ];
+
+  preBuild = lib.optionalString stdenv.hostPlatform.isDarwin ''
+    export CGO_LDFLAGS="-L${sectrustShim}/lib -lsectrustshim $CGO_LDFLAGS"
+  '';
 
   ldflags = [
     "-s"
