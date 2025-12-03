@@ -8,7 +8,8 @@ COMMIT := $(shell git log -1 --format='%H')
 NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
-COVDATA_GOTOOLDIR ?= $(BUILDDIR)/gotools
+GO_DEFAULT_TOOLDIR := $(shell go env GOTOOLDIR 2>/dev/null)
+COVDATA_GOTOOLDIR ?= $(GO_DEFAULT_TOOLDIR)
 LEDGER_ENABLED ?= true
 
 export GO111MODULE = on
@@ -142,16 +143,30 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test: check-network covdata
-	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 covdata:
 	@toolDir="$(COVDATA_GOTOOLDIR)"; \
+	defaultToolDir="$(GO_DEFAULT_TOOLDIR)"; \
 	if [ -z "$$toolDir" ]; then \
-		echo "calculated covdata tool dir is empty"; \
+		toolDir="$$defaultToolDir"; \
+	fi; \
+	if [ -z "$$toolDir" ]; then \
+		echo "unable to determine Go tool directory; set COVDATA_GOTOOLDIR"; \
 		exit 1; \
 	fi; \
-	mkdir -p "$$toolDir"; \
+	if [ "$$toolDir" != "$$defaultToolDir" ]; then \
+		echo "--> installing covdata into $$toolDir (Go currently uses $$defaultToolDir)"; \
+	fi; \
+	if [ ! -d "$$toolDir" ]; then \
+		echo "--> Go tool directory $$toolDir is missing"; \
+		exit 1; \
+	fi; \
+	if [ ! -w "$$toolDir" ]; then \
+		echo "--> $$toolDir is not writable; install Go into a writable location or grant access before running make covdata"; \
+		exit 1; \
+	fi; \
 	if [ ! -x "$$toolDir/covdata" ]; then \
 		echo "--> building go tool covdata"; \
 		goRoot=$$(go env GOROOT); \
@@ -163,12 +178,20 @@ covdata:
 			echo "cannot find covdata sources under $$goRoot/src/cmd/covdata"; \
 			exit 1; \
 		fi; \
-		if (cd "$$goRoot/src/cmd/covdata" && GOEXPERIMENT=coverageredesign go build -trimpath -o "$$toolDir/covdata"); then \
+		tmpFile=$$(mktemp "$$toolDir/covdata.XXXXXX"); \
+		if (cd "$$goRoot/src/cmd/covdata" && GOEXPERIMENT=coverageredesign go build -trimpath -o "$$tmpFile"); then \
 			: ; \
 		else \
 			echo "--> retrying covdata build without GOEXPERIMENT"; \
-			(cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$toolDir/covdata"); \
+			if (cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$tmpFile"); then \
+				: ; \
+			else \
+				rm -f "$$tmpFile"; \
+				exit 1; \
+			fi; \
 		fi; \
+		mv "$$tmpFile" "$$toolDir/covdata"; \
+		chmod +x "$$toolDir/covdata"; \
 	fi
 .PHONY: covdata
 
@@ -204,13 +227,13 @@ vulncheck: $(BUILDDIR)/
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
-	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=0 -v -timeout 24h
 
 test-sim-custom-genesis-fast: check-network
 	@echo "Running custom genesis simulation..."
 	@echo "By default, ${HOME}/.chain-maind/config/genesis.json will be used."
-	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
+	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
 		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h -ExitOnFail
 
 test-sim-import-export:
