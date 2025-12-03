@@ -22,10 +22,13 @@ import sources.nixpkgs {
       let
         gomodSrc = sources.gomod2nix;
         callPackage = final.callPackage;
+        gomodBuilder = callPackage "${gomodSrc}/builder" { };
       in
       {
-        inherit (callPackage "${gomodSrc}/builder" { }) buildGoApplication mkGoEnv mkVendorEnv;
-        gomod2nix = callPackage "${gomodSrc}/default.nix" { };
+        inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
+        gomod2nix =
+          (callPackage "${gomodSrc}/default.nix" { })
+          .overrideAttrs (_: { modRoot = "."; });
       }
     )
     (import ./build_overlay.nix)

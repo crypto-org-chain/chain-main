@@ -28,10 +28,13 @@
         let
           gomodSrc = gomod2nix.outPath;
           callPackage = final.callPackage;
+          gomodBuilder = callPackage "${gomodSrc}/builder" { };
         in
         {
-          inherit (callPackage "${gomodSrc}/builder" { }) buildGoApplication mkGoEnv mkVendorEnv;
-          gomod2nix = callPackage "${gomodSrc}/default.nix" { };
+          inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
+          gomod2nix =
+            (callPackage "${gomodSrc}/default.nix" { })
+            .overrideAttrs (_: { modRoot = "."; });
         };
       mkApp = drv: {
         type = "app";
