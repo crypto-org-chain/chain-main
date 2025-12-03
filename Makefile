@@ -140,9 +140,36 @@ go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
 
-test: check-network
+test: check-network covdata
 	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
+
+covdata:
+	@toolDir=$$(go env GOTOOLDIR); \
+	if [ -z "$$toolDir" ]; then \
+		echo "go env GOTOOLDIR returned empty value"; \
+		exit 1; \
+	fi; \
+	if [ ! -x "$$toolDir/covdata" ]; then \
+		echo "--> building go tool covdata"; \
+		goRoot=$$(go env GOROOT); \
+		if [ -z "$$goRoot" ]; then \
+			echo "go env GOROOT returned empty value"; \
+			exit 1; \
+		fi; \
+		if [ ! -d "$$goRoot/src/cmd/covdata" ]; then \
+			echo "cannot find covdata sources under $$goRoot/src/cmd/covdata"; \
+			exit 1; \
+		fi; \
+		chmod u+w "$$toolDir" 2>/dev/null || true; \
+		if (cd "$$goRoot/src/cmd/covdata" && GOEXPERIMENT=coverageredesign go build -trimpath -o "$$toolDir/covdata"); then \
+			: ; \
+		else \
+			echo "--> retrying covdata build without GOEXPERIMENT"; \
+			(cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$toolDir/covdata"); \
+		fi; \
+	fi
+.PHONY: covdata
 
 lint-install:
 	@echo "--> Installing golangci-lint $(golangci_version)"
