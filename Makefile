@@ -8,6 +8,7 @@ COMMIT := $(shell git log -1 --format='%H')
 NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
+COVDATA_GOTOOLDIR ?= $(BUILDDIR)/gotools
 LEDGER_ENABLED ?= true
 
 export GO111MODULE = on
@@ -141,15 +142,16 @@ go.sum: go.mod
 		GO111MODULE=on go mod verify
 
 test: check-network covdata
-	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
+	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
 
 covdata:
-	@toolDir=$$(go env GOTOOLDIR); \
+	@toolDir="$(COVDATA_GOTOOLDIR)"; \
 	if [ -z "$$toolDir" ]; then \
-		echo "go env GOTOOLDIR returned empty value"; \
+		echo "calculated covdata tool dir is empty"; \
 		exit 1; \
 	fi; \
+	mkdir -p "$$toolDir"; \
 	if [ ! -x "$$toolDir/covdata" ]; then \
 		echo "--> building go tool covdata"; \
 		goRoot=$$(go env GOROOT); \
@@ -161,7 +163,6 @@ covdata:
 			echo "cannot find covdata sources under $$goRoot/src/cmd/covdata"; \
 			exit 1; \
 		fi; \
-		chmod u+w "$$toolDir" 2>/dev/null || true; \
 		if (cd "$$goRoot/src/cmd/covdata" && GOEXPERIMENT=coverageredesign go build -trimpath -o "$$toolDir/covdata"); then \
 			: ; \
 		else \
@@ -203,13 +204,13 @@ vulncheck: $(BUILDDIR)/
 
 test-sim-nondeterminism: check-network
 	@echo "Running non-determinism test..."
-	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
+	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestAppStateDeterminism -Enabled=true \
 		-NumBlocks=100 -BlockSize=200 -Commit=true -Period=0 -v -timeout 24h
 
 test-sim-custom-genesis-fast: check-network
 	@echo "Running custom genesis simulation..."
 	@echo "By default, ${HOME}/.chain-maind/config/genesis.json will be used."
-	@go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
+	@GOTOOLDIR=$(COVDATA_GOTOOLDIR) go test $(TEST_FLAGS) -mod=readonly $(SIMAPP) -run TestFullAppSimulation -Genesis=${HOME}/.gaiad/config/genesis.json \
 		-Enabled=true -NumBlocks=100 -BlockSize=200 -Commit=true -Seed=99 -Period=5 -v -timeout 24h -ExitOnFail
 
 test-sim-import-export:
