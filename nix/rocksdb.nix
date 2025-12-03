@@ -91,7 +91,11 @@ stdenv.mkDerivation rec {
     "-DCMAKE_C_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
     "-DCMAKE_CXX_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
   ]
-  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
+  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
+  ++ lib.optionals stdenv.hostPlatform.isMinGW [
+    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4}/include"
+    "-DLZ4_LIBRARY=${lib.getLib lz4}/lib/liblz4_static.a"
+  ];
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";
