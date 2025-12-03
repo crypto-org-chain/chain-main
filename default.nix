@@ -58,6 +58,7 @@ buildGoApplication rec {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
   };
+  modRoot = ".";
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
   buildFlags = lib.optionalString coverage "-cover";

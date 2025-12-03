@@ -9,7 +9,7 @@ let
     if len == 0 then [ ] else final.lib.lists.take (len - 1) l ++ [ newVal ];
 in
 {
-  go_1_25 = super.go_1_24.overrideAttrs (old: rec {
+  go_1_25 = super.go_1_25.overrideAttrs (old: rec {
     version = "1.25.0";
     src = final.fetchurl {
       url = "https://go.dev/dl/go${version}.src.tar.gz";

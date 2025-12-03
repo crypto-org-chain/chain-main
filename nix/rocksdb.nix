@@ -63,6 +63,7 @@ stdenv.mkDerivation rec {
     ]
     ++ lib.optionals stdenv.cc.isClang [
       "-Wno-error=unused-private-field"
+      "-Wno-error=nontrivial-memcall" # new clang diagnostic on 25.11 toolchain
       "-faligned-allocation"
     ];
 
