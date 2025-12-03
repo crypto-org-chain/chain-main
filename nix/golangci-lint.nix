@@ -3,11 +3,14 @@
   fetchFromGitHub,
   lib,
   installShellFiles,
+  go_1_25,
 }:
 
 buildGoModule rec {
   pname = "golangci-lint";
   version = "2.1.6";
+
+  go = go_1_25;
 
   src = fetchFromGitHub {
     owner = "golangci";
