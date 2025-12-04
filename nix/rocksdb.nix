@@ -67,6 +67,8 @@ stdenv.mkDerivation rec {
       "-faligned-allocation"
     ];
 
+  NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
+
   cmakeFlags = [
     "-DPORTABLE=1"
     "-DWITH_JEMALLOC=${if enableJemalloc then "1" else "0"}"
@@ -94,7 +96,15 @@ stdenv.mkDerivation rec {
   ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
   ++ lib.optionals stdenv.hostPlatform.isMinGW [
     "-DLZ4_INCLUDE_DIR=${lib.getDev lz4}/include"
-    "-DLZ4_LIBRARY=${lib.getLib lz4}/lib/liblz4_static.a"
+    "-DLZ4_LIBRARIES=${lib.getLib lz4}/lib/liblz4.dll.a"
+    "-DSNAPPY_INCLUDE_DIR=${lib.getDev snappy}/include"
+    "-DSNAPPY_LIBRARIES=${lib.getLib snappy}/lib/libsnappy.dll.a"
+    "-DZLIB_INCLUDE_DIR=${lib.getDev zlib}/include"
+    "-DZLIB_LIBRARY=${lib.getLib zlib}/lib/libz.dll.a"
+    "-Dbzip2_INCLUDE_DIR=${lib.getDev bzip2}/include"
+    "-Dbzip2_LIBRARIES=${lib.getLib bzip2}/lib/libbz2.dll.a"
+    "-DZSTD_INCLUDE_DIR=${lib.getDev zstd}/include"
+    "-DZSTD_LIBRARY=${lib.getLib zstd}/lib/libzstd.dll.a"
   ];
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
