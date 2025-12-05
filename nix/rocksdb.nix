@@ -27,7 +27,7 @@ let
         # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
         # This is needed for RocksDB which uses LZ4's streaming compression API
         cmakeFlags = (old.cmakeFlags or [ ]) ++ [
-          "-DCMAKE_C_FLAGS=-DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
+          "-DCMAKE_C_FLAGS+=\ -DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
         ];
       })
     else
