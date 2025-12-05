@@ -26,9 +26,7 @@ let
       lz4.overrideAttrs (old: {
         # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
         # This is needed for RocksDB which uses LZ4's streaming compression API
-        cmakeFlags = (old.cmakeFlags or [ ]) ++ [
-          "-DCMAKE_C_FLAGS+=\ -DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
-        ];
+        NIX_CFLAGS_COMPILE = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1${lib.optionalString (old ? NIX_CFLAGS_COMPILE) " ${old.NIX_CFLAGS_COMPILE}"}";
       })
     else
       lz4;
