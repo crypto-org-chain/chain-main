@@ -20,6 +20,24 @@
   sse42Support ? stdenv.hostPlatform.sse4_2Support,
 }:
 
+let
+  lz4Published =
+    if stdenv.hostPlatform.isMinGW then
+      lz4.overrideAttrs (old: {
+        NIX_CFLAGS_COMPILE =
+          let
+            prev =
+              if old ? NIX_CFLAGS_COMPILE then
+                if builtins.isList old.NIX_CFLAGS_COMPILE then old.NIX_CFLAGS_COMPILE else [ old.NIX_CFLAGS_COMPILE ]
+              else
+                [ ];
+          in
+          prev ++ [ "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1" ];
+      })
+    else
+      lz4;
+in
+
 stdenv.mkDerivation rec {
   pname = "rocksdb";
   version = "9.11.2";
@@ -38,7 +56,7 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [
     bzip2
-    lz4
+    lz4Published
     snappy
     zlib
     zstd
@@ -95,8 +113,8 @@ stdenv.mkDerivation rec {
   ]
   ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
   ++ lib.optionals stdenv.hostPlatform.isMinGW [
-    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4}/include"
-    "-DLZ4_LIBRARIES=${lib.getLib lz4}/lib/liblz4.dll.a"
+    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4Published}/include"
+    "-DLZ4_LIBRARIES=${lib.getLib lz4Published}/lib/liblz4.dll.a"
     "-DSNAPPY_INCLUDE_DIR=${lib.getDev snappy}/include"
     "-DSNAPPY_LIBRARIES=${lib.getLib snappy}/lib/libsnappy.dll.a"
     "-DZLIB_INCLUDE_DIR=${lib.getDev zlib}/include"
