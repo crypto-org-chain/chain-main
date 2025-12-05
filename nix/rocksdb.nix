@@ -24,15 +24,11 @@ let
   lz4Published =
     if stdenv.hostPlatform.isMinGW then
       lz4.overrideAttrs (old: {
-        NIX_CFLAGS_COMPILE =
-          let
-            prev =
-              if old ? NIX_CFLAGS_COMPILE then
-                if builtins.isList old.NIX_CFLAGS_COMPILE then old.NIX_CFLAGS_COMPILE else [ old.NIX_CFLAGS_COMPILE ]
-              else
-                [ ];
-          in
-          prev ++ [ "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1" ];
+        # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
+        # This is needed for RocksDB which uses LZ4's streaming compression API
+        cmakeFlags = (old.cmakeFlags or [ ]) ++ [
+          "-DCMAKE_C_FLAGS=-DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
+        ];
       })
     else
       lz4;
@@ -83,6 +79,11 @@ stdenv.mkDerivation rec {
       "-Wno-error=unused-private-field"
       "-Wno-error=nontrivial-memcall" # new clang diagnostic on 25.11 toolchain
       "-faligned-allocation"
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isMinGW [
+      # Match the LZ4_PUBLISH_STATIC_FUNCTIONS define we set for lz4Published
+      # This tells RocksDB to expect published (exported) LZ4 functions instead of inline ones
+      "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
     ];
 
   NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
