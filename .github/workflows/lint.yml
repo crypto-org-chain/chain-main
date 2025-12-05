@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: '1.22.7'
+          go-version: '1.25'
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
         with:

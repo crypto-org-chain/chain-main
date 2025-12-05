@@ -17,10 +17,23 @@ import sources.nixpkgs {
       solomachine = pkgs.callPackage ./solomachine.nix { };
     })
     (import "${sources.poetry2nix}/overlay.nix")
-    (import "${sources.gomod2nix}/overlay.nix")
+    (
+      final: prev:
+      let
+        gomodSrc = sources.gomod2nix;
+        callPackage = final.callPackage;
+        gomodBuilder = callPackage "${gomodSrc}/builder" { };
+      in
+      {
+        inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
+        gomod2nix = (callPackage "${gomodSrc}/default.nix" { }).overrideAttrs (_: {
+          modRoot = ".";
+        });
+      }
+    )
     (import ./build_overlay.nix)
     (pkgs: prev: {
-      go = pkgs.go_1_24;
+      go = pkgs.go_1_25;
       test-env = pkgs.callPackage ./testenv.nix { };
       lint-ci = pkgs.writeShellScriptBin "lint-ci" ''
         EXIT_STATUS=0

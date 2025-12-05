@@ -24,6 +24,6 @@ rustPlatform.buildRustPackage rec {
     protobuf
     rustfmt
   ];
-  buildInputs = lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.SystemConfiguration ];
+  buildInputs = [ ];
   doCheck = false;
 }

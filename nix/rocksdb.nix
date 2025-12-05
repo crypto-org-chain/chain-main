@@ -20,6 +20,18 @@
   sse42Support ? stdenv.hostPlatform.sse4_2Support,
 }:
 
+let
+  lz4Published =
+    if stdenv.hostPlatform.isMinGW then
+      lz4.overrideAttrs (old: {
+        # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
+        # This is needed for RocksDB which uses LZ4's streaming compression API
+        NIX_CFLAGS_COMPILE = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1${lib.optionalString (old ? NIX_CFLAGS_COMPILE) " ${old.NIX_CFLAGS_COMPILE}"}";
+      })
+    else
+      lz4;
+in
+
 stdenv.mkDerivation rec {
   pname = "rocksdb";
   version = "9.11.2";
@@ -38,7 +50,7 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [
     bzip2
-    lz4
+    lz4Published
     snappy
     zlib
     zstd
@@ -63,8 +75,16 @@ stdenv.mkDerivation rec {
     ]
     ++ lib.optionals stdenv.cc.isClang [
       "-Wno-error=unused-private-field"
+      "-Wno-error=nontrivial-memcall" # new clang diagnostic on 25.11 toolchain
       "-faligned-allocation"
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isMinGW [
+      # Match the LZ4_PUBLISH_STATIC_FUNCTIONS define we set for lz4Published
+      # This tells RocksDB to expect published (exported) LZ4 functions instead of inline ones
+      "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
     ];
+
+  NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
 
   cmakeFlags = [
     "-DPORTABLE=1"
@@ -90,7 +110,19 @@ stdenv.mkDerivation rec {
     "-DCMAKE_C_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
     "-DCMAKE_CXX_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
   ]
-  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
+  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
+  ++ lib.optionals stdenv.hostPlatform.isMinGW [
+    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4Published}/include"
+    "-DLZ4_LIBRARIES=${lib.getLib lz4Published}/lib/liblz4.dll.a"
+    "-DSNAPPY_INCLUDE_DIR=${lib.getDev snappy}/include"
+    "-DSNAPPY_LIBRARIES=${lib.getLib snappy}/lib/libsnappy.dll.a"
+    "-DZLIB_INCLUDE_DIR=${lib.getDev zlib}/include"
+    "-DZLIB_LIBRARY=${lib.getLib zlib}/lib/libz.dll.a"
+    "-Dbzip2_INCLUDE_DIR=${lib.getDev bzip2}/include"
+    "-Dbzip2_LIBRARIES=${lib.getLib bzip2}/lib/libbz2.dll.a"
+    "-DZSTD_INCLUDE_DIR=${lib.getDev zstd}/include"
+    "-DZSTD_LIBRARY=${lib.getLib zstd}/lib/libzstd.dll.a"
+  ];
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";

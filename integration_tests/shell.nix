@@ -5,7 +5,7 @@
 pkgs.mkShell {
   buildInputs = with pkgs; [
     # build tools
-    go_1_24
+    go_1_25
     rocksdb
 
     # lint tools

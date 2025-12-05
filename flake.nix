@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/9cf79b5735b34d25bb8ee55c90356e72696e7cb3";
     flake-utils.url = "github:numtide/flake-utils";
     nix-bundle-exe = {
       url = "github:3noch/nix-bundle-exe";
@@ -23,6 +23,19 @@
     }:
     let
       rev = self.shortRev or "dirty";
+      gomodOverlay =
+        final: prev:
+        let
+          gomodSrc = gomod2nix.outPath;
+          callPackage = final.callPackage;
+          gomodBuilder = callPackage "${gomodSrc}/builder" { };
+        in
+        {
+          inherit (gomodBuilder) buildGoApplication mkGoEnv mkVendorEnv;
+          gomod2nix = (callPackage "${gomodSrc}/default.nix" { }).overrideAttrs (_: {
+            modRoot = ".";
+          });
+        };
       mkApp = drv: {
         type = "app";
         program = "${drv}/bin/${drv.meta.mainProgram}";
@@ -35,7 +48,7 @@
           inherit system;
           overlays = [
             (import ./nix/build_overlay.nix)
-            gomod2nix.overlays.default
+            gomodOverlay
             self.overlay
           ];
           config = { };
