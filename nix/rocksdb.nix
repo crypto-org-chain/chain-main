@@ -16,17 +16,23 @@
   enableJemalloc ? !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.isStatic,
   jemalloc,
   enableLite ? false,
-  enableShared ? !stdenv.hostPlatform.isStatic,
+  enableShared ? !stdenv.hostPlatform.isStatic && !stdenv.hostPlatform.isMinGW,
   sse42Support ? stdenv.hostPlatform.sse4_2Support,
 }:
 
 let
+  publishLz4Flag = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1";
+  appendPublishFlag = attr: old:
+    publishLz4Flag
+    + lib.optionalString (builtins.hasAttr attr old) " ${toString (builtins.getAttr attr old)}";
   lz4Published =
     if stdenv.hostPlatform.isMinGW then
       lz4.overrideAttrs (old: {
         # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
         # This is needed for RocksDB which uses LZ4's streaming compression API
-        NIX_CFLAGS_COMPILE = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1${lib.optionalString (old ? NIX_CFLAGS_COMPILE) " ${old.NIX_CFLAGS_COMPILE}"}";
+        NIX_CFLAGS_COMPILE = appendPublishFlag "NIX_CFLAGS_COMPILE" old;
+        NIX_CFLAGS_COMPILE_FOR_TARGET = appendPublishFlag "NIX_CFLAGS_COMPILE_FOR_TARGET" old;
+        makeFlags = (old.makeFlags or []) ++ [ "CFLAGS=${publishLz4Flag}" ];
       })
     else
       lz4;
@@ -60,10 +66,7 @@ stdenv.mkDerivation rec {
     lib.optional enableJemalloc jemalloc
     ++ lib.optional stdenv.hostPlatform.isMinGW windows.mingw_w64_pthreads;
 
-  outputs = [
-    "out"
-    "tools"
-  ];
+  outputs = [ "out" ] ++ lib.optional (!stdenv.hostPlatform.isMinGW) "tools";
 
   NIX_CFLAGS_COMPILE =
     lib.optionals stdenv.cc.isGNU [
@@ -81,19 +84,23 @@ stdenv.mkDerivation rec {
     ++ lib.optionals stdenv.hostPlatform.isMinGW [
       # Match the LZ4_PUBLISH_STATIC_FUNCTIONS define we set for lz4Published
       # This tells RocksDB to expect published (exported) LZ4 functions instead of inline ones
-      "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1"
+      publishLz4Flag
     ];
 
   NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
+
+  preConfigure = lib.optionalString stdenv.hostPlatform.isMinGW ''
+    export LDFLAGS="$LDFLAGS -L${lib.getLib lz4Published}/lib -L${lib.getLib snappy}/lib -L${lib.getLib zlib}/lib -L${lib.getLib bzip2}/lib -L${lib.getLib zstd}/lib"
+  '';
 
   cmakeFlags = [
     "-DPORTABLE=1"
     "-DWITH_JEMALLOC=${if enableJemalloc then "1" else "0"}"
     "-DWITH_JNI=0"
     "-DWITH_BENCHMARK_TOOLS=0"
-    "-DWITH_TESTS=1"
+    "-DWITH_TESTS=${if stdenv.hostPlatform.isMinGW then "0" else "1"}"
     "-DWITH_TOOLS=0"
-    "-DWITH_CORE_TOOLS=1"
+    "-DWITH_CORE_TOOLS=${if stdenv.hostPlatform.isMinGW then "0" else "1"}"
     "-DWITH_BZ2=1"
     "-DWITH_LZ4=1"
     "-DWITH_SNAPPY=1"
@@ -127,7 +134,7 @@ stdenv.mkDerivation rec {
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";
 
-  preInstall = ''
+  preInstall = lib.optionalString (!stdenv.hostPlatform.isMinGW) ''
     mkdir -p $tools/bin
     cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
   ''
