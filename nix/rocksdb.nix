@@ -22,9 +22,16 @@
 
 let
   publishLz4Flag = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1";
+  ensureList = val: if builtins.isList val then val else [ val ];
   appendPublishFlag = attr: old:
-    publishLz4Flag
-    + lib.optionalString (builtins.hasAttr attr old) " ${toString (builtins.getAttr attr old)}";
+    let
+      existing =
+        if builtins.hasAttr attr old then
+          ensureList (builtins.getAttr attr old)
+        else
+          [ ];
+    in
+    lib.concatStringsSep " " (existing ++ [ publishLz4Flag ]);
   lz4Published =
     if stdenv.hostPlatform.isMinGW then
       lz4.overrideAttrs (old: {
