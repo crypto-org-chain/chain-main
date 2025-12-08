@@ -23,13 +23,10 @@
 let
   publishLz4Flag = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1";
   ensureList = val: if builtins.isList val then val else [ val ];
-  appendPublishFlag = attr: old:
+  appendPublishFlag =
+    attr: old:
     let
-      existing =
-        if builtins.hasAttr attr old then
-          ensureList (builtins.getAttr attr old)
-        else
-          [ ];
+      existing = if builtins.hasAttr attr old then ensureList (builtins.getAttr attr old) else [ ];
     in
     lib.concatStringsSep " " (existing ++ [ publishLz4Flag ]);
   lz4Published =
@@ -39,7 +36,7 @@ let
         # This is needed for RocksDB which uses LZ4's streaming compression API
         NIX_CFLAGS_COMPILE = appendPublishFlag "NIX_CFLAGS_COMPILE" old;
         NIX_CFLAGS_COMPILE_FOR_TARGET = appendPublishFlag "NIX_CFLAGS_COMPILE_FOR_TARGET" old;
-        makeFlags = (old.makeFlags or []) ++ [ "CFLAGS=${publishLz4Flag}" ];
+        makeFlags = (old.makeFlags or [ ]) ++ [ "CFLAGS=${publishLz4Flag}" ];
       })
     else
       lz4;
@@ -141,16 +138,17 @@ stdenv.mkDerivation rec {
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";
 
-  preInstall = lib.optionalString (!stdenv.hostPlatform.isMinGW) ''
-    mkdir -p $tools/bin
-    cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
-  ''
-  + lib.optionalString stdenv.isDarwin ''
-    ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
-  ''
-  + lib.optionalString (stdenv.isLinux && enableShared) ''
-    ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
-  '';
+  preInstall =
+    lib.optionalString (!stdenv.hostPlatform.isMinGW) ''
+      mkdir -p $tools/bin
+      cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
+    ''
+    + lib.optionalString stdenv.isDarwin ''
+      ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
+    ''
+    + lib.optionalString (stdenv.isLinux && enableShared) ''
+      ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
+    '';
 
   # Old version doesn't ship the .pc file, new version puts wrong paths in there.
   postFixup = ''
