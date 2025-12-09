@@ -42,7 +42,7 @@ let
       if static then
         "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
       else if stdenv.hostPlatform.isWindows then
-        "-lrocksdb-shared"
+        "-lrocksdb -lstdc++ -lzstd -lsnappy -llz4 -lbz2 -lz -lshlwapi -lrpcrt4"
       else
         "-lrocksdb -pthread -lstdc++ -ldl"
     )

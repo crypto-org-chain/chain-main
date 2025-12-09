@@ -29,14 +29,16 @@ let
       existing = if builtins.hasAttr attr old then ensureList (builtins.getAttr attr old) else [ ];
     in
     lib.concatStringsSep " " (existing ++ [ publishLz4Flag ]);
-  lz4Published =
+  lz4Static =
     if stdenv.hostPlatform.isMinGW then
+      # Build static lz4 for Windows since DLL doesn't export streaming API
       lz4.overrideAttrs (old: {
-        # LZ4_PUBLISH_STATIC_FUNCTIONS makes the streaming API functions visible in the DLL
-        # This is needed for RocksDB which uses LZ4's streaming compression API
+        cmakeFlags = (old.cmakeFlags or [ ]) ++ [
+          "-DBUILD_SHARED_LIBS=OFF"
+          "-DBUILD_STATIC_LIBS=ON"
+        ];
         NIX_CFLAGS_COMPILE = appendPublishFlag "NIX_CFLAGS_COMPILE" old;
         NIX_CFLAGS_COMPILE_FOR_TARGET = appendPublishFlag "NIX_CFLAGS_COMPILE_FOR_TARGET" old;
-        makeFlags = (old.makeFlags or [ ]) ++ [ "CFLAGS=${publishLz4Flag}" ];
       })
     else
       lz4;
@@ -60,7 +62,7 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [
     bzip2
-    lz4Published
+    lz4Static
     snappy
     zlib
     zstd
@@ -94,7 +96,7 @@ stdenv.mkDerivation rec {
   NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
 
   preConfigure = lib.optionalString stdenv.hostPlatform.isMinGW ''
-    export LDFLAGS="$LDFLAGS -L${lib.getLib lz4Published}/lib -L${lib.getLib snappy}/lib -L${lib.getLib zlib}/lib -L${lib.getLib bzip2}/lib -L${lib.getLib zstd}/lib"
+    export LDFLAGS="$LDFLAGS -L${lib.getLib lz4Static}/lib -L${lib.getLib snappy}/lib -L${lib.getLib zlib}/lib -L${lib.getLib bzip2}/lib -L${lib.getLib zstd}/lib"
   '';
 
   cmakeFlags = [
@@ -123,8 +125,8 @@ stdenv.mkDerivation rec {
   ]
   ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
   ++ lib.optionals stdenv.hostPlatform.isMinGW [
-    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4Published}/include"
-    "-DLZ4_LIBRARIES=${lib.getLib lz4Published}/lib/liblz4.dll.a"
+    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4Static}/include"
+    "-DLZ4_LIBRARIES=${lib.getLib lz4Static}/lib/liblz4.a"
     "-DSNAPPY_INCLUDE_DIR=${lib.getDev snappy}/include"
     "-DSNAPPY_LIBRARIES=${lib.getLib snappy}/lib/libsnappy.dll.a"
     "-DZLIB_INCLUDE_DIR=${lib.getDev zlib}/include"
