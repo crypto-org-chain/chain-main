@@ -179,16 +179,11 @@ covdata:
 			exit 1; \
 		fi; \
 		tmpFile=$$(mktemp "$$toolDir/covdata.XXXXXX"); \
-		if (cd "$$goRoot/src/cmd/covdata" && GOEXPERIMENT=coverageredesign go build -trimpath -o "$$tmpFile"); then \
+		if (cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$tmpFile"); then \
 			: ; \
 		else \
-			echo "--> retrying covdata build without GOEXPERIMENT"; \
-			if (cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$tmpFile"); then \
-				: ; \
-			else \
-				rm -f "$$tmpFile"; \
-				exit 1; \
-			fi; \
+			rm -f "$$tmpFile"; \
+			exit 1; \
 		fi; \
 		mv "$$tmpFile" "$$toolDir/covdata"; \
 		chmod +x "$$toolDir/covdata"; \
