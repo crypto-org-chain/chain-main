@@ -13,9 +13,11 @@ rustPlatform.buildRustPackage rec {
   inherit src;
   cargoBuildFlags = "-p ibc-relayer-cli";
   buildInputs = lib.optionals stdenv.isDarwin [
+    darwin.apple_sdk.frameworks.Security
     pkg-config
     openssl
     darwin.libiconv
+    darwin.apple_sdk.frameworks.SystemConfiguration
   ];
   cargoLock = {
     lockFile = "${src}/Cargo.lock";

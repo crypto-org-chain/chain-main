@@ -163,11 +163,11 @@ covdata:
 		echo "--> Go tool directory $$toolDir is missing"; \
 		exit 1; \
 	fi; \
-	if [ ! -w "$$toolDir" ]; then \
-		echo "--> $$toolDir is not writable; install Go into a writable location or grant access before running make covdata"; \
-		exit 1; \
-	fi; \
 	if [ ! -x "$$toolDir/covdata" ]; then \
+		if [ ! -w "$$toolDir" ]; then \
+			echo "--> $$toolDir is not writable; install Go into a writable location or grant access before running make covdata"; \
+			exit 1; \
+		fi; \
 		echo "--> building go tool covdata"; \
 		goRoot=$$(go env GOROOT); \
 		if [ -z "$$goRoot" ]; then \
