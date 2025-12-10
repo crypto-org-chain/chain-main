@@ -3,7 +3,7 @@
 # > docker build -t cryptocom/chain-main .
 # > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chain-maind:/chain-main/.chain-maind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind init [moniker] [flags]
 # > docker run -it -p 26657:26657 -p 26656:26656 -v ~/.chain-maind:/chain-main/.chain-maind -v ~/.chainmaincli:/chain-main/.chainmaincli cryptocom/chain-main chain-maind start
-FROM golang:alpine AS build-env
+FROM golang:1.25-alpine AS build-env
 
 ARG NETWORK=testnet
 

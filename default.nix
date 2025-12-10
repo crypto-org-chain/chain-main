@@ -8,6 +8,7 @@
   coverage ? false, # https://tip.golang.org/doc/go1.20#cover
   gomod2nix,
   rocksdb ? null,
+  sectrustShim ? null,
   network ? "mainnet", # mainnet|testnet
   rev ? "dirty",
   ledger_zemu ? false,
@@ -36,28 +37,36 @@ let
     "^third_party/cosmos-sdk/.*"
     "^gomod2nix.toml$"
   ];
+  cgoLdFlags =
+    lib.optional (rocksdb != null) (
+      if static then
+        "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
+      else if stdenv.hostPlatform.isWindows then
+        "-lrocksdb -lstdc++ -lzstd -lsnappy -llz4 -lbz2 -lz -lshlwapi -lrpcrt4"
+      else
+        "-lrocksdb -pthread -lstdc++ -ldl"
+    )
+    ++ lib.optionals (stdenv.isDarwin && sectrustShim != null) [
+      "${sectrustShim}/lib/libsectrustshim.a"
+    ];
 in
 buildGoApplication rec {
   pname = "chain-maind";
   version = "v7.0.0";
-  go = buildPackages.go_1_24;
+  go = buildPackages.go_1_25;
   src = lib.cleanSourceWith {
     name = "src";
     src = lib.sourceByRegex ./. src_regexes;
   };
+  modRoot = ".";
   modules = ./gomod2nix.toml;
   subPackages = [ "cmd/chain-maind" ];
   buildFlags = lib.optionalString coverage "-cover";
-  buildInputs = lib.lists.optional (rocksdb != null) rocksdb;
+  buildInputs =
+    lib.lists.optional (rocksdb != null) rocksdb
+    ++ lib.lists.optionals (stdenv.isDarwin && sectrustShim != null) [ sectrustShim ];
   CGO_ENABLED = "1";
-  CGO_LDFLAGS = lib.optionalString (rocksdb != null) (
-    if static then
-      "-lrocksdb -pthread -lstdc++ -ldl -lzstd -lsnappy -llz4 -lbz2 -lz"
-    else if stdenv.hostPlatform.isWindows then
-      "-lrocksdb-shared"
-    else
-      "-lrocksdb -pthread -lstdc++ -ldl"
-  );
+  CGO_LDFLAGS = lib.concatStringsSep " " cgoLdFlags;
   tags = [
     "cgo"
     "ledger"
