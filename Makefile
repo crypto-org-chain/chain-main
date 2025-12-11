@@ -8,6 +8,8 @@ COMMIT := $(shell git log -1 --format='%H')
 NETWORK ?= mainnet
 COVERAGE ?= coverage.txt
 BUILDDIR ?= $(CURDIR)/build
+GO_DEFAULT_TOOLDIR := $(shell go env GOTOOLDIR 2>/dev/null)
+COVDATA_GOTOOLDIR ?= $(GO_DEFAULT_TOOLDIR)
 LEDGER_ENABLED ?= true
 
 export GO111MODULE = on
@@ -140,9 +142,53 @@ go.sum: go.mod
 		@echo "--> Ensure dependencies have not been modified"
 		GO111MODULE=on go mod verify
 
-test: check-network
+test: check-network covdata
 	@go test $(TEST_FLAGS) -v -mod=readonly $(PACKAGES) -coverprofile=$(COVERAGE) -covermode=atomic
 .PHONY: test
+
+covdata:
+	@toolDir="$(COVDATA_GOTOOLDIR)"; \
+	defaultToolDir="$(GO_DEFAULT_TOOLDIR)"; \
+	if [ -z "$$toolDir" ]; then \
+		toolDir="$$defaultToolDir"; \
+	fi; \
+	if [ -z "$$toolDir" ]; then \
+		echo "unable to determine Go tool directory; set COVDATA_GOTOOLDIR"; \
+		exit 1; \
+	fi; \
+	if [ "$$toolDir" != "$$defaultToolDir" ]; then \
+		echo "--> installing covdata into $$toolDir (Go currently uses $$defaultToolDir)"; \
+	fi; \
+	if [ ! -d "$$toolDir" ]; then \
+		echo "--> Go tool directory $$toolDir is missing"; \
+		exit 1; \
+	fi; \
+	if [ ! -x "$$toolDir/covdata" ]; then \
+		if [ ! -w "$$toolDir" ]; then \
+			echo "--> $$toolDir is not writable; install Go into a writable location or grant access before running make covdata"; \
+			exit 1; \
+		fi; \
+		echo "--> building go tool covdata"; \
+		goRoot=$$(go env GOROOT); \
+		if [ -z "$$goRoot" ]; then \
+			echo "go env GOROOT returned empty value"; \
+			exit 1; \
+		fi; \
+		if [ ! -d "$$goRoot/src/cmd/covdata" ]; then \
+			echo "cannot find covdata sources under $$goRoot/src/cmd/covdata"; \
+			exit 1; \
+		fi; \
+		tmpFile=$$(mktemp "$$toolDir/covdata.XXXXXX"); \
+		if (cd "$$goRoot/src/cmd/covdata" && go build -trimpath -o "$$tmpFile"); then \
+			: ; \
+		else \
+			rm -f "$$tmpFile"; \
+			exit 1; \
+		fi; \
+		mv "$$tmpFile" "$$toolDir/covdata"; \
+		chmod +x "$$toolDir/covdata"; \
+	fi
+.PHONY: covdata
 
 lint-install:
 	@echo "--> Installing golangci-lint $(golangci_version)"

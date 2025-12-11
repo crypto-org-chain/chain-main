@@ -16,9 +16,33 @@
   enableJemalloc ? !stdenv.hostPlatform.isWindows && !stdenv.hostPlatform.isStatic,
   jemalloc,
   enableLite ? false,
-  enableShared ? !stdenv.hostPlatform.isStatic,
+  enableShared ? !stdenv.hostPlatform.isStatic && !stdenv.hostPlatform.isMinGW,
   sse42Support ? stdenv.hostPlatform.sse4_2Support,
 }:
+
+let
+  publishLz4Flag = "-DLZ4_PUBLISH_STATIC_FUNCTIONS=1";
+  ensureList = val: if builtins.isList val then val else [ val ];
+  appendPublishFlag =
+    attr: old:
+    let
+      existing = if builtins.hasAttr attr old then ensureList (builtins.getAttr attr old) else [ ];
+    in
+    lib.concatStringsSep " " (existing ++ [ publishLz4Flag ]);
+  lz4Static =
+    if stdenv.hostPlatform.isMinGW then
+      # Build static lz4 for Windows since DLL doesn't export streaming API
+      lz4.overrideAttrs (old: {
+        cmakeFlags = (old.cmakeFlags or [ ]) ++ [
+          "-DBUILD_SHARED_LIBS=OFF"
+          "-DBUILD_STATIC_LIBS=ON"
+        ];
+        NIX_CFLAGS_COMPILE = appendPublishFlag "NIX_CFLAGS_COMPILE" old;
+        NIX_CFLAGS_COMPILE_FOR_TARGET = appendPublishFlag "NIX_CFLAGS_COMPILE_FOR_TARGET" old;
+      })
+    else
+      lz4;
+in
 
 stdenv.mkDerivation rec {
   pname = "rocksdb";
@@ -38,7 +62,7 @@ stdenv.mkDerivation rec {
 
   propagatedBuildInputs = [
     bzip2
-    lz4
+    lz4Static
     snappy
     zlib
     zstd
@@ -48,10 +72,7 @@ stdenv.mkDerivation rec {
     lib.optional enableJemalloc jemalloc
     ++ lib.optional stdenv.hostPlatform.isMinGW windows.mingw_w64_pthreads;
 
-  outputs = [
-    "out"
-    "tools"
-  ];
+  outputs = [ "out" ] ++ lib.optional (!stdenv.hostPlatform.isMinGW) "tools";
 
   NIX_CFLAGS_COMPILE =
     lib.optionals stdenv.cc.isGNU [
@@ -63,17 +84,29 @@ stdenv.mkDerivation rec {
     ]
     ++ lib.optionals stdenv.cc.isClang [
       "-Wno-error=unused-private-field"
+      "-Wno-error=nontrivial-memcall" # new clang diagnostic on 25.11 toolchain
       "-faligned-allocation"
+    ]
+    ++ lib.optionals stdenv.hostPlatform.isMinGW [
+      # Match the LZ4_PUBLISH_STATIC_FUNCTIONS define we set for lz4Published
+      # This tells RocksDB to expect published (exported) LZ4 functions instead of inline ones
+      publishLz4Flag
     ];
+
+  NIX_LDFLAGS = lib.optionalString stdenv.hostPlatform.isMinGW "-llz4 -lsnappy -lz -lbz2 -lzstd";
+
+  preConfigure = lib.optionalString stdenv.hostPlatform.isMinGW ''
+    export LDFLAGS="$LDFLAGS -L${lib.getLib lz4Static}/lib -L${lib.getLib snappy}/lib -L${lib.getLib zlib}/lib -L${lib.getLib bzip2}/lib -L${lib.getLib zstd}/lib"
+  '';
 
   cmakeFlags = [
     "-DPORTABLE=1"
     "-DWITH_JEMALLOC=${if enableJemalloc then "1" else "0"}"
     "-DWITH_JNI=0"
     "-DWITH_BENCHMARK_TOOLS=0"
-    "-DWITH_TESTS=1"
+    "-DWITH_TESTS=${if stdenv.hostPlatform.isMinGW then "0" else "1"}"
     "-DWITH_TOOLS=0"
-    "-DWITH_CORE_TOOLS=1"
+    "-DWITH_CORE_TOOLS=${if stdenv.hostPlatform.isMinGW then "0" else "1"}"
     "-DWITH_BZ2=1"
     "-DWITH_LZ4=1"
     "-DWITH_SNAPPY=1"
@@ -90,21 +123,34 @@ stdenv.mkDerivation rec {
     "-DCMAKE_C_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
     "-DCMAKE_CXX_FLAGS=-U_WIN32_WINNT -D_WIN32_WINNT=0x0602"
   ]
-  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0";
+  ++ lib.optional (!enableShared) "-DROCKSDB_BUILD_SHARED=0"
+  ++ lib.optionals stdenv.hostPlatform.isMinGW [
+    "-DLZ4_INCLUDE_DIR=${lib.getDev lz4Static}/include"
+    "-DLZ4_LIBRARIES=${lib.getLib lz4Static}/lib/liblz4.a"
+    "-DSNAPPY_INCLUDE_DIR=${lib.getDev snappy}/include"
+    "-DSNAPPY_LIBRARIES=${lib.getLib snappy}/lib/libsnappy.dll.a"
+    "-DZLIB_INCLUDE_DIR=${lib.getDev zlib}/include"
+    "-DZLIB_LIBRARY=${lib.getLib zlib}/lib/libz.dll.a"
+    "-Dbzip2_INCLUDE_DIR=${lib.getDev bzip2}/include"
+    "-Dbzip2_LIBRARIES=${lib.getLib bzip2}/lib/libbz2.dll.a"
+    "-DZSTD_INCLUDE_DIR=${lib.getDev zstd}/include"
+    "-DZSTD_LIBRARY=${lib.getLib zstd}/lib/libzstd.dll.a"
+  ];
 
   # otherwise "cc1: error: -Wformat-security ignored without -Wformat [-Werror=format-security]"
   hardeningDisable = lib.optional stdenv.hostPlatform.isWindows "format";
 
-  preInstall = ''
-    mkdir -p $tools/bin
-    cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
-  ''
-  + lib.optionalString stdenv.isDarwin ''
-    ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
-  ''
-  + lib.optionalString (stdenv.isLinux && enableShared) ''
-    ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
-  '';
+  preInstall =
+    lib.optionalString (!stdenv.hostPlatform.isMinGW) ''
+      mkdir -p $tools/bin
+      cp tools/{ldb,sst_dump}${stdenv.hostPlatform.extensions.executable} $tools/bin/
+    ''
+    + lib.optionalString stdenv.isDarwin ''
+      ls -1 $tools/bin/* | xargs -I{} ${stdenv.cc.bintools.targetPrefix}install_name_tool -change "@rpath/librocksdb.${lib.versions.major version}.dylib" $out/lib/librocksdb.dylib {}
+    ''
+    + lib.optionalString (stdenv.isLinux && enableShared) ''
+      ls -1 $tools/bin/* | xargs -I{} patchelf --set-rpath $out/lib:${stdenv.cc.cc.lib}/lib {}
+    '';
 
   # Old version doesn't ship the .pc file, new version puts wrong paths in there.
   postFixup = ''
