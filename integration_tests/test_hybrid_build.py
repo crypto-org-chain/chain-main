@@ -50,8 +50,7 @@ def edit_chain_program(chain_id, ini_path, callback):
 VALIDATOR_BINARIES = {
     0: "chain-maind",  # Default binary for node0
     1: "chain-maind",  # Default binary for node1
-    # 2: "chain-maind",  # Default binary for node2
-    2: "/Users/jaytseng/workspace/chain-main-private/build/chain-maind",  # Default binary for node2
+    2: "chain-maind",  # Default binary for node2
     # Example with different binaries:
     # 0: "/path/to/v5.0.0/chain-maind",
     # 1: "/path/to/v6.0.0/chain-maind",
