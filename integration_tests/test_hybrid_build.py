@@ -50,7 +50,8 @@ def edit_chain_program(chain_id, ini_path, callback):
 VALIDATOR_BINARIES = {
     0: "chain-maind",  # Default binary for node0
     1: "chain-maind",  # Default binary for node1
-    2: "chain-maind",  # Default binary for node2
+    # 2: "chain-maind",  # Default binary for node2
+    2: "/Users/jaytseng/workspace/chain-main-private/build/chain-maind",  # Default binary for node2
     # Example with different binaries:
     # 0: "/path/to/v5.0.0/chain-maind",
     # 1: "/path/to/v6.0.0/chain-maind",
@@ -251,4 +252,85 @@ def test_hybrid_build_rolling_upgrade(cluster):
     for i, val in enumerate(validators):
         assert val["status"] == "BOND_STATUS_BONDED", f"Validator {i} should be bonded"
         assert not val.get("jailed", False), f"Validator {i} should not be jailed"
+
+
+# Default binary for rollback testing
+DEFAULT_BINARY = "chain-maind"
+
+# Upgraded binary for rollback testing (update this path)
+UPGRADED_BINARY = "/path/to/your/new/chain-maind"
+
+
+@pytest.mark.hybrid
+def test_hybrid_build_rollback(cluster):
+    """
+    Test upgrade and rollback scenario.
+
+    This test simulates:
+    1. Running with original binary
+    2. Upgrading a node to new binary
+    3. Rolling back to original binary
+    4. Verifying chain continues to work after rollback
+    """
+    validator_count = len(cluster.config["validators"])
+    target_node = 2  # Node to upgrade and rollback
+    print(f"\n=== Rollback Test: Upgrade node{target_node} then rollback ===")
+
+    # Step 1: Ensure all nodes are running with default binary
+    print("\n--- Step 1: Start with default binary ---")
+    default_binaries = {i: DEFAULT_BINARY for i in range(validator_count)}
+    restart_all_nodes_with_binaries(cluster, default_binaries, validator_count)
+
+    initial_height = cluster.block_height()
+    wait_for_block(cluster, initial_height + 3, timeout=MAX_WAIT_SEC)
+    height_before_upgrade = cluster.block_height()
+    print(f"Height before upgrade: {height_before_upgrade}")
+
+    # Step 2: Upgrade target node to new binary
+    print(f"\n--- Step 2: Upgrade node{target_node} to new binary ---")
+    print(f"Upgrading to: {UPGRADED_BINARY}")
+    start_node_with_binary(cluster, target_node, UPGRADED_BINARY)
+
+    wait_for_block(cluster, height_before_upgrade + 5, timeout=MAX_WAIT_SEC)
+    height_after_upgrade = cluster.block_height()
+    print(f"Height after upgrade: {height_after_upgrade}")
+
+    assert height_after_upgrade > height_before_upgrade, "Chain should produce blocks after upgrade"
+
+    # Verify chain is functional after upgrade
+    print("Verifying chain is functional after upgrade...")
+    from_addr = cluster.address("community")
+    to_addr = cluster.address("signer1")
+    rsp = cluster.transfer(from_addr, to_addr, "100basecro")
+    assert rsp["code"] == 0, f"Transfer failed after upgrade: {rsp.get('raw_log', rsp)}"
+
+    # Step 3: Rollback target node to original binary
+    print(f"\n--- Step 3: Rollback node{target_node} to original binary ---")
+    print(f"Rolling back to: {DEFAULT_BINARY}")
+    start_node_with_binary(cluster, target_node, DEFAULT_BINARY)
+
+    wait_for_block(cluster, height_after_upgrade + 5, timeout=MAX_WAIT_SEC)
+    height_after_rollback = cluster.block_height()
+    print(f"Height after rollback: {height_after_rollback}")
+
+    assert height_after_rollback > height_after_upgrade, "Chain should produce blocks after rollback"
+
+    # Step 4: Verify chain is fully functional after rollback
+    print("\n--- Step 4: Verify chain functionality after rollback ---")
+
+    # Test transfer
+    rsp = cluster.transfer(from_addr, to_addr, "100basecro")
+    assert rsp["code"] == 0, f"Transfer failed after rollback: {rsp.get('raw_log', rsp)}"
+
+    # Verify all validators are healthy
+    validators = cluster.validators()
+    assert len(validators) == validator_count, "All validators should still exist"
+    for i, val in enumerate(validators):
+        assert val["status"] == "BOND_STATUS_BONDED", f"Validator {i} should be bonded after rollback"
+        assert not val.get("jailed", False), f"Validator {i} should not be jailed after rollback"
+
+    print(f"\nRollback test completed successfully")
+    print(f"  Blocks before upgrade: {height_before_upgrade}")
+    print(f"  Blocks after upgrade:  {height_after_upgrade}")
+    print(f"  Blocks after rollback: {height_after_rollback}")
 
