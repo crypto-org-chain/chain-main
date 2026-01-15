@@ -1,7 +1,5 @@
 import configparser
 import re
-import sys
-import time
 from pathlib import Path
 from xmlrpc.client import Fault
 
@@ -67,7 +65,7 @@ def cluster(worker_index, pytestconfig, tmp_path_factory):
         Path(__file__).parent / "configs/hybrid_build.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
-        )
+    )
 
 
 def set_validator_binaries(cluster, binaries: dict):
@@ -78,6 +76,7 @@ def set_validator_binaries(cluster, binaries: dict):
         binaries: Dict mapping node index to binary path
                   e.g., {0: "/path/bin1", 1: "/path/bin2", 2: "/path/bin3"}
     """
+
     def set_binary(i, old):
         node_idx = int(i)
         if node_idx in binaries:
@@ -89,7 +88,7 @@ def set_validator_binaries(cluster, binaries: dict):
         cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         set_binary,
-        )
+    )
 
 
 def restart_all_nodes_with_binaries(cluster, binaries: dict, validator_count: int = 3):
@@ -147,7 +146,7 @@ def start_node_with_binary(cluster, node_idx: int, binary: str):
         cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
         set_binary,
-        )
+    )
 
     cluster.reload_supervisor()
 
@@ -229,16 +228,25 @@ def test_hybrid_build_rolling_upgrade(cluster):
         # Wait for new blocks to ensure chain is still producing
         wait_for_block(cluster, height_before + 3, timeout=MAX_WAIT_SEC)
         height_after = cluster.block_height()
-        print(f"Blocks produced after upgrading node{node_idx}: {height_after - height_before}")
+        print(
+            f"Blocks produced after upgrading node{node_idx}: "
+            f"{height_after - height_before}"
+        )
 
-        assert height_after > height_before, f"Chain should continue after upgrading node{node_idx}"
+        assert (
+            height_after > height_before
+        ), f"Chain should continue after upgrading node{node_idx}"
 
     # Final verification
     final_height = cluster.block_height()
     print(f"\nFinal block height: {final_height}")
-    print(f"Total blocks produced during rolling upgrade: {final_height - initial_height}")
+    print(
+        f"Total blocks produced during rolling upgrade: {final_height - initial_height}"
+    )
 
-    assert final_height > initial_height, "Chain should have produced blocks during upgrade"
+    assert (
+        final_height > initial_height
+    ), "Chain should have produced blocks during upgrade"
 
     # Verify all validators are still active after rolling upgrade
     validators = cluster.validators()
