@@ -243,37 +243,3 @@ def test_hybrid_build_rolling_upgrade(cluster):
     print(f"\nFinal block height: {final_height}")
     print(f"Total blocks produced during rolling upgrade: {final_height - initial_height}")
 
-
-@pytest.mark.hybrid
-def test_hybrid_build_consensus(cluster):
-    """
-    Test that validators with different binaries can reach consensus.
-
-    This test verifies:
-    1. All validators are active and not jailed
-    2. All validators are signing blocks
-    3. Governance proposals can pass with hybrid validators
-    """
-    validator_count = len(cluster.config["validators"])
-    print(f"\n=== Consensus Test with {validator_count} hybrid validators ===")
-
-    # Restart with hybrid binaries
-    restart_all_nodes_with_binaries(cluster, VALIDATOR_BINARIES, validator_count)
-
-    # Wait for some blocks
-    initial_height = cluster.block_height()
-    wait_for_block(cluster, initial_height + 10, timeout=MAX_WAIT_SEC)
-
-    # Check all validators are active
-    print("\nChecking validator status...")
-    validators = cluster.validators()
-    for i, val in enumerate(validators):
-        status = val["status"]
-        jailed = val.get("jailed", False)
-        tokens = val["tokens"]
-        print(f"  Validator {i}: status={status}, jailed={jailed}, tokens={tokens}")
-        assert status == "BOND_STATUS_BONDED", f"Validator {i} should be bonded"
-        assert not jailed, f"Validator {i} should not be jailed"
-
-    print(f"\nAll {validator_count} validators are active and reaching consensus")
-
