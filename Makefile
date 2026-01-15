@@ -220,7 +220,7 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine'"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine and not hybrid'"
 
 nix-integration-test-solomachine: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m solomachine"
