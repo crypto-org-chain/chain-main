@@ -243,3 +243,12 @@ def test_hybrid_build_rolling_upgrade(cluster):
     print(f"\nFinal block height: {final_height}")
     print(f"Total blocks produced during rolling upgrade: {final_height - initial_height}")
 
+    assert final_height > initial_height, "Chain should have produced blocks during upgrade"
+
+    # Verify all validators are still active after rolling upgrade
+    validators = cluster.validators()
+    assert len(validators) == validator_count, "All validators should still exist"
+    for i, val in enumerate(validators):
+        assert val["status"] == "BOND_STATUS_BONDED", f"Validator {i} should be bonded"
+        assert not val.get("jailed", False), f"Validator {i} should not be jailed"
+
