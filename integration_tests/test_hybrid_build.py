@@ -58,6 +58,35 @@ VALIDATOR_BINARIES = {
 MAX_WAIT_SEC = 120
 
 
+def test_basic_transfer(cluster, description=""):
+    """
+    Test a basic transfer to verify the chain is functional.
+    Args:
+        cluster: The cluster CLI instance
+        description: Optional description for logging (e.g., "after node0 upgrade")
+    Returns:
+        True if transfer was successful
+    """
+    desc_suffix = f" ({description})" if description else ""
+    print(f"\nTesting basic transfer{desc_suffix}...")
+
+    from_addr = cluster.address("community")
+    to_addr = cluster.address("signer1")
+    initial_balance = cluster.balance(to_addr)
+
+    rsp = cluster.transfer(from_addr, to_addr, "1000basecro")
+    assert rsp["code"] == 0, f"Transfer failed{desc_suffix}: {rsp.get('raw_log', rsp)}"
+
+    # Verify balance changed
+    new_balance = cluster.balance(to_addr)
+    assert new_balance == initial_balance + 1000, (
+        f"Balance mismatch{desc_suffix}: expected {initial_balance + 1000}, "
+        f"got {new_balance}"
+    )
+    print(f"Basic transfer successful{desc_suffix}")
+    return True
+
+
 @pytest.fixture(scope="module")
 def cluster(worker_index, pytestconfig, tmp_path_factory):
     """Override cluster fixture for hybrid build test"""
@@ -187,17 +216,7 @@ def test_hybrid_build_basic(cluster):
     assert new_height > initial_height, "Chain should produce new blocks"
 
     # Test a basic transfer to verify chain is functional
-    print("\nTesting basic transfer...")
-    from_addr = cluster.address("community")
-    to_addr = cluster.address("signer1")
-    initial_balance = cluster.balance(to_addr)
-
-    rsp = cluster.transfer(from_addr, to_addr, "1000basecro")
-    assert rsp["code"] == 0, f"Transfer failed: {rsp.get('raw_log', rsp)}"
-
-    # Verify balance changed
-    new_balance = cluster.balance(to_addr)
-    assert new_balance != initial_balance, "Balance should have changed after transfer"
+    test_basic_transfer(cluster, "with hybrid binaries")
 
 
 @pytest.mark.hybrid
@@ -236,6 +255,9 @@ def test_hybrid_build_rolling_upgrade(cluster):
         assert (
             height_after > height_before
         ), f"Chain should continue after upgrading node{node_idx}"
+
+        # Test basic transfer after each node upgrade
+        test_basic_transfer(cluster, f"after node{node_idx} upgrade")
 
     # Final verification
     final_height = cluster.block_height()
