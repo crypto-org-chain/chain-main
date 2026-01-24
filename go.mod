@@ -63,6 +63,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/ProjectZKM/Ziren/crates/go-runtime/zkvm_runtime v0.0.0-20251001021608-1fe7b43fc4d6 // indirect
 	github.com/alitto/pond v1.8.3 // indirect
 	github.com/aws/aws-sdk-go v1.44.224 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -107,7 +108,7 @@ require (
 	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/ethereum/go-ethereum v1.15.5 // indirect
+	github.com/ethereum/go-ethereum v1.16.8 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -124,7 +125,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
+	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -226,7 +227,7 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
