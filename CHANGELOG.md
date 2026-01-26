@@ -1,6 +1,15 @@
 # Changelog
 
 
+*January 26, 2026*
+
+## v6.0.4
+- [#1228](https://github.com/crypto-org-chain/chain-main/pull/1228) Apply tachyon patch
+
+*October 15, 2025*
+
+## v6.0.3
+- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft to include security advisory GHSA-hrhf-2vcr-ghch
 
 *September 1, 2025*
 
