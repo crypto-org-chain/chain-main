@@ -14,7 +14,7 @@ flake8-black = "^0.3"
 flake8-isort = "^6.1"
 pep8-naming = "^0.13"
 pytest-github-actions-annotate-failures = "^0.2"
-protobuf = "^4.25"
+protobuf = "^6.33"
 pyyaml = "^6.0.2rc1"
 python-dateutil = "^2.8"
 pystarport = { git = "https://github.com/crypto-com/pystarport.git", branch = "main" }
