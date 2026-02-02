@@ -25,7 +25,7 @@ var (
 	IsBeginWithAlpha = regexp.MustCompile(`^[a-z].*`).MatchString
 )
 
-// ValidateDenomID verifies whether the  parameters are legal
+// ValidateDenomID verifies whether the parameters are legal.
 func ValidateDenomID(denomID string) error {
 	if len(denomID) < MinDenomLen || len(denomID) > MaxDenomLen {
 		return sdkerrors.Wrapf(ErrInvalidDenom, "the length of denom(%s) only accepts value [%d, %d]", denomID, MinDenomLen, MaxDenomLen)
@@ -36,7 +36,7 @@ func ValidateDenomID(denomID string) error {
 	return nil
 }
 
-// ValidateDenomIDWithIBC verifies whether the  parameters are legal and considers IBC denom IDs when checking
+// ValidateDenomIDWithIBC verifies whether the parameters are legal and considers IBC denom IDs when checking.
 func ValidateDenomIDWithIBC(denomID string) error {
 	if strings.HasPrefix(denomID, "ibc/") {
 		if len(denomID) != IBCDenomLen {
@@ -49,7 +49,7 @@ func ValidateDenomIDWithIBC(denomID string) error {
 	return ValidateDenomID(denomID)
 }
 
-// ValidateDenomName verifies whether the  parameters are legal
+// ValidateDenomName verifies whether the parameters are legal.
 func ValidateDenomName(denomName string) error {
 	denomName = strings.TrimSpace(denomName)
 	if len(denomName) == 0 {
