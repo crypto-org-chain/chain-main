@@ -168,7 +168,7 @@ var (
 	_ servertypes.Application = (*ChainApp)(nil)
 )
 
-// RootMultiStore this is source from https://github.com/crypto-org-chain/cosmos-sdk/blob/release/v0.50.x/store/types/store.go
+// RootMultiStore is a source from https://github.com/crypto-org-chain/cosmos-sdk/blob/release/v0.50.x/store/types/store.go
 type RootMultiStore interface {
 	storetypes.MultiStore
 
