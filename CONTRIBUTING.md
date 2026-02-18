@@ -26,7 +26,7 @@ we ask you to refer to [security policy](SECURITY.md).
 ## Consensus-breaking and large structural code changes
 
 When the issue is well understood but the solution leads to a consensus-breaking change (i.e. a need for the network-wide upgrade coordination) or large structural changes to the code base, these changes should be proposed in the form of an Architectural Decision Record
-([ADR](https://github.com/crypto-org-chain/chain-main/blob/master/docs/architecture/README.md)). The ADR will help build consensus on an overall strategy to ensure the code base maintains coherence in the larger context. If you are not comfortable with writing an ADR, you can open a less-formal issue and the maintainers will help you turn it into an ADR.
+([ADR](https://github.com/crypto-org-chain/chain-main/blob/master/doc/architecture/README.md)). The ADR will help build consensus on an overall strategy to ensure the code base maintains coherence in the larger context. If you are not comfortable with writing an ADR, you can open a less-formal issue and the maintainers will help you turn it into an ADR.
 
 ## Working on issues
 There are several ways to identify an area where you can contribute to Chain:
