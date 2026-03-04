@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -22,11 +22,19 @@ type Keeper struct {
 	stakingKeeper types.StakingKeeper
 
 	// the address capable of executing a MsgUpdateParams message. Typically, this
-	// should be the x/maxsupply module account.
+	// should be the x/inflation module account.
 	authority string
+
+	cache *decayCache
 }
 
-// NewKeeper creates a new maxsupply Keeper instance
+type decayCache struct {
+	DecayRate     math.LegacyDec
+	BlocksPerYear uint64
+	BlockFactor   math.LegacyDec
+}
+
+// NewKeeper creates a new inflation Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
@@ -106,7 +114,19 @@ func (k Keeper) GetSupplyAndDenom(ctx context.Context) (math.Int, string, error)
 	return k.bankKeeper.GetSupply(ctx, bondDenom).Amount, bondDenom, nil
 }
 
-// GetAuthority returns the maxsupply module's authority.
+// GetAuthority returns the inflation module's authority.
 func (k Keeper) GetAuthority() string {
 	return k.authority
+}
+
+func (k *Keeper) GetDecayCache() *decayCache {
+	if k.cache == nil {
+		return nil
+	}
+	c := *k.cache
+	return &c
+}
+
+func (k *Keeper) SetDecayCache(cache *decayCache) {
+	k.cache = cache
 }

@@ -7,8 +7,8 @@ import (
 )
 
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(Params{}, "chainmain/x/maxsupply/Params", nil)
-	cdc.RegisterConcrete(&MsgUpdateParams{}, "chainmain/x/maxsupply/MsgUpdateParams", nil)
+	cdc.RegisterConcrete(Params{}, "chainmain/inflation/Params", nil)
+	cdc.RegisterConcrete(&MsgUpdateParams{}, "chainmain/inflation/MsgUpdateParams", nil)
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {

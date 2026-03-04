@@ -6,8 +6,8 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
-	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/inflation/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -34,10 +34,10 @@ func (suite *KeeperSuite) SetupTest() {
 	suite.app = a
 	suite.legacyAmino = a.LegacyAmino()
 	suite.ctx = a.BaseApp.NewContext(isCheckTx).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
-	suite.keeper = a.MaxSupplyKeeper
+	suite.keeper = a.InflationKeeper
 
 	queryHelper := baseapp.NewQueryServerTestHelper(suite.ctx, a.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, a.MaxSupplyKeeper)
+	types.RegisterQueryServer(queryHelper, a.InflationKeeper)
 	suite.queryClient = types.NewQueryClient(queryHelper)
 }
 

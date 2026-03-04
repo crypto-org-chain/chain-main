@@ -1,7 +1,7 @@
 package keeper_test
 
 import (
-	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 
 	sdkmath "cosmossdk.io/math"
 )
@@ -14,10 +14,10 @@ func (suite *KeeperSuite) TestMaxSupply() {
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.NoError(err)
 
-	response, err := suite.queryClient.MaxSupply(suite.ctx, &types.QueryMaxSupplyRequest{})
+	response, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.NoError(err)
 
-	suite.Equal(response.MaxSupply, expectedMaxSupply.String())
+	suite.Equal(response.Params.MaxSupply, expectedMaxSupply.String())
 }
 
 func (suite *KeeperSuite) TestBurnedAddresses() {
@@ -33,11 +33,13 @@ func (suite *KeeperSuite) TestBurnedAddresses() {
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.NoError(err)
 
-	response, err := suite.queryClient.BurnedAddresses(suite.ctx, &types.QueryBurnedAddressesRequest{})
+	response, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.NoError(err)
 
-	suite.Equal(len(response.BurnedAddresses), len(expectedBurnedAddresses))
-	suite.Equal(response.BurnedAddresses, expectedBurnedAddresses)
+	burnedAddresses := response.Params.BurnedAddresses
+
+	suite.Equal(len(burnedAddresses), len(expectedBurnedAddresses))
+	suite.Equal(burnedAddresses, expectedBurnedAddresses)
 }
 
 func (suite *KeeperSuite) TestBurnedAddressesEmpty() {
@@ -47,9 +49,11 @@ func (suite *KeeperSuite) TestBurnedAddressesEmpty() {
 	err := suite.keeper.SetParams(suite.ctx, params)
 	suite.NoError(err)
 
-	response, err := suite.queryClient.BurnedAddresses(suite.ctx, &types.QueryBurnedAddressesRequest{})
+	response, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.NoError(err)
 
-	suite.Equal(len(response.BurnedAddresses), 0)
-	suite.Empty(response.BurnedAddresses)
+	burnedAddresses := response.Params.BurnedAddresses
+
+	suite.Equal(len(burnedAddresses), 0)
+	suite.Empty(burnedAddresses)
 }

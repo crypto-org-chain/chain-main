@@ -305,6 +305,9 @@ nix-integration-test-byzantine: check-network
 nix-integration-test-gov: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m gov"
 
+nix-integration-test-inflation: check-network 
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m inflation"	
+
 nix-integration-test-grpc: check-network make-proto
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m grpc"
 

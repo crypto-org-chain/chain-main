@@ -3,7 +3,7 @@ package keeper
 import (
 	"context"
 
-	"github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 
 	"cosmossdk.io/errors"
 

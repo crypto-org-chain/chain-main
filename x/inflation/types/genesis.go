@@ -1,6 +1,6 @@
 package types
 
-// DefaultGenesis returns the default maxsupply genesis state
+// DefaultGenesis returns the default inflation genesis state
 func DefaultGenesis() *GenesisState {
 	return &GenesisState{
 		Params: DefaultParams(),

@@ -15,10 +15,12 @@ const (
 )
 
 // NewParams creates a new Params instance
-func NewParams(maxSupply sdkmath.Int, burnedAddresses []string) Params {
+func NewParams(maxSupply sdkmath.Int, burnedAddresses []string, decayStartHeight uint64, decayRate sdkmath.LegacyDec) Params {
 	return Params{
-		MaxSupply:       maxSupply,
-		BurnedAddresses: burnedAddresses,
+		MaxSupply:        maxSupply,
+		BurnedAddresses:  burnedAddresses,
+		DecayStartHeight: decayStartHeight,
+		DecayRate:        decayRate,
 	}
 }
 
@@ -27,6 +29,8 @@ func DefaultParams() Params {
 	return NewParams(
 		sdkmath.NewInt(UNLIMITED_SUPPLY),
 		[]string{},
+		1,                       // default to block 1
+		sdkmath.LegacyZeroDec(), // default to 0 (decay disabled)
 	)
 }
 
@@ -37,6 +41,14 @@ func (p Params) Validate() error {
 	}
 
 	if err := validateBurnedAddresses(p.BurnedAddresses); err != nil {
+		return err
+	}
+
+	if err := validateDecayStartHeight(p.DecayStartHeight); err != nil {
+		return err
+	}
+
+	if err := validateDecayRate(p.DecayRate); err != nil {
 		return err
 	}
 
@@ -86,9 +98,40 @@ func validateBurnedAddresses(v any) error {
 		}
 		addressMap[addr] = true
 
-		if addr == "" {
-			return fmt.Errorf("burned address cannot be empty at index %d", i)
-		}
+	}
+
+	return nil
+}
+
+func validateDecayStartHeight(i any) error {
+	v, ok := i.(uint64)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v == 0 {
+		return fmt.Errorf("decay start height must be positive (got: %d)", v)
+	}
+
+	return nil
+}
+
+func validateDecayRate(i any) error {
+	v, ok := i.(sdkmath.LegacyDec)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	if v.IsNil() {
+		return fmt.Errorf("decay rate cannot be nil: %s", v)
+	}
+
+	if v.IsNegative() {
+		return fmt.Errorf("decay rate cannot be negative (must be between 0 and 1 inclusive, got: %s)", v)
+	}
+
+	if v.GT(sdkmath.LegacyOneDec()) {
+		return fmt.Errorf("decay rate too large (must be between 0 and 1 inclusive, got: %s)", v)
 	}
 
 	return nil

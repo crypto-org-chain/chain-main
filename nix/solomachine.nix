@@ -6,6 +6,7 @@
   rustPlatform,
   protobuf,
   rustfmt,
+  apple-sdk_15,
 }:
 rustPlatform.buildRustPackage rec {
   pname = "ibc-solo-machine";
@@ -25,8 +26,7 @@ rustPlatform.buildRustPackage rec {
     rustfmt
   ];
   buildInputs = lib.optionals stdenv.isDarwin [
-    darwin.apple_sdk.frameworks.Security
-    darwin.apple_sdk.frameworks.SystemConfiguration
+    apple-sdk_15
   ];
   doCheck = false;
 }

@@ -13,6 +13,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "upgrade: marks upgrade tests")
     config.addinivalue_line("markers", "normal: marks normal tests")
     config.addinivalue_line("markers", "ibc: marks ibc tests")
+    config.addinivalue_line("markers", "inflation: marks inflation tests")
     config.addinivalue_line("markers", "byzantine: marks byzantine tests")
     config.addinivalue_line("markers", "gov: marks gov tests")
     config.addinivalue_line("markers", "solomachine: marks solomachine tests")
