@@ -27,11 +27,11 @@ func (k *Keeper) DeflationCalculationFn() func(ctx context.Context, minter mintt
 		// Calculate base inflation rate using default method
 		baseRate := minttypes.DefaultInflationCalculationFn(ctx, minter, params, bondedRatio)
 
-		// Apply decay if enabled and we're past the start height
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		currentHeight := uint64(sdkCtx.BlockHeight())
 		finalInflation := baseRate
 
+		// Apply decay if enabled and we're past the start height
 		if decayRate.IsPositive() && currentHeight >= decayStartHeight {
 			monthsInYear := uint64(12)
 			blocksPerYear := params.BlocksPerYear
