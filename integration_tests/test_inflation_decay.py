@@ -3,12 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from .utils import (
-    cluster_fixture,
-    get_sync_info,
-    query_command,
-    wait_for_block,
-)
+from .utils import cluster_fixture, get_sync_info, query_command, wait_for_block
 
 pytestmark = pytest.mark.inflation
 
@@ -59,9 +54,9 @@ def test_inflation_decay(cluster):
 
     # Verify burned address is already in inflation params from genesis
     params_rsp = query_command(cluster, "inflation", "params")
-    assert burned_addr in params_rsp["params"]["burned_addresses"], (
-        f"burned address {burned_addr} not found in inflation params"
-    )
+    assert (
+        burned_addr in params_rsp["params"]["burned_addresses"]
+    ), f"burned address {burned_addr} not found in inflation params"
 
     # Record initial supply
     rsp = query_command(cluster, "bank", "total-supply-of", DENOM)
@@ -81,9 +76,7 @@ def test_inflation_decay(cluster):
     burned_balance = cluster.balance(burned_addr)
     circulating = total_supply - burned_balance
 
-    current_height = int(
-        get_sync_info(cluster.status())["latest_block_height"]
-    )
+    current_height = int(get_sync_info(cluster.status())["latest_block_height"])
 
     print(f"blocks processed: {current_height}")
     print(f"burned balance: {burned_balance} basecro")
@@ -96,15 +89,15 @@ def test_inflation_decay(cluster):
     print(f"hard supply cap: {MAX_SUPPLY_CRO * CRO} basecro")
 
     # 1. Total supply must have grown (inflation is active)
-    assert total_supply > initial_supply, (
-        f"Total supply should have grown: {total_supply} <= {initial_supply}"
-    )
+    assert (
+        total_supply > initial_supply
+    ), f"Total supply should have grown: {total_supply} <= {initial_supply}"
 
     # 2. Circulating supply must not exceed MaxSupply
     max_supply_basecro = MAX_SUPPLY_CRO * CRO
-    assert circulating <= max_supply_basecro, (
-        f"Circulating supply {circulating} exceeded max supply {max_supply_basecro}"
-    )
+    assert (
+        circulating <= max_supply_basecro
+    ), f"Circulating supply {circulating} exceeded max supply {max_supply_basecro}"
 
     # 3. Total supply should be below the theoretical max
     #    (we may not have reached convergence yet, but supply must not exceed it)
