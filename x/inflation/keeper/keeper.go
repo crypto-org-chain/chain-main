@@ -101,8 +101,12 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 }
 
 // GetAddressBalance returns the balance of the given address in the specified denomination.
-func (k Keeper) GetAddressBalance(ctx context.Context, address, denom string) math.Int {
-	return k.bankKeeper.GetBalance(ctx, sdk.AccAddress(address), denom).Amount
+func (k Keeper) GetAddressBalance(ctx context.Context, address, denom string) (math.Int, error) {
+	addr, err := sdk.AccAddressFromBech32(address)
+	if err != nil {
+		return math.ZeroInt(), err
+	}
+	return k.bankKeeper.GetBalance(ctx, addr, denom).Amount, nil
 }
 
 // GetSupplyAndDenom returns the total supply and the bond denomination.
