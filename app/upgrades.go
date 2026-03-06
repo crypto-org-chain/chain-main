@@ -80,10 +80,6 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
 		inflationParams.DecayRate = math.LegacyNewDecWithPrec(680, 3) // 0.0680 = 6.80%
 
-		if err := inflationParams.Validate(); err != nil {
-			return map[string]uint64{}, err
-		}
-
 		if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
 			return map[string]uint64{}, err
 		}
