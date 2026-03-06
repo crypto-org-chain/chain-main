@@ -213,6 +213,43 @@ func (s *KeeperSuite) TestDeflationCalculationFn_EdgeCases() {
 	)
 }
 
+// TestDeflationCalculationFn_FullDecay tests that when decayRate = 1.0 (100%),
+// inflation drops to zero immediately after decayStartHeight.
+func (s *KeeperSuite) TestDeflationCalculationFn_FullDecay() {
+	params := types.DefaultParams()
+	params.DecayStartHeight = 1000
+	params.DecayRate = math.LegacyOneDec() // 100% decay
+	err := s.keeper.SetParams(s.ctx, params)
+	s.Require().NoError(err)
+
+	mintParams := minttypes.DefaultParams()
+	mintParams.BlocksPerYear = 6307200
+
+	minter := minttypes.DefaultInitialMinter()
+	bondedRatio := math.LegacyNewDecWithPrec(50, 2)
+	baseInflation := minttypes.DefaultInflationCalculationFn(s.ctx, minter, mintParams, bondedRatio)
+
+	// Before decay start — should equal base inflation
+	s.ctx = s.ctx.WithBlockHeight(999)
+	inflation := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
+	s.Require().Equal(baseInflation, inflation, "inflation should match base before decay start")
+
+	// At decay start (0 blocks elapsed) — decayFactor^0 = 1, no fractional part → still base
+	s.ctx = s.ctx.WithBlockHeight(1000)
+	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
+	s.Require().Equal(baseInflation, inflation, "inflation should match base at decay start (0 elapsed)")
+
+	// 1 block after decay start — decayFactor = 0, perBlockFactor = 0^(1/m) = 0 → inflation = 0
+	s.ctx = s.ctx.WithBlockHeight(1001)
+	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
+	s.Require().True(inflation.IsZero(), "inflation should be zero with 100%% decay after 1 block, got %s", inflation)
+
+	// Many blocks later — should still be zero
+	s.ctx = s.ctx.WithBlockHeight(1000 + int64(mintParams.BlocksPerYear))
+	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
+	s.Require().True(inflation.IsZero(), "inflation should be zero with 100%% decay after 1 year, got %s", inflation)
+}
+
 // TestDeflationCalculationFn_SupplyCap tests that circulating supply doesn't exceed 100B tokens.
 func (s *KeeperSuite) TestDeflationCalculationFn_SupplyCap() {
 	// Set up params with decay enabled
