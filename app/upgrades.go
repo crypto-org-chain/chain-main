@@ -78,7 +78,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 
 		inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
-		inflationParams.DecayRate = math.LegacyNewDecWithPrec(680, 3) // 0.0680 = 6.80%
+		inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
 
 		if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
 			return map[string]uint64{}, err
@@ -97,8 +97,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		mintParams.InflationMax = math.LegacyNewDecWithPrec(1, 2) // 0.01 = 1%
-		mintParams.InflationMin = math.LegacyNewDecWithPrec(1, 2) // 0.01 = 1%
+		mintParams.InflationMax = math.LegacyMustNewDecFromStr("0.01") // 1%
+		mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.01") // 1%
 		// Set inflation rate change for consistency with the new decay mechanism
 		mintParams.InflationRateChange = math.LegacyZeroDec()
 
