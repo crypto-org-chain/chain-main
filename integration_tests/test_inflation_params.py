@@ -174,4 +174,3 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
         pass
     except Exception as e:
         assert False, f"Test case failed due to exception: {e}."
-
