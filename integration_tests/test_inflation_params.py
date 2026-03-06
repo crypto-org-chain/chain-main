@@ -121,9 +121,8 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     assert "max_supply" in rsp
 
-    # Prepare new max supply (increase by 450000) and submit a proposal
-    # Around 13 blocks should pass before total supply exceeds max supply
-    new_max_supply = current_total_supply + 450000
+    # Prepare new max supply (increase by 480000) and submit a proposal
+    new_max_supply = current_total_supply + 480000
     rsp["max_supply"] = str(new_max_supply)
     proposal_src = _create_max_supply_proposal(rsp)
 
@@ -172,7 +171,7 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
             log_content = f.read()
             print("log_content:", log_content)
             assert ERROR in log_content, "Expected error message not found in log"
-
         pass
     except Exception as e:
         assert False, f"Test case failed due to exception: {e}."
+
