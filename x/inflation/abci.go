@@ -25,12 +25,12 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 		panic("could not get supply and denom: " + err.Error())
 	}
 
-	totalBurnedDenom := math.NewInt(0)
+	burned := math.NewInt(0)
 	for _, ba := range params.BurnedAddresses {
 		balance := k.GetAddressBalance(ctx, ba, denom)
-		totalBurnedDenom.Add(balance)
+		burned = burned.Add(balance)
 	}
-	totalsupply = totalsupply.Sub(totalBurnedDenom)
+	totalsupply = totalsupply.Sub(burned)
 
 	maxsupply := params.MaxSupply
 	if maxsupply.IsPositive() && totalsupply.GT(maxsupply) {
