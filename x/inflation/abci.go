@@ -1,8 +1,8 @@
 package inflation
 
 import (
+	"fmt"
 	"context"
-	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/inflation/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
@@ -34,7 +34,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 
 	maxsupply := params.MaxSupply
 	if maxsupply.IsPositive() && totalsupply.GT(maxsupply) {
-		return errors.New("the total supply has exceeded the maximum supply")
+		return fmt.Errorf("the total supply has exceeded the maximum supply: %s > %s", totalsupply, maxsupply)
 	}
 
 	return nil
