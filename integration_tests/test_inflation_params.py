@@ -5,24 +5,22 @@ import pytest
 
 from .utils import (
     approve_proposal,
-    check_proposal_exist,
     cluster_fixture,
-    find_event_proposal_id,
     module_address,
     query_command,
     wait_for_new_blocks,
 )
 
-MAXSUPPLY = "maxsupply"
+INFLATION_MODULE = "inflation"
 TOTALSUPPLY = "total-supply-of"
 BANK_MODULE = "bank"
-PARAM = "max-supply"
+PARAMS = "params"
 DENOM = "basecro"
 AMOUNT = "amount"
-MSG = "/chainmain.maxsupply.v1.MsgUpdateParams"
+MSG = "/chainmain.inflation.v1.MsgUpdateParams"
 ERROR = "failed to apply block; error the total supply has exceeded the maximum supply"
 
-pytestmark = pytest.mark.normal
+pytestmark = pytest.mark.inflation
 
 
 @pytest.fixture(scope="module")
@@ -53,26 +51,30 @@ def _create_max_supply_proposal(params):
     return proposal_src
 
 
-def test_max_supply_cli_query(cluster):
+def test_params_cli_query(cluster):
     """Test querying max supply parameters"""
-    # Query max supply parameters
-    rsp = query_command(cluster, MAXSUPPLY, PARAM)
-    assert "max_supply" in rsp
-    assert int(rsp["max_supply"]) == 0  # the max supply is 0 by default
+    params = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
+    assert "max_supply" in params
+    assert int(params["max_supply"]) == 0
+    assert "burned_addresses" in params
+    assert len(params["burned_addresses"]) == 0
+    assert "decay_start_height" in params
+    assert int(params["decay_start_height"]) == 1
+    assert "decay_rate" in params
+    assert float(params["decay_rate"]) == 0.0
+    assert int(params["max_supply"]) == 0  # the max supply is 0 by default
 
 
 def test_max_supply_persistence(cluster):
     """Test that max supply persists across chain restarts"""
     # Get initial max supply
-    initial_max_supply_rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    initial_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     initial_max_supply = initial_max_supply_rsp["max_supply"]
 
-    # Restart the chain (this would require cluster restart functionality)
-    # For now, just verify the value is consistent
     wait_for_new_blocks(cluster, 1)
 
     # Query again after some blocks
-    final_max_supply_rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    final_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     final_max_supply = final_max_supply_rsp["max_supply"]
     assert (
         initial_max_supply == final_max_supply
@@ -82,7 +84,7 @@ def test_max_supply_persistence(cluster):
 def test_max_supply_update_via_governance(cluster):
     """Test updating max supply through governance proposal"""
     # Get current max supply
-    rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     current_max_supply = int(rsp["max_supply"])
 
     # Prepare new max supply (increase by 2000000000000)
@@ -96,21 +98,11 @@ def test_max_supply_update_via_governance(cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    # Extract proposal ID from the response
-    proposal_id = find_event_proposal_id(rsp["events"])
-
-    # Wait for proposal to be available
-    wait_for_new_blocks(cluster, 1)
-
-    # Check if proposal exists before voting
-    check_proposal_exist(cluster, proposal_id)
-
     # Vote on proposal
     approve_proposal(cluster, rsp, msg=f",{MSG}")
-    print("check params have been updated now")
 
     # Verify max supply has been updated
-    updated_max_supply_rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    updated_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     updated_max_supply = int(updated_max_supply_rsp["max_supply"])
 
     assert (
@@ -126,7 +118,7 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     print("current_total_supply:", current_total_supply)
 
     # Get current max supply
-    rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     assert "max_supply" in rsp
 
     # Prepare new max supply (increase by 450000) and submit a proposal
@@ -140,20 +132,11 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    # Extract proposal ID from the response
-    proposal_id = find_event_proposal_id(rsp["events"])
-
-    # Wait for proposal to be available
-    wait_for_new_blocks(cluster, 1)
-
-    # Check if proposal exists before voting
-    check_proposal_exist(cluster, proposal_id)
-
     # Vote on proposal
     approve_proposal(cluster, rsp, msg=f",{MSG}")
 
     # Verify max supply has been updated
-    updated_max_supply_rsp = query_command(cluster, MAXSUPPLY, PARAM)
+    updated_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     updated_max_supply = int(updated_max_supply_rsp["max_supply"])
     assert (
         updated_max_supply == new_max_supply
