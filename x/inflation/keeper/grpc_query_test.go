@@ -17,7 +17,7 @@ func (suite *KeeperSuite) TestMaxSupply() {
 	response, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
 	suite.NoError(err)
 
-	suite.Equal(response.Params.MaxSupply, expectedMaxSupply.String())
+	suite.Equal(response.Params.MaxSupply.String(), expectedMaxSupply.String())
 }
 
 func (suite *KeeperSuite) TestBurnedAddresses() {
