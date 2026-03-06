@@ -11,8 +11,8 @@ DENOM = "basecro"
 CRO = 10**8  # 1 CRO = 10^8 basecro
 
 # Genesis totals (must match inflation.jsonnet)
-# validator: 10, supply: 98,700,000,000, burned: 420,000,000
-INITIAL_TOTAL_CRO = 10 + 98_700_000_000 + 420_000_000
+# validator: 10, supply: 98,700,000,000, burned: 380,000,000
+INITIAL_TOTAL_CRO = 10 + 98_700_000_000 + 380_000_000
 
 BASE_RATE = 0.01  # 1% annual inflation (InflationMin = InflationMax = 0.01)
 DECAY_RATE = 0.068  # 6.8% monthly decay
@@ -110,3 +110,29 @@ def test_inflation_decay(cluster):
         f"Total supply {total_supply} exceeded theoretical max "
         f"{theoretical_total:.0f} by more than 1%"
     )
+
+
+def test_inflation_rate_decreases_over_time(cluster):
+    """
+    Verify that the effective inflation rate strictly decreases over time.
+    Samples the inflation rate every 5 blocks for 10 intervals and asserts
+    each sample is lower than the previous one.
+    """
+    interval = 5
+    samples = 10
+    start_height = int(get_sync_info(cluster.status())["latest_block_height"])
+
+    prev_inflation = float(query_command(cluster, "mint", "inflation")["inflation"])
+    print(f"height {start_height}: inflation = {prev_inflation}")
+
+    for i in range(1, samples + 1):
+        wait_for_block(cluster, start_height + i * interval, timeout=120)
+        cur_inflation = float(query_command(cluster, "mint", "inflation")["inflation"])
+        cur_height = int(get_sync_info(cluster.status())["latest_block_height"])
+        print(f"height {cur_height}: inflation = {cur_inflation}")
+
+        assert cur_inflation < prev_inflation, (
+            f"Block {cur_height}: inflation did not decrease: "
+            f"{cur_inflation} >= {prev_inflation}"
+        )
+        prev_inflation = cur_inflation

@@ -18,7 +18,7 @@ PARAMS = "params"
 DENOM = "basecro"
 AMOUNT = "amount"
 MSG = "/chainmain.inflation.v1.MsgUpdateParams"
-ERROR = "failed to apply block; error the total supply has exceeded the maximum supply"
+ERROR = "the total supply has exceeded the maximum supply"
 
 pytestmark = pytest.mark.inflation
 

@@ -23,9 +23,9 @@ func (suite *KeeperSuite) TestMaxSupply() {
 func (suite *KeeperSuite) TestBurnedAddresses() {
 	// Set up expected burned addresses
 	expectedBurnedAddresses := []string{
-		"cro1abc123def456ghi789jkl012mno345pqr678stu",
-		"cro1def456ghi789jkl012mno345pqr678stu901vwx",
-		"cro1ghi789jkl012mno345pqr678stu901vwx234yz0",
+		"cosmos1dej28rxfh39axghzlcusd98qhpkdarcqqu23ua",
+		"cosmos1g69pjvgvdug5m9kphwh284rvls4g5jnrg4p8dm",
+		"cosmos1zpdh03ej2h9ct3lgjydqp3upqkktq322dcvwjm",
 	}
 
 	params := types.DefaultParams()

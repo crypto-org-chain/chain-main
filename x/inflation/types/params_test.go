@@ -25,8 +25,75 @@ func TestNewParams_Validate(t *testing.T) {
 				1,
 				sdkmath.LegacyNewDecWithPrec(680, 3),
 			),
-			wantErr:     false,
-			errContains: "",
+			wantErr: false,
+		},
+		{
+			name: "valid zero max supply (unlimited)",
+			params: NewParams(
+				sdkmath.NewInt(0),
+				[]string{},
+				1,
+				sdkmath.LegacyZeroDec(),
+			),
+			wantErr: false,
+		},
+		{
+			name: "valid with burned addresses",
+			params: NewParams(
+				sdkmath.NewInt(1000000000),
+				[]string{"cosmos1zpdh03ej2h9ct3lgjydqp3upqkktq322dcvwjm"},
+				1,
+				sdkmath.LegacyNewDecWithPrec(65, 3),
+			),
+			wantErr: false,
+		},
+		{
+			name: "valid with multiple burned addresses",
+			params: NewParams(
+				sdkmath.NewInt(1000000000),
+				[]string{
+					"cosmos1g69pjvgvdug5m9kphwh284rvls4g5jnrg4p8dm",
+					"cosmos1ws268687q2xhu4gqwgwqhnwpthyt4td9t60nd8",
+				},
+				100,
+				sdkmath.LegacyNewDecWithPrec(68, 3),
+			),
+			wantErr: false,
+		},
+		{
+			name: "valid decay rate zero (disabled)",
+			params: NewParams(
+				sdkmath.NewInt(1000000000),
+				[]string{},
+				1,
+				sdkmath.LegacyZeroDec(),
+			),
+			wantErr: false,
+		},
+		{
+			name: "valid decay rate one (100% decay)",
+			params: NewParams(
+				sdkmath.NewInt(1000000000),
+				[]string{},
+				1,
+				sdkmath.LegacyOneDec(),
+			),
+			wantErr: false,
+		},
+		{
+			name:    "valid default params",
+			params:  DefaultParams(),
+			wantErr: false,
+		},
+		{
+			name: "valid large max supply",
+			params: NewParams(
+				sdkmath.NewIntFromBigInt(sdkmath.NewInt(10_000_000_000).Mul(sdkmath.NewInt(100_000_000)).BigInt()),
+				[]string{},
+				1,
+				sdkmath.LegacyNewDecWithPrec(680, 3),
+			),
+			wantErr: false,
 		},
 	}
 
@@ -66,6 +133,37 @@ func TestNewParams_ValidateMaxSupply(t *testing.T) {
 			),
 			wantErr:     true,
 			errContains: "max supply cannot be negative",
+		},
+		{
+			name: "negative one max supply",
+			params: NewParams(
+				sdkmath.NewInt(-1),
+				[]string{},
+				1,
+				sdkmath.LegacyZeroDec(),
+			),
+			wantErr:     true,
+			errContains: "max supply cannot be negative",
+		},
+		{
+			name: "zero max supply is valid (unlimited)",
+			params: NewParams(
+				sdkmath.NewInt(0),
+				[]string{},
+				1,
+				sdkmath.LegacyZeroDec(),
+			),
+			wantErr: false,
+		},
+		{
+			name: "positive max supply is valid",
+			params: NewParams(
+				sdkmath.NewInt(1),
+				[]string{},
+				1,
+				sdkmath.LegacyZeroDec(),
+			),
+			wantErr: false,
 		},
 	}
 
