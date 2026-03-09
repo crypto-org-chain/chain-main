@@ -10,7 +10,6 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
-
 const MonthsInYear = 12
 
 // DeflationCalculationFn returns a custom InflationCalculationFn which applies continuous exponential decay to inflation.
@@ -41,7 +40,7 @@ func (k *Keeper) DeflationCalculationFn() func(ctx context.Context, minter mintt
 		blocksPerYear := params.BlocksPerYear
 		blocksPerMonth := blocksPerYear / MonthsInYear
 		blocksElapsed := currentHeight - decayStartHeight
-		
+
 		if blocksPerMonth > 0 {
 			// Compute months elapsed as a decimal for continuous decay
 			monthsElapsed := math.LegacyNewDec(int64(blocksElapsed)).Quo(math.LegacyNewDec(int64(blocksPerMonth)))
