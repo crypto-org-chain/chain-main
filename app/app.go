@@ -48,6 +48,9 @@ import (
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v8/x/supply/types"
+	tieredrewards "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards"
+	tieredrewardskeeper "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
@@ -218,6 +221,7 @@ type ChainApp struct {
 	NFTKeeper             nftkeeper.Keeper
 	CircuitKeeper         circuitkeeper.Keeper
 	InflationKeeper       inflationkeeper.Keeper
+	TieredRewardsKeeper   tieredrewardskeeper.Keeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -347,6 +351,11 @@ func New(
 		authtypes.FeeCollectorName,
 		authAddr,
 		mintkeeper.WithMintFn(mintkeeper.DefaultMintFn(app.InflationKeeper.DeflationCalculationFn())),
+	)
+	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		authAddr,
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
@@ -549,6 +558,7 @@ func New(
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 		circuit.NewAppModule(appCodec, app.CircuitKeeper),
 		inflation.NewAppModule(appCodec, app.InflationKeeper),
+		tieredrewards.NewAppModule(appCodec, app.TieredRewardsKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -589,6 +599,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -600,6 +611,7 @@ func New(
 	app.ModuleManager.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		minttypes.ModuleName,
+		tieredrewardstypes.ModuleName, // has to be before distribution module to calculate how much more base rewards to distribute
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -646,6 +658,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -674,6 +687,7 @@ func New(
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -1014,6 +1028,7 @@ func StoreKeys() (
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
 		inflationtypes.StoreKey,
+		tieredrewardstypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
 		circuittypes.StoreKey,

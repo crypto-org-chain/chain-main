@@ -1,0 +1,26 @@
+syntax = "proto3";
+package chainmain.tieredrewards.v1;
+
+import "amino/amino.proto";
+import "chainmain/tieredrewards/v1/params.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params returns the tieredrewards module parameters.
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/params";
+  }
+}
+
+// QueryParamsRequest is the request type for the Query/Params RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is the response type for the Query/Params RPC method.
+message QueryParamsResponse {
+  // params defines the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
