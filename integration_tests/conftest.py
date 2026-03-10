@@ -8,6 +8,7 @@ from .utils import cluster_fixture
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks tests as slow")
+    config.addinivalue_line("markers", "base_rewards: marks base rewards tests")
     config.addinivalue_line("markers", "ledger: marks tests as ledger hardware test")
     config.addinivalue_line("markers", "grpc: marks grpc tests")
     config.addinivalue_line("markers", "upgrade: marks upgrade tests")

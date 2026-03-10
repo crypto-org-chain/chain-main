@@ -74,6 +74,7 @@ class ModuleAccount(enum.Enum):
     BondedPool = "bonded_tokens_pool"
     NotBondedPool = "not_bonded_tokens_pool"
     IBCTransfer = "transfer"
+    RewardsPool = "rewards_pool"
 
 
 @format_doc_string(
