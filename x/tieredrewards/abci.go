@@ -18,6 +18,17 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 }
 
 func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
+	
+	targetBaseRewardsRate := params.TargetBaseRewardsRate
+
+	if targetBaseRewardsRate.IsZero() {
+		return nil
+	}
+
 	totalBonded, err := k.TotalBondedTokens(ctx)
 	if err != nil {
 		return err
@@ -33,22 +44,11 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return err
 	}
 
-	params, err := k.GetParams(ctx)
-	if err != nil {
-		return err
-	}
-
 	communityTax, err := k.GetCommunityTax(ctx)
 	if err != nil {
 		return err
 	}
-
-	targetBaseRewardsRate := params.TargetBaseRewardsRate
-
-	if targetBaseRewardsRate.IsZero() {
-		return nil
-	}
-
+	
 	targetStakersReward := math.LegacyNewDecFromInt(totalBonded).
 		Mul(targetBaseRewardsRate).
 		Quo(math.LegacyNewDec(int64(blocksPerYear)))
@@ -117,6 +117,6 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 	}
 
 	return sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsTopUp{
-		Amount: sdk.NewCoin(bondDenom, topUpAmount),
+		TopUp: sdk.NewCoin(bondDenom, topUpAmount),
 	})
 }
