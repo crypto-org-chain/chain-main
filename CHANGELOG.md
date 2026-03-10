@@ -2,10 +2,14 @@
 
 ## UNRELEASED
 
+## Features
+- [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
+- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up.
+
 ### Improvements
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
-- [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
+
 
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
