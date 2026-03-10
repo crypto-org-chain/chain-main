@@ -7,6 +7,7 @@ import (
 	"time"
 
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -115,6 +116,14 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			"inflation_min", mintParams.InflationMin.String(),
 			"inflation_rate_change", mintParams.InflationRateChange.String())
 
+		tieredrewardsParams := tieredrewardstypes.DefaultParams()
+		tieredrewardsParams.TargetBaseRewardsRate = math.LegacyMustNewDecFromStr("0.03") // 3%
+		if err := app.TieredRewardsKeeper.Params.Set(sdkCtx, tieredrewardsParams); err != nil {
+			return map[string]uint64{}, err
+		}
+		sdkCtx.Logger().Info("tieredrewards module updated params",
+			"target_base_rewards_rate", tieredrewardsParams.TargetBaseRewardsRate.String())
+			
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
 			"version_map", m)
@@ -130,6 +139,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				inflationtypes.StoreKey,
+				tieredrewardstypes.StoreKey,
 			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
