@@ -28,7 +28,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:            "update-params-proposal [params]",
 					Short:          "Submit a proposal to update tieredrewards module params. Note: the entire params must be provided.",
 					Long:           fmt.Sprintf("Submit a proposal to update tieredrewards module params. Note: the entire params must be provided.\n See the fields to fill in by running `%s query tieredrewards params --output json`", version.AppName),
-					Example:        fmt.Sprintf(`%s tx tieredrewards update-params-proposal '{ "target_base_reward_rate": "0.03" }'`, version.AppName),
+					Example:        fmt.Sprintf(`%s tx tieredrewards update-params-proposal '{ "target_base_rewards_rate": "0.03" }'`, version.AppName),
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "params"}},
 					GovProposal:    true,
 				},

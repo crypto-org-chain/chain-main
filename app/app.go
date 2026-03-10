@@ -153,17 +153,20 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		icatypes.ModuleName:            nil,
+		authtypes.FeeCollectorName:             nil,
+		distrtypes.ModuleName:                  nil,
+		minttypes.ModuleName:                   {authtypes.Minter},
+		stakingtypes.BondedPoolName:            {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:         {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                    {authtypes.Burner},
+		ibctransfertypes.ModuleName:            {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:                    nil,
+		tieredrewardstypes.BaseRewardsPoolName: nil,
 	}
 	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{}
+	allowedReceivingModAcc = map[string]bool{
+		tieredrewardstypes.BaseRewardsPoolName: true,
+	}
 )
 
 var (
@@ -352,11 +355,6 @@ func New(
 		authAddr,
 		mintkeeper.WithMintFn(mintkeeper.DefaultMintFn(app.InflationKeeper.DeflationCalculationFn())),
 	)
-	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
-		authAddr,
-	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
@@ -365,6 +363,16 @@ func New(
 		app.StakingKeeper,
 		authtypes.FeeCollectorName,
 		authAddr,
+	)
+	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		authAddr,
+		app.MintKeeper,
+		app.StakingKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,

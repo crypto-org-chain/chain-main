@@ -7,9 +7,9 @@ import (
 )
 
 // NewParams creates a new Params instance.
-func NewParams(targetBaseRewardRate sdkmath.LegacyDec) Params {
+func NewParams(targetBaseRewardsRate sdkmath.LegacyDec) Params {
 	return Params{
-		TargetBaseRewardRate: targetBaseRewardRate,
+		TargetBaseRewardsRate: targetBaseRewardsRate,
 	}
 }
 
@@ -22,16 +22,16 @@ func DefaultParams() Params {
 
 // Validate validates the set of params.
 func (p Params) Validate() error {
-	return validateTargetBaseRewardRate(p.TargetBaseRewardRate)
+	return validateTargetBaseRewardsRate(p.TargetBaseRewardsRate)
 }
 
-func validateTargetBaseRewardRate(v sdkmath.LegacyDec) error {
+func validateTargetBaseRewardsRate(v sdkmath.LegacyDec) error {
 	if v.IsNil() {
-		return fmt.Errorf("target base reward rate cannot be nil")
+		return fmt.Errorf("target base rewards rate cannot be nil")
 	}
 
 	if v.IsNegative() {
-		return fmt.Errorf("target base reward rate cannot be negative: %s", v)
+		return fmt.Errorf("target base rewards rate cannot be negative: %s", v)
 	}
 
 	return nil
