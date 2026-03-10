@@ -77,7 +77,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return nil
 	}
 
-	poolAddr := k.GetModuleAddress(types.BaseRewardsPoolName)
+	poolAddr := k.GetModuleAddress(types.RewardsPoolName)
 	poolBalance := k.GetBalance(ctx, poolAddr, bondDenom)
 	topUpAmount := shortFallAmount
 	if poolBalance.Amount.IsZero() {
@@ -94,7 +94,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		topUpAmount = poolBalance.Amount
 	}
 
-	err = k.SendCoinsFromModuleToModule(ctx, types.BaseRewardsPoolName, distributiontypes.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, topUpAmount)))
+	err = k.SendCoinsFromModuleToModule(ctx, types.RewardsPoolName, distributiontypes.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, topUpAmount)))
 	if err != nil {
 		return err
 	}

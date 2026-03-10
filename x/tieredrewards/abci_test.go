@@ -49,7 +49,7 @@ func TestBeginBlocker_ZeroRate(t *testing.T) {
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.BaseRewardsPoolName)
+	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
 	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
@@ -99,7 +99,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	// Clear the fee collector so there's a guaranteed shortfall
 	feeCollectorAddr := a.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName).GetAddress()
 	feeBalance := a.BankKeeper.GetAllBalances(ctx, feeCollectorAddr)
-	err = a.BankKeeper.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, types.BaseRewardsPoolName, feeBalance)
+	err = a.BankKeeper.SendCoinsFromModuleToModule(ctx, authtypes.FeeCollectorName, types.RewardsPoolName, feeBalance)
 	require.NoError(t, err)
 
 	// Calculate expected shortfall (fee collector is 0, so full target is the shortfall)
@@ -112,7 +112,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 		Quo(sdkmath.LegacyNewDec(int64(blocksPerYear))).
 		TruncateInt()
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.BaseRewardsPoolName)
+	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
@@ -150,10 +150,10 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 
 	// Fund pool with a small amount that is less than the shortfall
 	smallAmount := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(1)))
-	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.BaseRewardsPoolName, smallAmount)
+	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, smallAmount)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.BaseRewardsPoolName)
+	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
 
@@ -183,10 +183,10 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 
 	// Fund the pool so we can verify it stays untouched
 	poolFund := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(1_000_000_000)))
-	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.BaseRewardsPoolName, poolFund)
+	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, poolFund)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.BaseRewardsPoolName)
+	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
 	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)

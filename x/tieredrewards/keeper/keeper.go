@@ -44,8 +44,8 @@ func NewKeeper(
 	distributionKeeper types.DistributionKeeper,
 ) Keeper {
 	// ensure base rewards pool module account is set
-	if addr := accountKeeper.GetModuleAddress(types.BaseRewardsPoolName); addr == nil {
-		panic(fmt.Sprintf("the %s module account has not been set", types.BaseRewardsPoolName))
+	if addr := accountKeeper.GetModuleAddress(types.RewardsPoolName); addr == nil {
+		panic(fmt.Sprintf("the %s module account has not been set", types.RewardsPoolName))
 	}
 
 	sb := collections.NewSchemaBuilder(storeService)
