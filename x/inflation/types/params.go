@@ -123,7 +123,7 @@ func validateDecayRate(i any) error {
 	}
 
 	if v.IsNil() {
-		return fmt.Errorf("decay rate cannot be nil: %s", v)
+		return fmt.Errorf("decay rate cannot be nil")
 	}
 
 	if v.IsNegative() {
