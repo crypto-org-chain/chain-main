@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	maxsupplytypes "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 
-	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -54,9 +54,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 
 		var _ok bool
-		maxSupplyParams := maxsupplytypes.DefaultParams()
+		inflationParams := inflationtypes.DefaultParams()
 		// update max supply to 100B * 10^8 basecro
-		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("10000000000000000000")
+		inflationParams.MaxSupply, _ok = math.NewIntFromString("10000000000000000000")
 		if !_ok {
 			return map[string]uint64{}, fmt.Errorf("invalid max supply")
 		}
@@ -65,27 +65,55 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 
 		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
 			// For mainnet or the integration test
-			maxSupplyParams.BurnedAddresses = []string{
+			inflationParams.BurnedAddresses = []string{
 				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
 			}
 		} else if strings.Contains(chainID, "testnet") {
 			// For testnet, use different burned addresses or configuration
-			maxSupplyParams.BurnedAddresses = []string{
+			inflationParams.BurnedAddresses = []string{
 				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
 			}
 		} else {
 			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
 		}
 
-		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
+		inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
+		inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
+
+		if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
 			return map[string]uint64{}, err
 		}
 
-		sdkCtx.Logger().Info("maxsupply module initialized with params",
-			"max_supply", maxSupplyParams.MaxSupply.String(),
-			"burned_addresses", maxSupplyParams.BurnedAddresses)
+		sdkCtx.Logger().Info("inflation module initialized with params",
+			"max_supply", inflationParams.MaxSupply.String(),
+			"burned_addresses", inflationParams.BurnedAddresses,
+			"decay_start_height", inflationParams.DecayStartHeight,
+			"decay_rate", inflationParams.DecayRate.String())
 
-		m[maxsupplytypes.ModuleName] = 1
+		m[inflationtypes.ModuleName] = 1
+
+		mintParams, err := app.MintKeeper.Params.Get(ctx)
+		if err != nil {
+			return map[string]uint64{}, err
+		}
+
+		mintParams.InflationMax = math.LegacyMustNewDecFromStr("0.01") // 1%
+		mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.01") // 1%
+		// Set inflation rate change for consistency with the new decay mechanism
+		mintParams.InflationRateChange = math.LegacyZeroDec()
+
+		if err := mintParams.Validate(); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		if err := app.MintKeeper.Params.Set(ctx, mintParams); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		sdkCtx.Logger().Info("mint module updated params",
+			"inflation_max", mintParams.InflationMax.String(),
+			"inflation_min", mintParams.InflationMin.String(),
+			"inflation_rate_change", mintParams.InflationRateChange.String())
 
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
@@ -101,7 +129,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
-				maxsupplytypes.StoreKey,
+				inflationtypes.StoreKey,
 			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
@@ -119,19 +147,19 @@ func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
 		expeditedAmount := minDeposit.Amount.MulRaw(govv1.DefaultMinExpeditedDepositTokensRatio)
 		govParams.ExpeditedMinDeposit = sdk.NewCoins(sdk.NewCoin(minDeposit.Denom, expeditedAmount))
 	}
-	threshold, err := sdkmath.LegacyNewDecFromStr(govParams.Threshold)
+	threshold, err := math.LegacyNewDecFromStr(govParams.Threshold)
 	if err != nil {
 		return fmt.Errorf("invalid threshold string: %w", err)
 	}
-	expeditedThreshold, err := sdkmath.LegacyNewDecFromStr(govParams.ExpeditedThreshold)
+	expeditedThreshold, err := math.LegacyNewDecFromStr(govParams.ExpeditedThreshold)
 	if err != nil {
 		return fmt.Errorf("invalid expedited threshold string: %w", err)
 	}
 	if expeditedThreshold.LTE(threshold) {
 		expeditedThreshold = threshold.Mul(DefaultThresholdRatio())
 	}
-	if expeditedThreshold.GT(sdkmath.LegacyOneDec()) {
-		expeditedThreshold = sdkmath.LegacyOneDec()
+	if expeditedThreshold.GT(math.LegacyOneDec()) {
+		expeditedThreshold = math.LegacyOneDec()
 	}
 	govParams.ExpeditedThreshold = expeditedThreshold.String()
 	if govParams.ExpeditedVotingPeriod != nil && govParams.VotingPeriod != nil && *govParams.ExpeditedVotingPeriod >= *govParams.VotingPeriod {
@@ -145,18 +173,18 @@ func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
 	return gov.Params.Set(ctx, govParams)
 }
 
-func DefaultThresholdRatio() sdkmath.LegacyDec {
+func DefaultThresholdRatio() math.LegacyDec {
 	return govv1.DefaultExpeditedThreshold.Quo(govv1.DefaultThreshold)
 }
 
-func DefaultPeriodRatio() sdkmath.LegacyDec {
+func DefaultPeriodRatio() math.LegacyDec {
 	return DurationToDec(govv1.DefaultExpeditedPeriod).Quo(DurationToDec(govv1.DefaultPeriod))
 }
 
-func DurationToDec(d time.Duration) sdkmath.LegacyDec {
-	return sdkmath.LegacyMustNewDecFromStr(fmt.Sprintf("%f", d.Seconds()))
+func DurationToDec(d time.Duration) math.LegacyDec {
+	return math.LegacyMustNewDecFromStr(fmt.Sprintf("%f", d.Seconds()))
 }
 
-func DecToDuration(d sdkmath.LegacyDec) time.Duration {
+func DecToDuration(d math.LegacyDec) time.Duration {
 	return time.Second * time.Duration(d.RoundInt64())
 }
