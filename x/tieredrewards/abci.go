@@ -3,10 +3,120 @@ package tieredrewards
 import (
 	"context"
 
+	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-// BeginBlocker is called at the beginning of every block.
-func BeginBlocker(_ context.Context, _ keeper.Keeper) error {
-	return nil
+func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
+	return topUpBaseRewards(ctx, k)
+}
+
+func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
+	totalBonded, err := k.TotalBondedTokens(ctx)
+	if err != nil {
+		return err
+	}
+
+	bondDenom, err := k.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+
+	blocksPerYear, err := k.GetBlocksPerYear(ctx)
+	if err != nil {
+		return err
+	}
+
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	communityTax, err := k.GetCommunityTax(ctx)
+	if err != nil {
+		return err
+	}
+
+	targetBaseRewardsRate := params.TargetBaseRewardsRate
+	
+	if targetBaseRewardsRate.IsZero() {
+		return nil
+	}
+
+	targetStakersReward := math.LegacyNewDecFromInt(totalBonded).
+		Mul(targetBaseRewardsRate).
+		Quo(math.LegacyNewDec(int64(blocksPerYear)))
+
+	feeCollectorAddr := k.GetModuleAccount(ctx, authtypes.FeeCollectorName).GetAddress()
+	feeCollectorBalance := k.GetBalance(ctx, feeCollectorAddr, bondDenom)
+	defaultStakersReward := math.LegacyNewDecFromInt(feeCollectorBalance.Amount).
+		MulTruncate(math.LegacyOneDec().Sub(communityTax))
+
+	shortFallAmount := targetStakersReward.Sub(defaultStakersReward).TruncateInt()
+
+	if !shortFallAmount.IsPositive() {
+		return nil
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	bondedVotes := sdkCtx.VoteInfos()
+
+	var previousTotalPower int64
+	for _, voteInfo := range bondedVotes {
+		previousTotalPower += voteInfo.Validator.Power
+	}
+
+	// if no validators are voting, skip
+	if previousTotalPower == 0 {
+		return nil
+	}
+
+	poolAddr := k.GetModuleAddress(types.BaseRewardsPoolName)
+	poolBalance := k.GetBalance(ctx, poolAddr, bondDenom)
+	topUpAmount := shortFallAmount
+	if poolBalance.Amount.IsZero() {
+		k.Logger(ctx).Error("base rewards pool is empty, cannot top up validator rewards",
+			"shortfall", shortFallAmount.String(),
+		)
+		return nil
+	}
+	if poolBalance.Amount.LT(shortFallAmount) {
+		k.Logger(ctx).Error("base rewards pool has insufficient funds, distributing remaining balance",
+			"shortfall", shortFallAmount.String(),
+			"pool_balance", poolBalance.Amount.String(),
+		)
+		topUpAmount = poolBalance.Amount
+	}
+
+	err = k.SendCoinsFromModuleToModule(ctx, types.BaseRewardsPoolName, distributiontypes.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, topUpAmount)))
+	if err != nil {
+		return err
+	}
+
+	topUp := sdk.NewDecCoins(sdk.NewDecCoin(bondDenom, topUpAmount))
+
+	for _, vote := range bondedVotes {
+		validator, err := k.ValidatorByConsAddr(ctx, vote.Validator.Address)
+		if err != nil {
+			return err
+		}
+
+		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(previousTotalPower))
+		reward := topUp.MulDecTruncate(powerFraction)
+
+		err = k.AllocateTokensToValidator(ctx, validator, reward)
+		if err != nil {
+			return err
+		}
+	}
+
+	return sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsTopUp{
+		Amount: sdk.NewCoin(bondDenom, topUpAmount),
+	})
 }

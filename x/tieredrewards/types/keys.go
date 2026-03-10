@@ -12,4 +12,7 @@ const (
 
 	// StoreKey defines the primary module store key
 	StoreKey = ModuleName
+
+	// BaseRewardsPoolName defines the base reward pool module account name
+	BaseRewardsPoolName = "base_rewards_pool"
 )
