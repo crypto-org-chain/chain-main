@@ -123,7 +123,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		}
 		sdkCtx.Logger().Info("tieredrewards module updated params",
 			"target_base_rewards_rate", tieredrewardsParams.TargetBaseRewardsRate.String())
-			
+
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
 			"version_map", m)
