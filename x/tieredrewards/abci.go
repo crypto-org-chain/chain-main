@@ -3,14 +3,14 @@ package tieredrewards
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
@@ -44,7 +44,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 	}
 
 	targetBaseRewardsRate := params.TargetBaseRewardsRate
-	
+
 	if targetBaseRewardsRate.IsZero() {
 		return nil
 	}

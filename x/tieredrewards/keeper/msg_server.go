@@ -3,11 +3,11 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/errors"
 
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 var _ types.MsgServer = msgServer{}

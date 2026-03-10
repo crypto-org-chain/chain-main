@@ -2,9 +2,7 @@ package types
 
 import "cosmossdk.io/collections"
 
-var (
-	ParamsKey = collections.NewPrefix(0)
-)
+var ParamsKey = collections.NewPrefix(0)
 
 const (
 	// ModuleName defines the module name

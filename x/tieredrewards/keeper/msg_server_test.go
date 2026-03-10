@@ -1,10 +1,10 @@
 package keeper_test
 
 import (
-	sdkmath "cosmossdk.io/math"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	sdkmath "cosmossdk.io/math"
 )
 
 func (s *KeeperSuite) TestUpdateParams_Success() {

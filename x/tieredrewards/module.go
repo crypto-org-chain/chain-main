@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"cosmossdk.io/core/appmodule"
@@ -14,9 +16,6 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 var (

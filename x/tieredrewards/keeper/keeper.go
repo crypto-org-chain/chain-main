@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
@@ -12,8 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // Keeper of the tieredrewards store.
