@@ -8,6 +8,8 @@ import (
 
 	"cosmossdk.io/math"
 
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -20,9 +22,9 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get params: %v", err))
 	}
-	
+
 	targetBaseRewardsRate := params.TargetBaseRewardsRate
 
 	if targetBaseRewardsRate.IsZero() {
@@ -31,24 +33,24 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 
 	totalBonded, err := k.TotalBondedTokens(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get total bonded tokens: %v", err))
 	}
 
 	bondDenom, err := k.BondDenom(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get bond denom: %v", err))
 	}
 
 	blocksPerYear, err := k.GetBlocksPerYear(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get blocks per year: %v", err))
 	}
 
 	communityTax, err := k.GetCommunityTax(ctx)
 	if err != nil {
-		return err
+		panic(fmt.Sprintf("failed to get community tax: %v", err))
 	}
-	
+
 	targetStakersReward := math.LegacyNewDecFromInt(totalBonded).
 		Mul(targetBaseRewardsRate).
 		Quo(math.LegacyNewDec(int64(blocksPerYear)))
