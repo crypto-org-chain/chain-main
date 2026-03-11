@@ -183,9 +183,9 @@ def test_chain_continues_after_pool_empty(cluster):
     wait_for_new_blocks(cluster, 5)
 
     height_after = int(get_sync_info(cluster.status())["latest_block_height"])
-    assert height_after >= height_before + 5, (
-        "chain should continue producing blocks with empty pool"
-    )
+    assert (
+        height_after >= height_before + 5
+    ), "chain should continue producing blocks with empty pool"
 
 
 def test_insufficient_pool_partial_drain(cluster):
@@ -233,9 +233,7 @@ def test_zero_rate_no_topup(cluster):
     # Verify pool drains at 10000% rate
     wait_for_new_blocks(cluster, 3)
     pool_after_drain = _pool_balance(cluster)
-    assert pool_after_drain < pool_after_fund, (
-        "pool should have been drained"
-    )
+    assert pool_after_drain < pool_after_fund, "pool should have been drained"
 
     # Now set rate to 0
     params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
@@ -269,9 +267,7 @@ def test_zero_rate_no_topup(cluster):
     wait_for_new_blocks(cluster, 3)
 
     pool_after = _pool_balance(cluster)
-    assert pool_after == pool_before, (
-        "pool should be untouched when rate is zero"
-    )
+    assert pool_after == pool_before, "pool should be untouched when rate is zero"
 
 
 # target base rewards rate = 0.01 // 1%
@@ -318,6 +314,6 @@ def test_fee_collector_sufficient_no_topup(cluster):
 
     pool_after = _pool_balance(cluster)
 
-    assert pool_after == pool_funds, (
-        "pool should be untouched when fee collector is sufficient"
-    )
+    assert (
+        pool_after == pool_funds
+    ), "pool should be untouched when fee collector is sufficient"
