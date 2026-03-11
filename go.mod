@@ -21,7 +21,7 @@ require (
 	github.com/cometbft/cometbft v0.38.21
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.53.4
+	github.com/cosmos/cosmos-sdk v0.53.6
 	github.com/cosmos/gogoproto v1.7.2
 	github.com/cosmos/ibc-go/v10 v10.1.1
 	github.com/cosmos/rosetta v0.50.3-1
@@ -247,8 +247,7 @@ require (
 
 replace github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881
 
-// TODO: update to fork before merging PR
-replace github.com/cosmos/cosmos-sdk => github.com/randy-cro/cosmos-sdk v0.0.0-20260310071231-89e075a63263
+replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20260311065045-34b487225358
 
 replace (
 	// use cosmos fork of keyring
