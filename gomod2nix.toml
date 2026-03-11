@@ -189,7 +189,7 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.53.6-0.20260311065045-34b487225358"
+    version = "v0.0.0-20260311065045-34b487225358"
     hash = "sha256-C1rHn6NVMJUV+/bgeqkJjaT+BYXymVNQNGdggmkUon8="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
