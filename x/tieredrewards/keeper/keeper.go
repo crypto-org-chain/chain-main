@@ -81,10 +81,6 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
-	return k.Params.Get(ctx)
-}
-
 func (k Keeper) GetBlocksPerYear(ctx context.Context) (uint64, error) {
 	params, err := k.mintKeeper.GetParams(ctx)
 	if err != nil {

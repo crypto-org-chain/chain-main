@@ -20,7 +20,7 @@ func (s *KeeperSuite) TestUpdateParams_Success() {
 	_, err := msgServer.UpdateParams(s.ctx, msg)
 	s.Require().NoError(err)
 
-	stored, err := s.keeper.GetParams(s.ctx)
+	stored, err := s.keeper.Params.Get(s.ctx)
 	s.Require().NoError(err)
 	s.Require().True(newParams.TargetBaseRewardsRate.Equal(stored.TargetBaseRewardsRate))
 }

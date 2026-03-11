@@ -110,8 +110,8 @@ def test_empty_pool_no_panic(cluster):
 # target base rewards rate = 100 // 10000%
 # target stakers reward = 2000000000 * 100 / 6311520 = 31688.088638376 basecro
 # fee collector balance = 25581
-# default stakers reward = 25581* (1 - 0.02) = 25069.38 basecro
-# shortfall per block = 31688.088638376 - 25069.38 ~= 6618
+# default stakers reward = 25581 * (1 - 0.02) = 25069.38 basecro
+# shortfall per block = 31688.088638376 - 25069.38 ~= 6618 basecro
 
 def test_topup_from_pool(cluster):
     """Test that funding the pool results in rewards being distributed.
@@ -257,19 +257,19 @@ def test_zero_rate_no_topup(cluster):
     updated_params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
     assert float(updated_params["target_base_rewards_rate"]) == 0.0
 
-    pool_before_zero = _pool_balance(cluster)
+    pool_before = _pool_balance(cluster)
 
     wait_for_new_blocks(cluster, 3)
 
-    pool_after_zero = _pool_balance(cluster)
-    assert pool_after_zero == pool_before_zero, (
+    pool_after = _pool_balance(cluster)
+    assert pool_after == pool_before, (
         "pool should be untouched when rate is zero"
     )
-
+    
 
 # target base rewards rate = 0.01 // 1%
 # target stakers reward = 2000000000 * 0.01 / 6311520 = 3.1688088638376 basecro
-# fee collector balance = 25581
+# fee collector balance per block = 25581 basecro
 def test_fee_collector_sufficient_no_topup(cluster):
     """Test that no top-up occurs when fee collector already covers the target.
     Update params to a very low rate via governance so fee collector is sufficient.

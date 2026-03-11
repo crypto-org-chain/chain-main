@@ -28,7 +28,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Params holds parameters for the tieredrewards module.
 type Params struct {
-	// target_base_rewards_rate is the target base reward rate for validators.
+	// target_base_rewards_rate is the target base rewards rate for validators.
 	TargetBaseRewardsRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=target_base_rewards_rate,json=targetBaseRewardsRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"target_base_rewards_rate"`
 }
 

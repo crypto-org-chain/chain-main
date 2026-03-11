@@ -4,7 +4,7 @@
 
 ## Features
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
-- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up.
+- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up
 
 ### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
@@ -19,7 +19,6 @@
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 - [#1235](https://github.com/crypto-org-chain/chain-main/pull/1235) doc: add ADR for tiered reward module
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
-- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up
 
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)

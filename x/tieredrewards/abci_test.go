@@ -193,8 +193,8 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 	require.NoError(t, err)
 
 	// Pool should be untouched
-	//  At 10000% rate with 1M bonded, the per-block target is 1_000_000 * 100 / 6_311_520 ≈ 15
-	//  the fee collector already has ~2M from mint, which more than covers it. So the pool stays untouched.
+	// At 10000% rate with 1M bonded, the per-block target is 1_000_000 * 100 / 6_311_520 ≈ 15
+	// the fee collector already has ~2M from mint, which more than covers the target. So the pool stays untouched.
 	poolAfter := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 	require.Equal(t, poolBefore.Amount, poolAfter.Amount, "pool should be untouched when fee collector is sufficient")
 }

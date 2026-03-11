@@ -26,7 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 type EventBaseRewardsTopUp struct {
-	// topup is the additional top up distributed to validators.
+	// topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
 	TopUp types.Coin `protobuf:"bytes,1,opt,name=top_up,json=topUp,proto3" json:"top_up"`
 }
 

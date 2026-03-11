@@ -19,7 +19,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 }
 
 func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
-	params, err := k.GetParams(ctx)
+	params, err := k.Params.Get(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get params: %v", err))
 	}

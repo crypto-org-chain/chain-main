@@ -8,6 +8,6 @@ option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/type
 
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 message EventBaseRewardsTopUp {
-  // topup is the additional top up distributed to validators.
+  // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
   cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
 }
