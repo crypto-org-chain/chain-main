@@ -38,3 +38,12 @@ func (ms msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams
 
 	return &types.MsgUpdateParamsResponse{}, nil
 }
+
+func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCommitDelegationToTier) (*types.MsgCommitDelegationToTierResponse, error) {
+	_, err := ms.Keeper.TransferDelegationToPool(ctx, *msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.MsgCommitDelegationToTierResponse{}, nil
+}

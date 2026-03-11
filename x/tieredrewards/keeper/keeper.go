@@ -138,6 +138,22 @@ func (k Keeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddres
 	return k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
 }
 
+func (k Keeper) ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (math.LegacyDec, error) {
+	return k.stakingKeeper.ValidateUnbondAmount(ctx, delAddr, valAddr, amt)
+}
+
+func (k Keeper) Unbond(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, shares math.LegacyDec) (math.Int, error) {
+	return k.stakingKeeper.Unbond(ctx, delAddr, valAddr, shares)
+}
+
+func (k Keeper) Delegate(ctx context.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (math.LegacyDec, error) {
+	return k.stakingKeeper.Delegate(ctx, delAddr, bondAmt, tokenSrc, validator, subtractAccount)
+}
+
+func (k Keeper) GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error) {
+	return k.stakingKeeper.GetValidator(ctx, addr)
+}
+
 func (k Keeper) GetMintParams(ctx context.Context) (minttypes.Params, error) {
 	p, err := k.mintKeeper.GetParams(ctx)
 	if err != nil {
