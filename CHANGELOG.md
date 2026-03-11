@@ -3,19 +3,6 @@
 ## UNRELEASED
 
 ### Improvements
-- [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
-- [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
-- [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
-
-### Bugfixes
-- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
-
-
-*July 9, 2025*
-
-## v7.0.0
-
-### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
 - [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
 - [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
@@ -24,7 +11,13 @@
 - [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
 - [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
 - [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
+- [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
+- [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
+- [#1235](https://github.com/crypto-org-chain/chain-main/pull/1235) doc: add ADR for tiered reward module
+- [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
 
+### Bugfixes
+- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 
 *July 9, 2025*
 
