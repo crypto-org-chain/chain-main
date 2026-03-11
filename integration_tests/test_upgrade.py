@@ -561,34 +561,26 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # v7 upgrade
     propose_n_execute_v7_upgrade(cluster)
 
-    # test v7 maxsupply module is working
-    assert_v7_maxsupply_module_is_working(cluster)
+    # test v7 inflation module is working
+    assert_v7_inflation_module_is_working(cluster)
 
 
-def assert_v7_maxsupply_module_is_working(cluster):
+def assert_v7_inflation_module_is_working(cluster):
     cli = cluster.cosmos_cli()
     rsp = json.loads(
         cli.raw(
             "query",
-            "maxsupply",
-            "max-supply",
+            "inflation",
+            "params",
             output="json",
             node=cli.node_rpc,
         )
     )
+
+    rsp = rsp["params"]
 
     expected_max_supply = "10000000000000000000"  # 100B * 10^8
     assert rsp["max_supply"] == expected_max_supply, rsp["max_supply"]
-
-    rsp = json.loads(
-        cli.raw(
-            "query",
-            "maxsupply",
-            "burned-addresses",
-            output="json",
-            node=cli.node_rpc,
-        )
-    )
 
     expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
     assert rsp["burned_addresses"] == expected_burned_addresses, rsp["burned_addresses"]
@@ -607,7 +599,7 @@ def propose_n_execute_v7_upgrade(cluster):
         {
             "name": plan_name,
             "title": "v7.0.0 upgrade",
-            "summary": "Upgrade to v7.0.0 with maxsupply module",
+            "summary": "Upgrade to v7.0.0 with inflation module",
             "upgrade-height": target_height,
             "deposit": "0.1cro",
         },
