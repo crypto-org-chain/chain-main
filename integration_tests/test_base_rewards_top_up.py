@@ -150,6 +150,7 @@ def test_pool_drains_to_zero(cluster):
     With a very high target rate (10000%) and limited pool funds,
     the pool should be fully drained after enough blocks.
     """
+    # funded from the previous test_topup_from_pool test
     pool_balance = _pool_balance(cluster)
     assert pool_balance > 0, "pool should still have funds"
 
