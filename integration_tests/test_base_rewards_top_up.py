@@ -71,6 +71,7 @@ def _find_topup_event(cluster, height):
             return attrs
     return None
 
+
 def _assert_topup_event_emitted(cluster, amount):
     height = int(get_sync_info(cluster.status())["latest_block_height"])
     ev = _find_topup_event(cluster, height)
@@ -145,6 +146,7 @@ def test_topup_from_pool(cluster):
 
     _assert_topup_event_emitted(cluster, "6618")
 
+
 def test_pool_drains_to_zero(cluster):
     """Test that the pool eventually drains to zero as blocks progress.
     With a very high target rate (10000%) and limited pool funds,
@@ -165,6 +167,7 @@ def test_pool_drains_to_zero(cluster):
         f"but still has {pool_final} basecro"
     )
 
+
 def test_chain_continues_after_pool_empty(cluster):
     """Test that the chain continues producing blocks after the pool is empty.
     This verifies that an empty pool doesn't cause consensus errors.
@@ -182,6 +185,7 @@ def test_chain_continues_after_pool_empty(cluster):
     assert height_after >= height_before + 5, (
         "chain should continue producing blocks with empty pool"
     )
+
 
 def test_insufficient_pool_partial_drain(cluster):
     """Test that when pool has less than the shortfall, it drains everything available.
@@ -205,6 +209,7 @@ def test_insufficient_pool_partial_drain(cluster):
         f"pool should be fully drained when insufficient, "
         f"but still has {pool_after} basecro"
     )
+
 
 def test_zero_rate_no_topup(cluster):
     """Test that with rate = 0, no top-up occurs regardless of pool balance.
@@ -266,7 +271,7 @@ def test_zero_rate_no_topup(cluster):
     assert pool_after == pool_before, (
         "pool should be untouched when rate is zero"
     )
-    
+
 
 # target base rewards rate = 0.01 // 1%
 # target stakers reward = 2000000000 * 0.01 / 6311520 = 3.1688088638376 basecro
@@ -304,7 +309,7 @@ def test_fee_collector_sufficient_no_topup(cluster):
     updated_params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
     assert float(updated_params["target_base_rewards_rate"]) == 0.01
 
-   # funded from the previous test_zero_rate_no_topup test
+    # funded from the previous test_zero_rate_no_topup test
     pool_funds = _pool_balance(cluster)
     assert pool_funds > 0, "pool should have funds"
 
