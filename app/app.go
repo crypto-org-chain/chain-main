@@ -163,8 +163,10 @@ var (
 		icatypes.ModuleName:                nil,
 		tieredrewardstypes.RewardsPoolName: nil,
 	}
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{
+	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
+	// receive tokens from external accounts via MsgSend, bypassing the default
+	// block on sends to module accounts.
+	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
 		tieredrewardstypes.RewardsPoolName: true,
 	}
 )
@@ -862,7 +864,7 @@ func (app *ChainApp) ModuleAccountAddrs() map[string]bool {
 func (app *ChainApp) BlockedAddrs() map[string]bool {
 	blockedAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !moduleAccsAllowedToReceiveExternalFunds[acc]
 	}
 
 	return blockedAddrs

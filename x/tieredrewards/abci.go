@@ -45,21 +45,31 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		panic(fmt.Sprintf("failed to get blocks per year: %v", err))
 	}
 
+	if blocksPerYear == 0 {
+		k.Logger(ctx).Error("blocks per year is 0, skipping base rewards top up")
+		return nil
+	}
+
 	communityTax, err := k.GetCommunityTax(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get community tax: %v", err))
 	}
 
-	targetStakersReward := math.LegacyNewDecFromInt(totalBonded).
+	targetStakersRewardPerBlock := math.LegacyNewDecFromInt(totalBonded).
 		Mul(targetBaseRewardsRate).
 		Quo(math.LegacyNewDec(int64(blocksPerYear)))
 
-	feeCollectorAddr := k.GetModuleAccount(ctx, authtypes.FeeCollectorName).GetAddress()
+	feeCollector := k.GetModuleAccount(ctx, authtypes.FeeCollectorName)
+	if feeCollector == nil {
+		k.Logger(ctx).Error("fee collector module account not found, skipping base rewards top up")
+		return nil
+	}
+	feeCollectorAddr := feeCollector.GetAddress()
 	feeCollectorBalance := k.GetBalance(ctx, feeCollectorAddr, bondDenom)
-	defaultStakersReward := math.LegacyNewDecFromInt(feeCollectorBalance.Amount).
+	defaultStakersRewardPerBlock := math.LegacyNewDecFromInt(feeCollectorBalance.Amount).
 		MulTruncate(math.LegacyOneDec().Sub(communityTax))
 
-	shortFallAmount := targetStakersReward.Sub(defaultStakersReward).TruncateInt()
+	shortFallAmount := targetStakersRewardPerBlock.Sub(defaultStakersRewardPerBlock).TruncateInt()
 
 	if !shortFallAmount.IsPositive() {
 		return nil

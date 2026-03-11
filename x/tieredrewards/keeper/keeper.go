@@ -48,6 +48,26 @@ func NewKeeper(
 		panic(fmt.Sprintf("the %s module account has not been set", types.RewardsPoolName))
 	}
 
+	if mintKeeper == nil {
+		panic("mint keeper is nil")
+	}
+
+	if stakingKeeper == nil {
+		panic("staking keeper is nil")
+	}
+
+	if accountKeeper == nil {
+		panic("account keeper is nil")
+	}
+
+	if bankKeeper == nil {
+		panic("bank keeper is nil")
+	}
+
+	if distributionKeeper == nil {
+		panic("distribution keeper is nil")
+	}
+
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
 		cdc:                cdc,

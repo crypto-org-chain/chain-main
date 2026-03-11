@@ -114,6 +114,7 @@ def test_empty_pool_no_panic(cluster):
 # default stakers reward = 25581 * (1 - 0.02) = 25069.38 basecro
 # shortfall per block = 31688.088638376 - 25069.38 ~= 6618 basecro
 
+
 def test_topup_from_pool(cluster):
     """Test that funding the pool results in rewards being distributed.
     Fund the pool, wait for blocks, verify pool decreased and distribution
