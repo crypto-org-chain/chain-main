@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 import requests
-
 from pystarport.ports import rpc_port
 
 from .utils import (
@@ -78,7 +77,8 @@ def _assert_topup_event_emitted(cluster, amount):
     assert ev is not None, "EventBaseRewardsTopUp should have been emitted"
     expected = f'{{"denom":"{DENOM}","amount":"{amount}"}}'
     assert ev["top_up"] == expected, (
-        f"EventBaseRewardsTopUp topup mismatch: expected {expected}, got {ev['top_up']}"
+        "EventBaseRewardsTopUp topup mismatch:"
+        f" expected {expected}, got {ev['top_up']}"
     )
 
 
