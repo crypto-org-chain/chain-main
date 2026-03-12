@@ -13,6 +13,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -101,14 +102,6 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k Keeper) GetBlocksPerYear(ctx context.Context) (uint64, error) {
-	params, err := k.mintKeeper.GetParams(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return params.BlocksPerYear, nil
-}
-
 func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
 	return k.stakingKeeper.TotalBondedTokens(ctx)
 }
@@ -143,4 +136,12 @@ func (k Keeper) AllocateTokensToValidator(ctx context.Context, val stakingtypes.
 
 func (k Keeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
 	return k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+}
+
+func (k Keeper) GetMintParams(ctx context.Context) (minttypes.Params, error) {
+	p, err := k.mintKeeper.GetParams(ctx)
+	if err != nil {
+		return minttypes.Params{}, err
+	}
+	return p, nil
 }

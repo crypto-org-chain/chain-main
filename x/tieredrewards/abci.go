@@ -40,10 +40,12 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		panic(fmt.Sprintf("failed to get bond denom: %v", err))
 	}
 
-	blocksPerYear, err := k.GetBlocksPerYear(ctx)
+	mintParams, err := k.GetMintParams(ctx)
 	if err != nil {
-		panic(fmt.Sprintf("failed to get blocks per year: %v", err))
+		panic(fmt.Sprintf("failed to get mint params: %v", err))
 	}
+
+	blocksPerYear := mintParams.BlocksPerYear
 
 	if blocksPerYear == 0 {
 		k.Logger(ctx).Error("blocks per year is 0, skipping base rewards top up")
