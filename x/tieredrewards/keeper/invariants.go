@@ -187,7 +187,7 @@ func UnbondingConsistencyInvariant(k Keeper) sdk.Invariant {
 		err = k.UnbondingPositions.Walk(ctx, nil, func(posId uint64, _ int64) (bool, error) {
 			pos, posErr := k.GetPosition(ctx, posId)
 			if posErr != nil {
-				return true, fmt.Errorf("UnbondingPositions entry %d references non-existent position: %s", posId, posErr)
+				return true, fmt.Errorf("UnbondingPositions entry %d references non-existent position: %w", posId, posErr)
 			}
 			if !pos.IsUnbonding {
 				return true, fmt.Errorf("UnbondingPositions entry %d but position has IsUnbonding=false", posId)

@@ -13,8 +13,8 @@ var MaxBonusAPY = sdkmath.LegacyNewDec(10) // 1000%
 func NewParams(targetBaseRewardsRate sdkmath.LegacyDec, tiers []TierDefinition, bonusDenoms []string) Params {
 	return Params{
 		TargetBaseRewardsRate: targetBaseRewardsRate,
-		Tiers:                tiers,
-		BonusDenoms:          bonusDenoms,
+		Tiers:                 tiers,
+		BonusDenoms:           bonusDenoms,
 	}
 }
 

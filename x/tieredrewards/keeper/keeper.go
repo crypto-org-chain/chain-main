@@ -121,10 +121,10 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		bankKeeper:         bankKeeper,
 		distributionKeeper: distributionKeeper,
-		Params:          collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		Positions:        collections.NewIndexedMap(sb, types.PositionByIDPrefix, "positions", collections.Uint64Key, codec.CollValue[types.TierPosition](cdc), newPositionIndexes(sb)),
-		NextPositionID:   collections.NewSequence(sb, types.NextPositionIDKey, "next_position_id"),
-		TotalTierShares:  collections.NewMap(sb, types.TotalTierSharesPrefix, "total_tier_shares", collections.StringKey, sdk.LegacyDecValue),
+		Params:             collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Positions:          collections.NewIndexedMap(sb, types.PositionByIDPrefix, "positions", collections.Uint64Key, codec.CollValue[types.TierPosition](cdc), newPositionIndexes(sb)),
+		NextPositionID:     collections.NewSequence(sb, types.NextPositionIDKey, "next_position_id"),
+		TotalTierShares:    collections.NewMap(sb, types.TotalTierSharesPrefix, "total_tier_shares", collections.StringKey, sdk.LegacyDecValue),
 		UnbondingPositions: collections.NewMap(sb, types.UnbondingPositionsPrefix, "unbonding_positions", collections.Uint64Key, collections.Int64Value),
 	}
 

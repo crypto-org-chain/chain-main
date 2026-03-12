@@ -3,13 +3,13 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	query "github.com/cosmos/cosmos-sdk/types/query"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 var _ types.QueryServer = queryServer{}
