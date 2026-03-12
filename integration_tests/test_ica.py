@@ -7,7 +7,7 @@ import requests
 from pystarport import cluster as c
 
 from .ibc_utils import search_target, wait_for_check_channel_ready, wait_relayer_ready
-from .utils import cluster_fixture, wait_for_fn, wait_for_new_blocks
+from .utils import cluster_fixture, get_sync_info, wait_for_fn, wait_for_new_blocks
 
 pytestmark = pytest.mark.ibc
 
@@ -47,6 +47,7 @@ def wait_for_check_tx(cli, adr, num_txs, timeout=None):
     if timeout is None:
         wait_for_fn("transfer tx", check_tx)
     else:
+        raised = False
         try:
             print(f"should assert timeout err when pass {timeout}s")
             wait_for_fn("transfer tx", check_tx, timeout=timeout)
@@ -170,7 +171,8 @@ def test_ica(cluster, tmp_path):
     no_timeout = 60
     num_txs = len(cli_host.query_all_txs(ica_address)["txs"])
 
-    def submit_msgs(amt, timeout_in_s=no_timeout, gas="200000"):
+    def submit_msgs(amt, timeout_in_s=no_timeout, gas="200000", wait_for_result=True):
+        prev_num_txs = len(cli_host.query_all_txs(ica_address)["txs"])
         # generate a transaction to send to host chain
         data = json.dumps([gen_send_msg(ica_address, addr_host, "basecro", amt)])
         packet = cli_controller.ica_generate_packet_data(data)
@@ -183,8 +185,9 @@ def test_ica(cluster, tmp_path):
             from_=addr_controller,
         )
         assert rsp["code"] == 0, rsp["raw_log"]
-        timeout = timeout_in_s + 3 if timeout_in_s < no_timeout else None
-        wait_for_check_tx(cli_host, ica_address, num_txs, timeout)
+        if wait_for_result:
+            timeout = timeout_in_s + 3 if timeout_in_s < no_timeout else None
+            wait_for_check_tx(cli_host, ica_address, prev_num_txs, timeout)
         return rsp["height"]
 
     submit_msgs(50000000)
@@ -192,16 +195,26 @@ def test_ica(cluster, tmp_path):
     assert len(cli_host.query_all_txs(ica_address)["txs"]) == num_txs + 1
     # check if the funds are reduced in interchain account
     assert cli_host.balance(ica_address) == 50000000
-    height = int(submit_msgs(1000000000000000))
+    # record host chain height before submitting the failing tx so we don't
+    # miss the ics27 error event when scanning block results; skip waiting for
+    # tx confirmation since failed ICA txs are not indexed by address
+    scan_height = int(get_sync_info(cli_host.status())["latest_block_height"])
+    submit_msgs(1000000000000000, wait_for_result=False)
 
     ev = None
+    height = scan_height
+    tm_rpc = cli_host.node_rpc
+    if tm_rpc.startswith("tcp://"):
+        tm_rpc = "http://" + tm_rpc[len("tcp://") :]
     max_retry = 20
     for _ in range(max_retry):
         wait_for_new_blocks(cli_host, 1, sleep=0.1)
-        url = f"http://127.0.0.1:26757/block_results?height={height}"
+        url = f"{tm_rpc}/block_results?height={height}"
         res = requests.get(url).json()
-        height += 1
+        if res.get("error"):
+            continue
         txs_results = res.get("result", {}).get("txs_results")
+        height += 1
         if txs_results is None:
             continue
         for res in txs_results or []:
