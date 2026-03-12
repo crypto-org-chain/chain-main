@@ -3,6 +3,7 @@ package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
 import "chainmain/tieredrewards/v1/params.proto";
+import "chainmain/tieredrewards/v1/types.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/base/v1beta1/coin.proto";
@@ -17,6 +18,15 @@ service Msg {
   // UpdateParams defines a governance operation for updating the x/tieredrewards module
   // parameters. The authority is hard-coded to the x/gov module account.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // AddTier creates a new tier. Authority-gated.
+  rpc AddTier(MsgAddTier) returns (MsgAddTierResponse);
+
+  // UpdateTier updates an existing tier. Authority-gated.
+  rpc UpdateTier(MsgUpdateTier) returns (MsgUpdateTierResponse);
+
+  // DeleteTier removes a tier. Authority-gated.
+  rpc DeleteTier(MsgDeleteTier) returns (MsgDeleteTierResponse);
 
   // CommitDelegationToTier allows a commitment of a delegation to a tier.
   rpc CommitDelegationToTier(MsgCommitDelegationToTier) returns (MsgCommitDelegationToTierResponse);
@@ -36,9 +46,44 @@ message MsgUpdateParams {
   Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
+// MsgUpdateParamsResponse defines the response for MsgUpdateParams.
 message MsgUpdateParamsResponse {}
+
+// MsgAddTier creates a new tier.
+message MsgAddTier {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "chainmain/tieredrewards/MsgAddTier";
+
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  Tier   tier      = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgAddTierResponse defines the response for MsgAddTier.
+message MsgAddTierResponse {}
+
+// MsgUpdateTier updates an existing tier.
+message MsgUpdateTier {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "chainmain/tieredrewards/MsgUpdateTier";
+
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  Tier   tier      = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgUpdateTierResponse defines the response for MsgUpdateTier.
+message MsgUpdateTierResponse {}
+
+// MsgDeleteTier removes a tier.
+message MsgDeleteTier {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "chainmain/tieredrewards/MsgDeleteTier";
+
+  string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 id        = 2;
+}
+
+// MsgDeleteTierResponse defines the response for MsgDeleteTier.
+message MsgDeleteTierResponse {}
 
 // MsgCommitDelegationToTier is the Msg/CommitDelegationToTier request type.
 message MsgCommitDelegationToTier {
@@ -54,6 +99,5 @@ message MsgCommitDelegationToTier {
   cosmos.base.v1beta1.Coin amount                = 4 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
-// MsgCommitDelegationToTierResponse defines the response structure for executing a
-// MsgCommitDelegationToTier message.
+// MsgCommitDelegationToTierResponse defines the response for MsgCommitDelegationToTier.
 message MsgCommitDelegationToTierResponse {}

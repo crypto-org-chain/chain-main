@@ -8,7 +8,7 @@ import (
 
 // InitGenesis initializes the module's state from a provided genesis state.
 func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
-	if err := k.Params.Set(ctx, data.Params); err != nil {
+	if err := k.SetParams(ctx, data.Params); err != nil {
 		panic(err)
 	}
 }

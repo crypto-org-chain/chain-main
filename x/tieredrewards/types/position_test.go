@@ -17,8 +17,8 @@ var (
 	testValidator = sdk.ValAddress([]byte("test_validator______")).String()
 )
 
-func validPosition() types.TierPosition {
-	return types.TierPosition{
+func validPosition() types.Position {
+	return types.Position{
 		Id:              1,
 		Owner:           testOwner,
 		TierId:          1,
@@ -28,36 +28,36 @@ func validPosition() types.TierPosition {
 	}
 }
 
-func validDelegatedPosition() types.TierPosition {
+func validDelegatedPosition() types.Position {
 	p := validPosition()
 	p.Validator = testValidator
 	p.DelegatedShares = sdkmath.LegacyNewDec(1000)
 	return p
 }
 
-func TestTierPosition_Validate(t *testing.T) {
+func TestPosition_Validate(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name        string
-		modify      func(*types.TierPosition)
+		modify      func(*types.Position)
 		wantErr     bool
 		errContains string
 	}{
 		{
 			name:   "valid undelegated position",
-			modify: func(_ *types.TierPosition) {},
+			modify: func(_ *types.Position) {},
 		},
 		{
 			name: "valid delegated position",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Validator = testValidator
 				p.DelegatedShares = sdkmath.LegacyNewDec(1000)
 			},
 		},
 		{
 			name: "valid exiting position",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				now := time.Now()
 				p.ExitTriggeredAt = now
 				p.ExitUnlockAt = now.Add(time.Hour * 24 * 365)
@@ -65,7 +65,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "empty owner",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Owner = ""
 			},
 			wantErr:     true,
@@ -73,7 +73,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid owner address",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Owner = "not_a_valid_address"
 			},
 			wantErr:     true,
@@ -81,7 +81,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "nil amount locked",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.AmountLocked = sdkmath.Int{}
 			},
 			wantErr:     true,
@@ -89,7 +89,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "zero amount locked",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.AmountLocked = sdkmath.ZeroInt()
 			},
 			wantErr:     true,
@@ -97,7 +97,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "negative amount locked",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.AmountLocked = sdkmath.NewInt(-500)
 			},
 			wantErr:     true,
@@ -105,7 +105,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "negative delegated shares when delegated",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Validator = testValidator
 				p.DelegatedShares = sdkmath.LegacyNewDec(-1)
 			},
@@ -114,7 +114,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "invalid validator address when delegated",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Validator = "not_valid"
 				p.DelegatedShares = sdkmath.LegacyNewDec(100)
 			},
@@ -123,7 +123,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "zero delegated shares when delegated",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Validator = testValidator
 				p.DelegatedShares = sdkmath.LegacyZeroDec()
 			},
@@ -132,7 +132,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "non-nil delegated shares when not delegated",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.Validator = ""
 				p.DelegatedShares = sdkmath.LegacyZeroDec()
 			},
@@ -141,7 +141,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "exit_unlock_at set without exit_triggered_at",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.ExitUnlockAt = time.Now().Add(time.Hour)
 			},
 			wantErr:     true,
@@ -149,7 +149,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "exit_unlock_at before exit_triggered_at",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				now := time.Now()
 				p.ExitTriggeredAt = now
 				p.ExitUnlockAt = now.Add(-time.Hour)
@@ -159,7 +159,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "exit_unlock_at equal to exit_triggered_at",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				now := time.Now()
 				p.ExitTriggeredAt = now
 				p.ExitUnlockAt = now
@@ -169,7 +169,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "zero created_at_height",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.CreatedAtHeight = 0
 			},
 			wantErr:     true,
@@ -177,7 +177,7 @@ func TestTierPosition_Validate(t *testing.T) {
 		},
 		{
 			name: "zero created_at_time",
-			modify: func(p *types.TierPosition) {
+			modify: func(p *types.Position) {
 				p.CreatedAtTime = time.Time{}
 			},
 			wantErr:     true,
@@ -203,7 +203,7 @@ func TestTierPosition_Validate(t *testing.T) {
 	}
 }
 
-func TestTierPosition_IsDelegated(t *testing.T) {
+func TestPosition_IsDelegated(t *testing.T) {
 	t.Parallel()
 
 	undelegated := validPosition()
@@ -213,7 +213,7 @@ func TestTierPosition_IsDelegated(t *testing.T) {
 	require.True(t, delegated.IsDelegated())
 }
 
-func TestTierPosition_IsExiting(t *testing.T) {
+func TestPosition_IsExiting(t *testing.T) {
 	t.Parallel()
 
 	notExiting := validPosition()

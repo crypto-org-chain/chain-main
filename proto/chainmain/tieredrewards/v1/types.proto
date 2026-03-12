@@ -40,8 +40,8 @@ message Tier {
   bool close_only = 5;
 }
 
-// TierPosition represents a single lock position in the tier system.
-message TierPosition {
+// Position represents a single lock position in the tier.
+message Position {
   // id is the unique identifier for this position.
   uint64 id = 1;
 

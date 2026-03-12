@@ -3,6 +3,7 @@ package chainmain.tieredrewards.v1;
 
 import "cosmos/base/v1beta1/coin.proto";
 import "chainmain/tieredrewards/v1/tx.proto";
+import "chainmain/tieredrewards/v1/types.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
@@ -17,4 +18,21 @@ message EventBaseRewardsTopUp {
 message EventTransferDelegationToPool {
   // transfer_delegation is the delegation transfer details.
   MsgCommitDelegationToTier transfer_delegation = 1 [(gogoproto.nullable) = false];
+}
+
+// TierChangeAction enumerates the type of change made to a tier.
+enum TierChangeAction {
+  TIER_CHANGE_ACTION_UNSPECIFIED = 0;
+  TIER_CHANGE_ACTION_NEW         = 1;
+  TIER_CHANGE_ACTION_UPDATE      = 2;
+  TIER_CHANGE_ACTION_DELETE      = 3;
+}
+
+// EventTierChanged is emitted when a tier is added, updated, or deleted.
+message EventTierChanged {
+  // action is the type of change (add, update, delete).
+  TierChangeAction action = 1;
+
+  // tier is the updated tier at the time of the change.
+  Tier tier = 2 [(gogoproto.nullable) = false];
 }

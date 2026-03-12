@@ -1,0 +1,143 @@
+package keeper
+
+import (
+	"context"
+	"errors"
+
+	"cosmossdk.io/collections"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+)
+
+// GetPosition returns a position by ID.
+func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, error) {
+	pos, err := k.Positions.Get(ctx, id)
+	if err != nil {
+		return types.Position{}, err
+	}
+	return pos, nil
+}
+
+// SetPosition stores a position. Call this function to create or update a position.
+// It validates the position and maintains the secondary indexes.
+func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
+	if err := pos.Validate(); err != nil {
+		return err
+	}
+	oldPos, err := k.Positions.Get(ctx, pos.Id)
+	isNew := errors.Is(err, collections.ErrNotFound)
+
+	if !isNew && err != nil {
+		return err
+	}
+
+	if err == nil && oldPos.IsDelegated() && oldPos.Validator != pos.Validator {
+		oldVal, _ := sdk.ValAddressFromBech32(oldPos.Validator)
+		if oldVal != nil {
+			_ = k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id))
+		}
+	}
+
+	return k.setPositionStates(ctx, pos, isNew)
+}
+
+// setPositionStates sets all the relevant states for a position.
+func (k Keeper) setPositionStates(ctx context.Context, pos types.Position, isNew bool) error {
+	owner, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return err
+	}
+	if err := k.Positions.Set(ctx, pos.Id, pos); err != nil {
+		return err
+	}
+	if err := k.PositionsByOwner.Set(ctx, collections.Join(owner, pos.Id)); err != nil {
+		return err
+	}
+	if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
+		return err
+	}
+	if pos.IsDelegated() {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return err
+		}
+		return k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id))
+	}
+	if isNew {
+		return k.increasePositionCount(ctx, pos.TierId)
+	}
+	return nil
+}
+
+// DeletePosition removes a position and its secondary indexes.
+func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
+	owner, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return err
+	}
+
+	if err := k.Positions.Remove(ctx, pos.Id); err != nil {
+		return err
+	}
+	if err := k.PositionsByOwner.Remove(ctx, collections.Join(owner, pos.Id)); err != nil {
+		return err
+	}
+	if err := k.PositionsByTier.Remove(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
+		return err
+	}
+	if pos.IsDelegated() {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return err
+		}
+		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
+			return err
+		}
+	}
+	return k.decreasePositionCount(ctx, pos.TierId)
+
+}
+
+// GetPositionsIdsByOwner returns all position IDs owned by an address.
+func (k Keeper) GetPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
+	rng := collections.NewPrefixedPairRange[sdk.AccAddress, uint64](owner)
+	return types.CollectPairKeySetK2(ctx, k.PositionsByOwner, rng)
+}
+
+// GetPositionsIdsByValidator returns all position IDs delegated to a validator.
+func (k Keeper) GetPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
+	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
+	return types.CollectPairKeySetK2(ctx, k.PositionsByValidator, rng)
+}
+
+// GetPositionsByIds returns positions for the given IDs.
+func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
+	positions := make([]types.Position, 0, len(ids))
+	for _, id := range ids {
+		pos, err := k.GetPosition(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		positions = append(positions, pos)
+	}
+	return positions, nil
+}
+
+// GetPositionsByOwner returns all positions owned by an address.
+func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
+	ids, err := k.GetPositionsIdsByOwner(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+	return k.GetPositionsByIds(ctx, ids)
+}
+
+// GetPositionsByValidator returns all positions delegated to a validator.
+func (k Keeper) GetPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
+	ids, err := k.GetPositionsIdsByValidator(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+	return k.GetPositionsByIds(ctx, ids)
+}

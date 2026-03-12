@@ -6,8 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Validate performs basic validation of a TierPosition.
-func (p TierPosition) Validate() error {
+// Validate performs basic validation of a Position.
+func (p Position) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(p.Owner); err != nil {
 		return fmt.Errorf("invalid owner address: %w", err)
 	}
@@ -54,11 +54,11 @@ func (p TierPosition) Validate() error {
 }
 
 // IsDelegated returns true if the position is delegated to a validator.
-func (p TierPosition) IsDelegated() bool {
+func (p Position) IsDelegated() bool {
 	return p.Validator != ""
 }
 
 // IsExiting returns true if exit has been triggered for this position.
-func (p TierPosition) IsExiting() bool {
+func (p Position) IsExiting() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }

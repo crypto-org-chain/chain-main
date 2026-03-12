@@ -46,7 +46,7 @@ func TestBeginBlocker_ZeroRate(t *testing.T) {
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 
 	params := types.NewParams(sdkmath.LegacyZeroDec())
-	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
+	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
@@ -67,7 +67,7 @@ func TestBeginBlocker_EmptyPool(t *testing.T) {
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
 	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
+	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	// Drain the fee collector to a random address so there's a shortfall
@@ -93,7 +93,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 
 	// Set the target base rewards rate to 10000% so that there is a shortfall since it is easier than increasing the total bonded tokens
 	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
+	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	// Clear the fee collector so there's a guaranteed shortfall
@@ -137,7 +137,7 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
 	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
+	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	// Clear the fee collector to guarantee a shortfall
@@ -179,7 +179,7 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 	// Even at 10000%, the fee collector's existing balance (~2M) exceeds the
 	// per-block target for 1M bonded tokens, so no top-up should occur.
 	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
+	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
 	// Fund the pool so we can verify it stays untouched

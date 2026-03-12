@@ -166,7 +166,7 @@ func updateTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
 	tieredrewardsParams := tieredrewardstypes.DefaultParams()
 	tieredrewardsParams.TargetBaseRewardsRate = math.LegacyMustNewDecFromStr("0.03") // 3%
 
-	if err := app.TieredRewardsKeeper.Params.Set(sdkCtx, tieredrewardsParams); err != nil {
+	if err := app.TieredRewardsKeeper.SetParams(sdkCtx, tieredrewardsParams); err != nil {
 		return err
 	}
 

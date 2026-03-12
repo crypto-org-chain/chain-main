@@ -26,6 +26,20 @@ type Keeper struct {
 	Schema collections.Schema
 	Params collections.Item[types.Params]
 
+	Tiers collections.Map[uint32, types.Tier]
+
+	// Positions
+	Positions      collections.Map[uint64, types.Position]
+	NextPositionId collections.Sequence
+
+	// Secondary indexes
+	PositionsByOwner     collections.KeySet[collections.Pair[sdk.AccAddress, uint64]]
+	PositionsByTier      collections.KeySet[collections.Pair[uint32, uint64]]
+	PositionsByValidator collections.KeySet[collections.Pair[sdk.ValAddress, uint64]]
+
+	// Counters
+	PositionCountByTier collections.Map[uint32, uint64]
+
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
 	accountKeeper      types.AccountKeeper
@@ -71,15 +85,22 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:                cdc,
-		storeService:       storeService,
-		authority:          authority,
-		mintKeeper:         mintKeeper,
-		stakingKeeper:      stakingKeeper,
-		accountKeeper:      accountKeeper,
-		bankKeeper:         bankKeeper,
-		distributionKeeper: distributionKeeper,
-		Params:             collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		cdc:                  cdc,
+		storeService:         storeService,
+		authority:            authority,
+		mintKeeper:           mintKeeper,
+		stakingKeeper:        stakingKeeper,
+		accountKeeper:        accountKeeper,
+		bankKeeper:           bankKeeper,
+		distributionKeeper:   distributionKeeper,
+		Params:               collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Tiers:                collections.NewMap(sb, types.TiersKey, "tiers", collections.Uint32Key, codec.CollValue[types.Tier](cdc)),
+		Positions:            collections.NewMap(sb, types.PositionsKey, "positions", collections.Uint64Key, codec.CollValue[types.Position](cdc)),
+		NextPositionId:       collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
+		PositionsByOwner:     collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
+		PositionsByTier:      collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
+		PositionsByValidator: collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
+		PositionCountByTier: collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()
@@ -160,4 +181,11 @@ func (k Keeper) GetMintParams(ctx context.Context) (minttypes.Params, error) {
 		return minttypes.Params{}, err
 	}
 	return p, nil
+}
+
+func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
+	if err := params.Validate(); err != nil {
+		return err
+	}
+	return k.Params.Set(ctx, params)
 }
