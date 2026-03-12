@@ -7,6 +7,7 @@ import (
 	"time"
 
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -53,67 +54,19 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		var _ok bool
-		inflationParams := inflationtypes.DefaultParams()
-		// update max supply to 100B * 10^8 basecro
-		inflationParams.MaxSupply, _ok = math.NewIntFromString("10000000000000000000")
-		if !_ok {
-			return map[string]uint64{}, fmt.Errorf("invalid max supply")
-		}
+		sdkCtx.Logger().Info("module migrations completed!")
 
-		chainID := sdkCtx.ChainID()
-
-		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
-			// For mainnet or the integration test
-			inflationParams.BurnedAddresses = []string{
-				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
-			}
-		} else if strings.Contains(chainID, "testnet") {
-			// For testnet, use different burned addresses or configuration
-			inflationParams.BurnedAddresses = []string{
-				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
-			}
-		} else {
-			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
-		}
-
-		inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
-		inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
-
-		if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
+		if err := updateInflationParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
 
-		sdkCtx.Logger().Info("inflation module initialized with params",
-			"max_supply", inflationParams.MaxSupply.String(),
-			"burned_addresses", inflationParams.BurnedAddresses,
-			"decay_start_height", inflationParams.DecayStartHeight,
-			"decay_rate", inflationParams.DecayRate.String())
-
-		m[inflationtypes.ModuleName] = 1
-
-		mintParams, err := app.MintKeeper.Params.Get(ctx)
-		if err != nil {
+		if err := updateMintParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
 
-		mintParams.InflationMax = math.LegacyMustNewDecFromStr("0.01") // 1%
-		mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.01") // 1%
-		// Set inflation rate change for consistency with the new decay mechanism
-		mintParams.InflationRateChange = math.LegacyZeroDec()
-
-		if err := mintParams.Validate(); err != nil {
+		if err := updateTieredRewardsParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
-
-		if err := app.MintKeeper.Params.Set(ctx, mintParams); err != nil {
-			return map[string]uint64{}, err
-		}
-
-		sdkCtx.Logger().Info("mint module updated params",
-			"inflation_max", mintParams.InflationMax.String(),
-			"inflation_min", mintParams.InflationMin.String(),
-			"inflation_rate_change", mintParams.InflationRateChange.String())
 
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
@@ -130,11 +83,97 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				inflationtypes.StoreKey,
+				tieredrewardstypes.StoreKey,
 			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
+}
+
+func updateInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating inflation params...")
+
+	inflationParams := inflationtypes.DefaultParams()
+
+	// update max supply to 100B * 10^8 basecro
+	var ok bool
+	inflationParams.MaxSupply, ok = math.NewIntFromString("10000000000000000000")
+	if !ok {
+		return fmt.Errorf("invalid max supply")
+	}
+
+	chainID := sdkCtx.ChainID()
+	switch {
+	case strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet"):
+		inflationParams.BurnedAddresses = []string{
+			"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+		}
+	case strings.Contains(chainID, "testnet"):
+		inflationParams.BurnedAddresses = []string{
+			"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+		}
+	default:
+		return fmt.Errorf("unknown upgrade chain ID: %s", chainID)
+	}
+
+	inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
+	inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
+
+	if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("inflation module updated with params",
+		"max_supply", inflationParams.MaxSupply.String(),
+		"burned_addresses", inflationParams.BurnedAddresses,
+		"decay_start_height", inflationParams.DecayStartHeight,
+		"decay_rate", inflationParams.DecayRate.String())
+
+	return nil
+}
+
+func updateMintParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating mint params...")
+	mintParams, err := app.MintKeeper.Params.Get(sdkCtx)
+	if err != nil {
+		return err
+	}
+
+	mintParams.InflationMax = math.LegacyMustNewDecFromStr("0.01") // 1%
+	mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.01") // 1%
+	// Set inflation rate change for consistency with the new decay mechanism
+	mintParams.InflationRateChange = math.LegacyZeroDec()
+
+	if err := mintParams.Validate(); err != nil {
+		return err
+	}
+
+	if err := app.MintKeeper.Params.Set(sdkCtx, mintParams); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("mint module updated params",
+		"inflation_max", mintParams.InflationMax.String(),
+		"inflation_min", mintParams.InflationMin.String(),
+		"inflation_rate_change", mintParams.InflationRateChange.String())
+
+	return nil
+}
+
+func updateTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating tiered rewards params...")
+	tieredrewardsParams := tieredrewardstypes.DefaultParams()
+	tieredrewardsParams.TargetBaseRewardsRate = math.LegacyMustNewDecFromStr("0.03") // 3%
+
+	if err := app.TieredRewardsKeeper.Params.Set(sdkCtx, tieredrewardsParams); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("tieredrewards module updated params",
+		"target_base_rewards_rate", tieredrewardsParams.TargetBaseRewardsRate.String())
+
+	return nil
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {

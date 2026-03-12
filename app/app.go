@@ -48,6 +48,9 @@ import (
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v8/x/supply/types"
+	tieredrewards "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards"
+	tieredrewardskeeper "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
@@ -150,17 +153,22 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		icatypes.ModuleName:            nil,
+		authtypes.FeeCollectorName:         nil,
+		distrtypes.ModuleName:              nil,
+		minttypes.ModuleName:               {authtypes.Minter},
+		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                {authtypes.Burner},
+		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:                nil,
+		tieredrewardstypes.RewardsPoolName: nil,
 	}
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{}
+	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
+	// receive tokens from external accounts via MsgSend, bypassing the default
+	// block on sends to module accounts.
+	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
+		tieredrewardstypes.RewardsPoolName: true,
+	}
 )
 
 var (
@@ -218,6 +226,7 @@ type ChainApp struct {
 	NFTKeeper             nftkeeper.Keeper
 	CircuitKeeper         circuitkeeper.Keeper
 	InflationKeeper       inflationkeeper.Keeper
+	TieredRewardsKeeper   tieredrewardskeeper.Keeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -356,6 +365,16 @@ func New(
 		app.StakingKeeper,
 		authtypes.FeeCollectorName,
 		authAddr,
+	)
+	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		authAddr,
+		app.MintKeeper,
+		app.StakingKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
@@ -549,6 +568,7 @@ func New(
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 		circuit.NewAppModule(appCodec, app.CircuitKeeper),
 		inflation.NewAppModule(appCodec, app.InflationKeeper),
+		tieredrewards.NewAppModule(appCodec, app.TieredRewardsKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -589,6 +609,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -600,6 +621,7 @@ func New(
 	app.ModuleManager.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		minttypes.ModuleName,
+		tieredrewardstypes.ModuleName, // has to be before distribution module to calculate how much more base rewards to distribute
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -646,6 +668,7 @@ func New(
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -674,6 +697,7 @@ func New(
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -840,7 +864,7 @@ func (app *ChainApp) ModuleAccountAddrs() map[string]bool {
 func (app *ChainApp) BlockedAddrs() map[string]bool {
 	blockedAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !moduleAccsAllowedToReceiveExternalFunds[acc]
 	}
 
 	return blockedAddrs
@@ -1014,6 +1038,7 @@ func StoreKeys() (
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
 		inflationtypes.StoreKey,
+		tieredrewardstypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
 		circuittypes.StoreKey,

@@ -18,10 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
-var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
-)
+var _ module.AppModuleBasic = AppModuleBasic{}
 
 // ----------------------------------------------------------------------------
 // AppModuleBasic

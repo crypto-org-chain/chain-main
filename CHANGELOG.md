@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+## Features
+- [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
+- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up
+
 ### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
 - [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
