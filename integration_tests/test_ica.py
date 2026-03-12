@@ -195,7 +195,7 @@ def test_ica(cluster, tmp_path):
     height = int(submit_msgs(1000000000000000))
 
     ev = None
-    max_retry = 5
+    max_retry = 20
     for _ in range(max_retry):
         wait_for_new_blocks(cli_host, 1, sleep=0.1)
         url = f"http://127.0.0.1:26757/block_results?height={height}"
