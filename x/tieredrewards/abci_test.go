@@ -107,8 +107,9 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	// Calculate expected shortfall (fee collector is 0, so full target is the shortfall)
 	totalBonded, err := a.StakingKeeper.TotalBondedTokens(ctx)
 	require.NoError(t, err)
-	blocksPerYear, err := a.TieredRewardsKeeper.GetBlocksPerYear(ctx)
+	mintParams, err := a.TieredRewardsKeeper.GetMintParams(ctx)
 	require.NoError(t, err)
+	blocksPerYear := mintParams.BlocksPerYear
 	expectedShortfall := sdkmath.LegacyNewDecFromInt(totalBonded).
 		Mul(params.TargetBaseRewardsRate).
 		Quo(sdkmath.LegacyNewDec(int64(blocksPerYear))).

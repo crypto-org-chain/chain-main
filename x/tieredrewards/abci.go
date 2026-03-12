@@ -101,10 +101,12 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return fmt.Errorf("failed to get bond denom: %w", err)
 	}
 
-	blocksPerYear, err := k.GetBlocksPerYear(ctx)
+	mintParams, err := k.GetMintParams(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get blocks per year: %w", err)
+		panic(fmt.Sprintf("failed to get mint params: %v", err))
 	}
+
+	blocksPerYear := mintParams.BlocksPerYear
 
 	if blocksPerYear == 0 {
 		k.Logger(ctx).Error("blocks per year is 0, skipping base rewards top up")
@@ -144,8 +146,8 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		previousTotalPower += voteInfo.Validator.Power
 	}
 
-	// if no validators are voting, skip
 	if previousTotalPower == 0 {
+		k.Logger(ctx).Error("no validators are voting, skipping base rewards top up")
 		return nil
 	}
 
