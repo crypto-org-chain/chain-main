@@ -10,15 +10,19 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
+	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
+	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -26,17 +30,90 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// TierDefinition defines a single tier.
+type TierDefinition struct {
+	// tier_id is the unique identifier for this tier.
+	TierId uint32 `protobuf:"varint,1,opt,name=tier_id,json=tierId,proto3" json:"tier_id,omitempty"`
+	// exit_commitment_duration is how long a user must wait after triggering exit
+	// before they can claim tokens. No bonus is paid after this period.
+	ExitCommitmentDuration time.Duration `protobuf:"bytes,2,opt,name=exit_commitment_duration,json=exitCommitmentDuration,proto3,stdduration" json:"exit_commitment_duration"`
+	// exit_commitment_duration_in_years is the commitment duration in years (integer).
+	ExitCommitmentDurationInYears int64 `protobuf:"varint,3,opt,name=exit_commitment_duration_in_years,json=exitCommitmentDurationInYears,proto3" json:"exit_commitment_duration_in_years,omitempty"`
+	// bonus_apy is the fixed bonus APY (per year) as a decimal, e.g. "0.04" = 4%.
+	BonusApy cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=bonus_apy,json=bonusApy,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"bonus_apy"`
+	// min_lock_amount is the minimum amount required when creating a new position in this tier.
+	MinLockAmount cosmossdk_io_math.Int `protobuf:"bytes,5,opt,name=min_lock_amount,json=minLockAmount,proto3,customtype=cosmossdk.io/math.Int" json:"min_lock_amount"`
+}
+
+func (m *TierDefinition) Reset()         { *m = TierDefinition{} }
+func (m *TierDefinition) String() string { return proto.CompactTextString(m) }
+func (*TierDefinition) ProtoMessage()    {}
+func (*TierDefinition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_1325376778712f90, []int{0}
+}
+func (m *TierDefinition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TierDefinition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TierDefinition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TierDefinition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TierDefinition.Merge(m, src)
+}
+func (m *TierDefinition) XXX_Size() int {
+	return m.Size()
+}
+func (m *TierDefinition) XXX_DiscardUnknown() {
+	xxx_messageInfo_TierDefinition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TierDefinition proto.InternalMessageInfo
+
+func (m *TierDefinition) GetTierId() uint32 {
+	if m != nil {
+		return m.TierId
+	}
+	return 0
+}
+
+func (m *TierDefinition) GetExitCommitmentDuration() time.Duration {
+	if m != nil {
+		return m.ExitCommitmentDuration
+	}
+	return 0
+}
+
+func (m *TierDefinition) GetExitCommitmentDurationInYears() int64 {
+	if m != nil {
+		return m.ExitCommitmentDurationInYears
+	}
+	return 0
+}
+
 // Params holds parameters for the tieredrewards module.
 type Params struct {
 	// target_base_rewards_rate is the target base rewards rate for validators.
 	TargetBaseRewardsRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,1,opt,name=target_base_rewards_rate,json=targetBaseRewardsRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"target_base_rewards_rate"`
+	// tiers defines the available tier definitions.
+	Tiers []TierDefinition `protobuf:"bytes,2,rep,name=tiers,proto3" json:"tiers"`
+	// bonus_denoms defines the denom(s) for bonus payouts.
+	BonusDenoms []string `protobuf:"bytes,3,rep,name=bonus_denoms,json=bonusDenoms,proto3" json:"bonus_denoms,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
 func (m *Params) String() string { return proto.CompactTextString(m) }
 func (*Params) ProtoMessage()    {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1325376778712f90, []int{0}
+	return fileDescriptor_1325376778712f90, []int{1}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -65,7 +142,22 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
+func (m *Params) GetTiers() []TierDefinition {
+	if m != nil {
+		return m.Tiers
+	}
+	return nil
+}
+
+func (m *Params) GetBonusDenoms() []string {
+	if m != nil {
+		return m.BonusDenoms
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*TierDefinition)(nil), "chainmain.tieredrewards.v1.TierDefinition")
 	proto.RegisterType((*Params)(nil), "chainmain.tieredrewards.v1.Params")
 }
 
@@ -74,25 +166,102 @@ func init() {
 }
 
 var fileDescriptor_1325376778712f90 = []byte{
-	// 283 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x50, 0x31, 0x4b, 0x03, 0x31,
-	0x18, 0xbd, 0x2c, 0x05, 0x6f, 0xb3, 0x28, 0xd4, 0x0a, 0xa9, 0xb8, 0x28, 0xc2, 0x25, 0x14, 0xc1,
-	0xc9, 0xa9, 0x74, 0x74, 0x90, 0x0e, 0x0e, 0x2e, 0xc7, 0xd7, 0xf4, 0x23, 0x0d, 0x92, 0x7e, 0x47,
-	0x12, 0xab, 0xf7, 0x2f, 0xfc, 0x19, 0x8e, 0x0e, 0xfe, 0x88, 0x8e, 0xc5, 0x49, 0x1c, 0x8a, 0xf4,
-	0x06, 0xff, 0x86, 0x98, 0x1c, 0x82, 0x2e, 0x8f, 0xbc, 0x97, 0xc7, 0x7b, 0x7c, 0x2f, 0x3f, 0x51,
-	0x73, 0x30, 0x0b, 0x0b, 0x66, 0x21, 0x83, 0x41, 0x87, 0x33, 0x87, 0x0f, 0xe0, 0x66, 0x5e, 0x2e,
-	0x87, 0xb2, 0x02, 0x07, 0xd6, 0x8b, 0xca, 0x51, 0xa0, 0x6e, 0xff, 0xd7, 0x28, 0xfe, 0x18, 0xc5,
-	0x72, 0xd8, 0xdf, 0x05, 0x6b, 0x16, 0x24, 0x23, 0x26, 0x7b, 0xff, 0x40, 0x91, 0xb7, 0xe4, 0xcb,
-	0xc8, 0x64, 0x22, 0xed, 0xd7, 0x9e, 0x26, 0x4d, 0x49, 0xff, 0x79, 0x25, 0xf5, 0xb8, 0xce, 0x3b,
-	0xd7, 0xb1, 0xaf, 0x4b, 0x79, 0x2f, 0x80, 0xd3, 0x18, 0xca, 0x29, 0x78, 0x2c, 0xdb, 0x9e, 0xd2,
-	0x41, 0xc0, 0x1e, 0x3b, 0x62, 0xa7, 0x3b, 0xa3, 0x8b, 0xd5, 0x66, 0x90, 0x7d, 0x6c, 0x06, 0x87,
-	0x29, 0xd7, 0xcf, 0xee, 0x84, 0x21, 0x69, 0x21, 0xcc, 0xc5, 0x15, 0x6a, 0x50, 0xf5, 0x18, 0xd5,
-	0xdb, 0x6b, 0x91, 0xb7, 0xb5, 0x63, 0x54, 0xcf, 0x5f, 0x2f, 0x67, 0x6c, 0xb2, 0x9f, 0x72, 0x47,
-	0xe0, 0x71, 0x92, 0x52, 0x27, 0x10, 0x70, 0x74, 0xb3, 0xda, 0x72, 0xb6, 0xde, 0x72, 0xf6, 0xb9,
-	0xe5, 0xec, 0xa9, 0xe1, 0xd9, 0xba, 0xe1, 0xd9, 0x7b, 0xc3, 0xb3, 0xdb, 0x4b, 0x6d, 0xc2, 0xfc,
-	0x7e, 0x2a, 0x14, 0x59, 0xa9, 0x5c, 0x5d, 0x05, 0x2a, 0xc8, 0xe9, 0x22, 0x4e, 0x21, 0x23, 0x16,
-	0x71, 0xba, 0xc7, 0x7f, 0xe3, 0x85, 0xba, 0x42, 0x3f, 0xed, 0xc4, 0xcb, 0xce, 0xbf, 0x03, 0x00,
-	0x00, 0xff, 0xff, 0x22, 0x37, 0xff, 0xdb, 0x64, 0x01, 0x00, 0x00,
+	// 540 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0x41, 0x6f, 0xd3, 0x30,
+	0x14, 0xc7, 0xeb, 0x75, 0x2b, 0xab, 0xcb, 0x40, 0x44, 0x0c, 0xb2, 0x22, 0xd2, 0x6e, 0x17, 0xa2,
+	0xa1, 0x3a, 0xea, 0x90, 0x38, 0x71, 0x59, 0xa8, 0x10, 0x95, 0x26, 0x84, 0x02, 0x42, 0x02, 0x09,
+	0x59, 0x6e, 0xe2, 0xa5, 0x56, 0x67, 0x3b, 0xb2, 0xdd, 0xb1, 0x7c, 0x0b, 0x8e, 0x7c, 0x04, 0x8e,
+	0x1c, 0xf8, 0x10, 0x3b, 0x4e, 0x9c, 0x10, 0x87, 0x81, 0x5a, 0x24, 0x3e, 0x02, 0x57, 0x14, 0x27,
+	0x9d, 0x18, 0xb0, 0x03, 0x17, 0x2b, 0xef, 0xf9, 0x9f, 0xdf, 0x7b, 0x7a, 0xef, 0x6f, 0x78, 0x27,
+	0x1e, 0x13, 0x26, 0x38, 0x61, 0x22, 0x30, 0x8c, 0x2a, 0x9a, 0x28, 0xfa, 0x86, 0xa8, 0x44, 0x07,
+	0x87, 0xfd, 0x20, 0x23, 0x8a, 0x70, 0x8d, 0x32, 0x25, 0x8d, 0x74, 0xda, 0x67, 0x42, 0x74, 0x4e,
+	0x88, 0x0e, 0xfb, 0xed, 0x6b, 0x84, 0x33, 0x21, 0x03, 0x7b, 0x96, 0xf2, 0xf6, 0x46, 0x2c, 0x35,
+	0x97, 0x1a, 0xdb, 0x28, 0x28, 0x83, 0xea, 0xea, 0x7a, 0x2a, 0x53, 0x59, 0xe6, 0x8b, 0xaf, 0x2a,
+	0xeb, 0xa5, 0x52, 0xa6, 0x07, 0x34, 0xb0, 0xd1, 0x68, 0xba, 0x1f, 0x24, 0x53, 0x45, 0x0c, 0x93,
+	0xa2, 0xbc, 0xdf, 0xfa, 0xb9, 0x04, 0xaf, 0x3c, 0x67, 0x54, 0x0d, 0xe8, 0x3e, 0x13, 0xac, 0xb8,
+	0x70, 0x6e, 0xc2, 0x4b, 0x45, 0x2b, 0x98, 0x25, 0x2e, 0xe8, 0x02, 0x7f, 0x2d, 0x6a, 0x14, 0xe1,
+	0x30, 0x71, 0x5e, 0x43, 0x97, 0x1e, 0x31, 0x83, 0x63, 0xc9, 0x39, 0x33, 0x9c, 0x0a, 0x83, 0x17,
+	0x34, 0x77, 0xa9, 0x0b, 0xfc, 0xd6, 0xce, 0x06, 0x2a, 0xcb, 0xa1, 0x45, 0x39, 0x34, 0xa8, 0x04,
+	0xe1, 0xea, 0xf1, 0x69, 0xa7, 0xf6, 0xee, 0x6b, 0x07, 0x44, 0x37, 0x0a, 0xc8, 0xc3, 0x33, 0xc6,
+	0x42, 0xe1, 0x3c, 0x86, 0x9b, 0x17, 0xe1, 0x31, 0x13, 0x38, 0xa7, 0x44, 0x69, 0xb7, 0xde, 0x05,
+	0x7e, 0x3d, 0xba, 0xfd, 0x6f, 0xc4, 0x50, 0xbc, 0x2c, 0x44, 0xce, 0x13, 0xd8, 0x1c, 0x49, 0x31,
+	0xd5, 0x98, 0x64, 0xb9, 0xbb, 0xdc, 0x05, 0x7e, 0x33, 0xec, 0x17, 0xe5, 0xbf, 0x9c, 0x76, 0x6e,
+	0x95, 0x33, 0xd3, 0xc9, 0x04, 0x31, 0x19, 0x70, 0x62, 0xc6, 0x68, 0x8f, 0xa6, 0x24, 0xce, 0x07,
+	0x34, 0xfe, 0xf4, 0xb1, 0x07, 0xab, 0x91, 0x0e, 0x68, 0x1c, 0xad, 0x5a, 0xc6, 0x6e, 0x96, 0x3b,
+	0xcf, 0xe0, 0x55, 0xce, 0x04, 0x3e, 0x90, 0xf1, 0x04, 0x13, 0x2e, 0xa7, 0xc2, 0xb8, 0x2b, 0x96,
+	0x7a, 0xb7, 0xa2, 0xae, 0xff, 0x4d, 0x1d, 0x0a, 0xf3, 0x1b, 0x6f, 0x28, 0x4c, 0xb4, 0xc6, 0x99,
+	0xd8, 0x93, 0xf1, 0x64, 0xd7, 0x12, 0xb6, 0xbe, 0x03, 0xd8, 0x78, 0x6a, 0xad, 0xe0, 0x48, 0xe8,
+	0x1a, 0xa2, 0x52, 0x6a, 0xf0, 0x88, 0x68, 0x8a, 0x2b, 0x0b, 0x60, 0x45, 0x0c, 0xb5, 0x2b, 0x68,
+	0x86, 0xf7, 0xff, 0xbb, 0xfd, 0xf7, 0x3f, 0x3e, 0x6c, 0x83, 0x68, 0xbd, 0xe4, 0x86, 0x44, 0xd3,
+	0xa8, 0xa4, 0x46, 0xc4, 0x50, 0xe7, 0x11, 0x5c, 0x29, 0x76, 0xaa, 0xdd, 0xa5, 0x6e, 0xdd, 0x6f,
+	0xed, 0x6c, 0xa3, 0x8b, 0x5d, 0x88, 0xce, 0xbb, 0x23, 0x5c, 0x2e, 0x3a, 0x89, 0xca, 0xdf, 0x9d,
+	0x4d, 0x78, 0xb9, 0x1c, 0x74, 0x42, 0x85, 0xe4, 0xc5, 0x76, 0xea, 0x7e, 0x33, 0x6a, 0xd9, 0xdc,
+	0xc0, 0xa6, 0xc2, 0x17, 0xc7, 0x33, 0x0f, 0x9c, 0xcc, 0x3c, 0xf0, 0x6d, 0xe6, 0x81, 0xb7, 0x73,
+	0xaf, 0x76, 0x32, 0xf7, 0x6a, 0x9f, 0xe7, 0x5e, 0xed, 0xd5, 0x83, 0x94, 0x99, 0xf1, 0x74, 0x84,
+	0x62, 0xc9, 0x83, 0x58, 0xe5, 0x99, 0x91, 0x3d, 0xa9, 0xd2, 0x9e, 0x6d, 0x25, 0xb0, 0x67, 0xcf,
+	0x3e, 0xa0, 0xa3, 0x3f, 0x9e, 0x90, 0xc9, 0x33, 0xaa, 0x47, 0x0d, 0x6b, 0xb1, 0x7b, 0xbf, 0x02,
+	0x00, 0x00, 0xff, 0xff, 0x7c, 0xe6, 0x03, 0x46, 0x6a, 0x03, 0x00, 0x00,
+}
+
+func (m *TierDefinition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TierDefinition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TierDefinition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size := m.MinLockAmount.Size()
+		i -= size
+		if _, err := m.MinLockAmount.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintParams(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x2a
+	{
+		size := m.BonusApy.Size()
+		i -= size
+		if _, err := m.BonusApy.MarshalTo(dAtA[i:]); err != nil {
+			return 0, err
+		}
+		i = encodeVarintParams(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x22
+	if m.ExitCommitmentDurationInYears != 0 {
+		i = encodeVarintParams(dAtA, i, uint64(m.ExitCommitmentDurationInYears))
+		i--
+		dAtA[i] = 0x18
+	}
+	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.ExitCommitmentDuration, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.ExitCommitmentDuration):])
+	if err1 != nil {
+		return 0, err1
+	}
+	i -= n1
+	i = encodeVarintParams(dAtA, i, uint64(n1))
+	i--
+	dAtA[i] = 0x12
+	if m.TierId != 0 {
+		i = encodeVarintParams(dAtA, i, uint64(m.TierId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Params) Marshal() (dAtA []byte, err error) {
@@ -115,6 +284,29 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.BonusDenoms) > 0 {
+		for iNdEx := len(m.BonusDenoms) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.BonusDenoms[iNdEx])
+			copy(dAtA[i:], m.BonusDenoms[iNdEx])
+			i = encodeVarintParams(dAtA, i, uint64(len(m.BonusDenoms[iNdEx])))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Tiers) > 0 {
+		for iNdEx := len(m.Tiers) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Tiers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintParams(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	{
 		size := m.TargetBaseRewardsRate.Size()
 		i -= size
@@ -139,6 +331,27 @@ func encodeVarintParams(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *TierDefinition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.TierId != 0 {
+		n += 1 + sovParams(uint64(m.TierId))
+	}
+	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.ExitCommitmentDuration)
+	n += 1 + l + sovParams(uint64(l))
+	if m.ExitCommitmentDurationInYears != 0 {
+		n += 1 + sovParams(uint64(m.ExitCommitmentDurationInYears))
+	}
+	l = m.BonusApy.Size()
+	n += 1 + l + sovParams(uint64(l))
+	l = m.MinLockAmount.Size()
+	n += 1 + l + sovParams(uint64(l))
+	return n
+}
+
 func (m *Params) Size() (n int) {
 	if m == nil {
 		return 0
@@ -147,6 +360,18 @@ func (m *Params) Size() (n int) {
 	_ = l
 	l = m.TargetBaseRewardsRate.Size()
 	n += 1 + l + sovParams(uint64(l))
+	if len(m.Tiers) > 0 {
+		for _, e := range m.Tiers {
+			l = e.Size()
+			n += 1 + l + sovParams(uint64(l))
+		}
+	}
+	if len(m.BonusDenoms) > 0 {
+		for _, s := range m.BonusDenoms {
+			l = len(s)
+			n += 1 + l + sovParams(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -155,6 +380,195 @@ func sovParams(x uint64) (n int) {
 }
 func sozParams(x uint64) (n int) {
 	return sovParams(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *TierDefinition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowParams
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TierDefinition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TierDefinition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TierId", wireType)
+			}
+			m.TierId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TierId |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExitCommitmentDuration", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.ExitCommitmentDuration, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExitCommitmentDurationInYears", wireType)
+			}
+			m.ExitCommitmentDurationInYears = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExitCommitmentDurationInYears |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BonusApy", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.BonusApy.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MinLockAmount", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.MinLockAmount.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipParams(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthParams
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *Params) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -218,6 +632,72 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			if err := m.TargetBaseRewardsRate.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tiers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tiers = append(m.Tiers, TierDefinition{})
+			if err := m.Tiers[len(m.Tiers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BonusDenoms", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowParams
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthParams
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthParams
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BonusDenoms = append(m.BonusDenoms, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

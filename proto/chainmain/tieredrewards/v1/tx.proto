@@ -3,6 +3,8 @@ package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
 import "chainmain/tieredrewards/v1/params.proto";
+import "chainmain/tieredrewards/v1/position.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
@@ -13,9 +15,41 @@ option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/type
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // UpdateParams defines a governance operation for updating the x/tieredrewards module
-  // parameters. The authority is hard-coded to the x/gov module account.
+  // UpdateParams defines a governance operation for updating the module parameters.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+
+  // LockTier locks tokens into a tier with optional delegate and exit options.
+  rpc LockTier(MsgLockTier) returns (MsgLockTierResponse);
+
+  // CommitDelegationToTier commits an existing delegation to a tier without undelegating.
+  rpc CommitDelegationToTier(MsgCommitDelegationToTier) returns (MsgCommitDelegationToTierResponse);
+
+  // AddToTierPosition adds tokens to an existing tier position.
+  rpc AddToTierPosition(MsgAddToTierPosition) returns (MsgAddToTierPositionResponse);
+
+  // TierDelegate delegates a tier position's tokens to a validator.
+  rpc TierDelegate(MsgTierDelegate) returns (MsgTierDelegateResponse);
+
+  // TierUndelegate undelegates a tier position (only allowed after exit triggered).
+  rpc TierUndelegate(MsgTierUndelegate) returns (MsgTierUndelegateResponse);
+
+  // TierRedelegate redelegates a tier position to a different validator.
+  rpc TierRedelegate(MsgTierRedelegate) returns (MsgTierRedelegateResponse);
+
+  // TriggerExitFromTier starts the exit commitment for a position.
+  rpc TriggerExitFromTier(MsgTriggerExitFromTier) returns (MsgTriggerExitFromTierResponse);
+
+  // WithdrawFromTier claims tokens after the exit commitment has elapsed.
+  rpc WithdrawFromTier(MsgWithdrawFromTier) returns (MsgWithdrawFromTierResponse);
+
+  // WithdrawTierRewards withdraws base + bonus rewards for a position.
+  rpc WithdrawTierRewards(MsgWithdrawTierRewards) returns (MsgWithdrawTierRewardsResponse);
+
+  // FundTierPool funds the tier rewards pool.
+  rpc FundTierPool(MsgFundTierPool) returns (MsgFundTierPoolResponse);
+
+  // TransferTierPosition transfers ownership of a tier position (optional).
+  rpc TransferTierPosition(MsgTransferTierPosition) returns (MsgTransferTierPositionResponse);
 }
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
@@ -23,15 +57,129 @@ message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
   option (amino.name)           = "chainmain/tieredrewards/MsgUpdateParams";
 
-  // authority is the address that controls the module (defaults to x/gov module account).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  Params params    = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+message MsgUpdateParamsResponse {}
 
-  // params defines the x/tieredrewards parameters to update.
-  //
-  // NOTE: All parameters must be supplied.
-  Params params = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+// MsgLockTier locks tokens into a tier.
+message MsgLockTier {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner   = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 tier_id = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+
+  // validator (optional): delegate at lock time.
+  string validator = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+
+  // trigger_exit_immediately (optional): start exit commitment from creation.
+  bool trigger_exit_immediately = 5;
+}
+message MsgLockTierResponse {
+  uint64 position_id = 1;
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
-message MsgUpdateParamsResponse {}
+// MsgCommitDelegationToTier commits an existing delegation to a tier.
+message MsgCommitDelegationToTier {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner     = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 tier_id   = 2;
+  string validator  = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  cosmos.base.v1beta1.Coin amount = 4 [(gogoproto.nullable) = false];
+}
+message MsgCommitDelegationToTierResponse {
+  uint64 position_id = 1;
+}
+
+// MsgAddToTierPosition adds tokens to an existing position.
+message MsgAddToTierPosition {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+  cosmos.base.v1beta1.Coin amount = 3 [(gogoproto.nullable) = false];
+}
+message MsgAddToTierPositionResponse {}
+
+// MsgTierDelegate delegates a tier position to a validator.
+message MsgTierDelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+  string validator    = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+message MsgTierDelegateResponse {}
+
+// MsgTierUndelegate undelegates a tier position (only after exit triggered).
+message MsgTierUndelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+}
+message MsgTierUndelegateResponse {}
+
+// MsgTierRedelegate redelegates a tier position to another validator.
+message MsgTierRedelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner         = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id   = 2;
+  string dst_validator  = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+message MsgTierRedelegateResponse {}
+
+// MsgTriggerExitFromTier starts the exit commitment for a position.
+message MsgTriggerExitFromTier {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+}
+message MsgTriggerExitFromTierResponse {}
+
+// MsgWithdrawFromTier claims tokens after exit commitment has elapsed.
+message MsgWithdrawFromTier {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+}
+message MsgWithdrawFromTierResponse {}
+
+// MsgWithdrawTierRewards withdraws base + bonus rewards for a position.
+message MsgWithdrawTierRewards {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+}
+message MsgWithdrawTierRewardsResponse {
+  repeated cosmos.base.v1beta1.Coin base_rewards = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  repeated cosmos.base.v1beta1.Coin bonus_rewards = 2
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+// MsgFundTierPool funds the tier rewards pool.
+message MsgFundTierPool {
+  option (cosmos.msg.v1.signer) = "sender";
+
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin amount = 2
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+message MsgFundTierPoolResponse {}
+
+// MsgTransferTierPosition transfers ownership of a tier position.
+message MsgTransferTierPosition {
+  option (cosmos.msg.v1.signer) = "owner";
+
+  string owner       = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint64 position_id = 2;
+  string new_owner   = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+message MsgTransferTierPositionResponse {}

@@ -1,0 +1,82 @@
+syntax = "proto3";
+package chainmain.tieredrewards.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
+
+// TierPosition represents a single tier lock position.
+message TierPosition {
+  // position_id is the unique identifier.
+  uint64 position_id = 1;
+
+  // owner is the address that owns this position.
+  string owner = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // tier_id is which tier this position belongs to.
+  uint32 tier_id = 3;
+
+  // amount_locked is the total tokens locked in this position (bond denom).
+  string amount_locked = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+
+  // created_at_height is the block height when the position was created.
+  int64 created_at_height = 5;
+
+  // created_at_time is the block time when the position was created.
+  google.protobuf.Timestamp created_at_time = 6
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // exit_triggered_at is zero when not exiting; set when user triggers exit.
+  google.protobuf.Timestamp exit_triggered_at = 7
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // exit_unlock_time is when the exit commitment elapses and user can claim.
+  google.protobuf.Timestamp exit_unlock_time = 8
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // validator is the operator address if delegated; empty if not.
+  string validator = 9 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+
+  // delegated_shares is the validator delegation shares for this position.
+  string delegated_shares = 10 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+
+  // delegated_at_time is when the current delegation started.
+  google.protobuf.Timestamp delegated_at_time = 11
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // last_bonus_accrual is the last time bonus was accrued.
+  google.protobuf.Timestamp last_bonus_accrual = 12
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+
+  // is_unbonding indicates the position is waiting for unbonding to complete.
+  bool is_unbonding = 13;
+
+  // pending_base_rewards accumulated from other positions' withdrawals on the same validator.
+  repeated cosmos.base.v1beta1.Coin pending_base_rewards = 14
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+
+  // unbonding_completion_time is when the unbonding period completes.
+  google.protobuf.Timestamp unbonding_completion_time = 15
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true];
+}
+
+// PendingBaseReward tracks pending base rewards per validator.
+message PendingBaseReward {
+  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  repeated cosmos.base.v1beta1.Coin amount = 2
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  int64 last_withdraw_height = 3;
+}
+
+// We need the coin import for PendingBaseReward.
+import "cosmos/base/v1beta1/coin.proto";

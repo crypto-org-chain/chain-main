@@ -22,13 +22,15 @@ var (
 	_ module.AppModuleBasic = AppModule{}
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
+	_ module.HasInvariants  = AppModule{}
 
 	_ appmodule.AppModule       = AppModule{}
 	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.HasEndBlocker   = AppModule{}
 )
 
 // ConsensusVersion defines the current x/tieredrewards module consensus version.
-const ConsensusVersion = 1
+const ConsensusVersion = 4
 
 // AppModuleBasic defines the basic application module used by the tieredrewards module.
 type AppModuleBasic struct {
@@ -106,6 +108,19 @@ func (am AppModule) Name() string {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+
+	m := keeper.NewMigrator(am.keeper)
+	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
+		panic(fmt.Sprintf("failed to register x/%s migration: %v", types.ModuleName, err))
+	}
+	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
+		panic(fmt.Sprintf("failed to register x/%s migration: %v", types.ModuleName, err))
+	}
+}
+
+// RegisterInvariants registers the tieredrewards module invariants.
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+	keeper.RegisterInvariants(ir, am.keeper)
 }
 
 // InitGenesis performs genesis initialization for the tieredrewards module.
@@ -128,4 +143,9 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 // BeginBlock returns the begin blocker for the tieredrewards module.
 func (am AppModule) BeginBlock(ctx context.Context) error {
 	return BeginBlocker(ctx, am.keeper)
+}
+
+// EndBlock returns the end blocker for the tieredrewards module.
+func (am AppModule) EndBlock(ctx context.Context) error {
+	return EndBlocker(ctx, am.keeper)
 }

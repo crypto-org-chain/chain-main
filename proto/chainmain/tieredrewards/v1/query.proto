@@ -3,6 +3,10 @@ package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
 import "chainmain/tieredrewards/v1/params.proto";
+import "chainmain/tieredrewards/v1/position.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 
@@ -14,13 +18,90 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/params";
   }
+
+  // TierPoolBalance returns the balance of the tier rewards pool.
+  rpc TierPoolBalance(QueryTierPoolBalanceRequest) returns (QueryTierPoolBalanceResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/pool_balance";
+  }
+
+  // TierPosition returns a tier position by ID.
+  rpc TierPosition(QueryTierPositionRequest) returns (QueryTierPositionResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/position/{position_id}";
+  }
+
+  // TierPositionsByOwner returns all tier positions for an owner.
+  rpc TierPositionsByOwner(QueryTierPositionsByOwnerRequest) returns (QueryTierPositionsByOwnerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions/{owner}";
+  }
+
+  // AllTierPositions returns all tier positions.
+  rpc AllTierPositions(QueryAllTierPositionsRequest) returns (QueryAllTierPositionsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions";
+  }
+
+  // EstimateTierBonus returns estimated pending rewards for a position.
+  rpc EstimateTierBonus(QueryEstimateTierBonusRequest) returns (QueryEstimateTierBonusResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/estimate_bonus/{position_id}";
+  }
+
+  // TierVotingPower returns the tier voting power for an address.
+  rpc TierVotingPower(QueryTierVotingPowerRequest) returns (QueryTierVotingPowerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/voting_power/{owner}";
+  }
 }
 
-// QueryParamsRequest is the request type for the Query/Params RPC method.
 message QueryParamsRequest {}
-
-// QueryParamsResponse is the response type for the Query/Params RPC method.
 message QueryParamsResponse {
-  // params defines the parameters of the module.
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+message QueryTierPoolBalanceRequest {}
+message QueryTierPoolBalanceResponse {
+  repeated cosmos.base.v1beta1.Coin balance = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+message QueryTierPositionRequest {
+  uint64 position_id = 1;
+}
+message QueryTierPositionResponse {
+  TierPosition position = 1 [(gogoproto.nullable) = false];
+}
+
+message QueryTierPositionsByOwnerRequest {
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+message QueryTierPositionsByOwnerResponse {
+  repeated TierPosition positions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryAllTierPositionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+message QueryAllTierPositionsResponse {
+  repeated TierPosition positions = 1 [(gogoproto.nullable) = false];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+message QueryEstimateTierBonusRequest {
+  uint64 position_id = 1;
+}
+message QueryEstimateTierBonusResponse {
+  repeated cosmos.base.v1beta1.Coin estimated_base = 1
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+  repeated cosmos.base.v1beta1.Coin estimated_bonus = 2
+      [(gogoproto.nullable) = false, (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"];
+}
+
+message QueryTierVotingPowerRequest {
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+message QueryTierVotingPowerResponse {
+  string voting_power = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
 }

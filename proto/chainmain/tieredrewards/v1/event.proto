@@ -2,12 +2,99 @@ syntax = "proto3";
 package chainmain.tieredrewards.v1;
 
 import "cosmos/base/v1beta1/coin.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
 
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 message EventBaseRewardsTopUp {
-  // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
   cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
+}
+
+// EventTierLock is emitted when tokens are locked into a tier.
+message EventTierLock {
+  uint64 position_id = 1;
+  string owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 tier_id     = 3;
+  string amount      = 4;
+  string validator    = 5;
+  bool   exiting     = 6;
+}
+
+// EventTierDelegate is emitted when a tier position is delegated.
+message EventTierDelegate {
+  uint64 position_id = 1;
+  string owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string validator    = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+
+// EventTierUndelegate is emitted when a tier position is undelegated.
+message EventTierUndelegate {
+  uint64 position_id = 1;
+  string owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventTierRedelegate is emitted when a tier position is redelegated.
+message EventTierRedelegate {
+  uint64 position_id  = 1;
+  string owner        = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string dst_validator = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+
+// EventTriggerExit is emitted when exit is triggered for a position.
+message EventTriggerExit {
+  uint64 position_id    = 1;
+  string owner          = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string exit_unlock_time = 3;
+}
+
+// EventWithdrawFromTier is emitted when tokens are claimed from a tier.
+message EventWithdrawFromTier {
+  uint64 position_id = 1;
+  string owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventWithdrawTierRewards is emitted when rewards are withdrawn.
+message EventWithdrawTierRewards {
+  uint64 position_id  = 1;
+  string owner        = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string base_amount  = 3;
+  string bonus_amount = 4;
+}
+
+// EventFundTierPool is emitted when the tier pool is funded.
+message EventFundTierPool {
+  string sender = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string amount = 2;
+}
+
+// EventTransferTierPosition is emitted when a position is transferred.
+message EventTransferTierPosition {
+  uint64 position_id = 1;
+  string old_owner   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string new_owner   = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventAddToTierPosition is emitted when tokens are added to an existing position.
+message EventAddToTierPosition {
+  uint64 position_id  = 1;
+  string owner        = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string amount_added = 3;
+  string new_total    = 4;
+}
+
+// EventCommitDelegationToTier is emitted when an existing delegation is committed to a tier.
+message EventCommitDelegationToTier {
+  uint64 position_id   = 1;
+  string owner         = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 tier_id       = 3;
+  string validator      = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string amount_locked = 5;
+}
+
+// EventUnbondingComplete is emitted when an unbonding period completes for a position.
+message EventUnbondingComplete {
+  uint64 position_id = 1;
+  string owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }

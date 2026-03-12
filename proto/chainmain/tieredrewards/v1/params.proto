@@ -4,8 +4,37 @@ package chainmain.tieredrewards.v1;
 import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
+
+// TierDefinition defines a single tier.
+message TierDefinition {
+  // tier_id is the unique identifier for this tier.
+  uint32 tier_id = 1;
+
+  // exit_commitment_duration is how long a user must wait after triggering exit
+  // before they can claim tokens. No bonus is paid after this period.
+  google.protobuf.Duration exit_commitment_duration = 2
+      [(gogoproto.nullable) = false, (gogoproto.stdduration) = true];
+
+  // exit_commitment_duration_in_years is the commitment duration in years (integer).
+  int64 exit_commitment_duration_in_years = 3;
+
+  // bonus_apy is the fixed bonus APY (per year) as a decimal, e.g. "0.04" = 4%.
+  string bonus_apy = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+
+  // min_lock_amount is the minimum amount required when creating a new position in this tier.
+  string min_lock_amount = 5 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+}
 
 // Params holds parameters for the tieredrewards module.
 message Params {
@@ -16,4 +45,10 @@ message Params {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
+
+  // tiers defines the available tier definitions.
+  repeated TierDefinition tiers = 2 [(gogoproto.nullable) = false];
+
+  // bonus_denoms defines the denom(s) for bonus payouts.
+  repeated string bonus_denoms = 3;
 }

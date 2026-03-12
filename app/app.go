@@ -161,13 +161,16 @@ var (
 		govtypes.ModuleName:                {authtypes.Burner},
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:                nil,
+		tieredrewardstypes.ModuleName:      {authtypes.Staking},
 		tieredrewardstypes.RewardsPoolName: nil,
+		tieredrewardstypes.TierPoolName:    nil,
 	}
 	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
 	// receive tokens from external accounts via MsgSend, bypassing the default
 	// block on sends to module accounts.
 	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
 		tieredrewardstypes.RewardsPoolName: true,
+		tieredrewardstypes.TierPoolName:    true,
 	}
 )
 
@@ -401,6 +404,7 @@ func New(
 	app.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(
 		app.DistrKeeper.Hooks(),
 		app.SlashingKeeper.Hooks(),
+		app.TieredRewardsKeeper.Hooks(),
 	))
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), appCodec, app.MsgServiceRouter(), app.AccountKeeper)
@@ -439,6 +443,9 @@ func New(
 		app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.DistrKeeper,
 		app.MsgServiceRouter(), govConfig, authAddr,
+		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(
+			tieredrewardskeeper.CustomTallyFn(app.TieredRewardsKeeper, app.StakingKeeper, app.AccountKeeper.AddressCodec()),
+		),
 	)
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(

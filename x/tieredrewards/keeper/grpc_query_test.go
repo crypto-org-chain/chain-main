@@ -8,7 +8,7 @@ import (
 
 func (s *KeeperSuite) TestGRPCQueryParams() {
 	customParams := types.NewParams(
-		sdkmath.LegacyNewDecWithPrec(3, 2),
+		sdkmath.LegacyNewDecWithPrec(3, 2), []types.TierDefinition{}, []string{},
 	)
 	s.keeper.InitGenesis(s.ctx, &types.GenesisState{Params: customParams})
 

@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/collections/indexes"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -16,6 +18,31 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// PositionIndexes defines the secondary indexes for TierPosition.
+type PositionIndexes struct {
+	Owner     *indexes.Multi[string, uint64, types.TierPosition]
+	Validator *indexes.Multi[string, uint64, types.TierPosition]
+}
+
+func (i PositionIndexes) IndexesList() []collections.Index[uint64, types.TierPosition] {
+	return []collections.Index[uint64, types.TierPosition]{i.Owner, i.Validator}
+}
+
+func newPositionIndexes(sb *collections.SchemaBuilder) PositionIndexes {
+	return PositionIndexes{
+		Owner: indexes.NewMulti(sb, types.PositionsByOwnerPrefix, "positions_by_owner",
+			collections.StringKey, collections.Uint64Key,
+			func(_ uint64, v types.TierPosition) (string, error) {
+				return v.Owner, nil
+			}),
+		Validator: indexes.NewMulti(sb, types.PositionsByValidatorPrefix, "positions_by_validator",
+			collections.StringKey, collections.Uint64Key,
+			func(_ uint64, v types.TierPosition) (string, error) {
+				return v.Validator, nil
+			}),
+	}
+}
+
 // Keeper of the tieredrewards store.
 type Keeper struct {
 	cdc          codec.BinaryCodec
@@ -24,6 +51,16 @@ type Keeper struct {
 
 	Schema collections.Schema
 	Params collections.Item[types.Params]
+
+	// Positions stores all tier positions keyed by position ID, with secondary index on Owner.
+	Positions *collections.IndexedMap[uint64, types.TierPosition, PositionIndexes]
+	// NextPositionID is a sequence that produces monotonically increasing position IDs.
+	NextPositionID collections.Sequence
+	// TotalTierShares tracks the total delegated shares per validator across all tier positions.
+	TotalTierShares collections.Map[string, math.LegacyDec]
+	// UnbondingPositions tracks position IDs that are currently unbonding.
+	// Key = position_id, Value = unbonding completion time as unix seconds.
+	UnbondingPositions collections.Map[uint64, int64]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -46,6 +83,11 @@ func NewKeeper(
 	// ensure base rewards pool module account is set
 	if addr := accountKeeper.GetModuleAddress(types.RewardsPoolName); addr == nil {
 		panic(fmt.Sprintf("the %s module account has not been set", types.RewardsPoolName))
+	}
+
+	// ensure tier reward pool module account is set
+	if addr := accountKeeper.GetModuleAddress(types.TierPoolName); addr == nil {
+		panic(fmt.Sprintf("the %s module account has not been set", types.TierPoolName))
 	}
 
 	if mintKeeper == nil {
@@ -78,7 +120,11 @@ func NewKeeper(
 		accountKeeper:      accountKeeper,
 		bankKeeper:         bankKeeper,
 		distributionKeeper: distributionKeeper,
-		Params:             collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Params:          collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Positions:        collections.NewIndexedMap(sb, types.PositionByIDPrefix, "positions", collections.Uint64Key, codec.CollValue[types.TierPosition](cdc), newPositionIndexes(sb)),
+		NextPositionID:   collections.NewSequence(sb, types.NextPositionIDKey, "next_position_id"),
+		TotalTierShares:  collections.NewMap(sb, types.TotalTierSharesPrefix, "total_tier_shares", collections.StringKey, sdk.LegacyDecValue),
+		UnbondingPositions: collections.NewMap(sb, types.UnbondingPositionsPrefix, "unbonding_positions", collections.Uint64Key, collections.Int64Value),
 	}
 
 	schema, err := sb.Build()
@@ -143,4 +189,47 @@ func (k Keeper) AllocateTokensToValidator(ctx context.Context, val stakingtypes.
 
 func (k Keeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
 	return k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
+}
+
+// AddTierShares adds shares to the running total for a validator.
+func (k Keeper) AddTierShares(ctx context.Context, validator string, shares math.LegacyDec) error {
+	if shares.IsZero() {
+		return nil
+	}
+	current, err := k.GetTotalTierShares(ctx, validator)
+	if err != nil {
+		return err
+	}
+	return k.TotalTierShares.Set(ctx, validator, current.Add(shares))
+}
+
+// SubTierShares subtracts shares from the running total for a validator.
+func (k Keeper) SubTierShares(ctx context.Context, validator string, shares math.LegacyDec) error {
+	if shares.IsZero() {
+		return nil
+	}
+	current, err := k.GetTotalTierShares(ctx, validator)
+	if err != nil {
+		return err
+	}
+	newTotal := current.Sub(shares)
+	if newTotal.IsNegative() {
+		return fmt.Errorf("TotalTierShares for validator %s would go negative: current=%s, sub=%s", validator, current, shares)
+	}
+	if newTotal.IsZero() {
+		return k.TotalTierShares.Remove(ctx, validator)
+	}
+	return k.TotalTierShares.Set(ctx, validator, newTotal)
+}
+
+// GetTotalTierShares returns the total tier shares for a validator. Returns zero if not found.
+func (k Keeper) GetTotalTierShares(ctx context.Context, validator string) (math.LegacyDec, error) {
+	total, err := k.TotalTierShares.Get(ctx, validator)
+	if err != nil {
+		if errors.Is(err, collections.ErrNotFound) {
+			return math.LegacyZeroDec(), nil
+		}
+		return math.LegacyZeroDec(), err
+	}
+	return total, nil
 }
