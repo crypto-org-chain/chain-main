@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/client/cli"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
 
@@ -22,7 +24,7 @@ var (
 	_ module.AppModuleBasic = AppModule{}
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
-	_ module.HasInvariants  = AppModule{}
+	_ module.HasInvariants  = AppModule{} //nolint: staticcheck
 
 	_ appmodule.AppModule       = AppModule{}
 	_ appmodule.HasBeginBlocker = AppModule{}
@@ -74,6 +76,14 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *g
 	}
 }
 
+// GetTxCmd returns the root tx command for the tieredrewards module.
+// Commands with cosmos.base.v1beta1.Coin fields are registered here as custom
+// Cobra commands because autocli v2 panics on proto.Merge for Coin messages
+// when pulsar-generated API types are not available for the module.
+func (AppModuleBasic) GetTxCmd() *cobra.Command {
+	return cli.GetTxCmd()
+}
+
 // AppModule implements an application module for the tieredrewards module.
 type AppModule struct {
 	AppModuleBasic
@@ -119,7 +129,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterInvariants registers the tieredrewards module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
+func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) { //nolint: staticcheck
 	keeper.RegisterInvariants(ir, am.keeper)
 }
 

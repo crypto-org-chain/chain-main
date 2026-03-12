@@ -83,8 +83,6 @@ func (s *KeeperSuite) lockTierHelper(owner sdk.AccAddress, amount sdkmath.Int) u
 // lockTierWithDelegateHelper creates a tier-1 lock with delegation.
 func (s *KeeperSuite) lockTierWithDelegateHelper(owner sdk.AccAddress, amount sdkmath.Int, val stakingtypes.Validator) uint64 {
 	msgServer := s.newMsgServer()
-	valAddr, err := val.GetConsAddr()
-	_ = valAddr
 	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:     owner.String(),
 		TierId:    1,

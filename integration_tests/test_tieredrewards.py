@@ -1,7 +1,7 @@
+import json
 from datetime import timedelta
 from pathlib import Path
 
-import json
 import pytest
 from dateutil.parser import isoparse
 
@@ -57,9 +57,9 @@ def _get_latest_position(cluster, owner_addr):
 
 def _query_position(cluster, position_id):
     """Query a single tier position by ID."""
-    return query_command(
-        cluster, "tieredrewards", "tier-position", str(position_id)
-    )["position"]
+    return query_command(cluster, "tieredrewards", "tier-position", str(position_id))[
+        "position"
+    ]
 
 
 def _tier_pool_balance(cluster):
@@ -325,9 +325,7 @@ def test_transfer_tier_position(cluster):
     assert pos["owner"] == addr2
 
     # signer1 should no longer have this position
-    result = query_command(
-        cluster, "tieredrewards", "tier-positions-by-owner", addr1
-    )
+    result = query_command(cluster, "tieredrewards", "tier-positions-by-owner", addr1)
     s1_ids = {str(p["position_id"]) for p in result["positions"]}
     assert str(pos_id) not in s1_ids
 
@@ -364,9 +362,7 @@ def test_commit_delegation_to_tier(cluster):
 def test_tier_voting_power_query(cluster):
     """Query tier voting power for an address with delegated positions."""
     addr = cluster.address("signer1")
-    result = query_command(
-        cluster, "tieredrewards", "tier-voting-power", addr
-    )
+    result = query_command(cluster, "tieredrewards", "tier-voting-power", addr)
     vp = result["voting_power"]
     assert float(vp) > 0, f"expected non-zero voting power, got {vp}"
 
@@ -423,6 +419,6 @@ def test_wrong_owner_rejected(cluster):
         # tx passed CheckTx; wait for execution result
         rsp = cli.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] != 0, "non-owner should be rejected"
-    assert "not position owner" in rsp.get("raw_log", ""), (
-        f"expected ownership error, got: {rsp.get('raw_log', '')}"
-    )
+    assert "not position owner" in rsp.get(
+        "raw_log", ""
+    ), f"expected ownership error, got: {rsp.get('raw_log', '')}"

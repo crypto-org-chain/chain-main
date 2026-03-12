@@ -55,7 +55,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: "chainmain.tieredrewards.v1.Msg",
+			Service:              "chainmain.tieredrewards.v1.Msg",
+			EnhanceCustomCommand: true,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod:      "UpdateParams",
@@ -66,20 +67,25 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "params"}},
 					GovProposal:    true,
 				},
+				// LockTier, CommitDelegationToTier, AddToTierPosition, and FundTierPool
+				// use cosmos.base.v1beta1.Coin fields which trigger a proto.Merge panic
+				// in autocli v2 (dynamicpb/pulsar field descriptor mismatch).
+				// These are handled by custom Cobra commands in client/cli/tx.go.
 				{
 					RpcMethod: "LockTier",
-					Use:       "lock-tier",
-					Short:     "Lock tokens into a tier with optional delegate and exit options",
+					Skip:      true,
 				},
 				{
 					RpcMethod: "CommitDelegationToTier",
-					Use:       "commit-delegation-to-tier",
-					Short:     "Commit an existing delegation to a tier without undelegating",
+					Skip:      true,
 				},
 				{
 					RpcMethod: "AddToTierPosition",
-					Use:       "add-to-tier-position",
-					Short:     "Add tokens to an existing tier position",
+					Skip:      true,
+				},
+				{
+					RpcMethod: "FundTierPool",
+					Skip:      true,
 				},
 				{
 					RpcMethod: "TierDelegate",
@@ -110,11 +116,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					RpcMethod: "WithdrawTierRewards",
 					Use:       "withdraw-tier-rewards",
 					Short:     "Withdraw base and bonus rewards for a tier position",
-				},
-				{
-					RpcMethod: "FundTierPool",
-					Use:       "fund-tier-pool",
-					Short:     "Fund the tier rewards pool",
 				},
 				{
 					RpcMethod: "TransferTierPosition",

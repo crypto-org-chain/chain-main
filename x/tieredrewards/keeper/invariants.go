@@ -11,6 +11,8 @@ import (
 )
 
 // RegisterInvariants registers all tieredrewards module invariants.
+//
+//nolint:staticcheck // sdk.InvariantRegistry is deprecated but still required by the module interface.
 func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 	ir.RegisterRoute(types.ModuleName, "module-balance", ModuleBalanceInvariant(k))
 	ir.RegisterRoute(types.ModuleName, "position-consistency", PositionConsistencyInvariant(k))
@@ -20,6 +22,8 @@ func RegisterInvariants(ir sdk.InvariantRegistry, k Keeper) {
 
 // ModuleBalanceInvariant checks that the module account holds enough tokens
 // to cover all locked positions and accumulated pending base rewards.
+//
+//nolint:staticcheck // sdk.Invariant and sdk.FormatInvariant are deprecated but still required.
 func ModuleBalanceInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		bondDenom, err := k.stakingKeeper.BondDenom(ctx)
@@ -65,6 +69,8 @@ func ModuleBalanceInvariant(k Keeper) sdk.Invariant {
 
 // PositionConsistencyInvariant checks that every delegated, non-unbonding
 // position has positive shares, and that every unbonding position has zero shares.
+//
+//nolint:staticcheck // sdk.Invariant and sdk.FormatInvariant are deprecated but still required.
 func PositionConsistencyInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		positions, err := k.GetAllPositions(ctx)
@@ -96,6 +102,8 @@ func PositionConsistencyInvariant(k Keeper) sdk.Invariant {
 
 // TotalTierSharesInvariant checks that TotalTierShares[validator] equals the
 // sum of DelegatedShares across all actively delegated positions for that validator.
+//
+//nolint:staticcheck // sdk.Invariant and sdk.FormatInvariant are deprecated but still required.
 func TotalTierSharesInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		positions, err := k.GetAllPositions(ctx)
@@ -149,6 +157,8 @@ func TotalTierSharesInvariant(k Keeper) sdk.Invariant {
 
 // UnbondingConsistencyInvariant checks that every position with IsUnbonding==true
 // has a corresponding entry in UnbondingPositions, and vice versa.
+//
+//nolint:staticcheck // sdk.Invariant and sdk.FormatInvariant are deprecated but still required.
 func UnbondingConsistencyInvariant(k Keeper) sdk.Invariant {
 	return func(ctx sdk.Context) (string, bool) {
 		positions, err := k.GetAllPositions(ctx)
