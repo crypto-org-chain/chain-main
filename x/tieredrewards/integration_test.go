@@ -249,14 +249,15 @@ func TestAddToPositionRejectsWhenExiting(t *testing.T) {
 func TestFundTierPoolAndQueryBalance(t *testing.T) {
 	ctx, msgServer, bondDenom, a := setupTierParams(t)
 
-	senderAddr := sdk.AccAddress([]byte("tier_test_user_addr5"))
+	// FundTierPool is restricted to the governance authority.
+	authority := a.TieredRewardsKeeper.GetAuthority()
 	fundAmount := sdkmath.NewInt(50000)
-	err := banktestutil.FundAccount(ctx, a.BankKeeper, senderAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
+	err := banktestutil.FundModuleAccount(ctx, a.BankKeeper, "gov", sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
 	require.NoError(t, err)
 
 	// Fund the tier pool via message.
 	_, err = msgServer.FundTierPool(ctx, &types.MsgFundTierPool{
-		Sender: senderAddr.String(),
+		Sender: authority,
 		Amount: sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)),
 	})
 	require.NoError(t, err)

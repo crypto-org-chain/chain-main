@@ -601,23 +601,41 @@ func (s *KeeperSuite) TestWithdrawRewards_NotDelegated() {
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestFundTierPool_Success() {
-	sender := sdk.AccAddress([]byte("test_fund_sender____"))
+	// Authority (governance) is the only allowed sender.
+	authority := s.keeper.GetAuthority()
+
 	bondDenom := s.bondDenom()
-	fundAmount := sdkmath.NewInt(50000)
-	s.fundAccount(sender, fundAmount)
+	// Fund the gov module account (authority address is blocked from receiving via FundAccount).
+	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(50000)))
+	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, "gov", coins)
+	s.Require().NoError(err)
 
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.TierPoolName)
 	poolBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
 
 	msgServer := s.newMsgServer()
-	_, err := msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
-		Sender: sender.String(),
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Sender: authority,
 		Amount: sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(10000))),
 	})
 	s.Require().NoError(err)
 
 	poolAfter := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
 	s.Require().Equal(poolBefore.Amount.Add(sdkmath.NewInt(10000)), poolAfter.Amount)
+}
+
+func (s *KeeperSuite) TestFundTierPool_RejectsUnauthorized() {
+	sender := sdk.AccAddress([]byte("test_fund_unauth____"))
+	s.fundAccount(sender, sdkmath.NewInt(50000))
+
+	bondDenom := s.bondDenom()
+	msgServer := s.newMsgServer()
+	_, err := msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Sender: sender.String(),
+		Amount: sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(10000))),
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
 }
 
 // ---------------------------------------------------------------------------
@@ -1085,12 +1103,16 @@ func (s *KeeperSuite) TestWithdrawRewards_PendingRewardsAccumulate() {
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestFundTierPool_RejectsNonBondDenom() {
-	sender := sdk.AccAddress([]byte("test_fund_denom_____"))
-	s.fundAccount(sender, sdkmath.NewInt(50000))
+	authority := s.keeper.GetAuthority()
+	bondDenom := s.bondDenom()
+	// Fund the gov module account so it has balance to attempt sending.
+	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(50000)))
+	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, "gov", coins)
+	s.Require().NoError(err)
 
 	msgServer := s.newMsgServer()
-	_, err := msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
-		Sender: sender.String(),
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Sender: authority,
 		Amount: sdk.NewCoins(sdk.NewCoin("wrongdenom", sdkmath.NewInt(10000))),
 	})
 	s.Require().Error(err)

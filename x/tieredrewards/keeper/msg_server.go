@@ -927,6 +927,11 @@ func (ms msgServer) WithdrawTierRewards(ctx context.Context, msg *types.MsgWithd
 func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+	// ADR-006 §5.8: restrict to governance authority.
+	if ms.authority != msg.Sender {
+		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "unauthorized: expected %s, got %s", ms.authority, msg.Sender)
+	}
+
 	senderAddr, err := sdk.AccAddressFromBech32(msg.Sender)
 	if err != nil {
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid sender address: %s", err)

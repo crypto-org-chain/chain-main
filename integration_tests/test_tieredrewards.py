@@ -257,21 +257,29 @@ def test_withdraw_tier_rewards(cluster):
     assert rewards < 100000, f"rewards look unreasonably large: {rewards}"
 
 
-def test_fund_tier_pool(cluster):
-    """Fund the tier pool and verify balance increased."""
-    pool_before = _tier_pool_balance(cluster)
-
+def test_fund_tier_pool_rejected_for_non_authority(cluster):
+    """Verify that funding the tier pool is rejected for non-authority senders."""
     cli = cluster.cosmos_cli()
-    rsp = cli.tx(
-        "tieredrewards",
-        "fund-tier-pool",
-        from_="signer1",
-        amount=f"10000{DENOM}",
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "tieredrewards",
+            "fund-tier-pool",
+            "-y",
+            from_="signer1",
+            amount=f"10000{DENOM}",
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            keyring_backend="test",
+        )
     )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pool_after = _tier_pool_balance(cluster)
-    assert pool_after >= pool_before + 10000
+    if rsp["code"] == 0:
+        # tx passed CheckTx; wait for execution result
+        rsp = cli.event_query_tx_for(rsp["txhash"])
+    assert rsp["code"] != 0, "non-authority should be rejected"
+    assert "unauthorized" in rsp.get(
+        "raw_log", ""
+    ), f"expected unauthorized error, got: {rsp.get('raw_log', '')}"
 
 
 def test_add_to_tier_position(cluster):
