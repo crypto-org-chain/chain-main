@@ -83,8 +83,8 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		previousTotalPower += voteInfo.Validator.Power
 	}
 
-	// if no validators are voting, skip
 	if previousTotalPower == 0 {
+		k.Logger(ctx).Error("no validators are voting, skipping base rewards top up")
 		return nil
 	}
 
