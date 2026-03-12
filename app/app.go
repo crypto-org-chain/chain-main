@@ -169,6 +169,7 @@ var (
 	// receive tokens from external accounts via MsgSend, bypassing the default
 	// block on sends to module accounts.
 	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
+		tieredrewardstypes.ModuleName:      true,
 		tieredrewardstypes.RewardsPoolName: true,
 		tieredrewardstypes.TierPoolName:    true,
 	}

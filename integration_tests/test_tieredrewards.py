@@ -155,6 +155,7 @@ def test_tier_redelegate(cluster):
         from_="signer1",
         position_id=str(pos_id),
         dst_validator=val1,
+        gas="300000",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -382,7 +383,7 @@ def test_positions_query_pagination(cluster):
             "all-tier-positions",
             home=cli.data_dir,
             output="json",
-            limit="2",
+            page_limit="2",
         )
     )
     assert len(result["positions"]) == 2
