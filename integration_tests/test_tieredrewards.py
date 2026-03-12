@@ -39,6 +39,7 @@ def _lock_tier(cluster, from_name, amount, tier_id="1", validator=None, i=0):
         from_=from_name,
         tier_id=tier_id,
         amount=f"{amount}{DENOM}",
+        gas="300000",
     )
     if validator:
         kwargs["validator"] = validator
@@ -247,6 +248,7 @@ def test_withdraw_tier_rewards(cluster):
         "withdraw-tier-rewards",
         from_="signer1",
         position_id=str(pos_id),
+        gas="300000",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -301,6 +303,7 @@ def test_add_to_tier_position(cluster):
         from_="signer1",
         position_id=str(pos_id),
         amount=f"2000{DENOM}",
+        gas="300000",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
@@ -360,6 +363,7 @@ def test_commit_delegation_to_tier(cluster):
         tier_id="1",
         validator=val0,
         amount=f"5000{DENOM}",
+        gas="300000",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
