@@ -22,22 +22,19 @@ func (s *KeeperSuite) setupTierParams() {
 	authority := s.keeper.GetAuthority()
 	tiers := []types.TierDefinition{
 		{
-			TierId:                        1,
-			ExitCommitmentDuration:        time.Hour * 24 * 365, // 1 year
-			ExitCommitmentDurationInYears: 1,
-			BonusApy:                      sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
-			MinLockAmount:                 sdkmath.NewInt(1000),
+			TierId:                 1,
+			ExitCommitmentDuration: time.Hour * 24 * 365, // 1 year
+			BonusApy:               sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
+			MinLockAmount:          sdkmath.NewInt(1000),
 		},
 		{
-			TierId:                        2,
-			ExitCommitmentDuration:        time.Hour * 24 * 365 * 5, // 5 years
-			ExitCommitmentDurationInYears: 5,
-			BonusApy:                      sdkmath.LegacyNewDecWithPrec(8, 2), // 8%
-			MinLockAmount:                 sdkmath.NewInt(5000),
+			TierId:                 2,
+			ExitCommitmentDuration: time.Hour * 24 * 365 * 5, // 5 years
+			BonusApy:               sdkmath.LegacyNewDecWithPrec(8, 2), // 8%
+			MinLockAmount:          sdkmath.NewInt(5000),
 		},
 	}
-	bondDenom, _ := s.app.StakingKeeper.BondDenom(s.ctx)
-	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers, []string{bondDenom})
+	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers)
 	msg := &types.MsgUpdateParams{Authority: authority, Params: params}
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err := msgServer.UpdateParams(s.ctx, msg)
@@ -841,7 +838,7 @@ func (s *KeeperSuite) TestTransferPosition_SettlesBonusToOldOwner() {
 	s.fundAccount(user, sdkmath.NewInt(10000))
 
 	// Fund tier pool so bonus can be paid.
-	tierPoolAddr := s.keeper.GetModuleAddress("tier_reward_pool")
+	tierPoolAddr := s.app.AccountKeeper.GetModuleAddress("tier_reward_pool")
 	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, tierPoolAddr, sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(100000))))
 	s.Require().NoError(err)
 

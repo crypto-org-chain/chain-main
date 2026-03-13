@@ -34,7 +34,7 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 
 // TierPoolBalance returns the balance of the tier rewards pool.
 func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPoolBalanceRequest) (*types.QueryTierPoolBalanceResponse, error) {
-	poolAddr := q.k.GetModuleAddress(types.TierPoolName)
+	poolAddr := q.k.accountKeeper.GetModuleAddress(types.TierPoolName)
 	balances := q.k.bankKeeper.GetAllBalances(ctx, poolAddr)
 	return &types.QueryTierPoolBalanceResponse{Balance: balances}, nil
 }
@@ -161,7 +161,7 @@ func (q queryServer) EstimateTierBonus(ctx context.Context, req *types.QueryEsti
 	if err != nil {
 		return nil, err
 	}
-	bondDenom, err := q.k.BondDenom(ctx)
+	bondDenom, err := q.k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		return nil, err
 	}

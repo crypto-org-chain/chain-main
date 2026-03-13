@@ -20,27 +20,27 @@ func TestParams_Validate(t *testing.T) {
 	}{
 		{
 			name:    "valid zero rate",
-			params:  types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{}, []string{}),
+			params:  types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{}),
 			wantErr: false,
 		},
 		{
 			name:    "valid 3% rate",
-			params:  types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2), []types.TierDefinition{}, []string{}),
+			params:  types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2), []types.TierDefinition{}),
 			wantErr: false,
 		},
 		{
 			name:    "valid 100% rate",
-			params:  types.NewParams(sdkmath.LegacyOneDec(), []types.TierDefinition{}, []string{}),
+			params:  types.NewParams(sdkmath.LegacyOneDec(), []types.TierDefinition{}),
 			wantErr: false,
 		},
 		{
 			name:    "valid large rate",
-			params:  types.NewParams(sdkmath.LegacyNewDec(10), []types.TierDefinition{}, []string{}),
+			params:  types.NewParams(sdkmath.LegacyNewDec(10), []types.TierDefinition{}),
 			wantErr: false,
 		},
 		{
 			name:        "negative rate",
-			params:      types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}, []string{}),
+			params:      types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}),
 			wantErr:     true,
 			errContains: "negative",
 		},

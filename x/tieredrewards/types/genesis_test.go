@@ -18,14 +18,14 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("valid custom genesis", func(t *testing.T) {
 		genesis := types.GenesisState{
-			Params: types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2), []types.TierDefinition{}, []string{}),
+			Params: types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2), []types.TierDefinition{}),
 		}
 		require.NoError(t, types.ValidateGenesis(genesis))
 	})
 
 	t.Run("invalid genesis - negative rate", func(t *testing.T) {
 		genesis := types.GenesisState{
-			Params: types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}, []string{}),
+			Params: types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}),
 		}
 		require.Error(t, types.ValidateGenesis(genesis))
 	})
@@ -100,25 +100,23 @@ func TestValidateGenesis(t *testing.T) {
 func TestParams_ValidateTiers_MaxBonusAPY(t *testing.T) {
 	t.Run("valid bonus APY at max", func(t *testing.T) {
 		tiers := []types.TierDefinition{{
-			TierId:                        1,
-			ExitCommitmentDuration:        time.Hour * 24 * 365,
-			ExitCommitmentDurationInYears: 1,
-			BonusApy:                      sdkmath.LegacyNewDec(10), // exactly at max (1000%)
-			MinLockAmount:                 sdkmath.NewInt(1000),
+			TierId:                 1,
+			ExitCommitmentDuration: time.Hour * 24 * 365,
+			BonusApy:               sdkmath.LegacyNewDec(10), // exactly at max (1000%)
+			MinLockAmount:          sdkmath.NewInt(1000),
 		}}
-		params := types.NewParams(sdkmath.LegacyZeroDec(), tiers, []string{})
+		params := types.NewParams(sdkmath.LegacyZeroDec(), tiers)
 		require.NoError(t, params.Validate())
 	})
 
 	t.Run("invalid bonus APY exceeds max", func(t *testing.T) {
 		tiers := []types.TierDefinition{{
-			TierId:                        1,
-			ExitCommitmentDuration:        time.Hour * 24 * 365,
-			ExitCommitmentDurationInYears: 1,
-			BonusApy:                      sdkmath.LegacyNewDec(11), // exceeds 1000% cap
-			MinLockAmount:                 sdkmath.NewInt(1000),
+			TierId:                 1,
+			ExitCommitmentDuration: time.Hour * 24 * 365,
+			BonusApy:               sdkmath.LegacyNewDec(11), // exceeds 1000% cap
+			MinLockAmount:          sdkmath.NewInt(1000),
 		}}
-		params := types.NewParams(sdkmath.LegacyZeroDec(), tiers, []string{})
+		params := types.NewParams(sdkmath.LegacyZeroDec(), tiers)
 		err := params.Validate()
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "exceeds maximum")

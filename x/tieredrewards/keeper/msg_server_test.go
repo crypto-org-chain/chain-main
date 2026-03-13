@@ -9,7 +9,7 @@ import (
 
 func (s *KeeperSuite) TestUpdateParams_Success() {
 	authority := s.keeper.GetAuthority()
-	newParams := types.NewParams(sdkmath.LegacyNewDecWithPrec(5, 2), []types.TierDefinition{}, []string{}) // 0.05
+	newParams := types.NewParams(sdkmath.LegacyNewDecWithPrec(5, 2), []types.TierDefinition{}) // 0.05
 
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
@@ -41,7 +41,7 @@ func (s *KeeperSuite) TestUpdateParams_NegativeRate() {
 	authority := s.keeper.GetAuthority()
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
-		Params:    types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}, []string{}),
+		Params:    types.NewParams(sdkmath.LegacyNewDec(-1), []types.TierDefinition{}),
 	}
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -54,7 +54,7 @@ func (s *KeeperSuite) TestUpdateParams_ZeroRate() {
 	authority := s.keeper.GetAuthority()
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
-		Params:    types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{}, []string{}),
+		Params:    types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{}),
 	}
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)

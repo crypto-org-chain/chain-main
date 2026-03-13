@@ -35,13 +35,12 @@ func setupTierParams(t *testing.T) (
 
 	authority := app.TieredRewardsKeeper.GetAuthority()
 	tiers := []types.TierDefinition{{
-		TierId:                        1,
-		ExitCommitmentDuration:        time.Hour * 24 * 365, // 1 year
-		ExitCommitmentDurationInYears: 1,
-		BonusApy:                      sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
-		MinLockAmount:                 sdkmath.NewInt(1000),
+		TierId:                 1,
+		ExitCommitmentDuration: time.Hour * 24 * 365, // 1 year
+		BonusApy:               sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
+		MinLockAmount:          sdkmath.NewInt(1000),
 	}}
-	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers, []string{bondDenom})
+	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers)
 
 	msgServer = keeper.NewMsgServerImpl(app.TieredRewardsKeeper)
 	_, err = msgServer.UpdateParams(ctx, &types.MsgUpdateParams{Authority: authority, Params: params})
@@ -263,7 +262,7 @@ func TestFundTierPoolAndQueryBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify pool balance by querying the TierPoolName module account directly.
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.TierPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.TierPoolName)
 	balance := a.BankKeeper.GetBalance(ctx, poolAddr, bondDenom)
 	require.Equal(t, fundAmount, balance.Amount)
 }

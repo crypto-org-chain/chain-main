@@ -47,11 +47,11 @@ func TestBeginBlocker_ZeroRate(t *testing.T) {
 	a := testutil.Setup(false, nil)
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 
-	params := types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{}, []string{})
+	params := types.NewParams(sdkmath.LegacyZeroDec(), []types.TierDefinition{})
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
 	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
@@ -68,7 +68,7 @@ func TestBeginBlocker_EmptyPool(t *testing.T) {
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
-	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}, []string{}) // 10000%
+	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}) // 10000%
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
@@ -94,7 +94,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
 	// Set the target base rewards rate to 10000% so that there is a shortfall since it is easier than increasing the total bonded tokens
-	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}, []string{}) // 10000%
+	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}) // 10000%
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
@@ -107,7 +107,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	// Calculate expected shortfall (fee collector is 0, so full target is the shortfall)
 	totalBonded, err := a.StakingKeeper.TotalBondedTokens(ctx)
 	require.NoError(t, err)
-	mintParams, err := a.TieredRewardsKeeper.GetMintParams(ctx)
+	mintParams, err := a.MintKeeper.GetParams(ctx)
 	require.NoError(t, err)
 	blocksPerYear := mintParams.BlocksPerYear
 	expectedShortfall := sdkmath.LegacyNewDecFromInt(totalBonded).
@@ -115,7 +115,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 		Quo(sdkmath.LegacyNewDec(int64(blocksPerYear))).
 		TruncateInt()
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
@@ -138,7 +138,7 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
-	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}, []string{}) // 10000%
+	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}) // 10000%
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
@@ -156,7 +156,7 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, smallAmount)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
 
@@ -180,7 +180,7 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 
 	// Even at 10000%, the fee collector's existing balance (~2M) exceeds the
 	// per-block target for 1M bonded tokens, so no top-up should occur.
-	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}, []string{}) // 10000%
+	params := types.NewParams(sdkmath.LegacyNewDec(100), []types.TierDefinition{}) // 10000%
 	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
@@ -189,7 +189,7 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, poolFund)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
 	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
@@ -209,20 +209,17 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 // setupTierParamsForABCI configures tier params on the app for ABCI-level tests.
 func setupTierParamsForABCI(t *testing.T, a *app.ChainApp, ctx sdk.Context) {
 	t.Helper()
-	bondDenom, err := a.StakingKeeper.BondDenom(ctx)
-	require.NoError(t, err)
 
 	tiers := []types.TierDefinition{
 		{
-			TierId:                        1,
-			ExitCommitmentDuration:        time.Hour * 24 * 365,
-			ExitCommitmentDurationInYears: 1,
-			BonusApy:                      sdkmath.LegacyNewDecWithPrec(4, 2),
-			MinLockAmount:                 sdkmath.NewInt(1000),
+			TierId:                 1,
+			ExitCommitmentDuration: time.Hour * 24 * 365,
+			BonusApy:               sdkmath.LegacyNewDecWithPrec(4, 2),
+			MinLockAmount:          sdkmath.NewInt(1000),
 		},
 	}
-	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers, []string{bondDenom})
-	err = a.TieredRewardsKeeper.Params.Set(ctx, params)
+	params := types.NewParams(sdkmath.LegacyZeroDec(), tiers)
+	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 }
 

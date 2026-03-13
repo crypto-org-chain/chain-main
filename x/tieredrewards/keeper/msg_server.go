@@ -70,6 +70,117 @@ func (ms msgServer) delegateToValidator(ctx context.Context, validatorAddr strin
 	return newShares, nil
 }
 
+// settleBonus computes the accrued bonus for a position, caps the payout to the
+// tier pool balance, and sends the result from TierPoolName to ownerAddr.
+// Returns (bonusCoins, fullyPaid, error). The caller decides whether to advance
+// LastBonusAccrual based on fullyPaid.
+func (ms msgServer) settleBonus(ctx context.Context, position types.TierPosition, ownerAddr sdk.AccAddress) (sdk.Coins, bool, error) {
+	params, err := ms.Params.Get(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	tierDef, err := params.GetTierDefinition(position.TierId)
+	if err != nil {
+		return nil, false, errors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
+	}
+
+	bonus, err := ms.CalculateBonus(ctx, position, tierDef)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to calculate bonus")
+	}
+
+	if !bonus.IsPositive() {
+		return nil, true, nil
+	}
+
+	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+
+	bonusCoin := sdk.NewCoin(bondDenom, bonus)
+	bonusCoins := sdk.NewCoins(bonusCoin)
+	fullyPaid := true
+
+	// Cap bonus to available tier pool balance.
+	poolAddr := ms.accountKeeper.GetModuleAddress(types.TierPoolName)
+	poolBalance := ms.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
+	if poolBalance.Amount.IsZero() {
+		return nil, false, nil
+	}
+	if poolBalance.Amount.LT(bonus) {
+		bonusCoin = sdk.NewCoin(bondDenom, poolBalance.Amount)
+		bonusCoins = sdk.NewCoins(bonusCoin)
+		fullyPaid = false
+	}
+
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.TierPoolName, ownerAddr, bonusCoins); err != nil {
+		return nil, false, errors.Wrap(err, "failed to send bonus rewards")
+	}
+
+	return bonusCoins, fullyPaid, nil
+}
+
+// attributeBaseRewards fairly distributes fullBaseRewards across all positions
+// delegated to the given validator. The calling position's share is returned
+// (not persisted to store); all other sibling positions' PendingBaseRewards
+// are updated in-store.
+func (ms msgServer) attributeBaseRewards(ctx context.Context, fullBaseRewards sdk.Coins, validator string, callerPositionId uint64) (sdk.Coins, error) {
+	if !fullBaseRewards.IsAllPositive() {
+		return nil, nil
+	}
+
+	totalTierShares, err := ms.GetTotalTierShares(ctx, validator)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get total tier shares")
+	}
+	if !totalTierShares.IsPositive() {
+		return nil, nil
+	}
+
+	// Iterate sibling positions using the validator index.
+	valIter, err := ms.Positions.Indexes.Validator.MatchExact(ctx, validator)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to iterate positions by validator")
+	}
+	defer valIter.Close()
+
+	var callerShare sdk.Coins
+	for ; valIter.Valid(); valIter.Next() {
+		pk, err := valIter.PrimaryKey()
+		if err != nil {
+			return nil, err
+		}
+		sib, err := ms.Positions.Get(ctx, pk)
+		if err != nil {
+			return nil, err
+		}
+		if sib.DelegatedShares.IsNil() || !sib.DelegatedShares.IsPositive() {
+			continue
+		}
+
+		fraction := sib.DelegatedShares.Quo(totalTierShares)
+		var sibRewards sdk.Coins
+		for _, coin := range fullBaseRewards {
+			attributed := fraction.MulInt(coin.Amount).TruncateInt()
+			if attributed.IsPositive() {
+				sibRewards = sibRewards.Add(sdk.NewCoin(coin.Denom, attributed))
+			}
+		}
+
+		if sib.PositionId == callerPositionId {
+			callerShare = sibRewards
+		} else if sibRewards.IsAllPositive() {
+			sib.PendingBaseRewards = sib.PendingBaseRewards.Add(sibRewards...)
+			if err := ms.SetPosition(ctx, sib); err != nil {
+				return nil, errors.Wrapf(err, "failed to set pending rewards for position %d", sib.PositionId)
+			}
+		}
+	}
+
+	return callerShare, nil
+}
+
 // UpdateParams updates the module parameters.
 func (ms msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	if ms.authority != msg.Authority {
@@ -309,39 +420,10 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	// If position is actively delegated, settle bonus (Option B: fair) then delegate the new tokens.
+	// If position is actively delegated, settle bonus then delegate the new tokens.
 	if position.Validator != "" {
-		// Compute and pay accrued bonus on the CURRENT AmountLocked before adding.
-		params, err := ms.Params.Get(ctx)
-		if err != nil {
+		if _, _, err := ms.settleBonus(ctx, position, ownerAddr); err != nil {
 			return nil, err
-		}
-		tierDef, err := params.GetTierDefinition(position.TierId)
-		if err != nil {
-			return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
-		}
-		bonus, err := ms.CalculateBonus(ctx, position, tierDef)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to calculate bonus on add")
-		}
-		if bonus.IsPositive() {
-			bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
-			if err != nil {
-				return nil, err
-			}
-			// Cap to pool balance.
-			poolAddr := ms.accountKeeper.GetModuleAddress(types.TierPoolName)
-			poolBalance := ms.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
-			payoutAmt := bonus
-			if poolBalance.Amount.LT(bonus) {
-				payoutAmt = poolBalance.Amount
-			}
-			if payoutAmt.IsPositive() {
-				bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, payoutAmt))
-				if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.TierPoolName, ownerAddr, bonusCoins); err != nil {
-					return nil, errors.Wrap(err, "failed to settle bonus on add")
-				}
-			}
 		}
 		// Always advance LastBonusAccrual when adding tokens, even if the bonus
 		// was only partially paid. Unlike WithdrawTierRewards (which preserves
@@ -739,59 +821,9 @@ func (ms msgServer) WithdrawTierRewards(ctx context.Context, msg *types.MsgWithd
 	}
 
 	// Phase 2: CRIT-1 — Fair attribution across ALL positions on this validator.
-	// Use the stored TotalTierShares instead of iterating all positions.
-	totalTierShares, err := ms.GetTotalTierShares(ctx, position.Validator)
+	positionBaseRewards, err := ms.attributeBaseRewards(ctx, fullBaseRewards, position.Validator, position.PositionId)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get total tier shares")
-	}
-
-	// Collect sibling positions using the validator index instead of full table scan.
-	var siblingPositions []types.TierPosition
-	valIter, err := ms.Positions.Indexes.Validator.MatchExact(ctx, position.Validator)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to iterate positions by validator")
-	}
-	defer valIter.Close()
-
-	for ; valIter.Valid(); valIter.Next() {
-		pk, err := valIter.PrimaryKey()
-		if err != nil {
-			return nil, err
-		}
-		pos, err := ms.Positions.Get(ctx, pk)
-		if err != nil {
-			return nil, err
-		}
-		if !pos.DelegatedShares.IsNil() && pos.DelegatedShares.IsPositive() {
-			siblingPositions = append(siblingPositions, pos)
-		}
-	}
-
-	var positionBaseRewards sdk.Coins
-	if totalTierShares.IsPositive() && !position.DelegatedShares.IsNil() && position.DelegatedShares.IsPositive() {
-		// Attribute rewards to ALL sibling positions.
-		for i, sibling := range siblingPositions {
-			fraction := sibling.DelegatedShares.Quo(totalTierShares)
-			var siblingRewards sdk.Coins
-			for _, coin := range fullBaseRewards {
-				attributed := fraction.MulInt(coin.Amount).TruncateInt()
-				if attributed.IsPositive() {
-					siblingRewards = siblingRewards.Add(sdk.NewCoin(coin.Denom, attributed))
-				}
-			}
-
-			if sibling.PositionId == position.PositionId {
-				// This is the calling position — collect its share plus any pending.
-				positionBaseRewards = siblingRewards
-			} else if siblingRewards.IsAllPositive() {
-				// Other position — accumulate as pending base rewards.
-				sibling.PendingBaseRewards = sibling.PendingBaseRewards.Add(siblingRewards...)
-				siblingPositions[i] = sibling
-				if err := ms.SetPosition(ctx, sibling); err != nil {
-					return nil, errors.Wrapf(err, "failed to set pending rewards for position %d", sibling.PositionId)
-				}
-			}
-		}
+		return nil, err
 	}
 
 	// Add any previously accumulated pending base rewards for the caller.
@@ -808,48 +840,9 @@ func (ms msgServer) WithdrawTierRewards(ctx context.Context, msg *types.MsgWithd
 	}
 
 	// Phase 3: Calculate and pay tier bonus.
-	params, err := ms.Params.Get(ctx)
+	bonusRewards, bonusFullyPaid, err := ms.settleBonus(ctx, position, ownerAddr)
 	if err != nil {
 		return nil, err
-	}
-	tierDef, err := params.GetTierDefinition(position.TierId)
-	if err != nil {
-		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
-	}
-
-	bonus, err := ms.CalculateBonus(ctx, position, tierDef)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to calculate bonus")
-	}
-
-	var bonusRewards sdk.Coins
-	bonusFullyPaid := true
-	if bonus.IsPositive() {
-		bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
-		if err != nil {
-			return nil, err
-		}
-		bonusCoin := sdk.NewCoin(bondDenom, bonus)
-		bonusRewards = sdk.NewCoins(bonusCoin)
-
-		// Cap bonus to available tier pool balance (ADR §10).
-		poolAddr := ms.accountKeeper.GetModuleAddress(types.TierPoolName)
-		poolBalance := ms.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
-		if poolBalance.Amount.IsZero() {
-			bonusRewards = nil
-			bonusFullyPaid = false
-		} else if poolBalance.Amount.LT(bonus) {
-			bonusCoin = sdk.NewCoin(bondDenom, poolBalance.Amount)
-			bonusRewards = sdk.NewCoins(bonusCoin)
-			bonusFullyPaid = false
-		}
-
-		// Send bonus from tier pool to the owner (skip if pool was empty).
-		if bonusRewards.IsAllPositive() {
-			if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.TierPoolName, ownerAddr, bonusRewards); err != nil {
-				return nil, errors.Wrap(err, "failed to send bonus rewards to owner")
-			}
-		}
 	}
 
 	// Only advance LastBonusAccrual if bonus was fully paid. When the pool is
@@ -958,35 +951,8 @@ func (ms msgServer) TransferTierPosition(ctx context.Context, msg *types.MsgTran
 
 	// Settle accrued bonus to old owner before transfer.
 	if IsPositionDelegated(position) {
-		params, err := ms.Params.Get(ctx)
-		if err != nil {
+		if _, _, err := ms.settleBonus(ctx, position, oldOwnerAddr); err != nil {
 			return nil, err
-		}
-		tierDef, err := params.GetTierDefinition(position.TierId)
-		if err != nil {
-			return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "%s", err)
-		}
-		bonus, err := ms.CalculateBonus(ctx, position, tierDef)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to calculate bonus on transfer")
-		}
-		if bonus.IsPositive() {
-			bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
-			if err != nil {
-				return nil, err
-			}
-			poolAddr := ms.accountKeeper.GetModuleAddress(types.TierPoolName)
-			poolBalance := ms.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
-			payoutAmt := bonus
-			if poolBalance.Amount.LT(bonus) {
-				payoutAmt = poolBalance.Amount
-			}
-			if payoutAmt.IsPositive() {
-				bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, payoutAmt))
-				if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.TierPoolName, oldOwnerAddr, bonusCoins); err != nil {
-					return nil, errors.Wrap(err, "failed to settle bonus on transfer")
-				}
-			}
 		}
 		// Always advance LastBonusAccrual on transfer, even if bonus was only
 		// partially paid. Unlike WithdrawTierRewards (which preserves accrual
@@ -1008,52 +974,12 @@ func (ms msgServer) TransferTierPosition(ctx context.Context, msg *types.MsgTran
 			fullBaseRewards = nil
 		}
 
-		if fullBaseRewards.IsAllPositive() {
-			totalTierShares, err := ms.GetTotalTierShares(ctx, position.Validator)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get total tier shares")
-			}
-			if totalTierShares.IsPositive() {
-				// Attribute rewards across all sibling positions on this validator.
-				valIter, err := ms.Positions.Indexes.Validator.MatchExact(ctx, position.Validator)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to iterate positions by validator")
-				}
-				defer valIter.Close()
-
-				for ; valIter.Valid(); valIter.Next() {
-					pk, err := valIter.PrimaryKey()
-					if err != nil {
-						return nil, err
-					}
-					sib, err := ms.Positions.Get(ctx, pk)
-					if err != nil {
-						return nil, err
-					}
-					if sib.DelegatedShares.IsNil() || !sib.DelegatedShares.IsPositive() {
-						continue
-					}
-					fraction := sib.DelegatedShares.Quo(totalTierShares)
-					var sibRewards sdk.Coins
-					for _, coin := range fullBaseRewards {
-						attributed := fraction.MulInt(coin.Amount).TruncateInt()
-						if attributed.IsPositive() {
-							sibRewards = sibRewards.Add(sdk.NewCoin(coin.Denom, attributed))
-						}
-					}
-					if sibRewards.IsAllPositive() {
-						sib.PendingBaseRewards = sib.PendingBaseRewards.Add(sibRewards...)
-						if sib.PositionId == position.PositionId {
-							// Update our local copy so PendingBaseRewards is paid to old owner below.
-							position.PendingBaseRewards = sib.PendingBaseRewards
-						} else {
-							if err := ms.SetPosition(ctx, sib); err != nil {
-								return nil, errors.Wrapf(err, "failed to set pending rewards for position %d", sib.PositionId)
-							}
-						}
-					}
-				}
-			}
+		callerShare, err := ms.attributeBaseRewards(ctx, fullBaseRewards, position.Validator, position.PositionId)
+		if err != nil {
+			return nil, err
+		}
+		if callerShare.IsAllPositive() {
+			position.PendingBaseRewards = position.PendingBaseRewards.Add(callerShare...)
 		}
 	}
 

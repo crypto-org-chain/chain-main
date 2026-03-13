@@ -10,11 +10,10 @@ import (
 var MaxBonusAPY = sdkmath.LegacyNewDec(10) // 1000%
 
 // NewParams creates a new Params instance.
-func NewParams(targetBaseRewardsRate sdkmath.LegacyDec, tiers []TierDefinition, bonusDenoms []string) Params {
+func NewParams(targetBaseRewardsRate sdkmath.LegacyDec, tiers []TierDefinition) Params {
 	return Params{
 		TargetBaseRewardsRate: targetBaseRewardsRate,
 		Tiers:                 tiers,
-		BonusDenoms:           bonusDenoms,
 	}
 }
 
@@ -23,7 +22,6 @@ func DefaultParams() Params {
 	return NewParams(
 		sdkmath.LegacyZeroDec(),
 		[]TierDefinition{},
-		[]string{},
 	)
 }
 
@@ -56,9 +54,6 @@ func validateTiers(tiers []TierDefinition) error {
 		seen[t.TierId] = true
 		if t.ExitCommitmentDuration <= 0 {
 			return fmt.Errorf("tier %d: exit commitment duration must be positive", t.TierId)
-		}
-		if t.ExitCommitmentDurationInYears <= 0 {
-			return fmt.Errorf("tier %d: exit commitment duration in years must be positive", t.TierId)
 		}
 		if t.BonusApy.IsNil() || t.BonusApy.IsNegative() {
 			return fmt.Errorf("tier %d: bonus APY must be non-negative", t.TierId)
