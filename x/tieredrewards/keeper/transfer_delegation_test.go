@@ -39,7 +39,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_SameValidator_PartialTransfer
 	// Transfer half the tokens
 	delTotalTokensBefore := valBefore.TokensFromShares(del.Shares).TruncateInt()
 	delHalfTokens := delTotalTokensBefore.Quo(sdkmath.NewInt(2))
-	poolAddr := s.keeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	msg := types.MsgCommitDelegationToTier{
 		DelegatorAddress:    sdk.AccAddress(delAddr).String(),
@@ -120,7 +120,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_SameValidator_FullTransfer() 
 	s.Require().Error(err, "source delegation should be removed after full transfer")
 
 	// Verify pool delegation created
-	poolAddr := s.keeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
 	s.Require().NoError(err)
 	poolDelTokens := valAfter.TokensFromShares(poolDel.Shares).TruncateInt()
@@ -185,7 +185,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_CrossValidator_PartialTransfe
 	dstValBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, destValAddr)
 	s.Require().NoError(err)
 
-	poolAddr := s.keeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	// Transfer half the delegation tokens from srcValidator to dstValidator
 	delTokensBefore := srcValBefore.TokensFromShares(del.Shares).TruncateInt()
@@ -309,7 +309,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_CrossValidator_FullTransfer()
 	dstValBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, destValAddr)
 	s.Require().NoError(err)
 
-	poolAddr := s.keeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	// Transfer all delegation tokens from srcValidator to dstValidator
 	delTokensBefore := srcValBefore.TokensFromShares(del.Shares).TruncateInt()
@@ -468,7 +468,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_PoolCannotTransferToSelf() {
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
 
-	poolAddr := s.keeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	msg := types.MsgCommitDelegationToTier{
 		DelegatorAddress:    poolAddr.String(),

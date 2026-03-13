@@ -35,7 +35,7 @@ func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommi
 		)
 	}
 
-	bondDenom, err := k.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
@@ -51,7 +51,7 @@ func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommi
 		return math.LegacyDec{}, sdkerrors.ErrInvalidAddress
 	}
 
-	poolAddr := k.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	if from.Equals(poolAddr) {
 		return math.LegacyDec{}, types.ErrTransferDelegationToPoolSelf
 	}
@@ -66,14 +66,14 @@ func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommi
 		return math.LegacyDec{}, sdkerrors.ErrInvalidAddress
 	}
 
-	srcValidator, err := k.GetValidator(ctx, srcValidatorAddr)
+	srcValidator, err := k.stakingKeeper.GetValidator(ctx, srcValidatorAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return math.LegacyDec{}, types.ErrBadTransferDelegationSrc
 	} else if err != nil {
 		return math.LegacyDec{}, err
 	}
 
-	shares, err := k.ValidateUnbondAmount(
+	shares, err := k.stakingKeeper.ValidateUnbondAmount(
 		ctx, from, srcValidatorAddr, msg.Amount.Amount,
 	)
 
@@ -81,7 +81,7 @@ func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommi
 		return math.LegacyDec{}, err
 	}
 
-	returnAmount, err := k.Unbond(ctx, from, srcValidatorAddr, shares)
+	returnAmount, err := k.stakingKeeper.Unbond(ctx, from, srcValidatorAddr, shares)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
@@ -90,7 +90,7 @@ func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommi
 		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
 	}
 
-	destValidator, err := k.GetValidator(ctx, destValidatorAddr)
+	destValidator, err := k.stakingKeeper.GetValidator(ctx, destValidatorAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
 		return math.LegacyDec{}, types.ErrBadTransferDelegationDest
 	} else if err != nil {

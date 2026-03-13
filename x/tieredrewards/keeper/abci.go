@@ -1,10 +1,9 @@
-package tieredrewards
+package keeper
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
@@ -14,11 +13,11 @@ import (
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
 
-func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
-	return topUpBaseRewards(ctx, k)
+func (k Keeper) BeginBlocker(ctx context.Context) error {
+	return k.topUpBaseRewards(ctx)
 }
 
-func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
+func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	params, err := k.Params.Get(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get params: %v", err))
@@ -30,17 +29,17 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return nil
 	}
 
-	totalBonded, err := k.TotalBondedTokens(ctx)
+	totalBonded, err := k.stakingKeeper.TotalBondedTokens(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get total bonded tokens: %v", err))
 	}
 
-	bondDenom, err := k.BondDenom(ctx)
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get bond denom: %v", err))
 	}
 
-	mintParams, err := k.GetMintParams(ctx)
+	mintParams, err := k.mintKeeper.GetParams(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get mint params: %v", err))
 	}
@@ -52,7 +51,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return nil
 	}
 
-	communityTax, err := k.GetCommunityTax(ctx)
+	communityTax, err := k.distributionKeeper.GetCommunityTax(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get community tax: %v", err))
 	}
@@ -61,13 +60,13 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		Mul(targetBaseRewardsRate).
 		Quo(math.LegacyNewDec(int64(blocksPerYear)))
 
-	feeCollector := k.GetModuleAccount(ctx, authtypes.FeeCollectorName)
+	feeCollector := k.accountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 	if feeCollector == nil {
 		k.Logger(ctx).Error("fee collector module account not found, skipping base rewards top up")
 		return nil
 	}
 	feeCollectorAddr := feeCollector.GetAddress()
-	feeCollectorBalance := k.GetBalance(ctx, feeCollectorAddr, bondDenom)
+	feeCollectorBalance := k.bankKeeper.GetBalance(ctx, feeCollectorAddr, bondDenom)
 	defaultStakersRewardPerBlock := math.LegacyNewDecFromInt(feeCollectorBalance.Amount).
 		MulTruncate(math.LegacyOneDec().Sub(communityTax))
 
@@ -90,8 +89,8 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		return nil
 	}
 
-	poolAddr := k.GetModuleAddress(types.RewardsPoolName)
-	poolBalance := k.GetBalance(ctx, poolAddr, bondDenom)
+	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolBalance := k.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
 	topUpAmount := shortFallAmount
 	if poolBalance.Amount.IsZero() {
 		k.Logger(ctx).Error("base rewards pool is empty, cannot top up validator rewards",
@@ -107,7 +106,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		topUpAmount = poolBalance.Amount
 	}
 
-	err = k.SendCoinsFromModuleToModule(ctx, types.RewardsPoolName, distributiontypes.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, topUpAmount)))
+	err = k.bankKeeper.SendCoinsFromModuleToModule(ctx, types.RewardsPoolName, distributiontypes.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, topUpAmount)))
 	if err != nil {
 		return err
 	}
@@ -115,7 +114,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 	topUp := sdk.NewDecCoins(sdk.NewDecCoin(bondDenom, topUpAmount))
 
 	for _, vote := range bondedVotes {
-		validator, err := k.ValidatorByConsAddr(ctx, vote.Validator.Address)
+		validator, err := k.stakingKeeper.ValidatorByConsAddr(ctx, vote.Validator.Address)
 		if err != nil {
 			return err
 		}
@@ -123,7 +122,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(previousTotalPower))
 		reward := topUp.MulDecTruncate(powerFraction)
 
-		err = k.AllocateTokensToValidator(ctx, validator, reward)
+		err = k.distributionKeeper.AllocateTokensToValidator(ctx, validator, reward)
 		if err != nil {
 			return err
 		}

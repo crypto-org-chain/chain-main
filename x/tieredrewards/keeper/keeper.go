@@ -9,12 +9,9 @@ import (
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Keeper of the tieredrewards store.
@@ -100,7 +97,7 @@ func NewKeeper(
 		PositionsByOwner:     collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
 		PositionsByTier:      collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
 		PositionsByValidator: collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
-		PositionCountByTier: collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
+		PositionCountByTier:  collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()
@@ -123,66 +120,7 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }
 
-func (k Keeper) TotalBondedTokens(ctx context.Context) (math.Int, error) {
-	return k.stakingKeeper.TotalBondedTokens(ctx)
-}
-
-func (k Keeper) BondDenom(ctx context.Context) (string, error) {
-	return k.stakingKeeper.BondDenom(ctx)
-}
-
-func (k Keeper) GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI {
-	return k.accountKeeper.GetModuleAccount(ctx, moduleName)
-}
-
-func (k Keeper) GetModuleAddress(moduleName string) sdk.AccAddress {
-	return k.accountKeeper.GetModuleAddress(moduleName)
-}
-
-func (k Keeper) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
-	return k.bankKeeper.GetBalance(ctx, addr, denom)
-}
-
-func (k Keeper) SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error {
-	return k.bankKeeper.SendCoinsFromModuleToModule(ctx, senderModule, recipientModule, amt)
-}
-
-func (k Keeper) GetCommunityTax(ctx context.Context) (math.LegacyDec, error) {
-	return k.distributionKeeper.GetCommunityTax(ctx)
-}
-
-func (k Keeper) AllocateTokensToValidator(ctx context.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins) error {
-	return k.distributionKeeper.AllocateTokensToValidator(ctx, val, tokens)
-}
-
-func (k Keeper) ValidatorByConsAddr(ctx context.Context, consAddr sdk.ConsAddress) (stakingtypes.ValidatorI, error) {
-	return k.stakingKeeper.ValidatorByConsAddr(ctx, consAddr)
-}
-
-func (k Keeper) ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (math.LegacyDec, error) {
-	return k.stakingKeeper.ValidateUnbondAmount(ctx, delAddr, valAddr, amt)
-}
-
-func (k Keeper) Unbond(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, shares math.LegacyDec) (math.Int, error) {
-	return k.stakingKeeper.Unbond(ctx, delAddr, valAddr, shares)
-}
-
-func (k Keeper) Delegate(ctx context.Context, delAddr sdk.AccAddress, bondAmt math.Int, tokenSrc stakingtypes.BondStatus, validator stakingtypes.Validator, subtractAccount bool) (math.LegacyDec, error) {
-	return k.stakingKeeper.Delegate(ctx, delAddr, bondAmt, tokenSrc, validator, subtractAccount)
-}
-
-func (k Keeper) GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error) {
-	return k.stakingKeeper.GetValidator(ctx, addr)
-}
-
-func (k Keeper) GetMintParams(ctx context.Context) (minttypes.Params, error) {
-	p, err := k.mintKeeper.GetParams(ctx)
-	if err != nil {
-		return minttypes.Params{}, err
-	}
-	return p, nil
-}
-
+// SetParams validates and stores the module parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	if err := params.Validate(); err != nil {
 		return err

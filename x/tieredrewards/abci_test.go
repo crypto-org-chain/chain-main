@@ -7,7 +7,6 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
-	tieredrewards "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
@@ -49,10 +48,10 @@ func TestBeginBlocker_ZeroRate(t *testing.T) {
 	err := a.TieredRewardsKeeper.SetParams(ctx, params)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
-	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
 	require.NoError(t, err)
 
 	poolAfter := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
@@ -80,7 +79,7 @@ func TestBeginBlocker_EmptyPool(t *testing.T) {
 	}
 
 	// Pool is empty but should not panic
-	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
 	require.NoError(t, err)
 }
 
@@ -105,7 +104,7 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	// Calculate expected shortfall (fee collector is 0, so full target is the shortfall)
 	totalBonded, err := a.StakingKeeper.TotalBondedTokens(ctx)
 	require.NoError(t, err)
-	mintParams, err := a.TieredRewardsKeeper.GetMintParams(ctx)
+	mintParams, err := a.MintKeeper.GetParams(ctx)
 	require.NoError(t, err)
 	blocksPerYear := mintParams.BlocksPerYear
 	expectedShortfall := sdkmath.LegacyNewDecFromInt(totalBonded).
@@ -113,12 +112,12 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 		Quo(sdkmath.LegacyNewDec(int64(blocksPerYear))).
 		TruncateInt()
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
 
-	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
 	require.NoError(t, err)
 
 	poolAfter := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
@@ -154,11 +153,11 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, smallAmount)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	distrAddr := a.AccountKeeper.GetModuleAccount(ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := a.BankKeeper.GetBalance(ctx, distrAddr, sdk.DefaultBondDenom)
 
-	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
 	require.NoError(t, err)
 
 	// Pool should be fully drained
@@ -187,10 +186,10 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 	err = banktestutil.FundModuleAccount(ctx, a.BankKeeper, types.RewardsPoolName, poolFund)
 	require.NoError(t, err)
 
-	poolAddr := a.TieredRewardsKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolAddr := a.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 
-	err = tieredrewards.BeginBlocker(ctx, a.TieredRewardsKeeper)
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
 	require.NoError(t, err)
 
 	// Pool should be untouched
