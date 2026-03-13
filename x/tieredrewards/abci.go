@@ -78,11 +78,10 @@ func processCompletedUnbondings(ctx context.Context, k keeper.Keeper) error {
 }
 
 // topUpBaseRewards implements the base rewards top-up mechanism.
-// 6a: All panics replaced with error returns.
 func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 	params, err := k.Params.Get(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get params: %w", err)
+		panic(fmt.Sprintf("failed to get params: %v", err))
 	}
 
 	targetBaseRewardsRate := params.TargetBaseRewardsRate
@@ -93,12 +92,12 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 
 	totalBonded, err := k.TotalBondedTokens(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get total bonded tokens: %w", err)
+		panic(fmt.Sprintf("failed to get total bonded tokens: %v", err))
 	}
 
 	bondDenom, err := k.BondDenom(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get bond denom: %w", err)
+		panic(fmt.Sprintf("failed to get bond denom: %v", err))
 	}
 
 	mintParams, err := k.GetMintParams(ctx)
@@ -115,7 +114,7 @@ func topUpBaseRewards(ctx context.Context, k keeper.Keeper) error {
 
 	communityTax, err := k.GetCommunityTax(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get community tax: %w", err)
+		panic(fmt.Sprintf("failed to get community tax: %v", err))
 	}
 
 	targetStakersRewardPerBlock := math.LegacyNewDecFromInt(totalBonded).
