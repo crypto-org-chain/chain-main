@@ -13,6 +13,7 @@ import (
 
 
 // delegateFromPosition delegates tokens from the tier module account to a validator on behalf of a position.
+// Only bonded validators are allowed
 // Returns the delegation shares received from the staking module.
 func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amount math.Int) (math.LegacyDec, error) {
 	valAddr, err := sdk.ValAddressFromBech32(validator)
@@ -22,6 +23,10 @@ func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amou
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
+	}
+
+	if !val.IsBonded() {
+		return math.LegacyDec{}, types.ErrValidatorNotBonded
 	}
 
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)

@@ -34,12 +34,12 @@ func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDeleg
 
 	from, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
 	if err != nil {
-		return math.LegacyDec{}, sdkerrors.ErrInvalidRequest
+		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
-		return math.LegacyDec{}, sdkerrors.ErrInvalidRequest
+		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)

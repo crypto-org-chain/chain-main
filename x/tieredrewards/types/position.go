@@ -4,8 +4,10 @@ import (
 	"fmt"
 	time "time"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
@@ -23,7 +25,7 @@ func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, cr
 // Validate performs basic validation of a Position.
 func (p Position) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(p.Owner); err != nil {
-		return fmt.Errorf("invalid owner address: %w", err)
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	if p.Amount.IsNil() {

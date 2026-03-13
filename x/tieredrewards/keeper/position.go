@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	errorsmod "cosmossdk.io/errors"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
@@ -64,7 +65,7 @@ func (k Keeper) CreatePosition(
 func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) error {
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
-		return sdkerrors.ErrInvalidAddress
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
@@ -100,7 +101,7 @@ func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return sdkerrors.ErrInvalidAddress
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	if err := k.Positions.Set(ctx, pos.Id, pos); err != nil {
@@ -138,7 +139,7 @@ func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return err
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	if err := k.Positions.Remove(ctx, pos.Id); err != nil {
