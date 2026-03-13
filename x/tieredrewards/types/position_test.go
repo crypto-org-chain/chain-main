@@ -22,7 +22,7 @@ func validPosition() types.Position {
 		Id:              1,
 		Owner:           testOwner,
 		TierId:          1,
-		AmountLocked:    sdkmath.NewInt(1000),
+		Amount:          sdkmath.NewInt(1000),
 		CreatedAtHeight: 100,
 		CreatedAtTime:   time.Now(),
 	}
@@ -82,7 +82,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "nil amount locked",
 			modify: func(p *types.Position) {
-				p.AmountLocked = sdkmath.Int{}
+				p.Amount = sdkmath.Int{}
 			},
 			wantErr:     true,
 			errContains: "amount locked cannot be nil",
@@ -90,7 +90,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "zero amount locked",
 			modify: func(p *types.Position) {
-				p.AmountLocked = sdkmath.ZeroInt()
+				p.Amount = sdkmath.ZeroInt()
 			},
 			wantErr:     true,
 			errContains: "amount locked must be positive",
@@ -98,7 +98,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "negative amount locked",
 			modify: func(p *types.Position) {
-				p.AmountLocked = sdkmath.NewInt(-500)
+				p.Amount = sdkmath.NewInt(-500)
 			},
 			wantErr:     true,
 			errContains: "amount locked must be positive",

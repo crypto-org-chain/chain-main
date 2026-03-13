@@ -13,7 +13,7 @@ func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, create
 		Id:              id,
 		Owner:           owner,
 		TierId:          tierId,
-		AmountLocked:    amount,
+		Amount:    amount,
 		CreatedAtHeight: uint64(createdAtHeight),
 		CreatedAtTime:   createdAtTime,
 	}
@@ -26,12 +26,12 @@ func (p Position) Validate() error {
 		return fmt.Errorf("invalid owner address: %w", err)
 	}
 
-	if p.AmountLocked.IsNil() {
+	if p.Amount.IsNil() {
 		return fmt.Errorf("amount locked cannot be nil")
 	}
 
-	if !p.AmountLocked.IsPositive() {
-		return fmt.Errorf("amount locked must be positive: %s", p.AmountLocked)
+	if !p.Amount.IsPositive() {
+		return fmt.Errorf("amount locked must be positive: %s", p.Amount)
 	}
 
 	if !p.IsDelegated() && !p.DelegatedShares.IsNil() {

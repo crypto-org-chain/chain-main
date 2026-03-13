@@ -21,7 +21,7 @@ func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
 		Id:              id,
 		Owner:           owner,
 		TierId:          tierId,
-		AmountLocked:    sdkmath.NewInt(1000),
+		Amount:    sdkmath.NewInt(1000),
 		CreatedAtHeight: 100,
 		CreatedAtTime:   time.Now(),
 	}
@@ -37,7 +37,7 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
 	s.Require().Equal(pos.TierId, got.TierId)
-	s.Require().True(pos.AmountLocked.Equal(got.AmountLocked))
+	s.Require().True(pos.Amount.Equal(got.Amount))
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {
@@ -61,7 +61,7 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().Equal(uint64(1), count)
 
 	// Update same position — counter should not change
-	pos.AmountLocked = sdkmath.NewInt(2000)
+	pos.Amount = sdkmath.NewInt(2000)
 	_, err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 

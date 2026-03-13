@@ -51,8 +51,8 @@ message Position {
   // tier_id references the Tier this position belongs to.
   uint32 tier_id = 3;
 
-  // amount_locked is the total tokens locked in this position (bond denom).
-  string amount_locked = 4 [
+  // amount is the total tokens locked in this position (bond denom).
+  string amount = 4 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable)   = false,
