@@ -8,12 +8,12 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
+func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
 	return Position{
 		Id:              id,
 		Owner:           owner,
 		TierId:          tierId,
-		Amount:    amount,
+		Amount:          amount,
 		CreatedAtHeight: uint64(createdAtHeight),
 		CreatedAtTime:   createdAtTime,
 	}
@@ -77,12 +77,13 @@ func (p Position) IsExiting() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
 
-func (p *Position) UpdateDelegation(validator string, shares math.LegacyDec) {
+func (p *Position) InitDelegation(validator string, shares math.LegacyDec, blockTime time.Time) {
 	p.Validator = validator
 	p.DelegatedShares = shares
+	p.RewardsLastClaimedAt = blockTime
 }
 
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
-    p.ExitTriggeredAt = blockTime
-    p.ExitUnlockAt = blockTime.Add(duration)
+	p.ExitTriggeredAt = blockTime
+	p.ExitUnlockAt = blockTime.Add(duration)
 }

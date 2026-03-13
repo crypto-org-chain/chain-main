@@ -94,7 +94,7 @@ func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithActivePositions() {
 
 	// Create a position in tier 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	_, err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
 	// Delete should fail
@@ -112,7 +112,7 @@ func (s *KeeperSuite) TestKeeperDeleteTier_SucceedsAfterPositionsRemoved() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
 	pos := newTestPosition(1, testPositionOwner, 1)
-	_, err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
 	// Remove position

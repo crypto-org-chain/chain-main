@@ -56,98 +56,6 @@ func (TierChangeAction) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_218b2d5b7c7fba34, []int{0}
 }
 
-// EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
-type EventBaseRewardsTopUp struct {
-	// topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
-	TopUp types.Coin `protobuf:"bytes,1,opt,name=top_up,json=topUp,proto3" json:"top_up"`
-}
-
-func (m *EventBaseRewardsTopUp) Reset()         { *m = EventBaseRewardsTopUp{} }
-func (m *EventBaseRewardsTopUp) String() string { return proto.CompactTextString(m) }
-func (*EventBaseRewardsTopUp) ProtoMessage()    {}
-func (*EventBaseRewardsTopUp) Descriptor() ([]byte, []int) {
-	return fileDescriptor_218b2d5b7c7fba34, []int{0}
-}
-func (m *EventBaseRewardsTopUp) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *EventBaseRewardsTopUp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_EventBaseRewardsTopUp.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *EventBaseRewardsTopUp) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EventBaseRewardsTopUp.Merge(m, src)
-}
-func (m *EventBaseRewardsTopUp) XXX_Size() int {
-	return m.Size()
-}
-func (m *EventBaseRewardsTopUp) XXX_DiscardUnknown() {
-	xxx_messageInfo_EventBaseRewardsTopUp.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_EventBaseRewardsTopUp proto.InternalMessageInfo
-
-func (m *EventBaseRewardsTopUp) GetTopUp() types.Coin {
-	if m != nil {
-		return m.TopUp
-	}
-	return types.Coin{}
-}
-
-// EventTransferDelegationToPool is emitted when a delegation is transferred to the rewards pool.
-type EventTransferDelegationToPool struct {
-	// transfer_delegation is the delegation transfer details.
-	TransferDelegation MsgCommitDelegationToTier `protobuf:"bytes,1,opt,name=transfer_delegation,json=transferDelegation,proto3" json:"transfer_delegation"`
-}
-
-func (m *EventTransferDelegationToPool) Reset()         { *m = EventTransferDelegationToPool{} }
-func (m *EventTransferDelegationToPool) String() string { return proto.CompactTextString(m) }
-func (*EventTransferDelegationToPool) ProtoMessage()    {}
-func (*EventTransferDelegationToPool) Descriptor() ([]byte, []int) {
-	return fileDescriptor_218b2d5b7c7fba34, []int{1}
-}
-func (m *EventTransferDelegationToPool) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *EventTransferDelegationToPool) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_EventTransferDelegationToPool.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *EventTransferDelegationToPool) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EventTransferDelegationToPool.Merge(m, src)
-}
-func (m *EventTransferDelegationToPool) XXX_Size() int {
-	return m.Size()
-}
-func (m *EventTransferDelegationToPool) XXX_DiscardUnknown() {
-	xxx_messageInfo_EventTransferDelegationToPool.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_EventTransferDelegationToPool proto.InternalMessageInfo
-
-func (m *EventTransferDelegationToPool) GetTransferDelegation() MsgCommitDelegationToTier {
-	if m != nil {
-		return m.TransferDelegation
-	}
-	return MsgCommitDelegationToTier{}
-}
-
 // EventTierChanged is emitted when a tier is added, updated, or deleted.
 type EventTierChanged struct {
 	// action is the type of change (add, update, delete).
@@ -160,7 +68,7 @@ func (m *EventTierChanged) Reset()         { *m = EventTierChanged{} }
 func (m *EventTierChanged) String() string { return proto.CompactTextString(m) }
 func (*EventTierChanged) ProtoMessage()    {}
 func (*EventTierChanged) Descriptor() ([]byte, []int) {
-	return fileDescriptor_218b2d5b7c7fba34, []int{2}
+	return fileDescriptor_218b2d5b7c7fba34, []int{0}
 }
 func (m *EventTierChanged) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -203,11 +111,159 @@ func (m *EventTierChanged) GetTier() Tier {
 	return Tier{}
 }
 
+// EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
+type EventBaseRewardsTopUp struct {
+	// topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
+	TopUp types.Coin `protobuf:"bytes,1,opt,name=top_up,json=topUp,proto3" json:"top_up"`
+}
+
+func (m *EventBaseRewardsTopUp) Reset()         { *m = EventBaseRewardsTopUp{} }
+func (m *EventBaseRewardsTopUp) String() string { return proto.CompactTextString(m) }
+func (*EventBaseRewardsTopUp) ProtoMessage()    {}
+func (*EventBaseRewardsTopUp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_218b2d5b7c7fba34, []int{1}
+}
+func (m *EventBaseRewardsTopUp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventBaseRewardsTopUp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventBaseRewardsTopUp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventBaseRewardsTopUp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventBaseRewardsTopUp.Merge(m, src)
+}
+func (m *EventBaseRewardsTopUp) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventBaseRewardsTopUp) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventBaseRewardsTopUp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventBaseRewardsTopUp proto.InternalMessageInfo
+
+func (m *EventBaseRewardsTopUp) GetTopUp() types.Coin {
+	if m != nil {
+		return m.TopUp
+	}
+	return types.Coin{}
+}
+
+// EventPositionCreated is emitted when a new position is created via MsgLockTier.
+type EventPositionCreated struct {
+	// position is the newly created position.
+	Position Position `protobuf:"bytes,1,opt,name=position,proto3" json:"position"`
+}
+
+func (m *EventPositionCreated) Reset()         { *m = EventPositionCreated{} }
+func (m *EventPositionCreated) String() string { return proto.CompactTextString(m) }
+func (*EventPositionCreated) ProtoMessage()    {}
+func (*EventPositionCreated) Descriptor() ([]byte, []int) {
+	return fileDescriptor_218b2d5b7c7fba34, []int{2}
+}
+func (m *EventPositionCreated) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventPositionCreated) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventPositionCreated.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventPositionCreated) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventPositionCreated.Merge(m, src)
+}
+func (m *EventPositionCreated) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventPositionCreated) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventPositionCreated.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventPositionCreated proto.InternalMessageInfo
+
+func (m *EventPositionCreated) GetPosition() Position {
+	if m != nil {
+		return m.Position
+	}
+	return Position{}
+}
+
+// EventDelegationCommited is emitted when a new position is created via CommitDelegationToTier.
+type EventDelegationCommitted struct {
+	// committed_delegation holds the details of the delegation commited.
+	CommittedDelegation CommittedDelegation `protobuf:"bytes,1,opt,name=committed_delegation,json=committedDelegation,proto3" json:"committed_delegation"`
+	// position is the newly created position.
+	Position Position `protobuf:"bytes,2,opt,name=position,proto3" json:"position"`
+}
+
+func (m *EventDelegationCommitted) Reset()         { *m = EventDelegationCommitted{} }
+func (m *EventDelegationCommitted) String() string { return proto.CompactTextString(m) }
+func (*EventDelegationCommitted) ProtoMessage()    {}
+func (*EventDelegationCommitted) Descriptor() ([]byte, []int) {
+	return fileDescriptor_218b2d5b7c7fba34, []int{3}
+}
+func (m *EventDelegationCommitted) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EventDelegationCommitted) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EventDelegationCommitted.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EventDelegationCommitted) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EventDelegationCommitted.Merge(m, src)
+}
+func (m *EventDelegationCommitted) XXX_Size() int {
+	return m.Size()
+}
+func (m *EventDelegationCommitted) XXX_DiscardUnknown() {
+	xxx_messageInfo_EventDelegationCommitted.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EventDelegationCommitted proto.InternalMessageInfo
+
+func (m *EventDelegationCommitted) GetCommittedDelegation() CommittedDelegation {
+	if m != nil {
+		return m.CommittedDelegation
+	}
+	return CommittedDelegation{}
+}
+
+func (m *EventDelegationCommitted) GetPosition() Position {
+	if m != nil {
+		return m.Position
+	}
+	return Position{}
+}
+
 func init() {
 	proto.RegisterEnum("chainmain.tieredrewards.v1.TierChangeAction", TierChangeAction_name, TierChangeAction_value)
-	proto.RegisterType((*EventBaseRewardsTopUp)(nil), "chainmain.tieredrewards.v1.EventBaseRewardsTopUp")
-	proto.RegisterType((*EventTransferDelegationToPool)(nil), "chainmain.tieredrewards.v1.EventTransferDelegationToPool")
 	proto.RegisterType((*EventTierChanged)(nil), "chainmain.tieredrewards.v1.EventTierChanged")
+	proto.RegisterType((*EventBaseRewardsTopUp)(nil), "chainmain.tieredrewards.v1.EventBaseRewardsTopUp")
+	proto.RegisterType((*EventPositionCreated)(nil), "chainmain.tieredrewards.v1.EventPositionCreated")
+	proto.RegisterType((*EventDelegationCommitted)(nil), "chainmain.tieredrewards.v1.EventDelegationCommitted")
 }
 
 func init() {
@@ -215,102 +271,38 @@ func init() {
 }
 
 var fileDescriptor_218b2d5b7c7fba34 = []byte{
-	// 456 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4f, 0x8b, 0xd3, 0x40,
-	0x18, 0xc6, 0x33, 0xeb, 0xda, 0xc3, 0x08, 0x12, 0xc6, 0x3f, 0xec, 0x16, 0x36, 0x2e, 0x15, 0x44,
-	0xc4, 0xce, 0xd0, 0x15, 0x3d, 0x88, 0x97, 0x36, 0x19, 0xb5, 0xa0, 0xdd, 0x52, 0xb3, 0x0a, 0x5e,
-	0xc2, 0x34, 0x1d, 0xd3, 0x81, 0x26, 0x6f, 0x98, 0xcc, 0xd6, 0xdd, 0x0f, 0x21, 0xec, 0xc1, 0x0f,
-	0xb5, 0xc7, 0x3d, 0x7a, 0x12, 0x69, 0xbf, 0x88, 0x64, 0x12, 0xaa, 0xae, 0xdb, 0xee, 0x25, 0xbc,
-	0xe4, 0x7d, 0x9e, 0xf7, 0xf9, 0x25, 0x3c, 0xf8, 0x51, 0x3c, 0x15, 0x2a, 0x4b, 0x85, 0xca, 0x98,
-	0x51, 0x52, 0xcb, 0x89, 0x96, 0x5f, 0x85, 0x9e, 0x14, 0x6c, 0xde, 0x61, 0x72, 0x2e, 0x33, 0x43,
-	0x73, 0x0d, 0x06, 0x48, 0x73, 0xa5, 0xa3, 0xff, 0xe8, 0xe8, 0xbc, 0xd3, 0xf4, 0x62, 0x28, 0x52,
-	0x28, 0xd8, 0x58, 0x14, 0x92, 0xcd, 0x3b, 0x63, 0x69, 0x44, 0x87, 0xc5, 0xa0, 0xb2, 0xca, 0xdb,
-	0x7c, 0xb8, 0x21, 0xc3, 0x9c, 0xd4, 0xa2, 0x4d, 0x20, 0xe6, 0x34, 0x97, 0x45, 0xad, 0xbb, 0x9b,
-	0x40, 0x02, 0x76, 0x64, 0xe5, 0x54, 0xbd, 0x6d, 0x1d, 0xe2, 0x7b, 0xbc, 0xa4, 0xed, 0x89, 0x42,
-	0x8e, 0x2a, 0x63, 0x08, 0xf9, 0x51, 0x4e, 0x5e, 0xe0, 0x86, 0x81, 0x3c, 0x3a, 0xce, 0x77, 0xd0,
-	0x3e, 0x7a, 0x7c, 0xeb, 0x60, 0x97, 0x56, 0xb0, 0xb4, 0x84, 0xa5, 0x35, 0x2c, 0xf5, 0x41, 0x65,
-	0xbd, 0xed, 0xf3, 0x9f, 0x0f, 0x9c, 0xd1, 0x4d, 0x53, 0xfa, 0x5a, 0xdf, 0x10, 0xde, 0xb3, 0x17,
-	0x43, 0x2d, 0xb2, 0xe2, 0x8b, 0xd4, 0x81, 0x9c, 0xc9, 0x44, 0x18, 0x05, 0x59, 0x08, 0x43, 0x80,
-	0x19, 0x99, 0xe1, 0x3b, 0xa6, 0xde, 0x45, 0x93, 0xd5, 0xb2, 0x8e, 0x79, 0x4e, 0xd7, 0xff, 0x2f,
-	0xfa, 0xbe, 0x48, 0x7c, 0x48, 0x53, 0x65, 0xfe, 0xbe, 0x19, 0x2a, 0xa9, 0x6b, 0x04, 0x62, 0xfe,
-	0xcb, 0x6c, 0x7d, 0x47, 0xd8, 0xad, 0x78, 0x94, 0xd4, 0xfe, 0x54, 0x64, 0x89, 0x9c, 0x90, 0x00,
-	0x37, 0x44, 0xbc, 0x4a, 0xbd, 0x7d, 0xf0, 0x74, 0x53, 0xea, 0x1f, 0x63, 0xd7, 0x7a, 0x46, 0xb5,
-	0x97, 0xbc, 0xc4, 0xdb, 0xa5, 0x78, 0x67, 0xcb, 0x92, 0xef, 0x5f, 0x77, 0xa3, 0x86, 0xb4, 0x9e,
-	0x27, 0x67, 0x08, 0xbb, 0x97, 0x0f, 0x93, 0x16, 0xf6, 0xc2, 0x3e, 0x1f, 0x45, 0xfe, 0xdb, 0xee,
-	0xe0, 0x0d, 0x8f, 0xba, 0x7e, 0xd8, 0x3f, 0x1c, 0x44, 0x47, 0x83, 0x0f, 0x43, 0xee, 0xf7, 0x5f,
-	0xf7, 0x79, 0xe0, 0x3a, 0xa4, 0x89, 0xef, 0x5f, 0xa1, 0x19, 0xf0, 0x4f, 0x2e, 0x22, 0x7b, 0x78,
-	0xf7, 0x2a, 0xff, 0x30, 0xe8, 0x86, 0xdc, 0xdd, 0x5a, 0xb3, 0x0e, 0xf8, 0x3b, 0x1e, 0x72, 0xf7,
-	0x46, 0xef, 0xe3, 0xf9, 0xc2, 0x43, 0x17, 0x0b, 0x0f, 0xfd, 0x5a, 0x78, 0xe8, 0x6c, 0xe9, 0x39,
-	0x17, 0x4b, 0xcf, 0xf9, 0xb1, 0xf4, 0x9c, 0xcf, 0xaf, 0x12, 0x65, 0xa6, 0xc7, 0x63, 0x1a, 0x43,
-	0xca, 0x62, 0x7d, 0x9a, 0x1b, 0x68, 0x83, 0x4e, 0xda, 0xf6, 0x7b, 0x99, 0x7d, 0xb6, 0x6d, 0xff,
-	0x4e, 0x2e, 0x35, 0xd0, 0xd6, 0x6f, 0xdc, 0xb0, 0x4d, 0x7b, 0xf6, 0x3b, 0x00, 0x00, 0xff, 0xff,
-	0x75, 0x39, 0xb6, 0x09, 0x32, 0x03, 0x00, 0x00,
-}
-
-func (m *EventBaseRewardsTopUp) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *EventBaseRewardsTopUp) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EventBaseRewardsTopUp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.TopUp.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintEvent(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
-func (m *EventTransferDelegationToPool) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *EventTransferDelegationToPool) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *EventTransferDelegationToPool) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.TransferDelegation.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintEvent(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
+	// 486 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4f, 0x6b, 0x13, 0x41,
+	0x14, 0xdf, 0x89, 0x35, 0xc8, 0x14, 0x64, 0x59, 0xa3, 0xa4, 0x01, 0xd7, 0xb0, 0x8a, 0x14, 0x31,
+	0x33, 0x24, 0x82, 0x07, 0xf1, 0x92, 0xec, 0x4e, 0x35, 0x20, 0x69, 0x88, 0x5b, 0x05, 0x0f, 0x2e,
+	0x93, 0xdd, 0x61, 0x33, 0xe0, 0xee, 0x2c, 0xb3, 0xd3, 0xd8, 0x7e, 0x8b, 0x1e, 0xfc, 0x50, 0x3d,
+	0x78, 0xe8, 0xd1, 0x93, 0x48, 0xf2, 0x45, 0x64, 0x27, 0xd3, 0x94, 0xd6, 0x36, 0x42, 0x2f, 0xcb,
+	0xec, 0xbc, 0xdf, 0xbf, 0xf7, 0x86, 0x07, 0x9f, 0xc7, 0x33, 0xca, 0xf3, 0x8c, 0xf2, 0x1c, 0x2b,
+	0xce, 0x24, 0x4b, 0x24, 0xfb, 0x4e, 0x65, 0x52, 0xe2, 0x79, 0x17, 0xb3, 0x39, 0xcb, 0x15, 0x2a,
+	0xa4, 0x50, 0xc2, 0x69, 0xad, 0x71, 0xe8, 0x12, 0x0e, 0xcd, 0xbb, 0x2d, 0x37, 0x16, 0x65, 0x26,
+	0x4a, 0x3c, 0xa5, 0x25, 0xc3, 0xf3, 0xee, 0x94, 0x29, 0xda, 0xc5, 0xb1, 0xe0, 0xf9, 0x8a, 0xdb,
+	0x7a, 0xba, 0xc1, 0x43, 0x1d, 0x19, 0xd0, 0xa6, 0x20, 0xea, 0xb8, 0x60, 0xa5, 0xc1, 0x35, 0x52,
+	0x91, 0x0a, 0x7d, 0xc4, 0xd5, 0x69, 0x75, 0xeb, 0xfd, 0x00, 0xd0, 0x26, 0x55, 0xdc, 0x90, 0x33,
+	0xe9, 0xcf, 0x68, 0x9e, 0xb2, 0xc4, 0x09, 0x60, 0x9d, 0xc6, 0x8a, 0x8b, 0xbc, 0x09, 0xda, 0x60,
+	0xf7, 0x7e, 0xef, 0x25, 0xba, 0xb9, 0x09, 0x74, 0x41, 0xec, 0x6b, 0xce, 0xc4, 0x70, 0x9d, 0x37,
+	0x70, 0xab, 0x02, 0x37, 0x6b, 0x6d, 0xb0, 0xbb, 0xdd, 0x6b, 0xff, 0x4f, 0x63, 0xb0, 0x75, 0xfa,
+	0xfb, 0x89, 0x35, 0xd1, 0x1c, 0x6f, 0x1f, 0x3e, 0xd4, 0xa9, 0x06, 0xb4, 0x64, 0x93, 0x15, 0x2e,
+	0x14, 0xc5, 0x41, 0xe1, 0xbc, 0x86, 0x75, 0x25, 0x8a, 0xe8, 0xb0, 0xd0, 0xd1, 0xb6, 0x7b, 0x3b,
+	0x68, 0x35, 0x43, 0x54, 0xcd, 0x10, 0x99, 0x19, 0x22, 0x5f, 0xf0, 0xdc, 0xe8, 0xdd, 0x55, 0x15,
+	0xcf, 0xfb, 0x0a, 0x1b, 0x5a, 0x70, 0x2c, 0x4a, 0x5e, 0xa5, 0xf3, 0x25, 0xa3, 0x8a, 0x25, 0xce,
+	0x1e, 0xbc, 0x57, 0x98, 0x2b, 0xa3, 0xf8, 0x6c, 0x53, 0xd0, 0x73, 0xba, 0x11, 0x5f, 0x73, 0xbd,
+	0x9f, 0x00, 0x36, 0xb5, 0x41, 0xc0, 0xbe, 0xb1, 0x94, 0x6a, 0x0b, 0x91, 0x65, 0x5c, 0x55, 0x26,
+	0x33, 0xd8, 0x88, 0xcf, 0x7f, 0xa2, 0x64, 0x0d, 0x30, 0x86, 0x78, 0x93, 0xe1, 0x5a, 0xe4, 0x42,
+	0xd7, 0x78, 0x3f, 0x88, 0xff, 0x2d, 0x5d, 0x6a, 0xa7, 0x76, 0xfb, 0x76, 0x5e, 0x9c, 0x00, 0x68,
+	0x5f, 0x7d, 0x58, 0xc7, 0x83, 0x6e, 0x38, 0x24, 0x93, 0xc8, 0x7f, 0xdf, 0x1f, 0xbd, 0x23, 0x51,
+	0xdf, 0x0f, 0x87, 0xfb, 0xa3, 0xe8, 0x60, 0xf4, 0x71, 0x4c, 0xfc, 0xe1, 0xde, 0x90, 0x04, 0xb6,
+	0xe5, 0xb4, 0xe0, 0xa3, 0x6b, 0x30, 0x23, 0xf2, 0xd9, 0x06, 0xce, 0x63, 0xb8, 0x73, 0x1d, 0x7f,
+	0x1c, 0xf4, 0x43, 0x62, 0xd7, 0x6e, 0x28, 0x07, 0xe4, 0x03, 0x09, 0x89, 0x7d, 0x67, 0xf0, 0xe9,
+	0x74, 0xe1, 0x82, 0xb3, 0x85, 0x0b, 0xfe, 0x2c, 0x5c, 0x70, 0xb2, 0x74, 0xad, 0xb3, 0xa5, 0x6b,
+	0xfd, 0x5a, 0xba, 0xd6, 0x97, 0xb7, 0x29, 0x57, 0xb3, 0xc3, 0x29, 0x8a, 0x45, 0x86, 0x63, 0x79,
+	0x5c, 0x28, 0xd1, 0x11, 0x32, 0xed, 0xe8, 0xbe, 0xb1, 0xfe, 0x76, 0xf4, 0x7a, 0x1c, 0x5d, 0x59,
+	0x10, 0xbd, 0x1d, 0xd3, 0xba, 0x5e, 0x84, 0x57, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xf2, 0x17,
+	0xa2, 0x54, 0xd1, 0x03, 0x00, 0x00,
 }
 
 func (m *EventTierChanged) Marshal() (dAtA []byte, err error) {
@@ -351,6 +343,115 @@ func (m *EventTierChanged) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *EventBaseRewardsTopUp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventBaseRewardsTopUp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventBaseRewardsTopUp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.TopUp.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintEvent(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *EventPositionCreated) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventPositionCreated) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventPositionCreated) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Position.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintEvent(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *EventDelegationCommitted) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EventDelegationCommitted) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EventDelegationCommitted) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Position.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintEvent(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	{
+		size, err := m.CommittedDelegation.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintEvent(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintEvent(dAtA []byte, offset int, v uint64) int {
 	offset -= sovEvent(v)
 	base := offset
@@ -362,28 +463,6 @@ func encodeVarintEvent(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *EventBaseRewardsTopUp) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.TopUp.Size()
-	n += 1 + l + sovEvent(uint64(l))
-	return n
-}
-
-func (m *EventTransferDelegationToPool) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.TransferDelegation.Size()
-	n += 1 + l + sovEvent(uint64(l))
-	return n
-}
-
 func (m *EventTierChanged) Size() (n int) {
 	if m == nil {
 		return 0
@@ -398,11 +477,148 @@ func (m *EventTierChanged) Size() (n int) {
 	return n
 }
 
+func (m *EventBaseRewardsTopUp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.TopUp.Size()
+	n += 1 + l + sovEvent(uint64(l))
+	return n
+}
+
+func (m *EventPositionCreated) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.Position.Size()
+	n += 1 + l + sovEvent(uint64(l))
+	return n
+}
+
+func (m *EventDelegationCommitted) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = m.CommittedDelegation.Size()
+	n += 1 + l + sovEvent(uint64(l))
+	l = m.Position.Size()
+	n += 1 + l + sovEvent(uint64(l))
+	return n
+}
+
 func sovEvent(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozEvent(x uint64) (n int) {
 	return sovEvent(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *EventTierChanged) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowEvent
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EventTierChanged: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EventTierChanged: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Action", wireType)
+			}
+			m.Action = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Action |= TierChangeAction(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tier", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Tier.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipEvent(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *EventBaseRewardsTopUp) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -487,7 +703,7 @@ func (m *EventBaseRewardsTopUp) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EventTransferDelegationToPool) Unmarshal(dAtA []byte) error {
+func (m *EventPositionCreated) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -510,15 +726,15 @@ func (m *EventTransferDelegationToPool) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EventTransferDelegationToPool: wiretype end group for non-group")
+			return fmt.Errorf("proto: EventPositionCreated: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EventTransferDelegationToPool: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EventPositionCreated: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TransferDelegation", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Position", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -545,7 +761,7 @@ func (m *EventTransferDelegationToPool) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.TransferDelegation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Position.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -570,7 +786,7 @@ func (m *EventTransferDelegationToPool) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EventTierChanged) Unmarshal(dAtA []byte) error {
+func (m *EventDelegationCommitted) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -593,34 +809,15 @@ func (m *EventTierChanged) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EventTierChanged: wiretype end group for non-group")
+			return fmt.Errorf("proto: EventDelegationCommitted: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EventTierChanged: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: EventDelegationCommitted: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Action", wireType)
-			}
-			m.Action = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowEvent
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Action |= TierChangeAction(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Tier", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field CommittedDelegation", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -647,7 +844,40 @@ func (m *EventTierChanged) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.Tier.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.CommittedDelegation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Position", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowEvent
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthEvent
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthEvent
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Position.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

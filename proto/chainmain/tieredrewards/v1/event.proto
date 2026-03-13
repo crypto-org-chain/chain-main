@@ -8,18 +8,6 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
 
-// EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
-message EventBaseRewardsTopUp {
-  // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
-  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
-}
-
-// EventTransferDelegationToPool is emitted when a delegation is transferred to the rewards pool.
-message EventTransferDelegationToPool {
-  // transfer_delegation is the delegation transfer details.
-  MsgCommitDelegationToTier transfer_delegation = 1 [(gogoproto.nullable) = false];
-}
-
 // TierChangeAction enumerates the type of change made to a tier.
 enum TierChangeAction {
   TIER_CHANGE_ACTION_UNSPECIFIED = 0;
@@ -35,4 +23,24 @@ message EventTierChanged {
 
   // tier is the updated tier at the time of the change.
   Tier tier = 2 [(gogoproto.nullable) = false];
+}
+
+// EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
+message EventBaseRewardsTopUp {
+  // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
+  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
+}
+
+// EventPositionCreated is emitted when a new position is created via MsgLockTier.
+message EventPositionCreated {
+  // position is the newly created position.
+  Position position = 1 [(gogoproto.nullable) = false];
+}
+
+// EventDelegationCommited is emitted when a new position is created via CommitDelegationToTier.
+message EventDelegationCommitted {
+  // committed_delegation holds the details of the delegation commited.
+  CommittedDelegation committed_delegation = 1 [(gogoproto.nullable) = false];
+  // position is the newly created position.
+  Position position = 2 [(gogoproto.nullable) = false];
 }
