@@ -5,31 +5,87 @@ import (
 	"errors"
 
 	"cosmossdk.io/collections"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-// GetPosition returns a position by ID.
-func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, error) {
-	pos, err := k.Positions.Get(ctx, id)
+// CreatePosition locks tokens from the owner into the tier module and creates a new position.
+// If a validator address is provided, the locked tokens are immediately delegated to that validator.
+// If triggerExitImmediately is true, the exit commitment starts from lock time.
+// The tier must exist, not be in close-only mode, and the amount must meet the tier's minimum lock requirement.
+func (k Keeper) CreatePosition(
+	ctx context.Context,
+	owner string,
+	tierId uint32,
+	amount math.Int,
+	validator string,
+	triggerExitImmediately bool) (types.Position, error) {
+
+	tier, err := k.Tiers.Get(ctx, tierId)
 	if err != nil {
 		return types.Position{}, err
 	}
-	return pos, nil
+
+	if tier.IsCloseOnly() {
+		return types.Position{}, types.ErrTierIsCloseOnly
+	}
+
+	if !tier.MeetsMinLockRequirement(amount) {
+		return types.Position{}, types.ErrMinLockAmountNotMet
+	}
+
+	ownerAddr, err := sdk.AccAddressFromBech32(owner)
+	if err != nil {
+		return types.Position{}, sdkerrors.ErrInvalidAddress
+	}
+
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	id, err := k.NextPositionId.Next(ctx)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	pos := types.NewPosition(id, owner, tierId, amount, sdkCtx.BlockHeight(), sdkCtx.BlockTime())
+
+	if validator != "" {
+		shares, err := k.delegateFromPosition(ctx, validator, amount)
+		if err != nil {
+			return types.Position{}, err
+		}
+		pos.UpdateDelegation(validator, shares)
+	}
+
+	if triggerExitImmediately {
+		pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
+	}
+
+	return k.SetPosition(ctx, pos)
 }
 
-// SetPosition stores a position. Call this function to create or update a position.
-// It validates the position and maintains the secondary indexes.
-func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
+// SetPosition stores a position. Validates and maintains secondary indexes.
+func (k Keeper) SetPosition(ctx context.Context, pos types.Position) (types.Position, error) {
 	if err := pos.Validate(); err != nil {
-		return err
+		return types.Position{}, err
 	}
 	oldPos, err := k.Positions.Get(ctx, pos.Id)
 	isNew := errors.Is(err, collections.ErrNotFound)
 
 	if !isNew && err != nil {
-		return err
+		return types.Position{}, err
 	}
 
 	if err == nil && oldPos.IsDelegated() && oldPos.Validator != pos.Validator {
@@ -39,35 +95,40 @@ func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 		}
 	}
 
-	return k.setPositionStates(ctx, pos, isNew)
-}
-
-// setPositionStates sets all the relevant states for a position.
-func (k Keeper) setPositionStates(ctx context.Context, pos types.Position, isNew bool) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return err
+		return types.Position{}, sdkerrors.ErrInvalidAddress
 	}
+
 	if err := k.Positions.Set(ctx, pos.Id, pos); err != nil {
-		return err
+		return types.Position{}, err
 	}
+
 	if err := k.PositionsByOwner.Set(ctx, collections.Join(owner, pos.Id)); err != nil {
-		return err
+		return types.Position{}, err
 	}
+
 	if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
-		return err
+		return types.Position{}, err
 	}
+
 	if pos.IsDelegated() {
 		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
-			return err
+			return types.Position{}, err
 		}
-		return k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id))
+		if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
+			return types.Position{}, err
+		}
 	}
+
 	if isNew {
-		return k.increasePositionCount(ctx, pos.TierId)
+		err = k.increasePositionCount(ctx, pos.TierId)
+		if err != nil {
+			return types.Position{}, err
+		}
 	}
-	return nil
+	return pos, nil
 }
 
 // DeletePosition removes a position and its secondary indexes.
@@ -115,7 +176,10 @@ func (k Keeper) GetPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValA
 func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
 	positions := make([]types.Position, 0, len(ids))
 	for _, id := range ids {
-		pos, err := k.GetPosition(ctx, id)
+		pos, err := k.Positions.Get(ctx, id)
+		if errors.Is(err, collections.ErrNotFound) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}

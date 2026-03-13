@@ -3,8 +3,8 @@ package keeper_test
 import (
 	"time"
 
-	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/collections"
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
@@ -29,10 +29,10 @@ func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
 
 func (s *KeeperSuite) TestSetAndGetPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	_, err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.GetPosition(s.ctx, 1)
+	got, err := s.keeper.Positions.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
@@ -41,19 +41,20 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {
-	_, err := s.keeper.GetPosition(s.ctx, 999)
+	_, err := s.keeper.Positions.Get(s.ctx, 999)
 	s.Require().ErrorIs(err, collections.ErrNotFound)
 }
 
 func (s *KeeperSuite) TestSetPosition_InvalidFails() {
 	pos := types.Position{}
-	err := s.keeper.SetPosition(s.ctx, pos)
+	_, err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().Error(err)
 }
 
 func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
 	s.Require().NoError(err)
@@ -61,20 +62,34 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 
 	// Update same position — counter should not change
 	pos.AmountLocked = sdkmath.NewInt(2000)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err = s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 }
 
+func (s *KeeperSuite) TestSetPosition_DelegatedNewPositionIncrementsCounter() {
+	pos := newTestPosition(1, testPositionOwner, 1)
+	pos.Validator = testPosValidator
+	pos.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+}
+
 func (s *KeeperSuite) TestDeletePosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
 
-	_, err := s.keeper.GetPosition(s.ctx, 1)
+	_, err = s.keeper.Positions.Get(s.ctx, pos.Id)
 	s.Require().ErrorIs(err, collections.ErrNotFound)
 }
 
@@ -83,7 +98,7 @@ func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	err := s.keeper.DeletePosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	_, err = s.keeper.GetPosition(s.ctx, 1)
+	_, err = s.keeper.Positions.Get(s.ctx, 1)
 	s.Require().ErrorIs(err, collections.ErrNotFound)
 }
 
@@ -98,9 +113,12 @@ func (s *KeeperSuite) TestPositionCountByTier() {
 	s.Require().Equal(uint64(0), count)
 
 	// Create positions
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos3))
+	_, err = s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos3)
+	s.Require().NoError(err)
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
 	s.Require().NoError(err)
@@ -139,8 +157,10 @@ func (s *KeeperSuite) TestGetPositionsIdsByOwner() {
 
 	pos1 := newTestPosition(1, owner.String(), 1)
 	pos2 := newTestPosition(2, owner.String(), 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	_, err := s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByOwner(s.ctx, owner)
 	s.Require().NoError(err)
@@ -162,7 +182,8 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
 
 	// Undelegated position — should NOT be in validator index
 	pos1 := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
+	_, err = s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -172,7 +193,8 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
 	pos2 := newTestPosition(2, testPositionOwner, 1)
 	pos2.Validator = testPosValidator
 	pos2.DelegatedShares = sdkmath.LegacyNewDec(1000)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
 
 	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -190,7 +212,8 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	pos.Validator = testPosValidator
 	pos.DelegatedShares = sdkmath.LegacyNewDec(1000)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err = s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
 	s.Require().NoError(err)
@@ -198,7 +221,8 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 
 	// Redelegate to validator 2
 	pos.Validator = testPosValidator2
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err = s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	// Validator 1 should have no positions
 	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
@@ -217,8 +241,10 @@ func (s *KeeperSuite) TestGetPositionsByOwner() {
 
 	pos1 := newTestPosition(1, owner.String(), 1)
 	pos2 := newTestPosition(2, owner.String(), 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	_, err := s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
 
 	positions, err := s.keeper.GetPositionsByOwner(s.ctx, owner)
 	s.Require().NoError(err)
@@ -237,8 +263,10 @@ func (s *KeeperSuite) TestGetPositionsByValidator() {
 	pos2.Validator = testPosValidator
 	pos2.DelegatedShares = sdkmath.LegacyNewDec(500)
 
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	_, err = s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
 
 	positions, err := s.keeper.GetPositionsByValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -248,18 +276,20 @@ func (s *KeeperSuite) TestGetPositionsByValidator() {
 func (s *KeeperSuite) TestGetPositionsByIds() {
 	pos1 := newTestPosition(1, testPositionOwner, 1)
 	pos2 := newTestPosition(2, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	_, err := s.keeper.SetPosition(s.ctx, pos1)
+	s.Require().NoError(err)
+	_, err = s.keeper.SetPosition(s.ctx, pos2)
+	s.Require().NoError(err)
 
 	positions, err := s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 2})
 	s.Require().NoError(err)
 	s.Require().Len(positions, 2)
 
-	// Non-existent ID should error
-	_, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 999})
-	s.Require().Error(err)
+	// Non existent ID should not throw error
+	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 999})
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
 
-	// Empty slice
 	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{})
 	s.Require().NoError(err)
 	s.Require().Empty(positions)

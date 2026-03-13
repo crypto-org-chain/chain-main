@@ -77,7 +77,7 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 		return nil, errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", ms.authority, msg.Authority)
 	}
 
-	tier, err := ms.GetTier(ctx, msg.Id)
+	tier, err := ms.Tiers.Get(ctx, msg.Id)
 	if err != nil {
 		return nil, err
 	}

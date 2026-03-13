@@ -2,6 +2,8 @@ package types
 
 import (
 	"fmt"
+
+	"cosmossdk.io/math"
 )
 
 // Validate performs basic validation of a Tier.
@@ -31,4 +33,8 @@ func (t Tier) Validate() error {
 
 func (t Tier) IsCloseOnly() bool {
 	return t.CloseOnly
+}
+
+func (t Tier) MeetsMinLockRequirement(amount math.Int) bool {
+	return amount.GTE(t.MinLockAmount)
 }

@@ -383,7 +383,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_ZeroAmount() {
 	}
 	_, err = s.keeper.TransferDelegationToPool(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
+	s.Require().ErrorIs(err, types.ErrInvalidAmount)
 }
 
 func (s *KeeperSuite) TestTransferDelegationToPool_InvalidSrcValidator() {

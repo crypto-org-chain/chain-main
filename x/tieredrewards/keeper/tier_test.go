@@ -22,7 +22,7 @@ func (s *KeeperSuite) TestSetAndGetTier() {
 	err := s.keeper.SetTier(s.ctx, tier)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(tier.Id, got.Id)
 	s.Require().True(tier.BonusApy.Equal(got.BonusApy))
@@ -32,7 +32,7 @@ func (s *KeeperSuite) TestSetAndGetTier() {
 }
 
 func (s *KeeperSuite) TestGetTier_NotFound() {
-	_, err := s.keeper.GetTier(s.ctx, 999)
+	_, err := s.keeper.Tiers.Get(s.ctx, 999)
 	s.Require().Error(err)
 }
 
@@ -50,7 +50,7 @@ func (s *KeeperSuite) TestSetTier_UpdateExisting() {
 	tier.BonusApy = sdkmath.LegacyNewDecWithPrec(8, 2)
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.LegacyNewDecWithPrec(8, 2).Equal(got.BonusApy))
 }
@@ -60,7 +60,7 @@ func (s *KeeperSuite) TestSetTier_CloseOnly() {
 	tier.CloseOnly = true
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(got.IsCloseOnly())
 }
@@ -94,10 +94,11 @@ func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithActivePositions() {
 
 	// Create a position in tier 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	// Delete should fail
-	err := s.keeper.DeleteTier(s.ctx, 1)
+	err = s.keeper.DeleteTier(s.ctx, 1)
 	s.Require().ErrorIs(err, types.ErrTierHasActivePositions)
 
 	// Tier should still exist
@@ -111,7 +112,8 @@ func (s *KeeperSuite) TestKeeperDeleteTier_SucceedsAfterPositionsRemoved() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	// Remove position
 	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))

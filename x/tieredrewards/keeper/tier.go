@@ -9,15 +9,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-// GetTier returns a tier by ID.
-func (k Keeper) GetTier(ctx context.Context, tierId uint32) (types.Tier, error) {
-	tier, err := k.Tiers.Get(ctx, tierId)
-	if err != nil {
-		return types.Tier{}, err
-	}
-	return tier, nil
-}
-
 // SetTier stores a tier. Validates before saving.
 func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
 	if err := tier.Validate(); err != nil {

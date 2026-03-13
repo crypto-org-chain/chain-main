@@ -29,6 +29,7 @@ type AccountKeeper interface {
 type BankKeeper interface {
 	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error
+	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error
 }
 
 type MintKeeper interface {
@@ -38,4 +39,5 @@ type MintKeeper interface {
 type DistributionKeeper interface {
 	GetCommunityTax(ctx context.Context) (math.LegacyDec, error)
 	AllocateTokensToValidator(ctx context.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins) error
+	WithdrawDelegationRewards(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.Coins, error)
 }

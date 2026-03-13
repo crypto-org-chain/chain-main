@@ -81,7 +81,7 @@ func (s *KeeperSuite) TestAddTier_Success() {
 	s.Require().NoError(err)
 
 	// Verify tier was stored
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), got.Id)
 	s.Require().True(msg.Tier.BonusApy.Equal(got.BonusApy))
@@ -156,7 +156,7 @@ func (s *KeeperSuite) TestUpdateTier_Success() {
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.LegacyNewDecWithPrec(8, 2).Equal(got.BonusApy))
 }
@@ -178,7 +178,7 @@ func (s *KeeperSuite) TestUpdateTier_SetCloseOnly() {
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.GetTier(s.ctx, 1)
+	got, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(got.CloseOnly)
 }
@@ -285,14 +285,15 @@ func (s *KeeperSuite) TestDeleteTier_FailsWithActivePositions() {
 
 	// Create a position in tier 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	msg := &types.MsgDeleteTier{
 		Authority: authority,
 		Id:        1,
 	}
 
-	_, err := msgServer.DeleteTier(s.ctx, msg)
+	_, err = msgServer.DeleteTier(s.ctx, msg)
 	s.Require().ErrorIs(err, types.ErrTierHasActivePositions)
 
 	// Tier should still exist
@@ -308,7 +309,8 @@ func (s *KeeperSuite) TestDeleteTier_SucceedsAfterPositionsRemoved() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
 
 	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	_, err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
 
 	// Remove the position
 	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
@@ -318,7 +320,7 @@ func (s *KeeperSuite) TestDeleteTier_SucceedsAfterPositionsRemoved() {
 		Id:        1,
 	}
 
-	_, err := msgServer.DeleteTier(s.ctx, msg)
+	_, err = msgServer.DeleteTier(s.ctx, msg)
 	s.Require().NoError(err)
 
 	has, err := s.keeper.HasTier(s.ctx, 1)

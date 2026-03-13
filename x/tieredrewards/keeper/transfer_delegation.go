@@ -30,8 +30,8 @@ import (
 func (k Keeper) TransferDelegationToPool(ctx context.Context, msg types.MsgCommitDelegationToTier) (math.LegacyDec, error) {
 	if !msg.Amount.IsValid() || !msg.Amount.Amount.IsPositive() {
 		return math.LegacyDec{}, errorsmod.Wrap(
-			sdkerrors.ErrInvalidRequest,
-			"invalid delegation amount",
+			types.ErrInvalidAmount,
+			"delegation amount must be positive",
 		)
 	}
 

@@ -2,9 +2,23 @@ package types
 
 import (
 	"fmt"
+	time "time"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
+	return Position{
+		Id:              id,
+		Owner:           owner,
+		TierId:          tierId,
+		AmountLocked:    amount,
+		CreatedAtHeight: uint64(createdAtHeight),
+		CreatedAtTime:   createdAtTime,
+	}
+
+}
 
 // Validate performs basic validation of a Position.
 func (p Position) Validate() error {
@@ -61,4 +75,14 @@ func (p Position) IsDelegated() bool {
 // IsExiting returns true if exit has been triggered for this position.
 func (p Position) IsExiting() bool {
 	return !p.ExitTriggeredAt.IsZero()
+}
+
+func (p *Position) UpdateDelegation(validator string, shares math.LegacyDec) {
+	p.Validator = validator
+	p.DelegatedShares = shares
+}
+
+func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
+    p.ExitTriggeredAt = blockTime
+    p.ExitUnlockAt = blockTime.Add(duration)
 }
