@@ -27,10 +27,6 @@ func NewMsgServerImpl(k Keeper) types.MsgServer {
 	return &msgServer{Keeper: k}
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 // authorizePositionOwner fetches the position and verifies msg.Owner matches.
 func (ms msgServer) authorizePositionOwner(ctx context.Context, positionId uint64, owner string) (types.TierPosition, error) {
 	position, err := ms.GetPosition(ctx, positionId)
@@ -74,10 +70,6 @@ func (ms msgServer) delegateToValidator(ctx context.Context, validatorAddr strin
 	return newShares, nil
 }
 
-// ---------------------------------------------------------------------------
-// 1. UpdateParams
-// ---------------------------------------------------------------------------
-
 // UpdateParams updates the module parameters.
 func (ms msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
 	if ms.authority != msg.Authority {
@@ -94,10 +86,6 @@ func (ms msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams
 
 	return &types.MsgUpdateParamsResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 2. LockTier (ADR-006 SS5.1)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*types.MsgLockTierResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -184,10 +172,6 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 
 	return &types.MsgLockTierResponse{PositionId: position.PositionId}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 3. CommitDelegationToTier (ADR-006 SS5.2)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCommitDelegationToTier) (*types.MsgCommitDelegationToTierResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -285,10 +269,6 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 
 	return &types.MsgCommitDelegationToTierResponse{PositionId: position.PositionId}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 4. AddToTierPosition (ADR-006 SS5.3)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTierPosition) (*types.MsgAddToTierPositionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -401,10 +381,6 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	return &types.MsgAddToTierPositionResponse{}, nil
 }
 
-// ---------------------------------------------------------------------------
-// 5. TierDelegate (ADR-006 SS5.4)
-// ---------------------------------------------------------------------------
-
 func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate) (*types.MsgTierDelegateResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
@@ -457,10 +433,6 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 
 	return &types.MsgTierDelegateResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 6. TierUndelegate (ADR-006 SS5.4)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndelegate) (*types.MsgTierUndelegateResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -523,10 +495,6 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	return &types.MsgTierUndelegateResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 7. TierRedelegate (ADR-006 SS5.4)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedelegate) (*types.MsgTierRedelegateResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -615,10 +583,6 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	return &types.MsgTierRedelegateResponse{}, nil
 }
 
-// ---------------------------------------------------------------------------
-// 8. TriggerExitFromTier (ADR-006 SS5.5)
-// ---------------------------------------------------------------------------
-
 func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTriggerExitFromTier) (*types.MsgTriggerExitFromTierResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
@@ -660,10 +624,6 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 
 	return &types.MsgTriggerExitFromTierResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 9. WithdrawFromTier (ADR-006 SS5.6)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdrawFromTier) (*types.MsgWithdrawFromTierResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -744,10 +704,6 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	return &types.MsgWithdrawFromTierResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 10. WithdrawTierRewards (ADR-006 SS5.7) — CRIT-1: Fair reward attribution
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) WithdrawTierRewards(ctx context.Context, msg *types.MsgWithdrawTierRewards) (*types.MsgWithdrawTierRewardsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -920,10 +876,6 @@ func (ms msgServer) WithdrawTierRewards(ctx context.Context, msg *types.MsgWithd
 	}, nil
 }
 
-// ---------------------------------------------------------------------------
-// 11. FundTierPool (ADR-006 SS5.8)
-// ---------------------------------------------------------------------------
-
 func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -965,10 +917,6 @@ func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool
 
 	return &types.MsgFundTierPoolResponse{}, nil
 }
-
-// ---------------------------------------------------------------------------
-// 12. TransferTierPosition (ADR-006 SS12, optional)
-// ---------------------------------------------------------------------------
 
 func (ms msgServer) TransferTierPosition(ctx context.Context, msg *types.MsgTransferTierPosition) (*types.MsgTransferTierPositionResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

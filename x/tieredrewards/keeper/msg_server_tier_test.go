@@ -686,7 +686,7 @@ func (s *KeeperSuite) TestTransferPosition_NotOwner() {
 }
 
 // ---------------------------------------------------------------------------
-// HIGH-2: LockTier zero amount rejected
+// LockTier zero amount rejected
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestLockTier_ZeroAmountRejected() {
@@ -706,7 +706,7 @@ func (s *KeeperSuite) TestLockTier_ZeroAmountRejected() {
 }
 
 // ---------------------------------------------------------------------------
-// HIGH-3: TierRedelegate rejects when exiting
+// TierRedelegate rejects when exiting
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestTierRedelegate_RejectsWhenExiting() {
@@ -781,7 +781,7 @@ func (s *KeeperSuite) TestTierRedelegate_RejectsWhenUnbonding() {
 }
 
 // ---------------------------------------------------------------------------
-// MED-2: TransferTierPosition rejects exiting and self-transfer
+// TransferTierPosition rejects exiting and self-transfer
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestTransferPosition_RejectsExiting() {
@@ -912,7 +912,7 @@ func (s *KeeperSuite) TestTierDelegate_RejectsExiting() {
 }
 
 // ---------------------------------------------------------------------------
-// CRIT-2: EndBlocker clears completed unbonding
+// EndBlocker clears completed unbonding
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestEndBlocker_ClearsCompletedUnbonding() {
@@ -1003,7 +1003,7 @@ func (s *KeeperSuite) TestEndBlocker_SkipsActiveUnbonding() {
 }
 
 // ---------------------------------------------------------------------------
-// CRIT-1: Fair reward attribution across multiple positions
+// Fair reward attribution across multiple positions
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestWithdrawRewards_MultiplePositions_FairAttribution() {
@@ -1099,7 +1099,7 @@ func (s *KeeperSuite) TestWithdrawRewards_PendingRewardsAccumulate() {
 }
 
 // ---------------------------------------------------------------------------
-// 6i: FundTierPool rejects non-bond denom
+// FundTierPool rejects non-bond denom
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestFundTierPool_RejectsNonBondDenom() {
@@ -1120,7 +1120,7 @@ func (s *KeeperSuite) TestFundTierPool_RejectsNonBondDenom() {
 }
 
 // ---------------------------------------------------------------------------
-// CRIT-2 integration: TestFullUnbondingLifecycle
+// TestFullUnbondingLifecycle
 // lock → delegate → exit → undelegate → EndBlocker → withdraw
 // ---------------------------------------------------------------------------
 

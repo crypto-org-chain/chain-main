@@ -203,7 +203,7 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// EndBlocker tests (CRIT-2)
+// EndBlocker tests
 // ---------------------------------------------------------------------------
 
 // setupTierParamsForABCI configures tier params on the app for ABCI-level tests.

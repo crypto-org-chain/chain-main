@@ -20,7 +20,7 @@ func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
 	return topUpBaseRewards(ctx, k)
 }
 
-// EndBlocker processes completed unbondings for tier positions (CRIT-2).
+// EndBlocker processes completed unbondings for tier positions.
 func EndBlocker(ctx context.Context, k keeper.Keeper) error {
 	return processCompletedUnbondings(ctx, k)
 }
