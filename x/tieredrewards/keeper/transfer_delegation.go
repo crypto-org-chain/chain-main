@@ -18,6 +18,11 @@ import (
 // re-delegated from the module account to the same validator, transferring
 // ownership without changing the validator.
 //
+// Only allow transfer to a bonded validator.
+// Does not allow transfer if the delegator has an active incoming redelegation
+// to the validator.
+// Undbonding delegation is not an issue here because it would already been removed from the delegation
+//
 // Returns the new shares created for the module's delegation.
 func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDelegationToTier) (math.LegacyDec, error) {
 	if !msg.Amount.IsPositive() {
@@ -47,6 +52,26 @@ func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDeleg
 		return math.LegacyDec{}, types.ErrBadTransferDelegationSrc
 	} else if err != nil {
 		return math.LegacyDec{}, err
+	}
+
+	// Only allow transferring delegations on bonded validators.
+	// Non-bonded validators earn no rewards, so creating a tier position
+	// for them would produce incorrect reward accounting.
+	if !validator.IsBonded() {
+		return math.LegacyDec{}, types.ErrValidatorNotBonded
+	}
+
+	// Block transfer if the delegator has an active incoming redelegation
+	// to this validator. Without this check, the user could escape slashing
+	// at the source validator by transferring the destination delegation to
+	// the tier module — the redelegation entry would reference shares that
+	// no longer belong to the user, causing the slash to miss.
+	hasRedel, err := k.stakingKeeper.HasReceivingRedelegation(ctx, from, valAddr)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+	if hasRedel {
+		return math.LegacyDec{}, types.ErrActiveRedelegation
 	}
 
 	shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, from, valAddr, msg.Amount)
