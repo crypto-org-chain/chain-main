@@ -31,7 +31,7 @@ func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amou
 
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, false)
+	newShares, err := k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
