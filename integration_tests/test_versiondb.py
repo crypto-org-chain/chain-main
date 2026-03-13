@@ -115,8 +115,8 @@ def test_versiondb_migration(cluster):
     # wait for consensus to be stable after restart
     wait_for_new_blocks(cluster, 2)
     # ensure both nodes have replayed up to block1 before historical queries
-    wait_for_block(node0.cosmos_cli(), block1)
-    wait_for_block(node1.cosmos_cli(), block1)
+    wait_for_block(node0, block1)
+    wait_for_block(node1, block1)
 
     # node0 supports historical queries with versiondb
     assert node0.balance(community_addr, height=block0) == cm_balance0
@@ -157,7 +157,7 @@ def test_versiondb_migration(cluster):
     # wait for consensus to be stable after restart
     wait_for_new_blocks(cluster, 2)
     # ensure node1 has replayed up to block1 before historical queries
-    wait_for_block(node1.cosmos_cli(), block1)
+    wait_for_block(node1, block1)
     # should be able to query node1's balance with memiavl
     assert node1.balance(community_addr, height=block0) == cm_balance0
     assert node1.balance(community_addr, height=block1) == cm_balance1
