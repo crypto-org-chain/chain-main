@@ -12,7 +12,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (s *KeeperSuite) TestTransferDelegationToPool_PartialTransfer() {
+func (s *KeeperSuite) TestTransferDelegation_PartialTransfer() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(vals)
@@ -67,7 +67,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_PartialTransfer() {
 	s.Require().True(totalTokens.Equal(delTotalTokensBefore), "total tokens should equal initial delegation")
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_FullTransfer() {
+func (s *KeeperSuite) TestTransferDelegation_FullTransfer() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
@@ -113,7 +113,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_FullTransfer() {
 	s.Require().True(poolDelTokens.Equal(valAfter.Tokens), "module tokens should equal validator tokens")
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_ZeroAmount() {
+func (s *KeeperSuite) TestTransferDelegation_ZeroAmount() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
@@ -128,7 +128,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_ZeroAmount() {
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_InvalidValidator() {
+func (s *KeeperSuite) TestTransferDelegation_InvalidValidator() {
 	msg := types.MsgCommitDelegationToTier{
 		DelegatorAddress: sdk.AccAddress([]byte("test_delegator_addr1")).String(),
 		ValidatorAddress: sdk.ValAddress([]byte("nonexistent_val_addr")).String(),
@@ -139,7 +139,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_InvalidValidator() {
 	s.Require().ErrorIs(err, types.ErrBadTransferDelegationSrc)
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_InsufficientTokens() {
+func (s *KeeperSuite) TestTransferDelegation_InsufficientTokens() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
@@ -166,7 +166,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_InsufficientTokens() {
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_PoolCannotTransferToSelf() {
+func (s *KeeperSuite) TestTransferDelegation_PoolCannotTransferToSelf() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
@@ -183,7 +183,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_PoolCannotTransferToSelf() {
 	s.Require().ErrorIs(err, types.ErrTransferDelegationToPoolSelf)
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_NoDelegation() {
+func (s *KeeperSuite) TestTransferDelegation_NoDelegation() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
@@ -199,7 +199,7 @@ func (s *KeeperSuite) TestTransferDelegationToPool_NoDelegation() {
 	s.Require().Error(err, "should fail when delegator has no delegation")
 }
 
-func (s *KeeperSuite) TestTransferDelegationToPool_InvalidFromAddress() {
+func (s *KeeperSuite) TestTransferDelegation_InvalidFromAddress() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
