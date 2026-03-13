@@ -24,10 +24,10 @@ const (
 // Collection prefixes for state storage
 var (
 	// ParamsKey is already defined above (prefix 0)
-	PositionByIDPrefix     = collections.NewPrefix(1)
-	PositionsByOwnerPrefix = collections.NewPrefix(2)
-	NextPositionIDKey      = collections.NewPrefix(3)
-	TotalTierSharesPrefix  = collections.NewPrefix(5)
+	PositionByIDPrefix         = collections.NewPrefix(1)
+	PositionsByOwnerPrefix     = collections.NewPrefix(2)
+	NextPositionIDKey          = collections.NewPrefix(3)
+	TotalTierSharesPrefix      = collections.NewPrefix(5)
 	PositionsByValidatorPrefix = collections.NewPrefix(6)
 	UnbondingPositionsPrefix   = collections.NewPrefix(7)
 )

@@ -36,7 +36,7 @@ func setupTierParams(t *testing.T) (
 	authority := app.TieredRewardsKeeper.GetAuthority()
 	tiers := []types.TierDefinition{{
 		TierId:                 1,
-		ExitCommitmentDuration: time.Hour * 24 * 365, // 1 year
+		ExitCommitmentDuration: time.Hour * 24 * 365,               // 1 year
 		BonusApy:               sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
 		MinLockAmount:          sdkmath.NewInt(1000),
 	}}

@@ -23,13 +23,13 @@ func (s *KeeperSuite) setupTierParams() {
 	tiers := []types.TierDefinition{
 		{
 			TierId:                 1,
-			ExitCommitmentDuration: time.Hour * 24 * 365, // 1 year
+			ExitCommitmentDuration: time.Hour * 24 * 365,               // 1 year
 			BonusApy:               sdkmath.LegacyNewDecWithPrec(4, 2), // 4%
 			MinLockAmount:          sdkmath.NewInt(1000),
 		},
 		{
 			TierId:                 2,
-			ExitCommitmentDuration: time.Hour * 24 * 365 * 5, // 5 years
+			ExitCommitmentDuration: time.Hour * 24 * 365 * 5,           // 5 years
 			BonusApy:               sdkmath.LegacyNewDecWithPrec(8, 2), // 8%
 			MinLockAmount:          sdkmath.NewInt(5000),
 		},
