@@ -211,10 +211,10 @@ def test_ica(cluster, tmp_path):
         wait_for_new_blocks(cli_host, 1, sleep=0.1)
         url = f"{tm_rpc}/block_results?height={height}"
         res = requests.get(url).json()
+        height += 1
         if res.get("error"):
             continue
         txs_results = res.get("result", {}).get("txs_results")
-        height += 1
         if txs_results is None:
             continue
         for res in txs_results or []:
