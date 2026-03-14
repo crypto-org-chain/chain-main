@@ -402,6 +402,7 @@ func New(
 	app.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(
 		app.DistrKeeper.Hooks(),
 		app.SlashingKeeper.Hooks(),
+		app.TieredRewardsKeeper.Hooks(),
 	))
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), appCodec, app.MsgServiceRouter(), app.AccountKeeper)
