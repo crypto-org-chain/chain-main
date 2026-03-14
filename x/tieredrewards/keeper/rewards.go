@@ -2,14 +2,73 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+	sdkmath "cosmossdk.io/math"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
+
+// delegateFromPosition delegates tokens from the tier module account to a validator on behalf of a position.
+// Only bonded validators are allowed
+// Returns the delegation shares received from the staking module.
+func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amount math.Int) (math.LegacyDec, error) {
+	valAddr, err := sdk.ValAddressFromBech32(validator)
+	if err != nil {
+		return math.LegacyDec{}, sdkerrors.ErrInvalidAddress
+	}
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	if !val.IsBonded() {
+		return math.LegacyDec{}, types.ErrValidatorNotBonded
+	}
+
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+
+	newShares, err := k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	return newShares, nil
+}
+
+// withdrawDelegationRewards withdraws base staking rewards for the
+// tier module account's delegation to a validator.
+// Returns the rewards received.
+func (k Keeper) withdrawDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	return k.distributionKeeper.WithdrawDelegationRewards(ctx, moduleAddr, valAddr)
+}
+
+// slashPositions slashes positions by a given fraction.
+func (k Keeper) slashPositions(ctx context.Context, positions []types.Position, fraction sdkmath.LegacyDec) error {
+	for _, pos := range positions {
+		k.slashPosition(&pos, fraction)
+		if err := k.SetPosition(ctx, pos); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// slashPosition reduces the amount of a position by a given fraction.
+func (k Keeper) slashPosition(pos *types.Position, fraction sdkmath.LegacyDec) {
+	slash := sdkmath.LegacyNewDecFromInt(pos.Amount).Mul(fraction).TruncateInt()
+	pos.Amount = pos.Amount.Sub(slash)
+	if pos.Amount.IsNegative() {
+		pos.Amount = math.ZeroInt()
+	}
+}
 
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
 // Formula: Amount × BonusApy × durationSeconds / SecondsPerYear
@@ -37,6 +96,23 @@ func (k Keeper) calculateBonus(position types.Position, tier types.Tier, blockTi
 		TruncateInt()
 
 	return bonus
+}
+
+func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) error {
+	_, err := k.ClaimBaseRewardsForPositions(ctx, valAddr, positions)
+	if err != nil {
+		return err
+	}
+
+	_, err = k.ClaimBonusRewardsForPositions(ctx, positions)
+	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
+		k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool before validator slashed",
+			"validator", valAddr.String(),
+			"error", err,
+		)
+		return nil
+	}
+	return err
 }
 
 // ClaimBaseRewardsForPositions withdraws base staking rewards from distribution
