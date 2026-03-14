@@ -14,4 +14,5 @@ var (
 	ErrMinLockAmountNotMet          = errors.Register(ModuleName, 9, "min lock amount not met")
 	ErrActiveRedelegation           = errors.Register(ModuleName, 10, "cannot transfer delegation with active incoming redelegation")
 	ErrValidatorNotBonded           = errors.Register(ModuleName, 11, "validator is not bonded")
+	ErrInsufficientBonusPool        = errors.Register(ModuleName, 12, "insufficient bonus pool balance")
 )

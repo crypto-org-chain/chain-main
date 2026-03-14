@@ -38,3 +38,11 @@ func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amou
 
 	return newShares, nil
 }
+
+// withdrawDelegationRewards withdraws base staking rewards for the
+// tier module account's delegation to a validator.
+// Returns the rewards received.
+func (k Keeper) withdrawDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	return k.distributionKeeper.WithdrawDelegationRewards(ctx, moduleAddr, valAddr)
+}

@@ -22,4 +22,7 @@ const (
 
 	// RewardsPoolName defines the base reward pool module account name
 	RewardsPoolName = "rewards_pool"
+
+	// SecondsPerYear is used to convert durations to years for bonus calculation (365.25 days)
+	SecondsPerYear int64 = 31_557_600
 )

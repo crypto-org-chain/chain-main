@@ -70,8 +70,8 @@ message Position {
     (amino.dont_omitempty) = true
   ];
 
-  // rewards_last_claimed_at is the last time rewards was claimed.
-  google.protobuf.Timestamp rewards_last_claimed_at = 7
+  // last_bonus_accrual is the last time bonus rewards was claimed.
+  google.protobuf.Timestamp last_bonus_accrual = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // exit_triggered_at is the time when exit was triggered. Zero value means not exiting.

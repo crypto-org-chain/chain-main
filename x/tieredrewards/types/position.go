@@ -82,7 +82,7 @@ func (p Position) IsExiting() bool {
 func (p *Position) InitDelegation(validator string, shares math.LegacyDec, blockTime time.Time) {
 	p.Validator = validator
 	p.DelegatedShares = shares
-	p.RewardsLastClaimedAt = blockTime
+	p.LastBonusAccrual = blockTime
 }
 
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
