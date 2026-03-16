@@ -86,6 +86,36 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	return nil
 }
 
+// AfterSlashUnbondingDelegation is called after an unbonding delegation entry
+// is slashed in SlashUnbondingDelegation. Reduces the position's Amount by the
+// actual slashed amount.
+func (h Hooks) AfterSlashUnbondingDelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
+	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+}
+
+// AfterSlashUnbondingRedelegation is called after an unbonding delegation at the
+// destination validator is slashed as part of SlashRedelegation (the case where
+// the delegator redelegated A→B then undelegated from B, and A is slashed).
+func (h Hooks) AfterSlashUnbondingRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
+	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+}
+
+// AfterSlashRedelegation is called after the active delegation at the destination
+// validator is slashed as part of SlashRedelegation (A→B redelegation, A is slashed,
+// B's active delegation is reduced).
+func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, _ sdkmath.LegacyDec) error {
+	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+}
+
+
+// AfterUnbondingInitiated is a no-op. The unbondingId → positionId mapping
+// is created directly in the message handlers (MsgTierUndelegate, MsgTierRedelegate)
+// after the staking operation returns the unbonding ID.
+func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
+	return nil
+}
+
+
 // --- No-op hooks ---
 
 func (h Hooks) AfterValidatorCreated(_ context.Context, _ sdk.ValAddress) error {
@@ -113,9 +143,5 @@ func (h Hooks) BeforeDelegationRemoved(_ context.Context, _ sdk.AccAddress, _ sd
 }
 
 func (h Hooks) AfterDelegationModified(_ context.Context, _ sdk.AccAddress, _ sdk.ValAddress) error {
-	return nil
-}
-
-func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
 	return nil
 }

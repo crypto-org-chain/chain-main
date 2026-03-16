@@ -918,8 +918,6 @@ github.com/creachadair/tomledit v0.0.24 h1:5Xjr25R2esu1rKCbQEmjZYlrhFkDspoAbAKb6
 github.com/creachadair/tomledit v0.0.24/go.mod h1:9qHbShRWQzSCcn617cMzg4eab1vbLCOjOshAWSzWr8U=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/crypto-org-chain/cosmos-sdk v0.0.0-20260311065045-34b487225358 h1:hCOdp+XZwiw+0tIg+g4mlHgeWKaxwk+6yFJAqwKNfzk=
-github.com/crypto-org-chain/cosmos-sdk v0.0.0-20260311065045-34b487225358/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881 h1:EDyxlMIC50plAgvz+IY4Bu6ymLb/6BhNtQLc96VLQ14=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881/go.mod h1:Cgi3xIJ4py34GX6pr653a3BpAD9bLeq4kqkupow1T4g=
 github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912125026-c998a90e2881 h1:dl6VKXDHfMGZmadlh51nCiJoCPTLSRksN8F+P3y3ZtE=
@@ -1655,6 +1653,8 @@ github.com/prometheus/procfs v0.6.0/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1
 github.com/prometheus/procfs v0.16.1 h1:hZ15bTNuirocR6u0JZ6BAHHmwS1p8B4P6MRqxtzMyRg=
 github.com/prometheus/procfs v0.16.1/go.mod h1:teAbpZRB1iIAJYREa1LsoWUXykVXA1KlTmWl8x/U+Is=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
+github.com/randy-cro/cosmos-sdk v0.0.0-20260316102620-e97a165c004e h1:07npNOuyjlwQHfZWiY4ocpk+/rBUOx+veGeE/DssPt0=
+github.com/randy-cro/cosmos-sdk v0.0.0-20260316102620-e97a165c004e/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5XpJzTSTfLsJV/mx9Q9g7kxmchpfZyxgzM=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=

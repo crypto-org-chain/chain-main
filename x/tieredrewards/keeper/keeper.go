@@ -40,6 +40,13 @@ type Keeper struct {
 	// Base reward tracking: cumulative rewards-per-share indexed by validator
 	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
 
+	// Unbonding tracking: maps staking unbonding IDs to tier position IDs.
+	// Populated in message handlers (MsgTierUndelegate, MsgTierRedelegate) after
+	// calling staking Undelegate/BeginRedelegate which returns the unbonding ID.
+	// Used by slash hooks to find the affected position when unbonding delegations
+	// or redelegations are slashed.
+	UnbondingIdToPositionId collections.Map[uint64, uint64]
+
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
 	accountKeeper      types.AccountKeeper
@@ -101,7 +108,8 @@ func NewKeeper(
 		PositionsByTier:      collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
 		PositionsByValidator: collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:  collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
-		ValidatorRewardRatio: collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		ValidatorRewardRatio:    collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		UnbondingIdToPositionId: collections.NewMap(sb, types.UnbondingIdToPositionIdKey, "unbonding_id_to_position_id", collections.Uint64Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()

@@ -167,6 +167,35 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 	return nil
 }
 
+// slashPositionByUnbondingId looks up the position associated with an unbonding
+// or redelegation entry and reduces its Amount by the given slashed amount.
+// Called by AfterSlashUnbondingDelegation, AfterSlashUnbondingRedelegation, and
+// AfterSlashRedelegation hooks.
+// If the unbondingId is not mapped to a tier position (i.e. it belongs to a
+// non-tier delegator), this is a no-op.
+func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
+	positionId, err := k.UnbondingIdToPositionId.Get(ctx, unbondingId)
+	if errors.Is(err, collections.ErrNotFound) {
+		// Not a tier module unbonding — ignore.
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	pos, err := k.Positions.Get(ctx, positionId)
+	if err != nil {
+		return err
+	}
+
+	newAmount := pos.Amount.Sub(slashAmount)
+	if newAmount.IsNegative() {
+		newAmount = math.ZeroInt()
+	}
+	pos.UpdateAmount(newAmount)
+
+	return k.SetPosition(ctx, pos)
+}
+
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
 // Formula: Amount × BonusApy × durationSeconds / SecondsPerYear
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
