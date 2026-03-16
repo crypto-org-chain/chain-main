@@ -5,24 +5,20 @@ import (
 	"errors"
 	"time"
 
+	"cosmossdk.io/collections"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 	sdkmath "cosmossdk.io/math"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-// delegateFromPosition delegates tokens from the tier module account to a validator on behalf of a position.
+// Delegate delegates tokens from the tier module account to a validator on behalf of a position.
 // Only bonded validators are allowed
 // Returns the delegation shares received from the staking module.
-func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amount math.Int) (math.LegacyDec, error) {
-	valAddr, err := sdk.ValAddressFromBech32(validator)
-	if err != nil {
-		return math.LegacyDec{}, sdkerrors.ErrInvalidAddress
-	}
+func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
@@ -48,6 +44,94 @@ func (k Keeper) delegateFromPosition(ctx context.Context, validator string, amou
 func (k Keeper) withdrawDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (sdk.Coins, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	return k.distributionKeeper.WithdrawDelegationRewards(ctx, moduleAddr, valAddr)
+}
+
+// GetValidatorRewardRatio returns the cumulative rewards-per-share ratio for a validator.
+// Returns empty DecCoins if no ratio has been stored yet (first delegation, no rewards accrued).
+func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+	ratio, err := k.ValidatorRewardRatio.Get(ctx, valAddr)
+	if errors.Is(err, collections.ErrNotFound) {
+		// Not found — no rewards have been accrued yet for this validator.
+		return sdk.DecCoins{}, nil
+	}
+	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+	return ratio.CumulativeRewardsPerShare, nil
+
+}
+
+// UpdateBaseRewardsPerShare withdraws base rewards from x/distribution for the
+// tier module's delegation to the given validator and updates the cumulative
+// rewards-per-share ratio stored for that validator.
+//
+// Must be called before any operation that changes the tier module's total
+// delegation shares on a validator (new position, add to position, undelegate,
+// redelegate) so that existing positions' share of prior rewards is preserved.
+func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+	// Check if the tier module even has a delegation to this validator.
+	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	delegation, err := k.stakingKeeper.GetDelegation(ctx, poolAddr, valAddr)
+	if errors.Is(err, stakingtypes.ErrNoDelegation) {
+		// Not found — no rewards have been accrued yet for this validator.
+		return sdk.DecCoins{}, nil
+	}
+	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	totalShares := delegation.Shares
+	if totalShares.IsZero() {
+		// No delegation
+		return sdk.DecCoins{}, nil
+	}
+
+	// Withdraw accumulated base rewards from distribution.
+	rewards, err := k.withdrawDelegationRewards(ctx, valAddr)
+	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	if rewards.IsZero() {
+		currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
+		if errors.Is(err, collections.ErrNotFound) {
+			// Not found — no rewards have been accrued yet for this validator.
+			return sdk.DecCoins{}, nil
+		}
+		if err != nil {
+			return sdk.DecCoins{}, err
+		}
+		return currentRatio, nil
+	}
+
+	decRewards := sdk.NewDecCoinsFromCoins(rewards...)
+	delta := decRewards.QuoDecTruncate(totalShares)
+
+	currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
+	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	newRatio := currentRatio.Add(delta...)
+
+	err = k.ValidatorRewardRatio.Set(ctx, valAddr, types.ValidatorRewardRatio{
+		CumulativeRewardsPerShare: newRatio,
+	})
+
+	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsPerShareUpdated{
+		Validator:                 valAddr.String(),
+		RewardsWithdrawn:          rewards,
+		CumulativeRewardsPerShare: newRatio,
+	}); err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	return newRatio, nil
 }
 
 // slashPositions slashes positions by a given fraction.
@@ -79,7 +163,7 @@ func (k Keeper) calculateBonus(position types.Position, tier types.Tier, blockTi
 	}
 
 	accrualEnd := blockTime
-	if position.IsExiting() && blockTime.After(position.ExitUnlockAt) {
+	if position.HasExited(blockTime) {
 		accrualEnd = position.ExitUnlockAt
 	}
 
@@ -115,67 +199,78 @@ func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 	return err
 }
 
-// ClaimBaseRewardsForPositions withdraws base staking rewards from distribution
-// for the module's delegation to the given validator and distributes them
-// proportionally to each position based on their share of the total delegation.
+// ClaimBaseRewardsForPositions updates the cumulative rewards-per-share ratio
+// for the validator and then settles each position's base rewards using the
+// difference between the current ratio and the position's starting snapshot.
 func (k Keeper) ClaimBaseRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, error) {
-	rewards, err := k.withdrawDelegationRewards(ctx, valAddr)
+	currentRatio, err := k.UpdateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return sdk.Coins{}, err
 	}
 
-	if rewards.IsZero() || len(positions) == 0 {
-		return rewards, nil
-	}
+	total := sdk.NewCoins()
+	for i := range positions {
+		claimed, err := k.ClaimBaseRewards(ctx, &positions[i], currentRatio)
+		if err != nil {
+			return sdk.Coins{}, err
+		}
+		total = total.Add(claimed...)
 
-	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	delegation, err := k.stakingKeeper.GetDelegation(ctx, poolAddr, valAddr)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	totalShares := delegation.Shares
-
-	decRewards := sdk.NewDecCoinsFromCoins(rewards...)
-
-	for _, pos := range positions {
-		if err := k.ClaimBaseRewards(ctx, pos, decRewards, totalShares); err != nil {
+		if err := k.SetPosition(ctx, positions[i]); err != nil {
 			return sdk.Coins{}, err
 		}
 	}
 
-	return rewards, nil
+	return total, nil
 }
 
-// ClaimBaseRewards calculates and sends a position's share of base rewards to the owner.
-// Follows the same pattern as x/distribution: ratio first, then multiply with MulDecTruncate.
-func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.Position, totalRewards sdk.DecCoins, totalShares math.LegacyDec) error {
-	if totalShares.IsZero() {
-		return nil
+// ClaimBaseRewards calculates and sends a position's accrued base rewards using
+// the cumulative rewards-per-share ratio. Updates the position's snapshot to the
+// current ratio so rewards are not double-counted.
+//
+// reward = position.DelegatedShares × (currentRatio − position.BaseRewardsPerShare)
+func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
+	if !pos.IsDelegated() || pos.DelegatedShares.IsZero() {
+		return sdk.Coins{}, nil
 	}
-	fraction := pos.DelegatedShares.QuoTruncate(totalShares)
-	posRewards, _ := totalRewards.MulDecTruncate(fraction).TruncateDecimal()
+
+	// Compute the difference in cumulative ratio since the position was
+	// created (or last claimed).
+	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
+	if delta.IsZero() {
+		// Update snapshot even if zero so future claims start from here.
+		pos.BaseRewardsPerShare = currentRatio
+		return sdk.Coins{}, nil
+	}
+
+	posRewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
+
+	// Update the position's snapshot to the current ratio.
+	pos.BaseRewardsPerShare = currentRatio
 
 	if posRewards.IsZero() {
-		return nil
+		return sdk.Coins{}, nil
 	}
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return err
+		return sdk.Coins{}, err
 	}
 
-	err = k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, posRewards)
-	if err != nil {
-		return err
+	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, posRewards); err != nil {
+		return sdk.Coins{}, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsClaimed{
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsClaimed{
 		PositionId: pos.Id,
 		Owner:      pos.Owner,
 		Amount:     posRewards,
-	})
+	}); err != nil {
+		return sdk.Coins{}, err
+	}
+
+	return posRewards, nil
 }
 
 // ClaimBonusRewardsForPositions settles bonus for a list of positions.
@@ -218,7 +313,7 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	bonus := k.calculateBonus(*pos, tier, blockTime)
 
 	accrualEnd := blockTime
-	if pos.IsExiting() && blockTime.After(pos.ExitUnlockAt) {
+	if pos.HasExited(blockTime) {
 		accrualEnd = pos.ExitUnlockAt
 	}
 	pos.LastBonusAccrual = accrualEnd

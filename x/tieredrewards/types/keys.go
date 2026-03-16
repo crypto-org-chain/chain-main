@@ -10,7 +10,8 @@ var (
 	PositionsByOwnerKey     = collections.NewPrefix(4)
 	PositionsByTierKey      = collections.NewPrefix(5)
 	PositionsByValidatorKey = collections.NewPrefix(6)
-	PositionCountByTierKey  = collections.NewPrefix(7)
+	PositionCountByTierKey      = collections.NewPrefix(7)
+	ValidatorRewardRatioKey     = collections.NewPrefix(8)
 )
 
 const (

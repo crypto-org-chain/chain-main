@@ -212,14 +212,3 @@ func TestPosition_IsDelegated(t *testing.T) {
 	delegated := validDelegatedPosition()
 	require.True(t, delegated.IsDelegated())
 }
-
-func TestPosition_IsExiting(t *testing.T) {
-	t.Parallel()
-
-	notExiting := validPosition()
-	require.False(t, notExiting.IsExiting())
-
-	exiting := validPosition()
-	exiting.ExitTriggeredAt = time.Now()
-	require.True(t, exiting.IsExiting())
-}

@@ -7,9 +7,9 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
 
+	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	errorsmod "cosmossdk.io/errors"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
@@ -26,13 +26,12 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 	return nil
 }
 
-// CreatePosition creates a new position, optionally delegates and triggers exit
 func (k Keeper) CreatePosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
 	amount math.Int,
-	validator string,
+	delegation *types.Delegation,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
 	id, err := k.NextPositionId.Next(ctx)
@@ -46,16 +45,16 @@ func (k Keeper) CreatePosition(
 
 	pos := types.NewBasePosition(id, owner, tier.Id, amount, blockHeight, blockTime)
 
-	if validator != "" {
-		shares, err := k.delegateFromPosition(ctx, validator, amount)
-		if err != nil {
-			return types.Position{}, err
-		}
-		pos.InitDelegation(validator, shares, blockTime)
+	if delegation != nil {
+		pos.WithDelegation(*delegation, blockTime)
 	}
 
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)
+	}
+
+	if err := k.SetPosition(ctx, pos); err != nil {
+		return types.Position{}, err
 	}
 
 	return pos, nil

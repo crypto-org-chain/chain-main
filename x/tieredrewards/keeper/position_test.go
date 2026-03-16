@@ -307,13 +307,13 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	lockAmount := sdkmath.NewInt(1000)
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
 
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, "", false)
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, nil, false)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), pos.TierId)
 	s.Require().True(lockAmount.Equal(pos.Amount))
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().False(pos.IsDelegated())
-	s.Require().False(pos.IsExiting())
+	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.Require().Equal(lockAmount, balBefore.Amount.Sub(balAfter.Amount))
@@ -327,11 +327,42 @@ func (s *KeeperSuite) TestCreatePosition_WithValidator() {
 	lockAmount := sdkmath.NewInt(1000)
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
 
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, valAddr.String(), false)
+	delegation := &types.Delegation{
+		Validator:           valAddr.String(),
+		Shares:              sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{},
+	}
+
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, delegation, false)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().True(pos.BaseRewardsPerShare.IsZero())
+}
+
+func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	s.Require().NoError(err)
+
+	lockAmount := sdkmath.NewInt(1000)
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
+
+	rps := sdk.DecCoins{sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("0.5"))}
+
+	delegation := &types.Delegation{
+		Validator:           valAddr.String(),
+		Shares:              sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: rps,
+	}
+
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, delegation, false)
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+	s.Require().Equal(valAddr.String(), pos.Validator)
+	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().True(pos.BaseRewardsPerShare.Equal(rps))
 }
 
 func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
@@ -342,9 +373,9 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	lockAmount := sdkmath.NewInt(1000)
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
 
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, "", true)
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, nil, true)
 	s.Require().NoError(err)
-	s.Require().True(pos.IsExiting())
+	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().False(pos.ExitTriggeredAt.IsZero())
 	s.Require().False(pos.ExitUnlockAt.IsZero())
 	s.Require().True(pos.ExitUnlockAt.After(pos.ExitTriggeredAt))
@@ -357,11 +388,11 @@ func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 
 	lockAmount := sdkmath.NewInt(1000)
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
-	pos1, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, "", false)
+	pos1, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, nil, false)
 	s.Require().NoError(err)
 
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
-	pos2, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, "", false)
+	pos2, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, nil, false)
 	s.Require().NoError(err)
 
 	s.Require().True(pos2.Id > pos1.Id)

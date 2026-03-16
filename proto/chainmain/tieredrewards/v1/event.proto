@@ -64,3 +64,24 @@ message EventBonusRewardsClaimed {
   string                   owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   cosmos.base.v1beta1.Coin amount      = 3 [(gogoproto.nullable) = false];
 }
+
+// EventBaseRewardsPerShareUpdated is emitted when the cumulative rewards-per-share
+// ratio is updated for a validator after withdrawing base rewards from x/distribution.
+message EventBaseRewardsPerShareUpdated {
+  // validator is the validator operator address.
+  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+
+  // rewards_withdrawn is the base rewards withdrawn from x/distribution in this update.
+  repeated cosmos.base.v1beta1.Coin rewards_withdrawn = 2 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+
+  // cumulative_rewards_per_share is the new cumulative ratio after the update.
+  repeated cosmos.base.v1beta1.DecCoin cumulative_rewards_per_share = 3 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}

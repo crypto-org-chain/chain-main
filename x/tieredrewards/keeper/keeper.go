@@ -37,6 +37,9 @@ type Keeper struct {
 	// Counters
 	PositionCountByTier collections.Map[uint32, uint64]
 
+	// Base reward tracking: cumulative rewards-per-share indexed by validator
+	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
+
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
 	accountKeeper      types.AccountKeeper
@@ -98,6 +101,7 @@ func NewKeeper(
 		PositionsByTier:      collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
 		PositionsByValidator: collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:  collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
+		ValidatorRewardRatio: collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
 	}
 
 	schema, err := sb.Build()

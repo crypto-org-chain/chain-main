@@ -39,12 +39,28 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	pos, err := ms.Keeper.CreatePosition(ctx, msg.Owner, tier, msg.Amount, msg.ValidatorAddress, msg.TriggerExitImmediately)
-	if err != nil {
-		return nil, err
+	var delegation *types.Delegation
+	if msg.ValidatorAddress != "" {
+		valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+		if err != nil {
+			return nil, err
+		}
+		currentRatio, err := ms.Keeper.UpdateBaseRewardsPerShare(ctx, valAddr)
+		if err != nil {
+			return nil, err
+		}
+		shares, err := ms.Keeper.Delegate(ctx, valAddr, msg.Amount)
+		if err != nil {
+			return nil, err
+		}
+		delegation = &types.Delegation{
+			Validator:           msg.ValidatorAddress,
+			Shares:              shares,
+			BaseRewardsPerShare: currentRatio,
+		}
 	}
 
-	err = ms.Keeper.SetPosition(ctx, pos)
+	pos, err := ms.Keeper.CreatePosition(ctx, msg.Owner, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -74,22 +90,33 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
+	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	currentRatio, err := ms.Keeper.UpdateBaseRewardsPerShare(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	shares, err := ms.Keeper.TransferDelegation(ctx, *msg)
 	if err != nil {
 		return nil, err
 	}
 
-	pos, err := ms.Keeper.CreatePosition(ctx, msg.DelegatorAddress, tier, msg.Amount, "", msg.TriggerExitImmediately)
+	delegation := &types.Delegation{
+		Validator:           msg.ValidatorAddress,
+		Shares:              shares,
+		BaseRewardsPerShare: currentRatio,
+	}
+
+	pos, err := ms.Keeper.CreatePosition(ctx, msg.DelegatorAddress, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
-	// Update delegation directly since TransferDelegationToPool already delegated
-	pos.InitDelegation(msg.ValidatorAddress, shares, blockTime)
-	if err := ms.Keeper.SetPosition(ctx, pos); err != nil {
-		return nil, err
-	}
 
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventDelegationCommitted{
 		CommittedDelegation: types.CommittedDelegation{

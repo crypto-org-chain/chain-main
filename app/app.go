@@ -169,6 +169,7 @@ var (
 	// block on sends to module accounts.
 	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
 		tieredrewardstypes.RewardsPoolName: true,
+		tieredrewardstypes.ModuleName:      true,
 	}
 )
 

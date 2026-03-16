@@ -10,6 +10,12 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+type Delegation struct {
+	Validator           string
+	Shares              math.LegacyDec
+	BaseRewardsPerShare sdk.DecCoins
+}
+
 func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
 	return Position{
 		Id:              id,
@@ -45,16 +51,25 @@ func (p Position) Validate() error {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
 
+		// It is possible to have no base rewards per share when the position is created
+		// if the position is the first one delegated to a validator (no base rewards accrued yet)
+		// Decided against storing Coins with 0 amount as it will fail validation
+		if len(p.BaseRewardsPerShare) > 0 {
+			if err := p.BaseRewardsPerShare.Validate(); err != nil {
+				return fmt.Errorf("invalid base rewards per share: %w", err)
+			}
+		}
+
 		if !p.DelegatedShares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
 		}
 	}
 
-	if !p.IsExiting() && !p.ExitUnlockAt.IsZero() {
-		return fmt.Errorf("exit_unlock_at must not be set for a position that is not exiting")
+	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
+		return fmt.Errorf("exit_unlock_at must not be set for a position that has not")
 	}
 
-	if p.IsExiting() && !p.ExitUnlockAt.After(p.ExitTriggeredAt) {
+	if !p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.After(p.ExitTriggeredAt) {
 		return fmt.Errorf("exit_unlock_at must be after exit_triggered_at")
 	}
 
@@ -69,19 +84,22 @@ func (p Position) Validate() error {
 	return nil
 }
 
-// IsDelegated returns true if the position is delegated to a validator.
 func (p Position) IsDelegated() bool {
-	return p.Validator != ""
+	return p.Validator != "" && p.DelegatedShares.IsPositive()
 }
 
-// IsExiting returns true if exit has been triggered for this position.
-func (p Position) IsExiting() bool {
-	return !p.ExitTriggeredAt.IsZero()
+func (p Position) IsExiting(blockTime time.Time) bool {
+	return !blockTime.Before(p.ExitTriggeredAt) && blockTime.Before(p.ExitUnlockAt)
 }
 
-func (p *Position) InitDelegation(validator string, shares math.LegacyDec, blockTime time.Time) {
-	p.Validator = validator
-	p.DelegatedShares = shares
+func (p Position) HasExited(blockTime time.Time) bool {
+	return !blockTime.Before(p.ExitUnlockAt)
+}
+
+func (p *Position) WithDelegation(delegation Delegation, blockTime time.Time) {
+	p.Validator = delegation.Validator
+	p.DelegatedShares = delegation.Shares
+	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
 	p.LastBonusAccrual = blockTime
 }
 

@@ -6,6 +6,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // --- MsgLockTier tests ---
@@ -30,7 +33,7 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(sdkmath.NewInt(1000).Equal(pos.Amount))
 	s.Require().False(pos.IsDelegated())
-	s.Require().False(pos.IsExiting())
+	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 }
 
 func (s *KeeperSuite) TestMsgLockTier_WithValidator() {
@@ -70,8 +73,7 @@ func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 
 	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
 	s.Require().NoError(err)
-	s.Require().True(pos.IsExiting())
-	s.Require().True(pos.ExitUnlockAt.After(pos.ExitTriggeredAt))
+	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
@@ -249,7 +251,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_WithImmediateTriggerExit() {
 	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
-	s.Require().True(pos.IsExiting())
+	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 }
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_TierNotFound() {
@@ -316,4 +318,231 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_NoDelegation() {
 
 	_, err := msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().Error(err)
+}
+
+
+// allocateRewardsToValidator funds the distribution module and allocates
+// rewards to a validator so that WithdrawDelegationRewards returns them.
+func (s *KeeperSuite) allocateRewardsToValidator(valAddr sdk.ValAddress, amount sdkmath.Int, denom string) {
+	s.T().Helper()
+
+	// Fund the distribution module account so it can back the allocation.
+	rewardCoins := sdk.NewCoins(sdk.NewCoin(denom, amount))
+	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, distrtypes.ModuleName, rewardCoins)
+	s.Require().NoError(err)
+
+	// Allocate through distribution so the rewards show up in WithdrawDelegationRewards.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	decRewards := sdk.NewDecCoinsFromCoins(rewardCoins...)
+	err = s.app.DistrKeeper.AllocateTokensToValidator(s.ctx, val, decRewards)
+	s.Require().NoError(err)
+}
+
+// setValidatorCommission overrides the genesis validator's commission rate.
+// The default genesis validator has 100% commission, which means delegators
+// receive nothing from AllocateTokensToValidator. This helper sets it to
+// a usable rate for reward tests.
+func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmath.LegacyDec) {
+	s.T().Helper()
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	val.Commission = stakingtypes.NewCommission(rate, sdkmath.LegacyOneDec(), sdkmath.LegacyZeroDec())
+	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
+}
+
+func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_LockTier() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create the first position with delegation — this should call
+	// UpdateBaseRewardsPerShare internally. Since there's no prior
+	// delegation to the validator, the ratio should be zero/empty.
+	msg := &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	}
+
+	_, err := msgServer.LockTier(s.ctx, msg)
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+
+	// First position should have empty BaseRewardsPerShare (no prior rewards).
+	s.Require().True(pos.BaseRewardsPerShare.IsZero(),
+		"first position should start with zero base rewards per share")
+}
+
+
+func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio_LockTier() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// The genesis validator has 100% commission — delegators get nothing.
+	// Set it to 0% so all allocated rewards go to delegators.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// Create first position with same amount as initial delegation
+	// Expects half the rewards to go to the tier module account
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	msg1 := &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	}
+	_, err := msgServer.LockTier(s.ctx, msg1)
+	s.Require().NoError(err)
+
+	// Advance the block so the delegation's starting period in x/distribution
+	// is finalized before rewards are allocated. Without this, the delegation
+	// and allocation happen in the same period and WithdrawDelegationRewards
+	// returns zero (startingRatio == endingRatio).
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// Simulate rewards accruing by allocating through x/distribution.
+	// This is the proper way — fund the distribution module and call
+	// AllocateTokensToValidator so WithdrawDelegationRewards returns them.
+	rewardAmount := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, rewardAmount, bondDenom)
+
+	// Create second position — UpdateBaseRewardsPerShare should be called,
+	// withdrawing from distribution and computing the ratio.
+	msg2 := &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	}
+	_, err = msgServer.LockTier(s.ctx, msg2)
+	s.Require().NoError(err)
+
+	pos1, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	s.Require().NoError(err)
+
+	// First position started with zero ratio.
+	s.Require().True(pos1.BaseRewardsPerShare.IsZero(),
+		"first position should have zero base rewards per share")
+
+	// Second position should have a positive ratio reflecting the reward
+	// distributed across the first position's delegation shares.
+	s.Require().False(pos2.BaseRewardsPerShare.IsZero(),
+		"second position should have non-zero base rewards per share")
+
+	rewardToTierModule := rewardAmount.Quo(sdkmath.NewInt(2))
+	expectedRatio := sdkmath.LegacyNewDecFromInt(rewardToTierModule).Quo(pos1.DelegatedShares)
+
+	actualRatio := pos2.BaseRewardsPerShare[0].Amount
+
+	s.Require().True(actualRatio.Equal(expectedRatio),
+		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
+		actualRatio, expectedRatio)
+}
+func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_CommitDelegationToTier() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
+
+	// Create the first position with delegation — this should call
+	// UpdateBaseRewardsPerShare internally. Since there's no prior
+	// delegation to the validator, the ratio should be zero/empty.
+	msg := &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	}
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+
+	// First position should have empty BaseRewardsPerShare (no prior rewards).
+	s.Require().True(pos.BaseRewardsPerShare.IsZero(),
+		"first position should start with zero base rewards per share")
+}
+
+
+func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio_CommitDelegationToTier() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// The genesis validator has 100% commission — delegators get nothing.
+	// Set it to 0% so all allocated rewards go to delegators.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// Create first position with same amount as initial delegation
+	// Expects half the rewards to go to the tier module account
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	msg1 := &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	}
+	_, err := msgServer.LockTier(s.ctx, msg1)
+	s.Require().NoError(err)
+
+	// Advance the block so the delegation's starting period in x/distribution
+	// is finalized before rewards are allocated. Without this, the delegation
+	// and allocation happen in the same period and WithdrawDelegationRewards
+	// returns zero (startingRatio == endingRatio).
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// Simulate rewards accruing by allocating through x/distribution.
+	// This is the proper way — fund the distribution module and call
+	// AllocateTokensToValidator so WithdrawDelegationRewards returns them.
+	rewardAmount := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, rewardAmount, bondDenom)
+
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
+
+	msg := &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	}
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
+	s.Require().NoError(err)
+
+	pos1, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	s.Require().NoError(err)
+
+	// First position started with zero ratio.
+	s.Require().True(pos1.BaseRewardsPerShare.IsZero(),
+		"first position should have zero base rewards per share")
+
+	// Second position should have a positive ratio reflecting the reward
+	// distributed across the first position's delegation shares.
+	s.Require().False(pos2.BaseRewardsPerShare.IsZero(),
+		"second position should have non-zero base rewards per share")
+
+	rewardToTierModule := rewardAmount.Quo(sdkmath.NewInt(2))
+	expectedRatio := sdkmath.LegacyNewDecFromInt(rewardToTierModule).Quo(pos1.DelegatedShares)
+
+	actualRatio := pos2.BaseRewardsPerShare[0].Amount
+
+	s.Require().True(actualRatio.Equal(expectedRatio),
+		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
+		actualRatio, expectedRatio)
 }
