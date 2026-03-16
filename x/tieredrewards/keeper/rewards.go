@@ -244,15 +244,15 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, curre
 	}
 
 	if delta.IsZero() {
-		// Update snapshot even if zero so future claims start from here.
-		pos.BaseRewardsPerShare = currentRatio
+		// Ensure that base rewards per share is updated to the current ratio
+		pos.UpdateBaseRewardsPerShare(currentRatio)
 		return sdk.Coins{}, nil
 	}
 
 	posRewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
 
 	// Update the position's snapshot to the current ratio.
-	pos.BaseRewardsPerShare = currentRatio
+	pos.UpdateBaseRewardsPerShare(currentRatio)
 
 	if posRewards.IsZero() {
 		return sdk.Coins{}, nil

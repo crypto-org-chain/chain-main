@@ -85,7 +85,7 @@ func (p Position) Validate() error {
 }
 
 func (p Position) IsDelegated() bool {
-	return p.Validator != "" && p.DelegatedShares.IsPositive()
+	return p.Validator != ""
 }
 
 func (p Position) IsExiting(blockTime time.Time) bool {
@@ -99,8 +99,12 @@ func (p Position) HasExited(blockTime time.Time) bool {
 func (p *Position) WithDelegation(delegation Delegation, blockTime time.Time) {
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
-	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
+	p.UpdateBaseRewardsPerShare(delegation.BaseRewardsPerShare)
 	p.LastBonusAccrual = blockTime
+}
+
+func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
+	p.BaseRewardsPerShare = brps
 }
 
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
