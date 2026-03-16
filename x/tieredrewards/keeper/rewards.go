@@ -154,10 +154,7 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 
 // slash reduces the bonded tokens of a position by a given fraction.
 func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction sdkmath.LegacyDec) error {
-	bondedTokens, err := validator.SharesFromTokens(pos.Amount)
-	if err != nil {
-		return err
-	}
+	bondedTokens := validator.TokensFromShares(pos.DelegatedShares)
 
 	slash := bondedTokens.Mul(fraction).TruncateInt()
 	pos.UpdateAmount(pos.Amount.Sub(slash))
