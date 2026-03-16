@@ -230,13 +230,19 @@ func (k Keeper) ClaimBaseRewardsForPositions(ctx context.Context, valAddr sdk.Va
 //
 // reward = position.DelegatedShares × (currentRatio − position.BaseRewardsPerShare)
 func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	if !pos.IsDelegated() || pos.DelegatedShares.IsZero() {
+	if !pos.IsDelegated() {
 		return sdk.Coins{}, nil
 	}
 
 	// Compute the difference in cumulative ratio since the position was
 	// created (or last claimed).
 	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
+
+	if delta.IsAnyNegative() {
+		k.Logger(ctx).Error("base rewards per share is negative, this should not happen, skipping base rewards claim", "position", pos.String())
+		return sdk.Coins{}, nil
+	}
+
 	if delta.IsZero() {
 		// Update snapshot even if zero so future claims start from here.
 		pos.BaseRewardsPerShare = currentRatio
