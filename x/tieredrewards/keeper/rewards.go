@@ -148,9 +148,9 @@ func (k Keeper) slashPositions(ctx context.Context, positions []types.Position, 
 // slashPosition reduces the amount of a position by a given fraction.
 func (k Keeper) slashPosition(pos *types.Position, fraction sdkmath.LegacyDec) {
 	slash := sdkmath.LegacyNewDecFromInt(pos.Amount).Mul(fraction).TruncateInt()
-	pos.Amount = pos.Amount.Sub(slash)
+	pos.UpdateAmount(pos.Amount.Sub(slash))
 	if pos.Amount.IsNegative() {
-		pos.Amount = math.ZeroInt()
+		pos.UpdateAmount(math.ZeroInt())
 	}
 }
 
@@ -322,7 +322,8 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	if pos.HasExited(blockTime) {
 		accrualEnd = pos.ExitUnlockAt
 	}
-	pos.LastBonusAccrual = accrualEnd
+
+	pos.UpdateLastBonusAccrual(accrualEnd)
 
 	if bonus.IsZero() {
 		return sdk.NewCoins(), nil

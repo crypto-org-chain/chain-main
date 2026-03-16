@@ -77,7 +77,7 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	blockTime := sdkCtx.BlockTime()
 
 	for _, pos := range positions {
-		pos.LastBonusAccrual = blockTime
+		pos.UpdateLastBonusAccrual(blockTime)
 		if err := h.k.SetPosition(ctx, pos); err != nil {
 			return err
 		}

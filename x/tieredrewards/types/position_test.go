@@ -30,8 +30,13 @@ func validPosition() types.Position {
 
 func validDelegatedPosition() types.Position {
 	p := validPosition()
-	p.Validator = testValidator
-	p.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	p.WithDelegation(types.Delegation{
+		Validator: testValidator,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 	return p
 }
 
@@ -51,16 +56,20 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "valid delegated position",
 			modify: func(p *types.Position) {
-				p.Validator = testValidator
-				p.DelegatedShares = sdkmath.LegacyNewDec(1000)
+				p.WithDelegation(types.Delegation{
+					Validator: testValidator,
+					Shares:    sdkmath.LegacyNewDec(1000),
+					BaseRewardsPerShare: sdk.DecCoins{
+						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+					},
+				}, time.Now())
 			},
 		},
 		{
 			name: "valid exiting position",
 			modify: func(p *types.Position) {
 				now := time.Now()
-				p.ExitTriggeredAt = now
-				p.ExitUnlockAt = now.Add(time.Hour * 24 * 365)
+				p.TriggerExit(now, time.Hour*24*365)
 			},
 		},
 		{
@@ -82,7 +91,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "nil amount locked",
 			modify: func(p *types.Position) {
-				p.Amount = sdkmath.Int{}
+				p.UpdateAmount(sdkmath.Int{})
 			},
 			wantErr:     true,
 			errContains: "amount locked cannot be nil",
@@ -90,7 +99,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "zero amount locked",
 			modify: func(p *types.Position) {
-				p.Amount = sdkmath.ZeroInt()
+				p.UpdateAmount(sdkmath.ZeroInt())
 			},
 			wantErr:     true,
 			errContains: "amount locked must be positive",
@@ -98,7 +107,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "negative amount locked",
 			modify: func(p *types.Position) {
-				p.Amount = sdkmath.NewInt(-500)
+				p.UpdateAmount(sdkmath.NewInt(-500))
 			},
 			wantErr:     true,
 			errContains: "amount locked must be positive",
@@ -106,8 +115,13 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "negative delegated shares when delegated",
 			modify: func(p *types.Position) {
-				p.Validator = testValidator
-				p.DelegatedShares = sdkmath.LegacyNewDec(-1)
+				p.WithDelegation(types.Delegation{
+					Validator: testValidator,
+					Shares:    sdkmath.LegacyNewDec(-1),
+					BaseRewardsPerShare: sdk.DecCoins{
+						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+					},
+				}, time.Now())
 			},
 			wantErr:     true,
 			errContains: "delegated shares must be positive when validator is set",
@@ -115,8 +129,13 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "invalid validator address when delegated",
 			modify: func(p *types.Position) {
-				p.Validator = "not_valid"
-				p.DelegatedShares = sdkmath.LegacyNewDec(100)
+				p.WithDelegation(types.Delegation{
+					Validator: "not_valid",
+					Shares:    sdkmath.LegacyNewDec(100),
+					BaseRewardsPerShare: sdk.DecCoins{
+						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+					},
+				}, time.Now())
 			},
 			wantErr:     true,
 			errContains: "invalid validator address",
@@ -124,8 +143,13 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "zero delegated shares when delegated",
 			modify: func(p *types.Position) {
-				p.Validator = testValidator
-				p.DelegatedShares = sdkmath.LegacyZeroDec()
+				p.WithDelegation(types.Delegation{
+					Validator: testValidator,
+					Shares:    sdkmath.LegacyZeroDec(),
+					BaseRewardsPerShare: sdk.DecCoins{
+						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+					},
+				}, time.Now())
 			},
 			wantErr:     true,
 			errContains: "delegated shares must be positive when validator is set",
@@ -133,8 +157,13 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "non-nil delegated shares when not delegated",
 			modify: func(p *types.Position) {
-				p.Validator = ""
-				p.DelegatedShares = sdkmath.LegacyZeroDec()
+				p.WithDelegation(types.Delegation{
+					Validator: "",
+					Shares:    sdkmath.LegacyZeroDec(),
+					BaseRewardsPerShare: sdk.DecCoins{
+						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+					},
+				}, time.Now())
 			},
 			wantErr:     true,
 			errContains: "delegated shares must not be set when not delegated",
@@ -151,8 +180,7 @@ func TestPosition_Validate(t *testing.T) {
 			name: "exit_unlock_at before exit_triggered_at",
 			modify: func(p *types.Position) {
 				now := time.Now()
-				p.ExitTriggeredAt = now
-				p.ExitUnlockAt = now.Add(-time.Hour)
+				p.TriggerExit(now, -time.Hour)
 			},
 			wantErr:     true,
 			errContains: "exit_unlock_at must be after exit_triggered_at",
@@ -161,8 +189,7 @@ func TestPosition_Validate(t *testing.T) {
 			name: "exit_unlock_at equal to exit_triggered_at",
 			modify: func(p *types.Position) {
 				now := time.Now()
-				p.ExitTriggeredAt = now
-				p.ExitUnlockAt = now
+				p.TriggerExit(now, 0)
 			},
 			wantErr:     true,
 			errContains: "exit_unlock_at must be after exit_triggered_at",

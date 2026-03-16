@@ -61,7 +61,7 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().Equal(uint64(1), count)
 
 	// Update same position — counter should not change
-	pos.Amount = sdkmath.NewInt(2000)
+	pos.UpdateAmount(sdkmath.NewInt(2000))
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
@@ -72,8 +72,13 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 
 func (s *KeeperSuite) TestSetPosition_DelegatedNewPositionIncrementsCounter() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	pos.Validator = testPosValidator
-	pos.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	pos.WithDelegation(types.Delegation{
+		Validator: testPosValidator,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
@@ -191,8 +196,13 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
 
 	// Delegated position — should be in validator index
 	pos2 := newTestPosition(2, testPositionOwner, 1)
-	pos2.Validator = testPosValidator
-	pos2.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	pos2.WithDelegation(types.Delegation{
+		Validator: testPosValidator,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 	err = s.keeper.SetPosition(s.ctx, pos2)
 	s.Require().NoError(err)
 
@@ -210,8 +220,13 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 
 	// Create position delegated to validator 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	pos.Validator = testPosValidator
-	pos.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	pos.WithDelegation(types.Delegation{
+		Validator: testPosValidator,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
@@ -220,7 +235,13 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 	s.Require().Len(ids, 1)
 
 	// Redelegate to validator 2
-	pos.Validator = testPosValidator2
+	pos.WithDelegation(types.Delegation{
+		Validator: testPosValidator2,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
@@ -256,12 +277,22 @@ func (s *KeeperSuite) TestGetPositionsByValidator() {
 	s.Require().NoError(err)
 
 	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos1.Validator = testPosValidator
-	pos1.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	pos1.WithDelegation(types.Delegation{
+		Validator: testPosValidator,
+		Shares:    sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 
 	pos2 := newTestPosition(2, testPositionOwner, 1)
-	pos2.Validator = testPosValidator
-	pos2.DelegatedShares = sdkmath.LegacyNewDec(500)
+	pos2.WithDelegation(types.Delegation{
+		Validator: testPosValidator,
+		Shares:    sdkmath.LegacyNewDec(500),
+		BaseRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
+		},
+	}, time.Now())
 
 	err = s.keeper.SetPosition(s.ctx, pos1)
 	s.Require().NoError(err)

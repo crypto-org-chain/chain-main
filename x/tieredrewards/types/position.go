@@ -96,11 +96,11 @@ func (p Position) HasExited(blockTime time.Time) bool {
 	return !blockTime.Before(p.ExitUnlockAt)
 }
 
-func (p *Position) WithDelegation(delegation Delegation, blockTime time.Time) {
+func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
 	p.UpdateBaseRewardsPerShare(delegation.BaseRewardsPerShare)
-	p.LastBonusAccrual = blockTime
+	p.UpdateLastBonusAccrual(t)
 }
 
 func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
@@ -110,4 +110,12 @@ func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
 	p.ExitTriggeredAt = blockTime
 	p.ExitUnlockAt = blockTime.Add(duration)
+}
+
+func (p *Position) UpdateLastBonusAccrual(t time.Time) {
+	p.LastBonusAccrual = t
+}
+
+func (p *Position) UpdateAmount(amount math.Int) {
+	p.Amount = amount
 }
