@@ -196,7 +196,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
 // Formula: Amount × BonusApy × durationSeconds / SecondsPerYear
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
-func (k Keeper) calculateBonus(position types.Position, tier types.Tier, blockTime time.Time) math.Int {
+func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
 	if position.LastBonusAccrual.IsZero() {
 		return math.ZeroInt()
 	}
@@ -212,7 +212,9 @@ func (k Keeper) calculateBonus(position types.Position, tier types.Tier, blockTi
 	}
 
 	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual).Seconds())
-	bonus := math.LegacyNewDecFromInt(position.Amount).
+	tokens := validator.TokensFromShares(position.DelegatedShares)
+
+	bonus := tokens.
 		Mul(tier.BonusApy).
 		MulInt64(durationSeconds).
 		QuoInt64(types.SecondsPerYear).
@@ -247,7 +249,7 @@ func (k Keeper) ClaimBaseRewardsForPositions(ctx context.Context, valAddr sdk.Va
 		return sdk.Coins{}, err
 	}
 
-	total := sdk.NewCoins()
+	total := sdk.Coins{}
 	for i := range positions {
 		claimed, err := k.ClaimBaseRewards(ctx, &positions[i], currentRatio)
 		if err != nil {
@@ -329,20 +331,20 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 		if !ok {
 			tier, err := k.Tiers.Get(ctx, pos.TierId)
 			if err != nil {
-				return sdk.NewCoins(), err
+				return sdk.Coins{}, err
 			}
 			tierCache[pos.TierId] = tier
 		}
 
 		bonus, err := k.ClaimBonusRewards(ctx, &pos, tier)
 		if err != nil {
-			return sdk.NewCoins(), err
+			return sdk.Coins{}, err
 		}
 
 		total = total.Add(bonus...)
 
 		if err := k.SetPosition(ctx, pos); err != nil {
-			return sdk.NewCoins(), err
+			return sdk.Coins{}, err
 		}
 	}
 
@@ -355,7 +357,17 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 
-	bonus := k.calculateBonus(*pos, tier, blockTime)
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return sdk.Coins{}, err
+	}
+
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return sdk.Coins{}, err
+	}
+
+	bonus := k.calculateBonus(*pos, val, tier, blockTime)
 
 	accrualEnd := blockTime
 	if pos.HasExited(blockTime) {
@@ -365,29 +377,29 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	pos.UpdateLastBonusAccrual(accrualEnd)
 
 	if bonus.IsZero() {
-		return sdk.NewCoins(), nil
+		return sdk.Coins{}, nil
 	}
 
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
-		return sdk.NewCoins(), err
+		return sdk.Coins{}, err
 	}
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBalance := k.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
 
 	if poolBalance.Amount.LT(bonus) {
-		return sdk.NewCoins(), errorsmod.Wrapf(types.ErrInsufficientBonusPool, "bonus pool has insufficient funds, position id: %d, bonus: %s, pool balance: %s", pos.Id, bonus.String(), poolBalance.Amount.String())
+		return sdk.Coins{}, errorsmod.Wrapf(types.ErrInsufficientBonusPool, "bonus pool has insufficient funds, position id: %d, bonus: %s, pool balance: %s", pos.Id, bonus.String(), poolBalance.Amount.String())
 	}
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return sdk.NewCoins(), err
+		return sdk.Coins{}, err
 	}
 
 	bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, bonus))
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {
-		return sdk.NewCoins(), err
+		return sdk.Coins{}, err
 	}
 
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBonusRewardsClaimed{
@@ -395,7 +407,7 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 		Owner:      pos.Owner,
 		Amount:     sdk.NewCoin(bondDenom, bonus),
 	}); err != nil {
-		return sdk.NewCoins(), err
+		return sdk.Coins{}, err
 	}
 
 	return bonusCoins, nil
