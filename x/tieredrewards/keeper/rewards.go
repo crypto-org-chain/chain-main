@@ -135,9 +135,16 @@ func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 }
 
 // slashPositions slashes positions by a given fraction.
-func (k Keeper) slashPositions(ctx context.Context, positions []types.Position, fraction sdkmath.LegacyDec) error {
+func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, positions []types.Position, fraction sdkmath.LegacyDec) error {
+	validator, err := k.stakingKeeper.GetValidator(ctx, val)
+	if err != nil {
+		return err
+	}
 	for _, pos := range positions {
-		k.slashPosition(&pos, fraction)
+		err := k.slash(&pos, validator, fraction)
+		if err != nil {
+			return err
+		}
 		if err := k.SetPosition(ctx, pos); err != nil {
 			return err
 		}
@@ -145,13 +152,19 @@ func (k Keeper) slashPositions(ctx context.Context, positions []types.Position, 
 	return nil
 }
 
-// slashPosition reduces the amount of a position by a given fraction.
-func (k Keeper) slashPosition(pos *types.Position, fraction sdkmath.LegacyDec) {
-	slash := sdkmath.LegacyNewDecFromInt(pos.Amount).Mul(fraction).TruncateInt()
+// slash reduces the bonded tokens of a position by a given fraction.
+func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction sdkmath.LegacyDec) error {
+	bondedTokens, err := validator.SharesFromTokens(pos.Amount)
+	if err != nil {
+		return err
+	}
+
+	slash := bondedTokens.Mul(fraction).TruncateInt()
 	pos.UpdateAmount(pos.Amount.Sub(slash))
 	if pos.Amount.IsNegative() {
 		pos.UpdateAmount(math.ZeroInt())
 	}
+	return nil
 }
 
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.

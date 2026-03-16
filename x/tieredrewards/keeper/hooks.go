@@ -56,7 +56,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return err
 	}
 
-	return h.k.slashPositions(ctx, positions, fraction)
+	return h.k.slashPositions(ctx, valAddr, positions, fraction)
 
 }
 
