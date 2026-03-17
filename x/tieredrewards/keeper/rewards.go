@@ -157,10 +157,8 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 	bondedTokens := validator.TokensFromShares(pos.DelegatedShares)
 
 	slash := bondedTokens.Mul(fraction).TruncateInt()
-	pos.UpdateAmount(pos.Amount.Sub(slash))
-	if pos.Amount.IsNegative() {
-		pos.UpdateAmount(math.ZeroInt())
-	}
+	amount := sdkmath.MaxInt(pos.Amount.Sub(slash), math.ZeroInt())
+	pos.UpdateAmount(amount)
 	return nil
 }
 
@@ -183,11 +181,9 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	if err != nil {
 		return err
 	}
+	
+	newAmount := sdkmath.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 
-	newAmount := pos.Amount.Sub(slashAmount)
-	if newAmount.IsNegative() {
-		newAmount = math.ZeroInt()
-	}
 	pos.UpdateAmount(newAmount)
 
 	return k.SetPosition(ctx, pos)
