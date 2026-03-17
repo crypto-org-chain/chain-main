@@ -7,6 +7,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // --- Params ---
@@ -134,4 +135,25 @@ func (s *KeeperSuite) TestGRPCQueryTiers_Empty() {
 	resp, err := s.queryClient.Tiers(s.ctx.Context(), &types.QueryTiersRequest{})
 	s.Require().NoError(err)
 	s.Require().Empty(resp.Tiers)
+}
+
+// --- TierPoolBalance ---
+
+func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_Empty() {
+	resp, err := s.queryClient.TierPoolBalance(s.ctx.Context(), &types.QueryTierPoolBalanceRequest{})
+	s.Require().NoError(err)
+	s.Require().True(resp.Balance.IsZero())
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	fundAmount := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(50000)))
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.RewardsPoolName, fundAmount)
+	s.Require().NoError(err)
+
+	resp, err := s.queryClient.TierPoolBalance(s.ctx.Context(), &types.QueryTierPoolBalanceRequest{})
+	s.Require().NoError(err)
+	s.Require().Equal(fundAmount, resp.Balance)
 }

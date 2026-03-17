@@ -40,6 +40,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "tiers",
 					Short:     "Query all tier definitions",
 				},
+				{
+					RpcMethod: "TierPoolBalance",
+					Use:       "pool-balance",
+					Short:     "Query the bonus rewards pool balance",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

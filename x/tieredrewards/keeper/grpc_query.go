@@ -86,3 +86,10 @@ func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*ty
 	}
 	return &types.QueryTiersResponse{Tiers: tiers}, nil
 }
+
+// TierPoolBalance returns the current balance of the bonus rewards pool.
+func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPoolBalanceRequest) (*types.QueryTierPoolBalanceResponse, error) {
+	poolAddr := q.k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
+	balances := q.k.bankKeeper.SpendableCoins(ctx, poolAddr)
+	return &types.QueryTierPoolBalanceResponse{Balance: balances}, nil
+}
