@@ -1242,3 +1242,296 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	s.Require().True(expectedBonusRewards.Equal(resp.BonusRewards.AmountOf(bondDenom)), "bonus rewards should be correct")
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(expectedBaseRewards.Add(expectedBonusRewards))), "owner should have received rewards matching what's expected")
 }
+
+// --- MsgWithdrawFromTier tests ---
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
+	delAddr, _, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(1000)
+
+	// Lock tokens (undelegated) with immediate exit trigger
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit unlock (tier exit duration is 365 days)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().NotNil(resp)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount),
+		"response should include withdrawn amount")
+
+	// Owner should have received the locked tokens back
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)),
+		"owner should have received locked tokens back")
+
+	// Position should be deleted
+	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Verify position exists in owner index
+	posIds, err := s.keeper.GetPositionsIdsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(posIds, 1)
+
+	// Verify position count for tier
+	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+
+	// Advance time and withdraw
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Owner index should be empty
+	posIds, err = s.keeper.GetPositionsIdsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Empty(posIds, "owner index should be empty after withdrawal")
+
+	// Position count for tier should be 0
+	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), count, "tier position count should be 0 after withdrawal")
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitNotTriggered() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Lock tokens without triggering exit
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionNotReadyToWithdraw)
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitCommitmentNotElapsed() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Lock tokens with immediate exit trigger
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Don't advance time — exit commitment hasn't elapsed
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached)
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_StillDelegated() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Lock with delegation and immediate exit trigger
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit unlock
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	// Try to withdraw while still delegated (haven't undelegated)
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionStillDelegated)
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_WrongOwner() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionNotFound() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	delAddr := sdk.AccAddress([]byte("some_address________"))
+	_, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 999,
+	})
+	s.Require().Error(err)
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(1000)
+
+	// Lock with delegation and immediate exit trigger
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Fund the rewards pool so bonus claim in undelegate doesn't fail
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	// Advance time past exit unlock (365 days + 1 day)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	// Undelegate — this clears delegation state on the position
+	undelegateResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().False(undelegateResp.CompletionTime.IsZero())
+
+	// Position should not be delegated but still exists
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.IsDelegated())
+
+	// Fund the module account to simulate unbonding completion
+	// (in real chain, staking end blocker would return tokens after unbonding period)
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Now withdraw
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount))
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)),
+		"owner should have received locked tokens back after undelegate + withdraw")
+
+	// Position should be deleted
+	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create two positions with immediate exit
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(2000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	// Withdraw only the first position
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// First position should be deleted
+	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().Error(err, "first position should be deleted")
+
+	// Second position should still exist
+	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	s.Require().NoError(err)
+	s.Require().True(sdkmath.NewInt(2000).Equal(pos2.Amount))
+
+	// Owner should still have 1 position in index
+	posIds, err := s.keeper.GetPositionsIdsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(posIds, 1)
+	s.Require().Equal(uint64(1), posIds[0])
+
+	// Tier should have 1 position remaining
+	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+}

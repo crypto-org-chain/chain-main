@@ -129,3 +129,27 @@ func (k Keeper) ValidateClaimRewards(ctx context.Context, pos types.Position, ow
 
 	return nil
 }
+
+// ValidateWithdrawFromTier validates a position is ready for token withdrawal.
+// The position must have triggered exit, the exit commitment must have elapsed,
+// and the position must not still be delegated.
+func (k Keeper) ValidateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
+	if pos.Owner != owner {
+		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+	}
+
+	if !pos.HasTriggeredExit() {
+		return types.ErrPositionNotReadyToWithdraw
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
+	}
+
+	if pos.IsDelegated() {
+		return types.ErrPositionStillDelegated
+	}
+
+	return nil
+}
