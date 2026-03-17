@@ -3,6 +3,9 @@ package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
 import "chainmain/tieredrewards/v1/params.proto";
+import "chainmain/tieredrewards/v1/types.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 
@@ -14,6 +17,37 @@ service Query {
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/params";
   }
+
+  // TierPosition returns a single position by ID.
+  rpc TierPosition(QueryTierPositionRequest) returns (QueryTierPositionResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/position/{position_id}";
+  }
+
+  // TierPositionsByOwner returns all positions for a given owner address.
+  rpc TierPositionsByOwner(QueryTierPositionsByOwnerRequest) returns (QueryTierPositionsByOwnerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions/{owner}";
+  }
+
+  // AllTierPositions returns all positions with pagination.
+  rpc AllTierPositions(QueryAllTierPositionsRequest) returns (QueryAllTierPositionsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions";
+  }
+
+  // Tiers returns all tier definitions.
+  rpc Tiers(QueryTiersRequest) returns (QueryTiersResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/tiers";
+  }
+
+  // TierPoolBalance returns the current balance of the bonus rewards pool.
+  rpc TierPoolBalance(QueryTierPoolBalanceRequest) returns (QueryTierPoolBalanceResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/pool_balance";
+  }
+
+  // EstimateTierRewards estimates pending base and bonus rewards for a position
+  // without claiming them.
+  rpc EstimateTierRewards(QueryEstimateTierRewardsRequest) returns (QueryEstimateTierRewardsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/estimate_rewards/{position_id}";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -23,4 +57,77 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   // params defines the parameters of the module.
   Params params = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryTierPositionRequest is the request type for the Query/TierPosition RPC method.
+message QueryTierPositionRequest {
+  uint64 position_id = 1;
+}
+
+// QueryTierPositionResponse is the response type for the Query/TierPosition RPC method.
+message QueryTierPositionResponse {
+  Position position = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryTierPositionsByOwnerRequest is the request type for the Query/TierPositionsByOwner RPC method.
+message QueryTierPositionsByOwnerRequest {
+  string owner = 1;
+}
+
+// QueryTierPositionsByOwnerResponse is the response type for the Query/TierPositionsByOwner RPC method.
+message QueryTierPositionsByOwnerResponse {
+  repeated Position positions = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryAllTierPositionsRequest is the request type for the Query/AllTierPositions RPC method.
+message QueryAllTierPositionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryAllTierPositionsResponse is the response type for the Query/AllTierPositions RPC method.
+message QueryAllTierPositionsResponse {
+  repeated Position positions = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTiersRequest is the request type for the Query/Tiers RPC method.
+message QueryTiersRequest {}
+
+// QueryTiersResponse is the response type for the Query/Tiers RPC method.
+message QueryTiersResponse {
+  repeated Tier tiers = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryTierPoolBalanceRequest is the request type for the Query/TierPoolBalance RPC method.
+message QueryTierPoolBalanceRequest {}
+
+// QueryTierPoolBalanceResponse is the response type for the Query/TierPoolBalance RPC method.
+message QueryTierPoolBalanceResponse {
+  repeated cosmos.base.v1beta1.Coin balance = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+// QueryEstimateTierRewardsRequest is the request type for the Query/EstimateTierRewards RPC method.
+message QueryEstimateTierRewardsRequest {
+  uint64 position_id = 1;
+}
+
+// QueryEstimateTierRewardsResponse is the response type for the Query/EstimateTierRewards RPC method.
+message QueryEstimateTierRewardsResponse {
+  // base_rewards is the estimated pending base staking rewards.
+  repeated cosmos.base.v1beta1.Coin base_rewards = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+
+  // bonus_rewards is the estimated pending bonus APY rewards from the tier pool.
+  repeated cosmos.base.v1beta1.Coin bonus_rewards = 2 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
 }

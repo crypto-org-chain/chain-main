@@ -6,6 +6,8 @@ import (
 	sdkmath "cosmossdk.io/math"
 )
 
+// --- Params ---
+
 func (s *KeeperSuite) TestGRPCQueryParams() {
 	customParams := types.NewParams(
 		sdkmath.LegacyNewDecWithPrec(3, 2),

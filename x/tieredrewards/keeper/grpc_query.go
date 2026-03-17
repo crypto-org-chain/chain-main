@@ -6,13 +6,14 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-var _ types.QueryServer = queryServer{}
+var _ types.QueryServer = &queryServer{}
 
 func NewQueryServerImpl(k Keeper) types.QueryServer {
-	return queryServer{k}
+	return &queryServer{k: k}
 }
 
 type queryServer struct {
+	types.UnimplementedQueryServer
 	k Keeper
 }
 
