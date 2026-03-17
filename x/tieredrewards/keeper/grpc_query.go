@@ -26,3 +26,12 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 
 	return &types.QueryParamsResponse{Params: params}, nil
 }
+
+// TierPosition returns a single position by ID.
+func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
+	pos, err := q.k.Positions.Get(ctx, req.PositionId)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryTierPositionResponse{Position: pos}, nil
+}

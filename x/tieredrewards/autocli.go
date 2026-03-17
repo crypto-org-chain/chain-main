@@ -18,6 +18,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "params",
 					Short:     "Query the current tieredrewards parameters",
 				},
+				{
+					RpcMethod:      "TierPosition",
+					Use:            "position [position-id]",
+					Short:          "Query a single tier position by ID",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
