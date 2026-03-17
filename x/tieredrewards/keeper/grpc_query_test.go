@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -156,4 +158,61 @@ func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
 	resp, err := s.queryClient.TierPoolBalance(s.ctx.Context(), &types.QueryTierPoolBalanceRequest{})
 	s.Require().NoError(err)
 	s.Require().Equal(fundAmount, resp.Balance)
+}
+
+// --- EstimateTierRewards ---
+
+func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotDelegated() {
+	pos := newTestPosition(1, testPositionOwner, 1)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 1})
+	s.Require().NoError(err)
+	s.Require().True(resp.BaseRewards.IsZero())
+	s.Require().True(resp.BonusRewards.IsZero())
+}
+
+func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotFound() {
+	_, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 999})
+	s.Require().Error(err)
+}
+
+func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	s.Require().NoError(err)
+
+	lockAmount := sdkmath.NewInt(10000)
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
+
+	shares, err := s.keeper.Delegate(s.ctx, valAddr, lockAmount)
+	s.Require().NoError(err)
+
+	currentRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount,
+		&types.Delegation{
+			Validator:           valAddr.String(),
+			Shares:              shares,
+			BaseRewardsPerShare: currentRatio,
+		}, false)
+	s.Require().NoError(err)
+
+	// Advance block time by 30 days to accrue bonus
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+
+	// Bonus should be positive (10000 * 0.04 * 30days/365.25days > 0)
+	hasBondDenom := false
+	for _, c := range resp.BonusRewards {
+		if c.Denom == bondDenom {
+			hasBondDenom = true
+			s.Require().True(c.Amount.IsPositive(), "bonus reward should be positive, got %s", c.Amount)
+		}
+	}
+	s.Require().True(hasBondDenom, "bonus rewards should contain bond denom")
 }

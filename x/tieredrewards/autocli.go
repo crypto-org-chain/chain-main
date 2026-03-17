@@ -45,6 +45,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "pool-balance",
 					Short:     "Query the bonus rewards pool balance",
 				},
+				{
+					RpcMethod:      "EstimateTierRewards",
+					Use:            "estimate-rewards [position-id]",
+					Short:          "Estimate pending base and bonus rewards for a position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

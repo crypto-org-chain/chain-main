@@ -2,22 +2,26 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	"cosmossdk.io/collections"
+	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var _ types.QueryServer = &queryServer{}
+var _ types.QueryServer = queryServer{}
 
 func NewQueryServerImpl(k Keeper) types.QueryServer {
-	return &queryServer{k: k}
+	return queryServer{k}
 }
 
 type queryServer struct {
-	types.UnimplementedQueryServer
 	k Keeper
 }
 
@@ -92,4 +96,69 @@ func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPool
 	poolAddr := q.k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	balances := q.k.bankKeeper.SpendableCoins(ctx, poolAddr)
 	return &types.QueryTierPoolBalanceResponse{Balance: balances}, nil
+}
+
+// EstimateTierRewards estimates pending base and bonus rewards for a position.
+// Base rewards are computed from the stored cumulative ratio (excludes
+// rewards accrued since the last UpdateBaseRewardsPerShare).
+// Bonus rewards are computed from the position's last accrual time to now.
+func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEstimateTierRewardsRequest) (*types.QueryEstimateTierRewardsResponse, error) {
+	pos, err := q.k.Positions.Get(ctx, req.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	baseRewards := sdk.NewCoins()
+	bonusRewards := sdk.NewCoins()
+
+	if !pos.IsDelegated() {
+		return &types.QueryEstimateTierRewardsResponse{
+			BaseRewards:  baseRewards,
+			BonusRewards: bonusRewards,
+		}, nil
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return nil, err
+	}
+
+	// Estimate base rewards using the stored ratio
+	currentRatio, err := q.k.GetValidatorRewardRatio(ctx, valAddr)
+	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+		return nil, err
+	}
+
+	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
+	if !delta.IsAnyNegative() && !delta.IsZero() {
+		baseRewards, _ = delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
+	}
+
+	// Estimate bonus rewards
+	tier, err := q.k.Tiers.Get(ctx, pos.TierId)
+	if err != nil {
+		return nil, err
+	}
+
+	val, err := q.k.stakingKeeper.GetValidator(ctx, valAddr)
+	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+		val = stakingtypes.Validator{Tokens: math.ZeroInt()}
+	} else if err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	bonus := q.k.calculateBonus(pos, val, tier, sdkCtx.BlockTime())
+	if bonus.IsPositive() {
+		bondDenom, err := q.k.stakingKeeper.BondDenom(ctx)
+		if err != nil {
+			return nil, err
+		}
+		bonusRewards = sdk.NewCoins(sdk.NewCoin(bondDenom, bonus))
+	}
+
+	return &types.QueryEstimateTierRewardsResponse{
+		BaseRewards:  baseRewards,
+		BonusRewards: bonusRewards,
+	}, nil
 }
