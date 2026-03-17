@@ -6,6 +6,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -27,7 +28,6 @@ func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, cr
 		// initialize as zero instead of nil to be consistent when fetching from store (not nullable defaults this field to zero even if not set)
 		DelegatedShares: math.LegacyZeroDec(),
 	}
-
 }
 
 // Validate performs basic validation of a Position.

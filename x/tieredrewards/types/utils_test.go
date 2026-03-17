@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"cosmossdk.io/collections"
-	"cosmossdk.io/collections/colltest"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
+
+	"cosmossdk.io/collections"
+	"cosmossdk.io/collections/colltest"
 )
 
 func newTestKeySet(t *testing.T) (context.Context, collections.KeySet[collections.Pair[string, uint64]]) {

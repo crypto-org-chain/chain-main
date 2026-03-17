@@ -13,7 +13,7 @@ import (
 func validTier() types.Tier {
 	return types.Tier{
 		Id:            1,
-		ExitDuration:  time.Hour * 24 * 365, // 1 year
+		ExitDuration:  time.Hour * 24 * 365,               // 1 year
 		BonusApy:      sdkmath.LegacyNewDecWithPrec(4, 2), // 0.04
 		MinLockAmount: sdkmath.NewInt(1000),
 	}

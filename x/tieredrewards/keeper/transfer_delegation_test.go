@@ -299,7 +299,6 @@ func (s *KeeperSuite) TestTransferDelegation_RejectsActiveRedelegation() {
 	_, err = stakingServer.BeginRedelegate(s.ctx, redelMsg)
 	s.Require().NoError(err)
 
-
 	// Try to transfer delegation at the second validator (bonded, but has active incoming redelegation).
 	// Should be blocked to prevent slash escape.
 	msg := types.MsgCommitDelegationToTier{

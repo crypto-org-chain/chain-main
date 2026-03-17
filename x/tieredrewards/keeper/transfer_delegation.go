@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // TransferDelegation transfers delegation shares from a delegator to the

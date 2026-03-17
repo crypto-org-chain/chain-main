@@ -3,11 +3,12 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 var (

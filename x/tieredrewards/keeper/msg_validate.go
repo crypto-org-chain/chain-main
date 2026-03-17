@@ -3,12 +3,13 @@ package keeper
 import (
 	"context"
 
-	"cosmossdk.io/math"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // ValidateNewPosition validates the new position creation.
@@ -61,7 +62,7 @@ func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Positi
 }
 
 // ValidateRedelegatePosition validates the position intended to be redelegated.
-func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner string, dstValidator string) error {
+func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
 	if pos.Owner != owner {
 		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
 	}

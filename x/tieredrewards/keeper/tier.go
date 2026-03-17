@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"cosmossdk.io/collections"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	"cosmossdk.io/collections"
 )
 
 // SetTier stores a tier. Validates before saving.

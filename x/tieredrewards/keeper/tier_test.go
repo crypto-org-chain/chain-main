@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"time"
 
-	sdkmath "cosmossdk.io/math"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	sdkmath "cosmossdk.io/math"
 )
 
 func newTestTier(id uint32) types.Tier {
@@ -37,7 +37,7 @@ func (s *KeeperSuite) TestGetTier_NotFound() {
 }
 
 func (s *KeeperSuite) TestSetTier_InvalidFails() {
-	tier := types.Tier{} 
+	tier := types.Tier{}
 	err := s.keeper.SetTier(s.ctx, tier)
 	s.Require().Error(err)
 }

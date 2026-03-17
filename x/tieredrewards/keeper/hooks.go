@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // Hooks wraps the Keeper to implement staking hooks.
@@ -71,7 +72,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	}
 
 	return h.k.slashPositions(ctx, valAddr, positions, fraction)
-
 }
 
 // AfterValidatorBonded is called when a validator transitions to bonded.

@@ -3,14 +3,15 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // --- MsgLockTier tests ---
@@ -451,6 +452,7 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
 		actualRatio, expectedRatio)
 }
+
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_CommitDelegationToTier() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -820,7 +822,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
 
 	// Check that at least one unbonding ID maps to position 0
 	var found bool
-	err = s.keeper.UnbondingIdToPositionId.Walk(s.ctx, nil, func(unbondingId uint64, positionId uint64) (bool, error) {
+	err = s.keeper.UnbondingIdToPositionId.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		if positionId == 0 {
 			found = true
 			return true, nil

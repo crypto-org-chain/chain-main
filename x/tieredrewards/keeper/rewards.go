@@ -5,14 +5,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/collections"
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
-	sdkmath "cosmossdk.io/math"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Delegate delegates tokens from the tier module account to a validator on behalf of a position.
@@ -80,7 +80,6 @@ func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 		return sdk.DecCoins{}, err
 	}
 	return ratio.CumulativeRewardsPerShare, nil
-
 }
 
 // UpdateBaseRewardsPerShare withdraws base rewards from x/distribution for the
@@ -96,7 +95,7 @@ func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	if err != nil && !errors.Is(err, collections.ErrNotFound) {
 		return sdk.DecCoins{}, err
 	}
-	
+
 	var currentRatio sdk.DecCoins
 	if errors.Is(err, collections.ErrNotFound) {
 		currentRatio = sdk.DecCoins{}
@@ -139,7 +138,6 @@ func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	err = k.ValidatorRewardRatio.Set(ctx, valAddr, types.ValidatorRewardRatio{
 		CumulativeRewardsPerShare: newRatio,
 	})
-
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
@@ -157,7 +155,7 @@ func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 }
 
 // slashPositions slashes positions by a given fraction.
-func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, positions []types.Position, fraction sdkmath.LegacyDec) error {
+func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, positions []types.Position, fraction math.LegacyDec) error {
 	validator, err := k.stakingKeeper.GetValidator(ctx, val)
 	if err != nil {
 		return err
@@ -175,11 +173,11 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 }
 
 // slash reduces the bonded tokens of a position by a given fraction.
-func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction sdkmath.LegacyDec) error {
+func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) error {
 	bondedTokens := validator.TokensFromShares(pos.DelegatedShares)
 
 	slash := bondedTokens.Mul(fraction).TruncateInt()
-	amount := sdkmath.MaxInt(pos.Amount.Sub(slash), math.ZeroInt())
+	amount := math.MaxInt(pos.Amount.Sub(slash), math.ZeroInt())
 	pos.UpdateAmount(amount)
 	return nil
 }
@@ -190,7 +188,7 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 // AfterSlashRedelegation hooks.
 // If the unbondingId is not mapped to a tier position (i.e. it belongs to a
 // non-tier delegator), this is a no-op.
-func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
+func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
 	positionId, err := k.UnbondingIdToPositionId.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
 		// Not a tier module unbonding — ignore.
@@ -204,7 +202,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 		return err
 	}
 
-	newAmount := sdkmath.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
+	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 
 	pos.UpdateAmount(newAmount)
 

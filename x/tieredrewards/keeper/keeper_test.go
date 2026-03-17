@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"testing"
+	"time"
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/crypto-org-chain/chain-main/v8/app"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"time"
 )
 
 var isCheckTx = false
