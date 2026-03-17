@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var _ types.QueryServer = &queryServer{}
@@ -25,6 +27,21 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 	}
 
 	return &types.QueryParamsResponse{Params: params}, nil
+}
+
+// TierPositionsByOwner returns all positions for a given owner address.
+func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryTierPositionsByOwnerRequest) (*types.QueryTierPositionsByOwnerResponse, error) {
+	owner, err := sdk.AccAddressFromBech32(req.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	positions, err := q.k.GetPositionsByOwner(ctx, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionsByOwnerResponse{Positions: positions}, nil
 }
 
 // TierPosition returns a single position by ID.

@@ -4,6 +4,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // --- Params ---
@@ -44,5 +46,32 @@ func (s *KeeperSuite) TestGRPCQueryTierPosition() {
 
 func (s *KeeperSuite) TestGRPCQueryTierPosition_NotFound() {
 	_, err := s.queryClient.TierPosition(s.ctx.Context(), &types.QueryTierPositionRequest{PositionId: 999})
+	s.Require().Error(err)
+}
+
+// --- TierPositionsByOwner ---
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner() {
+	owner := testPositionOwner
+	pos1 := newTestPosition(1, owner, 1)
+	pos2 := newTestPosition(2, owner, 2)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+
+	resp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: owner})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 2)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_Empty() {
+	otherOwner := sdk.AccAddress([]byte("other_owner_________")).String()
+
+	resp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: otherOwner})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.Positions)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_InvalidAddress() {
+	_, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: "invalid"})
 	s.Require().Error(err)
 }
