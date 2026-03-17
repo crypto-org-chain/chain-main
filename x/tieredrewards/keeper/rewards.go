@@ -91,20 +91,33 @@ func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 // delegation shares on a validator (new position, add to position, undelegate,
 // redelegate) so that existing positions' share of prior rewards is preserved.
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+	ratio, err := k.GetValidatorRewardRatio(ctx, valAddr)
+
+	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+		return sdk.DecCoins{}, err
+	}
+	
+	var currentRatio sdk.DecCoins
+	if errors.Is(err, collections.ErrNotFound) {
+		currentRatio = sdk.DecCoins{}
+	} else {
+		currentRatio = ratio
+	}
+
 	// Check if the tier module even has a delegation to this validator.
 	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	delegation, err := k.stakingKeeper.GetDelegation(ctx, poolAddr, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoDelegation) {
-		// Not found — no rewards have been accrued yet for this validator.
 		return sdk.DecCoins{}, nil
 	}
+
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
 
 	totalShares := delegation.Shares
+	// defensive, though it should never happen
 	if totalShares.IsZero() {
-		// No delegation
 		return sdk.DecCoins{}, nil
 	}
 
@@ -115,24 +128,11 @@ func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	}
 
 	if rewards.IsZero() {
-		currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
-		if errors.Is(err, collections.ErrNotFound) {
-			// Not found — no rewards have been accrued yet for this validator.
-			return sdk.DecCoins{}, nil
-		}
-		if err != nil {
-			return sdk.DecCoins{}, err
-		}
 		return currentRatio, nil
 	}
 
 	decRewards := sdk.NewDecCoinsFromCoins(rewards...)
 	delta := decRewards.QuoDecTruncate(totalShares)
-
-	currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
-	if err != nil {
-		return sdk.DecCoins{}, err
-	}
 
 	newRatio := currentRatio.Add(delta...)
 
@@ -241,21 +241,16 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 	return bonus
 }
 
-func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) error {
-	_, err := k.ClaimBaseRewardsForPositions(ctx, valAddr, positions)
+func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
+	baseRewards, err := k.ClaimBaseRewardsForPositions(ctx, valAddr, positions)
 	if err != nil {
-		return err
+		return sdk.Coins{}, sdk.Coins{}, err
 	}
-
-	_, err = k.ClaimBonusRewardsForPositions(ctx, positions)
-	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
-		k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool before validator slashed",
-			"validator", valAddr.String(),
-			"error", err,
-		)
-		return nil
+	bonusRewards, err := k.ClaimBonusRewardsForPositions(ctx, positions)
+	if err != nil {
+		return sdk.Coins{}, sdk.Coins{}, err
 	}
-	return err
+	return baseRewards, bonusRewards, nil
 }
 
 // ClaimBaseRewardsForPositions updates the cumulative rewards-per-share ratio

@@ -13,6 +13,9 @@ var (
 	_ sdk.Msg = &MsgTierDelegate{}
 	_ sdk.Msg = &MsgTierUndelegate{}
 	_ sdk.Msg = &MsgTierRedelegate{}
+	_ sdk.Msg = &MsgAddToTierPosition{}
+	_ sdk.Msg = &MsgTriggerExitFromTier{}
+	_ sdk.Msg = &MsgClaimTierRewards{}
 )
 
 // Validate validates MsgLockTier sdk msg.
@@ -82,6 +85,37 @@ func (msg MsgTierRedelegate) Validate() error {
 
 	if _, err := sdk.ValAddressFromBech32(msg.DstValidator); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid destination validator address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgAddToTierPosition sdk msg.
+func (msg MsgAddToTierPosition) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if !msg.Amount.IsPositive() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "amount must be positive")
+	}
+
+	return nil
+}
+
+// Validate validates MsgTriggerExitFromTier sdk msg.
+func (msg MsgTriggerExitFromTier) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgClaimTierRewards sdk msg.
+func (msg MsgClaimTierRewards) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	return nil

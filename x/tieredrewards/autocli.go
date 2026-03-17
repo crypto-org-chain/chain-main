@@ -50,6 +50,24 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Move a position's delegation to a different validator",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "dst_validator_address"}},
 				},
+				{
+					RpcMethod:      "AddToTierPosition",
+					Use:            "add-to-tier-position [position-id] [amount]",
+					Short:          "Add tokens to an existing position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "amount"}},
+				},
+				{
+					RpcMethod:      "TriggerExitFromTier",
+					Use:            "trigger-exit [position-id]",
+					Short:          "Start the exit commitment for a position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "ClaimTierRewards",
+					Use:            "claim-tier-rewards [position-id]",
+					Short:          "Claim base and bonus rewards for a delegated position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
 			},
 		},
 	}

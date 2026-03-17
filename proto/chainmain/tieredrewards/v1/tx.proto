@@ -43,6 +43,15 @@ service Msg {
 
   // TierRedelegate moves a position's delegation from one validator to another.
   rpc TierRedelegate(MsgTierRedelegate) returns (MsgTierRedelegateResponse);
+
+  // AddToTierPosition adds tokens to an existing position.
+  rpc AddToTierPosition(MsgAddToTierPosition) returns (MsgAddToTierPositionResponse);
+
+  // TriggerExitFromTier starts the exit commitment for a position.
+  rpc TriggerExitFromTier(MsgTriggerExitFromTier) returns (MsgTriggerExitFromTierResponse);
+
+  // ClaimTierRewards claims base and bonus rewards for a delegated position.
+  rpc ClaimTierRewards(MsgClaimTierRewards) returns (MsgClaimTierRewardsResponse);
 }
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
@@ -65,7 +74,7 @@ message MsgUpdateParamsResponse {}
 // MsgAddTier creates a new tier.
 message MsgAddTier {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name)           = "chainmain/tieredrewards/MsgAddTier";
+  option (amino.name)           = "chainmain/MsgAddTier";
 
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   Tier   tier      = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
@@ -77,7 +86,7 @@ message MsgAddTierResponse {}
 // MsgUpdateTier updates an existing tier.
 message MsgUpdateTier {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name)           = "chainmain/tieredrewards/MsgUpdateTier";
+  option (amino.name)           = "chainmain/MsgUpdateTier";
 
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   Tier   tier      = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
@@ -89,7 +98,7 @@ message MsgUpdateTierResponse {}
 // MsgDeleteTier removes a tier.
 message MsgDeleteTier {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name)           = "chainmain/tieredrewards/MsgDeleteTier";
+  option (amino.name)           = "chainmain/MsgDeleteTier";
 
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   uint32 id        = 2;
@@ -101,7 +110,7 @@ message MsgDeleteTierResponse {}
 // MsgLockTier locks tokens into a tier.
 message MsgLockTier {
   option (cosmos.msg.v1.signer) = "owner";
-  option (amino.name)           = "chainmain/tieredrewards/MsgLockTier";
+  option (amino.name)           = "chainmain/MsgLockTier";
 
   // owner is the address locking tokens.
   string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -212,4 +221,75 @@ message MsgTierRedelegateResponse {
   // completion_time is when the redelegation will complete.
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// MsgAddToTierPosition adds tokens to an existing position.
+message MsgAddToTierPosition {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgAddToTierPosition";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to add to.
+  uint64 position_id = 2;
+
+  // amount is the amount of tokens to add.
+  string amount = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// MsgAddToTierPositionResponse defines the response for MsgAddToTierPosition.
+message MsgAddToTierPositionResponse {}
+
+// MsgTriggerExitFromTier starts the exit commitment for a position.
+message MsgTriggerExitFromTier {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgTriggerExitFromTier";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to trigger exit for.
+  uint64 position_id = 2;
+}
+
+// MsgTriggerExitFromTierResponse defines the response for MsgTriggerExitFromTier.
+message MsgTriggerExitFromTierResponse {
+  // exit_unlock_at is when the exit commitment will complete and tokens can be claimed.
+  google.protobuf.Timestamp exit_unlock_at = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// MsgClaimTierRewards claims base and bonus rewards for a delegated position.
+message MsgClaimTierRewards {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgClaimTierRewards";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to claim rewards for.
+  uint64 position_id = 2;
+}
+
+// MsgClaimTierRewardsResponse defines the response for MsgClaimTierRewards.
+message MsgClaimTierRewardsResponse {
+  // base_rewards is the base staking rewards claimed.
+  repeated cosmos.base.v1beta1.Coin base_rewards = 1 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+
+  // bonus_rewards is the bonus APY rewards claimed from the tier pool.
+  repeated cosmos.base.v1beta1.Coin bonus_rewards = 2 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
 }

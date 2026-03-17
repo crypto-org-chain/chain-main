@@ -206,7 +206,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if err := ms.Keeper.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
+	if _, _, err := ms.Keeper.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
 		return nil, err
 	}
 
@@ -275,7 +275,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if err := ms.Keeper.ClaimRewardsForPositions(ctx, srcValAddr, []types.Position{pos}); err != nil {
+	if _, _, err := ms.Keeper.ClaimRewardsForPositions(ctx, srcValAddr, []types.Position{pos}); err != nil {
 		return nil, err
 	}
 
@@ -328,5 +328,151 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 
 	return &types.MsgTierRedelegateResponse{
 		CompletionTime: completionTime,
+	}, nil
+}
+
+func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTierPosition) (*types.MsgAddToTierPositionResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.Keeper.Positions.Get(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.Keeper.ValidateAddToPosition(ctx, pos, msg.Owner); err != nil {
+		return nil, err
+	}
+
+	if err := ms.Keeper.LockFunds(ctx, msg.Owner, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if pos.IsDelegated() {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, _, err := ms.Keeper.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
+			return nil, err
+		}
+
+		newShares, err := ms.Keeper.Delegate(ctx, valAddr, msg.Amount)
+		if err != nil {
+			return nil, err
+		}
+
+		pos.WithDelegation(types.Delegation{
+			Validator:           pos.Validator,
+			Shares:              pos.DelegatedShares.Add(newShares),
+			BaseRewardsPerShare: pos.BaseRewardsPerShare,
+		}, sdkCtx.BlockTime())
+
+	}
+
+	pos.UpdateAmount(pos.Amount.Add(msg.Amount))
+
+	if err := ms.Keeper.SetPosition(ctx, pos); err != nil {
+		return nil, err
+	}
+
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionAmountAdded{
+		PositionId:  pos.Id,
+		TierId:      pos.TierId,
+		Owner:       pos.Owner,
+		AmountAdded: msg.Amount,
+		NewTotal:    pos.Amount,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgAddToTierPositionResponse{}, nil
+}
+
+func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTriggerExitFromTier) (*types.MsgTriggerExitFromTierResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.Keeper.Positions.Get(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.Keeper.ValidateTriggerExit(ctx, pos, msg.Owner); err != nil {
+		return nil, err
+	}
+
+	tier, err := ms.Keeper.Tiers.Get(ctx, pos.TierId)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
+
+	// There is no need to claim rewards here as the position is still delegated + locked
+	// Therefore, still gaining both base and bonus rewards as before the exit was triggered
+
+	if err := ms.Keeper.SetPosition(ctx, pos); err != nil {
+		return nil, err
+	}
+
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitTriggered{
+		PositionId:   pos.Id,
+		TierId:       pos.TierId,
+		Owner:        pos.Owner,
+		ExitUnlockAt: pos.ExitUnlockAt,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgTriggerExitFromTierResponse{
+		ExitUnlockAt: pos.ExitUnlockAt,
+	}, nil
+}
+
+func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTierRewards) (*types.MsgClaimTierRewardsResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.Keeper.Positions.Get(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.Keeper.ValidateClaimRewards(ctx, pos, msg.Owner); err != nil {
+		return nil, err
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return nil, err
+	}	
+
+	baseRewards, bonusRewards, err := ms.Keeper.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos})
+	if err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
+		PositionId:   pos.Id,
+		TierId:       pos.TierId,
+		Owner:        pos.Owner,
+		BaseRewards:  baseRewards,
+		BonusRewards: bonusRewards,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgClaimTierRewardsResponse{
+		BaseRewards:  baseRewards,
+		BonusRewards: bonusRewards,
 	}, nil
 }

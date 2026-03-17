@@ -352,6 +352,14 @@ func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmat
 	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
 }
 
+// fundRewardsPool funds the tier bonus rewards pool with the given amount.
+func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
+	s.T().Helper()
+	coins := sdk.NewCoins(sdk.NewCoin(denom, amount))
+	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.RewardsPoolName, coins)
+	s.Require().NoError(err)
+}
+
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_LockTier() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -673,7 +681,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 // --- MsgTierUndelegate tests ---
 
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Create delegated + exit-triggered position
@@ -685,6 +693,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
+
+	// Fund the rewards pool so bonus claim doesn't fail
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
 	// Advance time past exit unlock (tier exit duration is 365 days)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
@@ -783,7 +794,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
@@ -794,6 +805,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
+
+	// Fund the rewards pool so bonus claim doesn't fail
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
 	// Advance time past exit unlock (tier exit duration is 365 days)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
@@ -949,4 +963,280 @@ func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
 	s.Require().NoError(err)
 	s.Require().Len(dstIds, 1)
 	s.Require().Equal(uint64(0), dstIds[0])
+}
+
+// --- MsgAddToTierPosition tests ---
+
+func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(sdkmath.NewInt(1500).Equal(pos.Amount), "amount should be 1500")
+	s.Require().False(pos.IsDelegated())
+}
+
+func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	posBefore, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().NoError(err)
+
+	posAfter, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(sdkmath.NewInt(1500).Equal(posAfter.Amount), "amount should be 1500")
+	s.Require().True(posAfter.DelegatedShares.GT(posBefore.DelegatedShares), "shares should increase")
+}
+
+func (s *KeeperSuite) TestMsgAddToTierPosition_Exiting() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionExiting)
+}
+
+func (s *KeeperSuite) TestMsgAddToTierPosition_TierCloseOnly() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	// Set tier to close only
+	tier := newTestTier(1)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
+}
+
+func (s *KeeperSuite) TestMsgAddToTierPosition_WrongOwner() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+// --- MsgTriggerExitFromTier tests ---
+
+func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.ExitUnlockAt.IsZero())
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(pos.HasTriggeredExit())
+	s.Require().Equal(resp.ExitUnlockAt, pos.ExitUnlockAt)
+}
+
+func (s *KeeperSuite) TestMsgTriggerExitFromTier_AlreadyExiting() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionExiting)
+}
+
+func (s *KeeperSuite) TestMsgTriggerExitFromTier_WrongOwner() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+// --- MsgClaimTierRewards tests ---
+
+func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+}
+
+func (s *KeeperSuite) TestMsgClaimTierRewards_WrongOwner() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// Lock an amount equal to the genesis delegation so the tier module gets a meaningful share of rewards
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Advance block and time so distribution period is finalized
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	advanceInTime := time.Hour * 24
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(advanceInTime))
+
+	// Allocate base rewards
+	baseRewardsDistributed := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
+
+	// Fund the bonus rewards pool
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	expectedBonusRewards := sdkmath.LegacyNewDecFromInt(lockAmount).
+		Mul(sdkmath.LegacyNewDecWithPrec(4, 2)).
+		MulInt64(int64(advanceInTime.Seconds())).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+
+	// amount stake is half of whats staked in total, so base rewards are half of the distributed
+	expectedBaseRewards := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
+
+	s.Require().NoError(err)
+	s.Require().NotNil(resp)
+	s.Require().True(expectedBonusRewards.Equal(resp.BonusRewards.AmountOf(bondDenom)), "bonus rewards should be correct")
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(expectedBaseRewards.Add(expectedBonusRewards))), "owner should have received rewards matching what's expected")
 }

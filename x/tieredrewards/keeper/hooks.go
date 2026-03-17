@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // Hooks wraps the Keeper to implement staking hooks.
@@ -21,6 +23,18 @@ func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
 
+func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) error {
+	_, _, err := h.k.ClaimRewardsForPositions(ctx, valAddr, positions)
+	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
+		h.k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool before validator slashed",
+			"validator", valAddr.String(),
+			"error", err,
+		)
+		return nil
+	}
+	return err
+}
+
 // AfterValidatorBeginUnbonding is called when a validator transitions from bonded to unbonding.
 // We settle all pending rewards (base + bonus) for each position on this validator,
 // since no new base rewards will accrue after this point.
@@ -33,7 +47,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 		return nil
 	}
 
-	return h.k.ClaimRewardsForPositions(ctx, valAddr, positions)
+	return h.claimAllRewardsForPositions(ctx, valAddr, positions)
 }
 
 // BeforeValidatorSlashed is called before a validator is slashed.
@@ -51,7 +65,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return nil
 	}
 
-	err = h.k.ClaimRewardsForPositions(ctx, valAddr, positions)
+	err = h.claimAllRewardsForPositions(ctx, valAddr, positions)
 	if err != nil {
 		return err
 	}
@@ -107,14 +121,12 @@ func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, s
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
 
-
 // AfterUnbondingInitiated is a no-op. The unbondingId → positionId mapping
 // is created directly in the message handlers (MsgTierUndelegate, MsgTierRedelegate)
 // after the staking operation returns the unbonding ID.
 func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
 	return nil
 }
-
 
 // --- No-op hooks ---
 

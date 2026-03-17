@@ -12,18 +12,18 @@ import (
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(Params{}, "chainmain/tieredrewards/Params", nil)
 	legacy.RegisterAminoMsg(cdc, &MsgUpdateParams{}, "chainmain/tieredrewards/MsgUpdateParams")
-	legacy.RegisterAminoMsg(cdc, &MsgAddTier{}, "chainmain/tieredrewards/MsgAddTier")
-	legacy.RegisterAminoMsg(cdc, &MsgUpdateTier{}, "chainmain/tieredrewards/MsgUpdateTier")
-	legacy.RegisterAminoMsg(cdc, &MsgDeleteTier{}, "chainmain/tieredrewards/MsgDeleteTier")
-	legacy.RegisterAminoMsg(cdc, &MsgLockTier{}, "chainmain/tieredrewards/MsgLockTier")
-	// chainmain/tieredrewards/MsgCommitDelegationToTier is too long to be registered with amino
+	// some messages are too long to be registered with amino. so we standardize to remove the module name from the definition
+	legacy.RegisterAminoMsg(cdc, &MsgAddTier{}, "chainmain/MsgAddTier")
+	legacy.RegisterAminoMsg(cdc, &MsgUpdateTier{}, "chainmain/MsgUpdateTier")
+	legacy.RegisterAminoMsg(cdc, &MsgDeleteTier{}, "chainmain/MsgDeleteTier")
+	legacy.RegisterAminoMsg(cdc, &MsgLockTier{}, "chainmain/MsgLockTier")
 	legacy.RegisterAminoMsg(cdc, &MsgCommitDelegationToTier{}, "chainmain/MsgCommitDelegationToTier")
-	// chainmain/tieredrewards/MsgTierDelegate is too long to be registered with amino
 	legacy.RegisterAminoMsg(cdc, &MsgTierDelegate{}, "chainmain/MsgTierDelegate")
-	// chainmain/tieredrewards/MsgTierUndelegate is too long to be registered with amino
 	legacy.RegisterAminoMsg(cdc, &MsgTierUndelegate{}, "chainmain/MsgTierUndelegate")
-	// chainmain/tieredrewards/MsgTierRedelegate is too long to be registered with amino
 	legacy.RegisterAminoMsg(cdc, &MsgTierRedelegate{}, "chainmain/MsgTierRedelegate")
+	legacy.RegisterAminoMsg(cdc, &MsgAddToTierPosition{}, "chainmain/MsgAddToTierPosition")
+	legacy.RegisterAminoMsg(cdc, &MsgTriggerExitFromTier{}, "chainmain/MsgTriggerExitFromTier")
+	legacy.RegisterAminoMsg(cdc, &MsgClaimTierRewards{}, "chainmain/MsgClaimTierRewards")
 }
 
 // RegisterInterfaces registers the module's interface types.
@@ -39,6 +39,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgTierDelegate{},
 		&MsgTierUndelegate{},
 		&MsgTierRedelegate{},
+		&MsgAddToTierPosition{},
+		&MsgTriggerExitFromTier{},
+		&MsgClaimTierRewards{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
