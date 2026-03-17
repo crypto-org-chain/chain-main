@@ -7,13 +7,16 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // --- UpdateParams ---
 
 func (s *KeeperSuite) TestUpdateParams_Success() {
 	authority := s.keeper.GetAuthority()
-	newParams := types.NewParams(sdkmath.LegacyNewDecWithPrec(5, 2)) // 0.05
+	newParams := types.NewParams(sdkmath.LegacyNewDecWithPrec(5, 2), nil) // 0.05
 
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
@@ -45,7 +48,7 @@ func (s *KeeperSuite) TestUpdateParams_NegativeRate() {
 	authority := s.keeper.GetAuthority()
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
-		Params:    types.NewParams(sdkmath.LegacyNewDec(-1)),
+		Params:    types.NewParams(sdkmath.LegacyNewDec(-1), nil),
 	}
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -58,7 +61,7 @@ func (s *KeeperSuite) TestUpdateParams_ZeroRate() {
 	authority := s.keeper.GetAuthority()
 	msg := &types.MsgUpdateParams{
 		Authority: authority,
-		Params:    types.NewParams(sdkmath.LegacyZeroDec()),
+		Params:    types.NewParams(sdkmath.LegacyZeroDec(), nil),
 	}
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -326,4 +329,160 @@ func (s *KeeperSuite) TestDeleteTier_SucceedsAfterPositionsRemoved() {
 	has, err := s.keeper.HasTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().False(has)
+}
+
+// --- FundTierPool ---
+
+var testFunder = sdk.AccAddress([]byte("test_funder_________")).String()
+
+func (s *KeeperSuite) whitelistFunder(addr string) {
+	params, err := s.keeper.Params.Get(s.ctx)
+	s.Require().NoError(err)
+	params.PoolFunders = append(params.PoolFunders, addr)
+	s.Require().NoError(s.keeper.SetParams(s.ctx, params))
+}
+
+func (s *KeeperSuite) TestFundTierPool_Success() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	s.whitelistFunder(testFunder)
+
+	fundAmount := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000)))
+	funderAddr, _ := sdk.AccAddressFromBech32(testFunder)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, funderAddr, fundAmount)
+	s.Require().NoError(err)
+
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolBalBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
+
+	msg := &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    fundAmount,
+	}
+
+	_, err = msgServer.FundTierPool(s.ctx, msg)
+	s.Require().NoError(err)
+
+	poolBalAfter := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
+	s.Require().True(poolBalAfter.Amount.Equal(poolBalBefore.Amount.Add(sdkmath.NewInt(5000))),
+		"pool balance should have increased by funded amount")
+}
+
+func (s *KeeperSuite) TestFundTierPool_NotWhitelisted() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	outsider := sdk.AccAddress([]byte("not_whitelisted_____")).String()
+
+	msg := &types.MsgFundTierPool{
+		Depositor: outsider,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))),
+	}
+
+	_, err = msgServer.FundTierPool(s.ctx, msg)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrUnauthorizedFunder)
+}
+
+func (s *KeeperSuite) TestFundTierPool_ZeroAmount() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.whitelistFunder(testFunder)
+
+	msg := &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(),
+	}
+
+	_, err := msgServer.FundTierPool(s.ctx, msg)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrInvalidAmount)
+}
+
+func (s *KeeperSuite) TestFundTierPool_InsufficientFunds() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	s.whitelistFunder(testFunder)
+
+	msg := &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))),
+	}
+
+	_, err = msgServer.FundTierPool(s.ctx, msg)
+	s.Require().Error(err, "should fail when depositor has insufficient funds")
+}
+
+func (s *KeeperSuite) TestFundTierPool_MultipleFunds() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	s.whitelistFunder(testFunder)
+
+	totalFund := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(10000)))
+	funderAddr, _ := sdk.AccAddressFromBech32(testFunder)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, funderAddr, totalFund)
+	s.Require().NoError(err)
+
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolBalBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
+
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(3000))),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(7000))),
+	})
+	s.Require().NoError(err)
+
+	poolBalAfter := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, bondDenom)
+	s.Require().True(poolBalAfter.Amount.Equal(poolBalBefore.Amount.Add(sdkmath.NewInt(10000))),
+		"pool balance should reflect both deposits")
+}
+
+func (s *KeeperSuite) TestFundTierPool_RemovedFromWhitelist() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	s.whitelistFunder(testFunder)
+
+	funderAddr, _ := sdk.AccAddressFromBech32(testFunder)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, funderAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000))))
+	s.Require().NoError(err)
+
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))),
+	})
+	s.Require().NoError(err)
+
+	// Remove funder from whitelist via params update
+	params, err := s.keeper.Params.Get(s.ctx)
+	s.Require().NoError(err)
+	params.PoolFunders = nil
+	s.Require().NoError(s.keeper.SetParams(s.ctx, params))
+
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))),
+	})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrUnauthorizedFunder)
 }

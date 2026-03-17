@@ -107,6 +107,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Withdraw locked tokens after exit commitment has elapsed",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
 				},
+				{
+					RpcMethod:      "FundTierPool",
+					Use:            "fund-tier-pool [amount]",
+					Short:          "Fund the tier bonus rewards pool (must be whitelisted in pool_funders)",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "amount"}},
+				},
 			},
 		},
 	}

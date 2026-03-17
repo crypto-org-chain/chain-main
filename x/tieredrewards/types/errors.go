@@ -22,4 +22,5 @@ var (
 	ErrRedelegationToSameValidator  = errors.Register(ModuleName, 17, "redelegation to same validator")
 	ErrPositionNotReadyToWithdraw   = errors.Register(ModuleName, 18, "position is not ready to withdraw")
 	ErrPositionStillDelegated       = errors.Register(ModuleName, 19, "position is still delegated")
+	ErrUnauthorizedFunder           = errors.Register(ModuleName, 20, "address is not an authorized pool funder")
 )

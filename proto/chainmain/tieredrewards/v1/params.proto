@@ -16,4 +16,8 @@ message Params {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
+
+  // pool_funders is the list of addresses authorized to fund the tier rewards pool.
+  // Managed via MsgUpdateParams (governance).
+  repeated string pool_funders = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }

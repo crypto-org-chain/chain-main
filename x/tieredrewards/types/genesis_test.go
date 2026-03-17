@@ -17,14 +17,14 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("valid custom genesis", func(t *testing.T) {
 		genesis := types.GenesisState{
-			Params: types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2)),
+			Params: types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2), nil),
 		}
 		require.NoError(t, types.ValidateGenesis(genesis))
 	})
 
 	t.Run("invalid genesis - negative rate", func(t *testing.T) {
 		genesis := types.GenesisState{
-			Params: types.NewParams(sdkmath.LegacyNewDec(-1)),
+			Params: types.NewParams(sdkmath.LegacyNewDec(-1), nil),
 		}
 		require.Error(t, types.ValidateGenesis(genesis))
 	})
