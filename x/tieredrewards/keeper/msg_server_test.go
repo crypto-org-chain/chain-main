@@ -1,14 +1,16 @@
 package keeper_test
 
 import (
+	"time"
+
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // --- MsgLockTier tests ---
@@ -320,7 +322,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_NoDelegation() {
 	s.Require().Error(err)
 }
 
-
 // allocateRewardsToValidator funds the distribution module and allocates
 // rewards to a validator so that WithdrawDelegationRewards returns them.
 func (s *KeeperSuite) allocateRewardsToValidator(valAddr sdk.ValAddress, amount sdkmath.Int, denom string) {
@@ -375,7 +376,6 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_LockTier() {
 	s.Require().True(pos.BaseRewardsPerShare.IsZero(),
 		"first position should start with zero base rewards per share")
 }
-
 
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio_LockTier() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
@@ -474,7 +474,6 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_CommitDelegati
 		"first position should start with zero base rewards per share")
 }
 
-
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio_CommitDelegationToTier() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -545,4 +544,409 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 	s.Require().True(actualRatio.Equal(expectedRatio),
 		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
 		actualRatio, expectedRatio)
+}
+
+// --- MsgTierDelegate tests ---
+
+func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create undelegated position
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	// Delegate position
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+	s.Require().Equal(valAddr.String(), pos.Validator)
+	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set")
+}
+
+func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create position with delegation
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Try to delegate again
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionAlreadyDelegated)
+}
+
+func (s *KeeperSuite) TestMsgTierDelegate_AlreadyExiting() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Try to delegate an exiting position
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionExiting)
+}
+
+func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	// Before delegation, no positions for this validator from the tier module
+	posIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Empty(posIds)
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// After delegation, position should appear in validator index
+	posIds, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Len(posIds, 1)
+	s.Require().Equal(uint64(0), posIds[0])
+}
+
+// --- MsgTierUndelegate tests ---
+
+func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create delegated + exit-triggered position
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit unlock (tier exit duration is 365 days)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.CompletionTime.IsZero())
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
+	s.Require().True(pos.DelegatedShares.IsZero(), "delegated shares should be cleared")
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_HaventTriggeredExit() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached)
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_ExitLockDurationNotReached() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached)
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit unlock (tier exit duration is 365 days)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Check that at least one unbonding ID maps to position 0
+	var found bool
+	err = s.keeper.UnbondingIdToPositionId.Walk(s.ctx, nil, func(unbondingId uint64, positionId uint64) (bool, error) {
+		if positionId == 0 {
+			found = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().True(found, "unbonding ID mapping should exist for position 0")
+}
+
+// --- MsgTierRedelegate tests ---
+
+func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create a second validator to redelegate to
+	dstValAddr, _ := s.createSecondValidator()
+
+	// Create delegated position
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	resp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.CompletionTime.IsZero())
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+	s.Require().Equal(dstValAddr.String(), pos.Validator)
+	s.Require().True(pos.DelegatedShares.IsPositive())
+}
+
+func (s *KeeperSuite) TestMsgTierRedelegate_NotDelegated() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+}
+
+func (s *KeeperSuite) TestMsgTierRedelegate_SameValidator() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create delegated position
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrRedelegationToSameValidator)
+}
+
+func (s *KeeperSuite) TestMsgTierRedelegate_WrongOwner() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        wrongAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Position should be in source validator index
+	srcIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Len(srcIds, 1)
+
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Source validator index should be empty
+	srcIds, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Empty(srcIds)
+
+	// Destination validator index should have the position
+	dstIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, dstValAddr)
+	s.Require().NoError(err)
+	s.Require().Len(dstIds, 1)
+	s.Require().Equal(uint64(0), dstIds[0])
 }

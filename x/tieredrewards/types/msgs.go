@@ -10,6 +10,9 @@ import (
 var (
 	_ sdk.Msg = &MsgLockTier{}
 	_ sdk.Msg = &MsgCommitDelegationToTier{}
+	_ sdk.Msg = &MsgTierDelegate{}
+	_ sdk.Msg = &MsgTierUndelegate{}
+	_ sdk.Msg = &MsgTierRedelegate{}
 )
 
 // Validate validates MsgLockTier sdk msg.
@@ -44,6 +47,41 @@ func (msg MsgCommitDelegationToTier) Validate() error {
 	// Validator is required for commit delegation
 	if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgTierDelegate sdk msg.
+func (msg MsgTierDelegate) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgTierUndelegate sdk msg.
+func (msg MsgTierUndelegate) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgTierRedelegate sdk msg.
+func (msg MsgTierRedelegate) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if _, err := sdk.ValAddressFromBech32(msg.DstValidator); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid destination validator address")
 	}
 
 	return nil

@@ -23,6 +23,7 @@ func validPosition() types.Position {
 		Owner:           testOwner,
 		TierId:          1,
 		Amount:          sdkmath.NewInt(1000),
+		DelegatedShares: sdkmath.LegacyZeroDec(),
 		CreatedAtHeight: 100,
 		CreatedAtTime:   time.Now(),
 	}
@@ -155,18 +156,34 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "delegated shares must be positive when validator is set",
 		},
 		{
-			name: "non-nil delegated shares when not delegated",
+			name: "non-zero delegated shares when not delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: "",
-					Shares:    sdkmath.LegacyZeroDec(),
+					Shares: sdkmath.LegacyNewDec(100),
+				}, time.Now())
+			},
+			wantErr:     true,
+			errContains: "delegated shares must not be set when not delegated",
+		},
+		{
+			name: "populated base rewards per share when not delegated",
+			modify: func(p *types.Position) {
+				p.WithDelegation(types.Delegation{
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
 				}, time.Now())
 			},
 			wantErr:     true,
-			errContains: "delegated shares must not be set when not delegated",
+			errContains: "base rewards per share must not be set when not delegated",
+		},
+		{
+			name: "populated last bonus accrual when not delegated",
+			modify: func(p *types.Position) {
+				p.WithDelegation(types.Delegation{}, time.Now())
+			},
+			wantErr:     true,
+			errContains: "last bonus accrual must not be set when not delegated",
 		},
 		{
 			name: "exit_unlock_at set without exit_triggered_at",

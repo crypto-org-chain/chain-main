@@ -32,6 +32,24 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "params"}},
 					GovProposal:    true,
 				},
+				{
+					RpcMethod:      "TierDelegate",
+					Use:            "tier-delegate [position-id] [validator-address]",
+					Short:          "Delegate a position's tokens to a validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "validator_address"}},
+				},
+				{
+					RpcMethod:      "TierUndelegate",
+					Use:            "tier-undelegate [position-id]",
+					Short:          "Begin undelegating a position's tokens from its validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "TierRedelegate",
+					Use:            "tier-redelegate [position-id] [dst-validator-address]",
+					Short:          "Move a position's delegation to a different validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "dst_validator_address"}},
+				},
 			},
 		},
 	}

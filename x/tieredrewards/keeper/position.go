@@ -26,6 +26,63 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 	return nil
 }
 
+// ValidateDelegatePosition validates the position intended to be delegated.
+func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+	if pos.Owner != owner {
+		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+	}
+
+	if pos.IsDelegated() {
+		return types.ErrPositionAlreadyDelegated
+	}
+
+	if pos.HasTriggeredExit() {
+		return types.ErrPositionExiting
+	}
+
+	return nil
+}
+
+// ValidateUndelegatePosition validates the position intended to be undelegated.
+func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+	if pos.Owner != owner {
+		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+	}
+
+	if !pos.IsDelegated() {
+		return types.ErrPositionNotDelegated
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
+	}
+
+	return nil
+}
+
+// ValidateRedelegatePosition validates the position intended to be redelegated.
+func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner string, dstValidator string) error {
+	if pos.Owner != owner {
+		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+	}
+
+	if !pos.IsDelegated() {
+		return types.ErrPositionNotDelegated
+	}
+
+	if pos.Validator == dstValidator {
+		return types.ErrRedelegationToSameValidator
+	}
+
+	if pos.HasTriggeredExit() {
+		return types.ErrPositionExiting
+	}
+
+	return nil
+}
+
 func (k Keeper) CreatePosition(
 	ctx context.Context,
 	owner string,

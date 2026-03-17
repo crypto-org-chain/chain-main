@@ -34,6 +34,15 @@ service Msg {
 
   // CommitDelegationToTier allows a commitment of a delegation to a tier.
   rpc CommitDelegationToTier(MsgCommitDelegationToTier) returns (MsgCommitDelegationToTierResponse);
+
+  // TierDelegate delegates a position's locked tokens to a validator.
+  rpc TierDelegate(MsgTierDelegate) returns (MsgTierDelegateResponse);
+
+  // TierUndelegate begins undelegating a position's tokens from its validator.
+  rpc TierUndelegate(MsgTierUndelegate) returns (MsgTierUndelegateResponse);
+
+  // TierRedelegate moves a position's delegation from one validator to another.
+  rpc TierRedelegate(MsgTierRedelegate) returns (MsgTierRedelegateResponse);
 }
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
@@ -145,3 +154,62 @@ message MsgCommitDelegationToTier {
 
 // MsgCommitDelegationToTierResponse defines the response for MsgCommitDelegationToTier.
 message MsgCommitDelegationToTierResponse {}
+
+// MsgTierDelegate delegates a position's locked tokens to a validator.
+message MsgTierDelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgTierDelegate";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to delegate.
+  uint64 position_id = 2;
+
+  // validator is the validator address to delegate to.
+  string validator = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+
+// MsgTierDelegateResponse defines the response for MsgTierDelegate.
+message MsgTierDelegateResponse {}
+
+// MsgTierUndelegate begins undelegating a position's tokens from its validator.
+message MsgTierUndelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgTierUndelegate";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to undelegate.
+  uint64 position_id = 2;
+}
+
+// MsgTierUndelegateResponse defines the response for MsgTierUndelegate.
+message MsgTierUndelegateResponse {
+  // completion_time is when the undelegation will complete.
+  google.protobuf.Timestamp completion_time = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// MsgTierRedelegate moves a position's delegation from one validator to another.
+message MsgTierRedelegate {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgTierRedelegate";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to redelegate.
+  uint64 position_id = 2;
+
+  // dst_validator is the new validator address to redelegate to.
+  string dst_validator = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+
+// MsgTierRedelegateResponse defines the response for MsgTierRedelegate.
+message MsgTierRedelegateResponse {
+  // completion_time is when the redelegation will complete.
+  google.protobuf.Timestamp completion_time = 1
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}

@@ -24,6 +24,8 @@ func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, cr
 		Amount:          amount,
 		CreatedAtHeight: uint64(createdAtHeight),
 		CreatedAtTime:   createdAtTime,
+		// initialize as zero instead of nil to be consistent when fetching from store (not nullable defaults this field to zero even if not set)
+		DelegatedShares: math.LegacyZeroDec(),
 	}
 
 }
@@ -42,15 +44,10 @@ func (p Position) Validate() error {
 		return fmt.Errorf("amount locked must be positive: %s", p.Amount)
 	}
 
-	if !p.IsDelegated() && !p.DelegatedShares.IsNil() {
-		return fmt.Errorf("delegated shares must not be set when not delegated")
-	}
-
 	if p.IsDelegated() {
 		if _, err := sdk.ValAddressFromBech32(p.Validator); err != nil {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
-
 		// It is possible to have no base rewards per share when the position is created
 		// if the position is the first one delegated to a validator (no base rewards accrued yet)
 		// Decided against storing Coins with 0 amount as it will fail validation
@@ -59,14 +56,23 @@ func (p Position) Validate() error {
 				return fmt.Errorf("invalid base rewards per share: %w", err)
 			}
 		}
-
 		if !p.DelegatedShares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
+		}
+	} else {
+		if !p.DelegatedShares.IsNil() && !p.DelegatedShares.IsZero() {
+			return fmt.Errorf("delegated shares must not be set when not delegated")
+		}
+		if len(p.BaseRewardsPerShare) > 0 {
+			return fmt.Errorf("base rewards per share must not be set when not delegated")
+		}
+		if !p.LastBonusAccrual.IsZero() {
+			return fmt.Errorf("last bonus accrual must not be set when not delegated")
 		}
 	}
 
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
-		return fmt.Errorf("exit_unlock_at must not be set for a position that has not")
+		return fmt.Errorf("exit_unlock_at must not be set for a position that is not exiting")
 	}
 
 	if !p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.After(p.ExitTriggeredAt) {
@@ -89,11 +95,11 @@ func (p Position) IsDelegated() bool {
 }
 
 func (p Position) IsExiting(blockTime time.Time) bool {
-	return !blockTime.Before(p.ExitTriggeredAt) && blockTime.Before(p.ExitUnlockAt)
+	return !p.ExitTriggeredAt.IsZero() && !blockTime.Before(p.ExitTriggeredAt) && blockTime.Before(p.ExitUnlockAt)
 }
 
-func (p Position) HasExited(blockTime time.Time) bool {
-	return !blockTime.Before(p.ExitUnlockAt)
+func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
+	return !p.ExitUnlockAt.IsZero() && !blockTime.Before(p.ExitUnlockAt)
 }
 
 func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
@@ -118,4 +124,17 @@ func (p *Position) UpdateLastBonusAccrual(t time.Time) {
 
 func (p *Position) UpdateAmount(amount math.Int) {
 	p.Amount = amount
+}
+
+// ClearDelegation resets all delegation-related fields when a position is undelegated.
+func (p *Position) ClearDelegation() {
+	p.Validator = ""
+	p.DelegatedShares = math.LegacyZeroDec()
+	p.BaseRewardsPerShare = sdk.DecCoins{}
+	p.LastBonusAccrual = time.Time{}
+}
+
+// HasTriggeredExit returns true if the position's exit has been triggered (regardless of whether the commitment has elapsed).
+func (p Position) HasTriggeredExit() bool {
+	return !p.ExitTriggeredAt.IsZero()
 }

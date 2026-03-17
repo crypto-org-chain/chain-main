@@ -38,6 +38,28 @@ func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount mat
 	return newShares, nil
 }
 
+// Undelegate undelegates tokens from a validator on behalf of the tier module account.
+// Returns the completion time and the unbonding ID for slash tracking.
+func (k Keeper) Undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, uint64, error) {
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	completionTime, _, unbondingId, err := k.stakingKeeper.Undelegate(ctx, moduleAddr, valAddr, shares)
+	if err != nil {
+		return time.Time{}, 0, err
+	}
+	return completionTime, unbondingId, nil
+}
+
+// Redelegate redelegates tokens from one validator to another on behalf of the tier module account.
+// Returns the completion time, new shares on the destination validator, and the unbonding ID for slash tracking.
+func (k Keeper) Redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	completionTime, newShares, unbondingId, err := k.stakingKeeper.BeginRedelegation(ctx, moduleAddr, srcValAddr, dstValAddr, shares)
+	if err != nil {
+		return time.Time{}, math.LegacyDec{}, 0, err
+	}
+	return completionTime, newShares, unbondingId, nil
+}
+
 // withdrawDelegationRewards withdraws base staking rewards for the
 // tier module account's delegation to a validator.
 // Returns the rewards received.
@@ -181,7 +203,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	if err != nil {
 		return err
 	}
-	
+
 	newAmount := sdkmath.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 
 	pos.UpdateAmount(newAmount)
@@ -198,7 +220,7 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 	}
 
 	accrualEnd := blockTime
-	if position.HasExited(blockTime) {
+	if position.CompletedExitLockDuration(blockTime) {
 		accrualEnd = position.ExitUnlockAt
 	}
 
@@ -325,7 +347,8 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 	for _, pos := range positions {
 		tier, ok := tierCache[pos.TierId]
 		if !ok {
-			tier, err := k.Tiers.Get(ctx, pos.TierId)
+			var err error
+			tier, err = k.Tiers.Get(ctx, pos.TierId)
 			if err != nil {
 				return sdk.Coins{}, err
 			}
@@ -366,7 +389,7 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	bonus := k.calculateBonus(*pos, val, tier, blockTime)
 
 	accrualEnd := blockTime
-	if pos.HasExited(blockTime) {
+	if pos.CompletedExitLockDuration(blockTime) {
 		accrualEnd = pos.ExitUnlockAt
 	}
 

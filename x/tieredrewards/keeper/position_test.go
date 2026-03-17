@@ -17,14 +17,7 @@ var (
 )
 
 func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
-	return types.Position{
-		Id:              id,
-		Owner:           owner,
-		TierId:          tierId,
-		Amount:          sdkmath.NewInt(1000),
-		CreatedAtHeight: 100,
-		CreatedAtTime:   time.Now(),
-	}
+	return types.NewBasePosition(id, owner, tierId, sdkmath.NewInt(1000), 100, time.Now())
 }
 
 func (s *KeeperSuite) TestSetAndGetPosition() {

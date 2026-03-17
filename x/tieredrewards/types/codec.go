@@ -18,6 +18,12 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgLockTier{}, "chainmain/tieredrewards/MsgLockTier")
 	// chainmain/tieredrewards/MsgCommitDelegationToTier is too long to be registered with amino
 	legacy.RegisterAminoMsg(cdc, &MsgCommitDelegationToTier{}, "chainmain/MsgCommitDelegationToTier")
+	// chainmain/tieredrewards/MsgTierDelegate is too long to be registered with amino
+	legacy.RegisterAminoMsg(cdc, &MsgTierDelegate{}, "chainmain/MsgTierDelegate")
+	// chainmain/tieredrewards/MsgTierUndelegate is too long to be registered with amino
+	legacy.RegisterAminoMsg(cdc, &MsgTierUndelegate{}, "chainmain/MsgTierUndelegate")
+	// chainmain/tieredrewards/MsgTierRedelegate is too long to be registered with amino
+	legacy.RegisterAminoMsg(cdc, &MsgTierRedelegate{}, "chainmain/MsgTierRedelegate")
 }
 
 // RegisterInterfaces registers the module's interface types.
@@ -30,6 +36,9 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgDeleteTier{},
 		&MsgLockTier{},
 		&MsgCommitDelegationToTier{},
+		&MsgTierDelegate{},
+		&MsgTierUndelegate{},
+		&MsgTierRedelegate{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
