@@ -30,6 +30,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Query all tier positions for an owner address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "owner"}},
 				},
+				{
+					RpcMethod: "AllTierPositions",
+					Use:       "positions",
+					Short:     "Query all tier positions (paginated)",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

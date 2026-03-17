@@ -5,6 +5,8 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -27,6 +29,25 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 	}
 
 	return &types.QueryParamsResponse{Params: params}, nil
+}
+
+// AllTierPositions returns all positions with pagination.
+func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTierPositionsRequest) (*types.QueryAllTierPositionsResponse, error) {
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.Positions,
+		req.Pagination,
+		func(_ uint64, pos types.Position) (types.Position, error) {
+			return pos, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryAllTierPositionsResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
 }
 
 // TierPositionsByOwner returns all positions for a given owner address.

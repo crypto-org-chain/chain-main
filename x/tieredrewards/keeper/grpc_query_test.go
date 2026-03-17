@@ -6,6 +6,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 )
 
 // --- Params ---
@@ -74,4 +75,44 @@ func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_Empty() {
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_InvalidAddress() {
 	_, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: "invalid"})
 	s.Require().Error(err)
+}
+
+// --- AllTierPositions ---
+
+func (s *KeeperSuite) TestGRPCQueryAllTierPositions() {
+	for i := uint64(1); i <= 5; i++ {
+		pos := newTestPosition(i, testPositionOwner, 1)
+		s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	}
+
+	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 5)
+}
+
+func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Pagination() {
+	for i := uint64(1); i <= 5; i++ {
+		pos := newTestPosition(i, testPositionOwner, 1)
+		s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	}
+
+	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{
+		Pagination: &query.PageRequest{Limit: 2},
+	})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 2)
+	s.Require().NotNil(resp.Pagination)
+	s.Require().NotEmpty(resp.Pagination.NextKey)
+
+	resp2, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{
+		Pagination: &query.PageRequest{Key: resp.Pagination.NextKey, Limit: 10},
+	})
+	s.Require().NoError(err)
+	s.Require().Len(resp2.Positions, 3)
+}
+
+func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
+	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.Positions)
 }
