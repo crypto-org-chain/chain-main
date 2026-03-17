@@ -95,18 +95,18 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Start the exit commitment for a position",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
 				},
-			{
-				RpcMethod:      "ClaimTierRewards",
-				Use:            "claim-tier-rewards [position-id]",
-				Short:          "Claim base and bonus rewards for a delegated position",
-				PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
-			},
-			{
-				RpcMethod:      "WithdrawFromTier",
-				Use:            "withdraw-from-tier [position-id]",
-				Short:          "Withdraw locked tokens after exit commitment has elapsed",
-				PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
-			},
+				{
+					RpcMethod:      "ClaimTierRewards",
+					Use:            "claim-tier-rewards [position-id]",
+					Short:          "Claim base and bonus rewards for a delegated position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "WithdrawFromTier",
+					Use:            "withdraw-from-tier [position-id]",
+					Short:          "Withdraw locked tokens after exit commitment has elapsed",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
 			},
 		},
 	}
