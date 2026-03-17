@@ -35,6 +35,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "positions",
 					Short:     "Query all tier positions (paginated)",
 				},
+				{
+					RpcMethod: "Tiers",
+					Use:       "tiers",
+					Short:     "Query all tier definitions",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

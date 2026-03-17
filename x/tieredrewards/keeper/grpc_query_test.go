@@ -116,3 +116,22 @@ func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
 	s.Require().NoError(err)
 	s.Require().Empty(resp.Positions)
 }
+
+// --- Tiers ---
+
+func (s *KeeperSuite) TestGRPCQueryTiers() {
+	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
+	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(2)))
+
+	resp, err := s.queryClient.Tiers(s.ctx.Context(), &types.QueryTiersRequest{})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Tiers, 2)
+	s.Require().Equal(uint32(1), resp.Tiers[0].Id)
+	s.Require().Equal(uint32(2), resp.Tiers[1].Id)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTiers_Empty() {
+	resp, err := s.queryClient.Tiers(s.ctx.Context(), &types.QueryTiersRequest{})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.Tiers)
+}

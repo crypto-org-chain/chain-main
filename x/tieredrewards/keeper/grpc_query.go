@@ -73,3 +73,16 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 	}
 	return &types.QueryTierPositionResponse{Position: pos}, nil
 }
+
+// Tiers returns all tier definitions.
+func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {
+	var tiers []types.Tier
+	err := q.k.Tiers.Walk(ctx, nil, func(_ uint32, tier types.Tier) (bool, error) {
+		tiers = append(tiers, tier)
+		return false, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryTiersResponse{Tiers: tiers}, nil
+}
