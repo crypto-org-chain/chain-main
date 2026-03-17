@@ -33,10 +33,43 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					GovProposal:    true,
 				},
 				{
+					RpcMethod:      "AddTier",
+					Use:            "add-tier [tier]",
+					Short:          "Create a new tier (authority-gated)",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tier"}},
+					GovProposal:    true,
+				},
+				{
+					RpcMethod:      "UpdateTier",
+					Use:            "update-tier [tier]",
+					Short:          "Update an existing tier (authority-gated)",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tier"}},
+					GovProposal:    true,
+				},
+				{
+					RpcMethod:      "DeleteTier",
+					Use:            "delete-tier [id]",
+					Short:          "Delete a tier (authority-gated)",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}},
+					GovProposal:    true,
+				},
+				{
+					RpcMethod:      "LockTier",
+					Use:            "lock-tier [id] [amount]",
+					Short:          "Lock tokens into a tier",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}, {ProtoField: "amount"}},
+				},
+				{
+					RpcMethod:      "CommitDelegationToTier",
+					Use:            "commit-delegation-to-tier [validator-address] [amount] [id]",
+					Short:          "Commit an existing delegation to a tier position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "validator_address"}, {ProtoField: "amount"}, {ProtoField: "id"}},
+				},
+				{
 					RpcMethod:      "TierDelegate",
-					Use:            "tier-delegate [position-id] [validator-address]",
+					Use:            "tier-delegate [position-id] [validator]",
 					Short:          "Delegate a position's tokens to a validator",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "validator_address"}},
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "validator"}},
 				},
 				{
 					RpcMethod:      "TierUndelegate",
@@ -46,9 +79,9 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod:      "TierRedelegate",
-					Use:            "tier-redelegate [position-id] [dst-validator-address]",
+					Use:            "tier-redelegate [position-id] [dst-validator]",
 					Short:          "Move a position's delegation to a different validator",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "dst_validator_address"}},
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}, {ProtoField: "dst_validator"}},
 				},
 				{
 					RpcMethod:      "AddToTierPosition",
