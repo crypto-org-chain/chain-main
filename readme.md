@@ -123,7 +123,7 @@ There are different tests that can be executed in the following ways:
 
 - unit tests: `make test`
 - simulations: `make test-sim-*` (e.g. `make test-sim-nondeterminism`)
-- integrations tests: `make nix-integration-test` (see more details in [their documentation](integration_tests/README.md))
+- integration tests: `make nix-integration-test` (see more details in [their documentation](integration_tests/README.md))
 
 <a id="pystarport" />
 
