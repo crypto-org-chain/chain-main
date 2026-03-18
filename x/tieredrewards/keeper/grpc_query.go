@@ -149,7 +149,7 @@ func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEs
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	bonus, _ := q.k.calculateBonus(pos, val, tier, sdkCtx.BlockTime())
+	bonus := q.k.calculateBonus(pos, val, tier, sdkCtx.BlockTime())
 	if bonus.IsPositive() {
 		bondDenom, err := q.k.stakingKeeper.BondDenom(ctx)
 		if err != nil {

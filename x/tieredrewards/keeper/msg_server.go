@@ -453,7 +453,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	baseRewards, bonusRewards, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos})
+	baseRewards, bonusRewards, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
 		return nil, err
 	}

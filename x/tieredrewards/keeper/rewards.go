@@ -228,7 +228,19 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	return k.SetPosition(ctx, pos)
 }
 
-// calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
+// calculateBonus returns accrued bonus, yielding zero when the validator is
+// not bonded. Callers that must settle a final bonus during a validator
+// state transition (e.g. AfterValidatorBeginUnbonding) should use
+// calculateBonusRaw instead.
+func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
+	if !validator.IsBonded() {
+		return math.ZeroInt()
+	}
+	return k.calculateBonusRaw(position, validator, tier, blockTime)
+}
+
+// calculateBonusRaw computes the accrued bonus for a position from
+// LastBonusAccrual to accrualEnd without checking validator status.
 // Formula: tokens × BonusApy × durationSeconds / SecondsPerYear
 // where tokens = validator.TokensFromShares(DelegatedShares) — this uses the current exchange
 // rate and reflects any slashing that has already been applied to the validator. As a result,
@@ -236,10 +248,9 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 // no further bonus accrues, even though Amount may still show a pre-slash value. This is the
 // intended behavior: the position has no economic value remaining.
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
-// Returns both the bonus amount and the accrual end time so callers do not recompute it.
-func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) (math.Int, time.Time) {
+func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
 	if position.LastBonusAccrual.IsZero() {
-		return math.ZeroInt(), blockTime
+		return math.ZeroInt()
 	}
 
 	accrualEnd := blockTime
@@ -247,9 +258,8 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 		accrualEnd = position.ExitUnlockAt
 	}
 
-	// No bonus if accrual end is not after last claimed
 	if !accrualEnd.After(position.LastBonusAccrual) {
-		return math.ZeroInt(), accrualEnd
+		return math.ZeroInt()
 	}
 
 	// Use integer division to avoid float64 truncation bias.
@@ -262,15 +272,19 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 		QuoInt64(types.SecondsPerYear).
 		TruncateInt()
 
-	return bonus, accrualEnd
+	return bonus
 }
 
-func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
+// ClaimRewardsForPositions settles base and bonus rewards for a set of
+// positions. When forceAccrue is true the bonus is calculated regardless of
+// validator bonded status (used by hooks that fire after the SDK has already
+// changed the validator status to unbonding).
+func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
 	baseRewards, err := k.ClaimBaseRewardsForPositions(ctx, valAddr, positions)
 	if err != nil {
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
-	bonusRewards, err := k.ClaimBonusRewardsForPositions(ctx, positions)
+	bonusRewards, err := k.ClaimBonusRewardsForPositions(ctx, positions, forceAccrue)
 	if errors.Is(err, types.ErrInsufficientBonusPool) {
 		// Bonus pool exhausted — base rewards were still claimed successfully.
 		// Return base rewards with empty bonus; the un-paid bonus remains
@@ -295,7 +309,7 @@ func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 // continue mutating the position (delegate, redelegate, add tokens) must use the
 // returned refreshed copy.
 func (k Keeper) ClaimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
-	base, bonus, err := k.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos})
+	base, bonus, err := k.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -396,7 +410,7 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, curre
 // Positions processed before the failing one have their LastBonusAccrual advanced and
 // are already persisted; the failing position and all later ones are left untouched so
 // their full unpaid bonus can be re-computed on a future claim.
-func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []types.Position) (sdk.Coins, error) {
+func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
 	tierCache := make(map[uint32]types.Tier)
 	total := sdk.NewCoins()
 
@@ -411,7 +425,7 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 			tierCache[positions[i].TierId] = tier
 		}
 
-		bonus, err := k.ClaimBonusRewards(ctx, &positions[i], tier)
+		bonus, err := k.ClaimBonusRewards(ctx, &positions[i], tier, forceAccrue)
 		if err != nil {
 			return sdk.Coins{}, err
 		}
@@ -426,7 +440,9 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 	return total, nil
 }
 
-// ClaimBonusRewards calculates and pays the bonus for a position from the rewards pool.
+// ClaimBonusRewards calculates and pays the bonus for a position from the
+// rewards pool. When forceAccrue is true calculateBonusRaw is used so that
+// the bonus is settled even if the validator is no longer bonded.
 // Updates LastBonusAccrual on the position.
 //
 // Ordering note: LastBonusAccrual is advanced to accrualEnd before the pool balance
@@ -435,7 +451,7 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 // by ClaimBonusRewardsForPositions, which only calls SetPosition on success. This
 // means the position retains its previous LastBonusAccrual in the store and the full
 // unpaid bonus will be recalculated on the next successful claim.
-func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier) (sdk.Coins, error) {
+func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 
@@ -449,7 +465,17 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 		return sdk.Coins{}, err
 	}
 
-	bonus, accrualEnd := k.calculateBonus(*pos, val, tier, blockTime)
+	var bonus math.Int
+	if forceAccrue {
+		bonus = k.calculateBonusRaw(*pos, val, tier, blockTime)
+	} else {
+		bonus = k.calculateBonus(*pos, val, tier, blockTime)
+	}
+
+	accrualEnd := blockTime
+	if pos.CompletedExitLockDuration(blockTime) {
+		accrualEnd = pos.ExitUnlockAt
+	}
 
 	pos.UpdateLastBonusAccrual(accrualEnd)
 
@@ -489,3 +515,4 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 
 	return bonusCoins, nil
 }
+

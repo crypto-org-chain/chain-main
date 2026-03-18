@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -23,14 +24,29 @@ func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
 
-func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) error {
-	_, _, err := h.k.ClaimRewardsForPositions(ctx, valAddr, positions)
+func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
+	_, _, err := h.k.ClaimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
+	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
+		h.k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool",
+			"validator", valAddr.String(),
+			"error", err,
+		)
+		return nil
+	}
 	return err
 }
 
-// AfterValidatorBeginUnbonding is called when a validator transitions from bonded to unbonding.
-// We settle all pending rewards (base + bonus) for each position on this validator,
-// since no new base rewards will accrue after this point.
+// AfterValidatorBeginUnbonding is called when a validator transitions from
+// bonded to unbonding. We settle all pending rewards (base + bonus) for each
+// position on this validator.
+//
+// forceAccrue=true is required because the SDK has already changed the
+// validator status to Unbonding before firing this hook; without forcing,
+// calculateBonus would return zero and the final bonus would be lost.
+// After settlement, LastBonusAccrual is advanced to block time. Future
+// claims via MsgClaimTierRewards will see the validator as not-bonded and
+// calculateBonus will return zero, so no bonus accrues during unbonding.
+// AfterValidatorBonded resets LastBonusAccrual when the validator re-bonds.
 func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
@@ -40,15 +56,14 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 		return nil
 	}
 
-	return h.claimAllRewardsForPositions(ctx, valAddr, positions)
+	return h.claimAllRewardsForPositions(ctx, valAddr, positions, true)
 }
 
 // BeforeValidatorSlashed is called before a validator is slashed.
-// We will first claim any pending rewards for all positions on this validator.
-// It is possible for a validator to be slashed multiple times, even when the validator is already unbonding/unbonded,
-// so there is a need to claim rewards here independently from AfterValidatorBeginUnbonding.
-// We will then reduce Amount on all positions delegated to this validator by the slash fraction.
-// This keeps bonus APY and claim amounts consistent with the actual token value.
+// We first claim any pending rewards for all positions on this validator.
+// forceAccrue=false: if the validator is still bonded the bonus is settled
+// normally; if already unbonding the bonus is correctly skipped.
+// We then reduce Amount on all positions by the slash fraction.
 func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
 	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
@@ -58,7 +73,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return nil
 	}
 
-	err = h.claimAllRewardsForPositions(ctx, valAddr, positions)
+	err = h.claimAllRewardsForPositions(ctx, valAddr, positions, false)
 	if err != nil {
 		return err
 	}
