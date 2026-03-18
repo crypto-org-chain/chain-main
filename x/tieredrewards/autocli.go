@@ -143,7 +143,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				{
 					RpcMethod:      "FundTierPool",
 					Use:            "fund-tier-pool [amount]",
-					Short:          "Fund the tier bonus rewards pool (must be whitelisted in pool_funders)",
+					Short:          "Fund the tier bonus rewards pool",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "amount"}},
 				},
 			},

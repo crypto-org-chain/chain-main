@@ -58,7 +58,6 @@ service Msg {
   rpc WithdrawFromTier(MsgWithdrawFromTier) returns (MsgWithdrawFromTierResponse);
 
   // FundTierPool sends coins to the tier bonus rewards pool.
-  // Depositor must be in the params.pool_funders whitelist.
   rpc FundTierPool(MsgFundTierPool) returns (MsgFundTierPoolResponse);
 }
 
@@ -326,12 +325,12 @@ message MsgWithdrawFromTierResponse {
 }
 
 // MsgFundTierPool sends coins to the tier bonus rewards pool.
-// The depositor must be in the pool_funders whitelist (managed via MsgUpdateParams).
+// Any account may fund the pool.
 message MsgFundTierPool {
   option (cosmos.msg.v1.signer) = "depositor";
   option (amino.name)           = "chainmain/MsgFundTierPool";
 
-  // depositor is the address funding the pool (must be in params.pool_funders).
+  // depositor is the address funding the pool.
   string depositor = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
   // amount is the coins to deposit into the tier rewards pool.

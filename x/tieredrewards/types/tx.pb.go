@@ -1318,9 +1318,9 @@ func (m *MsgWithdrawFromTierResponse) GetAmount() github_com_cosmos_cosmos_sdk_t
 }
 
 // MsgFundTierPool sends coins to the tier bonus rewards pool.
-// The depositor must be in the pool_funders whitelist (managed via MsgUpdateParams).
+// Any account may fund the pool.
 type MsgFundTierPool struct {
-	// depositor is the address funding the pool (must be in params.pool_funders).
+	// depositor is the address funding the pool.
 	Depositor string `protobuf:"bytes,1,opt,name=depositor,proto3" json:"depositor,omitempty"`
 	// amount is the coins to deposit into the tier rewards pool.
 	Amount github_com_cosmos_cosmos_sdk_types.Coins `protobuf:"bytes,2,rep,name=amount,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.Coins" json:"amount"`
@@ -1580,7 +1580,6 @@ type MsgClient interface {
 	// sends the position's amount back to the owner, and deletes the position.
 	WithdrawFromTier(ctx context.Context, in *MsgWithdrawFromTier, opts ...grpc.CallOption) (*MsgWithdrawFromTierResponse, error)
 	// FundTierPool sends coins to the tier bonus rewards pool.
-	// Depositor must be in the params.pool_funders whitelist.
 	FundTierPool(ctx context.Context, in *MsgFundTierPool, opts ...grpc.CallOption) (*MsgFundTierPoolResponse, error)
 }
 
@@ -1749,7 +1748,6 @@ type MsgServer interface {
 	// sends the position's amount back to the owner, and deletes the position.
 	WithdrawFromTier(context.Context, *MsgWithdrawFromTier) (*MsgWithdrawFromTierResponse, error)
 	// FundTierPool sends coins to the tier bonus rewards pool.
-	// Depositor must be in the params.pool_funders whitelist.
 	FundTierPool(context.Context, *MsgFundTierPool) (*MsgFundTierPoolResponse, error)
 }
 

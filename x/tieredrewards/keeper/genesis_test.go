@@ -9,7 +9,6 @@ import (
 func (s *KeeperSuite) TestInitExportGenesis_RoundTrip() {
 	customParams := types.NewParams(
 		sdkmath.LegacyNewDecWithPrec(3, 2), // 0.03
-		nil,
 	)
 	s.keeper.InitGenesis(s.ctx, &types.GenesisState{Params: customParams})
 
@@ -30,7 +29,6 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultParams() {
 func (s *KeeperSuite) TestInitExportGenesis_ReImport() {
 	original := types.NewParams(
 		sdkmath.LegacyNewDecWithPrec(5, 2), // 0.05
-		nil,
 	)
 	s.keeper.InitGenesis(s.ctx, &types.GenesisState{Params: original})
 
