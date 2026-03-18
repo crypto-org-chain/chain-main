@@ -191,3 +191,18 @@ func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEs
 		BonusRewards: bonusRewards,
 	}, nil
 }
+
+// TierVotingPower returns governance voting power from delegated tier positions for a voter.
+func (q queryServer) TierVotingPower(ctx context.Context, req *types.QueryTierVotingPowerRequest) (*types.QueryTierVotingPowerResponse, error) {
+	voter, err := sdk.AccAddressFromBech32(req.Voter)
+	if err != nil {
+		return nil, err
+	}
+
+	power, err := q.k.GetVotingPowerForAddress(ctx, voter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierVotingPowerResponse{VotingPower: power}, nil
+}

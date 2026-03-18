@@ -51,6 +51,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Estimate pending base and bonus rewards for a position",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
 				},
+				{
+					RpcMethod:      "TierVotingPower",
+					Use:            "voting-power [voter]",
+					Short:          "Query governance voting power from delegated tier positions",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "voter"}},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
