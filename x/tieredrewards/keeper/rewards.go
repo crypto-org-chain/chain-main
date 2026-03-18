@@ -209,6 +209,41 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	return k.SetPosition(ctx, pos)
 }
 
+// slashRedelegationPosition handles the AfterSlashRedelegation hook. It reduces
+// both Amount (by slashAmount) and DelegatedShares (by shareBurnt) for the
+// position mapped to the given unbonding ID.
+//
+// During a redelegation slash the SDK calls Unbond on the destination
+// validator, burning shares from the tier module's delegation. Without this
+// update, DelegatedShares becomes stale, causing over-credited rewards and
+// eventual undelegate failures.
+func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
+	positionId, err := k.UnbondingIdToPositionId.Get(ctx, unbondingId)
+	if errors.Is(err, collections.ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	pos, err := k.Positions.Get(ctx, positionId)
+	if err != nil {
+		return err
+	}
+
+	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
+
+	if pos.IsDelegated() && shareBurnt.IsPositive() {
+		newShares := pos.DelegatedShares.Sub(shareBurnt)
+		if newShares.IsPositive() {
+			pos.UpdateDelegatedShares(newShares)
+		} else {
+			pos.ClearDelegation()
+		}
+	}
+
+	return k.SetPosition(ctx, pos)
+}
+
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
 // Formula: Amount × BonusApy × durationSeconds / SecondsPerYear
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
