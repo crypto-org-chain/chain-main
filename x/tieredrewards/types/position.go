@@ -126,6 +126,10 @@ func (p *Position) UpdateAmount(amount math.Int) {
 	p.Amount = amount
 }
 
+func (p *Position) UpdateDelegatedShares(shares math.LegacyDec) {
+	p.DelegatedShares = shares
+}
+
 // ClearDelegation resets all delegation-related fields when a position is undelegated.
 func (p *Position) ClearDelegation() {
 	p.Validator = ""

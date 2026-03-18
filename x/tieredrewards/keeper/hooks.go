@@ -116,9 +116,11 @@ func (h Hooks) AfterSlashUnbondingRedelegation(ctx context.Context, unbondingId 
 
 // AfterSlashRedelegation is called after the active delegation at the destination
 // validator is slashed as part of SlashRedelegation (A→B redelegation, A is slashed,
-// B's active delegation is reduced).
-func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, _ sdkmath.LegacyDec) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+// B's active delegation is reduced). shareBurnt is the number of shares the SDK
+// removed from the destination delegation via Unbond; we must update
+// DelegatedShares on the position to keep it in sync.
+func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
+	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
 }
 
 // AfterUnbondingInitiated is a no-op. The unbondingId → positionId mapping
