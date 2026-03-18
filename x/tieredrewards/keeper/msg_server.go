@@ -206,7 +206,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
+	if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false); err != nil {
 		return nil, err
 	}
 
@@ -275,7 +275,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if _, _, err := ms.ClaimRewardsForPositions(ctx, srcValAddr, []types.Position{pos}); err != nil {
+	if _, _, err := ms.ClaimRewardsForPositions(ctx, srcValAddr, []types.Position{pos}, false); err != nil {
 		return nil, err
 	}
 
@@ -357,7 +357,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
+		if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false); err != nil {
 			return nil, err
 		}
 
@@ -455,7 +455,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	baseRewards, bonusRewards, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos})
+	baseRewards, bonusRewards, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
 		return nil, err
 	}
