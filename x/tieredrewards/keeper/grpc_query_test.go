@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -214,4 +215,51 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
 		}
 	}
 	s.Require().True(hasBondDenom, "bonus rewards should contain bond denom")
+}
+
+// --- TierVotingPower ---
+
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(5000),
+	})
+	s.Require().NoError(err)
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.IsZero())
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_Delegated() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)))
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoPositions() {
+	s.resetQueryClient()
+	addr := sdk.AccAddress([]byte("no_positions________")).String()
+
+	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: addr})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.IsZero())
 }
