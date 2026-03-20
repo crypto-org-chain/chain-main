@@ -5,6 +5,7 @@ package types
 
 import (
 	fmt "fmt"
+	_ "github.com/cosmos/cosmos-proto"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
 	io "io"
@@ -23,17 +24,133 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// ValidatorRewardRatioEntry wraps a validator address with its reward ratio for genesis export.
+type ValidatorRewardRatioEntry struct {
+	Validator   string               `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
+	RewardRatio ValidatorRewardRatio `protobuf:"bytes,2,opt,name=reward_ratio,json=rewardRatio,proto3" json:"reward_ratio"`
+}
+
+func (m *ValidatorRewardRatioEntry) Reset()         { *m = ValidatorRewardRatioEntry{} }
+func (m *ValidatorRewardRatioEntry) String() string { return proto.CompactTextString(m) }
+func (*ValidatorRewardRatioEntry) ProtoMessage()    {}
+func (*ValidatorRewardRatioEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{0}
+}
+func (m *ValidatorRewardRatioEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorRewardRatioEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorRewardRatioEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorRewardRatioEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorRewardRatioEntry.Merge(m, src)
+}
+func (m *ValidatorRewardRatioEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorRewardRatioEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorRewardRatioEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorRewardRatioEntry proto.InternalMessageInfo
+
+func (m *ValidatorRewardRatioEntry) GetValidator() string {
+	if m != nil {
+		return m.Validator
+	}
+	return ""
+}
+
+func (m *ValidatorRewardRatioEntry) GetRewardRatio() ValidatorRewardRatio {
+	if m != nil {
+		return m.RewardRatio
+	}
+	return ValidatorRewardRatio{}
+}
+
+// UnbondingMapping maps a staking unbonding ID to a tier position ID for genesis export.
+type UnbondingMapping struct {
+	UnbondingId uint64 `protobuf:"varint,1,opt,name=unbonding_id,json=unbondingId,proto3" json:"unbonding_id,omitempty"`
+	PositionId  uint64 `protobuf:"varint,2,opt,name=position_id,json=positionId,proto3" json:"position_id,omitempty"`
+}
+
+func (m *UnbondingMapping) Reset()         { *m = UnbondingMapping{} }
+func (m *UnbondingMapping) String() string { return proto.CompactTextString(m) }
+func (*UnbondingMapping) ProtoMessage()    {}
+func (*UnbondingMapping) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{1}
+}
+func (m *UnbondingMapping) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UnbondingMapping) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UnbondingMapping.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UnbondingMapping) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UnbondingMapping.Merge(m, src)
+}
+func (m *UnbondingMapping) XXX_Size() int {
+	return m.Size()
+}
+func (m *UnbondingMapping) XXX_DiscardUnknown() {
+	xxx_messageInfo_UnbondingMapping.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UnbondingMapping proto.InternalMessageInfo
+
+func (m *UnbondingMapping) GetUnbondingId() uint64 {
+	if m != nil {
+		return m.UnbondingId
+	}
+	return 0
+}
+
+func (m *UnbondingMapping) GetPositionId() uint64 {
+	if m != nil {
+		return m.PositionId
+	}
+	return 0
+}
+
 // GenesisState defines the tieredrewards module's genesis state.
 type GenesisState struct {
 	// params defines all the parameters of the module.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// tiers is the full set of tiers.
+	Tiers []Tier `protobuf:"bytes,2,rep,name=tiers,proto3" json:"tiers"`
+	// positions is the full set of positions.
+	Positions []Position `protobuf:"bytes,3,rep,name=positions,proto3" json:"positions"`
+	// next_position_id is the next auto-increment ID for positions.
+	NextPositionId uint64 `protobuf:"varint,4,opt,name=next_position_id,json=nextPositionId,proto3" json:"next_position_id,omitempty"`
+	// validator_reward_ratios is the cumulative reward ratio per validator.
+	ValidatorRewardRatios []ValidatorRewardRatioEntry `protobuf:"bytes,5,rep,name=validator_reward_ratios,json=validatorRewardRatios,proto3" json:"validator_reward_ratios"`
+	// unbonding_mappings maps staking unbonding IDs to tier position IDs.
+	UnbondingMappings []UnbondingMapping `protobuf:"bytes,6,rep,name=unbonding_mappings,json=unbondingMappings,proto3" json:"unbonding_mappings"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
 func (m *GenesisState) String() string { return proto.CompactTextString(m) }
 func (*GenesisState) ProtoMessage()    {}
 func (*GenesisState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a29049b0cc2bdb31, []int{0}
+	return fileDescriptor_a29049b0cc2bdb31, []int{2}
 }
 func (m *GenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -69,7 +186,44 @@ func (m *GenesisState) GetParams() Params {
 	return Params{}
 }
 
+func (m *GenesisState) GetTiers() []Tier {
+	if m != nil {
+		return m.Tiers
+	}
+	return nil
+}
+
+func (m *GenesisState) GetPositions() []Position {
+	if m != nil {
+		return m.Positions
+	}
+	return nil
+}
+
+func (m *GenesisState) GetNextPositionId() uint64 {
+	if m != nil {
+		return m.NextPositionId
+	}
+	return 0
+}
+
+func (m *GenesisState) GetValidatorRewardRatios() []ValidatorRewardRatioEntry {
+	if m != nil {
+		return m.ValidatorRewardRatios
+	}
+	return nil
+}
+
+func (m *GenesisState) GetUnbondingMappings() []UnbondingMapping {
+	if m != nil {
+		return m.UnbondingMappings
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*ValidatorRewardRatioEntry)(nil), "chainmain.tieredrewards.v1.ValidatorRewardRatioEntry")
+	proto.RegisterType((*UnbondingMapping)(nil), "chainmain.tieredrewards.v1.UnbondingMapping")
 	proto.RegisterType((*GenesisState)(nil), "chainmain.tieredrewards.v1.GenesisState")
 }
 
@@ -78,21 +232,111 @@ func init() {
 }
 
 var fileDescriptor_a29049b0cc2bdb31 = []byte{
-	// 216 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xd2, 0x48, 0xce, 0x48, 0xcc,
-	0xcc, 0xcb, 0x4d, 0xcc, 0xcc, 0xd3, 0x2f, 0xc9, 0x4c, 0x2d, 0x4a, 0x4d, 0x29, 0x4a, 0x2d, 0x4f,
-	0x2c, 0x4a, 0x29, 0xd6, 0x2f, 0x33, 0xd4, 0x4f, 0x4f, 0xcd, 0x4b, 0x2d, 0xce, 0x2c, 0xd6, 0x2b,
-	0x28, 0xca, 0x2f, 0xc9, 0x17, 0x92, 0x82, 0xab, 0xd4, 0x43, 0x51, 0xa9, 0x57, 0x66, 0x28, 0xa5,
-	0x8e, 0xc7, 0x94, 0x82, 0xc4, 0xa2, 0xc4, 0x5c, 0xa8, 0x21, 0x52, 0x22, 0xe9, 0xf9, 0xe9, 0xf9,
-	0x60, 0xa6, 0x3e, 0x88, 0x05, 0x11, 0x55, 0x0a, 0xe0, 0xe2, 0x71, 0x87, 0xd8, 0x15, 0x5c, 0x92,
-	0x58, 0x92, 0x2a, 0xe4, 0xc0, 0xc5, 0x06, 0xd1, 0x25, 0xc1, 0xa8, 0xc0, 0xa8, 0xc1, 0x6d, 0xa4,
-	0xa4, 0x87, 0xdb, 0x6e, 0xbd, 0x00, 0xb0, 0x4a, 0x27, 0x96, 0x13, 0xf7, 0xe4, 0x19, 0x82, 0xa0,
-	0xfa, 0x9c, 0xc2, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0, 0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6,
-	0x09, 0x8f, 0xe5, 0x18, 0x2e, 0x3c, 0x96, 0x63, 0xb8, 0xf1, 0x58, 0x8e, 0x21, 0xca, 0x26, 0x3d,
-	0xb3, 0x24, 0xa3, 0x34, 0x49, 0x2f, 0x39, 0x3f, 0x57, 0x3f, 0xb9, 0xa8, 0xb2, 0xa0, 0x24, 0x5f,
-	0x37, 0xbf, 0x28, 0x5d, 0x17, 0x6c, 0x81, 0x3e, 0x98, 0xd4, 0x05, 0xfb, 0xa3, 0x02, 0xcd, 0x27,
-	0x25, 0x95, 0x05, 0xa9, 0xc5, 0x49, 0x6c, 0x60, 0x07, 0x1b, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff,
-	0x7f, 0x9d, 0xad, 0x06, 0x37, 0x01, 0x00, 0x00,
+	// 496 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x41, 0x8b, 0xd3, 0x40,
+	0x18, 0x6d, 0xda, 0x6e, 0xa1, 0x93, 0x22, 0xeb, 0xa0, 0x98, 0x2d, 0x98, 0xed, 0x16, 0xd1, 0x1c,
+	0x6c, 0xe2, 0x56, 0xbc, 0x2d, 0xa8, 0x05, 0xd1, 0x3d, 0x08, 0x4b, 0x56, 0x0b, 0x7a, 0x09, 0xd3,
+	0xce, 0x90, 0x1d, 0x30, 0x33, 0x61, 0x66, 0x5a, 0xb7, 0xff, 0xc2, 0x1f, 0x23, 0xf8, 0x17, 0xf6,
+	0xb8, 0x78, 0x12, 0x0f, 0x22, 0xed, 0x1f, 0x91, 0x4c, 0x26, 0xc9, 0x5a, 0x6a, 0xc0, 0x4b, 0xc8,
+	0xbc, 0x79, 0xdf, 0xfb, 0x1e, 0xdf, 0x9b, 0x0f, 0x78, 0xf3, 0x0b, 0x44, 0x59, 0x82, 0x28, 0x0b,
+	0x14, 0x25, 0x82, 0x60, 0x41, 0x3e, 0x23, 0x81, 0x65, 0xb0, 0x3c, 0x0e, 0x62, 0xc2, 0x88, 0xa4,
+	0xd2, 0x4f, 0x05, 0x57, 0x1c, 0xf6, 0x4b, 0xa6, 0xff, 0x17, 0xd3, 0x5f, 0x1e, 0xf7, 0x1f, 0xd5,
+	0xa8, 0xa4, 0x48, 0xa0, 0xc4, 0x88, 0xf4, 0x1f, 0xd6, 0x10, 0xd5, 0x2a, 0x25, 0x05, 0xef, 0x60,
+	0xce, 0x65, 0xc2, 0x65, 0xa4, 0x4f, 0x41, 0x7e, 0x30, 0x57, 0x77, 0x62, 0x1e, 0xf3, 0x1c, 0xcf,
+	0xfe, 0x72, 0x74, 0xf8, 0xcd, 0x02, 0x07, 0x53, 0xf4, 0x89, 0x62, 0xa4, 0xb8, 0x08, 0xb5, 0x68,
+	0x88, 0x14, 0xe5, 0xaf, 0x98, 0x12, 0x2b, 0xf8, 0x1c, 0x74, 0x97, 0xc5, 0xa5, 0x63, 0x0d, 0x2c,
+	0xaf, 0x3b, 0x39, 0xfa, 0xfe, 0x75, 0x74, 0xdf, 0x08, 0x97, 0x85, 0x2f, 0x31, 0x16, 0x44, 0xca,
+	0x73, 0x25, 0x28, 0x8b, 0xc3, 0xaa, 0x06, 0x7e, 0x00, 0xbd, 0xdc, 0x69, 0x24, 0x32, 0x55, 0xa7,
+	0x39, 0xb0, 0x3c, 0x7b, 0xfc, 0xc4, 0xff, 0xf7, 0x4c, 0xfc, 0x5d, 0x6e, 0x26, 0xed, 0xab, 0x5f,
+	0x87, 0x8d, 0xd0, 0x16, 0x15, 0x34, 0x9c, 0x82, 0xfd, 0xf7, 0x6c, 0xc6, 0x19, 0xa6, 0x2c, 0x7e,
+	0x8b, 0xd2, 0x94, 0xb2, 0x18, 0x1e, 0x81, 0xde, 0xa2, 0xc0, 0x22, 0x8a, 0xb5, 0xe5, 0x76, 0x68,
+	0x97, 0xd8, 0x29, 0x86, 0x87, 0xc0, 0x4e, 0xb9, 0xa4, 0x8a, 0x72, 0x96, 0x31, 0x9a, 0x9a, 0x01,
+	0x0a, 0xe8, 0x14, 0x0f, 0x7f, 0xb6, 0x40, 0xef, 0x75, 0x9e, 0xe0, 0xb9, 0x42, 0x8a, 0xc0, 0x17,
+	0xa0, 0x93, 0x67, 0xa1, 0xe5, 0xec, 0xf1, 0xb0, 0xce, 0xfd, 0x99, 0x66, 0x1a, 0xbf, 0xa6, 0x0e,
+	0x9e, 0x80, 0xbd, 0x8c, 0x28, 0x9d, 0xe6, 0xa0, 0xe5, 0xd9, 0xe3, 0x41, 0x9d, 0xc0, 0x3b, 0x4a,
+	0x84, 0x29, 0xcf, 0x8b, 0xe0, 0x1b, 0xd0, 0x2d, 0xec, 0x49, 0xa7, 0xa5, 0x15, 0x1e, 0xd4, 0x5a,
+	0x30, 0x64, 0xa3, 0x52, 0x15, 0x43, 0x0f, 0xec, 0x33, 0x72, 0xa9, 0xa2, 0x9b, 0x03, 0x68, 0xeb,
+	0x01, 0xdc, 0xca, 0xf0, 0xb3, 0x72, 0x08, 0x50, 0x82, 0x7b, 0x65, 0x88, 0xd1, 0xcd, 0x04, 0xa5,
+	0xb3, 0xa7, 0x1d, 0x3c, 0xfb, 0xdf, 0x08, 0xf5, 0x83, 0x32, 0x96, 0xee, 0x2e, 0x77, 0x10, 0x24,
+	0x44, 0x00, 0x56, 0xe9, 0x25, 0x79, 0xa4, 0xd2, 0xe9, 0xe8, 0x7e, 0x8f, 0xeb, 0xfa, 0x6d, 0xbf,
+	0x03, 0xd3, 0xe6, 0xf6, 0x62, 0x0b, 0x97, 0x93, 0xe9, 0xd5, 0xda, 0xb5, 0xae, 0xd7, 0xae, 0xf5,
+	0x7b, 0xed, 0x5a, 0x5f, 0x36, 0x6e, 0xe3, 0x7a, 0xe3, 0x36, 0x7e, 0x6c, 0xdc, 0xc6, 0xc7, 0x93,
+	0x98, 0xaa, 0x8b, 0xc5, 0xcc, 0x9f, 0xf3, 0x24, 0x98, 0x8b, 0x55, 0xaa, 0xf8, 0x88, 0x8b, 0x78,
+	0xa4, 0xbb, 0x06, 0xfa, 0x3b, 0xd2, 0xeb, 0x77, 0xb9, 0xb5, 0x80, 0x7a, 0xfb, 0x66, 0x1d, 0xbd,
+	0x4d, 0x4f, 0xff, 0x04, 0x00, 0x00, 0xff, 0xff, 0xbf, 0xfc, 0x36, 0xcd, 0x17, 0x04, 0x00, 0x00,
+}
+
+func (m *ValidatorRewardRatioEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorRewardRatioEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorRewardRatioEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.RewardRatio.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x12
+	if len(m.Validator) > 0 {
+		i -= len(m.Validator)
+		copy(dAtA[i:], m.Validator)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Validator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *UnbondingMapping) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UnbondingMapping) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *UnbondingMapping) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.PositionId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.PositionId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.UnbondingId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.UnbondingId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
@@ -115,6 +359,67 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.UnbondingMappings) > 0 {
+		for iNdEx := len(m.UnbondingMappings) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.UnbondingMappings[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x32
+		}
+	}
+	if len(m.ValidatorRewardRatios) > 0 {
+		for iNdEx := len(m.ValidatorRewardRatios) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorRewardRatios[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x2a
+		}
+	}
+	if m.NextPositionId != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.NextPositionId))
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Positions) > 0 {
+		for iNdEx := len(m.Positions) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Positions[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.Tiers) > 0 {
+		for iNdEx := len(m.Tiers) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Tiers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -139,6 +444,36 @@ func encodeVarintGenesis(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *ValidatorRewardRatioEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Validator)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = m.RewardRatio.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *UnbondingMapping) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.UnbondingId != 0 {
+		n += 1 + sovGenesis(uint64(m.UnbondingId))
+	}
+	if m.PositionId != 0 {
+		n += 1 + sovGenesis(uint64(m.PositionId))
+	}
+	return n
+}
+
 func (m *GenesisState) Size() (n int) {
 	if m == nil {
 		return 0
@@ -147,6 +482,33 @@ func (m *GenesisState) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	if len(m.Tiers) > 0 {
+		for _, e := range m.Tiers {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.Positions) > 0 {
+		for _, e := range m.Positions {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if m.NextPositionId != 0 {
+		n += 1 + sovGenesis(uint64(m.NextPositionId))
+	}
+	if len(m.ValidatorRewardRatios) > 0 {
+		for _, e := range m.ValidatorRewardRatios {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.UnbondingMappings) > 0 {
+		for _, e := range m.UnbondingMappings {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -155,6 +517,209 @@ func sovGenesis(x uint64) (n int) {
 }
 func sozGenesis(x uint64) (n int) {
 	return sovGenesis(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *ValidatorRewardRatioEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorRewardRatioEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorRewardRatioEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Validator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RewardRatio", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.RewardRatio.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UnbondingMapping) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UnbondingMapping: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UnbondingMapping: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnbondingId", wireType)
+			}
+			m.UnbondingId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UnbondingId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PositionId", wireType)
+			}
+			m.PositionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PositionId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *GenesisState) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -215,6 +780,161 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := m.Params.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tiers", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Tiers = append(m.Tiers, Tier{})
+			if err := m.Tiers[len(m.Tiers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Positions", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Positions = append(m.Positions, Position{})
+			if err := m.Positions[len(m.Positions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NextPositionId", wireType)
+			}
+			m.NextPositionId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NextPositionId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorRewardRatios", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorRewardRatios = append(m.ValidatorRewardRatios, ValidatorRewardRatioEntry{})
+			if err := m.ValidatorRewardRatios[len(m.ValidatorRewardRatios)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnbondingMappings", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UnbondingMappings = append(m.UnbondingMappings, UnbondingMapping{})
+			if err := m.UnbondingMappings[len(m.UnbondingMappings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
