@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
@@ -22,21 +23,30 @@ import (
 // Mock + standalone tests
 // ---------------------------------------------------------------------------
 
+// mockTierVotingPower implements TierVotingPowerProvider for unit tests.
+// Set getErr to simulate errors from the keeper.
 type mockTierVotingPower struct {
-	powers map[string]sdkmath.LegacyDec
+	positions map[string][]types.Position
+	getErr    error
 }
 
-func (m mockTierVotingPower) GetVotingPowerForAddress(_ context.Context, voter sdk.AccAddress) (sdkmath.LegacyDec, error) {
-	if p, ok := m.powers[voter.String()]; ok {
-		return p, nil
+func (m mockTierVotingPower) GetActiveDelegatedPositionsByOwner(_ context.Context, voter sdk.AccAddress) ([]types.Position, error) {
+	if m.getErr != nil {
+		return nil, m.getErr
 	}
-	return sdkmath.LegacyZeroDec(), nil
+	var active []types.Position
+	for _, pos := range m.positions[voter.String()] {
+		if pos.IsActiveForGovernance() {
+			active = append(active, pos)
+		}
+	}
+	return active, nil
 }
 
 var _ keeper.TierVotingPowerProvider = mockTierVotingPower{}
 
 func TestNewCalculateVoteResultsAndVotingPowerFn_NotNil(t *testing.T) {
-	mock := mockTierVotingPower{powers: map[string]sdkmath.LegacyDec{}}
+	mock := mockTierVotingPower{positions: map[string][]types.Position{}}
 	fn := keeper.NewCalculateVoteResultsAndVotingPowerFn(mock, nil, nil)
 	require.NotNil(t, fn, "should return a non-nil tally function")
 }
@@ -120,6 +130,23 @@ func (s *KeeperSuite) stakingPowerFor(delAddr sdk.AccAddress, valAddr sdk.ValAdd
 	return del.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 }
 
+// tierPowerFor computes the exact tier voting power for an address from its
+// DelegatedShares using the validators map (same formula used by the tally).
+func (s *KeeperSuite) tierPowerFor(owner sdk.AccAddress, validators map[string]v1.ValidatorGovInfo) sdkmath.LegacyDec {
+	positions, err := s.keeper.GetActiveDelegatedPositionsByOwner(s.ctx, owner)
+	s.Require().NoError(err)
+
+	total := sdkmath.LegacyZeroDec()
+	for _, pos := range positions {
+		val, ok := validators[pos.Validator]
+		if !ok || val.DelegatorShares.IsZero() {
+			continue
+		}
+		total = total.Add(pos.DelegatedShares.MulInt(val.BondedTokens).Quo(val.DelegatorShares))
+	}
+	return total
+}
+
 // ---------------------------------------------------------------------------
 // Integration tests
 // ---------------------------------------------------------------------------
@@ -146,11 +173,15 @@ func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
 
 	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
+
+	// Compute expected power from DelegatedShares (exact, not pos.Amount).
+	expected := s.tierPowerFor(freshAddr, validators)
+	s.Require().True(expected.IsPositive(), "tier power should be positive")
+
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expected := sdkmath.LegacyNewDecFromInt(tierAmount)
 	s.Require().True(totalPower.Equal(expected),
-		"voter with no staking should have power = tier amount; got %s, want %s", totalPower, expected)
+		"voter with no staking should have power = tier power; got %s, want %s", totalPower, expected)
 	s.Require().True(results[v1.OptionYes].Equal(expected))
 	s.Require().True(results[v1.OptionNo].IsZero())
 	s.Require().True(results[v1.OptionAbstain].IsZero())
@@ -177,7 +208,7 @@ func (s *KeeperSuite) TestCustomTally_StakingPlusTier() {
 
 	expectedStaking := s.stakingPowerFor(delAddr, valAddr, validators)
 	s.Require().True(expectedStaking.IsPositive(), "delegator should have staking power")
-	expectedTier := sdkmath.LegacyNewDecFromInt(tierAmount)
+	expectedTier := s.tierPowerFor(delAddr, validators)
 	expectedTotal := expectedStaking.Add(expectedTier)
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
@@ -212,14 +243,17 @@ func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsTierPower() {
 	}
 	s.insertVote(testProposalID, freshAddr, opts)
 	validators := s.buildValidatorsMap()
+
+	tierPower := s.tierPowerFor(freshAddr, validators)
+	s.Require().True(tierPower.IsPositive())
+
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	tierDec := sdkmath.LegacyNewDecFromInt(tierAmount)
-	s.Require().True(totalPower.Equal(tierDec),
-		"total should equal tier amount; got %s, want %s", totalPower, tierDec)
+	s.Require().True(totalPower.Equal(tierPower),
+		"total should equal tier power; got %s, want %s", totalPower, tierPower)
 
-	expectedYes := tierDec.Mul(sdkmath.LegacyNewDecWithPrec(6, 1))  // 60 %
-	expectedNo := tierDec.Mul(sdkmath.LegacyNewDecWithPrec(4, 1))   // 40 %
+	expectedYes := tierPower.Mul(sdkmath.LegacyNewDecWithPrec(6, 1)) // 60 %
+	expectedNo := tierPower.Mul(sdkmath.LegacyNewDecWithPrec(4, 1))  // 40 %
 	s.Require().True(results[v1.OptionYes].Equal(expectedYes),
 		"Yes should be 60%% of tier; got %s, want %s", results[v1.OptionYes], expectedYes)
 	s.Require().True(results[v1.OptionNo].Equal(expectedNo),
@@ -266,10 +300,12 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 
 	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
 	validators = s.buildValidatorsMap()
-	totalPower, _ = s.callCustomTally(testProposalID, validators)
+	tierPower := s.tierPowerFor(freshAddr, validators)
+	s.Require().True(tierPower.IsPositive(), "delegated tier should give positive power")
 
-	s.Require().True(totalPower.Equal(sdkmath.LegacyNewDec(5000)),
-		"after delegating, tier power should appear; got %s", totalPower)
+	totalPower, _ = s.callCustomTally(testProposalID, validators)
+	s.Require().True(totalPower.Equal(tierPower),
+		"after delegating, tier power should appear; got %s, want %s", totalPower, tierPower)
 }
 
 // Two voters: one with tier, one without. Totals are correct and independent.
@@ -288,15 +324,15 @@ func (s *KeeperSuite) TestCustomTally_MultipleVoters() {
 
 	// Second voter: only tier, no staking
 	otherAddr := sdk.AccAddress([]byte("other_tier_voter____"))
-	otherTier := sdkmath.NewInt(3000)
+	otherTierAmount := sdkmath.NewInt(3000)
 	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, otherAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, otherTier)))
+		sdk.NewCoins(sdk.NewCoin(bondDenom, otherTierAmount)))
 	s.Require().NoError(err)
 
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            otherAddr.String(),
 		Id:               1,
-		Amount:           otherTier,
+		Amount:           otherTierAmount,
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
@@ -308,20 +344,20 @@ func (s *KeeperSuite) TestCustomTally_MultipleVoters() {
 	validators := s.buildValidatorsMap()
 
 	delStaking := s.stakingPowerFor(delAddr, valAddr, validators)
-	delTier := sdkmath.LegacyNewDecFromInt(tierAmount)
-	otherTierDec := sdkmath.LegacyNewDecFromInt(otherTier)
+	delTier := s.tierPowerFor(delAddr, validators)
+	otherTier := s.tierPowerFor(otherAddr, validators)
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expectedTotal := delStaking.Add(delTier).Add(otherTierDec)
+	expectedTotal := delStaking.Add(delTier).Add(otherTier)
 	s.Require().True(totalPower.Equal(expectedTotal),
 		"total should be delStaking + delTier + otherTier; got %s, want %s", totalPower, expectedTotal)
 
 	expectedYes := delStaking.Add(delTier)
 	s.Require().True(results[v1.OptionYes].Equal(expectedYes),
 		"Yes should include delAddr staking + tier; got %s, want %s", results[v1.OptionYes], expectedYes)
-	s.Require().True(results[v1.OptionNo].Equal(otherTierDec),
-		"No should equal otherAddr's tier; got %s, want %s", results[v1.OptionNo], otherTierDec)
+	s.Require().True(results[v1.OptionNo].Equal(otherTier),
+		"No should equal otherAddr's tier; got %s, want %s", results[v1.OptionNo], otherTier)
 }
 
 // After tally, all processed votes are removed from the gov store.
@@ -358,6 +394,8 @@ func (s *KeeperSuite) TestCustomTally_VotesRemovedAfterTally() {
 // Validator operator votes No alongside a tier voter voting Yes and a staking
 // delegator voting Yes. The validator's second-pass tally (remaining
 // delegator shares not yet counted) must be included correctly.
+// After the double-count fix, the tier position's DelegatedShares are included
+// in DelegatorDeductions, so the second-pass does not count them twice.
 func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -391,8 +429,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	s.Require().NoError(err)
 	delStakingPower := del.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
-	// valAccAddr's first-pass contribution: it may or may not have a
-	// personal delegation — gather whatever deduction it causes.
+	// valAccAddr's first-pass contribution
 	valSelfShares := sdkmath.LegacyZeroDec()
 	valSelfPower := sdkmath.LegacyZeroDec()
 	if selfDel, selfErr := s.app.StakingKeeper.GetDelegation(s.ctx, valAccAddr, valAddr); selfErr == nil {
@@ -400,17 +437,22 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 		valSelfPower = selfDel.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 	}
 
-	// Second pass: validator tallies remaining shares (delegators that did
-	// not vote, including the tier module delegation).
-	totalDeductions := del.Shares.Add(valSelfShares)
+	// Get tier position's DelegatedShares (deducted from validator in the fix).
+	tierPositions, err := s.keeper.GetActiveDelegatedPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(tierPositions, 1, "freshAddr should have one active tier position")
+	tierPos := tierPositions[0]
+	tierTokenValue := tierPos.DelegatedShares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+
+	// Second pass: validator tallies remaining shares. After the fix, deductions
+	// include: delAddr.Shares + valSelfShares + tierPos.DelegatedShares.
+	totalDeductions := del.Shares.Add(valSelfShares).Add(tierPos.DelegatedShares)
 	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
 		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
-	tierDec := sdkmath.LegacyNewDecFromInt(tierAmount)
-
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expectedYes := delStakingPower.Add(tierDec)
+	expectedYes := delStakingPower.Add(tierTokenValue)
 	expectedNo := valSelfPower.Add(valRemainingPower)
 	expectedTotal := expectedYes.Add(expectedNo)
 
@@ -435,4 +477,220 @@ func (s *KeeperSuite) TestCustomTally_NoVotes() {
 	s.Require().True(results[v1.OptionNo].IsZero())
 	s.Require().True(results[v1.OptionAbstain].IsZero())
 	s.Require().True(results[v1.OptionNoWithVeto].IsZero())
+}
+
+// TestCustomTally_DoubleCountPrevented verifies that when a tier voter and the
+// validator both vote, the tier position's delegation shares are deducted from
+// the validator's second-pass calculation, preventing double-counting of the
+// same economic stake.
+func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	valAccAddr := sdk.AccAddress(valAddr)
+	tierAmount := sdkmath.NewInt(5000)
+	freshAddr := sdk.AccAddress([]byte("dc_tier_voter_______"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           tierAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Only the tier voter and the validator itself vote.
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, valAccAddr, noVoteOpts())
+
+	validators := s.buildValidatorsMap()
+	valInfo := validators[valAddr.String()]
+
+	// Get the tier position's DelegatedShares.
+	tierPositions, err := s.keeper.GetActiveDelegatedPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(tierPositions, 1)
+	tierPos := tierPositions[0]
+	tierTokenValue := tierPos.DelegatedShares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+
+	// Validator self-delegation (if any).
+	valSelfShares := sdkmath.LegacyZeroDec()
+	valSelfPower := sdkmath.LegacyZeroDec()
+	if selfDel, selfErr := s.app.StakingKeeper.GetDelegation(s.ctx, valAccAddr, valAddr); selfErr == nil {
+		valSelfShares = selfDel.Shares
+		valSelfPower = selfDel.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+	}
+
+	// With the fix, second pass deductions = valSelfShares + tierPos.DelegatedShares.
+	// The module account's shares are not counted a second time.
+	totalDeductions := valSelfShares.Add(tierPos.DelegatedShares)
+	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
+		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+
+	expectedYes := tierTokenValue
+	expectedNo := valSelfPower.Add(valRemainingPower)
+	expectedTotal := expectedYes.Add(expectedNo)
+
+	s.Require().True(totalPower.Equal(expectedTotal),
+		"double-count check: total mismatch; got %s, want %s", totalPower, expectedTotal)
+	s.Require().True(results[v1.OptionYes].Equal(expectedYes),
+		"Yes should equal only tier power (no double-count); got %s, want %s", results[v1.OptionYes], expectedYes)
+	s.Require().True(results[v1.OptionNo].Equal(expectedNo),
+		"No should equal validator second-pass (self + remaining); got %s, want %s", results[v1.OptionNo], expectedNo)
+
+	// Sanity: in a 1:1 token-to-share ratio test environment, tier token value
+	// should equal the locked amount.
+	s.Require().True(tierTokenValue.Equal(sdkmath.LegacyNewDecFromInt(tierAmount)),
+		"in 1:1 ratio test env, tier power should equal tier amount; got %s", tierTokenValue)
+}
+
+// TestCustomTally_ExitingTierPositionIgnored verifies that a tier position
+// with a triggered exit does not contribute voting power.
+func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIgnored() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	freshAddr := sdk.AccAddress([]byte("exiting_tier_voter__"))
+	tierAmount := sdkmath.NewInt(5000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
+	s.Require().NoError(err)
+
+	// Lock with immediate exit triggered — position stays delegated but is exiting.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  freshAddr.String(),
+		Id:                     1,
+		Amount:                 tierAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Verify position state: delegated but exiting.
+	allPositions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(allPositions, 1)
+	s.Require().True(allPositions[0].IsDelegated(), "position should still be delegated")
+	s.Require().True(allPositions[0].HasTriggeredExit(), "position should have triggered exit")
+
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	validators := s.buildValidatorsMap()
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+
+	s.Require().True(totalPower.IsZero(),
+		"exiting tier + no staking should give zero power; got %s", totalPower)
+	s.Require().True(results[v1.OptionYes].IsZero(),
+		"exiting tier position should not contribute to Yes; got %s", results[v1.OptionYes])
+}
+
+// TestCustomTally_TierKeeperError verifies that an error from the tier keeper
+// is propagated correctly by the tally function.
+func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
+	_, _, bondDenom := s.setupTierAndDelegator()
+
+	// Set up a voter with a vote in the store.
+	addr := sdk.AccAddress([]byte("error_tier_voter____"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
+	s.Require().NoError(err)
+	s.insertVote(testProposalID, addr, yesVoteOpts())
+
+	// Build the tally function with a mock that always errors.
+	sentinel := errors.New("tier keeper error")
+	errMock := mockTierVotingPower{
+		positions: map[string][]types.Position{},
+		getErr:    sentinel,
+	}
+	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+		errMock, s.app.StakingKeeper, s.app.AccountKeeper,
+	)
+	proposal := v1.Proposal{Id: testProposalID}
+	validators := s.buildValidatorsMap()
+
+	_, _, tallyErr := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	s.Require().Error(tallyErr, "tally should propagate tier keeper error")
+	s.Require().ErrorContains(tallyErr, "error getting tier positions for")
+}
+
+// TestCustomTally_MultiplePositionsSameValidator verifies that a voter with
+// two tier positions on the same validator has both positions' DelegatedShares
+// counted once each — neither double-counted nor dropped.
+func (s *KeeperSuite) TestCustomTally_MultiplePositionsSameValidator() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	freshAddr := sdk.AccAddress([]byte("multi_pos_voter_____"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(8000))))
+	s.Require().NoError(err)
+
+	// Position 1: 3000 tokens on the same validator.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(3000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Position 2: 5000 tokens on the same validator.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(5000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	validators := s.buildValidatorsMap()
+
+	// tierPowerFor sums both positions' DelegatedShares-to-tokens.
+	expected := s.tierPowerFor(freshAddr, validators)
+	s.Require().True(expected.IsPositive(), "two delegated positions should give positive power")
+
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+
+	s.Require().True(totalPower.Equal(expected),
+		"total power should equal sum of both positions; got %s, want %s", totalPower, expected)
+	s.Require().True(results[v1.OptionYes].Equal(expected),
+		"Yes should equal combined tier power; got %s, want %s", results[v1.OptionYes], expected)
+	s.Require().True(results[v1.OptionNo].IsZero())
+}
+
+// TestCustomTally_TierPositionValidatorNotInMap verifies that a tier position
+// whose validator is not in the bonded validators map is gracefully skipped,
+// contributing zero voting power without panicking or returning an error.
+func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
+	s.setupTierAndDelegator() // ensures tier 1 exists
+
+	// Construct a position delegated to a validator that is NOT in the bonded map.
+	fakeValAddr := sdk.ValAddress([]byte("not_in_bonded_map___"))
+	freshAddr := sdk.AccAddress([]byte("fake_val_voter______"))
+
+	pos := types.Position{
+		Id:              999,
+		Owner:           freshAddr.String(),
+		TierId:          1,
+		Amount:          sdkmath.NewInt(5000),
+		CreatedAtHeight: 1,
+		CreatedAtTime:   s.ctx.BlockTime(),
+		DelegatedShares: sdkmath.LegacyNewDec(5000),
+		Validator:       fakeValAddr.String(),
+	}
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	validators := s.buildValidatorsMap()
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+
+	s.Require().True(totalPower.IsZero(),
+		"position on non-bonded validator should contribute zero power; got %s", totalPower)
+	s.Require().True(results[v1.OptionYes].IsZero(),
+		"Yes should be zero when validator not in map; got %s", results[v1.OptionYes])
 }
