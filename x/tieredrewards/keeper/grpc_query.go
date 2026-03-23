@@ -5,14 +5,13 @@ import (
 	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
-
-	"cosmossdk.io/math"
-
-	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 

@@ -20,6 +20,6 @@ var (
 	ErrExitLockDurationNotReached   = errors.Register(ModuleName, 15, "exit lock duration not reached")
 	ErrPositionExiting              = errors.Register(ModuleName, 16, "position is exiting")
 	ErrRedelegationToSameValidator  = errors.Register(ModuleName, 17, "redelegation to same validator")
-	ErrPositionNotReadyToWithdraw = errors.Register(ModuleName, 18, "position is not ready to withdraw")
-	ErrPositionStillDelegated     = errors.Register(ModuleName, 19, "position is still delegated")
+	ErrPositionNotReadyToWithdraw   = errors.Register(ModuleName, 18, "position is not ready to withdraw")
+	ErrPositionStillDelegated       = errors.Register(ModuleName, 19, "position is still delegated")
 )
