@@ -94,8 +94,17 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 }
 
 func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
-	if !msg.Amount.IsValid() || msg.Amount.IsZero() {
-		return nil, errors.Wrap(types.ErrInvalidAmount, "fund amount must be valid and non-zero")
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(msg.Amount) != 1 || msg.Amount[0].Denom != bondDenom {
+		return nil, errors.Wrapf(types.ErrInvalidAmount, "only bond denom %s is accepted", bondDenom)
 	}
 
 	depositor, err := sdk.AccAddressFromBech32(msg.Depositor)

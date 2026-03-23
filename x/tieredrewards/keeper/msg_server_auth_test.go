@@ -375,6 +375,22 @@ func (s *KeeperSuite) TestFundTierPool_ZeroAmount() {
 	s.Require().ErrorIs(err, types.ErrInvalidAmount)
 }
 
+func (s *KeeperSuite) TestFundTierPool_WrongDenom() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	funderAddr, _ := sdk.AccAddressFromBech32(testFunder)
+	wrongCoins := sdk.NewCoins(sdk.NewCoin("otherdenom", sdkmath.NewInt(1000)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, funderAddr, wrongCoins)
+	s.Require().NoError(err)
+
+	_, err = msgServer.FundTierPool(s.ctx, &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    wrongCoins,
+	})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrInvalidAmount)
+}
+
 func (s *KeeperSuite) TestFundTierPool_InsufficientFunds() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 

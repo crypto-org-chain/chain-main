@@ -6,10 +6,11 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -26,7 +27,11 @@ type queryServer struct {
 }
 
 // Params returns the tieredrewards module parameters.
-func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q queryServer) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	params, err := q.k.Params.Get(ctx)
 	if err != nil {
 		return nil, err
@@ -37,6 +42,10 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 
 // AllTierPositions returns all positions with pagination.
 func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTierPositionsRequest) (*types.QueryAllTierPositionsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	positions, pageResp, err := query.CollectionPaginate(
 		ctx,
 		q.k.Positions,
@@ -56,6 +65,10 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 
 // TierPositionsByOwner returns all positions for a given owner address.
 func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryTierPositionsByOwnerRequest) (*types.QueryTierPositionsByOwnerResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	owner, err := sdk.AccAddressFromBech32(req.Owner)
 	if err != nil {
 		return nil, err
@@ -71,6 +84,10 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 
 // TierPosition returns a single position by ID.
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	pos, err := q.k.Positions.Get(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
@@ -79,7 +96,11 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 }
 
 // Tiers returns all tier definitions.
-func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {
+func (q queryServer) Tiers(ctx context.Context, req *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	var tiers []types.Tier
 	err := q.k.Tiers.Walk(ctx, nil, func(_ uint32, tier types.Tier) (bool, error) {
 		tiers = append(tiers, tier)
@@ -92,7 +113,11 @@ func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*ty
 }
 
 // TierPoolBalance returns the current balance of the bonus rewards pool.
-func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPoolBalanceRequest) (*types.QueryTierPoolBalanceResponse, error) {
+func (q queryServer) TierPoolBalance(ctx context.Context, req *types.QueryTierPoolBalanceRequest) (*types.QueryTierPoolBalanceResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	poolAddr := q.k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	balances := q.k.bankKeeper.SpendableCoins(ctx, poolAddr)
 	return &types.QueryTierPoolBalanceResponse{Balance: balances}, nil
@@ -103,6 +128,10 @@ func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPool
 // rewards accrued since the last UpdateBaseRewardsPerShare).
 // Bonus rewards are computed from the position's last accrual time to now.
 func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEstimateTierRewardsRequest) (*types.QueryEstimateTierRewardsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	pos, err := q.k.Positions.Get(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
@@ -125,12 +154,12 @@ func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEs
 
 	// Estimate base rewards using the stored ratio
 	currentRatio, err := q.k.GetValidatorRewardRatio(ctx, valAddr)
-	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+	if err != nil {
 		return nil, err
 	}
 
 	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
-	if !delta.IsAnyNegative() && !delta.IsZero() {
+	if delta.IsAllPositive() {
 		baseRewards, _ = delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
 	}
 
