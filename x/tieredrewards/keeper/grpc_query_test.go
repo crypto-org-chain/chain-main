@@ -263,3 +263,56 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoPositions() {
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.IsZero())
 }
+
+// TestGRPCQueryTierVotingPower_NilRequest verifies the nil guard added to the
+// TierVotingPower handler returns InvalidArgument instead of panicking.
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TierVotingPower(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "empty request")
+}
+
+// TestGRPCQueryTierVotingPower_InvalidAddress verifies that a malformed bech32
+// address returns an error rather than panicking or returning zero power silently.
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_InvalidAddress() {
+	_, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: "not-a-valid-address"})
+	s.Require().Error(err)
+}
+
+// TestGRPCQueryTierVotingPower_ExitingPosition verifies that a position with a
+// triggered exit does not contribute to the reported voting power.
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+	s.resetQueryClient()
+
+	// Before triggering exit: should have positive voting power.
+	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"active delegated position should contribute voting power; got %s", resp.VotingPower)
+
+	// Trigger exit.
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.resetQueryClient()
+
+	// After triggering exit: power should be zero.
+	resp, err = s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.IsZero(),
+		"exiting position should report zero voting power; got %s", resp.VotingPower)
+}

@@ -254,3 +254,38 @@ func TestPosition_IsDelegated(t *testing.T) {
 	delegated := validDelegatedPosition()
 	require.True(t, delegated.IsDelegated())
 }
+
+func TestPosition_IsActiveForGovernance(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now()
+
+	tests := []struct {
+		name       string
+		delegated  bool
+		exitTriggered bool
+		want       bool
+	}{
+		{name: "delegated, no exit", delegated: true, exitTriggered: false, want: true},
+		{name: "delegated, exit triggered", delegated: true, exitTriggered: true, want: false},
+		{name: "undelegated, no exit", delegated: false, exitTriggered: false, want: false},
+		{name: "undelegated, exit triggered", delegated: false, exitTriggered: true, want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			pos := validPosition()
+			if tt.delegated {
+				pos.WithDelegation(types.Delegation{
+					Validator: testValidator,
+					Shares:    sdkmath.LegacyNewDec(1000),
+				}, now)
+			}
+			if tt.exitTriggered {
+				pos.TriggerExit(now, time.Hour*24*365)
+			}
+			require.Equal(t, tt.want, pos.IsActiveForGovernance())
+		})
+	}
+}

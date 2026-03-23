@@ -2,7 +2,7 @@ package types
 
 import (
 	"fmt"
-	time "time"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
@@ -137,4 +137,11 @@ func (p *Position) ClearDelegation() {
 // HasTriggeredExit returns true if the position's exit has been triggered (regardless of whether the commitment has elapsed).
 func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
+}
+
+// IsActiveForGovernance returns true when the position is actively delegated
+// and has not initiated an exit. Only such positions contribute to governance
+// voting power.
+func (p Position) IsActiveForGovernance() bool {
+	return p.IsDelegated() && !p.HasTriggeredExit()
 }
