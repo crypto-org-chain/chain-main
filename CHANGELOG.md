@@ -21,6 +21,7 @@
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
 
 ### Bugfixes
+- [#1249](https://github.com/crypto-org-chain/chain-main/pull/1249) x/tieredrewards: fix chain-halt on 100% slash, bonus pool blocking base rewards, and BeginBlocker panics
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 
 *July 9, 2025*

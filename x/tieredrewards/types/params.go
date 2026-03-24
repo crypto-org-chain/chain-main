@@ -34,5 +34,10 @@ func validateTargetBaseRewardsRate(v sdkmath.LegacyDec) error {
 		return fmt.Errorf("target base rewards rate cannot be negative: %s", v)
 	}
 
+	// Cap at 100% to prevent governance from draining the rewards pool via BeginBlock top-ups.
+	if v.GT(sdkmath.LegacyOneDec()) {
+		return fmt.Errorf("target base rewards rate must not exceed 1.0 (100%%): got %s", v)
+	}
+
 	return nil
 }

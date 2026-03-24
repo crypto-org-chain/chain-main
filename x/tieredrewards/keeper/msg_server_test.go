@@ -1230,7 +1230,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 
 	expectedBonusRewards := sdkmath.LegacyNewDecFromInt(lockAmount).
 		Mul(sdkmath.LegacyNewDecWithPrec(4, 2)).
-		MulInt64(int64(advanceInTime.Seconds())).
+		MulInt64(int64(advanceInTime / time.Second)).
 		QuoInt64(types.SecondsPerYear).
 		TruncateInt()
 
@@ -1241,4 +1241,177 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	s.Require().NotNil(resp)
 	s.Require().True(expectedBonusRewards.Equal(resp.BonusRewards.AmountOf(bondDenom)), "bonus rewards should be correct")
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(expectedBaseRewards.Add(expectedBonusRewards))), "owner should have received rewards matching what's expected")
+}
+
+// TestMsgAddToTierPosition_NeverDoubleClaimsRewards verifies that AddToTierPosition
+// re-fetches the position after ClaimRewardsForPositions, so the updated
+// BaseRewardsPerShare snapshot is not overwritten. Calling ClaimTierRewards a second
+// time should yield zero base rewards if no new rewards have been allocated.
+func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Allocate some base rewards before adding to position.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	// AddToTierPosition internally claims rewards before delegating new tokens.
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().NoError(err)
+
+	balAfterAdd := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// No new rewards have been allocated — a second claim should yield zero.
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	balAfterClaim := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Balance should not change: the first claim was already settled in AddToTierPosition.
+	s.Require().Equal(balAfterAdd.Amount, balAfterClaim.Amount, "no additional rewards should be paid on second claim")
+	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should be zero on second claim")
+	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should also be zero on second claim: already settled in AddToTierPosition")
+}
+
+// TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating verifies that TierRedelegate
+// claims pending rewards before performing the redelegation. A subsequent ClaimTierRewards
+// call (with no new rewards allocated) should yield zero base rewards.
+func (s *KeeperSuite) TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	dstValAddr, _ := s.createSecondValidator()
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Advance time and allocate rewards so there are pending base rewards.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// TierRedelegate internally claims rewards via ClaimAndRefreshPosition.
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	balAfterRedelegate := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfterRedelegate.Amount.GT(balBefore.Amount), "rewards should be paid during redelegate")
+
+	// No new rewards allocated — subsequent ClaimTierRewards on dst validator should yield zero base.
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should already be claimed during redelegate")
+}
+
+// TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating verifies that TierUndelegate
+// claims pending rewards before undelegating. A subsequent ClaimTierRewards would fail
+// (position no longer delegated), but the balance increase confirms rewards were paid.
+func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past exit duration and allocate rewards.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// TierUndelegate internally claims rewards via ClaimAndRefreshPosition.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	balAfterUndelegate := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfterUndelegate.Amount.GT(balBefore.Amount), "rewards should be paid during undelegate")
+}
+
+// TestMsgClaimTierRewards_SucceedsWhenBonusPoolEmpty verifies that ClaimTierRewards
+// still pays out base rewards even when the bonus pool has no funds.
+func (s *KeeperSuite) TestMsgClaimTierRewards_SucceedsWhenBonusPoolEmpty() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Advance time and allocate base rewards, but intentionally leave bonus pool empty.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 365))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	// Bonus pool remains at 0 — bonus accrued but pool cannot cover it.
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// ClaimTierRewards must succeed and return base rewards even with empty bonus pool.
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err, "ClaimTierRewards must not fail when bonus pool is empty")
+	s.Require().False(resp.BaseRewards.IsZero(), "base rewards should be returned even when bonus pool is empty")
+	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should be empty when pool is exhausted")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "base rewards should have been transferred to owner")
 }

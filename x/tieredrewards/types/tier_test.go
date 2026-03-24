@@ -45,6 +45,14 @@ func TestTier_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "zero tier id",
+			modify: func(t *types.Tier) {
+				t.Id = 0
+			},
+			wantErr:     true,
+			errContains: "tier id must be non-zero",
+		},
+		{
 			name: "zero exit duration",
 			modify: func(t *types.Tier) {
 				t.ExitDuration = 0
@@ -67,6 +75,20 @@ func TestTier_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "bonus apy cannot be negative",
+		},
+		{
+			name: "bonus apy exactly 100% is valid",
+			modify: func(t *types.Tier) {
+				t.BonusApy = sdkmath.LegacyOneDec()
+			},
+		},
+		{
+			name: "bonus apy above 100% is rejected",
+			modify: func(t *types.Tier) {
+				t.BonusApy = sdkmath.LegacyNewDecWithPrec(101, 2) // 1.01
+			},
+			wantErr:     true,
+			errContains: "bonus apy must not exceed 1.0",
 		},
 		{
 			name: "nil min lock amount",

@@ -206,12 +206,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
-		return nil, err
-	}
-
-	// Re-fetch position after ClaimRewardsForPositions (it calls SetPosition internally).
-	pos, err = ms.Positions.Get(ctx, pos.Id)
+	pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, valAddr, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +217,8 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	}
 
 	if unbondingId > 0 {
+		// TODO: clean up this mapping after the unbonding completes to prevent
+		// unbounded state growth. Requires an EndBlocker or hook callback.
 		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
@@ -275,12 +272,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if _, _, err := ms.ClaimRewardsForPositions(ctx, srcValAddr, []types.Position{pos}); err != nil {
-		return nil, err
-	}
-
-	// Re-fetch position after claiming.
-	pos, err = ms.Positions.Get(ctx, pos.Id)
+	pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, srcValAddr, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -297,6 +289,8 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	}
 
 	if unbondingId > 0 {
+		// TODO: clean up this mapping after the redelegation completes to prevent
+		// unbounded state growth. Requires an EndBlocker or hook callback.
 		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
@@ -357,7 +351,8 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		if _, _, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}); err != nil {
+		pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, valAddr, pos)
+		if err != nil {
 			return nil, err
 		}
 

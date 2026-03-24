@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -26,13 +25,6 @@ func (k Keeper) Hooks() Hooks {
 
 func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) error {
 	_, _, err := h.k.ClaimRewardsForPositions(ctx, valAddr, positions)
-	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
-		h.k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool before validator slashed",
-			"validator", valAddr.String(),
-			"error", err,
-		)
-		return nil
-	}
 	return err
 }
 
@@ -67,6 +59,14 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	}
 
 	err = h.claimAllRewardsForPositions(ctx, valAddr, positions)
+	if err != nil {
+		return err
+	}
+
+	// Re-fetch positions after claiming so slashPositions operates on the latest
+	// store state. ClaimRewardsForPositions calls SetPosition internally, so the
+	// in-memory slice is stale after the call.
+	positions, err = h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}

@@ -30,12 +30,7 @@ func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount mat
 
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
-	if err != nil {
-		return math.LegacyDec{}, err
-	}
-
-	return newShares, nil
+	return k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
 }
 
 // Undelegate undelegates tokens from a validator on behalf of the tier module account.
@@ -90,17 +85,10 @@ func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 // delegation shares on a validator (new position, add to position, undelegate,
 // redelegate) so that existing positions' share of prior rewards is preserved.
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
-	ratio, err := k.GetValidatorRewardRatio(ctx, valAddr)
-
-	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+	// GetValidatorRewardRatio already normalises ErrNotFound to (sdk.DecCoins{}, nil).
+	currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
+	if err != nil {
 		return sdk.DecCoins{}, err
-	}
-
-	var currentRatio sdk.DecCoins
-	if errors.Is(err, collections.ErrNotFound) {
-		currentRatio = sdk.DecCoins{}
-	} else {
-		currentRatio = ratio
 	}
 
 	// Check if the tier module even has a delegation to this validator.
@@ -160,12 +148,9 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 	if err != nil {
 		return err
 	}
-	for _, pos := range positions {
-		err := k.slash(&pos, validator, fraction)
-		if err != nil {
-			return err
-		}
-		if err := k.SetPosition(ctx, pos); err != nil {
+	for i := range positions {
+		k.slash(&positions[i], validator, fraction)
+		if err := k.SetPosition(ctx, positions[i]); err != nil {
 			return err
 		}
 	}
@@ -173,13 +158,12 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 }
 
 // slash reduces the bonded tokens of a position by a given fraction.
-func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) error {
+func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) {
 	bondedTokens := validator.TokensFromShares(pos.DelegatedShares)
 
 	slash := bondedTokens.Mul(fraction).TruncateInt()
 	amount := math.MaxInt(pos.Amount.Sub(slash), math.ZeroInt())
 	pos.UpdateAmount(amount)
-	return nil
 }
 
 // slashPositionByUnbondingId looks up the position associated with an unbonding
@@ -210,11 +194,17 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 }
 
 // calculateBonus computes the accrued bonus for a position from LastRewardClaimedAt to accrualEnd.
-// Formula: Amount × BonusApy × durationSeconds / SecondsPerYear
+// Formula: tokens × BonusApy × durationSeconds / SecondsPerYear
+// where tokens = validator.TokensFromShares(DelegatedShares) — this uses the current exchange
+// rate and reflects any slashing that has already been applied to the validator. As a result,
+// after a 100% slash the position's DelegatedShares are worthless (TokensFromShares ≈ 0) and
+// no further bonus accrues, even though Amount may still show a pre-slash value. This is the
+// intended behavior: the position has no economic value remaining.
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
-func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
+// Returns both the bonus amount and the accrual end time so callers do not recompute it.
+func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) (math.Int, time.Time) {
 	if position.LastBonusAccrual.IsZero() {
-		return math.ZeroInt()
+		return math.ZeroInt(), blockTime
 	}
 
 	accrualEnd := blockTime
@@ -224,10 +214,11 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 
 	// No bonus if accrual end is not after last claimed
 	if !accrualEnd.After(position.LastBonusAccrual) {
-		return math.ZeroInt()
+		return math.ZeroInt(), accrualEnd
 	}
 
-	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual).Seconds())
+	// Use integer division to avoid float64 truncation bias.
+	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual) / time.Second)
 	tokens := validator.TokensFromShares(position.DelegatedShares)
 
 	bonus := tokens.
@@ -236,7 +227,7 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 		QuoInt64(types.SecondsPerYear).
 		TruncateInt()
 
-	return bonus
+	return bonus, accrualEnd
 }
 
 func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
@@ -245,10 +236,39 @@ func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
 	bonusRewards, err := k.ClaimBonusRewardsForPositions(ctx, positions)
+	if errors.Is(err, types.ErrInsufficientBonusPool) {
+		// Bonus pool exhausted — base rewards were still claimed successfully.
+		// Return base rewards with empty bonus; the un-paid bonus remains
+		// accrued on the position and will be claimable once the pool is refilled.
+		//
+		// Partial-failure invariant: ClaimBonusRewardsForPositions stops at the
+		// first position that cannot be paid. Positions before that one have had
+		// their LastBonusAccrual advanced (and are persisted); the failing position
+		// and all subsequent ones retain their previous LastBonusAccrual and will
+		// recalculate their full unpaid bonus on the next successful claim.
+		return baseRewards, sdk.Coins{}, nil
+	}
 	if err != nil {
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
 	return baseRewards, bonusRewards, nil
+}
+
+// ClaimAndRefreshPosition claims rewards for a single position then re-fetches it
+// from the store. ClaimRewardsForPositions writes updated state via SetPosition, so
+// any in-memory copy of the position is stale after the call. Callers that need to
+// continue mutating the position (delegate, redelegate, add tokens) must use the
+// returned refreshed copy.
+func (k Keeper) ClaimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+	base, bonus, err := k.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos})
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+	refreshed, err := k.Positions.Get(ctx, pos.Id)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+	return refreshed, base, bonus, nil
 }
 
 // ClaimBaseRewardsForPositions updates the cumulative rewards-per-share ratio
@@ -333,29 +353,37 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, curre
 
 // ClaimBonusRewardsForPositions settles bonus for a list of positions.
 // Caches tier lookups so positions in the same tier don't re-fetch.
+// Uses pointer access (&positions[i]) so callers' slice elements are updated in-place,
+// consistent with ClaimBaseRewardsForPositions.
+//
+// Partial-failure behavior: if a position cannot be paid because the bonus pool is
+// exhausted (ErrInsufficientBonusPool), the function returns that error immediately.
+// Positions processed before the failing one have their LastBonusAccrual advanced and
+// are already persisted; the failing position and all later ones are left untouched so
+// their full unpaid bonus can be re-computed on a future claim.
 func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []types.Position) (sdk.Coins, error) {
 	tierCache := make(map[uint32]types.Tier)
 	total := sdk.NewCoins()
 
-	for _, pos := range positions {
-		tier, ok := tierCache[pos.TierId]
+	for i := range positions {
+		tier, ok := tierCache[positions[i].TierId]
 		if !ok {
 			var err error
-			tier, err = k.Tiers.Get(ctx, pos.TierId)
+			tier, err = k.Tiers.Get(ctx, positions[i].TierId)
 			if err != nil {
 				return sdk.Coins{}, err
 			}
-			tierCache[pos.TierId] = tier
+			tierCache[positions[i].TierId] = tier
 		}
 
-		bonus, err := k.ClaimBonusRewards(ctx, &pos, tier)
+		bonus, err := k.ClaimBonusRewards(ctx, &positions[i], tier)
 		if err != nil {
 			return sdk.Coins{}, err
 		}
 
 		total = total.Add(bonus...)
 
-		if err := k.SetPosition(ctx, pos); err != nil {
+		if err := k.SetPosition(ctx, positions[i]); err != nil {
 			return sdk.Coins{}, err
 		}
 	}
@@ -365,6 +393,13 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 
 // ClaimBonusRewards calculates and pays the bonus for a position from the rewards pool.
 // Updates LastBonusAccrual on the position.
+//
+// Ordering note: LastBonusAccrual is advanced to accrualEnd before the pool balance
+// check. If the pool is insufficient the function returns ErrInsufficientBonusPool
+// without persisting the position — the in-memory update is intentionally discarded
+// by ClaimBonusRewardsForPositions, which only calls SetPosition on success. This
+// means the position retains its previous LastBonusAccrual in the store and the full
+// unpaid bonus will be recalculated on the next successful claim.
 func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier) (sdk.Coins, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
@@ -379,12 +414,7 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 		return sdk.Coins{}, err
 	}
 
-	bonus := k.calculateBonus(*pos, val, tier, blockTime)
-
-	accrualEnd := blockTime
-	if pos.CompletedExitLockDuration(blockTime) {
-		accrualEnd = pos.ExitUnlockAt
-	}
+	bonus, accrualEnd := k.calculateBonus(*pos, val, tier, blockTime)
 
 	pos.UpdateLastBonusAccrual(accrualEnd)
 

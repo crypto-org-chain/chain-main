@@ -34,9 +34,16 @@ func TestParams_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "valid large rate",
-			params:  types.NewParams(sdkmath.LegacyNewDec(10)),
-			wantErr: false,
+			name:        "rate above 100% is rejected",
+			params:      types.NewParams(sdkmath.LegacyNewDecWithPrec(101, 2)),
+			wantErr:     true,
+			errContains: "must not exceed",
+		},
+		{
+			name:        "rate far above 100% is also rejected",
+			params:      types.NewParams(sdkmath.LegacyNewDec(10)),
+			wantErr:     true,
+			errContains: "must not exceed",
 		},
 		{
 			name:        "negative rate",

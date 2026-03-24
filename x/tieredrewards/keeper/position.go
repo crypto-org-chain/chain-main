@@ -60,11 +60,7 @@ func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) er
 		return err
 	}
 
-	err = k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
-	if err != nil {
-		return err
-	}
-	return nil
+	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
 }
 
 // SetPosition stores a position. Validates and maintains secondary indexes.

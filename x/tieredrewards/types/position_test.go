@@ -98,12 +98,10 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "amount locked cannot be nil",
 		},
 		{
-			name: "zero amount locked",
+			name: "zero amount locked is valid (post-slash state)",
 			modify: func(p *types.Position) {
 				p.UpdateAmount(sdkmath.ZeroInt())
 			},
-			wantErr:     true,
-			errContains: "amount locked must be positive",
 		},
 		{
 			name: "negative amount locked",
@@ -111,7 +109,7 @@ func TestPosition_Validate(t *testing.T) {
 				p.UpdateAmount(sdkmath.NewInt(-500))
 			},
 			wantErr:     true,
-			errContains: "amount locked must be positive",
+			errContains: "must not be negative",
 		},
 		{
 			name: "negative delegated shares when delegated",

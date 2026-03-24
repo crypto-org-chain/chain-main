@@ -65,8 +65,10 @@ func TestBeginBlocker_EmptyPool(t *testing.T) {
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
-	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.SetParams(ctx, params)
+	// Use an extreme rate directly (bypassing validation) to force a shortfall,
+	// since the test setup has only ~1M bonded tokens and ~6.3M blocks/year.
+	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000% — test-only extreme value
+	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
 	// Drain the fee collector to a random address so there's a shortfall
@@ -91,8 +93,9 @@ func TestBeginBlocker_TopUpFromPool(t *testing.T) {
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
 	// Set the target base rewards rate to 10000% so that there is a shortfall since it is easier than increasing the total bonded tokens
-	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.SetParams(ctx, params)
+	// Use Params.Set directly to bypass validation — this extreme value is intentional for testing.
+	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000% — test-only extreme value
+	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
 	// Clear the fee collector so there's a guaranteed shortfall
@@ -135,8 +138,8 @@ func TestBeginBlocker_InsufficientPool(t *testing.T) {
 	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
 	ctx = ctxWithVoteInfos(t, a, ctx)
 
-	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.SetParams(ctx, params)
+	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000% — test-only extreme value
+	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
 	// Clear the fee collector to guarantee a shortfall
@@ -177,8 +180,9 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 
 	// Even at 10000%, the fee collector's existing balance (~2M) exceeds the
 	// per-block target for 1M bonded tokens, so no top-up should occur.
-	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000%
-	err := a.TieredRewardsKeeper.SetParams(ctx, params)
+	// Use Params.Set directly to bypass validation — this extreme value is intentional for testing.
+	params := types.NewParams(sdkmath.LegacyNewDec(100)) // 10000% — test-only extreme value
+	err := a.TieredRewardsKeeper.Params.Set(ctx, params)
 	require.NoError(t, err)
 
 	// Fund the pool so we can verify it stays untouched
@@ -197,4 +201,27 @@ func TestBeginBlocker_FeeCollectorSufficient(t *testing.T) {
 	// the fee collector already has ~2M from mint, which more than covers the target. So the pool stays untouched.
 	poolAfter := a.BankKeeper.GetBalance(ctx, poolAddr, sdk.DefaultBondDenom)
 	require.Equal(t, poolBefore.Amount, poolAfter.Amount, "pool should be untouched when fee collector is sufficient")
+}
+
+// TestBeginBlocker_BlocksPerYearZero verifies that BeginBlocker returns nil without
+// panicking when blocksPerYear is zero.
+func TestBeginBlocker_BlocksPerYearZero(t *testing.T) {
+	a := testutil.Setup(false, nil)
+	ctx := a.BaseApp.NewContext(false).WithBlockHeader(tmproto.Header{ChainID: testutil.ChainID})
+
+	// Set blocksPerYear to 0 in mint params via direct store access to bypass validation.
+	mintParams, err := a.MintKeeper.Params.Get(ctx)
+	require.NoError(t, err)
+	mintParams.BlocksPerYear = 0
+	err = a.MintKeeper.Params.Set(ctx, mintParams)
+	require.NoError(t, err)
+
+	// Set a non-zero rewards rate to ensure the function doesn't exit early on that check.
+	params := types.NewParams(sdkmath.LegacyNewDecWithPrec(3, 2))
+	err = a.TieredRewardsKeeper.SetParams(ctx, params)
+	require.NoError(t, err)
+
+	// Should log an error and return nil — not panic.
+	err = a.TieredRewardsKeeper.BeginBlocker(ctx)
+	require.NoError(t, err)
 }

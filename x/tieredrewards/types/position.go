@@ -40,8 +40,8 @@ func (p Position) Validate() error {
 		return fmt.Errorf("amount locked cannot be nil")
 	}
 
-	if !p.Amount.IsPositive() {
-		return fmt.Errorf("amount locked must be positive: %s", p.Amount)
+	if p.Amount.IsNegative() {
+		return fmt.Errorf("amount locked must not be negative: %s", p.Amount)
 	}
 
 	if p.IsDelegated() {
