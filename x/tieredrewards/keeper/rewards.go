@@ -515,4 +515,3 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 
 	return bonusCoins, nil
 }
-
