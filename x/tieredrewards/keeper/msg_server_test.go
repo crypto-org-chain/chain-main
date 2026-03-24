@@ -91,6 +91,7 @@ func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
 
 	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrTierNotFound)
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {

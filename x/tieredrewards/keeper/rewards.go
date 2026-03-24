@@ -181,7 +181,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 		return err
 	}
 
-	pos, err := k.Positions.Get(ctx, positionId)
+	pos, err := k.GetPosition(ctx, positionId)
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func (k Keeper) ClaimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddr
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
-	refreshed, err := k.Positions.Get(ctx, pos.Id)
+	refreshed, err := k.GetPosition(ctx, pos.Id)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -369,7 +369,7 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 		tier, ok := tierCache[positions[i].TierId]
 		if !ok {
 			var err error
-			tier, err = k.Tiers.Get(ctx, positions[i].TierId)
+			tier, err = k.GetTier(ctx, positions[i].TierId)
 			if err != nil {
 				return sdk.Coins{}, err
 			}

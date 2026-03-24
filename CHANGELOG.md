@@ -4,7 +4,8 @@
 
 ## Features
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
-- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add tierrewards module with base rewards top up
+- [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add basic code for tierrewards module with base rewards top up
+- [#1249](https://github.com/crypto-org-chain/chain-main/pull/1249) Implement tiered rewards module
 
 ### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
@@ -21,7 +22,6 @@
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
 
 ### Bugfixes
-- [#1249](https://github.com/crypto-org-chain/chain-main/pull/1249) x/tieredrewards: fix chain-halt on 100% slash, bonus pool blocking base rewards, and BeginBlocker panics
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 
 *July 9, 2025*

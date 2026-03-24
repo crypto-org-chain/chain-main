@@ -5,7 +5,6 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	"cosmossdk.io/collections"
 	"cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -65,7 +64,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 		return nil, err
 	}
 	if !has {
-		return nil, collections.ErrNotFound
+		return nil, errors.Wrapf(types.ErrTierNotFound, "tier id %d", msg.Tier.Id)
 	}
 
 	// Note: updating BonusApy or ExitDuration affects all existing positions on this
@@ -88,7 +87,7 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 		return nil, err
 	}
 
-	tier, err := ms.Tiers.Get(ctx, msg.Id)
+	tier, err := ms.GetTier(ctx, msg.Id)
 	if err != nil {
 		return nil, err
 	}

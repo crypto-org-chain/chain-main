@@ -5,7 +5,6 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,7 +25,7 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.Positions.Get(s.ctx, 1)
+	got, err := s.keeper.GetPosition(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
@@ -35,8 +34,8 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {
-	_, err := s.keeper.Positions.Get(s.ctx, 999)
-	s.Require().ErrorIs(err, collections.ErrNotFound)
+	_, err := s.keeper.GetPosition(s.ctx, 999)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
 func (s *KeeperSuite) TestSetPosition_InvalidFails() {
@@ -88,8 +87,8 @@ func (s *KeeperSuite) TestDeletePosition() {
 
 	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
 
-	_, err = s.keeper.Positions.Get(s.ctx, pos.Id)
-	s.Require().ErrorIs(err, collections.ErrNotFound)
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
 func (s *KeeperSuite) TestDeleteUnsavedPosition() {
@@ -97,8 +96,8 @@ func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	err := s.keeper.DeletePosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	_, err = s.keeper.Positions.Get(s.ctx, 1)
-	s.Require().ErrorIs(err, collections.ErrNotFound)
+	_, err = s.keeper.GetPosition(s.ctx, 1)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
 func (s *KeeperSuite) TestPositionCountByTier() {
@@ -324,7 +323,7 @@ func (s *KeeperSuite) TestGetPositionsByIds() {
 
 func (s *KeeperSuite) TestCreatePosition_Basic() {
 	delAddr, _, bondDenom := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -346,7 +345,7 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 
 func (s *KeeperSuite) TestCreatePosition_WithValidator() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
 	lockAmount := sdkmath.NewInt(1000)
@@ -368,7 +367,7 @@ func (s *KeeperSuite) TestCreatePosition_WithValidator() {
 
 func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
 	lockAmount := sdkmath.NewInt(1000)
@@ -392,7 +391,7 @@ func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
 
 func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	delAddr, _, _ := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
 	lockAmount := sdkmath.NewInt(1000)
@@ -408,7 +407,7 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 
 func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 	delAddr, _, _ := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
 	lockAmount := sdkmath.NewInt(1000)

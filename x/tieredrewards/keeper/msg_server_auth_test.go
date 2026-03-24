@@ -81,7 +81,7 @@ func (s *KeeperSuite) TestAddTier_Success() {
 	s.Require().NoError(err)
 
 	// Verify tier was stored
-	got, err := s.keeper.Tiers.Get(s.ctx, 1)
+	got, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), got.Id)
 	s.Require().True(msg.Tier.BonusApy.Equal(got.BonusApy))
@@ -156,7 +156,7 @@ func (s *KeeperSuite) TestUpdateTier_Success() {
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.Tiers.Get(s.ctx, 1)
+	got, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.LegacyNewDecWithPrec(8, 2).Equal(got.BonusApy))
 }
@@ -178,7 +178,7 @@ func (s *KeeperSuite) TestUpdateTier_SetCloseOnly() {
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.Tiers.Get(s.ctx, 1)
+	got, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().True(got.CloseOnly)
 }
@@ -207,6 +207,7 @@ func (s *KeeperSuite) TestUpdateTier_NotFound() {
 
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrTierNotFound)
 }
 
 func (s *KeeperSuite) TestUpdateTier_InvalidTier() {

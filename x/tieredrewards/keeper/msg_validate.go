@@ -5,11 +5,9 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // ValidateNewPosition validates the new position creation.
@@ -28,7 +26,7 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 // ValidateDelegatePosition validates the position intended to be delegated.
 func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if pos.IsDelegated() {
@@ -45,7 +43,7 @@ func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position
 // ValidateUndelegatePosition validates the position intended to be undelegated.
 func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if !pos.IsDelegated() {
@@ -64,7 +62,7 @@ func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Positi
 // ValidateRedelegatePosition validates the position intended to be redelegated.
 func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if !pos.IsDelegated() {
@@ -85,14 +83,14 @@ func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Positi
 // ValidateAddToPosition validates the position intended to have tokens added.
 func (k Keeper) ValidateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if pos.HasTriggeredExit() {
 		return types.ErrPositionExiting
 	}
 
-	tier, err := k.Tiers.Get(ctx, pos.TierId)
+	tier, err := k.GetTier(ctx, pos.TierId)
 	if err != nil {
 		return err
 	}
@@ -107,7 +105,7 @@ func (k Keeper) ValidateAddToPosition(ctx context.Context, pos types.Position, o
 // ValidateTriggerExit validates the position intended to trigger exit.
 func (k Keeper) ValidateTriggerExit(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if pos.HasTriggeredExit() {
@@ -120,7 +118,7 @@ func (k Keeper) ValidateTriggerExit(ctx context.Context, pos types.Position, own
 // ValidateClaimRewards validates the position intended to claim rewards.
 func (k Keeper) ValidateClaimRewards(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
-		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+		return types.ErrNotPositionOwner
 	}
 
 	if !pos.IsDelegated() {

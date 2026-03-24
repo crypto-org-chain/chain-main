@@ -17,6 +17,11 @@ func (k Keeper) BeginBlocker(ctx context.Context) error {
 	return k.topUpBaseRewards(ctx)
 }
 
+// topUpBaseRewards ensures per-block staker rewards do not fall below TargetBaseRewardsRate
+// applied to total bonded stake (annualized using mint BlocksPerYear). It compares that target
+// to the fee collector balance after community tax; if fees imply less, it transfers the
+// shortfall from the rewards pool to distribution and allocates it to validators pro-rata by
+// last-block consensus voting power.
 func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	params, err := k.Params.Get(ctx)
 	if err != nil {
