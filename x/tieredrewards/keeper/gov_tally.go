@@ -147,7 +147,7 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 // distributeVotingPower splits power across weighted vote options and accumulates
 // into results. Weight strings are validated at vote-submission time by the gov
 // module, so parse errors here indicate corrupted state and are treated as zero
-// weight (consistent with the SDK default tally behaviour).
+// weight (consistent with the SDK default tally behavior).
 func distributeVotingPower(options []*v1.WeightedVoteOption, power math.LegacyDec, results map[v1.VoteOption]math.LegacyDec) {
 	for _, option := range options {
 		weight, _ := math.LegacyNewDecFromStr(option.Weight)

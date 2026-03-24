@@ -7,6 +7,7 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
@@ -15,8 +16,6 @@ import (
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	"github.com/stretchr/testify/require"
 )
 
 // ---------------------------------------------------------------------------

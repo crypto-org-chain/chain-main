@@ -3,9 +3,9 @@ package keeper
 import (
 	"context"
 
-	addresscodec "cosmossdk.io/core/address"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	addresscodec "cosmossdk.io/core/address"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"

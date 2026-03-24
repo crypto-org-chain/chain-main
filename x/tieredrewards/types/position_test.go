@@ -261,10 +261,10 @@ func TestPosition_IsActiveForGovernance(t *testing.T) {
 	now := time.Now()
 
 	tests := []struct {
-		name       string
-		delegated  bool
+		name          string
+		delegated     bool
 		exitTriggered bool
-		want       bool
+		want          bool
 	}{
 		{name: "delegated, no exit", delegated: true, exitTriggered: false, want: true},
 		{name: "delegated, exit triggered", delegated: true, exitTriggered: true, want: false},

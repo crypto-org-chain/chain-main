@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
