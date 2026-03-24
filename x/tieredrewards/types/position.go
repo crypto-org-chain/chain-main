@@ -143,9 +143,10 @@ func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
 
-// IsActiveForGovernance returns true when the position is actively delegated
-// and has not initiated an exit. Only such positions contribute to governance
-// voting power.
+// IsActiveForGovernance returns true when the position is actively delegated.
+// Per ADR-006 §8.5, positions that have triggered exit but are still delegated
+// continue to count for governance voting power until the owner undelegates
+// and unbonding completes.
 func (p Position) IsActiveForGovernance() bool {
-	return p.IsDelegated() && !p.HasTriggeredExit()
+	return p.IsDelegated()
 }

@@ -28,4 +28,5 @@ var (
 	ErrNotPositionOwner             = errors.Register(ModuleName, 23, "unauthorized: signer is not position owner")
 	ErrPositionNotReadyToWithdraw   = errors.Register(ModuleName, 24, "position is not ready to withdraw")
 	ErrPositionStillDelegated       = errors.Register(ModuleName, 25, "position is still delegated")
+	ErrExitNotTriggered             = errors.Register(ModuleName, 26, "exit has not been triggered")
 )

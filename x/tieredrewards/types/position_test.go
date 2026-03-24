@@ -267,7 +267,7 @@ func TestPosition_IsActiveForGovernance(t *testing.T) {
 		want          bool
 	}{
 		{name: "delegated, no exit", delegated: true, exitTriggered: false, want: true},
-		{name: "delegated, exit triggered", delegated: true, exitTriggered: true, want: false},
+		{name: "delegated, exit triggered", delegated: true, exitTriggered: true, want: true},
 		{name: "undelegated, no exit", delegated: false, exitTriggered: false, want: false},
 		{name: "undelegated, exit triggered", delegated: false, exitTriggered: true, want: false},
 	}

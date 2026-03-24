@@ -1,8 +1,6 @@
 package keeper_test
 
 import (
-	"time"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -98,10 +96,10 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_NoPositions() {
 	s.Require().True(power.IsZero())
 }
 
-// TestGetVotingPowerForAddress_ExitingPositionIgnored verifies that a position
-// which has triggered exit (but is still delegated) no longer contributes
-// voting power, while the same position before exit does contribute.
-func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionIgnored() {
+// TestGetVotingPowerForAddress_ExitingPositionStillCounts verifies that a
+// position which has triggered exit (but is still delegated) still contributes
+// voting power per ADR-006 §8.5.
+func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -127,16 +125,16 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionIgnored() {
 	})
 	s.Require().NoError(err)
 
-	// After triggering exit: position is still delegated but exit is in progress —
-	// it should no longer contribute voting power.
+	// After triggering exit: position is still delegated — per ADR-006 §8.5
+	// it should still contribute voting power.
 	power, err = s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
 	s.Require().NoError(err)
-	s.Require().True(power.IsZero(),
-		"exiting position should not contribute voting power; got %s", power)
+	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"exiting but still delegated position should contribute voting power; got %s", power)
 }
 
 // TestGetVotingPowerForAddress_AfterUndelegate tests the full lifecycle:
-// exit triggered → no voting power; TierUndelegate → still no voting power.
+// exit triggered → still has voting power; TierUndelegate → no voting power.
 func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -151,16 +149,15 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	})
 	s.Require().NoError(err)
 
-	// Exit has been triggered immediately: position is still delegated but the
-	// exit is in progress, so it must not contribute voting power.
+	// Exit has been triggered immediately: position is still delegated — per
+	// ADR-006 §8.5 it should still contribute voting power.
 	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
 	s.Require().NoError(err)
-	s.Require().True(power.IsZero(),
-		"exit triggered: should have zero voting power while exit is pending; got %s", power)
+	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"exit triggered but still delegated: should have voting power; got %s", power)
 
-	// Fund rewards pool and advance time past exit duration
+	// Fund rewards pool and undelegate (allowed immediately per ADR-006 §5.4)
 	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour)) // 366 days
 
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
@@ -207,9 +204,9 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 	s.Require().True(total.IsZero())
 }
 
-// TestTotalDelegatedVotingPower_ExcludesExiting verifies that positions with a
-// triggered exit are excluded from the total.
-func (s *KeeperSuite) TestTotalDelegatedVotingPower_ExcludesExiting() {
+// TestTotalDelegatedVotingPower_IncludesExiting verifies that positions with a
+// triggered exit are still included in the total per ADR-006 §8.5.
+func (s *KeeperSuite) TestTotalDelegatedVotingPower_IncludesExiting() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -234,6 +231,6 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_ExcludesExiting() {
 
 	total, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)
-	s.Require().True(total.Equal(sdkmath.LegacyNewDec(3000)),
-		"exiting position should be excluded from total; got %s", total)
+	s.Require().True(total.Equal(sdkmath.LegacyNewDec(5000)),
+		"exiting position should be included in total; got %s", total)
 }

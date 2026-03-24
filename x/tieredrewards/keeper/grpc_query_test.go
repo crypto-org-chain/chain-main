@@ -281,7 +281,7 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_InvalidAddress() {
 }
 
 // TestGRPCQueryTierVotingPower_ExitingPosition verifies that a position with a
-// triggered exit does not contribute to the reported voting power.
+// triggered exit still contributes to voting power per ADR-006 §8.5.
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -310,9 +310,10 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
-	// After triggering exit: power should be zero.
+	// After triggering exit: per ADR-006 §8.5, still-delegated positions
+	// continue to contribute voting power.
 	resp, err = s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
 	s.Require().NoError(err)
-	s.Require().True(resp.VotingPower.IsZero(),
-		"exiting position should report zero voting power; got %s", resp.VotingPower)
+	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"exiting but still delegated position should report voting power; got %s", resp.VotingPower)
 }

@@ -548,9 +548,9 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 		"in 1:1 ratio test env, tier power should equal tier amount; got %s", tierTokenValue)
 }
 
-// TestCustomTally_ExitingTierPositionIgnored verifies that a tier position
-// with a triggered exit does not contribute voting power.
-func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIgnored() {
+// TestCustomTally_ExitingTierPositionIncluded verifies that a tier position
+// with a triggered exit still contributes voting power per ADR-006 §8.5.
+func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIncluded() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -579,12 +579,19 @@ func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIgnored() {
 
 	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
+
+	// Per ADR-006 §8.5, exiting-but-delegated positions still count for
+	// governance voting power.
+	expectedPower := s.tierPowerFor(freshAddr, validators)
+	s.Require().True(expectedPower.IsPositive(),
+		"exiting but delegated position should have positive power")
+
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	s.Require().True(totalPower.IsZero(),
-		"exiting tier + no staking should give zero power; got %s", totalPower)
-	s.Require().True(results[v1.OptionYes].IsZero(),
-		"exiting tier position should not contribute to Yes; got %s", results[v1.OptionYes])
+	s.Require().True(totalPower.Equal(expectedPower),
+		"exiting tier should contribute voting power; got %s, want %s", totalPower, expectedPower)
+	s.Require().True(results[v1.OptionYes].Equal(expectedPower),
+		"Yes should include exiting tier position; got %s", results[v1.OptionYes])
 }
 
 // TestCustomTally_TierKeeperError verifies that an error from the tier keeper
@@ -692,4 +699,70 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 		"position on non-bonded validator should contribute zero power; got %s", totalPower)
 	s.Require().True(results[v1.OptionYes].IsZero(),
 		"Yes should be zero when validator not in map; got %s", results[v1.OptionYes])
+}
+
+// TestCustomTally_ExitingPositionDoubleCountPrevented verifies that exiting
+// tier positions (which now contribute voting power per ADR-006 §8.5) still
+// have their DelegatedShares correctly deducted from the validator's
+// second-pass tally to prevent double-counting.
+func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	valAccAddr := sdk.AccAddress(valAddr)
+	tierAmount := sdkmath.NewInt(5000)
+	freshAddr := sdk.AccAddress([]byte("exit_dc_voter_______"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
+	s.Require().NoError(err)
+
+	// Lock with delegation and immediate exit trigger.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  freshAddr.String(),
+		Id:                     1,
+		Amount:                 tierAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Tier voter votes Yes, validator votes No.
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, valAccAddr, noVoteOpts())
+
+	validators := s.buildValidatorsMap()
+	valInfo := validators[valAddr.String()]
+
+	// The exiting position is still delegated, so it should contribute.
+	tierPositions, err := s.keeper.GetActiveDelegatedPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(tierPositions, 1, "exiting position should be active for governance")
+	tierPos := tierPositions[0]
+	tierTokenValue := tierPos.DelegatedShares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+
+	// Validator self-delegation.
+	valSelfShares := sdkmath.LegacyZeroDec()
+	valSelfPower := sdkmath.LegacyZeroDec()
+	if selfDel, selfErr := s.app.StakingKeeper.GetDelegation(s.ctx, valAccAddr, valAddr); selfErr == nil {
+		valSelfShares = selfDel.Shares
+		valSelfPower = selfDel.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+	}
+
+	// With the fix, second pass deductions = valSelfShares + tierPos.DelegatedShares.
+	totalDeductions := valSelfShares.Add(tierPos.DelegatedShares)
+	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
+		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+
+	expectedYes := tierTokenValue
+	expectedNo := valSelfPower.Add(valRemainingPower)
+	expectedTotal := expectedYes.Add(expectedNo)
+
+	s.Require().True(totalPower.Equal(expectedTotal),
+		"exiting position double-count check: total mismatch; got %s, want %s", totalPower, expectedTotal)
+	s.Require().True(results[v1.OptionYes].Equal(expectedYes),
+		"Yes should equal only exiting tier power; got %s, want %s", results[v1.OptionYes], expectedYes)
+	s.Require().True(results[v1.OptionNo].Equal(expectedNo),
+		"No should equal validator second-pass; got %s, want %s", results[v1.OptionNo], expectedNo)
 }

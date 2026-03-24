@@ -24,6 +24,8 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgAddToTierPosition{}, "chainmain/MsgAddToTierPosition")
 	legacy.RegisterAminoMsg(cdc, &MsgTriggerExitFromTier{}, "chainmain/MsgTriggerExitFromTier")
 	legacy.RegisterAminoMsg(cdc, &MsgClaimTierRewards{}, "chainmain/MsgClaimTierRewards")
+	legacy.RegisterAminoMsg(cdc, &MsgWithdrawFromTier{}, "chainmain/MsgWithdrawFromTier")
+	legacy.RegisterAminoMsg(cdc, &MsgFundTierPool{}, "chainmain/MsgFundTierPool")
 }
 
 // RegisterInterfaces registers the module's interface types.
@@ -42,6 +44,8 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgAddToTierPosition{},
 		&MsgTriggerExitFromTier{},
 		&MsgClaimTierRewards{},
+		&MsgWithdrawFromTier{},
+		&MsgFundTierPool{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

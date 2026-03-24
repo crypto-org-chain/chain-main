@@ -44,7 +44,9 @@ func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 }
 
 // GetActiveDelegatedPositionsByOwner returns all positions owned by voter that
-// are currently delegated to a validator and have NOT triggered an exit.
+// are currently delegated to a validator. Per ADR-006 §8.5, positions that
+// have triggered exit but are still delegated continue to contribute to
+// governance voting power until the owner undelegates.
 // The governance tally uses these positions to deduct each position's
 // DelegatedShares from the corresponding validator's DelegatorDeductions,
 // preventing the tiered-rewards module account's delegation from being
@@ -64,11 +66,11 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 	return active, nil
 }
 
-// TotalDelegatedVotingPower returns the sum of locked Amount for all active
-// delegated positions (delegated and not exiting). Tier delegations already
-// flow into TotalBondedTokens via the module account, so this value is not
-// added to the governance quorum denominator; it is provided for informational
-// purposes only.
+// TotalDelegatedVotingPower returns the sum of locked Amount for all delegated
+// positions (including those that have triggered exit but are still delegated).
+// Tier delegations already flow into TotalBondedTokens via the module account,
+// so this value is not added to the governance quorum denominator; it is
+// provided for informational purposes only.
 //
 // Note: this returns the nominal locked amount (pos.Amount), not the
 // shares-to-tokens value used by the governance tally. The two may diverge

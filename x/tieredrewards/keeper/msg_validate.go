@@ -26,6 +26,9 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 }
 
 // ValidateDelegatePosition validates the position intended to be delegated.
+// Exiting positions are allowed to delegate per ADR-006 §10: a position
+// created with trigger_exit_immediately but no validator can still be
+// delegated later so it earns rewards until ExitUnlockTime.
 func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
@@ -35,14 +38,13 @@ func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrPositionAlreadyDelegated
 	}
 
-	if pos.HasTriggeredExit() {
-		return types.ErrPositionExiting
-	}
-
 	return nil
 }
 
 // ValidateUndelegatePosition validates the position intended to be undelegated.
+// Per ADR-006 §5.4, undelegation is allowed as soon as the user has triggered
+// exit (ExitTriggeredAt != 0). The user does not need to wait for the full
+// exit commitment to elapse before beginning the SDK unbonding period.
 func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
@@ -52,10 +54,8 @@ func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		return types.ErrExitLockDurationNotReached
+	if !pos.HasTriggeredExit() {
+		return types.ErrExitNotTriggered
 	}
 
 	return nil
