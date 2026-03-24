@@ -48,7 +48,6 @@ local validator = import 'validator.jsonnet';
             burned_addresses: ['cro17w87d4yyyjys26v9a4r83a9e5eeamjg5hp5z6g'],
             decay_rate: '0.068000000000000000',
           },
-          // decay begins at genesis height 1 (no upgrade in this test config)
           decay_epoch_start: '1',
         },
       },
