@@ -10,7 +10,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-// GetTier returns the tier by id, or ErrTierNotFound when it does not exist.
 func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
 	tier, err := k.Tiers.Get(ctx, id)
 	if err != nil {
@@ -22,7 +21,6 @@ func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
 	return tier, nil
 }
 
-// SetTier validates and persists a tier.
 func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
 	if err := tier.Validate(); err != nil {
 		return err
@@ -33,7 +31,6 @@ func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
 	return nil
 }
 
-// DeleteTier removes a tier by ID. Fails if the tier has active positions.
 func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
 	hasPositions, err := k.HasActivePositionsForTier(ctx, tierId)
 	if err != nil {
@@ -51,7 +48,6 @@ func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
 	return nil
 }
 
-// HasTier checks if a tier exists.
 func (k Keeper) HasTier(ctx context.Context, id uint32) (bool, error) {
 	has, err := k.Tiers.Has(ctx, id)
 	if err != nil {
@@ -60,7 +56,6 @@ func (k Keeper) HasTier(ctx context.Context, id uint32) (bool, error) {
 	return has, nil
 }
 
-// HasActivePositionsForTier returns true if any positions exist for a tier.
 func (k Keeper) HasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
 	count, err := k.GetPositionCountForTier(ctx, tierId)
 	if err != nil {
@@ -69,7 +64,6 @@ func (k Keeper) HasActivePositionsForTier(ctx context.Context, tierId uint32) (b
 	return count > 0, nil
 }
 
-// GetPositionCountForTier returns the number of positions for a tier.
 func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uint64, error) {
 	count, err := k.PositionCountByTier.Get(ctx, tierId)
 	if err != nil {
@@ -81,7 +75,6 @@ func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uin
 	return count, nil
 }
 
-// increasePositionCount increments the position count for a tier.
 func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error {
 	count, err := k.GetPositionCountForTier(ctx, tierId)
 	if err != nil {
@@ -93,7 +86,6 @@ func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error 
 	return nil
 }
 
-// decreasePositionCount decrements the position count for a tier.
 func (k Keeper) decreasePositionCount(ctx context.Context, id uint32) error {
 	count, err := k.GetPositionCountForTier(ctx, id)
 	if err != nil {
@@ -103,13 +95,7 @@ func (k Keeper) decreasePositionCount(ctx context.Context, id uint32) error {
 		return nil
 	}
 	if count == 1 {
-		if err := k.PositionCountByTier.Remove(ctx, id); err != nil {
-			return errorsmod.Wrapf(err, "%s (tier id %d)", types.ErrPositionCountStore.Error(), id)
-		}
-		return nil
+		return k.PositionCountByTier.Remove(ctx, id)
 	}
-	if err := k.PositionCountByTier.Set(ctx, id, count-1); err != nil {
-		return errorsmod.Wrapf(err, "%s (tier id %d)", types.ErrPositionCountStore.Error(), id)
-	}
-	return nil
+	return k.PositionCountByTier.Set(ctx, id, count-1)
 }

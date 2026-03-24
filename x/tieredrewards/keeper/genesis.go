@@ -6,10 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// InitGenesis initializes the module's state from a provided genesis state.
-// Order matters: params → tiers → positions → sequence → reward ratios → unbonding mappings.
-// SetPosition rebuilds all secondary indexes (PositionsByOwner, PositionsByTier,
-// PositionsByValidator) and PositionCountByTier, so derived data does not need
+// InitGenesis initializes the module's state from genesis.
+// SetPosition rebuilds all secondary indexes, so derived data does not need
 // to be stored in genesis.
 func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	if err := k.SetParams(ctx, data.Params); err != nil {
@@ -28,8 +26,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	// Set sequence after positions to avoid interference with SetPosition's
-	// increasePositionCount. The sequence only tracks the next ID to assign.
+	// Set sequence after positions to avoid interference with SetPosition's increasePositionCount.
 	if data.NextPositionId > 0 {
 		if err := k.NextPositionId.Set(ctx, data.NextPositionId); err != nil {
 			panic(err)
@@ -53,8 +50,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 }
 
-// ExportGenesis returns a GenesisState for a given context and keeper.
-// Only primary data is exported; secondary indexes are rebuilt on InitGenesis.
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params, err := k.Params.Get(ctx)
 	if err != nil {

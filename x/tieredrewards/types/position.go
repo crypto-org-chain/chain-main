@@ -25,12 +25,10 @@ func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, cr
 		Amount:          amount,
 		CreatedAtHeight: uint64(createdAtHeight),
 		CreatedAtTime:   createdAtTime,
-		// initialize as zero instead of nil to be consistent when fetching from store (not nullable defaults this field to zero even if not set)
 		DelegatedShares: math.LegacyZeroDec(),
 	}
 }
 
-// Validate performs basic validation of a Position.
 func (p Position) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(p.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -48,9 +46,6 @@ func (p Position) Validate() error {
 		if _, err := sdk.ValAddressFromBech32(p.Validator); err != nil {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
-		// It is possible to have no base rewards per share when the position is created
-		// if the position is the first one delegated to a validator (no base rewards accrued yet)
-		// Decided against storing Coins with 0 amount as it will fail validation
 		if len(p.BaseRewardsPerShare) > 0 {
 			if err := p.BaseRewardsPerShare.Validate(); err != nil {
 				return fmt.Errorf("invalid base rewards per share: %w", err)
@@ -130,7 +125,6 @@ func (p *Position) UpdateDelegatedShares(shares math.LegacyDec) {
 	p.DelegatedShares = shares
 }
 
-// ClearDelegation resets all delegation-related fields when a position is undelegated.
 func (p *Position) ClearDelegation() {
 	p.Validator = ""
 	p.DelegatedShares = math.LegacyZeroDec()
@@ -138,15 +132,11 @@ func (p *Position) ClearDelegation() {
 	p.LastBonusAccrual = time.Time{}
 }
 
-// HasTriggeredExit returns true if the position's exit has been triggered (regardless of whether the commitment has elapsed).
 func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
 
 // IsActiveForGovernance returns true when the position is actively delegated.
-// Per ADR-006 §8.5, positions that have triggered exit but are still delegated
-// continue to count for governance voting power until the owner undelegates
-// and unbonding completes.
 func (p Position) IsActiveForGovernance() bool {
 	return p.IsDelegated()
 }

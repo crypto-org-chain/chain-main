@@ -19,7 +19,6 @@ var (
 	_ sdk.Msg = &MsgWithdrawFromTier{}
 )
 
-// Validate validates MsgLockTier sdk msg.
 func (msg MsgLockTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -38,7 +37,6 @@ func (msg MsgLockTier) Validate() error {
 	return nil
 }
 
-// Validate validates MsgCommitDelegationToTier sdk msg.
 func (msg MsgCommitDelegationToTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
@@ -48,7 +46,6 @@ func (msg MsgCommitDelegationToTier) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "amount must be positive")
 	}
 
-	// Validator is required for commit delegation
 	if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
@@ -56,7 +53,6 @@ func (msg MsgCommitDelegationToTier) Validate() error {
 	return nil
 }
 
-// Validate validates MsgTierDelegate sdk msg.
 func (msg MsgTierDelegate) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -69,7 +65,6 @@ func (msg MsgTierDelegate) Validate() error {
 	return nil
 }
 
-// Validate validates MsgTierUndelegate sdk msg.
 func (msg MsgTierUndelegate) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -78,7 +73,6 @@ func (msg MsgTierUndelegate) Validate() error {
 	return nil
 }
 
-// Validate validates MsgTierRedelegate sdk msg.
 func (msg MsgTierRedelegate) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -91,7 +85,6 @@ func (msg MsgTierRedelegate) Validate() error {
 	return nil
 }
 
-// Validate validates MsgAddToTierPosition sdk msg.
 func (msg MsgAddToTierPosition) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -104,7 +97,6 @@ func (msg MsgAddToTierPosition) Validate() error {
 	return nil
 }
 
-// Validate validates MsgTriggerExitFromTier sdk msg.
 func (msg MsgTriggerExitFromTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -113,7 +105,6 @@ func (msg MsgTriggerExitFromTier) Validate() error {
 	return nil
 }
 
-// Validate validates MsgClaimTierRewards sdk msg.
 func (msg MsgClaimTierRewards) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -122,7 +113,6 @@ func (msg MsgClaimTierRewards) Validate() error {
 	return nil
 }
 
-// Validate validates MsgWithdrawFromTier sdk msg.
 func (msg MsgWithdrawFromTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")

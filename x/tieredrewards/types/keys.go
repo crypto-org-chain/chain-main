@@ -16,15 +16,10 @@ var (
 )
 
 const (
-	// ModuleName defines the module name
-	ModuleName = "tieredrewards"
-
-	// StoreKey defines the primary module store key
-	StoreKey = ModuleName
-
-	// RewardsPoolName defines the base reward pool module account name
+	ModuleName      = "tieredrewards"
+	StoreKey        = ModuleName
 	RewardsPoolName = "rewards_pool"
 
-	// SecondsPerYear is used to convert durations to years for bonus calculation (365.25 days)
+	// SecondsPerYear is 365.25 days, used to convert durations to years for bonus calculation.
 	SecondsPerYear int64 = 31_557_600
 )

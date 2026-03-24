@@ -10,12 +10,10 @@ import (
 
 var _ types.MsgServer = msgServer{}
 
-// msgServer is a wrapper of Keeper.
 type msgServer struct {
 	Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the tieredrewards MsgServer interface.
 func NewMsgServerImpl(k Keeper) types.MsgServer {
 	return &msgServer{Keeper: k}
 }
@@ -30,8 +28,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	err = ms.ValidateNewPosition(ctx, tier, msg.Amount)
-	if err != nil {
+	if err := ms.ValidateNewPosition(ctx, tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -85,8 +82,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	err = ms.ValidateNewPosition(ctx, tier, msg.Amount)
-	if err != nil {
+	if err := ms.ValidateNewPosition(ctx, tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -156,7 +152,6 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	// only accept whole position amount delegate, no partial delegation
 	newShares, err := ms.Delegate(ctx, valAddr, pos.Amount)
 	if err != nil {
 		return nil, err
@@ -196,8 +191,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	err = ms.ValidateUndelegatePosition(ctx, pos, msg.Owner)
-	if err != nil {
+	if err := ms.ValidateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -217,8 +211,6 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	}
 
 	if unbondingId > 0 {
-		// TODO: clean up this mapping after the unbonding completes to prevent
-		// unbounded state growth. Requires an EndBlocker or hook callback.
 		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
@@ -258,8 +250,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	err = ms.ValidateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator)
-	if err != nil {
+	if err := ms.ValidateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator); err != nil {
 		return nil, err
 	}
 
@@ -290,8 +281,6 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	}
 
 	if unbondingId > 0 {
-		// TODO: clean up this mapping after the redelegation completes to prevent
-		// unbounded state growth. Requires an EndBlocker or hook callback.
 		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
@@ -411,9 +400,6 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
-
-	// There is no need to claim rewards here as the position is still delegated + locked
-	// Therefore, still gaining both base and bonus rewards as before the exit was triggered
 
 	if err := ms.SetPosition(ctx, pos); err != nil {
 		return nil, err

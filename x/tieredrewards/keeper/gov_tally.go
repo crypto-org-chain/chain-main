@@ -13,20 +13,10 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// NewCalculateVoteResultsAndVotingPowerFn returns a CalculateVoteResultsAndVotingPowerFn
-// that includes tier-delegated voting power for each voter in addition to
-// standard staking power. The returned function replicates the SDK default
-// tally logic and, for every voter, adds their tier voting power (sum of
-// DelegatedShares converted to tokens for active tier positions owned by the voter).
-//
-// To prevent double-counting, the tier position's DelegatedShares are added to
-// the validator's DelegatorDeductions before the second-pass tally. This ensures
-// the module account's delegation on the validator is not counted a second time
-// through the validator's residual delegator shares.
-//
-// Because the gov Keeper's staking/auth keepers are unexported, the callers
-// (app.go) must pass them explicitly so the custom function can iterate
-// delegations and decode addresses.
+// NewCalculateVoteResultsAndVotingPowerFn returns a tally function that includes
+// tier-delegated voting power for each voter in addition to standard staking power.
+// To prevent double-counting, each position's DelegatedShares are added to the
+// validator's DelegatorDeductions before the second-pass tally.
 func NewCalculateVoteResultsAndVotingPowerFn(
 	tierKeeper TierVotingPowerProvider,
 	sk GovTallyStakingKeeper,
@@ -47,7 +37,6 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 		results[v1.OptionNoWithVeto] = math.LegacyZeroDec()
 
 		rng := collections.NewPrefixedPairRange[uint64, sdk.AccAddress](proposal.Id)
-		// Collect keys to remove after iteration; deleting during Walk is not safe.
 		votesToRemove := []collections.Pair[uint64, sdk.AccAddress]{}
 
 		err = k.Votes.Walk(ctx, rng, func(key collections.Pair[uint64, sdk.AccAddress], vote v1.Vote) (bool, error) {
@@ -84,10 +73,8 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 				return false, err
 			}
 
-			// Tier-delegated voting power: for each active tier position, deduct
-			// its DelegatedShares from the validator so the module account's
-			// delegation is not double-counted in the validator second-pass tally.
-			// Power is computed using the same shares-to-tokens formula as staking.
+			// Tier-delegated voting power: deduct DelegatedShares from each validator
+			// so the module account's delegation is not double-counted.
 			tierPositions, err := tierKeeper.GetActiveDelegatedPositionsByOwner(ctx, voter)
 			if err != nil {
 				return false, fmt.Errorf("error getting tier positions for %s: %w", vote.Voter, err)
@@ -97,7 +84,6 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 				if !ok || val.DelegatorShares.IsZero() {
 					continue
 				}
-				// Deduct so the second pass does not count this delegation again.
 				val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.DelegatedShares)
 				validators[pos.Validator] = val
 
@@ -119,9 +105,7 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 			}
 		}
 
-		// Tally remaining validator voting power (second pass): for validators who
-		// voted themselves, attribute the shares not already deducted by individual
-		// delegators to the validator's own vote choice.
+		// Second pass: attribute remaining validator shares to the validator's own vote.
 		for _, val := range validators {
 			if len(val.Vote) == 0 {
 				continue
@@ -144,10 +128,6 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 	}
 }
 
-// distributeVotingPower splits power across weighted vote options and accumulates
-// into results. Weight strings are validated at vote-submission time by the gov
-// module, so parse errors here indicate corrupted state and are treated as zero
-// weight (consistent with the SDK default tally behavior).
 func distributeVotingPower(options []*v1.WeightedVoteOption, power math.LegacyDec, results map[v1.VoteOption]math.LegacyDec) {
 	for _, option := range options {
 		weight, _ := math.LegacyNewDecFromStr(option.Weight)

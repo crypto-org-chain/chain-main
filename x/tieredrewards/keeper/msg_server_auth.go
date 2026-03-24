@@ -67,10 +67,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 		return nil, errors.Wrapf(types.ErrTierNotFound, "tier id %d", msg.Tier.Id)
 	}
 
-	// Note: updating BonusApy or ExitDuration affects all existing positions on this
-	// tier immediately (BonusApy changes the accrual rate; ExitUnlockAt for already-
-	// exiting positions is fixed at TriggerExit time and is unaffected by ExitDuration
-	// changes). Governance should communicate changes ahead of time.
+	// Updating BonusApy or ExitDuration affects all existing positions on this tier immediately.
 	if err := ms.SetTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}

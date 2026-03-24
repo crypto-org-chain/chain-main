@@ -19,7 +19,6 @@ type Hooks struct {
 
 var _ stakingtypes.StakingHooks = Hooks{}
 
-// Hooks returns the staking hooks for the tieredrewards module.
 func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
@@ -36,17 +35,9 @@ func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValA
 	return err
 }
 
-// AfterValidatorBeginUnbonding is called when a validator transitions from
-// bonded to unbonding. We settle all pending rewards (base + bonus) for each
-// position on this validator.
-//
-// forceAccrue=true is required because the SDK has already changed the
-// validator status to Unbonding before firing this hook; without forcing,
-// calculateBonus would return zero and the final bonus would be lost.
-// After settlement, LastBonusAccrual is advanced to block time. Future
-// claims via MsgClaimTierRewards will see the validator as not-bonded and
-// calculateBonus will return zero, so no bonus accrues during unbonding.
-// AfterValidatorBonded resets LastBonusAccrual when the validator re-bonds.
+// AfterValidatorBeginUnbonding settles all pending rewards for each position on
+// this validator. forceAccrue=true is required because the SDK has already changed
+// the validator status to Unbonding before firing this hook.
 func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
@@ -59,11 +50,8 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 	return h.claimAllRewardsForPositions(ctx, valAddr, positions, true)
 }
 
-// BeforeValidatorSlashed is called before a validator is slashed.
-// We first claim any pending rewards for all positions on this validator.
-// forceAccrue=false: if the validator is still bonded the bonus is settled
-// normally; if already unbonding the bonus is correctly skipped.
-// We then reduce Amount on all positions by the slash fraction.
+// BeforeValidatorSlashed claims pending rewards then reduces Amount on all
+// positions by the slash fraction.
 func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
 	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
@@ -78,9 +66,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return err
 	}
 
-	// Re-fetch positions after claiming so slashPositions operates on the latest
-	// store state. ClaimRewardsForPositions calls SetPosition internally, so the
-	// in-memory slice is stale after the call.
+	// Re-fetch after claiming so slashPositions operates on latest store state.
 	positions, err = h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
@@ -89,10 +75,8 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return h.k.slashPositions(ctx, valAddr, positions, fraction)
 }
 
-// AfterValidatorBonded is called when a validator transitions to bonded.
-// We reset LastBonusAccrual for all positions on this validator to the current block time,
-// so bonus only accrues from when the validator is bonded again.
-// Without this, positions would over-claim bonus for the period the validator was unbonding.
+// AfterValidatorBonded resets LastBonusAccrual for all positions on this
+// validator so bonus only accrues from when the validator is bonded again.
 func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
 	if err != nil {
@@ -115,37 +99,25 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	return nil
 }
 
-// AfterSlashUnbondingDelegation is called after an unbonding delegation entry
-// is slashed in SlashUnbondingDelegation. Reduces the position's Amount by the
-// actual slashed amount.
 func (h Hooks) AfterSlashUnbondingDelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
 
-// AfterSlashUnbondingRedelegation is called after an unbonding delegation at the
-// destination validator is slashed as part of SlashRedelegation (the case where
-// the delegator redelegated A→B then undelegated from B, and A is slashed).
 func (h Hooks) AfterSlashUnbondingRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
 
-// AfterSlashRedelegation is called after the active delegation at the destination
-// validator is slashed as part of SlashRedelegation (A→B redelegation, A is slashed,
-// B's active delegation is reduced). shareBurnt is the number of shares the SDK
-// removed from the destination delegation via Unbond; we must update
-// DelegatedShares on the position to keep it in sync.
+// AfterSlashRedelegation updates DelegatedShares when an active destination
+// delegation is slashed via redelegation.
 func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
 	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
 }
 
-// AfterUnbondingInitiated is a no-op. The unbondingId → positionId mapping
-// is created directly in the message handlers (MsgTierUndelegate, MsgTierRedelegate)
-// after the staking operation returns the unbonding ID.
 func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
 	return nil
 }
 
-// --- No-op hooks ---
+// No-op hooks.
 
 func (h Hooks) AfterValidatorCreated(_ context.Context, _ sdk.ValAddress) error {
 	return nil

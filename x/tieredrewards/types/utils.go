@@ -6,7 +6,7 @@ import (
 	"cosmossdk.io/collections"
 )
 
-// CollectPairKeySetK2 extracts the K2 values from a KeySet[Pair[K1, K2]] iterator with a prefix range.
+// CollectPairKeySetK2 extracts K2 values from a KeySet[Pair[K1, K2]] iterator.
 func CollectPairKeySetK2[K1, K2 any](ctx context.Context, keySet collections.KeySet[collections.Pair[K1, K2]], rng *collections.PairRange[K1, K2]) ([]K2, error) {
 	iter, err := keySet.Iterate(ctx, rng)
 	if err != nil {

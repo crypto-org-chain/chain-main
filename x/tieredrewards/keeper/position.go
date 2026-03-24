@@ -48,7 +48,7 @@ func (k Keeper) CreatePosition(
 	return pos, nil
 }
 
-// LockFunds locks the the desired amount of funds into a position.
+// LockFunds locks the desired amount of funds into a position.
 func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) error {
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
@@ -63,7 +63,7 @@ func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) er
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
 }
 
-// SetPosition stores a position. Validates and maintains secondary indexes.
+// SetPosition stores a position, validates it, and maintains secondary indexes.
 func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 	if err := pos.Validate(); err != nil {
 		return err
@@ -118,7 +118,7 @@ func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 	return nil
 }
 
-// DeletePosition removes a position and its secondary indexes.
+// DeletePosition removes a position and cleans up secondary indexes.
 func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
@@ -146,19 +146,16 @@ func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
 	return k.decreasePositionCount(ctx, pos.TierId)
 }
 
-// GetPositionsIdsByOwner returns all position IDs owned by an address.
 func (k Keeper) GetPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[sdk.AccAddress, uint64](owner)
 	return types.CollectPairKeySetK2(ctx, k.PositionsByOwner, rng)
 }
 
-// GetPositionsIdsByValidator returns all position IDs delegated to a validator.
 func (k Keeper) GetPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
 	return types.CollectPairKeySetK2(ctx, k.PositionsByValidator, rng)
 }
 
-// GetPositionsByIds returns positions for the given IDs.
 func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
 	positions := make([]types.Position, 0, len(ids))
 	for _, id := range ids {
@@ -174,7 +171,6 @@ func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Po
 	return positions, nil
 }
 
-// GetPositionsByOwner returns all positions owned by an address.
 func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
 	ids, err := k.GetPositionsIdsByOwner(ctx, owner)
 	if err != nil {
@@ -183,7 +179,6 @@ func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) (
 	return k.GetPositionsByIds(ctx, ids)
 }
 
-// GetPositionsByValidator returns all positions delegated to a validator.
 func (k Keeper) GetPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
 	ids, err := k.GetPositionsIdsByValidator(ctx, valAddr)
 	if err != nil {

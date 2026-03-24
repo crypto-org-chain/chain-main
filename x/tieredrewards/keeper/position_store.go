@@ -10,7 +10,6 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-// GetPosition returns the position by id, or ErrPositionNotFound when it does not exist.
 func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, error) {
 	pos, err := k.Positions.Get(ctx, id)
 	if err != nil {

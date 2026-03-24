@@ -12,11 +12,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// GetVotingPowerForAddress returns the tier governance voting power for a given
-// address. Power is computed using the same shares-to-tokens formula as the
-// governance tally: DelegatedShares * BondedTokens / DelegatorShares.
-// All delegated positions with a bonded validator contribute, including those
-// that have triggered exit but remain delegated (ADR-006 §8.5).
+// GetVotingPowerForAddress returns the tier governance voting power for an address.
+// Power = DelegatedShares * BondedTokens / DelegatorShares for each delegated position.
 func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
 	active, err := k.GetActiveDelegatedPositionsByOwner(ctx, voter)
 	if err != nil {
@@ -44,14 +41,6 @@ func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 	return power, nil
 }
 
-// GetActiveDelegatedPositionsByOwner returns all positions owned by voter that
-// are currently delegated to a validator. Per ADR-006 §8.5, positions that
-// have triggered exit but are still delegated continue to contribute to
-// governance voting power until the owner undelegates.
-// The governance tally uses these positions to deduct each position's
-// DelegatedShares from the corresponding validator's DelegatorDeductions,
-// preventing the tiered-rewards module account's delegation from being
-// double-counted in the validator second-pass tally.
 func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error) {
 	positions, err := k.GetPositionsByOwner(ctx, voter)
 	if err != nil {
@@ -67,16 +56,6 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 	return active, nil
 }
 
-// TotalDelegatedVotingPower returns the sum of locked Amount for all delegated
-// positions (including those that have triggered exit but are still delegated).
-// Tier delegations already flow into TotalBondedTokens via the module account,
-// so this value is not added to the governance quorum denominator; it is
-// provided for informational purposes only.
-//
-// Note: this returns the nominal locked amount (pos.Amount), not the
-// shares-to-tokens value used by the governance tally. The two may diverge
-// after validator slashing, but since this is informational-only the
-// simpler formula is intentional.
 func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
