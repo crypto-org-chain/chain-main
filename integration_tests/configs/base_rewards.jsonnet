@@ -10,9 +10,18 @@ local validator = import 'validator.jsonnet';
     accounts: default.accounts + default.signers,
     genesis+: genesis {
       app_state+: {
-        // target_base_rewards_rate must be <= 1.0; use reduced blocks_per_year to preserve per-block target.
-        mint+: {
-          params+: {
+        // Pin max=min=0 so no new coins enter the fee collector during these tests.
+        mint: {
+          minter: {
+            inflation: '0.000000000000000000',
+            annual_provisions: '0.000000000000000000',
+          },
+          params: {
+            mint_denom: 'basecro',
+            inflation_rate_change: '0.130000000000000000',
+            inflation_max: '0.000000000000000000',
+            inflation_min: '0.000000000000000000',
+            goal_bonded: '0.670000000000000000',
             blocks_per_year: '63115',
           },
         },
