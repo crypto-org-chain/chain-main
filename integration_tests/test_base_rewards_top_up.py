@@ -86,9 +86,10 @@ def test_params_query(cluster):
     """Test querying tieredrewards parameters"""
     params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
     assert "target_base_rewards_rate" in params
-    # Genesis config sets it to 100.0 (10000%)
+    # Genesis: max rate 1.0 (100% p.a.); mint blocks_per_year is lowered so per-block target
+    # matches the old integration setup that used invalid rate 100 at default blocks_per_year.
     rate = float(params["target_base_rewards_rate"])
-    assert rate == 100.0
+    assert rate == 1.0
 
 
 def test_empty_pool_no_panic(cluster):
@@ -107,9 +108,9 @@ def test_empty_pool_no_panic(cluster):
 
 # community tax = 2%
 # total bonded = 2000000000
-# blocks per year = 6311520
-# target base rewards rate = 100 // 10000%
-# target stakers reward = 2000000000 * 100 / 6311520 = 31688.088638376 basecro
+# blocks per year = 63115 (genesis mint override)
+# target base rewards rate = 1.0 // 100% of bonded per year
+# target stakers reward = 2000000000 * 1 / 63115 ≈ 31688 basecro
 # fee collector balance = 25581
 # default stakers reward = 25581 * (1 - 0.02) = 25069.38 basecro
 # shortfall per block = 31688.088638376 - 25069.38 ~= 6618 basecro
@@ -150,7 +151,7 @@ def test_topup_from_pool(cluster):
 
 def test_pool_drains_to_zero(cluster):
     """Test that the pool eventually drains to zero as blocks progress.
-    With a very high target rate (10000%) and limited pool funds,
+    With max on-chain rate (100%) and a high per-block target (fewer blocks/year) and limited pool funds,
     the pool should be fully drained after enough blocks.
     """
     # funded from the previous test_topup_from_pool test
@@ -190,7 +191,7 @@ def test_chain_continues_after_pool_empty(cluster):
 
 def test_insufficient_pool_partial_drain(cluster):
     """Test that when pool has less than the shortfall, it drains everything available.
-    Fund the pool with 1 basecro — guaranteed less than any shortfall at 10000% rate.
+    Fund the pool with 1 basecro — guaranteed less than any shortfall from genesis params.
     """
     pool_addr = module_address(REWARDS_POOL_NAME)
 
@@ -214,10 +215,10 @@ def test_insufficient_pool_partial_drain(cluster):
 
 def test_zero_rate_no_topup(cluster):
     """Test that with rate = 0, no top-up occurs regardless of pool balance.
-    First fund pool and verify it drains at the current 10000% rate.
+    First fund pool and verify it drains while fee collector is below target.
     Then set rate to 0 and verify pool stops draining.
     """
-    # Fund the pool (rate is still 10000% from previous tests)
+    # Fund the pool (target rate still max / high per-block from previous tests)
     pool_addr = module_address(REWARDS_POOL_NAME)
     rsp = cluster.transfer(
         cluster.address("signer1"),
@@ -230,7 +231,7 @@ def test_zero_rate_no_topup(cluster):
     pool_after_fund = _pool_balance(cluster)
     assert pool_after_fund > 0, "pool should have been funded"
 
-    # Verify pool drains at 10000% rate
+    # Verify pool drains when fee collector is below target
     wait_for_new_blocks(cluster, 3)
     pool_after_drain = _pool_balance(cluster)
     assert pool_after_drain < pool_after_fund, "pool should have been drained"
@@ -271,7 +272,7 @@ def test_zero_rate_no_topup(cluster):
 
 
 # target base rewards rate = 0.01 // 1%
-# target stakers reward = 2000000000 * 0.01 / 6311520 = 3.1688088638376 basecro
+# target stakers reward = 2000000000 * 0.01 / 63115 ≈ 317 basecro
 # fee collector balance per block = 25581 basecro
 def test_fee_collector_sufficient_no_topup(cluster):
     """Test that no top-up occurs when fee collector already covers the target.

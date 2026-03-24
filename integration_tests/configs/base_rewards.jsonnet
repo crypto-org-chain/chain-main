@@ -10,9 +10,15 @@ local validator = import 'validator.jsonnet';
     accounts: default.accounts + default.signers,
     genesis+: genesis {
       app_state+: {
+        // target_base_rewards_rate must be <= 1.0; use reduced blocks_per_year to preserve per-block target.
+        mint+: {
+          params+: {
+            blocks_per_year: '63115',
+          },
+        },
         tieredrewards: {
           params: {
-            target_base_rewards_rate: '100.000000000000000000',
+            target_base_rewards_rate: '1.000000000000000000',
           },
         },
       },
