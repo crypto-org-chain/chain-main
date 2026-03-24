@@ -46,6 +46,10 @@ func (k Keeper) Undelegate(ctx context.Context, valAddr sdk.ValAddress, shares m
 
 // Redelegate redelegates tokens from one validator to another on behalf of the tier module account.
 // Returns the completion time, new shares on the destination validator, and the unbonding ID for slash tracking.
+//
+// NOTE: The returned unbondingId must be stored in UnbondingIdToPositionId
+// so that AfterSlashRedelegation can adjust the position's DelegatedShares if
+// the source validator is slashed during the redelegation maturation window.
 func (k Keeper) Redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	completionTime, newShares, unbondingId, err := k.stakingKeeper.BeginRedelegation(ctx, moduleAddr, srcValAddr, dstValAddr, shares)

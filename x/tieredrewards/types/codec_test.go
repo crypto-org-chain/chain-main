@@ -58,7 +58,7 @@ func TestRegisterLegacyAminoCodec_AllMsgTypes(t *testing.T) {
 	types.RegisterLegacyAminoCodec(cdc)
 
 	// Verify MsgWithdrawFromTier and MsgFundTierPool are registered
-	// (these were previously missing per H-1 finding).
+	// (these were previously missing).
 	require.NotPanics(t, func() {
 		cdc.MustMarshalJSON(&types.MsgWithdrawFromTier{
 			Owner:      "cosmos1test",

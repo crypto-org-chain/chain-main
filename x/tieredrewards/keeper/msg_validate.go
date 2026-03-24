@@ -29,6 +29,15 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 // Exiting positions are allowed to delegate per ADR-006 §10: a position
 // created with trigger_exit_immediately but no validator can still be
 // delegated later so it earns rewards until ExitUnlockTime.
+//
+// NOTE: After undelegation, the SDK unbonding period runs in the
+// background. If the user re-delegates this position to a new validator
+// before the previous unbonding completes, a slash on the old validator
+// could still reduce the position's DelegatedShares via
+// AfterSlashUnbondingDelegation while the position is already earning
+// on the new validator. The UnbondingIdToPositionId mapping tracks
+// in-flight unbondings for this reason; callers should be aware that
+// the position may carry residual slash exposure from a prior validator.
 func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
@@ -62,6 +71,19 @@ func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Positi
 }
 
 // ValidateRedelegatePosition validates the position intended to be redelegated.
+// Exiting positions are blocked from redelegation because the owner has
+// committed to leaving the tier; only undelegation is allowed after exit.
+//
+// NOTE: A redelegation creates a transient unbonding entry on the
+// source validator (tracked via UnbondingIdToPositionId). If the source
+// validator is slashed during the redelegation maturation window, the
+// SDK routes the slash through AfterSlashRedelegation, which adjusts
+// the position's DelegatedShares on the destination validator. A second
+// redelegation from the destination to a third validator before the
+// first redelegation matures would create overlapping slash exposure;
+// the SDK's own redelegation-hop restriction prevents this at the
+// staking layer (BeginRedelegation rejects if destination has a pending
+// incoming redelegation from the same source).
 func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
