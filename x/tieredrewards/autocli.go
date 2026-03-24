@@ -18,6 +18,39 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "params",
 					Short:     "Query the current tieredrewards parameters",
 				},
+				{
+					RpcMethod:      "TierPosition",
+					Use:            "position [position-id]",
+					Short:          "Query a single tier position by ID",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "TierPositionsByOwner",
+					Use:            "positions-by-owner [owner]",
+					Short:          "Query all tier positions for an owner address",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "owner"}},
+				},
+				{
+					RpcMethod: "AllTierPositions",
+					Use:       "positions",
+					Short:     "Query all tier positions (paginated)",
+				},
+				{
+					RpcMethod: "Tiers",
+					Use:       "tiers",
+					Short:     "Query all tier definitions",
+				},
+				{
+					RpcMethod: "TierPoolBalance",
+					Use:       "pool-balance",
+					Short:     "Query the bonus rewards pool balance",
+				},
+				{
+					RpcMethod:      "EstimateTierRewards",
+					Use:            "estimate-rewards [position-id]",
+					Short:          "Estimate pending base and bonus rewards for a position",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
@@ -100,6 +133,18 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:            "claim-tier-rewards [position-id]",
 					Short:          "Claim base and bonus rewards for a delegated position",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "WithdrawFromTier",
+					Use:            "withdraw-from-tier [position-id]",
+					Short:          "Withdraw locked tokens after exit commitment has elapsed",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
+					RpcMethod:      "FundTierPool",
+					Use:            "fund-tier-pool [amount]",
+					Short:          "Fund the tier bonus rewards pool",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "amount"}},
 				},
 			},
 		},

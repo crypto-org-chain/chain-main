@@ -5,9 +5,11 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // ValidateNewPosition validates the new position creation.
@@ -123,6 +125,30 @@ func (k Keeper) ValidateClaimRewards(ctx context.Context, pos types.Position, ow
 
 	if !pos.IsDelegated() {
 		return types.ErrPositionNotDelegated
+	}
+
+	return nil
+}
+
+// ValidateWithdrawFromTier validates a position is ready for token withdrawal.
+// The position must have triggered exit, the exit commitment must have elapsed,
+// and the position must not still be delegated.
+func (k Keeper) ValidateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
+	if pos.Owner != owner {
+		return errorsmod.Wrap(sdkerrors.ErrUnauthorized, "signer is not position owner")
+	}
+
+	if !pos.HasTriggeredExit() {
+		return types.ErrPositionNotReadyToWithdraw
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
+	}
+
+	if pos.IsDelegated() {
+		return types.ErrPositionStillDelegated
 	}
 
 	return nil

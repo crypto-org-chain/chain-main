@@ -103,6 +103,31 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 	return &types.MsgDeleteTierResponse{}, nil
 }
 
+func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
+	if !msg.Amount.IsValid() || msg.Amount.IsZero() {
+		return nil, errors.Wrap(types.ErrInvalidAmount, "fund amount must be valid and non-zero")
+	}
+
+	depositor, err := sdk.AccAddressFromBech32(msg.Depositor)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.bankKeeper.SendCoinsFromAccountToModule(ctx, depositor, types.RewardsPoolName, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierPoolFunded{
+		Depositor: msg.Depositor,
+		Amount:    msg.Amount,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgFundTierPoolResponse{}, nil
+}
+
 func (ms msgServer) emitTierChangedEvent(ctx context.Context, action types.TierChangeAction, tier types.Tier) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.EventManager().EmitTypedEvent(&types.EventTierChanged{

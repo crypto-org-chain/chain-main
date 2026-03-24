@@ -15,9 +15,7 @@ func NewParams(targetBaseRewardsRate sdkmath.LegacyDec) Params {
 
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
-	return NewParams(
-		sdkmath.LegacyZeroDec(),
-	)
+	return NewParams(sdkmath.LegacyZeroDec())
 }
 
 // Validate validates the set of params.

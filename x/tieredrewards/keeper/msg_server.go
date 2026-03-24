@@ -475,3 +475,52 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		PositionId:   pos.Id,
 	}, nil
 }
+
+func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdrawFromTier) (*types.MsgWithdrawFromTierResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.Positions.Get(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.ValidateWithdrawFromTier(ctx, pos, msg.Owner); err != nil {
+		return nil, err
+	}
+
+	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	withdrawCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount))
+
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, withdrawCoins); err != nil {
+		return nil, err
+	}
+
+	if err := ms.DeletePosition(ctx, pos); err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
+		PositionId: pos.Id,
+		TierId:     pos.TierId,
+		Owner:      pos.Owner,
+		Amount:     withdrawCoins,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgWithdrawFromTierResponse{
+		Amount: withdrawCoins,
+	}, nil
+}

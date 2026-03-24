@@ -16,6 +16,7 @@ var (
 	_ sdk.Msg = &MsgAddToTierPosition{}
 	_ sdk.Msg = &MsgTriggerExitFromTier{}
 	_ sdk.Msg = &MsgClaimTierRewards{}
+	_ sdk.Msg = &MsgWithdrawFromTier{}
 )
 
 // Validate validates MsgLockTier sdk msg.
@@ -114,6 +115,15 @@ func (msg MsgTriggerExitFromTier) Validate() error {
 
 // Validate validates MsgClaimTierRewards sdk msg.
 func (msg MsgClaimTierRewards) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+// Validate validates MsgWithdrawFromTier sdk msg.
+func (msg MsgWithdrawFromTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
