@@ -134,7 +134,10 @@ message MsgLockTier {
 }
 
 // MsgLockTierResponse defines the response for MsgLockTier.
-message MsgLockTierResponse {}
+message MsgLockTierResponse {
+  // position_id is the ID of the newly created position.
+  uint64 position_id = 1;
+}
 
 // MsgCommitDelegationToTier commits an existing delegation to a tier position (same validator, no unbonding).
 message MsgCommitDelegationToTier {
@@ -162,7 +165,10 @@ message MsgCommitDelegationToTier {
 }
 
 // MsgCommitDelegationToTierResponse defines the response for MsgCommitDelegationToTier.
-message MsgCommitDelegationToTierResponse {}
+message MsgCommitDelegationToTierResponse {
+  // position_id is the ID of the newly created position.
+  uint64 position_id = 1;
+}
 
 // MsgTierDelegate delegates a position's locked tokens to a validator.
 message MsgTierDelegate {
@@ -180,7 +186,10 @@ message MsgTierDelegate {
 }
 
 // MsgTierDelegateResponse defines the response for MsgTierDelegate.
-message MsgTierDelegateResponse {}
+message MsgTierDelegateResponse {
+  // position_id echoes the delegated position ID.
+  uint64 position_id = 1;
+}
 
 // MsgTierUndelegate begins undelegating a position's tokens from its validator.
 message MsgTierUndelegate {
@@ -199,6 +208,8 @@ message MsgTierUndelegateResponse {
   // completion_time is when the undelegation will complete.
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  // position_id echoes the undelegated position ID.
+  uint64 position_id = 2;
 }
 
 // MsgTierRedelegate moves a position's delegation from one validator to another.
@@ -221,6 +232,8 @@ message MsgTierRedelegateResponse {
   // completion_time is when the redelegation will complete.
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  // position_id echoes the redelegated position ID.
+  uint64 position_id = 2;
 }
 
 // MsgAddToTierPosition adds tokens to an existing position.
@@ -244,7 +257,10 @@ message MsgAddToTierPosition {
 }
 
 // MsgAddToTierPositionResponse defines the response for MsgAddToTierPosition.
-message MsgAddToTierPositionResponse {}
+message MsgAddToTierPositionResponse {
+  // position_id echoes the position that was added to.
+  uint64 position_id = 1;
+}
 
 // MsgTriggerExitFromTier starts the exit commitment for a position.
 message MsgTriggerExitFromTier {
@@ -263,6 +279,8 @@ message MsgTriggerExitFromTierResponse {
   // exit_unlock_at is when the exit commitment will complete and tokens can be claimed.
   google.protobuf.Timestamp exit_unlock_at = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  // position_id echoes the position exiting the tier.
+  uint64 position_id = 2;
 }
 
 // MsgClaimTierRewards claims base and bonus rewards for a delegated position.
@@ -292,4 +310,7 @@ message MsgClaimTierRewardsResponse {
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
   ];
+
+  // position_id echoes the position rewards were claimed for.
+  uint64 position_id = 3;
 }

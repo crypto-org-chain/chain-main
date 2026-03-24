@@ -72,7 +72,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	return &types.MsgLockTierResponse{}, nil
+	return &types.MsgLockTierResponse{PositionId: pos.Id}, nil
 }
 
 func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCommitDelegationToTier) (*types.MsgCommitDelegationToTierResponse, error) {
@@ -129,7 +129,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	return &types.MsgCommitDelegationToTierResponse{}, nil
+	return &types.MsgCommitDelegationToTierResponse{PositionId: pos.Id}, nil
 }
 
 func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate) (*types.MsgTierDelegateResponse, error) {
@@ -183,7 +183,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	return &types.MsgTierDelegateResponse{}, nil
+	return &types.MsgTierDelegateResponse{PositionId: pos.Id}, nil
 }
 
 func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndelegate) (*types.MsgTierUndelegateResponse, error) {
@@ -244,6 +244,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	return &types.MsgTierUndelegateResponse{
 		CompletionTime: completionTime,
+		PositionId:     pos.Id,
 	}, nil
 }
 
@@ -322,6 +323,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 
 	return &types.MsgTierRedelegateResponse{
 		CompletionTime: completionTime,
+		PositionId:     pos.Id,
 	}, nil
 }
 
@@ -385,7 +387,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	return &types.MsgAddToTierPositionResponse{}, nil
+	return &types.MsgAddToTierPositionResponse{PositionId: pos.Id}, nil
 }
 
 func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTriggerExitFromTier) (*types.MsgTriggerExitFromTierResponse, error) {
@@ -428,6 +430,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 
 	return &types.MsgTriggerExitFromTierResponse{
 		ExitUnlockAt: pos.ExitUnlockAt,
+		PositionId:   pos.Id,
 	}, nil
 }
 
@@ -469,5 +472,6 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 	return &types.MsgClaimTierRewardsResponse{
 		BaseRewards:  baseRewards,
 		BonusRewards: bonusRewards,
+		PositionId:   pos.Id,
 	}, nil
 }
