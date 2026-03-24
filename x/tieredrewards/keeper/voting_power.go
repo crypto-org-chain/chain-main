@@ -15,7 +15,8 @@ import (
 // GetVotingPowerForAddress returns the tier governance voting power for a given
 // address. Power is computed using the same shares-to-tokens formula as the
 // governance tally: DelegatedShares * BondedTokens / DelegatorShares.
-// Only active positions (delegated, not exiting, validator bonded) contribute.
+// All delegated positions with a bonded validator contribute, including those
+// that have triggered exit but remain delegated (ADR-006 §8.5).
 func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
 	active, err := k.GetActiveDelegatedPositionsByOwner(ctx, voter)
 	if err != nil {
