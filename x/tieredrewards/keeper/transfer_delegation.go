@@ -22,7 +22,7 @@ import (
 // Only allow transfer to a bonded validator.
 // Does not allow transfer if the delegator has an active incoming redelegation
 // to the validator.
-// Unbonding delegation is not an issue here because it would already been removed from the delegation
+// Unbonding delegation is not an issue here because it would already have been removed from the delegation
 //
 // Returns the new shares created for the module's delegation.
 func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDelegationToTier) (math.LegacyDec, error) {

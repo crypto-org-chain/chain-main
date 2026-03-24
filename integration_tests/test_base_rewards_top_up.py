@@ -86,8 +86,9 @@ def test_params_query(cluster):
     """Test querying tieredrewards parameters"""
     params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
     assert "target_base_rewards_rate" in params
-    # Genesis: max rate 1.0 (100% p.a.); mint blocks_per_year is lowered so per-block target
-    # matches the old integration setup that used invalid rate 100 at default blocks_per_year.
+    # Genesis: max rate 1.0 (100% p.a.); mint blocks_per_year is lowered so
+    # per-block target matches the old integration setup that used invalid rate
+    # 100 at default blocks_per_year.
     rate = float(params["target_base_rewards_rate"])
     assert rate == 1.0
 
@@ -151,8 +152,9 @@ def test_topup_from_pool(cluster):
 
 def test_pool_drains_to_zero(cluster):
     """Test that the pool eventually drains to zero as blocks progress.
-    With max on-chain rate (100%) and a high per-block target (fewer blocks/year) and limited pool funds,
-    the pool should be fully drained after enough blocks.
+    With max on-chain rate (100%) and a high per-block target
+    (fewer blocks/year) and limited pool funds, the pool should be fully
+    drained after enough blocks.
     """
     # funded from the previous test_topup_from_pool test
     pool_balance = _pool_balance(cluster)
@@ -191,7 +193,8 @@ def test_chain_continues_after_pool_empty(cluster):
 
 def test_insufficient_pool_partial_drain(cluster):
     """Test that when pool has less than the shortfall, it drains everything available.
-    Fund the pool with 1 basecro — guaranteed less than any shortfall from genesis params.
+    Fund the pool with 1 basecro — guaranteed less than any shortfall from
+    genesis params.
     """
     pool_addr = module_address(REWARDS_POOL_NAME)
 
