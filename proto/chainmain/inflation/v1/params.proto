@@ -21,8 +21,8 @@ message Params {
   // burned_addresses is a list of addresses that hold burned tokens
   repeated string burned_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // block height at which decay starts
-  uint64 decay_start_height = 3;
+  reserved 3;
+  reserved "decay_start_height";
 
   // decay rate
   string decay_rate = 4 [

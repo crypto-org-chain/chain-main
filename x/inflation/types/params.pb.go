@@ -32,8 +32,6 @@ type Params struct {
 	MaxSupply cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=max_supply,json=maxSupply,proto3,customtype=cosmossdk.io/math.Int" json:"max_supply"`
 	// burned_addresses is a list of addresses that hold burned tokens
 	BurnedAddresses []string `protobuf:"bytes,2,rep,name=burned_addresses,json=burnedAddresses,proto3" json:"burned_addresses,omitempty"`
-	// block height at which decay starts
-	DecayStartHeight uint64 `protobuf:"varint,3,opt,name=decay_start_height,json=decayStartHeight,proto3" json:"decay_start_height,omitempty"`
 	// decay rate
 	DecayRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,4,opt,name=decay_rate,json=decayRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"decay_rate"`
 }
@@ -75,13 +73,6 @@ func (m *Params) GetBurnedAddresses() []string {
 		return m.BurnedAddresses
 	}
 	return nil
-}
-
-func (m *Params) GetDecayStartHeight() uint64 {
-	if m != nil {
-		return m.DecayStartHeight
-	}
-	return 0
 }
 
 func init() {
@@ -151,11 +142,6 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0x22
-	if m.DecayStartHeight != 0 {
-		i = encodeVarintParams(dAtA, i, uint64(m.DecayStartHeight))
-		i--
-		dAtA[i] = 0x18
-	}
 	if len(m.BurnedAddresses) > 0 {
 		for iNdEx := len(m.BurnedAddresses) - 1; iNdEx >= 0; iNdEx-- {
 			i -= len(m.BurnedAddresses[iNdEx])
@@ -202,9 +188,6 @@ func (m *Params) Size() (n int) {
 			l = len(s)
 			n += 1 + l + sovParams(uint64(l))
 		}
-	}
-	if m.DecayStartHeight != 0 {
-		n += 1 + sovParams(uint64(m.DecayStartHeight))
 	}
 	l = m.DecayRate.Size()
 	n += 1 + l + sovParams(uint64(l))
@@ -314,9 +297,9 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DecayStartHeight", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for reserved field decay_start_height", wireType)
 			}
-			m.DecayStartHeight = 0
+			var v uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowParams
@@ -326,11 +309,12 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.DecayStartHeight |= uint64(b&0x7F) << shift
+				v |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			_ = v // reserved field decay_start_height (ignored for state migration)
 		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DecayRate", wireType)

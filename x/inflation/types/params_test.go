@@ -22,7 +22,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1000000000),
 				[]string{},
-				1,
 				sdkmath.LegacyMustNewDecFromStr("0.0680"),
 			),
 			wantErr: false,
@@ -32,7 +31,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(0),
 				[]string{},
-				1,
 				sdkmath.LegacyZeroDec(),
 			),
 			wantErr: false,
@@ -42,7 +40,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1000000000),
 				[]string{"cosmos1zpdh03ej2h9ct3lgjydqp3upqkktq322dcvwjm"},
-				1,
 				sdkmath.LegacyNewDecWithPrec(65, 3),
 			),
 			wantErr: false,
@@ -55,7 +52,6 @@ func TestNewParams_Validate(t *testing.T) {
 					"cosmos1g69pjvgvdug5m9kphwh284rvls4g5jnrg4p8dm",
 					"cosmos1ws268687q2xhu4gqwgwqhnwpthyt4td9t60nd8",
 				},
-				100,
 				sdkmath.LegacyNewDecWithPrec(68, 3),
 			),
 			wantErr: false,
@@ -65,7 +61,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1000000000),
 				[]string{},
-				1,
 				sdkmath.LegacyZeroDec(),
 			),
 			wantErr: false,
@@ -75,7 +70,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1000000000),
 				[]string{},
-				1,
 				sdkmath.LegacyOneDec(),
 			),
 			wantErr: false,
@@ -90,7 +84,6 @@ func TestNewParams_Validate(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewIntFromBigInt(sdkmath.NewInt(10_000_000_000).Mul(sdkmath.NewInt(100_000_000)).BigInt()),
 				[]string{},
-				1,
 				sdkmath.LegacyMustNewDecFromStr("0.0680"),
 			),
 			wantErr: false,
@@ -128,7 +121,6 @@ func TestNewParams_ValidateMaxSupply(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(-1000000000),
 				[]string{},
-				1,
 				sdkmath.LegacyMustNewDecFromStr("0.0680"),
 			),
 			wantErr:     true,
@@ -139,7 +131,6 @@ func TestNewParams_ValidateMaxSupply(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(-1),
 				[]string{},
-				1,
 				sdkmath.LegacyZeroDec(),
 			),
 			wantErr:     true,
@@ -150,7 +141,6 @@ func TestNewParams_ValidateMaxSupply(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(0),
 				[]string{},
-				1,
 				sdkmath.LegacyZeroDec(),
 			),
 			wantErr: false,
@@ -160,7 +150,6 @@ func TestNewParams_ValidateMaxSupply(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1),
 				[]string{},
-				1,
 				sdkmath.LegacyZeroDec(),
 			),
 			wantErr: false,
@@ -201,7 +190,6 @@ func TestNewParams_ValidateBurnedAddresses(t *testing.T) {
 					"cosmos139f7kncmglres2nf3h4hc4tade85ekfr8sulz5",
 					"cosmos139f7kncmglres2nf3h4hc4tade85ekfr8sulz5",
 				},
-				1,
 				sdkmath.LegacyMustNewDecFromStr("0.0680"),
 			),
 			wantErr:     true,
@@ -212,7 +200,6 @@ func TestNewParams_ValidateBurnedAddresses(t *testing.T) {
 			params: NewParams(
 				sdkmath.NewInt(1000000000),
 				[]string{""},
-				1,
 				sdkmath.LegacyMustNewDecFromStr("0.0680"),
 			),
 			wantErr:     true,
@@ -230,45 +217,6 @@ func TestNewParams_ValidateBurnedAddresses(t *testing.T) {
 				if tt.errContains != "" {
 					require.ErrorContains(t, err, tt.errContains)
 				}
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
-func TestParams_ValidateDecayStartHeight(t *testing.T) {
-	tests := []struct {
-		name    string
-		height  uint64
-		wantErr bool
-	}{
-		{
-			name:    "valid positive height",
-			height:  1,
-			wantErr: false,
-		},
-		{
-			name:    "valid large height",
-			height:  1000000,
-			wantErr: false,
-		},
-		{
-			name:    "invalid zero height",
-			height:  0,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			params := DefaultParams()
-			params.DecayStartHeight = tt.height
-
-			err := params.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), "decay start height must be positive")
 			} else {
 				require.NoError(t, err)
 			}

@@ -16,7 +16,7 @@ const MonthsInYear = 12
 // Formula: inflation_rate = base_rate × (1 - monthly_decay)^months_elapsed
 // where months_elapsed = blocks_elapsed / blocks_per_month (continuous decimal value).
 // The base_rate is the inflation rate calculated using the default method.
-// Decay starts at DecayStartHeight and uses DecayRate from params.
+// Decay uses DecayRate from params; elapsed blocks are measured from the decay epoch in store.
 func (k *Keeper) DeflationCalculationFn() func(ctx context.Context, minter minttypes.Minter, params minttypes.Params, bondedRatio math.LegacyDec) math.LegacyDec {
 	return func(ctx context.Context, minter minttypes.Minter, params minttypes.Params, bondedRatio math.LegacyDec) math.LegacyDec {
 		inflationParams, err := k.GetParams(ctx)
@@ -24,7 +24,6 @@ func (k *Keeper) DeflationCalculationFn() func(ctx context.Context, minter mintt
 			panic(fmt.Sprintf("failed to get inflation params: %s", err))
 		}
 		decayRate := inflationParams.DecayRate
-		decayStartHeight := inflationParams.DecayStartHeight
 
 		// Calculate base inflation rate using default method
 		baseRate := minttypes.DefaultInflationCalculationFn(ctx, minter, params, bondedRatio)
@@ -32,14 +31,25 @@ func (k *Keeper) DeflationCalculationFn() func(ctx context.Context, minter mintt
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		currentHeight := uint64(sdkCtx.BlockHeight())
 
-		if !decayRate.IsPositive() || currentHeight < decayStartHeight {
+		if !decayRate.IsPositive() {
+			return baseRate
+		}
+
+		decayEpoch, ok, err := k.getDecayEpochStart(ctx)
+		if err != nil {
+			panic(fmt.Sprintf("failed to get decay epoch start: %s", err))
+		}
+		if !ok {
+			return baseRate
+		}
+		if currentHeight < decayEpoch {
 			return baseRate
 		}
 
 		finalInflation := baseRate
 		blocksPerYear := params.BlocksPerYear
 		blocksPerMonth := blocksPerYear / MonthsInYear
-		blocksElapsed := currentHeight - decayStartHeight
+		blocksElapsed := currentHeight - decayEpoch
 
 		if blocksPerMonth > 0 {
 			// Compute months elapsed as a decimal for continuous decay
