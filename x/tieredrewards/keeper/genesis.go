@@ -97,7 +97,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	var unbondingMappings []types.UnbondingMapping
-	err = k.UnbondingIdToPositionId.Walk(ctx, nil, func(unbondingId uint64, positionId uint64) (bool, error) {
+	err = k.UnbondingIdToPositionId.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		unbondingMappings = append(unbondingMappings, types.UnbondingMapping{
 			UnbondingId: unbondingId,
 			PositionId:  positionId,
