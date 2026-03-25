@@ -41,10 +41,7 @@ The module implements a continuous exponential decay mechanism for inflation rat
 
 ### Decay Parameters
 
-- **Decay Start Height**: The block height at which decay begins to apply
-  - Must be a positive integer (greater than 0)
-  - Before this height, base inflation rate is used
-  - At this height, decay starts
+- **Decay epoch**: The block height when decay begins is stored in module state under `DecayEpochStartKey` (not a governance parameter). The v7.0.0 upgrade handler sets it to the upgrade activation height; genesis export/import carries it as `decay_epoch_start` for new chains or state exports. Chains that enable decay from genesis JSON must set `decay_epoch_start` there as well.
 
 - **Decay Rate**: The monthly decay rate applied to inflation
   - Range: `0` to `1` (inclusive)
@@ -62,13 +59,13 @@ inflation_rate = base_rate × (1 - monthly_decay)^months_elapsed
 Where:
 - `base_rate`: The inflation rate calculated using the default Cosmos SDK method
 - `monthly_decay`: The decay rate parameter (0-1)
-- `blocks_elapsed`: `current_block_height` - `decay_start_height`
+- `blocks_elapsed`: `current_block_height` - `decay_epoch_start` (from module store)
 - `months_elapsed`: Continuous decimal value calculated as `blocks_elapsed / blocks_per_month`
 
 ### Decay Behavior
 
-- **Before Decay Start Height**: Base inflation rate is used (no decay applied)
-- **Once Decay Start Height Reached**: Exponential decay is compounded continuously (every block) based on elapsed time
+- **Before the decay epoch** (or when decay is disabled): Base inflation rate is used (no decay applied)
+- **From the decay epoch onward** (with positive decay rate): Exponential decay is compounded continuously (every block) based on elapsed time
 
 ## Module Structure
 
@@ -117,8 +114,9 @@ message QueryParamsResponse {
 The `Params` message includes:
 - `max_supply`: Maximum supply of tokens (string, cosmos.Int format)
 - `burned_addresses`: List of burned addresses (repeated string)
-- `decay_start_height`: Block height at which decay starts (uint64)
 - `decay_rate`: Monthly decay rate (string, cosmos.Dec format, 0-1)
+
+Genesis state also includes `decay_epoch_start` when decay has been enabled (for export/import).
 
 ### REST API (gRPC Gateway)
 
@@ -138,7 +136,6 @@ curl http://localhost:1317/chainmain/inflation/v1/params
     "burned_addresses": [
       "cosmos1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqrgrp2"
     ],
-    "decay_start_height": "1000",
     "decay_rate": "0.065"
   }
 }
@@ -164,13 +161,11 @@ The Inflation module supports updating parameters through governance proposals. 
 
 - **Max Supply**: Maximum token supply limit
 - **Burned Addresses**: List of addresses holding burned tokens
-- **Decay Start Height**: Block height when decay begins
 - **Decay Rate**: Monthly inflation decay rate (0-1)
 
 All parameter updates must pass validation:
 - Max supply must be non-negative
 - Burned addresses must be valid bech32 format, non-empty, and unique
-- Decay start height must be positive
 - Decay rate must be between 0 and 1 (inclusive)
 
 ## Integration with Mint Module
@@ -178,8 +173,8 @@ All parameter updates must pass validation:
 The Inflation module integrates with the Cosmos SDK's Mint module by providing a custom `InflationCalculationFn` (`DeflationCalculationFn`) that applies exponential decay to the base inflation rate. The decay calculation:
 
 1. Retrieves the base inflation rate using the default Cosmos SDK calculation
-2. Checks if decay is enabled (decay rate > 0) and if current height >= decay start height
-3. Calculates months elapsed since decay start
+2. Checks if decay is enabled (decay rate > 0) and if current height >= stored decay epoch
+3. Calculates months elapsed since the decay epoch
 4. Applies exponential decay: `base_rate × (1 - decay_rate)^months_elapsed`
 5. Returns the final inflation rate
 

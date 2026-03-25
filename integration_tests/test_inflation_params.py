@@ -58,8 +58,6 @@ def test_params_cli_query(cluster):
     assert int(params["max_supply"]) == 0
     assert "burned_addresses" in params
     assert len(params["burned_addresses"]) == 0
-    assert "decay_start_height" in params
-    assert int(params["decay_start_height"]) == 1
     assert "decay_rate" in params
     assert float(params["decay_rate"]) == 0.0
     assert int(params["max_supply"]) == 0  # the max supply is 0 by default

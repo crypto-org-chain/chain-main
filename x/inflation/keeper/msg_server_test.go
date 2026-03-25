@@ -76,23 +76,6 @@ func (s *KeeperSuite) TestUpdateParams_InvalidDecayRate() {
 	s.Require().Contains(err.Error(), "decay rate")
 }
 
-func (s *KeeperSuite) TestUpdateParams_InvalidDecayStartHeight() {
-	authority := s.keeper.GetAuthority()
-
-	newParams := types.DefaultParams()
-	newParams.DecayStartHeight = 0 // must be > 0
-
-	msg := &types.MsgUpdateParams{
-		Authority: authority,
-		Params:    newParams,
-	}
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err := msgServer.UpdateParams(s.ctx, msg)
-	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "decay start height must be positive")
-}
-
 func (s *KeeperSuite) TestUpdateParams_InvalidBurnedAddress() {
 	authority := s.keeper.GetAuthority()
 
