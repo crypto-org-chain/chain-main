@@ -96,7 +96,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	shares, err := ms.TransferDelegation(ctx, *msg)
+	shares, err := ms.transferDelegation(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
 	if err != nil {
 		return nil, err
 	}

@@ -14,26 +14,26 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// TransferDelegation transfers delegation shares from a delegator to the tier
+// transferDelegation transfers delegation shares from a delegator to the tier
 // module on the same validator. The delegator's tokens are unbonded and
 // re-delegated from the module account.
 //
 // Only bonded validators are allowed. Blocks transfer if the delegator has an
 // active incoming redelegation to the validator.
-func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDelegationToTier) (math.LegacyDec, error) {
-	if !msg.Amount.IsPositive() {
+func (k Keeper) transferDelegation(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+	if !amount.IsPositive() {
 		return math.LegacyDec{}, errorsmod.Wrap(
 			sdkerrors.ErrInvalidRequest,
 			"delegation amount must be positive",
 		)
 	}
 
-	from, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	from, err := sdk.AccAddressFromBech32(delegatorAddr)
 	if err != nil {
 		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	valAddr, err := sdk.ValAddressFromBech32(validatorAddr)
 	if err != nil {
 		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
@@ -65,7 +65,7 @@ func (k Keeper) TransferDelegation(ctx context.Context, msg types.MsgCommitDeleg
 		return math.LegacyDec{}, types.ErrActiveRedelegation
 	}
 
-	shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, from, valAddr, msg.Amount)
+	shares, err := k.stakingKeeper.ValidateUnbondAmount(ctx, from, valAddr, amount)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
