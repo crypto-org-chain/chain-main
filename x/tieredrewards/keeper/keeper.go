@@ -40,6 +40,7 @@ type Keeper struct {
 	ValidatorRewardsLastWithdrawalBlock collections.Map[sdk.ValAddress, uint64]
 
 	// Maps staking unbonding IDs to tier position IDs for slash tracking.
+	// TODO: clean when unbondingId are being removed in staking module. Needs new helper function from staking module.
 	UnbondingIdToPositionId collections.Map[uint64, uint64]
 
 	mintKeeper         types.MintKeeper
