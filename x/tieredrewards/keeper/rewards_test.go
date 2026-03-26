@@ -350,3 +350,52 @@ func (s *KeeperSuite) TestCalculateBonus_StopsAccruingAfterExitUnlockAt() {
 	s.Require().True(bonusAfterUnlock.IsZero(),
 		"bonus should not accrue past ExitUnlockAt, got %s", bonusAfterUnlock)
 }
+
+func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positionID := uint64(0)
+	currentHeight := uint64(s.ctx.BlockHeight())
+
+	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: positionID,
+	})
+	s.Require().NoError(err)
+
+	lastWithdrawalBlock, err := s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(currentHeight, lastWithdrawalBlock)
+
+	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: positionID,
+	})
+	s.Require().NoError(err)
+
+	lastWithdrawalBlock, err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(currentHeight, lastWithdrawalBlock, "same-block claim should keep withdrawal marker unchanged")
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	nextHeight := uint64(s.ctx.BlockHeight())
+
+	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: positionID,
+	})
+	s.Require().NoError(err)
+
+	lastWithdrawalBlock, err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(nextHeight, lastWithdrawalBlock, "new block should update withdrawal marker")
+}

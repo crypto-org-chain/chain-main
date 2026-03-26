@@ -90,8 +90,23 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 		return sdk.DecCoins{}, nil
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	currentBlockHeight := uint64(sdkCtx.BlockHeight())
+	lastWithdrawalBlock, err := k.ValidatorRewardsLastWithdrawalBlock.Get(ctx, valAddr)
+	if err == nil && lastWithdrawalBlock == currentBlockHeight {
+		// Base rewards for this validator were already withdrawn in the current block.
+		return currentRatio, nil
+	}
+	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+		return sdk.DecCoins{}, err
+	}
+
 	rewards, err := k.withdrawDelegationRewards(ctx, valAddr)
 	if err != nil {
+		return sdk.DecCoins{}, err
+	}
+
+	if err := k.ValidatorRewardsLastWithdrawalBlock.Set(ctx, valAddr, currentBlockHeight); err != nil {
 		return sdk.DecCoins{}, err
 	}
 
@@ -111,7 +126,6 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 		return sdk.DecCoins{}, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsPerShareUpdated{
 		Validator:                 valAddr.String(),
 		RewardsWithdrawn:          rewards,

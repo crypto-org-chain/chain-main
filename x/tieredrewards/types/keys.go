@@ -13,6 +13,7 @@ var (
 	PositionCountByTierKey     = collections.NewPrefix(7)
 	ValidatorRewardRatioKey    = collections.NewPrefix(8)
 	UnbondingIdToPositionIdKey = collections.NewPrefix(9)
+	ValidatorRewardsLastWithdrawalBlockKey = collections.NewPrefix(10)
 )
 
 const (

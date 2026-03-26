@@ -36,6 +36,8 @@ type Keeper struct {
 
 	// Cumulative rewards-per-share indexed by validator.
 	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
+	// Last block height where base rewards were withdrawn for a validator.
+	ValidatorRewardsLastWithdrawalBlock collections.Map[sdk.ValAddress, uint64]
 
 	// Maps staking unbonding IDs to tier position IDs for slash tracking.
 	UnbondingIdToPositionId collections.Map[uint64, uint64]
@@ -100,6 +102,13 @@ func NewKeeper(
 		PositionsByValidator:    collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:     collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 		ValidatorRewardRatio:    collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		ValidatorRewardsLastWithdrawalBlock: collections.NewMap(
+			sb,
+			types.ValidatorRewardsLastWithdrawalBlockKey,
+			"validator_rewards_last_withdrawal_block",
+			sdk.ValAddressKey,
+			collections.Uint64Value,
+		),
 		UnbondingIdToPositionId: collections.NewMap(sb, types.UnbondingIdToPositionIdKey, "unbonding_id_to_position_id", collections.Uint64Key, collections.Uint64Value),
 	}
 
