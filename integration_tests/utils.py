@@ -128,9 +128,8 @@ def wait_for_block_time(cli, t, timeout=120):
         if now >= t:
             break
         if time.perf_counter() > deadline:
-            raise TimeoutError(
-                f"timed out after {timeout}s waiting for block time {t} (last seen: {now})"
-            )
+            raise TimeoutError(f"timed out after {timeout}s waiting for block time {t} \
+                (last seen: {now})")
         time.sleep(0.5)
 
 
