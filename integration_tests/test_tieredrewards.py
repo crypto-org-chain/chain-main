@@ -363,8 +363,6 @@ def test_commit_delegation_with_exit(cluster):
     ), "exit_triggered_at should be set when trigger_exit_immediately=true"
 
 
-
-
 # ──────────────────────────────────────────────
 # Exit Flow (ADR-006 §5.6, §5.7)
 # ──────────────────────────────────────────────
@@ -441,9 +439,9 @@ def test_full_exit_flow(cluster):
             404,
             500,
         ), f"expected 404/500 for deleted position, got {exc.response.status_code}"
-        assert "not found" in exc.response.text.lower(), (
-            f"expected 'not found' error body, got: {exc.response.text}"
-        )
+        assert (
+            "not found" in exc.response.text.lower()
+        ), f"expected 'not found' error body, got: {exc.response.text}"
 
 
 # ──────────────────────────────────────────────
@@ -509,7 +507,9 @@ def test_claim_rewards_delegated(cluster):
         rsp["events"], "chainmain.tieredrewards.v1.EventTierRewardsClaimed"
     )
     assert ev is not None, "EventTierRewardsClaimed not found in tx events"
-    assert "position_id" in ev, f"EventTierRewardsClaimed missing position_id field: {ev}"
+    assert (
+        "position_id" in ev
+    ), f"EventTierRewardsClaimed missing position_id field: {ev}"
 
 
 def test_bonus_stops_after_exit_unlock(cluster):
@@ -588,8 +588,6 @@ def test_bonus_stops_after_exit_unlock(cluster):
         f"bonus rewards must be 0 after final claim post-exit_unlock_at, "
         f"got {bonus_after_list}"
     )
-
-
 
 
 # ──────────────────────────────────────────────
@@ -684,8 +682,6 @@ def test_delete_tier_via_governance(cluster):
     assert (
         TIER_3_ID not in ids
     ), f"Tier {TIER_3_ID} should be removed after DeleteTier proposal"
-
-
 
 
 # ──────────────────────────────────────────────

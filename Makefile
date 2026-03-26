@@ -207,6 +207,7 @@ lint-fix:
 	@echo "--> Running linter"
 	@golangci-lint run --fix
 	@go mod verify
+	@black --line-length 88 integration_tests/
 	@flake8 --show-source --count --statistics
 	@find . -name "*.nix" -type f | xargs nixfmt -c
 
