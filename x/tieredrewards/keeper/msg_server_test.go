@@ -1901,3 +1901,82 @@ func (s *KeeperSuite) TestMsgTierUndelegate_FullLifecycle_EarlyUndelegate() {
 	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
+
+// --- Event emission tests ---
+
+// TestMsgClaimTierRewards_EmitsEvent verifies that MsgClaimTierRewards emits
+// EventTierRewardsClaimed after a successful claim.
+func (s *KeeperSuite) TestMsgClaimTierRewards_EmitsEvent() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+
+	// Isolate events from this specific call.
+	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = msgServer.ClaimTierRewards(freshCtx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	found := false
+	for _, e := range freshCtx.EventManager().Events() {
+		if e.Type == "chainmain.tieredrewards.v1.EventTierRewardsClaimed" {
+			found = true
+			break
+		}
+	}
+	s.Require().True(found, "EventTierRewardsClaimed should be emitted by ClaimTierRewards")
+}
+
+// TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect verifies that
+// AddToTierPosition on a delegated position emits EventBonusRewardsClaimed as
+// a side effect of the implicit reward claim before adding tokens.
+// This covers the skipped integration test test_add_to_position_reward_side_effect.
+func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect() {
+	addr, _, pos := s.setupPositionForBonusTest()
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	// Advance time so bonus accrues (LastBonusAccrual is initialized at position creation by WithDelegation).
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	// Fund addr for the add operation; setupPositionForBonusTest exhausted its initial balance.
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = msgServer.AddToTierPosition(freshCtx, &types.MsgAddToTierPosition{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+		Amount:     sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	found := false
+	for _, e := range freshCtx.EventManager().Events() {
+		if e.Type == "chainmain.tieredrewards.v1.EventBonusRewardsClaimed" {
+			found = true
+			break
+		}
+	}
+	s.Require().True(found, "EventBonusRewardsClaimed should be emitted as side effect of AddToTierPosition on a delegated position")
+}

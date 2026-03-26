@@ -119,13 +119,18 @@ def wait_for_new_blocks(cli, n, sleep=0.5):
             break
 
 
-def wait_for_block_time(cli, t):
+def wait_for_block_time(cli, t, timeout=120):
     print("wait for block time", t)
+    deadline = time.perf_counter() + timeout
     while True:
         now = isoparse(get_sync_info(cli.status())["latest_block_time"])
         print("block time now:", now)
         if now >= t:
             break
+        if time.perf_counter() > deadline:
+            raise TimeoutError(
+                f"timed out after {timeout}s waiting for block time {t} (last seen: {now})"
+            )
         time.sleep(0.5)
 
 
