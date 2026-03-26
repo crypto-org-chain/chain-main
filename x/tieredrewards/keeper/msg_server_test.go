@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"errors"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
@@ -1399,9 +1400,10 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 	s.Require().True(balAfterUndelegate.Amount.GT(balBefore.Amount), "rewards should be paid during undelegate")
 }
 
-// TestMsgClaimTierRewards_SucceedsWhenBonusPoolEmpty verifies that ClaimTierRewards
-// still pays out base rewards even when the bonus pool has no funds.
-func (s *KeeperSuite) TestMsgClaimTierRewards_SucceedsWhenBonusPoolEmpty() {
+// TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient verifies that ClaimTierRewards
+// returns ErrInsufficientBonusPool when accrued bonus cannot be paid, so the tx rolls
+// back and the user can retry later without losing base rewards to a partial claim.
+func (s *KeeperSuite) TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -1424,17 +1426,18 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_SucceedsWhenBonusPoolEmpty() {
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	// ClaimTierRewards must succeed and return base rewards even with empty bonus pool.
-	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+	// Use a branched context so a failed message does not persist state (matches DeliverTx rollback).
+	cacheCtx, _ := s.ctx.CacheContext()
+	resp, err := msgServer.ClaimTierRewards(cacheCtx, &types.MsgClaimTierRewards{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().NoError(err, "ClaimTierRewards must not fail when bonus pool is empty")
-	s.Require().False(resp.BaseRewards.IsZero(), "base rewards should be returned even when bonus pool is empty")
-	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should be empty when pool is exhausted")
+	s.Require().Error(err)
+	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
+	s.Require().Nil(resp)
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "base rewards should have been transferred to owner")
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount), "failed claim must not transfer rewards")
 }
 
 // --- MsgWithdrawFromTier tests ---

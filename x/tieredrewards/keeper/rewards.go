@@ -240,9 +240,6 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
 	bonusRewards, err := k.claimBonusRewardsForPositions(ctx, positions, forceAccrue)
-	if errors.Is(err, types.ErrInsufficientBonusPool) {
-		return baseRewards, sdk.Coins{}, nil
-	}
 	if err != nil {
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
