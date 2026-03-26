@@ -12,7 +12,6 @@ import (
 func (s *KeeperSuite) TestDeflationCalculationFn_NoDecay() {
 	params := types.DefaultParams()
 	params.DecayRate = math.LegacyZeroDec() // Disable decay
-	params.DecayStartHeight = 1000
 
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
@@ -35,12 +34,14 @@ func (s *KeeperSuite) TestDeflationCalculationFn_NoDecay() {
 
 // TestDeflationCalculationFn_WithDecay tests that deflation calculation applies decay correctly.
 func (s *KeeperSuite) TestDeflationCalculationFn_WithDecay() {
+	const decayEpoch int64 = 1000
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1000
 	params.DecayRate = math.LegacyNewDecWithPrec(65, 3) // 6.5% monthly decay
 
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, uint64(decayEpoch)))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.BlocksPerYear = 6307200 // ~5 second blocks - divisible by 12 for test later
@@ -49,19 +50,19 @@ func (s *KeeperSuite) TestDeflationCalculationFn_WithDecay() {
 	bondedRatio := math.LegacyNewDecWithPrec(50, 2) // 0.50
 	baseInflation := minttypes.DefaultInflationCalculationFn(s.ctx, minter, mintParams, bondedRatio)
 
-	// Before decay start height - should use base rate
+	// Before decay epoch - should use base rate
 	s.ctx = s.ctx.WithBlockHeight(500)
 	inflationBefore := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().Equal(baseInflation, inflationBefore, "inflation should equal base before decay starts")
 
-	// At decay start height - should still use base rate (no months elapsed)
+	// At decay epoch - should still use base rate (no months elapsed)
 	s.ctx = s.ctx.WithBlockHeight(1000)
 	inflationAtStart := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
-	s.Require().Equal(baseInflation, inflationAtStart, "inflation should equal base at decay start (0 months elapsed)")
+	s.Require().Equal(baseInflation, inflationAtStart, "inflation should equal base at decay epoch (0 months elapsed)")
 
 	// After 1 month - should apply decay
 	blocksPerMonth := mintParams.BlocksPerYear / 12
-	s.ctx = s.ctx.WithBlockHeight(1000 + int64(blocksPerMonth))
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + int64(blocksPerMonth))
 	inflationAfter1Month := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	expectedDecayFactor := math.LegacyOneDec().Sub(params.DecayRate) // (1 - 0.065) = 0.935
 	expectedInflation := baseInflation.Mul(expectedDecayFactor)
@@ -77,7 +78,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_WithDecay() {
 	)
 
 	// After 12 months - should apply decay^12
-	s.ctx = s.ctx.WithBlockHeight(1000 + int64(blocksPerMonth*12))
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + int64(blocksPerMonth*12))
 	inflationAfter12Months := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	expectedDecayFactor12 := expectedDecayFactor.Power(12)
 	expectedInflation12 := baseInflation.Mul(expectedDecayFactor12)
@@ -95,11 +96,13 @@ func (s *KeeperSuite) TestDeflationCalculationFn_WithDecay() {
 
 // TestDeflationCalculationFn_FractionalMonths tests that deflation calculation works correctly with fractional months.
 func (s *KeeperSuite) TestDeflationCalculationFn_FractionalMonths() {
+	const decayEpoch int64 = 1000
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1000
 	params.DecayRate = math.LegacyNewDecWithPrec(65, 3) // 6.5% monthly decay
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, uint64(decayEpoch)))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.BlocksPerYear = 6307200 // ~5 second blocks - divisible by 12
@@ -113,7 +116,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_FractionalMonths() {
 
 	// Test 0.5 months (half a month)
 	halfMonthBlocks := blocksPerMonth / 2
-	s.ctx = s.ctx.WithBlockHeight(1000 + int64(halfMonthBlocks))
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + int64(halfMonthBlocks))
 	inflationAfterHalfMonth := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 
 	// Expected: base * decayFactor^0.5
@@ -135,7 +138,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_FractionalMonths() {
 
 	// Test 1.5 months
 	oneAndHalfMonthBlocks := blocksPerMonth + halfMonthBlocks
-	s.ctx = s.ctx.WithBlockHeight(1000 + int64(oneAndHalfMonthBlocks))
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + int64(oneAndHalfMonthBlocks))
 	inflationAfterOneAndHalfMonth := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 
 	// Expected: base * decayFactor^1.5 = base * decayFactor^1 * decayFactor^0.5
@@ -151,7 +154,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_FractionalMonths() {
 	)
 
 	// Decay decreases inflation over time, so: inflation(1.5) < inflation(0.5) < initial base inflation
-	s.ctx = s.ctx.WithBlockHeight(1000) // 0 months
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch) // 0 months
 	initialBaseInflation := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 
 	s.Require().True(
@@ -166,11 +169,13 @@ func (s *KeeperSuite) TestDeflationCalculationFn_FractionalMonths() {
 
 // TestDeflationCalculationFn_EdgeCases tests edge cases for fractional month calculations.
 func (s *KeeperSuite) TestDeflationCalculationFn_EdgeCases() {
+	const decayEpoch int64 = 1000
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1000
 	params.DecayRate = math.LegacyNewDecWithPrec(10, 2) // 10% monthly decay
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, uint64(decayEpoch)))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.BlocksPerYear = 6307200 // ~5 second blocks
@@ -182,13 +187,13 @@ func (s *KeeperSuite) TestDeflationCalculationFn_EdgeCases() {
 	blocksPerMonth := mintParams.BlocksPerYear / 12
 	decayFactor := math.LegacyOneDec().Sub(params.DecayRate) // 0.90
 
-	// Test at exactly decay start height (0 months elapsed)
-	s.ctx = s.ctx.WithBlockHeight(1000)
+	// Test at exactly decay epoch (0 months elapsed)
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	inflationAtStart := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().Equal(baseInflation, inflationAtStart, "inflation at start should equal base (0 months elapsed)")
 
 	// Test with very small elapsed time (1 block)
-	s.ctx = s.ctx.WithBlockHeight(1001)
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + 1)
 	inflationAfter1Block := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 
 	// Should have minimal decay: decayFactor^(1/blocksPerMonth)
@@ -214,13 +219,15 @@ func (s *KeeperSuite) TestDeflationCalculationFn_EdgeCases() {
 }
 
 // TestDeflationCalculationFn_FullDecay tests that when decayRate = 1.0 (100%),
-// inflation drops to zero immediately after decayStartHeight.
+// inflation drops to zero immediately after the decay epoch block.
 func (s *KeeperSuite) TestDeflationCalculationFn_FullDecay() {
+	const decayEpoch int64 = 1000
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1000
 	params.DecayRate = math.LegacyOneDec() // 100% decay
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, uint64(decayEpoch)))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.BlocksPerYear = 6307200
@@ -229,35 +236,36 @@ func (s *KeeperSuite) TestDeflationCalculationFn_FullDecay() {
 	bondedRatio := math.LegacyNewDecWithPrec(50, 2)
 	baseInflation := minttypes.DefaultInflationCalculationFn(s.ctx, minter, mintParams, bondedRatio)
 
-	// Before decay start — should equal base inflation
-	s.ctx = s.ctx.WithBlockHeight(999)
+	// Before decay epoch — should equal base inflation
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch - 1)
 	inflation := s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().Equal(baseInflation, inflation, "inflation should match base before decay start")
 
-	// At decay start (0 blocks elapsed) — decayFactor^0 = 1, no fractional part → still base
-	s.ctx = s.ctx.WithBlockHeight(1000)
+	// At decay epoch (0 blocks elapsed) — decayFactor^0 = 1, no fractional part → still base
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch)
 	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().Equal(baseInflation, inflation, "inflation should match base at decay start (0 elapsed)")
 
-	// 1 block after decay start — decayFactor = 0, perBlockFactor = 0^(1/m) = 0 → inflation = 0
-	s.ctx = s.ctx.WithBlockHeight(1001)
+	// 1 block after decay epoch — decayFactor = 0, perBlockFactor = 0^(1/m) = 0 → inflation = 0
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + 1)
 	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().True(inflation.IsZero(), "inflation should be zero with 100%% decay after 1 block, got %s", inflation)
 
 	// Many blocks later — should still be zero
-	s.ctx = s.ctx.WithBlockHeight(1000 + int64(mintParams.BlocksPerYear))
+	s.ctx = s.ctx.WithBlockHeight(decayEpoch + int64(mintParams.BlocksPerYear))
 	inflation = s.keeper.DeflationCalculationFn()(s.ctx, minter, mintParams, bondedRatio)
 	s.Require().True(inflation.IsZero(), "inflation should be zero with 100%% decay after 1 year, got %s", inflation)
 }
 
 // TestDeflationCalculationFn_SupplyCap tests that circulating supply doesn't exceed 100B tokens.
 func (s *KeeperSuite) TestDeflationCalculationFn_SupplyCap() {
-	// Set up params with decay enabled
+	// Set up params with decay enabled (decay epoch = block 1)
+	s.ctx = s.ctx.WithBlockHeight(1)
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1
 	params.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80% monthly decay
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, 1))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.InflationRateChange = math.LegacyMustNewDecFromStr("0.1") // 10%
@@ -338,11 +346,13 @@ func (s *KeeperSuite) TestDeflationCalculationFn_SupplyCap() {
 // TestDeflationCalculationFn_Cache tests that the per-block factor cache is populated,
 // returns correct values, and invalidates when decayRate or blocksPerYear changes.
 func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
+	const decayEpoch uint64 = 1000
+	s.ctx = s.ctx.WithBlockHeight(int64(decayEpoch))
 	params := types.DefaultParams()
-	params.DecayStartHeight = 1000
 	params.DecayRate = math.LegacyNewDecWithPrec(65, 3) // 6.5% monthly decay
 	err := s.keeper.SetParams(s.ctx, params)
 	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetDecayEpochStart(s.ctx, decayEpoch))
 
 	mintParams := minttypes.DefaultParams()
 	mintParams.BlocksPerYear = 6307200 // divisible by 12
@@ -356,15 +366,15 @@ func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
 	// Cache should be nil before any deflation calculation
 	s.Require().Nil(s.keeper.GetDecayCache(), "cache should be nil initially")
 
-	// Before decay start: cache should remain nil (no decay path executed)
+	// Before decay epoch: cache should remain nil (no decay path executed)
 	s.ctx = s.ctx.WithBlockHeight(500)
 	fn := s.keeper.DeflationCalculationFn()
 	fn(s.ctx, minter, mintParams, bondedRatio)
-	s.Require().Nil(s.keeper.GetDecayCache(), "cache should remain nil when before decay start height")
+	s.Require().Nil(s.keeper.GetDecayCache(), "cache should remain nil when before decay epoch")
 
 	// First call: should populate the cache
-	// Set height past decay start so the cache path is exercised
-	s.ctx = s.ctx.WithBlockHeight(int64(params.DecayStartHeight + 1000))
+	// Set height past decay epoch so the cache path is exercised
+	s.ctx = s.ctx.WithBlockHeight(int64(decayEpoch + 1000))
 
 	result1 := fn(s.ctx, minter, mintParams, bondedRatio)
 	decayFactor := math.LegacyOneDec().Sub(params.DecayRate) // 0.935
@@ -378,7 +388,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
 	s.Require().Equal(perBlockFactor, cache1.BlockFactor, "block factor should match")
 
 	// Verify result1 is mathematically correct
-	blocksElapsed1 := uint64(s.ctx.BlockHeight()) - params.DecayStartHeight
+	blocksElapsed1 := uint64(s.ctx.BlockHeight()) - decayEpoch
 	n1 := blocksElapsed1 / blocksPerMonth
 	r1 := blocksElapsed1 % blocksPerMonth
 
@@ -406,7 +416,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
 	s.Require().Equal(cache1.BlockFactor, cache2.BlockFactor, "caches block factor should match")
 
 	// Verify result2 is mathematically correct
-	blocksElapsed2 := uint64(s.ctx.BlockHeight()) - params.DecayStartHeight
+	blocksElapsed2 := uint64(s.ctx.BlockHeight()) - decayEpoch
 	n2 := blocksElapsed2 / blocksPerMonth
 	r2 := blocksElapsed2 % blocksPerMonth
 
@@ -448,7 +458,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
 	s.Require().Equal(perBlockFactor3, cache3.BlockFactor, "block factor should match")
 
 	// Verify result3 is mathematically correct
-	blocksElapsed3 := uint64(s.ctx.BlockHeight()) - params.DecayStartHeight
+	blocksElapsed3 := uint64(s.ctx.BlockHeight()) - decayEpoch
 	n3 := blocksElapsed3 / blocksPerMonth
 	r3 := blocksElapsed3 % blocksPerMonth
 
@@ -476,7 +486,7 @@ func (s *KeeperSuite) TestDeflationCalculationFn_Cache() {
 	s.Require().Equal(cache3.BlockFactor, cache4.BlockFactor, "caches block factor should match")
 
 	// Verify result4 is mathematically correct
-	blocksElapsed4 := uint64(s.ctx.BlockHeight()) - params.DecayStartHeight
+	blocksElapsed4 := uint64(s.ctx.BlockHeight()) - decayEpoch
 	n4 := blocksElapsed4 / blocksPerMonth
 	r4 := blocksElapsed4 % blocksPerMonth
 

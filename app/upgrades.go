@@ -117,18 +117,21 @@ func updateInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
 		return fmt.Errorf("unknown upgrade chain ID: %s", chainID)
 	}
 
-	inflationParams.DecayStartHeight = uint64(sdkCtx.BlockHeight())
 	inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
 
 	if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
+		return err
+	}
+	decayEpoch := uint64(sdkCtx.BlockHeight())
+	if err := app.InflationKeeper.SetDecayEpochStart(sdkCtx, decayEpoch); err != nil {
 		return err
 	}
 
 	sdkCtx.Logger().Info("inflation module updated with params",
 		"max_supply", inflationParams.MaxSupply.String(),
 		"burned_addresses", inflationParams.BurnedAddresses,
-		"decay_start_height", inflationParams.DecayStartHeight,
-		"decay_rate", inflationParams.DecayRate.String())
+		"decay_rate", inflationParams.DecayRate.String(),
+		"decay_epoch_start", decayEpoch)
 
 	return nil
 }

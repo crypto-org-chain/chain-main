@@ -2,7 +2,9 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 
@@ -76,18 +78,28 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 
 // SetParams set the params
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	store := k.storeService.OpenKVStore(ctx)
 	if err := params.Validate(); err != nil {
 		return err
 	}
+	store := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&params)
 	return store.Set([]byte(types.ParamsKey), bz)
 }
 
 // InitGenesis initializes the module's state from a provided genesis state.
 func (k Keeper) InitGenesis(ctx context.Context, genState types.GenesisState) {
-	if err := k.SetParams(ctx, genState.Params); err != nil {
+	if err := genState.Validate(); err != nil {
 		panic(err)
+	}
+	store := k.storeService.OpenKVStore(ctx)
+	bz := k.cdc.MustMarshal(&genState.Params)
+	if err := store.Set([]byte(types.ParamsKey), bz); err != nil {
+		panic(err)
+	}
+	if genState.DecayEpochStart != 0 {
+		if err := k.SetDecayEpochStart(ctx, genState.DecayEpochStart); err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -99,8 +111,38 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	if err != nil {
 		panic("fail to get params:" + err.Error())
 	}
+	epoch, ok, err := k.getDecayEpochStart(ctx)
+	if err != nil {
+		panic("fail to get decay epoch start:" + err.Error())
+	}
+	if ok {
+		genesis.DecayEpochStart = epoch
+	}
 
 	return genesis
+}
+
+// SetDecayEpochStart persists the block height at which inflation decay begins (e.g. upgrade activation height).
+func (k Keeper) SetDecayEpochStart(ctx context.Context, height uint64) error {
+	store := k.storeService.OpenKVStore(ctx)
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, height)
+	return store.Set([]byte(types.DecayEpochStartKey), bz)
+}
+
+func (k Keeper) getDecayEpochStart(ctx context.Context) (uint64, bool, error) {
+	store := k.storeService.OpenKVStore(ctx)
+	bz, err := store.Get([]byte(types.DecayEpochStartKey))
+	if err != nil {
+		return 0, false, err
+	}
+	if len(bz) == 0 {
+		return 0, false, nil
+	}
+	if len(bz) != 8 {
+		return 0, false, fmt.Errorf("invalid decay epoch start encoding: len=%d", len(bz))
+	}
+	return binary.BigEndian.Uint64(bz), true, nil
 }
 
 // GetAddressBalance returns the balance of the given address in the specified denomination.

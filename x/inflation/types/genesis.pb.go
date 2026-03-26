@@ -27,6 +27,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type GenesisState struct {
 	// params defines all the parameters of the module.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
+	// decay_epoch_start is the block height at which decay began (set when decay is first enabled).
+	DecayEpochStart uint64 `protobuf:"varint,2,opt,name=decay_epoch_start,json=decayEpochStart,proto3" json:"decay_epoch_start,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
@@ -67,6 +69,13 @@ func (m *GenesisState) GetParams() Params {
 		return m.Params
 	}
 	return Params{}
+}
+
+func (m *GenesisState) GetDecayEpochStart() uint64 {
+	if m != nil {
+		return m.DecayEpochStart
+	}
+	return 0
 }
 
 func init() {
@@ -115,6 +124,11 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DecayEpochStart != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.DecayEpochStart))
+		i--
+		dAtA[i] = 0x10
+	}
 	{
 		size, err := m.Params.MarshalToSizedBuffer(dAtA[:i])
 		if err != nil {
@@ -147,6 +161,9 @@ func (m *GenesisState) Size() (n int) {
 	_ = l
 	l = m.Params.Size()
 	n += 1 + l + sovGenesis(uint64(l))
+	if m.DecayEpochStart != 0 {
+		n += 1 + sovGenesis(uint64(m.DecayEpochStart))
+	}
 	return n
 }
 
@@ -218,6 +235,25 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DecayEpochStart", wireType)
+			}
+			m.DecayEpochStart = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DecayEpochStart |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenesis(dAtA[iNdEx:])
