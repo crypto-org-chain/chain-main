@@ -51,7 +51,7 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	blocksPerYear := mintParams.BlocksPerYear
 
 	if blocksPerYear == 0 {
-		k.Logger(ctx).Error("blocks per year is 0, skipping base rewards top up")
+		k.logger(ctx).Error("blocks per year is 0, skipping base rewards top up")
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 
 	feeCollector := k.accountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 	if feeCollector == nil {
-		k.Logger(ctx).Error("fee collector module account not found, skipping base rewards top up")
+		k.logger(ctx).Error("fee collector module account not found, skipping base rewards top up")
 		return nil
 	}
 	feeCollectorAddr := feeCollector.GetAddress()
@@ -89,7 +89,7 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	}
 
 	if previousTotalPower == 0 {
-		k.Logger(ctx).Error("no validators are voting, skipping base rewards top up")
+		k.logger(ctx).Error("no validators are voting, skipping base rewards top up")
 		return nil
 	}
 
@@ -97,13 +97,13 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	poolBalance := k.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
 	topUpAmount := shortFallAmount
 	if poolBalance.Amount.IsZero() {
-		k.Logger(ctx).Error("base rewards pool is empty, cannot top up validator rewards",
+		k.logger(ctx).Error("base rewards pool is empty, cannot top up validator rewards",
 			"shortfall", shortFallAmount.String(),
 		)
 		return nil
 	}
 	if poolBalance.Amount.LT(shortFallAmount) {
-		k.Logger(ctx).Error("base rewards pool has insufficient funds, distributing remaining balance",
+		k.logger(ctx).Error("base rewards pool has insufficient funds, distributing remaining balance",
 			"shortfall", shortFallAmount.String(),
 			"pool_balance", poolBalance.Amount.String(),
 		)

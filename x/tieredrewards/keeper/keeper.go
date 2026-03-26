@@ -112,11 +112,11 @@ func NewKeeper(
 	return k
 }
 
-func (k Keeper) GetAuthority() string {
+func (k Keeper) getAuthority() string {
 	return k.authority
 }
 
-func (k Keeper) Logger(ctx context.Context) log.Logger {
+func (k Keeper) logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
 }

@@ -14,7 +14,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-func (k Keeper) CreatePosition(
+func (k Keeper) createPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
@@ -41,7 +41,7 @@ func (k Keeper) CreatePosition(
 		pos.TriggerExit(blockTime, tier.ExitDuration)
 	}
 
-	if err := k.SetPosition(ctx, pos); err != nil {
+	if err := k.setPosition(ctx, pos); err != nil {
 		return types.Position{}, err
 	}
 
@@ -49,7 +49,7 @@ func (k Keeper) CreatePosition(
 }
 
 // LockFunds locks the desired amount of funds into a position.
-func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) error {
+func (k Keeper) lockFunds(ctx context.Context, owner string, amount math.Int) error {
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -64,7 +64,7 @@ func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) er
 }
 
 // SetPosition stores a position, validates it, and maintains secondary indexes.
-func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
+func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	if err := pos.Validate(); err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
 }
 
 // DeletePosition removes a position and cleans up secondary indexes.
-func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
+func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -146,17 +146,17 @@ func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
 	return k.decreasePositionCount(ctx, pos.TierId)
 }
 
-func (k Keeper) GetPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
+func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[sdk.AccAddress, uint64](owner)
-	return types.CollectPairKeySetK2(ctx, k.PositionsByOwner, rng)
+	return collectPairKeySetK2(ctx, k.PositionsByOwner, rng)
 }
 
-func (k Keeper) GetPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
+func (k Keeper) getPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
-	return types.CollectPairKeySetK2(ctx, k.PositionsByValidator, rng)
+	return collectPairKeySetK2(ctx, k.PositionsByValidator, rng)
 }
 
-func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
+func (k Keeper) getPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
 	positions := make([]types.Position, 0, len(ids))
 	for _, id := range ids {
 		pos, err := k.Positions.Get(ctx, id)
@@ -171,18 +171,18 @@ func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Po
 	return positions, nil
 }
 
-func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
-	ids, err := k.GetPositionsIdsByOwner(ctx, owner)
+func (k Keeper) getPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
+	ids, err := k.getPositionsIdsByOwner(ctx, owner)
 	if err != nil {
 		return nil, err
 	}
-	return k.GetPositionsByIds(ctx, ids)
+	return k.getPositionsByIds(ctx, ids)
 }
 
-func (k Keeper) GetPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
-	ids, err := k.GetPositionsIdsByValidator(ctx, valAddr)
+func (k Keeper) getPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
+	ids, err := k.getPositionsIdsByValidator(ctx, valAddr)
 	if err != nil {
 		return nil, err
 	}
-	return k.GetPositionsByIds(ctx, ids)
+	return k.getPositionsByIds(ctx, ids)
 }

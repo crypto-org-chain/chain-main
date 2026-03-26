@@ -23,16 +23,16 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	tier, err := ms.GetTier(ctx, msg.Id)
+	tier, err := ms.getTier(ctx, msg.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateNewPosition(ctx, tier, msg.Amount); err != nil {
+	if err := ms.validateNewPosition(ctx, tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
-	if err := ms.LockFunds(ctx, msg.Owner, msg.Amount); err != nil {
+	if err := ms.lockFunds(ctx, msg.Owner, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -42,11 +42,11 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		if err != nil {
 			return nil, err
 		}
-		currentRatio, err := ms.UpdateBaseRewardsPerShare(ctx, valAddr)
+		currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 		if err != nil {
 			return nil, err
 		}
-		shares, err := ms.Delegate(ctx, valAddr, msg.Amount)
+		shares, err := ms.delegate(ctx, valAddr, msg.Amount)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		}
 	}
 
-	pos, err := ms.CreatePosition(ctx, msg.Owner, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createPosition(ctx, msg.Owner, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +77,12 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	tier, err := ms.GetTier(ctx, msg.Id)
+	tier, err := ms.getTier(ctx, msg.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateNewPosition(ctx, tier, msg.Amount); err != nil {
+	if err := ms.validateNewPosition(ctx, tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	currentRatio, err := ms.UpdateBaseRewardsPerShare(ctx, valAddr)
+	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		BaseRewardsPerShare: currentRatio,
 	}
 
-	pos, err := ms.CreatePosition(ctx, msg.DelegatorAddress, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -133,12 +133,12 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateDelegatePosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateDelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -147,12 +147,12 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	currentRatio, err := ms.UpdateBaseRewardsPerShare(ctx, valAddr)
+	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	newShares, err := ms.Delegate(ctx, valAddr, pos.Amount)
+	newShares, err := ms.delegate(ctx, valAddr, pos.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		BaseRewardsPerShare: currentRatio,
 	}, sdkCtx.BlockTime())
 
-	if err := ms.SetPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -186,12 +186,12 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -200,12 +200,12 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, valAddr, pos)
+	pos, _, _, err = ms.claimAndRefreshPosition(ctx, valAddr, pos)
 	if err != nil {
 		return nil, err
 	}
 
-	completionTime, unbondingId, err := ms.Undelegate(ctx, valAddr, pos.DelegatedShares)
+	completionTime, unbondingId, err := ms.undelegate(ctx, valAddr, pos.DelegatedShares)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	srcValidator := pos.Validator
 	pos.ClearDelegation()
 
-	if err := ms.SetPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -245,12 +245,12 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator); err != nil {
+	if err := ms.validateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator); err != nil {
 		return nil, err
 	}
 
@@ -264,18 +264,18 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, srcValAddr, pos)
+	pos, _, _, err = ms.claimAndRefreshPosition(ctx, srcValAddr, pos)
 	if err != nil {
 		return nil, err
 	}
 
 	// Snapshot destination validator's ratio before new shares arrive.
-	dstCurrentRatio, err := ms.UpdateBaseRewardsPerShare(ctx, dstValAddr)
+	dstCurrentRatio, err := ms.updateBaseRewardsPerShare(ctx, dstValAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	completionTime, newShares, unbondingId, err := ms.Redelegate(ctx, srcValAddr, dstValAddr, pos.DelegatedShares)
+	completionTime, newShares, unbondingId, err := ms.redelegate(ctx, srcValAddr, dstValAddr, pos.DelegatedShares)
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		BaseRewardsPerShare: dstCurrentRatio,
 	}, sdkCtx.BlockTime())
 
-	if err := ms.SetPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -321,16 +321,16 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateAddToPosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateAddToPosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
-	if err := ms.LockFunds(ctx, msg.Owner, msg.Amount); err != nil {
+	if err := ms.lockFunds(ctx, msg.Owner, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -342,12 +342,12 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		pos, _, _, err = ms.ClaimAndRefreshPosition(ctx, valAddr, pos)
+		pos, _, _, err = ms.claimAndRefreshPosition(ctx, valAddr, pos)
 		if err != nil {
 			return nil, err
 		}
 
-		newShares, err := ms.Delegate(ctx, valAddr, msg.Amount)
+		newShares, err := ms.delegate(ctx, valAddr, msg.Amount)
 		if err != nil {
 			return nil, err
 		}
@@ -362,7 +362,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 
 	pos.UpdateAmount(pos.Amount.Add(msg.Amount))
 
-	if err := ms.SetPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -384,16 +384,16 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateTriggerExit(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateTriggerExit(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
-	tier, err := ms.GetTier(ctx, pos.TierId)
+	tier, err := ms.getTier(ctx, pos.TierId)
 	if err != nil {
 		return nil, err
 	}
@@ -401,7 +401,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
 
-	if err := ms.SetPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -425,12 +425,12 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, err := ms.GetPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.ValidateClaimRewards(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateClaimRewards(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -439,7 +439,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	baseRewards, bonusRewards, err := ms.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
+	baseRewards, bonusRewards, err := ms.claimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +472,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	if err := ms.ValidateWithdrawFromTier(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateWithdrawFromTier(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -492,7 +492,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	if err := ms.DeletePosition(ctx, pos); err != nil {
+	if err := ms.deletePosition(ctx, pos); err != nil {
 		return nil, err
 	}
 

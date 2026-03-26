@@ -12,7 +12,7 @@ import (
 )
 
 func (ms msgServer) requireAuthority(msgAuthority string) error {
-	if ms.GetAuthority() != msgAuthority {
+	if ms.getAuthority() != msgAuthority {
 		return errors.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", ms.authority, msgAuthority)
 	}
 	return nil
@@ -35,7 +35,7 @@ func (ms msgServer) AddTier(ctx context.Context, msg *types.MsgAddTier) (*types.
 		return nil, err
 	}
 
-	has, err := ms.HasTier(ctx, msg.Tier.Id)
+	has, err := ms.hasTier(ctx, msg.Tier.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (ms msgServer) AddTier(ctx context.Context, msg *types.MsgAddTier) (*types.
 		return nil, types.ErrTierAlreadyExists
 	}
 
-	if err := ms.SetTier(ctx, msg.Tier); err != nil {
+	if err := ms.setTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 		return nil, err
 	}
 
-	has, err := ms.HasTier(ctx, msg.Tier.Id)
+	has, err := ms.hasTier(ctx, msg.Tier.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 	}
 
 	// Updating BonusApy or ExitDuration affects all existing positions on this tier immediately.
-	if err := ms.SetTier(ctx, msg.Tier); err != nil {
+	if err := ms.setTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}
 
@@ -84,12 +84,12 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 		return nil, err
 	}
 
-	tier, err := ms.GetTier(ctx, msg.Id)
+	tier, err := ms.getTier(ctx, msg.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.Keeper.DeleteTier(ctx, msg.Id); err != nil {
+	if err := ms.deleteTier(ctx, msg.Id); err != nil {
 		return nil, err
 	}
 

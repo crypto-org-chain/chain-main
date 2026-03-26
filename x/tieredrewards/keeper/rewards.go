@@ -15,8 +15,8 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// Delegate delegates tokens from the tier module account to a bonded validator.
-func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+// delegate delegates tokens from the tier module account to a bonded validator.
+func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
@@ -31,7 +31,7 @@ func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount mat
 	return k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
 }
 
-func (k Keeper) Undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, uint64, error) {
+func (k Keeper) undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, uint64, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	completionTime, _, unbondingId, err := k.stakingKeeper.Undelegate(ctx, moduleAddr, valAddr, shares)
 	if err != nil {
@@ -40,9 +40,9 @@ func (k Keeper) Undelegate(ctx context.Context, valAddr sdk.ValAddress, shares m
 	return completionTime, unbondingId, nil
 }
 
-// Redelegate moves a delegation between validators for the tier module account.
+// redelegate moves a delegation between validators for the tier module account.
 // The caller must store the returned unbondingId for slash tracking.
-func (k Keeper) Redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
+func (k Keeper) redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	completionTime, newShares, unbondingId, err := k.stakingKeeper.BeginRedelegation(ctx, moduleAddr, srcValAddr, dstValAddr, shares)
 	if err != nil {
@@ -56,7 +56,7 @@ func (k Keeper) withdrawDelegationRewards(ctx context.Context, valAddr sdk.ValAd
 	return k.distributionKeeper.WithdrawDelegationRewards(ctx, moduleAddr, valAddr)
 }
 
-func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
 	ratio, err := k.ValidatorRewardRatio.Get(ctx, valAddr)
 	if errors.Is(err, collections.ErrNotFound) {
 		return sdk.DecCoins{}, nil
@@ -67,11 +67,11 @@ func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 	return ratio.CumulativeRewardsPerShare, nil
 }
 
-// UpdateBaseRewardsPerShare withdraws base rewards from x/distribution and
+// updateBaseRewardsPerShare withdraws base rewards from x/distribution and
 // updates the cumulative rewards-per-share ratio for the given validator.
 // Must be called before any operation that changes the module's delegation shares.
-func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
-	currentRatio, err := k.GetValidatorRewardRatio(ctx, valAddr)
+func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+	currentRatio, err := k.getValidatorRewardRatio(ctx, valAddr)
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
@@ -130,7 +130,7 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 	}
 	for i := range positions {
 		k.slash(&positions[i], validator, fraction)
-		if err := k.SetPosition(ctx, positions[i]); err != nil {
+		if err := k.setPosition(ctx, positions[i]); err != nil {
 			return err
 		}
 	}
@@ -156,7 +156,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 		return err
 	}
 
-	pos, err := k.GetPosition(ctx, positionId)
+	pos, err := k.getPosition(ctx, positionId)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 	pos.UpdateAmount(newAmount)
 
-	return k.SetPosition(ctx, pos)
+	return k.setPosition(ctx, pos)
 }
 
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
@@ -194,7 +194,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		}
 	}
 
-	return k.SetPosition(ctx, pos)
+	return k.setPosition(ctx, pos)
 }
 
 // calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.
@@ -232,14 +232,14 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 		TruncateInt()
 }
 
-// ClaimRewardsForPositions settles base and bonus rewards for a set of positions.
+// claimRewardsForPositions settles base and bonus rewards for a set of positions.
 // When forceAccrue is true, bonus is calculated regardless of validator bonded status.
-func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
-	baseRewards, err := k.ClaimBaseRewardsForPositions(ctx, valAddr, positions)
+func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
+	baseRewards, err := k.claimBaseRewardsForPositions(ctx, valAddr, positions)
 	if err != nil {
 		return sdk.Coins{}, sdk.Coins{}, err
 	}
-	bonusRewards, err := k.ClaimBonusRewardsForPositions(ctx, positions, forceAccrue)
+	bonusRewards, err := k.claimBonusRewardsForPositions(ctx, positions, forceAccrue)
 	if errors.Is(err, types.ErrInsufficientBonusPool) {
 		return baseRewards, sdk.Coins{}, nil
 	}
@@ -249,35 +249,35 @@ func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 	return baseRewards, bonusRewards, nil
 }
 
-// ClaimAndRefreshPosition claims rewards for a single position then re-fetches
-// it from the store, since ClaimRewardsForPositions persists updates internally.
-func (k Keeper) ClaimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
-	base, bonus, err := k.ClaimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
+// claimAndRefreshPosition claims rewards for a single position then re-fetches
+// it from the store, since claimRewardsForPositions persists updates internally.
+func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+	base, bonus, err := k.claimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
-	refreshed, err := k.GetPosition(ctx, pos.Id)
+	refreshed, err := k.getPosition(ctx, pos.Id)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
 	return refreshed, base, bonus, nil
 }
 
-func (k Keeper) ClaimBaseRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, error) {
-	currentRatio, err := k.UpdateBaseRewardsPerShare(ctx, valAddr)
+func (k Keeper) claimBaseRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, error) {
+	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return sdk.Coins{}, err
 	}
 
 	total := sdk.Coins{}
 	for i := range positions {
-		claimed, err := k.ClaimBaseRewards(ctx, &positions[i], currentRatio)
+		claimed, err := k.claimBaseRewards(ctx, &positions[i], currentRatio)
 		if err != nil {
 			return sdk.Coins{}, err
 		}
 		total = total.Add(claimed...)
 
-		if err := k.SetPosition(ctx, positions[i]); err != nil {
+		if err := k.setPosition(ctx, positions[i]); err != nil {
 			return sdk.Coins{}, err
 		}
 	}
@@ -285,9 +285,9 @@ func (k Keeper) ClaimBaseRewardsForPositions(ctx context.Context, valAddr sdk.Va
 	return total, nil
 }
 
-// ClaimBaseRewards calculates and sends a position's accrued base rewards.
+// claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
-func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
+func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
 	if !pos.IsDelegated() {
 		return sdk.Coins{}, nil
 	}
@@ -296,7 +296,7 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, curre
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
 	if delta.IsAnyNegative() {
-		k.Logger(ctx).Error("base rewards per share is negative, skipping claim", "position", pos.String())
+		k.logger(ctx).Error("base rewards per share is negative, skipping claim", "position", pos.String())
 		return sdk.Coins{}, nil
 	}
 
@@ -330,7 +330,7 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, curre
 	return posRewards, nil
 }
 
-func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
+func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
 	tierCache := make(map[uint32]types.Tier)
 	total := sdk.NewCoins()
 
@@ -338,21 +338,21 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 		tier, ok := tierCache[positions[i].TierId]
 		if !ok {
 			var err error
-			tier, err = k.GetTier(ctx, positions[i].TierId)
+			tier, err = k.getTier(ctx, positions[i].TierId)
 			if err != nil {
 				return sdk.Coins{}, err
 			}
 			tierCache[positions[i].TierId] = tier
 		}
 
-		bonus, err := k.ClaimBonusRewards(ctx, &positions[i], tier, forceAccrue)
+		bonus, err := k.claimBonusRewards(ctx, &positions[i], tier, forceAccrue)
 		if err != nil {
 			return sdk.Coins{}, err
 		}
 
 		total = total.Add(bonus...)
 
-		if err := k.SetPosition(ctx, positions[i]); err != nil {
+		if err := k.setPosition(ctx, positions[i]); err != nil {
 			return sdk.Coins{}, err
 		}
 	}
@@ -360,9 +360,9 @@ func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []t
 	return total, nil
 }
 
-// ClaimBonusRewards calculates and pays the bonus for a position from the rewards pool.
+// claimBonusRewards calculates and pays the bonus for a position from the rewards pool.
 // When forceAccrue is true, bonus is settled regardless of validator bonded status.
-func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
+func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 

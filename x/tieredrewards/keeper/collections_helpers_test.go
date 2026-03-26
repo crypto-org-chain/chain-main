@@ -1,10 +1,9 @@
-package types_test
+package keeper
 
 import (
 	"context"
 	"testing"
 
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/collections"
@@ -26,7 +25,7 @@ func TestCollectPairKeySetK2_Empty(t *testing.T) {
 	ctx, ks := newTestKeySet(t)
 
 	rng := collections.NewPrefixedPairRange[string, uint64]("prefix")
-	vals, err := types.CollectPairKeySetK2(ctx, ks, rng)
+	vals, err := collectPairKeySetK2(ctx, ks, rng)
 	require.NoError(t, err)
 	require.Empty(t, vals)
 }
@@ -39,21 +38,18 @@ func TestCollectPairKeySetK2_CollectsK2Values(t *testing.T) {
 	require.NoError(t, ks.Set(ctx, collections.Join("a", uint64(30))))
 	require.NoError(t, ks.Set(ctx, collections.Join("b", uint64(40))))
 
-	// Only "a" prefix
 	rng := collections.NewPrefixedPairRange[string, uint64]("a")
-	vals, err := types.CollectPairKeySetK2(ctx, ks, rng)
+	vals, err := collectPairKeySetK2(ctx, ks, rng)
 	require.NoError(t, err)
 	require.Equal(t, []uint64{10, 20, 30}, vals)
 
-	// Only "b" prefix
 	rng = collections.NewPrefixedPairRange[string, uint64]("b")
-	vals, err = types.CollectPairKeySetK2(ctx, ks, rng)
+	vals, err = collectPairKeySetK2(ctx, ks, rng)
 	require.NoError(t, err)
 	require.Equal(t, []uint64{40}, vals)
 
-	// Non-existent prefix
 	rng = collections.NewPrefixedPairRange[string, uint64]("z")
-	vals, err = types.CollectPairKeySetK2(ctx, ks, rng)
+	vals, err = collectPairKeySetK2(ctx, ks, rng)
 	require.NoError(t, err)
 	require.Empty(t, vals)
 }

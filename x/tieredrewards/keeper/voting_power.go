@@ -12,9 +12,9 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// GetVotingPowerForAddress returns the tier governance voting power for an address.
+// getVotingPowerForAddress returns the tier governance voting power for an address.
 // Power = DelegatedShares * BondedTokens / DelegatorShares for each delegated position.
-func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
+func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
 	active, err := k.GetActiveDelegatedPositionsByOwner(ctx, voter)
 	if err != nil {
 		return math.LegacyZeroDec(), err
@@ -42,7 +42,7 @@ func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 }
 
 func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error) {
-	positions, err := k.GetPositionsByOwner(ctx, voter)
+	positions, err := k.getPositionsByOwner(ctx, voter)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 	return active, nil
 }
 
-func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
+func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
 		if pos.IsActiveForGovernance() {

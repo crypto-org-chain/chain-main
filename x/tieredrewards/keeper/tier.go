@@ -10,7 +10,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
+func (k Keeper) getTier(ctx context.Context, id uint32) (types.Tier, error) {
 	tier, err := k.Tiers.Get(ctx, id)
 	if err != nil {
 		if stderrors.Is(err, collections.ErrNotFound) {
@@ -21,7 +21,7 @@ func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
 	return tier, nil
 }
 
-func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
+func (k Keeper) setTier(ctx context.Context, tier types.Tier) error {
 	if err := tier.Validate(); err != nil {
 		return err
 	}
@@ -31,8 +31,8 @@ func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
 	return nil
 }
 
-func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
-	hasPositions, err := k.HasActivePositionsForTier(ctx, tierId)
+func (k Keeper) deleteTier(ctx context.Context, tierId uint32) error {
+	hasPositions, err := k.hasActivePositionsForTier(ctx, tierId)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
 	return nil
 }
 
-func (k Keeper) HasTier(ctx context.Context, id uint32) (bool, error) {
+func (k Keeper) hasTier(ctx context.Context, id uint32) (bool, error) {
 	has, err := k.Tiers.Has(ctx, id)
 	if err != nil {
 		return false, errorsmod.Wrapf(err, "%s (tier id %d)", types.ErrTierStore.Error(), id)
@@ -56,15 +56,15 @@ func (k Keeper) HasTier(ctx context.Context, id uint32) (bool, error) {
 	return has, nil
 }
 
-func (k Keeper) HasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
-	count, err := k.GetPositionCountForTier(ctx, tierId)
+func (k Keeper) hasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
+	count, err := k.getPositionCountForTier(ctx, tierId)
 	if err != nil {
 		return false, err
 	}
 	return count > 0, nil
 }
 
-func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uint64, error) {
+func (k Keeper) getPositionCountForTier(ctx context.Context, tierId uint32) (uint64, error) {
 	count, err := k.PositionCountByTier.Get(ctx, tierId)
 	if err != nil {
 		if stderrors.Is(err, collections.ErrNotFound) {
@@ -76,7 +76,7 @@ func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uin
 }
 
 func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error {
-	count, err := k.GetPositionCountForTier(ctx, tierId)
+	count, err := k.getPositionCountForTier(ctx, tierId)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error 
 }
 
 func (k Keeper) decreasePositionCount(ctx context.Context, id uint32) error {
-	count, err := k.GetPositionCountForTier(ctx, id)
+	count, err := k.getPositionCountForTier(ctx, id)
 	if err != nil {
 		return err
 	}

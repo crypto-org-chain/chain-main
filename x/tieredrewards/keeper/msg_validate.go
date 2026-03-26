@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount math.Int) error {
+func (k Keeper) validateNewPosition(ctx context.Context, tier types.Tier, amount math.Int) error {
 	if tier.IsCloseOnly() {
 		return types.ErrTierIsCloseOnly
 	}
@@ -22,7 +22,7 @@ func (k Keeper) ValidateNewPosition(ctx context.Context, tier types.Tier, amount
 	return nil
 }
 
-func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -34,7 +34,7 @@ func (k Keeper) ValidateDelegatePosition(ctx context.Context, pos types.Position
 	return nil
 }
 
-func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -50,7 +50,7 @@ func (k Keeper) ValidateUndelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
+func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -70,7 +70,7 @@ func (k Keeper) ValidateRedelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) ValidateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -79,7 +79,7 @@ func (k Keeper) ValidateAddToPosition(ctx context.Context, pos types.Position, o
 		return types.ErrPositionExiting
 	}
 
-	tier, err := k.GetTier(ctx, pos.TierId)
+	tier, err := k.getTier(ctx, pos.TierId)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (k Keeper) ValidateAddToPosition(ctx context.Context, pos types.Position, o
 	return nil
 }
 
-func (k Keeper) ValidateTriggerExit(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateTriggerExit(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -103,7 +103,7 @@ func (k Keeper) ValidateTriggerExit(ctx context.Context, pos types.Position, own
 	return nil
 }
 
-func (k Keeper) ValidateClaimRewards(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateClaimRewards(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -115,7 +115,7 @@ func (k Keeper) ValidateClaimRewards(ctx context.Context, pos types.Position, ow
 	return nil
 }
 
-func (k Keeper) ValidateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}

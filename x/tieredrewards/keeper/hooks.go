@@ -24,9 +24,9 @@ func (k Keeper) Hooks() Hooks {
 }
 
 func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
-	_, _, err := h.k.ClaimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
+	_, _, err := h.k.claimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
 	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
-		h.k.Logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool",
+		h.k.logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool",
 			"validator", valAddr.String(),
 			"error", err,
 		)
@@ -39,7 +39,7 @@ func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValA
 // this validator. forceAccrue=true is required because the SDK has already changed
 // the validator status to Unbonding before firing this hook.
 func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
+	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 // BeforeValidatorSlashed claims pending rewards then reduces Amount on all
 // positions by the slash fraction.
 func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
-	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
+	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	}
 
 	// Re-fetch after claiming so slashPositions operates on latest store state.
-	positions, err = h.k.GetPositionsByValidator(ctx, valAddr)
+	positions, err = h.k.getPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 // AfterValidatorBonded resets LastBonusAccrual for all positions on this
 // validator so bonus only accrues from when the validator is bonded again.
 func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	positions, err := h.k.GetPositionsByValidator(ctx, valAddr)
+	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
@@ -91,7 +91,7 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 
 	for _, pos := range positions {
 		pos.UpdateLastBonusAccrual(blockTime)
-		if err := h.k.SetPosition(ctx, pos); err != nil {
+		if err := h.k.setPosition(ctx, pos); err != nil {
 			return err
 		}
 	}

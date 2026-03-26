@@ -10,7 +10,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, error) {
+func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
 	pos, err := k.Positions.Get(ctx, id)
 	if err != nil {
 		if stderrors.Is(err, collections.ErrNotFound) {

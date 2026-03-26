@@ -59,7 +59,7 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 		return nil, err
 	}
 
-	positions, err := q.k.GetPositionsByOwner(ctx, owner)
+	positions, err := q.k.getPositionsByOwner(ctx, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEs
 		return nil, err
 	}
 
-	currentRatio, err := q.k.GetValidatorRewardRatio(ctx, valAddr)
+	currentRatio, err := q.k.getValidatorRewardRatio(ctx, valAddr)
 	if err != nil && !errors.Is(err, collections.ErrNotFound) {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (q queryServer) TierVotingPower(ctx context.Context, req *types.QueryTierVo
 		return nil, status.Errorf(codes.InvalidArgument, "invalid voter address: %s", err)
 	}
 
-	power, err := q.k.GetVotingPowerForAddress(ctx, voter)
+	power, err := q.k.getVotingPowerForAddress(ctx, voter)
 	if err != nil {
 		return nil, err
 	}

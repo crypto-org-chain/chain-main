@@ -15,13 +15,13 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	for _, tier := range data.Tiers {
-		if err := k.SetTier(ctx, tier); err != nil {
+		if err := k.setTier(ctx, tier); err != nil {
 			panic(err)
 		}
 	}
 
 	for _, pos := range data.Positions {
-		if err := k.SetPosition(ctx, pos); err != nil {
+		if err := k.setPosition(ctx, pos); err != nil {
 			panic(err)
 		}
 	}
