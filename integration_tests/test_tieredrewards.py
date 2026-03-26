@@ -299,14 +299,18 @@ def test_tiers_query(cluster):
     assert float(t1["bonus_apy"]) == pytest.approx(
         0.04, rel=1e-6
     ), f"Tier 1 bonus_apy mismatch: {t1}"
-    assert int(t1["min_lock_amount"]) == TIER_1_MIN, f"Tier 1 min_lock_amount mismatch: {t1}"
+    assert (
+        int(t1["min_lock_amount"]) == TIER_1_MIN
+    ), f"Tier 1 min_lock_amount mismatch: {t1}"
 
     t2 = tier_map[TIER_2_ID]
     assert t2["exit_duration"] == "30s", f"Tier 2 exit_duration mismatch: {t2}"
     assert float(t2["bonus_apy"]) == pytest.approx(
         0.02, rel=1e-6
     ), f"Tier 2 bonus_apy mismatch: {t2}"
-    assert int(t2["min_lock_amount"]) == TIER_2_MIN, f"Tier 2 min_lock_amount mismatch: {t2}"
+    assert (
+        int(t2["min_lock_amount"]) == TIER_2_MIN
+    ), f"Tier 2 min_lock_amount mismatch: {t2}"
 
 
 def test_pool_balance_query(cluster):
@@ -774,11 +778,15 @@ def test_full_exit_flow(cluster):
         lambda attrs: "completion_time" in attrs,
     )
     assert unbond_data is not None, (
-        "EventPositionUndelegated with completion_time not found in tier-undelegate response"
+        "EventPositionUndelegated with completion_time not found in "
+        "tier-undelegate response"
     )
-    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(seconds=1)
+    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(
+        seconds=1
+    )
 
-    # 5. Wait for unbonding to complete using chain time (unbonding_time = 10s from genesis.jsonnet)
+    # 5. Wait for unbonding to complete using chain time (unbonding_time = 10s from
+    #    genesis.jsonnet)
     wait_for_block_time(cluster, completion_time)
     wait_for_new_blocks(cluster, 1)
 
@@ -1400,16 +1408,18 @@ def test_not_position_owner(cluster):
 
     # signer2 tries to add to signer1's position — must fail
     rsp = _add_to_position(cluster, other, pos_id, TIER_1_MIN)
-    assert (
-        rsp["code"] != 0
-    ), "add-to-tier-position on another user's position must fail with ErrNotPositionOwner"
+    assert rsp["code"] != 0, (
+        "add-to-tier-position on another user's position must fail with "
+        "ErrNotPositionOwner"
+    )
     assert "signer is not position owner" in rsp.get("raw_log", ""), rsp["raw_log"]
 
     # signer2 tries to claim rewards for signer1's position — must fail
     rsp = _claim_rewards(cluster, other, pos_id)
-    assert (
-        rsp["code"] != 0
-    ), "claim-tier-rewards on another user's position must fail with ErrNotPositionOwner"
+    assert rsp["code"] != 0, (
+        "claim-tier-rewards on another user's position must fail with "
+        "ErrNotPositionOwner"
+    )
     assert "signer is not position owner" in rsp.get("raw_log", ""), rsp["raw_log"]
 
 
