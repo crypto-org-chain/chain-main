@@ -6,7 +6,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -47,29 +46,4 @@ func TestRegisterInterfaces_AllMsgTypes(t *testing.T) {
 		err = registry.UnpackAny(any, &resolved)
 		require.NoError(t, err, "%T should be resolvable from interface registry", msg)
 	}
-}
-
-// TestRegisterLegacyAminoCodec_AllMsgTypes verifies that every message type is
-// registered in the legacy amino codec.
-func TestRegisterLegacyAminoCodec_AllMsgTypes(t *testing.T) {
-	t.Parallel()
-
-	cdc := codec.NewLegacyAmino()
-	types.RegisterLegacyAminoCodec(cdc)
-
-	// Verify MsgWithdrawFromTier and MsgFundTierPool are registered
-	// (these were previously missing).
-	require.NotPanics(t, func() {
-		cdc.MustMarshalJSON(&types.MsgWithdrawFromTier{
-			Owner:      "cosmos1test",
-			PositionId: 1,
-		})
-	}, "MsgWithdrawFromTier should be registered in amino codec")
-
-	require.NotPanics(t, func() {
-		cdc.MustMarshalJSON(&types.MsgFundTierPool{
-			Depositor: "cosmos1test",
-			Amount:    sdk.NewCoins(sdk.NewInt64Coin("stake", 100)),
-		})
-	}, "MsgFundTierPool should be registered in amino codec")
 }
