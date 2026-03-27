@@ -420,6 +420,54 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 	}, nil
 }
 
+func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPosition) (*types.MsgClearPositionResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.getPosition(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.validateClearPosition(ctx, pos, msg.Owner); err != nil {
+		return nil, err
+	}
+
+	// Settle rewards before clearing exit. While exiting with block time past exit_unlock_at,
+	// bonus accrual is capped at exit_unlock_at (see calculateBonusRaw). Clearing exit would
+	// remove that cap and allow claiming bonus for the post-unlock window without having
+	// earned it under the exit rules — draining the bonus pool. Same pattern as AddToTierPosition.
+	if pos.IsDelegated() {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return nil, err
+		}
+		var errClaim error
+		pos, _, _, errClaim = ms.claimAndRefreshPosition(ctx, valAddr, pos)
+		if errClaim != nil {
+			return nil, errClaim
+		}
+	}
+
+	pos.ClearExit()
+
+	if err := ms.setPosition(ctx, pos); err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitCleared{
+		PositionId: pos.Id,
+		TierId:     pos.TierId,
+		Owner:      pos.Owner,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgClearPositionResponse{PositionId: pos.Id}, nil
+}
+
 func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTierRewards) (*types.MsgClaimTierRewardsResponse, error) {
 	if err := msg.Validate(); err != nil {
 		return nil, err

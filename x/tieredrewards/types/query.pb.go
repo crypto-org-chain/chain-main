@@ -1148,7 +1148,6 @@ func _Query_TierVotingPower_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "chainmain.tieredrewards.v1.Query",
 	HandlerType: (*QueryServer)(nil),

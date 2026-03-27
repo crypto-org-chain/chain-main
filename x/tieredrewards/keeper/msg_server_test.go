@@ -1172,6 +1172,128 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_WrongOwner() {
 	s.Require().Contains(err.Error(), "unauthorized")
 }
 
+// --- MsgClearPosition tests ---
+
+func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionExiting)
+
+	clearResp, err := msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), clearResp.PositionId)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit())
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Amount:     sdkmath.NewInt(500),
+	})
+	s.Require().NoError(err)
+}
+
+func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      wrongAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "unauthorized")
+}
+
+func (s *KeeperSuite) TestMsgClearPosition_IdempotentWhenNotExiting() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  delAddr.String(),
+		Id:     1,
+		Amount: sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err)
+
+	resp, err := msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), resp.PositionId)
+}
+
+// TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeClear verifies that clearing
+// exit on a delegated position past exit_unlock_at succeeds and runs reward settlement
+// first (bonus capped at exit_unlock_at), avoiding an exploitable bonus pool window.
+func (s *KeeperSuite) TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeClear() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	// Past exit commitment (365d) plus one day — bonus must not accrue past unlock without clearing.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit())
+}
+
 // --- MsgClaimTierRewards tests ---
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {

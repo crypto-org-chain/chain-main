@@ -15,6 +15,7 @@ var (
 	_ sdk.Msg = &MsgTierRedelegate{}
 	_ sdk.Msg = &MsgAddToTierPosition{}
 	_ sdk.Msg = &MsgTriggerExitFromTier{}
+	_ sdk.Msg = &MsgClearPosition{}
 	_ sdk.Msg = &MsgClaimTierRewards{}
 	_ sdk.Msg = &MsgWithdrawFromTier{}
 )
@@ -98,6 +99,14 @@ func (msg MsgAddToTierPosition) Validate() error {
 }
 
 func (msg MsgTriggerExitFromTier) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+func (msg MsgClearPosition) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}

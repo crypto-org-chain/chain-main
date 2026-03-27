@@ -152,6 +152,13 @@ message EventExitTriggered {
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 
+// EventExitCleared is emitted when exit state is cleared via MsgClearPosition.
+message EventExitCleared {
+  uint64 position_id = 1;
+  uint32 tier_id     = 2;
+  string owner       = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
 // EventTierRewardsClaimed is emitted when rewards are claimed via MsgClaimTierRewards.
 message EventTierRewardsClaimed {
   uint64   position_id                           = 1;

@@ -50,6 +50,9 @@ service Msg {
   // TriggerExitFromTier starts the exit commitment for a position.
   rpc TriggerExitFromTier(MsgTriggerExitFromTier) returns (MsgTriggerExitFromTierResponse);
 
+  // ClearPosition clears exit state for a position so the owner can add funds again.
+  rpc ClearPosition(MsgClearPosition) returns (MsgClearPositionResponse);
+
   // ClaimTierRewards claims base and bonus rewards for a delegated position.
   rpc ClaimTierRewards(MsgClaimTierRewards) returns (MsgClaimTierRewardsResponse);
 
@@ -288,6 +291,24 @@ message MsgTriggerExitFromTierResponse {
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
   // position_id echoes the position exiting the tier.
   uint64 position_id = 2;
+}
+
+// MsgClearPosition clears exit_triggered_at and exit_unlock_at on a position.
+message MsgClearPosition {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgClearPosition";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to clear exit state for.
+  uint64 position_id = 2;
+}
+
+// MsgClearPositionResponse defines the response for MsgClearPosition.
+message MsgClearPositionResponse {
+  // position_id echoes the cleared position ID.
+  uint64 position_id = 1;
 }
 
 // MsgClaimTierRewards claims base and bonus rewards for a delegated position.

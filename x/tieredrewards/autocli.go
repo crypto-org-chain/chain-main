@@ -135,6 +135,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
 				},
 				{
+					RpcMethod:      "ClearPosition",
+					Use:            "clear-position [position-id]",
+					Short:          "Clear exit state on a position so tokens can be added again",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "position_id"}},
+				},
+				{
 					RpcMethod:      "ClaimTierRewards",
 					Use:            "claim-tier-rewards [position-id]",
 					Short:          "Claim base and bonus rewards for a delegated position",

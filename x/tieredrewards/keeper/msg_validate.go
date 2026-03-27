@@ -103,6 +103,14 @@ func (k Keeper) validateTriggerExit(ctx context.Context, pos types.Position, own
 	return nil
 }
 
+func (k Keeper) validateClearPosition(_ context.Context, pos types.Position, owner string) error {
+	if pos.Owner != owner {
+		return types.ErrNotPositionOwner
+	}
+
+	return nil
+}
+
 func (k Keeper) validateClaimRewards(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner

@@ -255,6 +255,19 @@ func TestPosition_IsDelegated(t *testing.T) {
 	require.True(t, delegated.IsDelegated())
 }
 
+func TestPosition_ClearExit(t *testing.T) {
+	t.Parallel()
+
+	pos := validPosition()
+	now := time.Now()
+	pos.TriggerExit(now, time.Hour*24)
+	require.True(t, pos.HasTriggeredExit())
+
+	pos.ClearExit()
+	require.False(t, pos.HasTriggeredExit())
+	require.NoError(t, pos.Validate())
+}
+
 func TestPosition_IsActiveForGovernance(t *testing.T) {
 	t.Parallel()
 

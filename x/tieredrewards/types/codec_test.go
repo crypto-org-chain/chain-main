@@ -33,6 +33,7 @@ func TestRegisterInterfaces_AllMsgTypes(t *testing.T) {
 		&types.MsgTierRedelegate{},
 		&types.MsgAddToTierPosition{},
 		&types.MsgTriggerExitFromTier{},
+		&types.MsgClearPosition{},
 		&types.MsgClaimTierRewards{},
 		&types.MsgWithdrawFromTier{},
 		&types.MsgFundTierPool{},
