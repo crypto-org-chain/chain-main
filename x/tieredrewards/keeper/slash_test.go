@@ -40,7 +40,7 @@ func (s *KeeperSuite) setupDelegatedPosition(valAddr sdk.ValAddress, bondDenom s
 	pos := positions[0]
 
 	// Create the unbondingId → positionId mapping that normally MsgTierRedelegate sets up.
-	err = s.keeper.UnbondingIdToPositionId.Set(s.ctx, unbondingId, pos.Id)
+	err = s.keeper.UnbondingMappings.Set(s.ctx, unbondingId, pos.Id)
 	s.Require().NoError(err)
 
 	return addr, pos

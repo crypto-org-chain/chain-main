@@ -6,6 +6,7 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -127,7 +128,13 @@ func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) erro
 	return nil
 }
 
-func (h Hooks) AfterValidatorRemoved(_ context.Context, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	if err := h.k.ValidatorRewardRatio.Remove(ctx, valAddr); err != nil && !errors.Is(err, collections.ErrNotFound) {
+		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
+	}
+	if err := h.k.ValidatorRewardsLastWithdrawalBlock.Remove(ctx, valAddr); err != nil && !errors.Is(err, collections.ErrNotFound) {
+		h.k.logger(ctx).Error("failed to cleanup validator withdrawal marker on validator removal", "validator", valAddr.String(), "error", err)
+	}
 	return nil
 }
 

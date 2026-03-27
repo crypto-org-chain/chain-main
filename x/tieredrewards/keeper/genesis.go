@@ -44,7 +44,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	for _, mapping := range data.UnbondingMappings {
-		if err := k.UnbondingIdToPositionId.Set(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
+		if err := k.setUnbondingPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
 			panic(err)
 		}
 	}
@@ -92,7 +92,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	var unbondingMappings []types.UnbondingMapping
-	err = k.UnbondingIdToPositionId.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+	err = k.UnbondingMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		unbondingMappings = append(unbondingMappings, types.UnbondingMapping{
 			UnbondingId: unbondingId,
 			PositionId:  positionId,

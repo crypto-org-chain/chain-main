@@ -91,6 +91,34 @@ func (s *KeeperSuite) TestDeletePosition() {
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
+func (s *KeeperSuite) TestDeletePosition_CleansUnbondingMappings() {
+	pos := newTestPosition(1, testPositionOwner, 1)
+	err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	err = s.keeper.UnbondingMappings.Set(s.ctx, 10, pos.Id)
+	s.Require().NoError(err)
+	err = s.keeper.UnbondingMappings.Set(s.ctx, 11, pos.Id)
+	s.Require().NoError(err)
+	err = s.keeper.UnbondingMappings.Set(s.ctx, 12, 999)
+	s.Require().NoError(err)
+
+	err = s.keeper.DeletePosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	has, err := s.keeper.UnbondingMappings.Has(s.ctx, 10)
+	s.Require().NoError(err)
+	s.Require().False(has)
+	has, err = s.keeper.UnbondingMappings.Has(s.ctx, 11)
+	s.Require().NoError(err)
+	s.Require().False(has)
+
+	// Unrelated mapping must remain.
+	has, err = s.keeper.UnbondingMappings.Has(s.ctx, 12)
+	s.Require().NoError(err)
+	s.Require().True(has)
+}
+
 func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	err := s.keeper.DeletePosition(s.ctx, pos)

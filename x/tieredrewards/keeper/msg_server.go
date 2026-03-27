@@ -211,7 +211,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	}
 
 	if unbondingId > 0 {
-		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
+		if err := ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
 	}
@@ -281,7 +281,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	}
 
 	if unbondingId > 0 {
-		if err := ms.UnbondingIdToPositionId.Set(ctx, unbondingId, pos.Id); err != nil {
+		if err := ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id); err != nil {
 			return nil, err
 		}
 	}

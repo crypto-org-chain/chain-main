@@ -843,7 +843,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
 
 	// Check that at least one unbonding ID maps to position 0
 	var found bool
-	err = s.keeper.UnbondingIdToPositionId.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		if positionId == 0 {
 			found = true
 			return true, nil
@@ -1649,6 +1649,17 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().NoError(err)
 	s.Require().False(undelegateResp.CompletionTime.IsZero())
 
+	var mappingExistsBeforeWithdraw bool
+	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
+		if positionId == 0 {
+			mappingExistsBeforeWithdraw = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().True(mappingExistsBeforeWithdraw, "unbonding mapping should exist before withdrawal")
+
 	// Position should not be delegated but still exists
 	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
 	s.Require().NoError(err)
@@ -1679,6 +1690,17 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	// Position should be deleted
 	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
 	s.Require().Error(err, "position should be deleted after withdrawal")
+
+	var mappingExistsAfterWithdraw bool
+	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
+		if positionId == 0 {
+			mappingExistsAfterWithdraw = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().False(mappingExistsAfterWithdraw, "unbonding mapping should be cleaned after position deletion")
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {

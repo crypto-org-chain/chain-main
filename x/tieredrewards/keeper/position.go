@@ -125,6 +125,10 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	if err := k.deleteUnbondingMappingsForPosition(ctx, pos.Id); err != nil {
+		return err
+	}
+
 	if err := k.Positions.Remove(ctx, pos.Id); err != nil {
 		return err
 	}

@@ -39,9 +39,8 @@ type Keeper struct {
 	// Last block height where base rewards were withdrawn for a validator. TODO: clean when validators are being removed
 	ValidatorRewardsLastWithdrawalBlock collections.Map[sdk.ValAddress, uint64]
 
-	// Maps staking unbonding IDs to tier position IDs for slash tracking.
-	// TODO: clean when unbondingId are being removed in staking module. Needs new helper function from staking module.
-	UnbondingIdToPositionId collections.Map[uint64, uint64]
+	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
+	UnbondingMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -110,7 +109,14 @@ func NewKeeper(
 			sdk.ValAddressKey,
 			collections.Uint64Value,
 		),
-		UnbondingIdToPositionId: collections.NewMap(sb, types.UnbondingIdToPositionIdKey, "unbonding_id_to_position_id", collections.Uint64Key, collections.Uint64Value),
+		UnbondingMappings: collections.NewIndexedMap(
+			sb,
+			types.UnbondingIdToPositionIdKey,
+			"unbonding_id_to_position_id",
+			collections.Uint64Key,
+			collections.Uint64Value,
+			newUnbondingMappingsIndexes(sb),
+		),
 	}
 
 	schema, err := sb.Build()

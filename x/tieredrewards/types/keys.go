@@ -14,6 +14,7 @@ var (
 	ValidatorRewardRatioKey                = collections.NewPrefix(8)
 	UnbondingIdToPositionIdKey             = collections.NewPrefix(9)
 	ValidatorRewardsLastWithdrawalBlockKey = collections.NewPrefix(10)
+	UnbondingIdsByPositionKey              = collections.NewPrefix(11)
 )
 
 const (

@@ -162,7 +162,7 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 // slashPositionByUnbondingId reduces a position's Amount by the slashed amount.
 // No-op if the unbondingId is not mapped to a tier position.
 func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
-	positionId, err := k.UnbondingIdToPositionId.Get(ctx, unbondingId)
+	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
 		return nil
 	}
@@ -171,6 +171,10 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	}
 
 	pos, err := k.getPosition(ctx, positionId)
+	if errors.Is(err, types.ErrPositionNotFound) || errors.Is(err, collections.ErrNotFound) {
+		// Stale mapping after position lifecycle completion.
+		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
+	}
 	if err != nil {
 		return err
 	}
@@ -184,7 +188,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
 // a position mapped to the given unbonding ID.
 func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
-	positionId, err := k.UnbondingIdToPositionId.Get(ctx, unbondingId)
+	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
 		return nil
 	}
@@ -193,6 +197,10 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	}
 
 	pos, err := k.Positions.Get(ctx, positionId)
+	if errors.Is(err, collections.ErrNotFound) {
+		// Stale mapping after position lifecycle completion.
+		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
+	}
 	if err != nil {
 		return err
 	}

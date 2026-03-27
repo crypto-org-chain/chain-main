@@ -333,3 +333,29 @@ func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
 	s.Require().NoError(hooks.BeforeDelegationRemoved(s.ctx, delAddr, valAddr))
 	s.Require().NoError(hooks.AfterDelegationModified(s.ctx, delAddr, valAddr))
 }
+
+func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
+	_, valAddr, _ := s.setupTierAndDelegator()
+	consAddr := sdk.ConsAddress(valAddr)
+	hooks := s.keeper.Hooks()
+
+	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
+		CumulativeRewardsPerShare: sdk.DecCoins{
+			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
+		},
+	})
+	s.Require().NoError(err)
+	err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Set(s.ctx, valAddr, uint64(123))
+	s.Require().NoError(err)
+
+	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+
+	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasRatio, "validator reward ratio should be cleaned after validator removal")
+
+	hasWithdrawalMarker, err := s.keeper.ValidatorRewardsLastWithdrawalBlock.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasWithdrawalMarker, "validator withdrawal marker should be cleaned after validator removal")
+}
