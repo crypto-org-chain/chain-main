@@ -421,3 +421,26 @@ func (s *KeeperSuite) TestFundTierPool_MultipleFunds() {
 	s.Require().True(poolBalAfter.Amount.Equal(poolBalBefore.Amount.Add(sdkmath.NewInt(10000))),
 		"pool balance should reflect both deposits")
 }
+
+func (s *KeeperSuite) TestFundTierPool_RejectsNonBondDenom() {
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	nonBondDenom := "utest"
+
+	fundAmount := sdk.NewCoins(sdk.NewCoin(nonBondDenom, sdkmath.NewInt(5000)))
+	funderAddr, _ := sdk.AccAddressFromBech32(testFunder)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, funderAddr, fundAmount)
+	s.Require().NoError(err)
+
+	msg := &types.MsgFundTierPool{
+		Depositor: testFunder,
+		Amount:    fundAmount,
+	}
+
+	_, err = msgServer.FundTierPool(s.ctx, msg)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrInvalidAmount)
+	s.Require().Contains(err.Error(), bondDenom)
+}

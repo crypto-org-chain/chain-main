@@ -105,6 +105,16 @@ func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool
 		return nil, errors.Wrap(types.ErrInvalidAmount, "fund amount must be valid and non-zero")
 	}
 
+	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, coin := range msg.Amount {
+		if coin.Denom != bondDenom {
+			return nil, errors.Wrapf(types.ErrInvalidAmount, "fund amount must use bond denom %s only", bondDenom)
+		}
+	}
+
 	depositor, err := sdk.AccAddressFromBech32(msg.Depositor)
 	if err != nil {
 		return nil, err
