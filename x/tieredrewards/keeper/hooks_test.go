@@ -318,3 +318,18 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 			"position %d amount should decrease after slash", i)
 	}
 }
+
+func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
+	_, valAddr, _ := s.setupTierAndDelegator()
+	consAddr := sdk.ConsAddress(valAddr)
+	delAddr := sdk.AccAddress([]byte("noop_delegator_addr"))
+
+	hooks := s.keeper.Hooks()
+	s.Require().NoError(hooks.BeforeValidatorModified(s.ctx, valAddr))
+	s.Require().NoError(hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr))
+	s.Require().NoError(hooks.AfterValidatorCreated(s.ctx, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationCreated(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationSharesModified(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationRemoved(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.AfterDelegationModified(s.ctx, delAddr, valAddr))
+}

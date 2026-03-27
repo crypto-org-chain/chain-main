@@ -152,14 +152,20 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 
 	val, err = s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
+	s.Require().True(val.IsBonded(), "validator should be bonded again after unjail + apply")
 
-	if val.IsBonded() {
-		// AfterValidatorBonded should have reset LastBonusAccrual.
-		updated, err = s.keeper.Positions.Get(s.ctx, pos.Id)
-		s.Require().NoError(err)
-		s.Require().False(updated.LastBonusAccrual.IsZero(),
-			"LastBonusAccrual should be reset after validator re-bonds")
-	}
+	updated, err = s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(updated.LastBonusAccrual.IsZero(),
+		"LastBonusAccrual should be reset after validator re-bonds")
+
+	tier, err := s.keeper.Tiers.Get(s.ctx, updated.TierId)
+	s.Require().NoError(err)
+
+	// Once bonded again, forceAccrue=false should produce positive bonus.
+	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &updated, tier, false)
+	s.Require().NoError(err)
+	s.Require().False(bonus.IsZero(), "bonus accrual should resume after validator re-bonds")
 }
 
 // calculateBonus returns zero when the validator is not bonded.

@@ -136,6 +136,56 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ZeroShareBurnt() {
 	s.Require().True(updated.IsDelegated())
 }
 
+// Unbonding delegation slash reduces Amount but keeps DelegatedShares unchanged.
+func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+
+	lockAmount := sdkmath.NewInt(6000)
+	const unbondingId uint64 = 45
+
+	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId)
+	origShares := pos.DelegatedShares
+	slashTokens := sdkmath.NewInt(900)
+
+	err := s.keeper.Hooks().AfterSlashUnbondingDelegation(s.ctx, unbondingId, slashTokens)
+	s.Require().NoError(err)
+
+	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
+	s.Require().True(updated.DelegatedShares.Equal(origShares),
+		"DelegatedShares should not change for unbonding slash callbacks")
+}
+
+// Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
+func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+
+	lockAmount := sdkmath.NewInt(4000)
+	const unbondingId uint64 = 46
+
+	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId)
+
+	err := s.keeper.Hooks().AfterSlashUnbondingRedelegation(s.ctx, unbondingId, sdkmath.NewInt(999999))
+	s.Require().NoError(err)
+
+	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(updated.Amount.IsZero(), "Amount should floor at zero when slash exceeds position amount")
+}
+
+// Unknown unbonding IDs should be no-op for both unbonding slash callbacks.
+func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
+	s.setupTierAndDelegator()
+
+	err := s.keeper.Hooks().AfterSlashUnbondingDelegation(s.ctx, 999, sdkmath.NewInt(100))
+	s.Require().NoError(err)
+
+	err = s.keeper.Hooks().AfterSlashUnbondingRedelegation(s.ctx, 1000, sdkmath.NewInt(200))
+	s.Require().NoError(err)
+}
+
 // ---------------------------------------------------------------------------
 // Bonded slash (BeforeValidatorSlashed) regression — DelegatedShares must NOT change.
 // ---------------------------------------------------------------------------
