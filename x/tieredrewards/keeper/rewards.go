@@ -333,10 +333,6 @@ func (k Keeper) claimBaseRewardsForPositions(ctx context.Context, valAddr sdk.Va
 // claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	if !pos.IsDelegated() {
-		return sdk.Coins{}, nil
-	}
-
 	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
@@ -412,40 +408,25 @@ func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []t
 	return total, nil
 }
 
-// claimBonusRewards calculates and pays the bonus for a position from the rewards pool.
-// When forceAccrue is true, bonus is settled regardless of validator bonded status.
-func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
-
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	var bonus math.Int
-	if forceAccrue {
-		bonus = k.calculateBonusRaw(*pos, val, tier, blockTime)
-	} else {
-		bonus = k.calculateBonus(*pos, val, tier, blockTime)
-	}
-
+func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 	accrualEnd := blockTime
 	if pos.CompletedExitLockDuration(blockTime) {
 		accrualEnd = pos.ExitUnlockAt
 	}
-
 	pos.UpdateLastBonusAccrual(accrualEnd)
+}
 
-	if bonus.IsZero() {
-		return sdk.Coins{}, nil
+// bonusAccrualAmount returns bonus owed for pos at blockTime. When forceAccrue is true,
+// bonded status is ignored (calculateBonusRaw).
+func (k Keeper) bonusAccrualAmount(pos *types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool) math.Int {
+	if forceAccrue {
+		return k.calculateBonusRaw(*pos, val, tier, blockTime)
 	}
+	return k.calculateBonus(*pos, val, tier, blockTime)
+}
 
+// sendBonusFromRewardsPool checks the rewards pool, transfers bonus to the owner, and emits EventBonusRewardsClaimed.
+func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos *types.Position, bonus math.Int) (sdk.Coins, error) {
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		return sdk.Coins{}, err
@@ -463,18 +444,45 @@ func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, tier
 		return sdk.Coins{}, err
 	}
 
-	bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, bonus))
+	bonusCoin := sdk.NewCoin(bondDenom, bonus)
+	bonusCoins := sdk.NewCoins(bonusCoin)
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {
 		return sdk.Coins{}, err
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBonusRewardsClaimed{
 		PositionId: pos.Id,
 		Owner:      pos.Owner,
-		Amount:     sdk.NewCoin(bondDenom, bonus),
+		Amount:     bonusCoin,
 	}); err != nil {
 		return sdk.Coins{}, err
 	}
 
 	return bonusCoins, nil
+}
+
+// claimBonusRewards calculates and pays the bonus for a position from the rewards pool.
+// When forceAccrue is true, bonus is settled regardless of validator bonded status.
+func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
+	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return sdk.Coins{}, err
+	}
+
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return sdk.Coins{}, err
+	}
+
+	bonus := k.bonusAccrualAmount(pos, val, tier, blockTime, forceAccrue)
+	applyBonusAccrualCheckpoint(pos, blockTime)
+
+	if bonus.IsZero() {
+		return sdk.Coins{}, nil
+	}
+
+	return k.sendBonusFromRewardsPool(ctx, pos, bonus)
 }
