@@ -67,6 +67,29 @@ func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 	return ratio.CumulativeRewardsPerShare, nil
 }
 
+// collectValidatorDelegationRewards pulls accumulated staking distribution rewards from
+// x/distribution into the tier module account for the delegation to valAddr.
+func (k Keeper) collectValidatorDelegationRewards(ctx context.Context, valAddr sdk.ValAddress, currentBlockHeight uint64) (rewards sdk.Coins, collected bool, err error) {
+	lastWithdrawalBlock, err := k.ValidatorRewardsLastWithdrawalBlock.Get(ctx, valAddr)
+	if err == nil && lastWithdrawalBlock == currentBlockHeight {
+		return sdk.Coins{}, false, nil
+	}
+	if err != nil && !errors.Is(err, collections.ErrNotFound) {
+		return sdk.Coins{}, false, err
+	}
+
+	rewards, err = k.withdrawDelegationRewards(ctx, valAddr)
+	if err != nil {
+		return sdk.Coins{}, false, err
+	}
+
+	if err := k.ValidatorRewardsLastWithdrawalBlock.Set(ctx, valAddr, currentBlockHeight); err != nil {
+		return sdk.Coins{}, false, err
+	}
+
+	return rewards, true, nil
+}
+
 // updateBaseRewardsPerShare withdraws base rewards from x/distribution and
 // updates the cumulative rewards-per-share ratio for the given validator.
 // Must be called before any operation that changes the module's delegation shares.
@@ -91,26 +114,11 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	currentBlockHeight := uint64(sdkCtx.BlockHeight())
-	lastWithdrawalBlock, err := k.ValidatorRewardsLastWithdrawalBlock.Get(ctx, valAddr)
-	if err == nil && lastWithdrawalBlock == currentBlockHeight {
-		// Base rewards for this validator were already withdrawn in the current block.
-		return currentRatio, nil
-	}
-	if err != nil && !errors.Is(err, collections.ErrNotFound) {
-		return sdk.DecCoins{}, err
-	}
-
-	rewards, err := k.withdrawDelegationRewards(ctx, valAddr)
+	rewards, collected, err := k.collectValidatorDelegationRewards(ctx, valAddr, uint64(sdkCtx.BlockHeight()))
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
-
-	if err := k.ValidatorRewardsLastWithdrawalBlock.Set(ctx, valAddr, currentBlockHeight); err != nil {
-		return sdk.DecCoins{}, err
-	}
-
-	if rewards.IsZero() {
+	if !collected || rewards.IsZero() {
 		return currentRatio, nil
 	}
 
