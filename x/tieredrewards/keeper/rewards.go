@@ -256,6 +256,11 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 
 // claimRewardsForPositions settles base and bonus rewards for a set of positions.
 // When forceAccrue is true, bonus is calculated regardless of validator bonded status.
+//
+// Returns:
+//   - baseRewards: total base (staking distribution) rewards paid to position owners
+//     for the given positions in this call;
+//   - bonusRewards: total bonus rewards paid from the rewards pool for those positions;
 func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
 	baseRewards, err := k.claimBaseRewardsForPositions(ctx, valAddr, positions)
 	if err != nil {
@@ -270,6 +275,11 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 
 // claimAndRefreshPosition claims rewards for a single position then re-fetches
 // it from the store, since claimRewardsForPositions persists updates internally.
+//
+// Returns:
+//   - refreshed: the position loaded from state after claiming (updated reward checkpoints);
+//   - base: base rewards paid to the owner for this position in this call;
+//   - bonus: bonus rewards paid to the owner for this position in this call;
 func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
 	base, bonus, err := k.claimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
 	if err != nil {
@@ -282,6 +292,14 @@ func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddr
 	return refreshed, base, bonus, nil
 }
 
+// claimBaseRewardsForPositions settles staking distribution (base) rewards for each
+// position delegated to valAddr. It first updates the validator's cumulative
+// rewards-per-share from x/distribution, then for each position computes the
+// owner's share, transfers coins from the module account, updates checkpoints,
+// and persists the position.
+//
+// Returns:
+//   - total: the sum of base coins paid to owners across all positions in this call;
 func (k Keeper) claimBaseRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, error) {
 	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -349,6 +367,13 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 	return posRewards, nil
 }
 
+// claimBonusRewardsForPositions settles bonus rewards for each position, loading tiers
+// as needed and persisting updated positions after each claim.
+// When forceAccrue is true, bonus is calculated regardless of validator bonded status
+// (see claimBonusRewards).
+//
+// Returns:
+//   - total: the sum of bonus coins paid to owners across all positions in this call;
 func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
 	tierCache := make(map[uint32]types.Tier)
 	total := sdk.NewCoins()
