@@ -205,7 +205,6 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),

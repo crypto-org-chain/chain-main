@@ -141,4 +141,3 @@ func (p *Position) ClearDelegation() {
 func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
-
