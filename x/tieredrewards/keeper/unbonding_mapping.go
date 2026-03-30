@@ -2,9 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
-
-	"cosmossdk.io/collections"
 )
 
 // setUnbondingPositionMapping stores unbondingId -> positionId and updates indexes.
@@ -14,7 +11,7 @@ func (k Keeper) setUnbondingPositionMapping(ctx context.Context, unbondingId, po
 
 // deleteUnbondingPositionMapping removes unbondingId mapping and its secondary indexes.
 func (k Keeper) deleteUnbondingPositionMapping(ctx context.Context, unbondingId uint64) error {
-	if err := k.UnbondingMappings.Remove(ctx, unbondingId); err != nil && !errors.Is(err, collections.ErrNotFound) {
+	if err := k.UnbondingMappings.Remove(ctx, unbondingId); err != nil {
 		return err
 	}
 	return nil
