@@ -68,7 +68,7 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 }
 
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
-	pos, err := q.k.Positions.Get(ctx, req.PositionId)
+	pos, err := q.k.getPosition(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (q queryServer) TierPoolBalance(ctx context.Context, _ *types.QueryTierPool
 // Base rewards use the stored cumulative ratio (excludes rewards accrued since
 // the last UpdateBaseRewardsPerShare call).
 func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEstimateTierRewardsRequest) (*types.QueryEstimateTierRewardsResponse, error) {
-	pos, err := q.k.Positions.Get(ctx, req.PositionId)
+	pos, err := q.k.getPosition(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}

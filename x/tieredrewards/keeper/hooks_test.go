@@ -75,7 +75,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 
 	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
-	posBefore, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	slashFraction := sdkmath.LegacyNewDecWithPrec(5, 2) // 5%
@@ -83,7 +83,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(posAfter.Amount.LT(posBefore.Amount), "position amount should decrease after slash")
 }
@@ -111,7 +111,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotRevertLastBonusAccrual()
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// LastBonusAccrual must be updated to claimTime, not left at the initial block time.
@@ -155,7 +155,7 @@ func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
 	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().Equal(newTime, pos.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
 }
@@ -229,7 +229,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(200), bondDenom)
 	// Bonus pool remains at 0 — any bonus claim will fail with ErrInsufficientBonusPool.
 
-	posBefore, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	oldRatio := posBefore.BaseRewardsPerShare
 
@@ -240,7 +240,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
 	s.Require().NoError(err, "BeforeValidatorSlashed must not fail when bonus pool is empty")
 
-	posAfter, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// Slash must still be applied.
@@ -273,7 +273,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyOneDec())
 	s.Require().NoError(err, "100% slash should not cause an error")
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100% slash")
 }
@@ -301,7 +301,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 
 	amountsBefore := make([]sdkmath.Int, 3)
 	for i := range 3 {
-		pos, err := s.keeper.Positions.Get(s.ctx, uint64(i))
+		pos, err := s.keeper.GetPosition(s.ctx, uint64(i))
 		s.Require().NoError(err)
 		amountsBefore[i] = pos.Amount
 	}
@@ -312,7 +312,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	s.Require().NoError(err)
 
 	for i := range 3 {
-		pos, err := s.keeper.Positions.Get(s.ctx, uint64(i))
+		pos, err := s.keeper.GetPosition(s.ctx, uint64(i))
 		s.Require().NoError(err)
 		s.Require().True(pos.Amount.LT(amountsBefore[i]),
 			"position %d amount should decrease after slash", i)

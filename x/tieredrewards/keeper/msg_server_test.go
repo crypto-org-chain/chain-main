@@ -32,7 +32,7 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.Require().NotNil(resp)
 
 	// Position should be persisted
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(sdkmath.NewInt(1000).Equal(pos.Amount))
@@ -54,7 +54,7 @@ func (s *KeeperSuite) TestMsgLockTier_WithValidator() {
 	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -75,7 +75,7 @@ func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 }
@@ -173,7 +173,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().NoError(err)
 
 	// Position should exist and be delegated
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(pos.IsDelegated())
@@ -208,7 +208,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	s.Require().NoError(err)
 
 	// Position should be delegated
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 
@@ -253,7 +253,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_WithImmediateTriggerExit() {
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
@@ -380,7 +380,7 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_LockTier() {
 	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// First position should have empty BaseRewardsPerShare (no prior rewards).
@@ -431,9 +431,9 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 	_, err = msgServer.LockTier(s.ctx, msg2)
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos1, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
-	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
 	s.Require().NoError(err)
 
 	// First position started with zero ratio.
@@ -478,7 +478,7 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_CommitDelegati
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// First position should have empty BaseRewardsPerShare (no prior rewards).
@@ -534,9 +534,9 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos1, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
-	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
 	s.Require().NoError(err)
 
 	// First position started with zero ratio.
@@ -580,7 +580,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -634,7 +634,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated(), "exiting position should now be delegated")
 	s.Require().True(pos.HasTriggeredExit(), "position should still be exiting after delegation")
@@ -720,7 +720,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
 	s.Require().True(pos.DelegatedShares.IsZero(), "delegated shares should be cleared")
@@ -791,7 +791,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_AllowedDuringExitCommitment() {
 	})
 	s.Require().NoError(err, "undelegation should be allowed during exit commitment period")
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 }
@@ -880,7 +880,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(dstValAddr.String(), pos.Validator)
@@ -1008,7 +1008,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.NewInt(1500).Equal(pos.Amount), "amount should be 1500")
 	s.Require().False(pos.IsDelegated())
@@ -1026,7 +1026,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 	})
 	s.Require().NoError(err)
 
-	posBefore, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
@@ -1036,7 +1036,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 	})
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.NewInt(1500).Equal(posAfter.Amount), "amount should be 1500")
 	s.Require().True(posAfter.DelegatedShares.GT(posBefore.DelegatedShares), "shares should increase")
@@ -1127,7 +1127,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.ExitUnlockAt.IsZero())
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit())
 	s.Require().Equal(resp.ExitUnlockAt, pos.ExitUnlockAt)
@@ -1200,7 +1200,7 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), clearResp.PositionId)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit())
 
@@ -1289,7 +1289,7 @@ func (s *KeeperSuite) TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeCl
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit())
 }
@@ -1599,7 +1599,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 		"owner should have received locked tokens back")
 
 	// Position should be deleted
-	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	_, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -1783,7 +1783,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().True(mappingExistsBeforeWithdraw, "unbonding mapping should exist before withdrawal")
 
 	// Position should not be delegated but still exists
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
@@ -1810,7 +1810,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 		"owner should have received locked tokens back after undelegate + withdraw")
 
 	// Position should be deleted
-	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	_, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().Error(err, "position should be deleted after withdrawal")
 
 	var mappingExistsAfterWithdraw bool
@@ -1857,11 +1857,11 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	s.Require().NoError(err)
 
 	// First position should be deleted
-	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	_, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().Error(err, "first position should be deleted")
 
 	// Second position should still exist
-	pos2, err := s.keeper.Positions.Get(s.ctx, uint64(1))
+	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.NewInt(2000).Equal(pos2.Amount))
 
@@ -1897,7 +1897,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition_ThenEarnRewards() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 	s.Require().False(pos.IsDelegated(), "position should not be delegated yet")
@@ -1910,7 +1910,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition_ThenEarnRewards() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated(), "position should now be delegated")
 	s.Require().True(pos.HasTriggeredExit(), "position should still be exiting")
@@ -1971,7 +1971,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ImmediatelyAfterExit() {
 	s.Require().NoError(err, "undelegation should succeed immediately after exit trigger")
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 	s.Require().True(pos.HasTriggeredExit())
@@ -2042,7 +2042,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_FullLifecycle_EarlyUndelegate() {
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)))
 
 	// Position should be deleted
-	_, err = s.keeper.Positions.Get(s.ctx, uint64(0))
+	_, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 

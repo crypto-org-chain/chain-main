@@ -203,8 +203,8 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	if err != nil {
 		return err
 	}
-
-	pos, err := k.Positions.Get(ctx, positionId)
+	
+	pos, err := k.getPosition(ctx, positionId)
 	if errors.Is(err, collections.ErrNotFound) {
 		// Stale mapping after position lifecycle completion.
 		return k.deleteUnbondingPositionMapping(ctx, unbondingId)

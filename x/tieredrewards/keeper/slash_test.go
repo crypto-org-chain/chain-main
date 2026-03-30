@@ -64,7 +64,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	err := s.keeper.Hooks().AfterSlashRedelegation(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)),
@@ -92,7 +92,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
 	err := s.keeper.Hooks().AfterSlashRedelegation(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().False(updated.IsDelegated(),
@@ -127,7 +127,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ZeroShareBurnt() {
 		s.ctx, unbondingId, slashTokens, sdkmath.LegacyZeroDec())
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
@@ -150,7 +150,7 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	err := s.keeper.Hooks().AfterSlashUnbondingDelegation(s.ctx, unbondingId, slashTokens)
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
@@ -170,7 +170,7 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 	err := s.keeper.Hooks().AfterSlashUnbondingRedelegation(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(updated.Amount.IsZero(), "Amount should floor at zero when slash exceeds position amount")
 }
@@ -217,7 +217,7 @@ func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
 	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.Positions.Get(s.ctx, positions[0].Id)
+	updated, err := s.keeper.GetPosition(s.ctx, positions[0].Id)
 	s.Require().NoError(err)
 
 	s.Require().True(updated.Amount.LT(lockAmount),

@@ -88,7 +88,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_SettlesFinalBonus() {
 	s.jailAndUnbondValidator(valAddr)
 
 	// LastBonusAccrual should be advanced to the block time (not zeroed).
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(unbondTime, updated.LastBonusAccrual,
 		"LastBonusAccrual should be advanced to block time after unbonding hook")
@@ -118,7 +118,7 @@ func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_ZeroBonus() {
 		"bonus should be zero for an unbonding validator; got %s", resp.BonusRewards)
 
 	// LastBonusAccrual should advance to current block time.
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(claimTime, updated.LastBonusAccrual,
 		"LastBonusAccrual should advance to block time even when bonus is zero")
@@ -134,7 +134,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.jailAndUnbondValidator(valAddr)
 
 	// Verify LastBonusAccrual was advanced (not zeroed).
-	updated, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(updated.LastBonusAccrual.IsZero())
 
@@ -154,7 +154,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().NoError(err)
 	s.Require().True(val.IsBonded(), "validator should be bonded again after unjail + apply")
 
-	updated, err = s.keeper.Positions.Get(s.ctx, pos.Id)
+	updated, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(updated.LastBonusAccrual.IsZero(),
 		"LastBonusAccrual should be reset after validator re-bonds")
@@ -180,7 +180,7 @@ func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
 	// Re-read position (hook advanced LastBonusAccrual).
-	pos, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
@@ -204,7 +204,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	// Advance time.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
-	pos, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
@@ -250,7 +250,7 @@ func (s *KeeperSuite) TestClaimBonusRewardsForPositions_UpdatesOriginalSlice() {
 		"ClaimBonusRewardsForPositions must update the slice element in-place")
 
 	// Also confirm the store is in sync.
-	stored, err := s.keeper.Positions.Get(s.ctx, positions[0].Id)
+	stored, err := s.keeper.GetPosition(s.ctx, positions[0].Id)
 	s.Require().NoError(err)
 	s.Require().Equal(positions[0].LastBonusAccrual, stored.LastBonusAccrual,
 		"in-memory slice element must match the stored position")
@@ -281,7 +281,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_DurationUsesIntegerSeconds() {
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(advanceDuration))
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000_000), bondDenom)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
@@ -327,7 +327,7 @@ func (s *KeeperSuite) TestCalculateBonus_StopsAccruingAfterExitUnlockAt() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	exitUnlockAt := pos.ExitUnlockAt
 

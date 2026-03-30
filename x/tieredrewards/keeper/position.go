@@ -79,8 +79,8 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	if err := pos.Validate(); err != nil {
 		return err
 	}
-	oldPos, err := k.Positions.Get(ctx, pos.Id)
-	isNew := errors.Is(err, collections.ErrNotFound)
+	oldPos, err := k.getPosition(ctx, pos.Id)
+	isNew := errors.Is(err, types.ErrPositionNotFound)
 
 	if !isNew && err != nil {
 		return err
@@ -174,8 +174,8 @@ func (k Keeper) getPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValA
 func (k Keeper) getPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
 	positions := make([]types.Position, 0, len(ids))
 	for _, id := range ids {
-		pos, err := k.Positions.Get(ctx, id)
-		if errors.Is(err, collections.ErrNotFound) {
+		pos, err := k.getPosition(ctx, id)
+		if errors.Is(err, types.ErrPositionNotFound) {
 			continue
 		}
 		if err != nil {
