@@ -6,6 +6,7 @@
 - [#1236](https://github.com/crypto-org-chain/chain-main/pull/1236) Add inflation decay. Refactor maxsupply module to inflation module
 - [#1237](https://github.com/crypto-org-chain/chain-main/pull/1237) Add basic code for tierrewards module with base rewards top up
 - [#1250](https://github.com/crypto-org-chain/chain-main/pull/1250) Remove DecayStartHeight from inflation module
+- [#1251](https://github.com/crypto-org-chain/chain-main/pull/1251) Remove unused decay_start_height field and move genesis to its own file
 - [#1249](https://github.com/crypto-org-chain/chain-main/pull/1249) Implement tiered rewards module
 
 ### Improvements
