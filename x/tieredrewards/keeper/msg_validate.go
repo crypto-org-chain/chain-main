@@ -111,7 +111,7 @@ func (k Keeper) validateClearPosition(_ context.Context, pos types.Position, own
 	return nil
 }
 
-func (k Keeper) validateClaimRewards(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateClaimRewards(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}

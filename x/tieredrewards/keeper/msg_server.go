@@ -478,7 +478,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	if err := ms.validateClaimRewards(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
