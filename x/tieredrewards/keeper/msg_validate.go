@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) validateNewPosition(ctx context.Context, tier types.Tier, amount math.Int) error {
+func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	if tier.IsCloseOnly() {
 		return types.ErrTierIsCloseOnly
 	}
@@ -22,7 +22,7 @@ func (k Keeper) validateNewPosition(ctx context.Context, tier types.Tier, amount
 	return nil
 }
 
-func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateDelegatePosition(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -34,7 +34,7 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 	return nil
 }
 
-func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateUndelegatePosition(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -50,7 +50,7 @@ func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
+func (k Keeper) validateRedelegatePosition(pos types.Position, owner, dstValidator string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -91,7 +91,7 @@ func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, o
 	return nil
 }
 
-func (k Keeper) validateTriggerExit(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateTriggerExit(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -103,7 +103,7 @@ func (k Keeper) validateTriggerExit(ctx context.Context, pos types.Position, own
 	return nil
 }
 
-func (k Keeper) validateClearPosition(_ context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateClearPosition(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}

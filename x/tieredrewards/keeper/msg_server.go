@@ -28,7 +28,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	if err := ms.validateNewPosition(ctx, tier, msg.Amount); err != nil {
+	if err := ms.validateNewPosition(tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -82,7 +82,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	if err := ms.validateNewPosition(ctx, tier, msg.Amount); err != nil {
+	if err := ms.validateNewPosition(tier, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -138,7 +138,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.validateDelegatePosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateDelegatePosition(pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -191,7 +191,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if err := ms.validateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateUndelegatePosition(pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -250,7 +250,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if err := ms.validateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator); err != nil {
+	if err := ms.validateRedelegatePosition(pos, msg.Owner, msg.DstValidator); err != nil {
 		return nil, err
 	}
 
@@ -389,7 +389,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 		return nil, err
 	}
 
-	if err := ms.validateTriggerExit(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateTriggerExit(pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -430,7 +430,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	if err := ms.validateClearPosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateClearPosition(pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
