@@ -34,9 +34,9 @@ type Keeper struct {
 
 	PositionCountByTier collections.Map[uint32, uint64]
 
-	// Cumulative rewards-per-share indexed by validator. TODO: clean when validators are being removed
+	// Cumulative rewards-per-share indexed by validator.
 	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
-	// Last block height where base rewards were withdrawn for a validator. TODO: clean when validators are being removed
+	// Last block height where base rewards were withdrawn for a validator. 
 	ValidatorRewardsLastWithdrawalBlock collections.Map[sdk.ValAddress, uint64]
 
 	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
