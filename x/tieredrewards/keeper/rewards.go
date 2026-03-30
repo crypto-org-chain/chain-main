@@ -160,11 +160,8 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 }
 
 func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) {
-	bondedTokens := validator.TokensFromShares(pos.DelegatedShares)
-
-	slash := bondedTokens.Mul(fraction).TruncateInt()
-	amount := math.MaxInt(pos.Amount.Sub(slash), math.ZeroInt())
-	pos.UpdateAmount(amount)
+	postSlashTokens := validator.TokensFromShares(pos.DelegatedShares).Mul(math.LegacyOneDec().Sub(fraction)).TruncateInt()
+	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
 }
 
 // slashPositionByUnbondingId reduces a position's Amount by the slashed amount.
