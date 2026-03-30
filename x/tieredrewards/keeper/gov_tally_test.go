@@ -35,7 +35,7 @@ func (m mockTierVotingPower) GetActiveDelegatedPositionsByOwner(_ context.Contex
 	}
 	var active []types.Position
 	for _, pos := range m.positions[voter.String()] {
-		if pos.IsActiveForGovernance() {
+		if pos.IsDelegated() {
 			active = append(active, pos)
 		}
 	}

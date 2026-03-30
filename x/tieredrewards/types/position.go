@@ -142,7 +142,3 @@ func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
 
-// IsActiveForGovernance returns true when the position is actively delegated.
-func (p Position) IsActiveForGovernance() bool {
-	return p.IsDelegated()
-}

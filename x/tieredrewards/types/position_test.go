@@ -298,7 +298,7 @@ func TestPosition_IsActiveForGovernance(t *testing.T) {
 			if tt.exitTriggered {
 				pos.TriggerExit(now, time.Hour*24*365)
 			}
-			require.Equal(t, tt.want, pos.IsActiveForGovernance())
+			require.Equal(t, tt.want, pos.IsDelegated())
 		})
 	}
 }

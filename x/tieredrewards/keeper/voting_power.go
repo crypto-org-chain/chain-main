@@ -49,7 +49,7 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 
 	var active []types.Position
 	for _, pos := range positions {
-		if pos.IsActiveForGovernance() {
+		if pos.IsDelegated() {
 			active = append(active, pos)
 		}
 	}
@@ -59,7 +59,7 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
-		if pos.IsActiveForGovernance() {
+		if pos.IsDelegated() {
 			total = total.Add(math.LegacyNewDecFromInt(pos.Amount))
 		}
 		return false, nil
