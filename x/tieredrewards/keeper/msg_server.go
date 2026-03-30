@@ -5,6 +5,8 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -16,6 +18,34 @@ type msgServer struct {
 
 func NewMsgServerImpl(k Keeper) types.MsgServer {
 	return &msgServer{Keeper: k}
+}
+
+// reconcileAmountFromShares converts delegation shares to the actual withdrawable
+// token amount under the validator's current exchange rate.
+func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAddress, shares sdkmath.LegacyDec) (sdkmath.Int, error) {
+	val, err := ms.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return sdkmath.Int{}, err
+	}
+	return val.TokensFromShares(shares).TruncateInt(), nil
+}
+
+// reconcileAndValidateNewPositionAmount derives the actual share-backed token
+// amount, then applies new-position checks (including min lock).
+func (ms msgServer) reconcileAndValidateNewPositionAmount(
+	ctx context.Context,
+	tier types.Tier,
+	valAddr sdk.ValAddress,
+	shares sdkmath.LegacyDec,
+) (sdkmath.Int, error) {
+	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
+	if err != nil {
+		return sdkmath.Int{}, err
+	}
+	if err := ms.validateNewPosition(tier, positionAmount); err != nil {
+		return sdkmath.Int{}, err
+	}
+	return positionAmount, nil
 }
 
 func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*types.MsgLockTierResponse, error) {
@@ -37,6 +67,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	}
 
 	var delegation *types.Delegation
+	positionAmount := msg.Amount
 	if msg.ValidatorAddress != "" {
 		valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 		if err != nil {
@@ -55,9 +86,13 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 			Shares:              shares,
 			BaseRewardsPerShare: currentRatio,
 		}
+		positionAmount, err = ms.reconcileAndValidateNewPositionAmount(ctx, tier, valAddr, shares)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	pos, err := ms.createPosition(ctx, msg.Owner, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createPosition(ctx, msg.Owner, tier, positionAmount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +142,12 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		BaseRewardsPerShare: currentRatio,
 	}
 
-	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, msg.Amount, delegation, msg.TriggerExitImmediately)
+	positionAmount, err := ms.reconcileAndValidateNewPositionAmount(ctx, tier, valAddr, shares)
+	if err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, positionAmount, delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +204,12 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		BaseRewardsPerShare: currentRatio,
 	}, sdkCtx.BlockTime())
 
+	reconciledAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, newShares)
+	if err != nil {
+		return nil, err
+	}
+	pos.UpdateAmount(reconciledAmount)
+
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
@@ -205,7 +251,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	completionTime, unbondingId, err := ms.undelegate(ctx, valAddr, pos.DelegatedShares)
+	completionTime, returnAmount, unbondingId, err := ms.undelegate(ctx, valAddr, pos.DelegatedShares)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +261,8 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 			return nil, err
 		}
 	}
+
+	pos.UpdateAmount(returnAmount)
 
 	srcValidator := pos.Validator
 	pos.ClearDelegation()
@@ -294,6 +342,12 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		BaseRewardsPerShare: dstCurrentRatio,
 	}, sdkCtx.BlockTime())
 
+	reconciledAmount, err := ms.reconcileAmountFromShares(ctx, dstValAddr, newShares)
+	if err != nil {
+		return nil, err
+	}
+	pos.UpdateAmount(reconciledAmount)
+
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
@@ -352,15 +406,21 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
+		totalShares := pos.DelegatedShares.Add(newShares)
 		pos.WithDelegation(types.Delegation{
 			Validator:           pos.Validator,
-			Shares:              pos.DelegatedShares.Add(newShares),
+			Shares:              totalShares,
 			BaseRewardsPerShare: pos.BaseRewardsPerShare,
 		}, sdkCtx.BlockTime())
 
+		reconciledAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, totalShares)
+		if err != nil {
+			return nil, err
+		}
+		pos.UpdateAmount(reconciledAmount)
+	} else {
+		pos.UpdateAmount(pos.Amount.Add(msg.Amount))
 	}
-
-	pos.UpdateAmount(pos.Amount.Add(msg.Amount))
 
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err

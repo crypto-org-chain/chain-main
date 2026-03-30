@@ -116,15 +116,24 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 	}
 
 	topUp := sdk.NewDecCoins(sdk.NewDecCoin(bondDenom, topUpAmount))
+	remaining := topUp
 
-	for _, vote := range bondedVotes {
+	for i, vote := range bondedVotes {
 		validator, err := k.stakingKeeper.ValidatorByConsAddr(ctx, vote.Validator.Address)
 		if err != nil {
 			return err
 		}
 
-		powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(previousTotalPower))
-		reward := topUp.MulDecTruncate(powerFraction)
+		var reward sdk.DecCoins
+		if i == len(bondedVotes)-1 {
+			// Give remainder to last validator to avoid untracked dust
+			// in the distribution module from power-fraction truncation.
+			reward = remaining
+		} else {
+			powerFraction := math.LegacyNewDec(vote.Validator.Power).QuoTruncate(math.LegacyNewDec(previousTotalPower))
+			reward = topUp.MulDecTruncate(powerFraction)
+			remaining = remaining.Sub(reward)
+		}
 
 		err = k.distributionKeeper.AllocateTokensToValidator(ctx, validator, reward)
 		if err != nil {

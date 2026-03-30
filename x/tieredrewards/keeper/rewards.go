@@ -31,13 +31,13 @@ func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount mat
 	return k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
 }
 
-func (k Keeper) undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, uint64, error) {
+func (k Keeper) undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.Int, uint64, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	completionTime, _, unbondingId, err := k.stakingKeeper.Undelegate(ctx, moduleAddr, valAddr, shares)
+	completionTime, returnAmount, unbondingId, err := k.stakingKeeper.Undelegate(ctx, moduleAddr, valAddr, shares)
 	if err != nil {
-		return time.Time{}, 0, err
+		return time.Time{}, math.Int{}, 0, err
 	}
-	return completionTime, unbondingId, nil
+	return completionTime, returnAmount, unbondingId, nil
 }
 
 // redelegate moves a delegation between validators for the tier module account.
@@ -159,13 +159,17 @@ func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, position
 	return nil
 }
 
+// slash updates a position's post-slash token amount from validator shares.
+// LegacyDec rounding may differ from SDK accounting by up to 1 basecro.
+// pos.Amount is reconciled with the SDK return value during TierUndelegate.
 func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) {
 	postSlashTokens := validator.TokensFromShares(pos.DelegatedShares).Mul(math.LegacyOneDec().Sub(fraction)).TruncateInt()
 	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
 }
 
-// slashPositionByUnbondingId reduces a position's Amount by the slashed amount.
-// No-op if the unbondingId is not mapped to a tier position.
+// slashPositionByUnbondingId subtracts slashAmount from a mapped position.
+// No-op if unbondingId is not mapped to a tier position.
+// Any rounding divergence is reconciled during TierUndelegate.
 func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
 	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {

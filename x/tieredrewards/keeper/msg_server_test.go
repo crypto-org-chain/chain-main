@@ -128,6 +128,40 @@ func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
 }
 
+func (s *KeeperSuite) TestMsgLockTier_WithValidator_ReconciledBelowMinLock() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create non-1:1 exchange rate so share/token conversions can truncate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	lockAmount := sdkmath.NewInt(10001)
+	shares, err := val.SharesFromTokens(lockAmount)
+	s.Require().NoError(err)
+	reconciled := val.TokensFromShares(shares).TruncateInt()
+	s.Require().True(reconciled.LT(lockAmount), "test precondition failed: fixed amount must trigger truncation")
+
+	tier := newTestTier(1)
+	tier.MinLockAmount = lockAmount
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	addr := sdk.AccAddress([]byte("min_lock_boundary___")) // 20 bytes
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
+}
+
 func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
 	delAddr, _, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -305,6 +339,42 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_BelowMinLock() {
 	}
 
 	_, err := msgServer.CommitDelegationToTier(s.ctx, msg)
+	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
+}
+
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconciledBelowMinLock() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create non-1:1 exchange rate so the transfer path can lose dust.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	commitAmount := sdkmath.NewInt(10001)
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	available := val.TokensFromShares(del.Shares).TruncateInt()
+	s.Require().True(available.GTE(commitAmount), "test precondition failed: delegator must have enough stake")
+
+	cacheCtx, _ := s.ctx.CacheContext()
+	shares, err := s.keeper.TransferDelegation(cacheCtx, delAddr.String(), valAddr.String(), commitAmount)
+	s.Require().NoError(err)
+	valAfter, err := s.app.StakingKeeper.GetValidator(cacheCtx, valAddr)
+	s.Require().NoError(err)
+	reconciled := valAfter.TokensFromShares(shares).TruncateInt()
+	s.Require().True(reconciled.LT(commitAmount), "test precondition failed: fixed amount must trigger truncation")
+
+	tier := newTestTier(1)
+	tier.MinLockAmount = commitAmount
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
 }
 
@@ -2123,4 +2193,510 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffec
 		}
 	}
 	s.Require().True(found, "EventBonusRewardsClaimed should be emitted as side effect of AddToTierPosition on a delegated position")
+}
+
+// slashValidatorDirect slashes a bonded validator through the staking module,
+// changing the token/share exchange rate to non-1:1.
+func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) {
+	s.T().Helper()
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	consAddr, err := val.GetConsAddr()
+	s.Require().NoError(err)
+	power := val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+	_, err = s.app.StakingKeeper.Slash(s.ctx, consAddr, s.ctx.BlockHeight(), power, fraction)
+	s.Require().NoError(err)
+}
+
+// TestMsgTierUndelegate_ReconcilesAmount: after TierUndelegate,
+// pos.Amount is reconciled with the actual token return value from the SDK's
+// share→token conversion, preventing insolvency on later withdrawal.
+func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash the validator to create a non-1:1 exchange rate so that
+	// share→token conversion actually truncates.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	lockAmount := sdkmath.NewInt(10001) // odd number to maximize truncation
+	addr := sdk.AccAddress([]byte("c1_reconcile_addr___"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  addr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+	s.Require().True(pos.IsDelegated())
+
+	// Compute what the SDK will actually return when converting shares→tokens.
+	// Undelegate internally calls TokensFromShares(shares).TruncateInt() before
+	// removing shares from the validator, so this matches the return value.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedReturn := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	// At the 0.9 exchange rate, round-trip truncation loses 1 token.
+	s.Require().Equal(sdkmath.NewInt(10000).String(), expectedReturn.String(),
+		"expected return should be 10000 (1 token lost to truncation)")
+
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	// pos.Amount must equal the actual return value, not the original lockAmount.
+	s.Require().Equal(expectedReturn.String(), pos.Amount.String(),
+		"pos.Amount must equal actual return value")
+	s.Require().Equal(sdkmath.NewInt(10000).String(), pos.Amount.String(),
+		"pos.Amount should be exactly 10000 after reconciliation")
+}
+
+// TestMsgTierUndelegate_ReconcilesAmountUpward verifies that TierUndelegate
+// trusts the staking module's exact return amount even when stored position
+// accounting is stale and too low.
+func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(1000)
+	addr := sdk.AccAddress([]byte("c1_upward_reconcile"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  addr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+	s.Require().True(pos.IsDelegated())
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedReturn := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	s.Require().Equal(lockAmount.String(), expectedReturn.String(),
+		"test setup expects a 1:1 validator exchange rate")
+
+	// Seed a stale underestimated amount to verify undelegation overwrites it
+	// with the staking module's authoritative return amount.
+	pos.UpdateAmount(expectedReturn.SubRaw(1))
+	err = s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(expectedReturn.String(), pos.Amount.String(),
+		"pos.Amount must be overwritten with the SDK return amount")
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, expectedReturn)))
+	s.Require().NoError(err)
+
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(expectedReturn.String(), resp.Amount.AmountOf(bondDenom).String(),
+		"withdrawn amount should equal the SDK return amount")
+}
+
+// TestMsgAddToTierPosition_ReconcilesAmountWithShares: after
+// AddToTierPosition on a delegated position, pos.Amount matches the actual
+// token value from total shares, not the arithmetic sum of deposits.
+func (s *KeeperSuite) TestMsgAddToTierPosition_ReconcilesAmountWithShares() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash the validator to create a non-1:1 exchange rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	lockAmount := sdkmath.NewInt(10001)
+	addAmount := sdkmath.NewInt(5001)
+	addr := sdk.AccAddress([]byte("h1_reconcile_addr___"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount.Add(addAmount))))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+		Amount:     addAmount,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	// pos.Amount must equal what the validator says the total shares are worth.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"pos.Amount must equal actual token value from shares")
+
+	// The reconciled amount must be strictly less than the arithmetic sum
+	// because the non-1:1 exchange rate causes truncation loss.
+	arithmeticSum := lockAmount.Add(addAmount) // 15002
+	s.Require().NotEqual(arithmeticSum.String(), pos.Amount.String(),
+		"pos.Amount must differ from naive arithmetic sum due to truncation")
+}
+
+// TestMsgAddToTierPosition_MultipleCalls_NoDivergence verifies that repeated
+// AddToTierPosition calls don't compound rounding divergence. After N calls,
+// pos.Amount still matches TokensFromShares(totalShares).
+func (s *KeeperSuite) TestMsgAddToTierPosition_MultipleCalls_NoDivergence() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash to get non-1:1 rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2))
+
+	initialAmount := sdkmath.NewInt(10000)
+	addPerCall := sdkmath.NewInt(1001) // odd to maximize truncation
+	numAdds := 5
+	totalFunds := initialAmount.Add(addPerCall.MulRaw(int64(numAdds)))
+
+	addr := sdk.AccAddress([]byte("h1_multi_add_addr____"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, totalFunds)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           initialAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	posId := positions[0].Id
+
+	for i := 0; i < numAdds; i++ {
+		_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+			Owner:      addr.String(),
+			PositionId: posId,
+			Amount:     addPerCall,
+		})
+		s.Require().NoError(err)
+	}
+
+	pos, err := s.keeper.GetPosition(s.ctx, posId)
+	s.Require().NoError(err)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"after %d additions, pos.Amount must equal actual token value from shares", numAdds)
+
+	// The reconciled amount must be strictly less than the arithmetic sum.
+	// Without the fix, pos.Amount would equal arithmeticSum (15005), diverging
+	// from the actual share-backed value by up to numAdds tokens.
+	arithmeticSum := initialAmount.Add(addPerCall.MulRaw(int64(numAdds)))
+	s.Require().NotEqual(arithmeticSum.String(), pos.Amount.String(),
+		"pos.Amount must differ from naive arithmetic sum due to truncation")
+}
+
+// TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency verifies the full
+// lifecycle: lock → delegate → exit → undelegate → withdraw. The module
+// account should have exactly enough tokens for withdrawal after the
+// reconciliation fix, without needing extra manual funding.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash to get non-1:1 rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2))
+
+	lockAmount := sdkmath.NewInt(10001)
+	addr := sdk.AccAddress([]byte("c1_lifecycle_addr____"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  addr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+
+	// Undelegate — this reconciles pos.Amount with actual return value.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	reconciledAmount := pos.Amount
+
+	// Advance time past exit unlock.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
+
+	// Simulate unbonding completion: fund the module account with exactly the
+	// reconciled amount (what the SDK will actually return).
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, reconciledAmount)))
+	s.Require().NoError(err)
+
+	// Withdrawal should succeed — the module has exactly enough tokens.
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(reconciledAmount.String(), resp.Amount.AmountOf(bondDenom).String(),
+		"withdrawn amount should equal reconciled amount")
+}
+
+// TestMsgLockTier_WithValidator_ReconcilesAmount: after LockTier with a
+// validator at non-1:1 exchange rate, pos.Amount matches the actual
+// share-backed token value, not the original msg.Amount.
+func (s *KeeperSuite) TestMsgLockTier_WithValidator_ReconcilesAmount() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash to create non-1:1 exchange rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	lockAmount := sdkmath.NewInt(10001)
+	addr := sdk.AccAddress([]byte("m1_locktier_addr_____"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+
+	// pos.Amount must equal what the validator says the shares are worth.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"pos.Amount must equal actual token value from shares after LockTier")
+
+	// With non-1:1 rate, reconciled amount should differ from msg.Amount.
+	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
+		"pos.Amount must differ from msg.Amount due to truncation")
+}
+
+// TestMsgCommitDelegationToTier_ReconcilesAmount: after CommitDelegationToTier
+// at non-1:1 exchange rate, pos.Amount matches the actual share-backed token
+// value, not the original msg.Amount.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconcilesAmount() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash to create non-1:1 exchange rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+
+	// Re-fetch validator for current exchange rate.
+	val, err = s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"pos.Amount must equal actual token value from shares after CommitDelegationToTier")
+}
+
+// TestMsgTierDelegate_ReconcilesAmount: after TierDelegate at non-1:1
+// exchange rate, pos.Amount matches the actual share-backed token value.
+func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash to create non-1:1 exchange rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	lockAmount := sdkmath.NewInt(10001)
+	addr := sdk.AccAddress([]byte("m1_tierdelegate______"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	// Create undelegated position first.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:  addr.String(),
+		Id:     1,
+		Amount: lockAmount,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	posId := positions[0].Id
+
+	// pos.Amount before delegation is the original lockAmount.
+	pos, err := s.keeper.GetPosition(s.ctx, posId)
+	s.Require().NoError(err)
+	s.Require().Equal(lockAmount.String(), pos.Amount.String())
+
+	// Now delegate — this should reconcile pos.Amount.
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      addr.String(),
+		PositionId: posId,
+		Validator:  valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, posId)
+	s.Require().NoError(err)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"pos.Amount must equal actual token value from shares after TierDelegate")
+
+	// With non-1:1 rate, reconciled amount should differ from original lockAmount.
+	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
+		"pos.Amount must differ from original lockAmount due to truncation")
+}
+
+// TestMsgTierRedelegate_ReconcilesAmount: after TierRedelegate at non-1:1
+// exchange rate, pos.Amount matches the destination validator's share-backed
+// token value.
+func (s *KeeperSuite) TestMsgTierRedelegate_ReconcilesAmount() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	// Slash source validator to create non-1:1 exchange rate.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	lockAmount := sdkmath.NewInt(10001)
+	addr := sdk.AccAddress([]byte("m1_redelegate_addr___"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	// Create delegated position on source validator.
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	posId := positions[0].Id
+
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+
+	// Redelegate to destination validator — this should reconcile pos.Amount.
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        addr.String(),
+		PositionId:   posId,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, posId)
+	s.Require().NoError(err)
+
+	// Verify pos.Amount matches destination validator's share value.
+	dstVal, err := s.app.StakingKeeper.GetValidator(s.ctx, dstValAddr)
+	s.Require().NoError(err)
+	actualTokenValue := dstVal.TokensFromShares(pos.DelegatedShares).TruncateInt()
+
+	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
+		"pos.Amount must equal actual token value from destination validator's shares after TierRedelegate")
 }
