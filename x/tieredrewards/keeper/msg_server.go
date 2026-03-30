@@ -515,7 +515,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	pos, err := ms.Positions.Get(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
