@@ -198,6 +198,56 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 		"total delegated voting power should be 3000; got %s", total)
 }
 
+// TestVotingPower_AfterSlash verifies that both getVotingPowerForAddress and
+// totalDelegatedVotingPower use share-based token value (not pos.Amount) after
+// a slash, and that they agree with each other.
+func (s *KeeperSuite) TestVotingPower_AfterSlash() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	perAddrPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	s.Require().NoError(err)
+	totalPower, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().True(perAddrPower.Equal(totalPower),
+		"before slash: voting power per-address (%s) and total (%s) should match", perAddrPower, totalPower)
+
+	// Slash the validator through staking so tokens are actually burned and
+	// the exchange rate changes.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	consAddr, err := val.GetConsAddr()
+	s.Require().NoError(err)
+	power := val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+	slashFraction := sdkmath.LegacyNewDecWithPrec(10, 2) // 10%
+	_, err = s.app.StakingKeeper.Slash(s.ctx, consAddr, s.ctx.BlockHeight(), power, slashFraction)
+	s.Require().NoError(err)
+
+	// After slash: voting power should be less than lockAmount.
+	perAddrPowerAfter, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().True(perAddrPowerAfter.LT(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"per-address voting power should decrease after slash; got %s", perAddrPowerAfter)
+
+	totalPowerAfter, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().True(totalPowerAfter.LT(sdkmath.LegacyNewDecFromInt(lockAmount)),
+		"total voting power should decrease after slash; got %s", totalPowerAfter)
+
+	s.Require().True(perAddrPowerAfter.Equal(totalPowerAfter),
+		"after slash: per-address (%s) and total (%s) must match", perAddrPowerAfter, totalPowerAfter)
+}
+
 func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 	total, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)

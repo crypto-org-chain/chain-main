@@ -58,10 +58,36 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 
 func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
+	vals := make(map[string]stakingtypes.Validator)
+
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
-		if pos.IsDelegated() {
-			total = total.Add(math.LegacyNewDecFromInt(pos.Amount))
+		if !pos.IsDelegated() {
+			return false, nil
 		}
+
+		val, ok := vals[pos.Validator]
+		if !ok {
+			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+			if err != nil {
+				return false, nil
+			}
+			v, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+			if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+				return false, nil
+			}
+			if err != nil {
+				return false, err
+			}
+			val = v
+			vals[pos.Validator] = val
+		}
+
+		if !val.IsBonded() || val.DelegatorShares.IsZero() {
+			return false, nil
+		}
+
+		power := pos.DelegatedShares.MulInt(val.BondedTokens()).Quo(val.DelegatorShares)
+		total = total.Add(power)
 		return false, nil
 	})
 	if err != nil {
