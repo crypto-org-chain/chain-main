@@ -14,6 +14,17 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
+	pos, err := k.Positions.Get(ctx, id)
+	if err != nil {
+		if errors.Is(err, collections.ErrNotFound) {
+			return types.Position{}, errorsmod.Wrapf(types.ErrPositionNotFound, "position id %d", id)
+		}
+		return types.Position{}, errorsmod.Wrapf(err, "%s (position id %d)", types.ErrPositionStore.Error(), id)
+	}
+	return pos, nil
+}
+
 func (k Keeper) createPosition(
 	ctx context.Context,
 	owner string,
