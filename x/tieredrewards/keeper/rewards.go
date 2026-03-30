@@ -179,7 +179,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	}
 
 	pos, err := k.getPosition(ctx, positionId)
-	if errors.Is(err, types.ErrPositionNotFound) || errors.Is(err, collections.ErrNotFound) {
+	if errors.Is(err, types.ErrPositionNotFound) {
 		// Stale mapping after position lifecycle completion.
 		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
 	}
