@@ -104,6 +104,9 @@ func (s *KeeperSuite) TestBeginBlocker_TopUpFromPool() {
 
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, sdk.DefaultBondDenom)
+	s.Require().True(poolBefore.Amount.GTE(expectedShortfall),
+		"test assumption: pool must have enough to cover shortfall; pool=%s shortfall=%s",
+		poolBefore.Amount, expectedShortfall)
 	distrAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, distrtypes.ModuleName).GetAddress()
 	distrBefore := s.app.BankKeeper.GetBalance(s.ctx, distrAddr, sdk.DefaultBondDenom)
 
@@ -180,4 +183,65 @@ func (s *KeeperSuite) TestBeginBlocker_BlocksPerYearZero() {
 
 	err = s.keeper.BeginBlocker(s.ctx)
 	s.Require().NoError(err)
+}
+
+// TestBeginBlocker_DustGoesToLastValidator verifies that power-fraction truncation
+// dust is allocated to the last validator so the full top-up amount is distributed
+// without leaving untracked coins in the distribution module.
+func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
+	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(vals)
+
+	consAddr, err := vals[0].GetConsAddr()
+	s.Require().NoError(err)
+
+	// Simulate two validators with power 1 and 6 (total 7).
+	// Validator 0 gets 1/7 of rewards — this truncates and produces dust.
+	// Validator 1 (last) receives the remainder including the dust.
+	totalPower := int64(7)
+	s.ctx = s.ctx.WithVoteInfos([]abci.VoteInfo{
+		{Validator: abci.Validator{Address: consAddr, Power: 1}},
+		{Validator: abci.Validator{Address: consAddr, Power: 6}},
+	})
+
+	s.setExtremeRate()
+	s.drainFeeCollector()
+
+	poolFund := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(1_000_000_000)))
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.RewardsPoolName, poolFund)
+	s.Require().NoError(err)
+
+	// Compute the shortfall (= topUp amount) and verify it's not divisible by total power, so dust will exist
+	totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+	s.Require().NoError(err)
+	mintParams, err := s.app.MintKeeper.GetParams(s.ctx)
+	s.Require().NoError(err)
+	params, err := s.keeper.Params.Get(s.ctx)
+	s.Require().NoError(err)
+	topUpAmount := sdkmath.LegacyNewDecFromInt(totalBonded).
+		Mul(params.TargetBaseRewardsRate).
+		Quo(sdkmath.LegacyNewDec(int64(mintParams.BlocksPerYear))).
+		TruncateInt()
+	s.Require().False(topUpAmount.ModRaw(totalPower).IsZero(),
+		"test assumption: topUp amount (%s) must not be divisible by %d to produce dust", topUpAmount, totalPower)
+
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
+	poolBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, sdk.DefaultBondDenom)
+	distrAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, distrtypes.ModuleName).GetAddress()
+	distrBefore := s.app.BankKeeper.GetBalance(s.ctx, distrAddr, sdk.DefaultBondDenom)
+
+	err = s.keeper.BeginBlocker(s.ctx)
+	s.Require().NoError(err)
+
+	poolAfter := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, sdk.DefaultBondDenom)
+	distrAfter := s.app.BankKeeper.GetBalance(s.ctx, distrAddr, sdk.DefaultBondDenom)
+
+	drained := poolBefore.Amount.Sub(poolAfter.Amount)
+	distrReceived := distrAfter.Amount.Sub(distrBefore.Amount)
+
+	s.Require().True(drained.IsPositive(), "pool should be drained")
+	s.Require().Equal(drained, distrReceived,
+		"distribution module must receive the full top-up amount (no dust lost); drained=%s received=%s",
+		drained, distrReceived)
 }
