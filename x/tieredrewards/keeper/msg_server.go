@@ -238,10 +238,9 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if unbondingId > 0 {
-		if err := ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id); err != nil {
-			return nil, err
-		}
+	err = ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id)
+	if err != nil {
+		return nil, err
 	}
 
 	pos.UpdateAmount(returnAmount)
@@ -310,10 +309,9 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if unbondingId > 0 {
-		if err := ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id); err != nil {
-			return nil, err
-		}
+	err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
+	if err != nil {
+		return nil, err
 	}
 
 	srcValidator := pos.Validator

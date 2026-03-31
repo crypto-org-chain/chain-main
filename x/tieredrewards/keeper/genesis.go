@@ -43,8 +43,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, mapping := range data.UnbondingMappings {
+	for _, mapping := range data.UnbondingDelegationMappings {
 		if err := k.setUnbondingPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, mapping := range data.RedelegationMappings {
+		if err := k.setRedelegationPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
 			panic(err)
 		}
 	}
@@ -91,9 +97,21 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var unbondingMappings []types.UnbondingMapping
-	err = k.UnbondingMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
-		unbondingMappings = append(unbondingMappings, types.UnbondingMapping{
+	var unbondingDelegationMappings []types.UnbondingMapping
+	err = k.UnbondingDelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+		unbondingDelegationMappings = append(unbondingDelegationMappings, types.UnbondingMapping{
+			UnbondingId: unbondingId,
+			PositionId:  positionId,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var redelegationMappings []types.UnbondingMapping
+	err = k.RedelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+		redelegationMappings = append(redelegationMappings, types.UnbondingMapping{
 			UnbondingId: unbondingId,
 			PositionId:  positionId,
 		})
@@ -104,11 +122,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	return &types.GenesisState{
-		Params:                params,
-		Tiers:                 tiers,
-		Positions:             positions,
-		NextPositionId:        nextPositionId,
-		ValidatorRewardRatios: validatorRewardRatios,
-		UnbondingMappings:     unbondingMappings,
+		Params:                      params,
+		Tiers:                       tiers,
+		Positions:                   positions,
+		NextPositionId:              nextPositionId,
+		ValidatorRewardRatios:       validatorRewardRatios,
+		UnbondingDelegationMappings: unbondingDelegationMappings,
+		RedelegationMappings:        redelegationMappings,
 	}
 }

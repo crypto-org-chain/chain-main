@@ -40,7 +40,9 @@ type Keeper struct {
 	ValidatorRewardsLastWithdrawalBlock collections.Map[sdk.ValAddress, uint64]
 
 	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
-	UnbondingMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
+	UnbondingDelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
+	// Primary map: redelegation unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
+	RedelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -109,13 +111,21 @@ func NewKeeper(
 			sdk.ValAddressKey,
 			collections.Uint64Value,
 		),
-		UnbondingMappings: collections.NewIndexedMap(
+		UnbondingDelegationMappings: collections.NewIndexedMap(
 			sb,
 			types.UnbondingIdToPositionIdKey,
 			"unbonding_id_to_position_id",
 			collections.Uint64Key,
 			collections.Uint64Value,
 			newUnbondingMappingsIndexes(sb),
+		),
+		RedelegationMappings: collections.NewIndexedMap(
+			sb,
+			types.RedelegationIdToPositionIdKey,
+			"redelegation_id_to_position_id",
+			collections.Uint64Key,
+			collections.Uint64Value,
+			newRedelegationMappingsIndexes(sb),
 		),
 	}
 

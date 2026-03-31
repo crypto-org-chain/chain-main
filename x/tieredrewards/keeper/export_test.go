@@ -115,3 +115,7 @@ func (k Keeper) CreatePosition(
 func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
 	return k.getPositionsByIds(ctx, ids)
 }
+
+func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
+	return k.stillUnbonding(ctx, positionId)
+}

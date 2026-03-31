@@ -136,7 +136,13 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	// guard, but should already be deleted by unbonding completion hook.
 	if err := k.deleteUnbondingMappingsForPosition(ctx, pos.Id); err != nil {
+		return err
+	}
+	
+	// guard, but should already be deleted by redelegation completion hook.
+	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
 		return err
 	}
 

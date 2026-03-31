@@ -29,4 +29,5 @@ var (
 	ErrPositionNotReadyToWithdraw   = errors.Register(ModuleName, 24, "position is not ready to withdraw")
 	ErrPositionStillDelegated       = errors.Register(ModuleName, 25, "position is still delegated")
 	ErrExitNotTriggered             = errors.Register(ModuleName, 26, "exit has not been triggered")
+	ErrPositionStillUnbonding       = errors.Register(ModuleName, 27, "position is still unbonding")
 )

@@ -63,8 +63,8 @@ func ValidateGenesis(data GenesisState) error {
 		seenValidators[entry.Validator] = struct{}{}
 	}
 
-	seenUnbondingIDs := make(map[uint64]struct{}, len(data.UnbondingMappings))
-	for i, mapping := range data.UnbondingMappings {
+	seenUnbondingIDs := make(map[uint64]struct{}, len(data.UnbondingDelegationMappings))
+	for i, mapping := range data.UnbondingDelegationMappings {
 		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
 			return fmt.Errorf("duplicate unbonding ID %d at index %d", mapping.UnbondingId, i)
 		}
@@ -72,6 +72,17 @@ func ValidateGenesis(data GenesisState) error {
 
 		if _, ok := posIDs[mapping.PositionId]; !ok {
 			return fmt.Errorf("unbonding mapping at index %d references unknown position ID %d", i, mapping.PositionId)
+		}
+	}
+	// redelegation unbonding ids share the same global counter as unbonding delegation ids, so there should be no duplicates.
+	for i, mapping := range data.RedelegationMappings {
+		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
+			return fmt.Errorf("duplicate redelegation ID %d at index %d", mapping.UnbondingId, i)
+		}
+		seenUnbondingIDs[mapping.UnbondingId] = struct{}{}
+
+		if _, ok := posIDs[mapping.PositionId]; !ok {
+			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, mapping.PositionId)
 		}
 	}
 

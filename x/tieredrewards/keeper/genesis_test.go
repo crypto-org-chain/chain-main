@@ -117,9 +117,13 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 				},
 			},
 		},
-		UnbondingMappings: []types.UnbondingMapping{
+		UnbondingDelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 42, PositionId: 2},
 			{UnbondingId: 43, PositionId: 3},
+		},
+		RedelegationMappings: []types.UnbondingMapping{
+			{UnbondingId: 44, PositionId: 2},
+			{UnbondingId: 45, PositionId: 3},
 		},
 	}
 
@@ -170,11 +174,17 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	s.Require().True(genesisState.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare.Equal(
 		exported.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare))
 
-	// Unbonding mappings.
-	s.Require().Len(exported.UnbondingMappings, 2)
-	for i, m := range exported.UnbondingMappings {
-		s.Require().Equal(genesisState.UnbondingMappings[i].UnbondingId, m.UnbondingId)
-		s.Require().Equal(genesisState.UnbondingMappings[i].PositionId, m.PositionId)
+	// Unbonding delegation mappings.
+	s.Require().Len(exported.UnbondingDelegationMappings, 2)
+	for i, m := range exported.UnbondingDelegationMappings {
+		s.Require().Equal(genesisState.UnbondingDelegationMappings[i].UnbondingId, m.UnbondingId)
+		s.Require().Equal(genesisState.UnbondingDelegationMappings[i].PositionId, m.PositionId)
+	}
+	// Redelegation mappings.
+	s.Require().Len(exported.RedelegationMappings, 2)
+	for i, m := range exported.RedelegationMappings {
+		s.Require().Equal(genesisState.RedelegationMappings[i].UnbondingId, m.UnbondingId)
+		s.Require().Equal(genesisState.RedelegationMappings[i].PositionId, m.PositionId)
 	}
 }
 
@@ -270,5 +280,6 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.Positions)
 	s.Require().Equal(uint64(0), exported.NextPositionId)
 	s.Require().Empty(exported.ValidatorRewardRatios)
-	s.Require().Empty(exported.UnbondingMappings)
+	s.Require().Empty(exported.UnbondingDelegationMappings)
+	s.Require().Empty(exported.RedelegationMappings)
 }

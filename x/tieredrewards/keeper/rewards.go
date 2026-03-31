@@ -169,37 +169,51 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 
 // slashPositionByUnbondingId subtracts slashAmount from a mapped position.
 // No-op if unbondingId is not mapped to a tier position.
-func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) (types.Position, error) {
-	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
+func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
+	positionId, err := k.UnbondingDelegationMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
-		return types.Position{}, nil
+		return nil
 	}
 	if err != nil {
-		return types.Position{}, err
+		return err
 	}
 
 	pos, err := k.getPosition(ctx, positionId)
 	if errors.Is(err, types.ErrPositionNotFound) {
 		// Stale mapping after position lifecycle completion.
-		return types.Position{}, k.deleteUnbondingPositionMapping(ctx, unbondingId)
+		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
 	}
 	if err != nil {
-		return types.Position{}, err
+		return err
 	}
 
 	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 	pos.UpdateAmount(newAmount)
 
-	return pos, nil
+	return k.setPosition(ctx, pos)
 }
 
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
-// a position mapped to the given unbonding ID.
-func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) (types.Position, error) {
-	pos, err := k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
-	if err != nil {
-		return types.Position{}, err
+// a position mapped to the given redelegation unbonding ID.
+func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
+	positionId, err := k.RedelegationMappings.Get(ctx, unbondingId)
+	if errors.Is(err, collections.ErrNotFound) {
+		return nil
 	}
+	if err != nil {
+		return err
+	}
+
+	pos, err := k.getPosition(ctx, positionId)
+	if errors.Is(err, types.ErrPositionNotFound) {
+		return k.deleteRedelegationPositionMapping(ctx, unbondingId)
+	}
+	if err != nil {
+		return err
+	}
+
+	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
+	pos.UpdateAmount(newAmount)
 
 	if pos.IsDelegated() && shareBurnt.IsPositive() {
 		newShares := pos.DelegatedShares.Sub(shareBurnt)
@@ -210,7 +224,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		}
 	}
 
-	return pos, nil
+	return k.setPosition(ctx, pos)
 }
 
 // calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.

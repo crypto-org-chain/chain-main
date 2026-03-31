@@ -101,32 +101,60 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 }
 
 func (h Hooks) AfterSlashUnbondingDelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	pos, err := h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
-	if err != nil {
-		return err
-	}
-	return h.k.setPosition(ctx, pos)
+	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
 
 func (h Hooks) AfterSlashUnbondingRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	pos, err := h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
-	if err != nil {
-		return err
-	}
-	return h.k.setPosition(ctx, pos)
+	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
 
 // AfterSlashRedelegation updates DelegatedShares when an active destination
 // delegation is slashed via redelegation.
 func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
-	pos, err := h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
-	if err != nil {
-		return err
-	}
-	return h.k.setPosition(ctx, pos)
+	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
 }
 
 func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
+	return nil
+}
+
+func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
+	poolAddr := h.k.accountKeeper.GetModuleAddress(types.ModuleName)
+	if !delAddr.Equals(poolAddr) {
+		return nil
+	}
+	for _, id := range unbondingIds {
+		has, err := h.k.UnbondingDelegationMappings.Has(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !has {
+			continue
+		}
+		if err := h.k.deleteUnbondingPositionMapping(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
+	poolAddr := h.k.accountKeeper.GetModuleAddress(types.ModuleName)
+	if !delAddr.Equals(poolAddr) {
+		return nil
+	}
+	for _, id := range unbondingIds {
+		has, err := h.k.RedelegationMappings.Has(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !has {
+			continue
+		}
+		if err := h.k.deleteRedelegationPositionMapping(ctx, id); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

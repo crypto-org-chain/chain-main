@@ -132,13 +132,21 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionNotReadyToWithdraw
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
+	}
+
 	if pos.IsDelegated() {
 		return types.ErrPositionStillDelegated
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		return types.ErrExitLockDurationNotReached
+	hasUnbonding, err := k.stillUnbonding(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if hasUnbonding {
+		return types.ErrPositionStillUnbonding
 	}
 
 	return nil

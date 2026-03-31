@@ -32,6 +32,8 @@ message GenesisState {
   uint64 next_position_id = 4;
   // validator_reward_ratios is the cumulative reward ratio per validator.
   repeated ValidatorRewardRatioEntry validator_reward_ratios = 5 [(gogoproto.nullable) = false];
-  // unbonding_mappings maps staking unbonding IDs to tier position IDs.
-  repeated UnbondingMapping unbonding_mappings = 6 [(gogoproto.nullable) = false];
+  // unbonding_delegation_mappings maps unbonding delegation IDs to tier position IDs.
+  repeated UnbondingMapping unbonding_delegation_mappings = 6 [(gogoproto.nullable) = false];
+  // redelegation_mappings maps redelegation IDs to tier position IDs.
+  repeated UnbondingMapping redelegation_mappings = 7 [(gogoproto.nullable) = false];
 }

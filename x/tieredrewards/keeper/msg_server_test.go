@@ -355,6 +355,22 @@ func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmat
 	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
 }
 
+// simulateUnbondingCompletion cleans up unbonding mappings for a position
+// by firing the AfterUnbondingCompleted hook, simulating what staking's
+// EndBlocker does when unbonding entries mature.
+func (s *KeeperSuite) simulateUnbondingCompletion(positionId uint64, valAddr sdk.ValAddress) {
+	s.T().Helper()
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, positionId)
+	s.Require().NoError(err)
+	unbondingIds, err := iter.PrimaryKeys()
+	s.Require().NoError(err)
+	if len(unbondingIds) > 0 {
+		err = s.keeper.Hooks().AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, unbondingIds)
+		s.Require().NoError(err)
+	}
+}
+
 // fundRewardsPool funds the tier bonus rewards pool with the given amount.
 func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 	s.T().Helper()
@@ -722,8 +738,32 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
+
 	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
 	s.Require().True(pos.DelegatedShares.IsZero(), "delegated shares should be cleared")
+
+	// Verify redelegation unbonding ID was written to UnbondingDelegationMappings, not RedelegationMappings.
+	var unbondingFound bool
+	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
+		if posId == pos.Id {
+			unbondingFound = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().True(unbondingFound, "undelegation unbonding ID should be in UnbondingDelegationMappings")
+
+	var redelegationFound bool
+	err = s.keeper.RedelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
+		if posId == pos.Id {
+			redelegationFound = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().False(redelegationFound, "undelegation unbonding ID should not be stored in RedelegationMappings")
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {
@@ -843,7 +883,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
 
 	// Check that at least one unbonding ID maps to position 0
 	var found bool
-	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		if positionId == 0 {
 			found = true
 			return true, nil
@@ -885,6 +925,29 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(dstValAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
+
+	// Verify redelegation unbonding ID was written to RedelegationMappings, not UnbondingDelegationMappings.
+	var redelegationFound bool
+	err = s.keeper.RedelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
+		if posId == pos.Id {
+			redelegationFound = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().True(redelegationFound, "redelegation unbonding ID should be stored in RedelegationMappings")
+
+	var unbondingFound bool
+	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
+		if posId == pos.Id {
+			unbondingFound = true
+			return true, nil
+		}
+		return false, nil
+	})
+	s.Require().NoError(err)
+	s.Require().False(unbondingFound, "redelegation unbonding ID should NOT be in UnbondingDelegationMappings")
 }
 
 func (s *KeeperSuite) TestMsgTierRedelegate_NotDelegated() {
@@ -1772,7 +1835,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().False(undelegateResp.CompletionTime.IsZero())
 
 	var mappingExistsBeforeWithdraw bool
-	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
+	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
 		if positionId == 0 {
 			mappingExistsBeforeWithdraw = true
 			return true, nil
@@ -1798,6 +1861,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Now withdraw — requires exit commitment elapsed
+	s.simulateUnbondingCompletion(0, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -1814,7 +1878,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().Error(err, "position should be deleted after withdrawal")
 
 	var mappingExistsAfterWithdraw bool
-	err = s.keeper.UnbondingMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
+	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
 		if positionId == 0 {
 			mappingExistsAfterWithdraw = true
 			return true, nil
@@ -1977,6 +2041,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ImmediatelyAfterExit() {
 	s.Require().True(pos.HasTriggeredExit())
 
 	// Withdrawal should still require exit commitment to elapse
+	s.simulateUnbondingCompletion(0, valAddr)
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -2031,6 +2096,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_FullLifecycle_EarlyUndelegate() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Now withdraw should succeed
+	s.simulateUnbondingCompletion(0, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -2255,6 +2321,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 		sdk.NewCoins(sdk.NewCoin(bondDenom, expectedReturn)))
 	s.Require().NoError(err)
 
+	s.simulateUnbondingCompletion(pos.Id, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2433,6 +2500,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	s.Require().NoError(err)
 
 	// Withdrawal should succeed — the module has exactly enough tokens.
+	s.simulateUnbondingCompletion(pos.Id, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2629,4 +2697,77 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ReconcilesAmount() {
 
 	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
 		"pos.Amount must equal actual token value from destination validator's shares after TierRedelegate")
+}
+
+// TestWithdrawFromTier_FailsWithPendingUnbonding verifies that withdrawal is
+// blocked when unbonding entries are still pending (mapping exists).
+func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(100000), bondDenom)
+
+	// Undelegate — this creates an unbonding mapping.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Verify unbonding mapping exists.
+	hasUnbonding, err := s.keeper.StillUnbonding(s.ctx, 0)
+	s.Require().NoError(err)
+	s.Require().True(hasUnbonding, "unbonding mapping should exist after TierUndelegate")
+
+	// Advance time past exit lock duration.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(newTestTier(1).ExitDuration * 2))
+
+	// Withdrawal should fail because unbonding entries are pending.
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionStillUnbonding)
+
+	// Simulate unbonding completion via hook.
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	hooks := s.keeper.Hooks()
+	// Get the unbonding IDs for position 0.
+	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	unbondingIds, err := iter.PrimaryKeys()
+	s.Require().NoError(err)
+	s.Require().NotEmpty(unbondingIds)
+
+	err = hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, unbondingIds)
+	s.Require().NoError(err)
+
+	// Verify mapping is cleaned up.
+	hasUnbonding, err = s.keeper.StillUnbonding(s.ctx, 0)
+	s.Require().NoError(err)
+	s.Require().False(hasUnbonding, "unbonding mapping should be cleaned up after hook")
+
+	// Fund the module account to simulate tokens returned from staking's CompleteUnbonding.
+	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount)))
+	s.Require().NoError(err)
+
+	// Withdrawal should now pass since unbonding entries are cleaned up.
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
 }

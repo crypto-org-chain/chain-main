@@ -93,7 +93,7 @@ message QueryAllTierPositionsRequest {
 
 // QueryAllTierPositionsResponse is the response type for the Query/AllTierPositions RPC method.
 message QueryAllTierPositionsResponse {
-  repeated Position positions = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 

@@ -45,8 +45,11 @@ func validFullGenesis() types.GenesisState {
 				RewardRatio: types.ValidatorRewardRatio{},
 			},
 		},
-		UnbondingMappings: []types.UnbondingMapping{
+		UnbondingDelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 10, PositionId: 1},
+		},
+		RedelegationMappings: []types.UnbondingMapping{
+			{UnbondingId: 11, PositionId: 1},
 		},
 	}
 }
@@ -120,13 +123,25 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("unbonding mapping references unknown position", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.UnbondingMappings[0].PositionId = 999
+		genesis.UnbondingDelegationMappings[0].PositionId = 999
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "unknown position ID")
 	})
 
 	t.Run("duplicate unbonding IDs", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.UnbondingMappings = append(genesis.UnbondingMappings, types.UnbondingMapping{UnbondingId: 10, PositionId: 1})
+		genesis.UnbondingDelegationMappings = append(genesis.UnbondingDelegationMappings, types.UnbondingMapping{UnbondingId: 10, PositionId: 1})
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate unbonding ID")
+	})
+
+	t.Run("redelegation mapping references unknown position", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.RedelegationMappings[0].PositionId = 999
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "unknown position ID")
+	})
+
+	t.Run("duplicate redelegation IDs", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.RedelegationMappings = append(genesis.RedelegationMappings, types.UnbondingMapping{UnbondingId: 11, PositionId: 1})
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegation ID")
 	})
 }

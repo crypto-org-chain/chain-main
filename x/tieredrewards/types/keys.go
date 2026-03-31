@@ -15,6 +15,8 @@ var (
 	UnbondingIdToPositionIdKey             = collections.NewPrefix(9)
 	ValidatorRewardsLastWithdrawalBlockKey = collections.NewPrefix(10)
 	UnbondingIdsByPositionKey              = collections.NewPrefix(11)
+	RedelegationIdToPositionIdKey          = collections.NewPrefix(12)
+	RedelegationIdsByPositionKey           = collections.NewPrefix(13)
 )
 
 const (
