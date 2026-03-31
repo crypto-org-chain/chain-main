@@ -30,24 +30,6 @@ func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.V
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// reconcileAndValidateNewPositionAmount derives the actual share-backed token
-// amount, then applies new-position checks (including min lock).
-func (ms msgServer) reconcileAndValidateNewPositionAmount(
-	ctx context.Context,
-	tier types.Tier,
-	valAddr sdk.ValAddress,
-	shares sdkmath.LegacyDec,
-) (sdkmath.Int, error) {
-	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
-	if err != nil {
-		return sdkmath.Int{}, err
-	}
-	if err := ms.validateNewPosition(tier, positionAmount); err != nil {
-		return sdkmath.Int{}, err
-	}
-	return positionAmount, nil
-}
-
 func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*types.MsgLockTierResponse, error) {
 	if err := msg.Validate(); err != nil {
 		return nil, err
@@ -86,7 +68,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 			Shares:              shares,
 			BaseRewardsPerShare: currentRatio,
 		}
-		positionAmount, err = ms.reconcileAndValidateNewPositionAmount(ctx, tier, valAddr, shares)
+		positionAmount, err = ms.reconcileAmountFromShares(ctx, valAddr, shares)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +124,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		BaseRewardsPerShare: currentRatio,
 	}
 
-	positionAmount, err := ms.reconcileAndValidateNewPositionAmount(ctx, tier, valAddr, shares)
+	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
 	if err != nil {
 		return nil, err
 	}

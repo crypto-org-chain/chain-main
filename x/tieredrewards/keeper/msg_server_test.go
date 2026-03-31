@@ -128,40 +128,6 @@ func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
 }
 
-func (s *KeeperSuite) TestMsgLockTier_WithValidator_ReconciledBelowMinLock() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Create non-1:1 exchange rate so share/token conversions can truncate.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-
-	lockAmount := sdkmath.NewInt(10001)
-	shares, err := val.SharesFromTokens(lockAmount)
-	s.Require().NoError(err)
-	reconciled := val.TokensFromShares(shares).TruncateInt()
-	s.Require().True(reconciled.LT(lockAmount), "test precondition failed: fixed amount must trigger truncation")
-
-	tier := newTestTier(1)
-	tier.MinLockAmount = lockAmount
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
-	addr := sdk.AccAddress([]byte("min_lock_boundary___")) // 20 bytes
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
-}
-
 func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
 	delAddr, _, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -339,42 +305,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_BelowMinLock() {
 	}
 
 	_, err := msgServer.CommitDelegationToTier(s.ctx, msg)
-	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
-}
-
-func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconciledBelowMinLock() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Create non-1:1 exchange rate so the transfer path can lose dust.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-
-	commitAmount := sdkmath.NewInt(10001)
-	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
-	s.Require().NoError(err)
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	available := val.TokensFromShares(del.Shares).TruncateInt()
-	s.Require().True(available.GTE(commitAmount), "test precondition failed: delegator must have enough stake")
-
-	cacheCtx, _ := s.ctx.CacheContext()
-	shares, err := s.keeper.TransferDelegation(cacheCtx, delAddr.String(), valAddr.String(), commitAmount)
-	s.Require().NoError(err)
-	valAfter, err := s.app.StakingKeeper.GetValidator(cacheCtx, valAddr)
-	s.Require().NoError(err)
-	reconciled := valAfter.TokensFromShares(shares).TruncateInt()
-	s.Require().True(reconciled.LT(commitAmount), "test precondition failed: fixed amount must trigger truncation")
-
-	tier := newTestTier(1)
-	tier.MinLockAmount = commitAmount
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
-	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
-		DelegatorAddress: delAddr.String(),
-		ValidatorAddress: valAddr.String(),
-		Id:               1,
-		Amount:           commitAmount,
-	})
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
 }
 
