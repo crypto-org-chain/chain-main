@@ -381,6 +381,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
 	tierCache := make(map[uint32]types.Tier)
 	total := sdk.NewCoins()
+	var firstErr error
 
 	for i := range positions {
 		tier, ok := tierCache[positions[i].TierId]
@@ -395,6 +396,19 @@ func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []t
 
 		bonus, err := k.claimBonusRewards(ctx, &positions[i], tier, forceAccrue)
 		if err != nil {
+			// Hooks tolerate an insufficient bonus pool so validator lifecycle and
+			// slashing can proceed. Persist the advanced checkpoint before returning
+			// the error so callers that swallow it do not later reprice the same
+			// accrual window against different validator state.
+			if errors.Is(err, types.ErrInsufficientBonusPool) {
+				if setErr := k.setPosition(ctx, positions[i]); setErr != nil {
+					return sdk.Coins{}, setErr
+				}
+				if firstErr == nil {
+					firstErr = err
+				}
+				continue
+			}
 			return sdk.Coins{}, err
 		}
 
@@ -403,6 +417,10 @@ func (k Keeper) claimBonusRewardsForPositions(ctx context.Context, positions []t
 		if err := k.setPosition(ctx, positions[i]); err != nil {
 			return sdk.Coins{}, err
 		}
+	}
+
+	if firstErr != nil {
+		return total, firstErr
 	}
 
 	return total, nil

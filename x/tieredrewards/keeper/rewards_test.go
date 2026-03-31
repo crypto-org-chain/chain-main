@@ -94,6 +94,41 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_SettlesFinalBonus() {
 		"LastBonusAccrual should be advanced to block time after unbonding hook")
 }
 
+// If the hook tolerates an empty bonus pool, it must still persist the advanced
+// checkpoint so the pre-unbond accrual window is not repriced later.
+func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_InsufficientBonusPoolAdvancesCheckpoint() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	addr := sdk.AccAddress([]byte("bonus_empty_pool_addr"))
+	lockAmount := sdkmath.NewInt(10000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+
+	unbondTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
+	s.ctx = s.ctx.WithBlockTime(unbondTime)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	updated, err := s.keeper.GetPosition(s.ctx, positions[0].Id)
+	s.Require().NoError(err)
+	s.Require().Equal(unbondTime, updated.LastBonusAccrual,
+		"LastBonusAccrual should advance even when bonus pool is empty during unbonding hook")
+}
+
 // MsgClaimTierRewards returns zero bonus when the validator is not bonded.
 func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_ZeroBonus() {
 	addr, valAddr, pos := s.setupPositionForBonusTest()

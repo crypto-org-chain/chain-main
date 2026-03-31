@@ -232,6 +232,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	oldRatio := posBefore.BaseRewardsPerShare
+	claimTime := s.ctx.BlockTime()
 
 	slashFraction := sdkmath.LegacyNewDecWithPrec(5, 2) // 5%
 	hooks := s.keeper.Hooks()
@@ -249,6 +250,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	// Base rewards must still be claimed (BaseRewardsPerShare updated).
 	s.Require().NotEqual(oldRatio, posAfter.BaseRewardsPerShare,
 		"BaseRewardsPerShare must be updated even when bonus pool is empty")
+	s.Require().Equal(claimTime, posAfter.LastBonusAccrual,
+		"LastBonusAccrual must still advance when bonus pool is empty")
 }
 
 // TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain verifies that a 100% slash
