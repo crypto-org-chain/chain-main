@@ -729,7 +729,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 		Validator:  valAddr.String(),
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
@@ -885,7 +885,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
 		PositionId: 0,
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
@@ -1018,7 +1018,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_WrongOwner() {
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
@@ -1174,7 +1174,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_WrongOwner() {
 		Amount:     sdkmath.NewInt(500),
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 // --- MsgTriggerExitFromTier tests ---
@@ -1239,7 +1239,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_WrongOwner() {
 		PositionId: 0,
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 // --- MsgClearPosition tests ---
@@ -1300,7 +1300,7 @@ func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
 		PositionId: 0,
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgClearPosition_IdempotentWhenNotExiting() {
@@ -1402,7 +1402,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_WrongOwner() {
 		PositionId: 0,
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
@@ -1800,7 +1800,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_WrongOwner() {
 		PositionId: 0,
 	})
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "unauthorized")
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionNotFound() {

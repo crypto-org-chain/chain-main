@@ -31,6 +31,12 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	s.Require().Equal(pos.Owner, got.Owner)
 	s.Require().Equal(pos.TierId, got.TierId)
 	s.Require().True(pos.Amount.Equal(got.Amount))
+	s.Require().True(pos.DelegatedShares.Equal(got.DelegatedShares))
+	s.Require().Equal(pos.CreatedAtHeight, got.CreatedAtHeight)
+	s.Require().Equal(pos.Validator, got.Validator)
+	s.Require().True(pos.BaseRewardsPerShare.Equal(got.BaseRewardsPerShare))
+	s.Require().Equal(pos.ExitTriggeredAt, got.ExitTriggeredAt)
+	s.Require().Equal(pos.ExitUnlockAt, got.ExitUnlockAt)
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {

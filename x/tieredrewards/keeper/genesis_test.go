@@ -153,7 +153,12 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().True(orig.Amount.Equal(pos.Amount))
 		s.Require().Equal(orig.Validator, pos.Validator)
 		s.Require().True(orig.DelegatedShares.Equal(pos.DelegatedShares))
+		s.Require().True(orig.BaseRewardsPerShare.Equal(pos.BaseRewardsPerShare))
+		s.Require().Equal(orig.LastBonusAccrual, pos.LastBonusAccrual)
 		s.Require().Equal(orig.CreatedAtHeight, pos.CreatedAtHeight)
+		s.Require().Equal(orig.CreatedAtTime.UTC(), pos.CreatedAtTime.UTC())
+		s.Require().Equal(orig.ExitTriggeredAt.UTC(), pos.ExitTriggeredAt.UTC())
+		s.Require().Equal(orig.ExitUnlockAt.UTC(), pos.ExitUnlockAt.UTC())
 	}
 
 	// Sequence.

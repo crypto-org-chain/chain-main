@@ -270,7 +270,7 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NilRequest() {
 	srv := keeper.NewQueryServerImpl(s.keeper)
 	_, err := srv.TierVotingPower(s.ctx, nil)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "empty request")
+	s.Require().ErrorContains(err, "empty request")
 }
 
 // TestGRPCQueryTierVotingPower_InvalidAddress verifies that a malformed bech32

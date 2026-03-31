@@ -236,7 +236,7 @@ func TestPosition_Validate(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errContains != "" {
-					require.Contains(t, err.Error(), tt.errContains)
+					require.ErrorContains(t, err, tt.errContains)
 				}
 			} else {
 				require.NoError(t, err)
@@ -268,7 +268,7 @@ func TestPosition_ClearExit(t *testing.T) {
 	require.NoError(t, pos.Validate())
 }
 
-func TestPosition_IsActiveForGovernance(t *testing.T) {
+func TestPosition_IsDelegated_WithExitState(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()

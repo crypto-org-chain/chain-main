@@ -41,7 +41,7 @@ func (s *KeeperSuite) TestUpdateParams_InvalidAuthority() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err := msgServer.UpdateParams(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "invalid authority")
+	s.Require().ErrorContains(err, "invalid authority")
 }
 
 func (s *KeeperSuite) TestUpdateParams_NegativeRate() {
@@ -54,7 +54,7 @@ func (s *KeeperSuite) TestUpdateParams_NegativeRate() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err := msgServer.UpdateParams(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "target base rewards rate cannot be negative")
+	s.Require().ErrorContains(err, "target base rewards rate cannot be negative")
 }
 
 func (s *KeeperSuite) TestUpdateParams_ZeroRate() {
@@ -100,7 +100,7 @@ func (s *KeeperSuite) TestAddTier_InvalidAuthority() {
 
 	_, err := msgServer.AddTier(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "invalid authority")
+	s.Require().ErrorContains(err, "invalid authority")
 }
 
 func (s *KeeperSuite) TestAddTier_AlreadyExists() {
@@ -135,7 +135,7 @@ func (s *KeeperSuite) TestAddTier_InvalidTier() {
 
 	_, err := msgServer.AddTier(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "exit duration")
+	s.Require().ErrorContains(err, "exit duration")
 }
 
 // --- UpdateTier ---
@@ -196,7 +196,7 @@ func (s *KeeperSuite) TestUpdateTier_InvalidAuthority() {
 
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "invalid authority")
+	s.Require().ErrorContains(err, "invalid authority")
 }
 
 func (s *KeeperSuite) TestUpdateTier_NotFound() {
@@ -231,7 +231,7 @@ func (s *KeeperSuite) TestUpdateTier_InvalidTier() {
 
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "bonus apy")
+	s.Require().ErrorContains(err, "bonus apy")
 }
 
 // --- DeleteTier ---
@@ -265,7 +265,7 @@ func (s *KeeperSuite) TestDeleteTier_InvalidAuthority() {
 
 	_, err := msgServer.DeleteTier(s.ctx, msg)
 	s.Require().Error(err)
-	s.Require().Contains(err.Error(), "invalid authority")
+	s.Require().ErrorContains(err, "invalid authority")
 }
 
 func (s *KeeperSuite) TestDeleteTier_NotFound() {
@@ -442,5 +442,5 @@ func (s *KeeperSuite) TestFundTierPool_RejectsNonBondDenom() {
 	_, err = msgServer.FundTierPool(s.ctx, msg)
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrInvalidAmount)
-	s.Require().Contains(err.Error(), bondDenom)
+	s.Require().ErrorContains(err, bondDenom)
 }
