@@ -67,12 +67,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return err
 	}
 
-	// Re-fetch after claiming so slashPositions operates on latest store state.
-	positions, err = h.k.getPositionsByValidator(ctx, valAddr)
-	if err != nil {
-		return err
-	}
-
 	return h.k.slashPositions(ctx, valAddr, positions, fraction)
 }
 
