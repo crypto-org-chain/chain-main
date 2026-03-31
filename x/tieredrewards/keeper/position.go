@@ -86,43 +86,85 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		return err
 	}
 
-	if err == nil && oldPos.IsDelegated() && oldPos.Validator != pos.Validator {
-		oldVal, _ := sdk.ValAddressFromBech32(oldPos.Validator)
-		if oldVal != nil {
-			_ = k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id))
-		}
-	}
-
-	owner, err := sdk.AccAddressFromBech32(pos.Owner)
-	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-	}
-
 	if err := k.Positions.Set(ctx, pos.Id, pos); err != nil {
 		return err
 	}
 
-	if err := k.PositionsByOwner.Set(ctx, collections.Join(owner, pos.Id)); err != nil {
-		return err
-	}
-
-	if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
-		return err
-	}
-
-	if pos.IsDelegated() {
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-		if err != nil {
-			return err
-		}
-		if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
-			return err
-		}
-	}
-
 	if isNew {
-		err = k.increasePositionCount(ctx, pos.TierId)
+		owner, err := sdk.AccAddressFromBech32(pos.Owner)
 		if err != nil {
+			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+		}
+		if err := k.PositionsByOwner.Set(ctx, collections.Join(owner, pos.Id)); err != nil {
+			return err
+		}
+		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
+			return err
+		}
+		if pos.IsDelegated() {
+			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+			if err != nil {
+				return err
+			}
+			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
+				return err
+			}
+		}
+		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if oldPos.Owner != pos.Owner {
+		oldOwner, err := sdk.AccAddressFromBech32(oldPos.Owner)
+		if err != nil {
+			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+		}
+		if err := k.PositionsByOwner.Remove(ctx, collections.Join(oldOwner, pos.Id)); err != nil {
+			return err
+		}
+		newOwner, err := sdk.AccAddressFromBech32(pos.Owner)
+		if err != nil {
+			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+		}
+		if err := k.PositionsByOwner.Set(ctx, collections.Join(newOwner, pos.Id)); err != nil {
+			return err
+		}
+	}
+
+	if oldPos.TierId != pos.TierId {
+		if err := k.PositionsByTier.Remove(ctx, collections.Join(oldPos.TierId, pos.Id)); err != nil {
+			return err
+		}
+		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
+			return err
+		}
+		if err := k.decreasePositionCount(ctx, oldPos.TierId); err != nil {
+			return err
+		}
+		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+			return err
+		}
+	}
+
+	oldDelegated := oldPos.IsDelegated()
+	newDelegated := pos.IsDelegated()
+	if oldDelegated && (!newDelegated || oldPos.Validator != pos.Validator) {
+		oldVal, err := sdk.ValAddressFromBech32(oldPos.Validator)
+		if err != nil {
+			return err
+		}
+		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
+			return err
+		}
+	}
+	if newDelegated && (!oldDelegated || oldPos.Validator != pos.Validator) {
+		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return err
+		}
+		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
 			return err
 		}
 	}

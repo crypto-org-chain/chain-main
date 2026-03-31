@@ -281,23 +281,35 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAdd
 	return baseRewards, bonusRewards, nil
 }
 
-// claimAndRefreshPosition claims rewards for a single position then re-fetches
-// it from the store, since claimRewardsForPositions persists updates internally.
+// claimAndRefreshPosition claims rewards for a single position and returns the
+// updated in-memory value so callers can finish their mutation and persist once.
 //
 // Returns:
-//   - refreshed: the position loaded from state after claiming (updated reward checkpoints);
+//   - refreshed: the updated position with reward checkpoints advanced;
 //   - base: base rewards paid to the owner for this position in this call;
 //   - bonus: bonus rewards paid to the owner for this position in this call;
 func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
-	base, bonus, err := k.claimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
+	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
-	refreshed, err := k.getPosition(ctx, pos.Id)
+
+	base, err := k.claimBaseRewards(ctx, &pos, currentRatio)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
-	return refreshed, base, bonus, nil
+
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+
+	bonus, err := k.claimBonusRewards(ctx, &pos, tier, false)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+
+	return pos, base, bonus, nil
 }
 
 // claimBaseRewardsForPositions settles staking distribution (base) rewards for each
