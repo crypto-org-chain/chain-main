@@ -363,36 +363,6 @@ func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddr
 	return pos, base, bonus, nil
 }
 
-// claimBaseRewardsForPositions settles staking distribution (base) rewards for each
-// position delegated to valAddr. It first updates the validator's cumulative
-// rewards-per-share from x/distribution, then for each position computes the
-// owner's share, transfers coins from the module account, updates checkpoints,
-// and persists the position.
-//
-// Returns:
-//   - total: the sum of base coins paid to owners across all positions in this call;
-func (k Keeper) claimBaseRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position) (sdk.Coins, error) {
-	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-	if err != nil {
-		return sdk.Coins{}, err
-	}
-
-	total := sdk.Coins{}
-	for i := range positions {
-		claimed, err := k.claimBaseRewards(ctx, &positions[i], currentRatio)
-		if err != nil {
-			return sdk.Coins{}, err
-		}
-		total = total.Add(claimed...)
-
-		if err := k.setPosition(ctx, positions[i]); err != nil {
-			return sdk.Coins{}, err
-		}
-	}
-
-	return total, nil
-}
-
 // claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
