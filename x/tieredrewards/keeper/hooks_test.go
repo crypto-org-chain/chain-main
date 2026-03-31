@@ -9,6 +9,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // --- BeforeValidatorSlashed hook tests ---
@@ -320,6 +321,77 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 		s.Require().True(pos.Amount.LT(amountsBefore[i]),
 			"position %d amount should decrease after slash", i)
 	}
+}
+
+// TestBeforeValidatorSlashed_MultiplePositions_InsufficientBonusPool verifies
+// that the hook can reuse the in-memory positions updated during reward
+// settlement, without reloading from store, while still advancing checkpoints
+// and applying the slash to every position.
+func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientBonusPool() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	addr1 := sdk.AccAddress([]byte("slash_mix_bonus_addr1_"))
+	addr2 := sdk.AccAddress([]byte("slash_mix_bonus_addr2_"))
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr1,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr2,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr1.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr2.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 365))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(200), bondDenom)
+
+	pos0Before, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos1Before, err := s.keeper.GetPosition(s.ctx, uint64(1))
+	s.Require().NoError(err)
+	oldRatio0 := pos0Before.BaseRewardsPerShare
+	oldRatio1 := pos1Before.BaseRewardsPerShare
+	claimTime := s.ctx.BlockTime()
+
+	hooks := s.keeper.Hooks()
+	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(5, 2))
+	s.Require().NoError(err, "slash hook must tolerate insufficient bonus pool across multiple positions")
+
+	pos0After, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos1After, err := s.keeper.GetPosition(s.ctx, uint64(1))
+	s.Require().NoError(err)
+
+	for _, pos := range []types.Position{pos0After, pos1After} {
+		s.Require().Equal(claimTime, pos.LastBonusAccrual,
+			"checkpoint must advance even when bonus payout fails")
+	}
+	s.Require().NotEqual(oldRatio0, pos0After.BaseRewardsPerShare,
+		"first position base rewards snapshot should be updated before slash")
+	s.Require().NotEqual(oldRatio1, pos1After.BaseRewardsPerShare,
+		"second position base rewards snapshot should be updated before slash")
+	s.Require().True(pos0After.Amount.LT(pos0Before.Amount),
+		"first position amount should still be slashed")
+	s.Require().True(pos1After.Amount.LT(pos1Before.Amount),
+		"second position amount should still be slashed")
 }
 
 func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {

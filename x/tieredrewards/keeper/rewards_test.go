@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"errors"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
@@ -289,6 +290,96 @@ func (s *KeeperSuite) TestClaimBonusRewardsForPositions_UpdatesOriginalSlice() {
 	s.Require().NoError(err)
 	s.Require().Equal(positions[0].LastBonusAccrual, stored.LastBonusAccrual,
 		"in-memory slice element must match the stored position")
+}
+
+// TestClaimRewardsForPositions_MixedInsufficientBonusPool verifies that the
+// fused reward-settlement loop can successfully pay earlier positions, then
+// persist checkpoints for a later position that hits ErrInsufficientBonusPool.
+func (s *KeeperSuite) TestClaimRewardsForPositions_MixedInsufficientBonusPool() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	addr1 := sdk.AccAddress([]byte("claim_rewards_mix_addr1"))
+	addr2 := sdk.AccAddress([]byte("claim_rewards_mix_addr2"))
+	lockAmount1 := sdkmath.NewInt(10_000)
+	lockAmount2 := sdkmath.NewInt(20_000)
+
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr1,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount1)))
+	s.Require().NoError(err)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr2,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount2)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr1.String(),
+		Id:               1,
+		Amount:           lockAmount1,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            addr2.String(),
+		Id:               1,
+		Amount:           lockAmount2,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	pos1, err := s.keeper.GetPosition(s.ctx, 0)
+	s.Require().NoError(err)
+	pos2, err := s.keeper.GetPosition(s.ctx, 1)
+	s.Require().NoError(err)
+
+	tier, err := s.keeper.GetTier(s.ctx, pos1.TierId)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	durationSeconds := int64((30 * 24 * time.Hour) / time.Second)
+	bonus1 := val.TokensFromShares(pos1.DelegatedShares).
+		Mul(tier.BonusApy).
+		MulInt64(durationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+	bonus2 := val.TokensFromShares(pos2.DelegatedShares).
+		Mul(tier.BonusApy).
+		MulInt64(durationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+	s.Require().True(bonus1.IsPositive())
+	s.Require().True(bonus2.IsPositive())
+
+	s.fundRewardsPool(bonus1, bondDenom)
+
+	bal1Before := s.app.BankKeeper.GetBalance(s.ctx, addr1, bondDenom)
+	bal2Before := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)
+	positions := []types.Position{pos1, pos2}
+
+	baseRewards, bonusRewards, err := s.keeper.ClaimRewardsForPositions(s.ctx, valAddr, positions, false)
+	s.Require().Error(err)
+	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
+	s.Require().True(baseRewards.IsZero(), "no base rewards were allocated for this test")
+	s.Require().Equal(bonus1.String(), bonusRewards.AmountOf(bondDenom).String(),
+		"only the first position bonus should be paid before pool exhaustion")
+
+	bal1After := s.app.BankKeeper.GetBalance(s.ctx, addr1, bondDenom)
+	bal2After := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)
+	s.Require().Equal(bal1Before.Amount.Add(bonus1).String(), bal1After.Amount.String(),
+		"first owner should receive the paid bonus")
+	s.Require().Equal(bal2Before.Amount.String(), bal2After.Amount.String(),
+		"second owner should not receive bonus when the pool is exhausted")
+
+	for _, pos := range positions {
+		s.Require().Equal(s.ctx.BlockTime(), pos.LastBonusAccrual,
+			"in-memory position checkpoint should still advance on insufficient bonus pool")
+		stored, err := s.keeper.GetPosition(s.ctx, pos.Id)
+		s.Require().NoError(err)
+		s.Require().Equal(s.ctx.BlockTime(), stored.LastBonusAccrual,
+			"stored position checkpoint should still advance on insufficient bonus pool")
+	}
 }
 
 // TestClaimBonusRewards_UsesIntegerDivisionForDuration verifies:
