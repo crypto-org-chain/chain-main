@@ -11,7 +11,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// slashRedelegationPosition tests (AfterSlashRedelegation)
+// slashRedelegationPosition tests (AfterRedelegationSlashed)
 // ---------------------------------------------------------------------------
 
 // setupDelegatedPosition creates a funded address, locks a tier position with
@@ -66,7 +66,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	slashTokens := sdkmath.NewInt(1000)
 	shareBurnt := origShares.Quo(sdkmath.LegacyNewDec(10))
 
-	err := s.keeper.Hooks().AfterSlashRedelegation(s.ctx, unbondingId, slashTokens, shareBurnt)
+	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -94,7 +94,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
 	slashTokens := sdkmath.NewInt(1000)
 	shareBurnt := origShares.Add(sdkmath.LegacyOneDec())
 
-	err := s.keeper.Hooks().AfterSlashRedelegation(s.ctx, unbondingId, slashTokens, shareBurnt)
+	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -111,7 +111,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
 func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 	s.setupTierAndDelegator()
 
-	err := s.keeper.Hooks().AfterSlashRedelegation(
+	err := s.keeper.Hooks().AfterRedelegationSlashed(
 		s.ctx, 999, sdkmath.NewInt(100), sdkmath.LegacyNewDec(50))
 	s.Require().NoError(err) // no-op, no error
 }
@@ -128,7 +128,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ZeroShareBurnt() {
 
 	slashTokens := sdkmath.NewInt(800)
 
-	err := s.keeper.Hooks().AfterSlashRedelegation(
+	err := s.keeper.Hooks().AfterRedelegationSlashed(
 		s.ctx, unbondingId, slashTokens, sdkmath.LegacyZeroDec())
 	s.Require().NoError(err)
 
@@ -152,7 +152,7 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
-	err := s.keeper.Hooks().AfterSlashUnbondingDelegation(s.ctx, unbondingId, slashTokens)
+	err := s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingId, slashTokens)
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -172,7 +172,7 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 
 	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, false)
 
-	err := s.keeper.Hooks().AfterSlashUnbondingRedelegation(s.ctx, unbondingId, sdkmath.NewInt(999999))
+	err := s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -184,10 +184,10 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
 	s.setupTierAndDelegator()
 
-	err := s.keeper.Hooks().AfterSlashUnbondingDelegation(s.ctx, 999, sdkmath.NewInt(100))
+	err := s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, 999, sdkmath.NewInt(100))
 	s.Require().NoError(err)
 
-	err = s.keeper.Hooks().AfterSlashUnbondingRedelegation(s.ctx, 1000, sdkmath.NewInt(200))
+	err = s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, 1000, sdkmath.NewInt(200))
 	s.Require().NoError(err)
 }
 
