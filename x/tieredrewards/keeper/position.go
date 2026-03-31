@@ -140,7 +140,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	if err := k.deleteUnbondingMappingsForPosition(ctx, pos.Id); err != nil {
 		return err
 	}
-	
+
 	// guard, but should already be deleted by redelegation completion hook.
 	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
 		return err
