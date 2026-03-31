@@ -101,17 +101,29 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 }
 
 func (h Hooks) AfterSlashUnbondingDelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+	pos, err := h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+	if err != nil {
+		return err
+	}
+	return h.k.setPosition(ctx, pos)
 }
 
 func (h Hooks) AfterSlashUnbondingRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+	pos, err := h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+	if err != nil {
+		return err
+	}
+	return h.k.setPosition(ctx, pos)
 }
 
 // AfterSlashRedelegation updates DelegatedShares when an active destination
 // delegation is slashed via redelegation.
 func (h Hooks) AfterSlashRedelegation(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
-	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
+	pos, err := h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
+	if err != nil {
+		return err
+	}
+	return h.k.setPosition(ctx, pos)
 }
 
 func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {

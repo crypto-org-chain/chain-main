@@ -169,51 +169,37 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 
 // slashPositionByUnbondingId subtracts slashAmount from a mapped position.
 // No-op if unbondingId is not mapped to a tier position.
-func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
+func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) (types.Position, error) {
 	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
-		return nil
+		return types.Position{}, nil
 	}
 	if err != nil {
-		return err
+		return types.Position{}, err
 	}
 
 	pos, err := k.getPosition(ctx, positionId)
 	if errors.Is(err, types.ErrPositionNotFound) {
 		// Stale mapping after position lifecycle completion.
-		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
+		return types.Position{}, k.deleteUnbondingPositionMapping(ctx, unbondingId)
 	}
 	if err != nil {
-		return err
+		return types.Position{}, err
 	}
 
 	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
 	pos.UpdateAmount(newAmount)
 
-	return k.setPosition(ctx, pos)
+	return pos, nil
 }
 
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
 // a position mapped to the given unbonding ID.
-func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
-	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
-	if errors.Is(err, collections.ErrNotFound) {
-		return nil
-	}
+func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) (types.Position, error) {
+	pos, err := k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 	if err != nil {
-		return err
+		return types.Position{}, err
 	}
-
-	pos, err := k.getPosition(ctx, positionId)
-	if errors.Is(err, types.ErrPositionNotFound) {
-		// Stale mapping after position lifecycle completion.
-		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
-	}
-	if err != nil {
-		return err
-	}
-
-	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
 
 	if pos.IsDelegated() && shareBurnt.IsPositive() {
 		newShares := pos.DelegatedShares.Sub(shareBurnt)
@@ -224,7 +210,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		}
 	}
 
-	return k.setPosition(ctx, pos)
+	return pos, nil
 }
 
 // calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.
