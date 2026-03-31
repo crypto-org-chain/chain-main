@@ -125,7 +125,8 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 		}
 
 		var reward sdk.DecCoins
-		if i == len(bondedVotes)-1 {
+		isLastVal := i == len(bondedVotes)-1
+		if isLastVal {
 			// Give remainder to last validator to avoid untracked dust
 			// in the distribution module from power-fraction truncation.
 			reward = remaining
