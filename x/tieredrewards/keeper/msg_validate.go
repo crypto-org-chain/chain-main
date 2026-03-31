@@ -34,7 +34,7 @@ func (k Keeper) validateDelegatePosition(pos types.Position, owner string) error
 	return nil
 }
 
-func (k Keeper) validateUndelegatePosition(pos types.Position, owner string) error {
+func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
@@ -45,6 +45,11 @@ func (k Keeper) validateUndelegatePosition(pos types.Position, owner string) err
 
 	if !pos.HasTriggeredExit() {
 		return types.ErrExitNotTriggered
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
 	}
 
 	return nil

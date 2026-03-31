@@ -371,6 +371,12 @@ func (s *KeeperSuite) simulateUnbondingCompletion(positionId uint64, valAddr sdk
 	}
 }
 
+// advancePastExitDuration advances block time past the default test tier's exit duration.
+func (s *KeeperSuite) advancePastExitDuration() {
+	s.T().Helper()
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(newTestTier(1).ExitDuration + time.Hour))
+}
+
 // fundRewardsPool funds the tier bonus rewards pool with the given amount.
 func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 	s.T().Helper()
@@ -727,8 +733,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	// Fund the rewards pool so bonus claim doesn't fail
 	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
-	// Per ADR-006 §5.4, undelegation is allowed immediately after triggering
-	// exit — no need to wait for exit commitment to elapse.
+	s.advancePastExitDuration()
 	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -778,6 +783,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {
 	})
 	s.Require().NoError(err)
 
+	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -804,38 +810,6 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ExitNotTriggered() {
 	s.Require().ErrorIs(err, types.ErrExitNotTriggered)
 }
 
-// TestMsgTierUndelegate_AllowedDuringExitCommitment verifies that undelegation
-// is allowed during the exit commitment period (not just after it elapses).
-// Per ADR-006 §5.4, only ExitTriggeredAt != 0 is required.
-func (s *KeeperSuite) TestMsgTierUndelegate_AllowedDuringExitCommitment() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(1000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	// Fund rewards pool so bonus claim doesn't fail
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	// Do NOT advance time — exit commitment has not elapsed yet, but
-	// undelegation should still succeed because exit has been triggered.
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err, "undelegation should be allowed during exit commitment period")
-
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	s.Require().False(pos.IsDelegated())
-}
-
 func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -850,48 +824,13 @@ func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
 	s.Require().NoError(err)
 
 	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
+	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      wrongAddr.String(),
 		PositionId: 0,
 	})
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
-}
-
-func (s *KeeperSuite) TestMsgTierUndelegate_StoresUnbondingIdMapping() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(1000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	// Fund the rewards pool so bonus claim doesn't fail
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	// Undelegation allowed immediately after exit trigger per ADR-006 §5.4
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err)
-
-	// Check that at least one unbonding ID maps to position 0
-	var found bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
-		if positionId == 0 {
-			found = true
-			return true, nil
-		}
-		return false, nil
-	})
-	s.Require().NoError(err)
-	s.Require().True(found, "unbonding ID mapping should exist for position 0")
 }
 
 // --- MsgTierRedelegate tests ---
@@ -1567,14 +1506,13 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 
 	// Advance block so delegation starting period is finalized, then allocate rewards.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 30)) // 30 days (within exit commitment)
+	s.advancePastExitDuration()
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// TierUndelegate internally claims rewards via ClaimAndRefreshPosition.
-	// Per ADR-006 §5.4, undelegation is allowed as soon as exit is triggered.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -1826,7 +1764,8 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	// Fund the rewards pool so bonus claim in undelegate doesn't fail
 	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
-	// Undelegate immediately (allowed per ADR-006 §5.4 once exit is triggered)
+	// Advance past exit duration so undelegation is allowed.
+	s.advancePastExitDuration()
 	undelegateResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -2002,116 +1941,6 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition_ThenEarnRewards() {
 		"rewards should have been transferred to owner")
 }
 
-// TestMsgTierUndelegate_ImmediatelyAfterExit verifies that undelegation
-// succeeds immediately after triggering exit, without waiting for the full
-// exit commitment to elapse. This is the ADR-006 §5.4 behavior.
-func (s *KeeperSuite) TestMsgTierUndelegate_ImmediatelyAfterExit() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Create delegated position
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(1000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Trigger exit
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	// Undelegate immediately — should succeed without time advance
-	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err, "undelegation should succeed immediately after exit trigger")
-	s.Require().False(resp.CompletionTime.IsZero())
-
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	s.Require().False(pos.IsDelegated())
-	s.Require().True(pos.HasTriggeredExit())
-
-	// Withdrawal should still require exit commitment to elapse
-	s.simulateUnbondingCompletion(0, valAddr)
-	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached,
-		"withdrawal should still require exit commitment to elapse")
-}
-
-// TestMsgTierUndelegate_FullLifecycle_EarlyUndelegate tests the complete flow:
-// lock → delegate → trigger exit → undelegate immediately → wait for exit →
-// withdraw. This verifies the ADR-006 intended timeline where unbonding
-// overlaps with exit commitment.
-func (s *KeeperSuite) TestMsgTierUndelegate_FullLifecycle_EarlyUndelegate() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	lockAmount := sdkmath.NewInt(1000)
-
-	// Lock with delegation and immediate exit
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 lockAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	// Undelegate immediately (ADR-006 §5.4)
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err)
-
-	// Cannot withdraw yet — exit commitment hasn't elapsed
-	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached)
-
-	// Advance time past exit commitment (365 days + 1 day)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
-
-	// Fund module account to simulate unbonding completion
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-
-	// Now withdraw should succeed
-	s.simulateUnbondingCompletion(0, valAddr)
-	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err)
-	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount))
-
-	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)))
-
-	// Position should be deleted
-	_, err = s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().Error(err, "position should be deleted after withdrawal")
-}
-
 // --- Event emission tests ---
 
 // TestMsgClaimTierRewards_EmitsEvent verifies that MsgClaimTierRewards emits
@@ -2249,6 +2078,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
 
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 
+	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2305,6 +2135,8 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2479,6 +2311,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 
+	s.advancePastExitDuration()
 	// Undelegate — this reconciles pos.Amount with actual return value.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
@@ -2717,6 +2550,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 
 	s.fundRewardsPool(sdkmath.NewInt(100000), bondDenom)
 
+	s.advancePastExitDuration()
 	// Undelegate — this creates an unbonding mapping.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),

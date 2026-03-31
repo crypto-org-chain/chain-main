@@ -156,8 +156,9 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"exit triggered but still delegated: should have voting power; got %s", power)
 
-	// Fund rewards pool and undelegate (allowed immediately per ADR-006 §5.4)
+	// Fund rewards pool and advance past exit duration so undelegation is allowed.
 	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+	s.advancePastExitDuration()
 
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),

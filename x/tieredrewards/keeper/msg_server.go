@@ -219,7 +219,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if err := ms.validateUndelegatePosition(pos, msg.Owner); err != nil {
+	if err := ms.validateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
