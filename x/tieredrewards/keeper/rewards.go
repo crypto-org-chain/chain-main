@@ -169,7 +169,6 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 
 // slashPositionByUnbondingId subtracts slashAmount from a mapped position.
 // No-op if unbondingId is not mapped to a tier position.
-// Any rounding divergence is reconciled during TierUndelegate.
 func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
 	positionId, err := k.UnbondingMappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
