@@ -100,44 +100,50 @@ func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
 	return nil
 }
 
-func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
+func (h Hooks) deleteCompletedPositionMappings(
+	ctx context.Context,
+	delAddr sdk.AccAddress,
+	unbondingIds []uint64,
+	hasMapping func(context.Context, uint64) (bool, error),
+	deleteMapping func(context.Context, uint64) error,
+) error {
 	poolAddr := h.k.accountKeeper.GetModuleAddress(types.ModuleName)
 	if !delAddr.Equals(poolAddr) {
 		return nil
 	}
 	for _, id := range unbondingIds {
-		has, err := h.k.UnbondingDelegationMappings.Has(ctx, id)
+		has, err := hasMapping(ctx, id)
 		if err != nil {
 			return err
 		}
 		if !has {
 			continue
 		}
-		if err := h.k.deleteUnbondingPositionMapping(ctx, id); err != nil {
+		if err := deleteMapping(ctx, id); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
+	return h.deleteCompletedPositionMappings(
+		ctx,
+		delAddr,
+		unbondingIds,
+		h.k.UnbondingDelegationMappings.Has,
+		h.k.deleteUnbondingPositionMapping,
+	)
+}
+
 func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
-	poolAddr := h.k.accountKeeper.GetModuleAddress(types.ModuleName)
-	if !delAddr.Equals(poolAddr) {
-		return nil
-	}
-	for _, id := range unbondingIds {
-		has, err := h.k.RedelegationMappings.Has(ctx, id)
-		if err != nil {
-			return err
-		}
-		if !has {
-			continue
-		}
-		if err := h.k.deleteRedelegationPositionMapping(ctx, id); err != nil {
-			return err
-		}
-	}
-	return nil
+	return h.deleteCompletedPositionMappings(
+		ctx,
+		delAddr,
+		unbondingIds,
+		h.k.RedelegationMappings.Has,
+		h.k.deleteRedelegationPositionMapping,
+	)
 }
 
 // No-op hooks.

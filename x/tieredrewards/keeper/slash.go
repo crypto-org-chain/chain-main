@@ -35,28 +35,48 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
 }
 
-// slashPositionByUnbondingId subtracts slashAmount from a mapped position.
-// No-op if unbondingId is not mapped to a tier position.
-func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
-	positionId, err := k.UnbondingDelegationMappings.Get(ctx, unbondingId)
+func applyAmountSlash(pos *types.Position, slashAmount math.Int) {
+	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
+}
+
+func (k Keeper) getMappedSlashPosition(
+	ctx context.Context,
+	mappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes],
+	unbondingId uint64,
+	deleteMapping func(context.Context, uint64) error,
+) (types.Position, bool, error) {
+	positionId, err := mappings.Get(ctx, unbondingId)
 	if errors.Is(err, collections.ErrNotFound) {
-		return nil
+		return types.Position{}, false, nil
 	}
 	if err != nil {
-		return err
+		return types.Position{}, false, err
 	}
 
 	pos, err := k.getPosition(ctx, positionId)
 	if errors.Is(err, types.ErrPositionNotFound) {
 		// Stale mapping after position lifecycle completion.
-		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
+		return types.Position{}, false, deleteMapping(ctx, unbondingId)
 	}
+	if err != nil {
+		return types.Position{}, false, err
+	}
+
+	return pos, true, nil
+}
+
+// slashPositionByUnbondingId subtracts slashAmount from a mapped position.
+// No-op if unbondingId is not mapped to a tier position.
+func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
+	pos, found, err := k.getMappedSlashPosition(ctx, k.UnbondingDelegationMappings, unbondingId, k.deleteUnbondingPositionMapping)
 	if err != nil {
 		return err
 	}
+	if !found {
+		return nil
+	}
 
-	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
-	pos.UpdateAmount(newAmount)
+	applyAmountSlash(&pos, slashAmount)
 
 	return k.setPosition(ctx, pos)
 }
@@ -64,24 +84,15 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
 // a position mapped to the given redelegation unbonding ID.
 func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
-	positionId, err := k.RedelegationMappings.Get(ctx, unbondingId)
-	if errors.Is(err, collections.ErrNotFound) {
+	pos, found, err := k.getMappedSlashPosition(ctx, k.RedelegationMappings, unbondingId, k.deleteRedelegationPositionMapping)
+	if err != nil {
+		return err
+	}
+	if !found {
 		return nil
 	}
-	if err != nil {
-		return err
-	}
 
-	pos, err := k.getPosition(ctx, positionId)
-	if errors.Is(err, types.ErrPositionNotFound) {
-		return k.deleteRedelegationPositionMapping(ctx, unbondingId)
-	}
-	if err != nil {
-		return err
-	}
-
-	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
-	pos.UpdateAmount(newAmount)
+	applyAmountSlash(&pos, slashAmount)
 
 	if pos.IsDelegated() && shareBurnt.IsPositive() {
 		newShares := pos.DelegatedShares.Sub(shareBurnt)
