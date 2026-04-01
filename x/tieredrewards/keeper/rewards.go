@@ -469,15 +469,19 @@ func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 
 // bonusAccrualAmount returns bonus owed for pos at blockTime. When forceAccrue is true,
 // bonded status is ignored (calculateBonusRaw).
-func (k Keeper) bonusAccrualAmount(pos *types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool) math.Int {
+func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool) math.Int {
 	if forceAccrue {
-		return k.calculateBonusRaw(*pos, val, tier, blockTime)
+		return k.calculateBonusRaw(pos, val, tier, blockTime)
 	}
-	return k.calculateBonus(*pos, val, tier, blockTime)
+	return k.calculateBonus(pos, val, tier, blockTime)
 }
 
 // sendBonusFromRewardsPool checks the rewards pool, transfers bonus to the owner, and emits EventBonusRewardsClaimed.
-func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos *types.Position, bonus math.Int) (sdk.Coins, error) {
+func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos types.Position, bonus math.Int) (sdk.Coins, error) {
+	if bonus.IsZero() {
+		return sdk.Coins{}, nil
+	}
+
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		return sdk.Coins{}, err
@@ -532,12 +536,8 @@ func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, tier
 func (k Keeper) claimBonusRewardsWithValidator(ctx context.Context, pos *types.Position, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
 
-	bonus := k.bonusAccrualAmount(pos, val, tier, blockTime, forceAccrue)
+	bonus := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue)
 	applyBonusAccrualCheckpoint(pos, blockTime)
 
-	if bonus.IsZero() {
-		return sdk.Coins{}, nil
-	}
-
-	return k.sendBonusFromRewardsPool(ctx, pos, bonus)
+	return k.sendBonusFromRewardsPool(ctx, *pos, bonus)
 }
