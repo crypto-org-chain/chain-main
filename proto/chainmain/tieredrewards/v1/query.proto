@@ -55,6 +55,12 @@ service Query {
   rpc TierVotingPower(QueryTierVotingPowerRequest) returns (QueryTierVotingPowerResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/voting_power/{voter}";
   }
+
+  // TotalDelegatedVotingPower returns the total governance voting power from
+  // all delegated tier positions.
+  rpc TotalDelegatedVotingPower(QueryTotalDelegatedVotingPowerRequest) returns (QueryTotalDelegatedVotingPowerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/total_delegated_voting_power";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -148,6 +154,21 @@ message QueryTierVotingPowerRequest {
 // QueryTierVotingPowerResponse is the response type for the Query/TierVotingPower RPC method.
 message QueryTierVotingPowerResponse {
   // voting_power is the sum of Amount for all delegated tier positions owned by the voter.
+  string voting_power = 1 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// QueryTotalDelegatedVotingPowerRequest is the request type for the
+// Query/TotalDelegatedVotingPower RPC method.
+message QueryTotalDelegatedVotingPowerRequest {}
+
+// QueryTotalDelegatedVotingPowerResponse is the response type for the
+// Query/TotalDelegatedVotingPower RPC method.
+message QueryTotalDelegatedVotingPowerResponse {
+  // voting_power is the total voting power from all delegated tier positions.
   string voting_power = 1 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",

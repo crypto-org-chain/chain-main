@@ -171,3 +171,16 @@ func (q queryServer) TierVotingPower(ctx context.Context, req *types.QueryTierVo
 
 	return &types.QueryTierVotingPowerResponse{VotingPower: power}, nil
 }
+
+func (q queryServer) TotalDelegatedVotingPower(ctx context.Context, req *types.QueryTotalDelegatedVotingPowerRequest) (*types.QueryTotalDelegatedVotingPowerResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	power, err := q.k.totalDelegatedVotingPower(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTotalDelegatedVotingPowerResponse{VotingPower: power}, nil
+}

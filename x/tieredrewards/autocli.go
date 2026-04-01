@@ -57,6 +57,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Query governance voting power from delegated tier positions",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "voter"}},
 				},
+				{
+					RpcMethod: "TotalDelegatedVotingPower",
+					Use:       "total-delegated-voting-power",
+					Short:     "Query total governance voting power from delegated tier positions",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

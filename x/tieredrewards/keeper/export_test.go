@@ -73,6 +73,10 @@ func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 	return k.getVotingPowerForAddress(ctx, voter)
 }
 
+func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
+	return k.totalDelegatedVotingPower(ctx)
+}
+
 func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
 	return k.claimBonusRewards(ctx, pos, tier, forceAccrue)
 }

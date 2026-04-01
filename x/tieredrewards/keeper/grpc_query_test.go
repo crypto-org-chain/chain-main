@@ -342,3 +342,56 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"exiting but still delegated position should report voting power; got %s", resp.VotingPower)
 }
+
+// --- TotalDelegatedVotingPower ---
+
+func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Empty() {
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.TotalDelegatedVotingPower(s.ctx.Context(), &types.QueryTotalDelegatedVotingPowerRequest{})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.IsZero())
+}
+
+func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Delegated() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	otherAddr := sdk.AccAddress([]byte("other_delegator______"))
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, otherAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, otherAddr.String(), lockAmount))
+	shares, err := s.keeper.Delegate(s.ctx, valAddr, lockAmount)
+	s.Require().NoError(err)
+	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	s.Require().NoError(err)
+	currentRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.keeper.CreatePosition(s.ctx, otherAddr.String(), tier, lockAmount, types.Delegation{
+		Validator:           valAddr.String(),
+		Shares:              shares,
+		BaseRewardsPerShare: currentRatio,
+	}, false)
+	s.Require().NoError(err)
+
+	s.resetQueryClient()
+	resp, err := s.queryClient.TotalDelegatedVotingPower(s.ctx.Context(), &types.QueryTotalDelegatedVotingPowerRequest{})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount.MulRaw(2))))
+}
+
+func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TotalDelegatedVotingPower(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "empty request")
+}
