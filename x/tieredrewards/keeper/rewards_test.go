@@ -278,7 +278,8 @@ func (s *KeeperSuite) TestClaimBonusRewardsForPositions_UpdatesOriginalSlice() {
 
 	originalLastAccrual := positions[0].LastBonusAccrual
 
-	_, err = s.keeper.ClaimBonusRewardsForPositions(s.ctx, positions, false)
+	// claims both base and bonus rewards
+	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, valAddr, positions, false)
 	s.Require().NoError(err)
 
 	// After the call the slice element must reflect the updated LastBonusAccrual.

@@ -81,10 +81,6 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	return k.claimBonusRewards(ctx, pos, tier, forceAccrue)
 }
 
-func (k Keeper) ClaimBonusRewardsForPositions(ctx context.Context, positions []types.Position, forceAccrue bool) (sdk.Coins, error) {
-	return k.claimBonusRewardsForPositions(ctx, positions, forceAccrue)
-}
-
 func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
 	return k.claimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
 }
