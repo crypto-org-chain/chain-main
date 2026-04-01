@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"errors"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
@@ -279,7 +278,7 @@ func (s *KeeperSuite) TestClaimBonusRewardsForPositions_UpdatesOriginalSlice() {
 	originalLastAccrual := positions[0].LastBonusAccrual
 
 	// claims both base and bonus rewards
-	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, valAddr, positions, false)
+	err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
 	s.Require().NoError(err)
 
 	// After the call the slice element must reflect the updated LastBonusAccrual.
@@ -293,10 +292,10 @@ func (s *KeeperSuite) TestClaimBonusRewardsForPositions_UpdatesOriginalSlice() {
 		"in-memory slice element must match the stored position")
 }
 
-// TestClaimRewardsForPositions_MixedInsufficientBonusPool verifies that the
+// TestSettleRewardsForPositions_MixedInsufficientBonusPool verifies that the
 // fused reward-settlement loop can successfully pay earlier positions, then
 // persist checkpoints for a later position that hits ErrInsufficientBonusPool.
-func (s *KeeperSuite) TestClaimRewardsForPositions_MixedInsufficientBonusPool() {
+func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -359,12 +358,8 @@ func (s *KeeperSuite) TestClaimRewardsForPositions_MixedInsufficientBonusPool() 
 	bal2Before := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)
 	positions := []types.Position{pos1, pos2}
 
-	baseRewards, bonusRewards, err := s.keeper.ClaimRewardsForPositions(s.ctx, valAddr, positions, false)
-	s.Require().Error(err)
-	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
-	s.Require().True(baseRewards.IsZero(), "no base rewards were allocated for this test")
-	s.Require().Equal(bonus1.String(), bonusRewards.AmountOf(bondDenom).String(),
-		"only the first position bonus should be paid before pool exhaustion")
+	err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
+	s.Require().NoError(err)
 
 	bal1After := s.app.BankKeeper.GetBalance(s.ctx, addr1, bondDenom)
 	bal2After := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)

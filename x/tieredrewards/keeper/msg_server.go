@@ -527,8 +527,12 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	baseRewards, bonusRewards, err := ms.claimRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
+	pos, baseRewards, bonusRewards, err := ms.claimAndRefreshPosition(ctx, valAddr, pos)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 

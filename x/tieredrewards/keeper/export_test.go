@@ -81,8 +81,8 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 	return k.claimBonusRewards(ctx, pos, tier, forceAccrue)
 }
 
-func (k Keeper) ClaimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
-	return k.claimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
+func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
+	return k.settleRewardsForPositions(ctx, valAddr, positions, forceAccrue)
 }
 
 func (k Keeper) GetAuthority() string {

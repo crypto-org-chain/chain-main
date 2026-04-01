@@ -144,74 +144,55 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 		TruncateInt()
 }
 
-// claimRewardsForPositions settles base and bonus rewards for a set of positions.
-// When forceAccrue is true, bonus is calculated regardless of validator bonded status.
-//
-// Returns:
-//   - baseRewards: total base (staking distribution) rewards paid to position owners
-//     for the given positions in this call;
-//   - bonusRewards: total bonus rewards paid from the rewards pool for those positions;
-func (k Keeper) claimRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) (sdk.Coins, sdk.Coins, error) {
+// settleRewardsForPositions settles base and bonus rewards for a batch of
+// positions on the same validator. It is designed for hook paths (slash,
+// unbonding, bonding) where the caller must proceed even if the bonus pool
+// is insufficient. When the bonus pool cannot cover a position's accrued
+// bonus, the checkpoint is still advanced and the position persisted so the
+// accrual window is consumed — the unpaid bonus is forfeited.
+func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
 	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
-		return sdk.Coins{}, sdk.Coins{}, err
+		return err
 	}
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
-		return sdk.Coins{}, sdk.Coins{}, err
+		return err
 	}
 
 	tierCache := make(map[uint32]types.Tier)
-	baseRewards := sdk.NewCoins()
-	bonusRewards := sdk.NewCoins()
-	var firstErr error
 
 	for i := range positions {
-		baseClaimed, err := k.claimBaseRewards(ctx, &positions[i], currentRatio)
-		if err != nil {
-			return sdk.Coins{}, sdk.Coins{}, err
+		if _, err := k.claimBaseRewards(ctx, &positions[i], currentRatio); err != nil {
+			return err
 		}
-		baseRewards = baseRewards.Add(baseClaimed...)
 
 		tier, ok := tierCache[positions[i].TierId]
 		if !ok {
 			tier, err = k.getTier(ctx, positions[i].TierId)
 			if err != nil {
-				return sdk.Coins{}, sdk.Coins{}, err
+				return err
 			}
 			tierCache[positions[i].TierId] = tier
 		}
 
-		bonusClaimed, err := k.claimBonusRewardsWithValidator(ctx, &positions[i], validator, tier, forceAccrue)
+		_, err := k.claimBonusRewardsWithValidator(ctx, &positions[i], validator, tier, forceAccrue)
 		if err != nil {
-			// Hooks tolerate an insufficient bonus pool so validator lifecycle and
-			// slashing can proceed. Persist the advanced checkpoint before returning
-			// the error so callers that swallow it do not later reprice the same
-			// accrual window against different validator state.
 			if errors.Is(err, types.ErrInsufficientBonusPool) {
-				if setErr := k.setPosition(ctx, positions[i]); setErr != nil {
-					return sdk.Coins{}, sdk.Coins{}, setErr
-				}
-				if firstErr == nil {
-					firstErr = err
-				}
-				continue
+				k.logger(ctx).Error(err.Error())
+			} else {
+				return err
 			}
-			return sdk.Coins{}, sdk.Coins{}, err
 		}
-		bonusRewards = bonusRewards.Add(bonusClaimed...)
-
+		// Checkpoint is already advanced in-memory by claimBonusRewardsWithValidator.
+		// Persist regardless of whether bonus was paid.
 		if err := k.setPosition(ctx, positions[i]); err != nil {
-			return sdk.Coins{}, sdk.Coins{}, err
+			return err
 		}
 	}
 
-	if firstErr != nil {
-		return baseRewards, bonusRewards, firstErr
-	}
-
-	return baseRewards, bonusRewards, nil
+	return nil
 }
 
 // claimAndRefreshPosition claims rewards for a single position and returns the

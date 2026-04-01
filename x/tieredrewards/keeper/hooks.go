@@ -23,19 +23,6 @@ var _ stakingtypes.StakingHooks = Hooks{}
 func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
-
-func (h Hooks) claimAllRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
-	_, _, err := h.k.claimRewardsForPositions(ctx, valAddr, positions, forceAccrue)
-	if err != nil && errors.Is(err, types.ErrInsufficientBonusPool) {
-		h.k.logger(ctx).Error("failed to claim bonus rewards due to insufficient funds in rewards pool",
-			"validator", valAddr.String(),
-			"error", err,
-		)
-		return nil
-	}
-	return err
-}
-
 // AfterValidatorBeginUnbonding settles all pending rewards for each position on
 // this validator. forceAccrue=true is required because the SDK has already changed
 // the validator status to Unbonding before firing this hook.
@@ -48,7 +35,7 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 		return nil
 	}
 
-	return h.claimAllRewardsForPositions(ctx, valAddr, positions, true)
+	return h.k.settleRewardsForPositions(ctx, valAddr, positions, true)
 }
 
 // BeforeValidatorSlashed claims pending rewards then reduces Amount on all
@@ -62,7 +49,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return nil
 	}
 
-	err = h.claimAllRewardsForPositions(ctx, valAddr, positions, false)
+	err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
 	if err != nil {
 		return err
 	}
