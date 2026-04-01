@@ -62,7 +62,7 @@ func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uin
 }
 
 func (k Keeper) HasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
-	return k.hasActivePositionsForTier(ctx, tierId)
+	return k.hasPositionsForTier(ctx, tierId)
 }
 
 func (k Keeper) TransferDelegation(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {

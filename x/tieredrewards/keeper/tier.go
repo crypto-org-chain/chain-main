@@ -32,7 +32,7 @@ func (k Keeper) setTier(ctx context.Context, tier types.Tier) error {
 }
 
 func (k Keeper) deleteTier(ctx context.Context, tierId uint32) error {
-	hasPositions, err := k.hasActivePositionsForTier(ctx, tierId)
+	hasPositions, err := k.hasPositionsForTier(ctx, tierId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (k Keeper) hasTier(ctx context.Context, id uint32) (bool, error) {
 	return has, nil
 }
 
-func (k Keeper) hasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
+func (k Keeper) hasPositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
 	count, err := k.getPositionCountForTier(ctx, tierId)
 	if err != nil {
 		return false, err
