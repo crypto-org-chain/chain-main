@@ -23,6 +23,7 @@ var _ stakingtypes.StakingHooks = Hooks{}
 func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
+
 // AfterValidatorBeginUnbonding settles all pending rewards for each position on
 // this validator. forceAccrue=true is required because the SDK has already changed
 // the validator status to Unbonding before firing this hook.

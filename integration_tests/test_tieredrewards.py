@@ -114,9 +114,7 @@ def _tx(cluster, *subcmd, from_, i=0, **extra):
     return rsp
 
 
-def _lock_tier(
-    cluster, owner, tier_id, amount, validator, trigger_exit=False, i=0
-):
+def _lock_tier(cluster, owner, tier_id, amount, validator, trigger_exit=False, i=0):
     args = ["lock-tier", str(tier_id), str(amount), validator]
     if trigger_exit:
         # Pass as positional flag — cobra bool flags don't take a value argument

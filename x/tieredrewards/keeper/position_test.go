@@ -83,6 +83,7 @@ func (s *KeeperSuite) TestSetPosition_DelegatedNewPositionIncrementsCounter() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 }
+
 func (s *KeeperSuite) TestDeletePosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	err := s.keeper.SetPosition(s.ctx, pos)

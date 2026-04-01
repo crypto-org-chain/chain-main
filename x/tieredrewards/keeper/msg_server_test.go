@@ -599,10 +599,12 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	s.Require().NoError(err)
 
 	// Trigger exit so we can undelegate
-	msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
 	s.advancePastExitDuration()
 	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
-	msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
 
 	// Complete staking unbonding so tokens return to the tier module account.
 	s.completeStakingUnbonding(valAddr)
@@ -1060,8 +1062,9 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
-	
+
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
 	// simulate the position being undelegated and amount is zero via redelegation slashing
 	pos.ClearDelegation()
 	pos.UpdateAmount(sdkmath.ZeroInt())
