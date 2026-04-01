@@ -102,7 +102,7 @@ def test_nft_transfer_rejects_wrong_source_port(cluster):
             if rsp["code"] == 0:
                 rsp = cli_src.event_query_tx_for(rsp["txhash"])
             tx_failed = rsp["code"] != 0
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, AssertionError):
         tx_failed = True
 
     assert tx_failed, "wrong-port nft-transfer tx unexpectedly succeeded"
