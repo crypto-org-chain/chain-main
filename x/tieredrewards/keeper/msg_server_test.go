@@ -38,28 +38,9 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(sdkmath.NewInt(1000).Equal(pos.Amount))
 	s.Require().True(pos.IsDelegated())
-	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
-}
-
-func (s *KeeperSuite) TestMsgLockTier_WithValidator() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	msg := &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(1000),
-		ValidatorAddress: valAddr.String(),
-	}
-
-	_, err := msgServer.LockTier(s.ctx, msg)
-	s.Require().NoError(err)
-
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 }
 
 func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {

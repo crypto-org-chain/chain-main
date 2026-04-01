@@ -365,32 +365,12 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().Equal(delegation.Shares, pos.DelegatedShares)
 	s.Require().Equal(delegation.BaseRewardsPerShare, pos.BaseRewardsPerShare)
+	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().True(pos.BaseRewardsPerShare.IsZero())
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.Require().Equal(lockAmount, balBefore.Amount.Sub(balAfter.Amount))
-}
-
-func (s *KeeperSuite) TestCreatePosition_WithValidator() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	tier, err := s.keeper.GetTier(s.ctx, 1)
-	s.Require().NoError(err)
-
-	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
-
-	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
-	}
-
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, delegation, false)
-	s.Require().NoError(err)
-	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().True(pos.DelegatedShares.IsPositive())
-	s.Require().True(pos.BaseRewardsPerShare.IsZero())
 }
 
 func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
