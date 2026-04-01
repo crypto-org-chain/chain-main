@@ -15,42 +15,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// delegate delegates tokens from the tier module account to a bonded validator.
-func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
-	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return math.LegacyDec{}, err
-	}
-
-	if !val.IsBonded() {
-		return math.LegacyDec{}, types.ErrValidatorNotBonded
-	}
-
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-
-	return k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
-}
-
-func (k Keeper) undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.Int, uint64, error) {
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	completionTime, returnAmount, unbondingId, err := k.stakingKeeper.Undelegate(ctx, moduleAddr, valAddr, shares)
-	if err != nil {
-		return time.Time{}, math.Int{}, 0, err
-	}
-	return completionTime, returnAmount, unbondingId, nil
-}
-
-// redelegate moves a delegation between validators for the tier module account.
-// The caller must store the returned unbondingId for slash tracking.
-func (k Keeper) redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	completionTime, newShares, unbondingId, err := k.stakingKeeper.BeginRedelegation(ctx, moduleAddr, srcValAddr, dstValAddr, shares)
-	if err != nil {
-		return time.Time{}, math.LegacyDec{}, 0, err
-	}
-	return completionTime, newShares, unbondingId, nil
-}
-
 func (k Keeper) withdrawDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (sdk.Coins, error) {
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	return k.distributionKeeper.WithdrawDelegationRewards(ctx, moduleAddr, valAddr)
@@ -143,88 +107,6 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	}
 
 	return newRatio, nil
-}
-
-func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, positions []types.Position, fraction math.LegacyDec) error {
-	validator, err := k.stakingKeeper.GetValidator(ctx, val)
-	if err != nil {
-		return err
-	}
-	for i := range positions {
-		k.slash(&positions[i], validator, fraction)
-		if err := k.setPosition(ctx, positions[i]); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// slash updates a position's post-slash token amount from validator shares.
-// LegacyDec rounding may differ from SDK accounting by up to 1 basecro.
-// pos.Amount is reconciled with the SDK return value during TierUndelegate.
-func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) {
-	postSlashTokens := validator.TokensFromShares(pos.DelegatedShares).Mul(math.LegacyOneDec().Sub(fraction)).TruncateInt()
-	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
-}
-
-// slashPositionByUnbondingId subtracts slashAmount from a mapped position.
-// No-op if unbondingId is not mapped to a tier position.
-func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint64, slashAmount math.Int) error {
-	positionId, err := k.UnbondingDelegationMappings.Get(ctx, unbondingId)
-	if errors.Is(err, collections.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	pos, err := k.getPosition(ctx, positionId)
-	if errors.Is(err, types.ErrPositionNotFound) {
-		// Stale mapping after position lifecycle completion.
-		return k.deleteUnbondingPositionMapping(ctx, unbondingId)
-	}
-	if err != nil {
-		return err
-	}
-
-	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
-	pos.UpdateAmount(newAmount)
-
-	return k.setPosition(ctx, pos)
-}
-
-// slashRedelegationPosition reduces both Amount and DelegatedShares for
-// a position mapped to the given redelegation unbonding ID.
-func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
-	positionId, err := k.RedelegationMappings.Get(ctx, unbondingId)
-	if errors.Is(err, collections.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
-	pos, err := k.getPosition(ctx, positionId)
-	if errors.Is(err, types.ErrPositionNotFound) {
-		return k.deleteRedelegationPositionMapping(ctx, unbondingId)
-	}
-	if err != nil {
-		return err
-	}
-
-	newAmount := math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt())
-	pos.UpdateAmount(newAmount)
-
-	if pos.IsDelegated() && shareBurnt.IsPositive() {
-		newShares := pos.DelegatedShares.Sub(shareBurnt)
-		if newShares.IsPositive() {
-			pos.UpdateDelegatedShares(newShares)
-		} else {
-			pos.ClearDelegation()
-		}
-	}
-
-	return k.setPosition(ctx, pos)
 }
 
 // calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.
