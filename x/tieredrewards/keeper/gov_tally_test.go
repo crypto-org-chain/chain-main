@@ -261,6 +261,28 @@ func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsTierPower() {
 	s.Require().True(results[v1.OptionNoWithVeto].IsZero())
 }
 
+func (s *KeeperSuite) TestCustomTally_InvalidVoteWeight_ReturnsError() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+
+	s.insertVote(testProposalID, delAddr, []*v1.WeightedVoteOption{
+		{Option: v1.OptionYes, Weight: "not-a-decimal"},
+	})
+
+	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
+	)
+	proposal := v1.Proposal{Id: testProposalID}
+	validators := s.buildValidatorsMap()
+
+	_, _, err := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "invalid vote weight")
+
+	hasVote, hasErr := s.app.GovKeeper.Votes.Has(s.ctx, collections.Join(testProposalID, delAddr))
+	s.Require().NoError(hasErr)
+	s.Require().True(hasVote, "failed tally should not remove the original vote")
+}
+
 // An undelegated tier position contributes zero tier voting power.
 func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()

@@ -527,3 +527,30 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	s.Require().NoError(err)
 	s.Require().Equal(nextHeight, lastWithdrawalBlock, "new block should update withdrawal marker")
 }
+
+func (s *KeeperSuite) TestClaimBaseRewards_NegativeDeltaPreservesCheckpoint() {
+	delAddr, _, _ := s.setupTierAndDelegator()
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	originalCheckpoint := sdk.DecCoins{
+		sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("2.0")),
+	}
+	currentRatio := sdk.DecCoins{
+		sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("1.0")),
+	}
+
+	pos := types.Position{
+		Id:                  99,
+		Owner:               delAddr.String(),
+		BaseRewardsPerShare: originalCheckpoint,
+		DelegatedShares:     sdkmath.LegacyNewDec(1000),
+	}
+
+	claimed, err := s.keeper.ClaimBaseRewards(s.ctx, &pos, currentRatio)
+	s.Require().NoError(err)
+	s.Require().True(claimed.IsZero(), "negative delta should not pay any base rewards")
+	s.Require().Equal(originalCheckpoint.String(), pos.BaseRewardsPerShare.String(),
+		"negative delta must not overwrite the stored base rewards checkpoint")
+}

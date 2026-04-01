@@ -55,6 +55,7 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 			}
 
 			// Standard staking voting power
+			var voteWeightErr error
 			err = sk.IterateDelegations(ctx, voter, func(_ int64, delegation stakingtypes.DelegationI) (stop bool) {
 				valAddrStr := delegation.GetValidatorAddr()
 
@@ -63,12 +64,18 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 					validators[valAddrStr] = val
 
 					votingPower := delegation.GetShares().MulInt(val.BondedTokens).Quo(val.DelegatorShares)
-					distributeVotingPower(vote.Options, votingPower, results)
+					if err := distributeVotingPower(vote.Options, votingPower, results); err != nil {
+						voteWeightErr = fmt.Errorf("invalid vote weight for voter %s: %w", vote.Voter, err)
+						return true
+					}
 					totalVotingPower = totalVotingPower.Add(votingPower)
 				}
 
 				return false
 			})
+			if voteWeightErr != nil {
+				return false, voteWeightErr
+			}
 			if err != nil {
 				return false, err
 			}
@@ -88,7 +95,9 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 				validators[pos.Validator] = val
 
 				tierPower := pos.DelegatedShares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
-				distributeVotingPower(vote.Options, tierPower, results)
+				if err := distributeVotingPower(vote.Options, tierPower, results); err != nil {
+					return false, fmt.Errorf("invalid vote weight for voter %s: %w", vote.Voter, err)
+				}
 				totalVotingPower = totalVotingPower.Add(tierPower)
 			}
 
@@ -106,7 +115,7 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 		}
 
 		// Second pass: attribute remaining validator shares to the validator's own vote.
-		for _, val := range validators {
+		for valAddrStr, val := range validators {
 			if len(val.Vote) == 0 {
 				continue
 			}
@@ -120,7 +129,9 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 			}
 			votingPower := sharesAfterDeductions.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 
-			distributeVotingPower(val.Vote, votingPower, results)
+			if err := distributeVotingPower(val.Vote, votingPower, results); err != nil {
+				return math.LegacyZeroDec(), nil, fmt.Errorf("invalid vote weight for validator %s: %w", valAddrStr, err)
+			}
 			totalVotingPower = totalVotingPower.Add(votingPower)
 		}
 
@@ -128,9 +139,13 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 	}
 }
 
-func distributeVotingPower(options []*v1.WeightedVoteOption, power math.LegacyDec, results map[v1.VoteOption]math.LegacyDec) {
+func distributeVotingPower(options []*v1.WeightedVoteOption, power math.LegacyDec, results map[v1.VoteOption]math.LegacyDec) error {
 	for _, option := range options {
-		weight, _ := math.LegacyNewDecFromStr(option.Weight)
+		weight, err := math.LegacyNewDecFromStr(option.Weight)
+		if err != nil {
+			return fmt.Errorf("option %s has invalid weight %q: %w", option.Option.String(), option.Weight, err)
+		}
 		results[option.Option] = results[option.Option].Add(power.Mul(weight))
 	}
+	return nil
 }
