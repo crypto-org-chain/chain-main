@@ -234,6 +234,34 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
 	s.Require().True(hasBondDenom, "bonus rewards should contain bond denom")
 }
 
+func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NegativeBaseDeltaReturnsZero() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(5000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	pos.BaseRewardsPerShare = sdk.DecCoins{
+		sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("2.0")),
+	}
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().True(resp.BaseRewards.IsZero(), "negative reward delta should not panic or estimate base rewards")
+}
+
 // --- TierVotingPower ---
 
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {

@@ -108,12 +108,6 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 			return math.LegacyZeroDec(), nil, fmt.Errorf("error while iterating votes: %w", err)
 		}
 
-		for _, key := range votesToRemove {
-			if err := k.Votes.Remove(ctx, key); err != nil {
-				return math.LegacyDec{}, nil, fmt.Errorf("error while removing vote (%d/%s): %w", key.K1(), key.K2(), err)
-			}
-		}
-
 		// Second pass: attribute remaining validator shares to the validator's own vote.
 		for valAddrStr, val := range validators {
 			if len(val.Vote) == 0 {
@@ -133,6 +127,12 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 				return math.LegacyZeroDec(), nil, fmt.Errorf("invalid vote weight for validator %s: %w", valAddrStr, err)
 			}
 			totalVotingPower = totalVotingPower.Add(votingPower)
+		}
+
+		for _, key := range votesToRemove {
+			if err := k.Votes.Remove(ctx, key); err != nil {
+				return math.LegacyDec{}, nil, fmt.Errorf("error while removing vote (%d/%s): %w", key.K1(), key.K2(), err)
+			}
 		}
 
 		return totalVotingPower, results, nil

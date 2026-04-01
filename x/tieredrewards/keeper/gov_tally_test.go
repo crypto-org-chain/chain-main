@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/collections"
+	addresscodec "cosmossdk.io/core/address"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -43,6 +44,32 @@ func (m mockTierVotingPower) GetActiveDelegatedPositionsByOwner(_ context.Contex
 }
 
 var _ keeper.TierVotingPowerProvider = mockTierVotingPower{}
+
+type rawStringCodec struct{}
+
+func (rawStringCodec) StringToBytes(text string) ([]byte, error) {
+	return []byte(text), nil
+}
+
+func (rawStringCodec) BytesToString(bz []byte) (string, error) {
+	return string(bz), nil
+}
+
+type mockGovTallyStakingKeeper struct{}
+
+func (mockGovTallyStakingKeeper) ValidatorAddressCodec() addresscodec.Codec {
+	return rawStringCodec{}
+}
+
+func (mockGovTallyStakingKeeper) IterateDelegations(_ context.Context, _ sdk.AccAddress, _ func(int64, stakingtypes.DelegationI) bool) error {
+	return nil
+}
+
+type mockGovTallyAccountKeeper struct{}
+
+func (mockGovTallyAccountKeeper) AddressCodec() addresscodec.Codec {
+	return rawStringCodec{}
+}
 
 func TestNewCalculateVoteResultsAndVotingPowerFn_NotNil(t *testing.T) {
 	mock := mockTierVotingPower{positions: map[string][]types.Position{}}
@@ -281,6 +308,44 @@ func (s *KeeperSuite) TestCustomTally_InvalidVoteWeight_ReturnsError() {
 	hasVote, hasErr := s.app.GovKeeper.Votes.Has(s.ctx, collections.Join(testProposalID, delAddr))
 	s.Require().NoError(hasErr)
 	s.Require().True(hasVote, "failed tally should not remove the original vote")
+}
+
+func (s *KeeperSuite) TestCustomTally_InvalidValidatorVoteWeight_PreservesVote() {
+	const validatorVoter = "validator-voter"
+
+	voterAddr := sdk.AccAddress([]byte(validatorVoter))
+	err := s.app.GovKeeper.Votes.Set(s.ctx, collections.Join(testProposalID, voterAddr), v1.Vote{
+		ProposalId: testProposalID,
+		Voter:      validatorVoter,
+		Options: []*v1.WeightedVoteOption{
+			{Option: v1.OptionNo, Weight: "not-a-decimal"},
+		},
+	})
+	s.Require().NoError(err)
+
+	validators := map[string]v1.ValidatorGovInfo{
+		validatorVoter: v1.NewValidatorGovInfo(
+			[]byte(validatorVoter),
+			sdkmath.NewInt(100),
+			sdkmath.LegacyNewDec(100),
+			sdkmath.LegacyZeroDec(),
+			nil,
+		),
+	}
+
+	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+		mockTierVotingPower{positions: map[string][]types.Position{}},
+		mockGovTallyStakingKeeper{},
+		mockGovTallyAccountKeeper{},
+	)
+
+	_, _, err = tallyFn(s.ctx, s.app.GovKeeper, v1.Proposal{Id: testProposalID}, validators)
+	s.Require().Error(err)
+	s.Require().ErrorContains(err, "invalid vote weight for validator")
+
+	hasVote, hasErr := s.app.GovKeeper.Votes.Has(s.ctx, collections.Join(testProposalID, voterAddr))
+	s.Require().NoError(hasErr)
+	s.Require().True(hasVote, "failed validator tally should not remove the original vote")
 }
 
 // An undelegated tier position contributes zero tier voting power.

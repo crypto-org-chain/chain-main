@@ -122,8 +122,8 @@ func (q queryServer) EstimateTierRewards(ctx context.Context, req *types.QueryEs
 		return nil, err
 	}
 
-	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
-	if !delta.IsAnyNegative() && !delta.IsZero() {
+	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
+	if !hasNegative && !delta.IsZero() {
 		baseRewards, _ = delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
 	}
 
