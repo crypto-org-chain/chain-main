@@ -56,7 +56,7 @@ func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sd
 	return active, nil
 }
 
-func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
+func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
 	vals := make(map[string]stakingtypes.Validator)
 
