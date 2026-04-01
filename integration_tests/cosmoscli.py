@@ -14,10 +14,11 @@ class CosmosCLI(cosmoscli.CosmosCLI):
     def event_query_tx_for(self, hash):
         try:
             return super().event_query_tx_for(hash)
-        except Exception:
+        except Exception as ws_err:
             # Fallback: the WebSocket event may have already been emitted
             # before the subscription was established (race condition).
             # Poll query tx by hash instead.
+            last_err = ws_err
             for _ in range(10):
                 try:
                     return json.loads(
@@ -30,9 +31,13 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                             output="json",
                         )
                     )
-                except Exception:
+                except Exception as poll_err:
+                    last_err = poll_err
                     time.sleep(0.5)
-            raise
+            raise RuntimeError(
+                f"event_query_tx_for({hash!r}) failed: "
+                f"WebSocket error then all polling attempts failed"
+            ) from last_err
 
     def tx(self, *args, wait_tx=True, **kwargs):
         output = kwargs.get("output", "json")
