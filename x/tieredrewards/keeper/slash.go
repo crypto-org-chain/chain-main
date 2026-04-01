@@ -89,6 +89,8 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 			pos.UpdateDelegatedShares(newShares)
 		} else {
 			pos.ClearDelegation()
+			// ensures position amount is zero when all shares are burnt
+			pos.UpdateAmount(math.ZeroInt())
 		}
 	}
 

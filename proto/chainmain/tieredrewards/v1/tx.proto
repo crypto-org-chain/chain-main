@@ -136,7 +136,7 @@ message MsgLockTier {
     (amino.dont_omitempty) = true
   ];
 
-  // validator_address is the optional validator to delegate to at lock time. Empty means no delegation.
+  // validator_address is the validator to delegate to at lock time.
   string validator_address = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
 
   // trigger_exit_immediately if true starts the exit commitment from lock time.

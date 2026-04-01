@@ -18,7 +18,7 @@ var (
 	ErrPositionNotDelegated         = errors.Register(ModuleName, 13, "position is not delegated")
 	ErrPositionAlreadyDelegated     = errors.Register(ModuleName, 14, "position is already delegated")
 	ErrExitLockDurationNotReached   = errors.Register(ModuleName, 15, "exit lock duration not reached")
-	ErrPositionExiting              = errors.Register(ModuleName, 16, "position is exiting")
+	ErrPositionTriggeredExit        = errors.Register(ModuleName, 16, "position has triggered exit")
 	ErrRedelegationToSameValidator  = errors.Register(ModuleName, 17, "redelegation to same validator")
 	ErrTierNotFound                 = errors.Register(ModuleName, 18, "tier not found")
 	ErrPositionNotFound             = errors.Register(ModuleName, 19, "position not found")

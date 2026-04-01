@@ -24,12 +24,14 @@ func TestMsgLockTier_Validate(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "valid without validator",
+			name: "missing validator address",
 			msg: types.MsgLockTier{
 				Owner:  validOwner,
 				Id:     1,
 				Amount: sdkmath.NewInt(1000),
 			},
+			wantErr:     true,
+			errContains: "invalid validator address",
 		},
 		{
 			name: "valid with validator",
@@ -46,6 +48,7 @@ func TestMsgLockTier_Validate(t *testing.T) {
 				Owner:                  validOwner,
 				Id:                     1,
 				Amount:                 sdkmath.NewInt(1000),
+				ValidatorAddress:       validValidator,
 				TriggerExitImmediately: true,
 			},
 		},

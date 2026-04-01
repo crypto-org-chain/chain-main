@@ -48,30 +48,30 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	var delegation *types.Delegation
-	positionAmount := msg.Amount
-	if msg.ValidatorAddress != "" {
-		valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-		if err != nil {
-			return nil, err
-		}
-		currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
-		if err != nil {
-			return nil, err
-		}
-		shares, err := ms.delegate(ctx, valAddr, msg.Amount)
-		if err != nil {
-			return nil, err
-		}
-		delegation = &types.Delegation{
-			Validator:           msg.ValidatorAddress,
-			Shares:              shares,
-			BaseRewardsPerShare: currentRatio,
-		}
-		positionAmount, err = ms.reconcileAmountFromShares(ctx, valAddr, shares)
-		if err != nil {
-			return nil, err
-		}
+	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	shares, err := ms.delegate(ctx, valAddr, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+
+	delegation := types.Delegation{
+		Validator:           msg.ValidatorAddress,
+		Shares:              shares,
+		BaseRewardsPerShare: currentRatio,
+	}
+
+	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
+	if err != nil {
+		return nil, err
 	}
 
 	pos, err := ms.createPosition(ctx, msg.Owner, tier, positionAmount, delegation, msg.TriggerExitImmediately)
@@ -118,7 +118,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	delegation := &types.Delegation{
+	delegation := types.Delegation{
 		Validator:           msg.ValidatorAddress,
 		Shares:              shares,
 		BaseRewardsPerShare: currentRatio,

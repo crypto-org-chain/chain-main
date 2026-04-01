@@ -18,27 +18,11 @@ var (
 )
 
 func validPosition() types.Position {
-	return types.Position{
-		Id:              1,
-		Owner:           testOwner,
-		TierId:          1,
-		Amount:          sdkmath.NewInt(1000),
-		DelegatedShares: sdkmath.LegacyZeroDec(),
-		CreatedAtHeight: 100,
-		CreatedAtTime:   time.Now(),
-	}
-}
-
-func validDelegatedPosition() types.Position {
-	p := validPosition()
-	p.WithDelegation(types.Delegation{
-		Validator: testValidator,
-		Shares:    sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-		},
+	return types.NewPosition(1, testOwner, 1, sdkmath.NewInt(1000), 100, types.Delegation{
+		Validator:           testValidator,
+		Shares:              sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{},
 	}, time.Now())
-	return p
 }
 
 func TestPosition_Validate(t *testing.T) {
@@ -51,10 +35,6 @@ func TestPosition_Validate(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:   "valid undelegated position",
-			modify: func(_ *types.Position) {},
-		},
-		{
 			name: "valid delegated position",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
@@ -65,6 +45,28 @@ func TestPosition_Validate(t *testing.T) {
 					},
 				}, time.Now())
 			},
+		},
+		{
+			name: "valid undelegated position with exit triggered",
+			modify: func(p *types.Position) {
+				p.TriggerExit(time.Now(), time.Hour*24*365)
+				p.ClearDelegation()
+			},
+		},
+		{
+			name: "valid undelegated position with zero amount (slashed redelegation)",
+			modify: func(p *types.Position) {
+				p.ClearDelegation()
+				p.UpdateAmount(sdkmath.ZeroInt())
+			},
+		},
+		{
+			name: "invalid undelegated position - non-zero amount without exit",
+			modify: func(p *types.Position) {
+				p.ClearDelegation()
+			},
+			wantErr:     true,
+			errContains: "undelegated position must have exit triggered or zero amount",
 		},
 		{
 			name: "valid exiting position",
@@ -248,11 +250,8 @@ func TestPosition_Validate(t *testing.T) {
 func TestPosition_IsDelegated(t *testing.T) {
 	t.Parallel()
 
-	undelegated := validPosition()
-	require.False(t, undelegated.IsDelegated())
-
-	delegated := validDelegatedPosition()
-	require.True(t, delegated.IsDelegated())
+	p := validPosition()
+	require.True(t, p.IsDelegated())
 }
 
 func TestPosition_ClearExit(t *testing.T) {
@@ -266,39 +265,4 @@ func TestPosition_ClearExit(t *testing.T) {
 	pos.ClearExit()
 	require.False(t, pos.HasTriggeredExit())
 	require.NoError(t, pos.Validate())
-}
-
-func TestPosition_IsDelegated_WithExitState(t *testing.T) {
-	t.Parallel()
-
-	now := time.Now()
-
-	tests := []struct {
-		name          string
-		delegated     bool
-		exitTriggered bool
-		want          bool
-	}{
-		{name: "delegated, no exit", delegated: true, exitTriggered: false, want: true},
-		{name: "delegated, exit triggered", delegated: true, exitTriggered: true, want: true},
-		{name: "undelegated, no exit", delegated: false, exitTriggered: false, want: false},
-		{name: "undelegated, exit triggered", delegated: false, exitTriggered: true, want: false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			pos := validPosition()
-			if tt.delegated {
-				pos.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyNewDec(1000),
-				}, now)
-			}
-			if tt.exitTriggered {
-				pos.TriggerExit(now, time.Hour*24*365)
-			}
-			require.Equal(t, tt.want, pos.IsDelegated())
-		})
-	}
 }

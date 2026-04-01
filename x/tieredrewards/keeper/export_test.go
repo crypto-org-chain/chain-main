@@ -106,7 +106,7 @@ func (k Keeper) CreatePosition(
 	owner string,
 	tier types.Tier,
 	amount math.Int,
-	delegation *types.Delegation,
+	delegation types.Delegation,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
 	return k.createPosition(ctx, owner, tier, amount, delegation, triggerExitImmediately)

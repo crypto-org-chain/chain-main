@@ -89,7 +89,7 @@ func (s *KeeperSuite) TestDeleteTier() {
 	s.Require().False(has)
 }
 
-func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithActivePositions() {
+func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithPositions() {
 	tier := newTestTier(1)
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 

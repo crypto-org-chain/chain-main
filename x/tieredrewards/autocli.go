@@ -94,9 +94,9 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod:      "LockTier",
-					Use:            "lock-tier [id] [amount]",
-					Short:          "Lock tokens into a tier",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}, {ProtoField: "amount"}},
+					Use:            "lock-tier [id] [amount] [validator-address]",
+					Short:          "Lock tokens into a tier and delegate to a validator",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}, {ProtoField: "amount"}, {ProtoField: "validator_address"}},
 				},
 				{
 					RpcMethod:      "CommitDelegationToTier",

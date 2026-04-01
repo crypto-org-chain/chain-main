@@ -18,13 +18,14 @@ import (
 // --- MsgLockTier tests ---
 
 func (s *KeeperSuite) TestMsgLockTier_Basic() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	msg := &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	}
 
 	resp, err := msgServer.LockTier(s.ctx, msg)
@@ -36,7 +37,7 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(sdkmath.NewInt(1000).Equal(pos.Amount))
-	s.Require().False(pos.IsDelegated())
+	s.Require().True(pos.IsDelegated())
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 }
 
@@ -62,13 +63,14 @@ func (s *KeeperSuite) TestMsgLockTier_WithValidator() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	msg := &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	}
 
@@ -81,13 +83,14 @@ func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	msg := &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     999,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               999,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	}
 
 	_, err := msgServer.LockTier(s.ctx, msg)
@@ -96,7 +99,7 @@ func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Set tier to close only
@@ -105,9 +108,10 @@ func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
 	msg := &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	}
 
 	_, err := msgServer.LockTier(s.ctx, msg)
@@ -115,13 +119,14 @@ func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	msg := &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(999), // min is 1000
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(999), // min is 1000
+		ValidatorAddress: valAddr.String(),
 	}
 
 	_, err := msgServer.LockTier(s.ctx, msg)
@@ -129,15 +134,16 @@ func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
-	delAddr, _, bondDenom := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	msg := &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	}
 
 	_, err := msgServer.LockTier(s.ctx, msg)
@@ -355,20 +361,17 @@ func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmat
 	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
 }
 
-// simulateUnbondingCompletion cleans up unbonding mappings for a position
-// by firing the AfterUnbondingCompleted hook, simulating what staking's
-// EndBlocker does when unbonding entries mature.
-func (s *KeeperSuite) simulateUnbondingCompletion(positionId uint64, valAddr sdk.ValAddress) {
+// completeStakingUnbonding advances block time past the staking unbonding
+// period and calls CompleteUnbonding so that the staking module returns tokens
+// from the NotBondedPool to the tier module account
+func (s *KeeperSuite) completeStakingUnbonding(valAddr sdk.ValAddress) {
 	s.T().Helper()
+	unbondingTime, err := s.app.StakingKeeper.UnbondingTime(s.ctx)
+	s.Require().NoError(err)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(unbondingTime + time.Second))
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, positionId)
+	_, err = s.app.StakingKeeper.CompleteUnbonding(s.ctx, poolAddr, valAddr)
 	s.Require().NoError(err)
-	unbondingIds, err := iter.PrimaryKeys()
-	s.Require().NoError(err)
-	if len(unbondingIds) > 0 {
-		err = s.keeper.Hooks().AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, unbondingIds)
-		s.Require().NoError(err)
-	}
 }
 
 // advancePastExitDuration advances block time past the default test tier's exit duration.
@@ -583,18 +586,28 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 // --- MsgTierDelegate tests ---
 
 func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Create undelegated position
+	// Create delegated position
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
-	// Delegate position
+	// Trigger exit so we can undelegate
+	msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+
+	// Complete staking unbonding so tokens return to the tier module account.
+	s.completeStakingUnbonding(valAddr)
+
+	// Re-delegate position
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -632,21 +645,29 @@ func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
 	s.Require().ErrorIs(err, types.ErrPositionAlreadyDelegated)
 }
 
-// TestMsgTierDelegate_ExitingPosition verifies that a position with exit
-// triggered can still be delegated per ADR-006 §10: "Lock with
-// trigger_exit_immediately but no validator: Allowed. Position is created in
-// exiting state. No rewards until the user delegates via MsgTierDelegate."
+// TestMsgTierDelegate_ExitingPosition verifies that a position that has been
+// undelegated while exiting can be re-delegated via MsgTierDelegate.
 func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
+
+	// Advance past exit and undelegate
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+
+	// Complete staking unbonding so tokens return to the tier module account
+	s.completeStakingUnbonding(valAddr)
 
 	// Delegating an exiting position should succeed
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
@@ -664,16 +685,25 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition() {
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
+	// Trigger exit, advance, undelegate so TierDelegate is possible
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr)
 	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      wrongAddr.String(),
@@ -685,20 +715,25 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
-	// Before delegation, no positions for this validator from the tier module
-	posIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// Trigger exit, advance, undelegate so TierDelegate is possible
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
-	s.Require().Empty(posIds)
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr)
 
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      delAddr.String(),
@@ -707,8 +742,8 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	})
 	s.Require().NoError(err)
 
-	// After delegation, position should appear in validator index
-	posIds, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// After creation with validator, position should appear in validator index
+	posIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().Len(posIds, 1)
 	s.Require().Equal(uint64(0), posIds[0])
@@ -772,18 +807,29 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
 
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// First undelegate succeeds
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Second undelegate should fail with ErrPositionNotDelegated
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -890,14 +936,25 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 }
 
 func (s *KeeperSuite) TestMsgTierRedelegate_NotDelegated() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	dstValAddr, _ := s.createSecondValidator()
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Undelegate first so position is not delegated
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
 	})
 	s.Require().NoError(err)
 
@@ -993,15 +1050,21 @@ func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
 // --- MsgAddToTierPosition tests ---
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
+	
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	// simulate the position being undelegated and amount is zero via redelegation slashing
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
 
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),
@@ -1010,10 +1073,10 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err = s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.NewInt(1500).Equal(pos.Amount), "amount should be 1500")
-	s.Require().False(pos.IsDelegated())
+	s.Require().True(pos.IsDelegated())
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
@@ -1045,13 +1108,14 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_Exiting() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1061,17 +1125,18 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Exiting() {
 		PositionId: 0,
 		Amount:     sdkmath.NewInt(500),
 	})
-	s.Require().ErrorIs(err, types.ErrPositionExiting)
+	s.Require().ErrorIs(err, types.ErrPositionTriggeredExit)
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_TierCloseOnly() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1089,13 +1154,14 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_TierCloseOnly() {
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_WrongOwner() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1112,13 +1178,14 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_WrongOwner() {
 // --- MsgTriggerExitFromTier tests ---
 
 func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1136,13 +1203,14 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
 }
 
 func (s *KeeperSuite) TestMsgTriggerExitFromTier_AlreadyExiting() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1151,17 +1219,18 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_AlreadyExiting() {
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionExiting)
+	s.Require().ErrorIs(err, types.ErrPositionTriggeredExit)
 }
 
 func (s *KeeperSuite) TestMsgTriggerExitFromTier_WrongOwner() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1177,13 +1246,14 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_WrongOwner() {
 // --- MsgClearPosition tests ---
 
 func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1193,7 +1263,7 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 		PositionId: 0,
 		Amount:     sdkmath.NewInt(500),
 	})
-	s.Require().ErrorIs(err, types.ErrPositionExiting)
+	s.Require().ErrorIs(err, types.ErrPositionTriggeredExit)
 
 	clearResp, err := msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
@@ -1215,13 +1285,14 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 }
 
 func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1236,13 +1307,14 @@ func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
 }
 
 func (s *KeeperSuite) TestMsgClearPosition_IdempotentWhenNotExiting() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1268,14 +1340,8 @@ func (s *KeeperSuite) TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeCl
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-		Validator:  valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1299,13 +1365,24 @@ func (s *KeeperSuite) TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeCl
 // --- MsgClaimTierRewards tests ---
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Undelegate so the position is not delegated
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
 	})
 	s.Require().NoError(err)
 
@@ -1566,22 +1643,37 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient() {
 // --- MsgWithdrawFromTier tests ---
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
-	delAddr, _, bondDenom := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	lockAmount := sdkmath.NewInt(1000)
 
-	// Lock tokens (undelegated) with immediate exit trigger
+	// Lock tokens with delegation and immediate exit trigger
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
 
 	// Advance time past exit unlock (tier exit duration is 365 days)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+	s.advancePastExitDuration()
+
+	// Fund bonus pool before undelegation
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// Undelegate first
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past staking unbonding period and complete unbonding so
+	// the staking module returns tokens to the tier module account.
+	s.completeStakingUnbonding(valAddr)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -1605,13 +1697,14 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1626,8 +1719,19 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 
-	// Advance time and withdraw
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+	// Advance time and undelegate
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	// Advance time past staking unbonding period and complete unbonding so
+	// the staking module returns tokens to the tier module account.
+	s.completeStakingUnbonding(valAddr)
 
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
@@ -1647,14 +1751,15 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitNotTriggered() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Lock tokens without triggering exit
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(1000),
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -1666,7 +1771,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitNotTriggered() {
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitCommitmentNotElapsed() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Lock tokens with immediate exit trigger
@@ -1674,6 +1779,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitCommitmentNotElapsed() {
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1712,13 +1818,14 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_StillDelegated() {
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_WrongOwner() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1792,15 +1899,10 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	// Advance time past exit unlock (365 days + 1 day) for withdrawal
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
 
-	// Fund the module account to simulate unbonding completion
-	// (in real chain, staking end blocker would return tokens after unbonding period)
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	// Now withdraw — requires exit commitment elapsed
-	s.simulateUnbondingCompletion(0, valAddr)
+	// Now withdraw — requires exit commitment elapsed and unbonding completed
+	s.completeStakingUnbonding(valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: 0,
@@ -1829,7 +1931,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Create two positions with immediate exit
@@ -1837,6 +1939,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
@@ -1845,12 +1948,28 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(2000),
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
 
 	// Advance time past exit
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 366))
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// Undelegate both positions
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 1,
+	})
+	s.Require().NoError(err)
+
+	s.completeStakingUnbonding(valAddr)
 
 	// Withdraw only the first position
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -1883,8 +2002,8 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 // --- ADR-006 Deviation Fix Tests ---
 
 // TestMsgTierDelegate_ExitingPosition_ThenEarnRewards verifies the full ADR-006
-// §10 flow: lock with trigger_exit_immediately but no validator, then delegate
-// later, and confirm bonus rewards accrue until ExitUnlockTime.
+// §10 flow: lock with trigger_exit_immediately and validator, and confirm
+// bonus rewards accrue until ExitUnlockTime.
 func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition_ThenEarnRewards() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -1896,27 +2015,15 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition_ThenEarnRewards() {
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,
-		TriggerExitImmediately: true, // exit triggered, no validator
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
 
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
-	s.Require().False(pos.IsDelegated(), "position should not be delegated yet")
-
-	// Delegate the exiting position to earn rewards
-	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-		Validator:  valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	s.Require().True(pos.IsDelegated(), "position should now be delegated")
-	s.Require().True(pos.HasTriggeredExit(), "position should still be exiting")
+	s.Require().True(pos.IsDelegated(), "position should be delegated")
 	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set")
 
 	// Advance time and allocate rewards
@@ -2148,12 +2255,8 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 	s.Require().Equal(expectedReturn.String(), pos.Amount.String(),
 		"pos.Amount must be overwritten with the SDK return amount")
 
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, expectedReturn)))
-	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr)
 
-	s.simulateUnbondingCompletion(pos.Id, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2326,14 +2429,9 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	// Advance time past exit unlock.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
 
-	// Simulate unbonding completion: fund the module account with exactly the
-	// reconciled amount (what the SDK will actually return).
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, reconciledAmount)))
-	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr)
 
 	// Withdrawal should succeed — the module has exactly enough tokens.
-	s.simulateUnbondingCompletion(pos.Id, valAddr)
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -2423,7 +2521,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconcilesAmount() {
 		"pos.Amount must equal actual token value from shares after CommitDelegationToTier")
 }
 
-// TestMsgTierDelegate_ReconcilesAmount: after TierDelegate at non-1:1
+// TestMsgTierDelegate_ReconcilesAmount: after LockTier at non-1:1
 // exchange rate, pos.Amount matches the actual share-backed token value.
 func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
@@ -2438,11 +2536,12 @@ func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
-	// Create undelegated position first.
+	// Create position with validator (always delegated now).
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  addr.String(),
-		Id:     1,
-		Amount: lockAmount,
+		Owner:            addr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
@@ -2451,20 +2550,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
 	s.Require().Len(positions, 1)
 	posId := positions[0].Id
 
-	// pos.Amount before delegation is the original lockAmount.
 	pos, err := s.keeper.GetPosition(s.ctx, posId)
-	s.Require().NoError(err)
-	s.Require().Equal(lockAmount.String(), pos.Amount.String())
-
-	// Now delegate — this should reconcile pos.Amount.
-	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
-		Owner:      addr.String(),
-		PositionId: posId,
-		Validator:  valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPosition(s.ctx, posId)
 	s.Require().NoError(err)
 
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -2472,7 +2558,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
 	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
 
 	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
-		"pos.Amount must equal actual token value from shares after TierDelegate")
+		"pos.Amount must equal actual token value from shares after LockTier")
 
 	// With non-1:1 rate, reconciled amount should differ from original lockAmount.
 	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
@@ -2591,12 +2677,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 	s.Require().False(hasUnbonding, "unbonding mapping should be cleaned up after hook")
 
-	// Fund the module account to simulate tokens returned from staking's CompleteUnbonding.
-	pos, err := s.keeper.Positions.Get(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount)))
-	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr)
 
 	// Withdrawal should now pass since unbonding entries are cleaned up.
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{

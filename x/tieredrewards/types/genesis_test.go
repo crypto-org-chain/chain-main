@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func genesisTier(id uint32) types.Tier {
@@ -20,15 +21,11 @@ func genesisTier(id uint32) types.Tier {
 }
 
 func genesisPosition(id uint64, tierId uint32) types.Position {
-	return types.Position{
-		Id:              id,
-		Owner:           testOwner,
-		TierId:          tierId,
-		Amount:          sdkmath.NewInt(5000),
-		DelegatedShares: sdkmath.LegacyZeroDec(),
-		CreatedAtHeight: 100,
-		CreatedAtTime:   time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
-	}
+	return types.NewPosition(id, testOwner, tierId, sdkmath.NewInt(1000), 100, types.Delegation{
+		Validator:           testValidator,
+		Shares:              sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{},
+	}, time.Now())
 }
 
 func validFullGenesis() types.GenesisState {

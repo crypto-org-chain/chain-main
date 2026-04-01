@@ -163,10 +163,26 @@ func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
 // --- EstimateTierRewards ---
 
 func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotDelegated() {
-	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 1})
+	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(5000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	s.advancePastExitDuration()
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+	s.resetQueryClient()
+
+	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 0})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero())
 	s.Require().True(resp.BonusRewards.IsZero())
@@ -191,12 +207,13 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
 	currentRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount,
-		&types.Delegation{
-			Validator:           valAddr.String(),
-			Shares:              shares,
-			BaseRewardsPerShare: currentRatio,
-		}, false)
+	delegation := types.Delegation{
+		Validator:           valAddr.String(),
+		Shares:              shares,
+		BaseRewardsPerShare: currentRatio,
+	}
+
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, delegation, false)
 	s.Require().NoError(err)
 
 	// Advance block time by 30 days to accrue bonus
@@ -220,14 +237,22 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
 // --- TierVotingPower ---
 
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  delAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(5000),
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(5000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
 	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	s.advancePastExitDuration()
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 	s.resetQueryClient()
 

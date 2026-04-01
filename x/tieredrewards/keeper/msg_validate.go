@@ -69,7 +69,7 @@ func (k Keeper) validateRedelegatePosition(pos types.Position, owner, dstValidat
 	}
 
 	if pos.HasTriggeredExit() {
-		return types.ErrPositionExiting
+		return types.ErrPositionTriggeredExit
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, o
 	}
 
 	if pos.HasTriggeredExit() {
-		return types.ErrPositionExiting
+		return types.ErrPositionTriggeredExit
 	}
 
 	tier, err := k.getTier(ctx, pos.TierId)
@@ -102,7 +102,7 @@ func (k Keeper) validateTriggerExit(pos types.Position, owner string) error {
 	}
 
 	if pos.HasTriggeredExit() {
-		return types.ErrPositionExiting
+		return types.ErrPositionTriggeredExit
 	}
 
 	return nil

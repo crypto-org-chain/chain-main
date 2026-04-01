@@ -115,16 +115,13 @@ def _tx(cluster, *subcmd, from_, i=0, **extra):
 
 
 def _lock_tier(
-    cluster, owner, tier_id, amount, validator=None, trigger_exit=False, i=0
+    cluster, owner, tier_id, amount, validator, trigger_exit=False, i=0
 ):
-    args = ["lock-tier", str(tier_id), str(amount)]
-    kwargs = {}
-    if validator:
-        kwargs["validator_address"] = validator
+    args = ["lock-tier", str(tier_id), str(amount), validator]
     if trigger_exit:
         # Pass as positional flag — cobra bool flags don't take a value argument
         args.append("--trigger-exit-immediately")
-    return _tx(cluster, *args, from_=owner, i=i, **kwargs)
+    return _tx(cluster, *args, from_=owner, i=i)
 
 
 def _tier_undelegate(cluster, owner, position_id, i=0):

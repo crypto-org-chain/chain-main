@@ -63,15 +63,18 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CloseOnly:     true,
 	}
 
-	// Non-delegated position.
+	// Delegated position (tier 1).
 	pos1 := types.Position{
-		Id:              1,
-		Owner:           owner,
-		TierId:          1,
-		Amount:          sdkmath.NewInt(5000),
-		DelegatedShares: sdkmath.LegacyZeroDec(),
-		CreatedAtHeight: 100,
-		CreatedAtTime:   now,
+		Id:                  1,
+		Owner:               owner,
+		TierId:              1,
+		Amount:              sdkmath.NewInt(5000),
+		Validator:           valAddr.String(),
+		DelegatedShares:     sdkmath.LegacyNewDec(5000),
+		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(2, 4))),
+		LastBonusAccrual:    now,
+		CreatedAtHeight:     100,
+		CreatedAtTime:       now,
 	}
 
 	// Delegated position.
@@ -193,6 +196,8 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 	valAddr := sdk.ValAddress([]byte("genesis_idx_val_____"))
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 
+	exitTime := now.Add(-time.Hour)
+
 	genesisState := &types.GenesisState{
 		Params: types.DefaultParams(),
 		Tiers: []types.Tier{
@@ -203,6 +208,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 			{
 				Id: 1, Owner: owner.String(), TierId: 1, Amount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
+				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
 			},
 			{
@@ -211,8 +217,9 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 				LastBonusAccrual: now,
 				CreatedAtHeight:  11, CreatedAtTime: now,
 			},
+			// simulate a redelegation-slashed to zero position here. No delegation here and amount is zero
 			{
-				Id: 3, Owner: owner.String(), TierId: 2, Amount: sdkmath.NewInt(500),
+				Id: 3, Owner: owner.String(), TierId: 2, Amount: sdkmath.ZeroInt(),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				CreatedAtHeight: 12, CreatedAtTime: now,
 			},
@@ -245,6 +252,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 	owner := sdk.AccAddress([]byte("genesis_seq_owner___")).String()
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	exitTime := now.Add(-time.Hour)
 
 	genesisState := &types.GenesisState{
 		Params: types.DefaultParams(),
@@ -255,6 +263,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 			{
 				Id: 5, Owner: owner, TierId: 1, Amount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
+				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
 			},
 		},

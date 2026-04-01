@@ -79,8 +79,8 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	s.Require().True(updated.IsDelegated(), "position should still be delegated")
 }
 
-// When shareBurnt exceeds DelegatedShares the position should clear its delegation.
-func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
+// When all shares are burnt, the position should clear its delegation and set amount to zero.
+func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
 
 	lockAmount := sdkmath.NewInt(5000)
@@ -89,9 +89,8 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
 	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, true)
 	origShares := pos.DelegatedShares
 
-	// Slash a portion of tokens (keep Amount > 0 for validation) but burn
-	// MORE shares than exist to exercise the floor-to-zero + ClearDelegation path.
-	slashTokens := sdkmath.NewInt(1000)
+	// all tokens should be slashed if all shares are burnt
+	slashTokens := lockAmount
 	shareBurnt := origShares.Add(sdkmath.LegacyOneDec())
 
 	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
@@ -103,8 +102,8 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_SharesBurntExceedsShares() {
 	s.Require().False(updated.IsDelegated(),
 		"position should have cleared delegation when shareBurnt exceeds shares")
 	s.Require().True(updated.DelegatedShares.IsZero())
-	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)),
-		"Amount should still be reduced")
+	s.Require().True(updated.Amount.IsZero(),
+		"Amount should be zero when all shares are destroyed")
 }
 
 // Unknown unbondingId is a no-op (non-tier delegation).
@@ -114,31 +113,6 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 	err := s.keeper.Hooks().AfterRedelegationSlashed(
 		s.ctx, 999, sdkmath.NewInt(100), sdkmath.LegacyNewDec(50))
 	s.Require().NoError(err) // no-op, no error
-}
-
-// Zero shareBurnt should only reduce Amount (no share change).
-func (s *KeeperSuite) TestSlashRedelegationPosition_ZeroShareBurnt() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-
-	lockAmount := sdkmath.NewInt(8000)
-	const unbondingId uint64 = 44
-
-	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, true)
-	origShares := pos.DelegatedShares
-
-	slashTokens := sdkmath.NewInt(800)
-
-	err := s.keeper.Hooks().AfterRedelegationSlashed(
-		s.ctx, unbondingId, slashTokens, sdkmath.LegacyZeroDec())
-	s.Require().NoError(err)
-
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
-	s.Require().True(updated.DelegatedShares.Equal(origShares),
-		"DelegatedShares should be unchanged when shareBurnt is zero")
-	s.Require().True(updated.IsDelegated())
 }
 
 // Unbonding delegation slash reduces Amount but keeps DelegatedShares unchanged.

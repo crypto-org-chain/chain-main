@@ -410,7 +410,7 @@ type MsgLockTier struct {
 	Id uint32 `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
 	// amount is the amount of tokens intended to be locked into this new position.
 	Amount cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
-	// validator_address is the optional validator to delegate to at lock time. Empty means no delegation.
+	// validator_address is the validator to delegate to at lock time.
 	ValidatorAddress string `protobuf:"bytes,4,opt,name=validator_address,json=validatorAddress,proto3" json:"validator_address,omitempty"`
 	// trigger_exit_immediately if true starts the exit commitment from lock time.
 	TriggerExitImmediately bool `protobuf:"varint,5,opt,name=trigger_exit_immediately,json=triggerExitImmediately,proto3" json:"trigger_exit_immediately,omitempty"`

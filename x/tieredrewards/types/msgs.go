@@ -29,10 +29,8 @@ func (msg MsgLockTier) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "amount must be positive")
 	}
 
-	if msg.ValidatorAddress != "" {
-		if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
-			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
-		}
+	if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
 
 	return nil

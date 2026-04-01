@@ -271,12 +271,19 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000))))
 	s.Require().NoError(err)
 
-	// Lock WITHOUT delegation
+	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:  freshAddr.String(),
-		Id:     1,
-		Amount: sdkmath.NewInt(5000),
+		Owner:                  freshAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(5000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
 	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	s.advancePastExitDuration()
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: freshAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 
 	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
@@ -290,6 +297,8 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 
 	// Sanity: verify the same address with delegated tier would be non-zero.
 	// (Re-insert vote since tally removed it, then delegate the position.)
+	// Complete staking unbonding so tokens return to the tier module account.
+	s.completeStakingUnbonding(valAddr)
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      freshAddr.String(),
 		PositionId: 0,

@@ -17,15 +17,18 @@ type Delegation struct {
 	BaseRewardsPerShare sdk.DecCoins
 }
 
-func NewBasePosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, createdAtTime time.Time) Position {
+func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, delegation Delegation, createdAtTime time.Time) Position {
 	return Position{
-		Id:              id,
-		Owner:           owner,
-		TierId:          tierId,
-		Amount:          amount,
-		CreatedAtHeight: uint64(createdAtHeight),
-		CreatedAtTime:   createdAtTime,
-		DelegatedShares: math.LegacyZeroDec(),
+		Id:                  id,
+		Owner:               owner,
+		TierId:              tierId,
+		Amount:              amount,
+		CreatedAtHeight:     uint64(createdAtHeight),
+		CreatedAtTime:       createdAtTime,
+		Validator:           delegation.Validator,
+		DelegatedShares:     delegation.Shares,
+		BaseRewardsPerShare: delegation.BaseRewardsPerShare,
+		LastBonusAccrual:    createdAtTime,
 	}
 }
 
@@ -64,6 +67,9 @@ func (p Position) Validate() error {
 		if !p.LastBonusAccrual.IsZero() {
 			return fmt.Errorf("last bonus accrual must not be set when not delegated")
 		}
+		if !p.HasTriggeredExit() && !p.Amount.IsZero() {
+			return fmt.Errorf("undelegated position must have exit triggered or zero amount")
+		}
 	}
 
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
@@ -100,8 +106,8 @@ func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
 func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
-	p.UpdateBaseRewardsPerShare(delegation.BaseRewardsPerShare)
-	p.UpdateLastBonusAccrual(t)
+	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
+	p.LastBonusAccrual = t
 }
 
 func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
