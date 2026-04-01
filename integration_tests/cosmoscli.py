@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import tempfile
+import time
 
 import durations
 import requests
@@ -10,6 +11,29 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
+    def event_query_tx_for(self, hash):
+        try:
+            return super().event_query_tx_for(hash)
+        except Exception:
+            # Fallback: the WebSocket event may have already been emitted
+            # before the subscription was established (race condition).
+            # Poll query tx by hash instead.
+            for _ in range(10):
+                try:
+                    return json.loads(
+                        self.raw(
+                            "query",
+                            "tx",
+                            hash,
+                            home=self.data_dir,
+                            node=self.node_rpc,
+                            output="json",
+                        )
+                    )
+                except Exception:
+                    time.sleep(0.5)
+            raise
+
     def tx(self, *args, wait_tx=True, **kwargs):
         output = kwargs.get("output", "json")
         if output != "json" and wait_tx:
