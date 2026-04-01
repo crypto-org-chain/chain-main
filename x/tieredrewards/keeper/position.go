@@ -150,7 +150,8 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 
 	oldDelegated := oldPos.IsDelegated()
 	newDelegated := pos.IsDelegated()
-	if oldDelegated && (!newDelegated || oldPos.Validator != pos.Validator) {
+	changedValidator := oldPos.Validator != pos.Validator
+	if oldDelegated && (!newDelegated || changedValidator) {
 		oldVal, err := sdk.ValAddressFromBech32(oldPos.Validator)
 		if err != nil {
 			return err
@@ -159,7 +160,7 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			return err
 		}
 	}
-	if newDelegated && (!oldDelegated || oldPos.Validator != pos.Validator) {
+	if newDelegated && (!oldDelegated || changedValidator) {
 		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
 			return err
