@@ -190,11 +190,11 @@ func (s *KeeperSuite) TestPositionCountByTier() {
 	s.Require().Equal(uint64(0), count)
 
 	// HasActivePositionsForTier should reflect
-	has, err := s.keeper.HasActivePositionsForTier(s.ctx, 1)
+	has, err := s.keeper.HasPositionsForTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().False(has)
 
-	has, err = s.keeper.HasActivePositionsForTier(s.ctx, 2)
+	has, err = s.keeper.HasPositionsForTier(s.ctx, 2)
 	s.Require().NoError(err)
 	s.Require().True(has)
 }

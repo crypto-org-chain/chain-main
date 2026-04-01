@@ -61,7 +61,7 @@ func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uin
 	return k.getPositionCountForTier(ctx, tierId)
 }
 
-func (k Keeper) HasActivePositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
+func (k Keeper) HasPositionsForTier(ctx context.Context, tierId uint32) (bool, error) {
 	return k.hasPositionsForTier(ctx, tierId)
 }
 
