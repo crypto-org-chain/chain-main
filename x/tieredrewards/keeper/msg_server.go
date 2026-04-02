@@ -84,10 +84,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	valAddr := sdk.MustValAddressFromBech32(msg.ValidatorAddress)
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -139,10 +136,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	valAddr := sdk.MustValAddressFromBech32(msg.ValidatorAddress)
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -200,10 +194,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(msg.Validator)
-	if err != nil {
-		return nil, err
-	}
+	valAddr := sdk.MustValAddressFromBech32(msg.Validator)
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -310,10 +301,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	dstValAddr, err := sdk.ValAddressFromBech32(msg.DstValidator)
-	if err != nil {
-		return nil, err
-	}
+	dstValAddr := sdk.MustValAddressFromBech32(msg.DstValidator)
 
 	pos, srcValAddr, _, _, err := ms.claimDelegatedPositionRewards(ctx, pos)
 	if err != nil {
@@ -387,12 +375,8 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	}
 
 	if pos.IsDelegated() {
-		pos, _, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
-
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		var valAddr sdk.ValAddress
+		pos, valAddr, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
 		if err != nil {
 			return nil, err
 		}
