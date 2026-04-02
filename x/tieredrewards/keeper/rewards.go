@@ -124,6 +124,7 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 	if !position.IsDelegated() {
 		return math.ZeroInt()
 	}
+	
 	if position.LastBonusAccrual.IsZero() {
 		return math.ZeroInt()
 	}

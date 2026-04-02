@@ -2,12 +2,14 @@ package keeper
 
 import (
 	"context"
+	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Test-only wrappers for black-box tests (package keeper_test) that need access
@@ -122,4 +124,8 @@ func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Po
 
 func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
 	return k.stillUnbonding(ctx, positionId)
+}
+
+func (k Keeper) CalculateBonusRaw(pos types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
+	return k.calculateBonusRaw(pos, validator, tier, blockTime)
 }

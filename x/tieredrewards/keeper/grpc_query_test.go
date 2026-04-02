@@ -160,9 +160,9 @@ func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
 	s.Require().Equal(fundAmount, resp.Balance)
 }
 
-// --- EstimateTierRewards ---
+// --- EstimatePositionRewards ---
 
-func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotDelegated() {
+func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotDelegated() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -182,66 +182,32 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotDelegated() {
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
-	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 0})
+	resp, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero())
 	s.Require().True(resp.BonusRewards.IsZero())
 }
 
-func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NotFound() {
-	_, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: 999})
+func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotFound() {
+	_, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 999})
 	s.Require().Error(err)
 }
 
-func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_DelegatedWithBonus() {
+func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
-	s.Require().NoError(err)
-
-	lockAmount := sdkmath.NewInt(10000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, delAddr.String(), lockAmount))
-
-	shares, err := s.keeper.Delegate(s.ctx, valAddr, lockAmount)
-	s.Require().NoError(err)
-
-	currentRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
-	s.Require().NoError(err)
-
-	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              shares,
-		BaseRewardsPerShare: currentRatio,
-	}
-
-	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, lockAmount, delegation, false)
-	s.Require().NoError(err)
-
-	// Advance block time by 30 days to accrue bonus
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
-	s.resetQueryClient()
-
-	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: pos.Id})
-	s.Require().NoError(err)
-
-	// Bonus should be positive (10000 * 0.04 * 30days/365.25days > 0)
-	hasBondDenom := false
-	for _, c := range resp.BonusRewards {
-		if c.Denom == bondDenom {
-			hasBondDenom = true
-			s.Require().True(c.Amount.IsPositive(), "bonus reward should be positive, got %s", c.Amount)
-		}
-	}
-	s.Require().True(hasBondDenom, "bonus rewards should contain bond denom")
-}
-
-func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NegativeBaseDeltaReturnsZero() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	// Set validator commission to 0% so all staking rewards go to delegators.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// Fund bonus pool so bonus rewards can accrue.
+	s.fundRewardsPool(sdkmath.NewInt(1000000000), bondDenom)
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),
 		Id:               1,
-		Amount:           sdkmath.NewInt(5000),
+		Amount:           lockAmount,
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
@@ -249,17 +215,41 @@ func (s *KeeperSuite) TestGRPCQueryEstimateTierRewards_NegativeBaseDeltaReturnsZ
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	pos.BaseRewardsPerShare = sdk.DecCoins{
-		sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("2.0")),
-	}
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	// Advance one block so the delegation's starting period in x/distribution
+	// is finalized before rewards are allocated.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// Allocate staking rewards so base rewards accrue.
+	rewardAmount := sdkmath.NewInt(10000000)
+	s.allocateRewardsToValidator(valAddr, rewardAmount, bondDenom)
+
+	// Advance 30 days to accrue bonus.
+	advanceDuration := 30 * 24 * time.Hour
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(advanceDuration))
 	s.resetQueryClient()
 
-	resp, err := s.queryClient.EstimateTierRewards(s.ctx.Context(), &types.QueryEstimateTierRewardsRequest{PositionId: pos.Id})
+	resp, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
 	s.Require().NoError(err)
-	s.Require().True(resp.BaseRewards.IsZero(), "negative reward delta should not panic or estimate base rewards")
+
+	// Base rewards: the genesis validator has one delegation of DefaultPowerReduction.
+	// LockTier added a second equal delegation from the tier module account.
+	// With 0% commission, the tier module's delegation gets half the rewards.
+	// base = rewardAmount / 2
+	expectedBase := rewardAmount.Quo(sdkmath.NewInt(2))
+	actualBase := resp.BaseRewards.AmountOf(bondDenom)
+	s.Require().Equal(expectedBase.String(), actualBase.String(),
+		"base rewards should equal half the allocated rewards")
+
+	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	s.Require().NoError(err)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)	
+	s.Require().NoError(err)
+
+	expectedBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
+	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
+		"bonus rewards should match what is calculated")
 }
 
 // --- TierVotingPower ---

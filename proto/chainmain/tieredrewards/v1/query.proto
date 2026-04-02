@@ -44,9 +44,9 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/pool_balance";
   }
 
-  // EstimateTierRewards estimates pending base and bonus rewards for a position
+  // EstimatePositionRewards estimates pending base and bonus rewards for a position
   // without claiming them.
-  rpc EstimateTierRewards(QueryEstimateTierRewardsRequest) returns (QueryEstimateTierRewardsResponse) {
+  rpc EstimatePositionRewards(QueryEstimatePositionRewardsRequest) returns (QueryEstimatePositionRewardsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/estimate_rewards/{position_id}";
   }
 
@@ -58,7 +58,8 @@ service Query {
 
   // TotalDelegatedVotingPower returns the total governance voting power from
   // all delegated tier positions.
-  rpc TotalDelegatedVotingPower(QueryTotalDelegatedVotingPowerRequest) returns (QueryTotalDelegatedVotingPowerResponse) {
+  rpc TotalDelegatedVotingPower(QueryTotalDelegatedVotingPowerRequest)
+      returns (QueryTotalDelegatedVotingPowerResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/total_delegated_voting_power";
   }
 }
@@ -123,13 +124,13 @@ message QueryTierPoolBalanceResponse {
   ];
 }
 
-// QueryEstimateTierRewardsRequest is the request type for the Query/EstimateTierRewards RPC method.
-message QueryEstimateTierRewardsRequest {
+// QueryEstimatePositionRewardsRequest is the request type for the Query/EstimatePositionRewards RPC method.
+message QueryEstimatePositionRewardsRequest {
   uint64 position_id = 1;
 }
 
-// QueryEstimateTierRewardsResponse is the response type for the Query/EstimateTierRewards RPC method.
-message QueryEstimateTierRewardsResponse {
+// QueryEstimatePositionRewardsResponse is the response type for the Query/EstimatePositionRewards RPC method.
+message QueryEstimatePositionRewardsResponse {
   // base_rewards is the estimated pending base staking rewards.
   repeated cosmos.base.v1beta1.Coin base_rewards = 1 [
     (gogoproto.nullable)     = false,
