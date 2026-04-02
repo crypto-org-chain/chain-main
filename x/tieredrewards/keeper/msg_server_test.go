@@ -693,7 +693,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_StillUnbonding() {
 		PositionId: 0,
 		Validator:  valAddr.String(),
 	})
-	s.Require().ErrorIs(err, types.ErrPositionStillUnbonding)
+	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 
 	// After completing unbonding, TierDelegate should succeed
 	s.completeStakingUnbonding(valAddr)
@@ -707,6 +707,97 @@ func (s *KeeperSuite) TestMsgTierDelegate_StillUnbonding() {
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
+}
+
+// TestMsgTierDelegate_AmountZero verifies that TierDelegate is rejected on a
+// zero-amount position
+func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Simulate redelegation slash clearing delegation and zeros amount
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionAmountZero)
+}
+
+// TestMsgTierDelegate_AmountZero_TriggeredExit verifies that TierDelegate is rejected on a
+// zero-amount position with exit triggered.
+func (s *KeeperSuite) TestMsgTierDelegate_AmountZero_ExitInProgress() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Simulate redelegation slash clearing delegation and zeros amount
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionAmountZero)
+}
+
+// TestMsgTierDelegate_ExitInProgress verifies that TierDelegate is rejected when
+// exit is triggered but not yet elapsed on an undelegated position.
+func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Simulate redelegation slashed to zero, add to tier position and then
+	// trigger exit in progress.
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionTriggeredExit)
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
@@ -881,6 +972,28 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ExitNotTriggered() {
 	s.Require().ErrorIs(err, types.ErrExitNotTriggered)
 }
 
+// TestMsgTierUndelegate_ExitDurationNotReached verifies that TierUndelegate is
+// rejected when exit is triggered but duration has not elapsed.
+func (s *KeeperSuite) TestMsgTierUndelegate_ExitDurationNotReached() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrExitLockDurationNotReached)
+}
+
 func (s *KeeperSuite) TestMsgTierUndelegate_WrongOwner() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -1010,6 +1123,56 @@ func (s *KeeperSuite) TestMsgTierRedelegate_SameValidator() {
 		DstValidator: valAddr.String(),
 	})
 	s.Require().ErrorIs(err, types.ErrRedelegationToSameValidator)
+}
+
+// TestMsgTierRedelegate_AmountZero verifies that TierRedelegate is rejected on a
+// zero-amount bonded position (slash from bonded validator)
+func (s *KeeperSuite) TestMsgTierRedelegate_AmountZero() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Create a zero-amount delegated position (simulating 100% bonded slash)
+	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
+	s.Require().NoError(err)
+	del := types.Delegation{
+		Validator:           valAddr.String(),
+		Shares:              sdkmath.LegacyNewDec(1000),
+		BaseRewardsPerShare: sdk.DecCoins{},
+	}
+	pos, err := s.keeper.CreatePosition(s.ctx, delAddr.String(), tier, sdkmath.ZeroInt(), del, false)
+	s.Require().NoError(err)
+
+	dstValidator := sdk.ValAddress([]byte("dst_validator________"))
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: dstValidator.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionAmountZero)
+}
+
+// TestMsgTierRedelegate_ExitTriggered verifies that TierRedelegate is rejected
+// when exit has been triggered
+func (s *KeeperSuite) TestMsgTierRedelegate_ExitTriggered() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	dstValidator := sdk.ValAddress([]byte("dst_validator________"))
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   0,
+		DstValidator: dstValidator.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionTriggeredExit)
 }
 
 func (s *KeeperSuite) TestMsgTierRedelegate_WrongOwner() {
@@ -1332,7 +1495,7 @@ func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
 	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
-func (s *KeeperSuite) TestMsgClearPosition_IdempotentWhenNotExiting() {
+func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -1344,12 +1507,43 @@ func (s *KeeperSuite) TestMsgClearPosition_IdempotentWhenNotExiting() {
 	})
 	s.Require().NoError(err)
 
-	resp, err := msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(0), resp.PositionId)
+
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit(), "position should still not be exiting")
+}
+
+// TestMsgClearPosition_RejectsWhileUnbonding verifies that ClearPosition is
+// rejected when the position is unbonding (S7).
+func (s *KeeperSuite) TestMsgClearPosition_RejectsWhileUnbonding() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+
+	// Position is still unbonding
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 }
 
 // TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeClear verifies that clearing
@@ -1388,6 +1582,35 @@ func (s *KeeperSuite) TestMsgClearPosition_DelegatedPastExitSettlesBonusBeforeCl
 	s.Require().False(pos.HasTriggeredExit())
 }
 
+// TestMsgClearPosition_RejectsAfterUnbondingCompleted verifies that ClearPosition
+// is rejected on an undelegated position after unbonding completes.
+func (s *KeeperSuite) TestMsgClearPosition_RejectsAfterUnbondingCompleted() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+
+	s.completeStakingUnbonding(valAddr)
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+}
+
 // --- MsgClaimTierRewards tests ---
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
@@ -1412,11 +1635,13 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
 	})
 	s.Require().NoError(err)
 
-	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+	s.Require().NoError(err)
+	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should be zero when not delegated")
+	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should be zero when not delegated")
 }
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_WrongOwner() {
@@ -1793,7 +2018,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitNotTriggered() {
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionNotReadyToWithdraw)
+	s.Require().ErrorIs(err, types.ErrExitNotTriggered)
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_ExitCommitmentNotElapsed() {
@@ -1840,7 +2065,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_StillDelegated() {
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionStillDelegated)
+	s.Require().ErrorIs(err, types.ErrPositionDelegated)
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_WrongOwner() {
@@ -2683,7 +2908,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionStillUnbonding)
+	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 
 	// Simulate unbonding completion via hook.
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)

@@ -527,4 +527,3 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	s.Require().NoError(err)
 	s.Require().Equal(nextHeight, lastWithdrawalBlock, "new block should update withdrawal marker")
 }
-

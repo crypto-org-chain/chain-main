@@ -91,7 +91,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return h.k.slashPositions(ctx, valAddr, positions, fraction)
 }
 
-
 func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
@@ -105,7 +104,6 @@ func (h Hooks) AfterUnbondingRedelegationSlashed(ctx context.Context, unbondingI
 func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
 	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
 }
-
 
 func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
 	return h.deleteCompletedPositionMappings(

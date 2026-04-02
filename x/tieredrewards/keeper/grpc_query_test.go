@@ -243,7 +243,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)	
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
 	expectedBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())

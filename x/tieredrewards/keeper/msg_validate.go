@@ -31,12 +31,21 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrPositionAlreadyDelegated
 	}
 
-	hasUnbonding, err := k.stillUnbonding(ctx, pos.Id)
+	if pos.Amount.IsZero() {
+		return types.ErrPositionAmountZero
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if pos.HasTriggeredExit() && !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrPositionTriggeredExit
+	}
+
+	unbonding, err := k.stillUnbonding(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if hasUnbonding {
-		return types.ErrPositionStillUnbonding
+	if unbonding {
+		return types.ErrPositionUnbonding
 	}
 
 	return nil
@@ -60,6 +69,8 @@ func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrExitLockDurationNotReached
 	}
 
+	// skip check for zero amount as we want those positions to be able to close their position properly
+
 	return nil
 }
 
@@ -70,6 +81,10 @@ func (k Keeper) validateRedelegatePosition(pos types.Position, owner, dstValidat
 
 	if !pos.IsDelegated() {
 		return types.ErrPositionNotDelegated
+	}
+
+	if pos.Amount.IsZero() {
+		return types.ErrPositionAmountZero
 	}
 
 	if pos.Validator == dstValidator {
@@ -116,9 +131,25 @@ func (k Keeper) validateTriggerExit(pos types.Position, owner string) error {
 	return nil
 }
 
-func (k Keeper) validateClearPosition(pos types.Position, owner string) error {
+func (k Keeper) validateClearPosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		unbonding, err := k.stillUnbonding(ctx, pos.Id)
+		if err != nil {
+			return err
+		}
+		if unbonding {
+			return types.ErrPositionUnbonding
+		}
+
+		if !pos.IsDelegated() {
+			return types.ErrPositionNotDelegated
+		}
+
 	}
 
 	return nil
@@ -127,10 +158,6 @@ func (k Keeper) validateClearPosition(pos types.Position, owner string) error {
 func (k Keeper) validateClaimRewards(pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
-	}
-
-	if !pos.IsDelegated() {
-		return types.ErrPositionNotDelegated
 	}
 
 	return nil
@@ -151,15 +178,15 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	}
 
 	if pos.IsDelegated() {
-		return types.ErrPositionStillDelegated
+		return types.ErrPositionDelegated
 	}
 
-	hasUnbonding, err := k.stillUnbonding(ctx, pos.Id)
+	unbonding, err := k.stillUnbonding(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if hasUnbonding {
-		return types.ErrPositionStillUnbonding
+	if unbonding {
+		return types.ErrPositionUnbonding
 	}
 
 	return nil

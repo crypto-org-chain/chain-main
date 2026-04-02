@@ -124,7 +124,7 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 	if !position.IsDelegated() {
 		return math.ZeroInt()
 	}
-	
+
 	if position.LastBonusAccrual.IsZero() {
 		return math.ZeroInt()
 	}
@@ -206,7 +206,16 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 //   - refreshed: the updated position with reward checkpoints advanced;
 //   - base: base rewards paid to the owner for this position in this call;
 //   - bonus: bonus rewards paid to the owner for this position in this call;
-func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddress, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+func (k Keeper) claimAndRefreshPosition(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+	if !pos.IsDelegated() {
+		return pos, sdk.NewCoins(), sdk.NewCoins(), nil
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+
 	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return types.Position{}, nil, nil, err

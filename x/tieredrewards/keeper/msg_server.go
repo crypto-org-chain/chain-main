@@ -30,22 +30,6 @@ func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.V
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// claimDelegatedPositionRewards refreshes a delegated position's in-memory reward state.
-// The caller is responsible for persisting the returned position.
-func (ms msgServer) claimDelegatedPositionRewards(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return types.Position{}, nil, nil, err
-	}
-
-	pos, baseRewards, bonusRewards, err := ms.claimAndRefreshPosition(ctx, valAddr, pos)
-	if err != nil {
-		return types.Position{}, nil, nil, err
-	}
-
-	return pos, baseRewards, bonusRewards, nil
-}
-
 // applyDelegationToPosition updates a position's delegation fields and reconciles
 // the stored amount from the validator's current share exchange rate.
 func (ms msgServer) applyDelegationToPosition(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
@@ -255,7 +239,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +304,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +381,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	}
 
 	if pos.IsDelegated() {
-		pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+		pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
 		if err != nil {
 			return nil, err
 		}
@@ -493,28 +477,22 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	if err := ms.validateClearPosition(pos, msg.Owner); err != nil {
+	if err := ms.validateClearPosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
-	// Settle rewards before clearing exit. While exiting with block time past exit_unlock_at,
-	// bonus accrual is capped at exit_unlock_at (see calculateBonusRaw). Clearing exit would
-	// remove that cap and allow claiming bonus for the post-unlock window without having
-	// earned it under the exit rules — draining the bonus pool. Same pattern as AddToTierPosition.
-	if pos.IsDelegated() {
-		pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
+	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
+	if err != nil {
+		return nil, err
 	}
 
-	pos.ClearExit()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	pos.ClearExit(sdkCtx.BlockTime())
 
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitCleared{
 		PositionId: pos.Id,
 		TierId:     pos.TierId,
@@ -540,7 +518,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, baseRewards, bonusRewards, err := ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, baseRewards, bonusRewards, err := ms.claimAndRefreshPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}

@@ -262,7 +262,7 @@ func TestPosition_ClearExit(t *testing.T) {
 	pos.TriggerExit(now, time.Hour*24)
 	require.True(t, pos.HasTriggeredExit())
 
-	pos.ClearExit()
+	pos.ClearExit(now)
 	require.False(t, pos.HasTriggeredExit())
 	require.NoError(t, pos.Validate())
 }

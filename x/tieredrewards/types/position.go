@@ -119,10 +119,11 @@ func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
 	p.ExitUnlockAt = blockTime.Add(duration)
 }
 
-// ClearExit resets exit timestamps so the position is no longer in an exit commitment.
-func (p *Position) ClearExit() {
+func (p *Position) ClearExit(blockTime time.Time) {
 	p.ExitTriggeredAt = time.Time{}
 	p.ExitUnlockAt = time.Time{}
+	// required so that positions who clear exit after exit lock duration won't have extra bonus accured
+	p.LastBonusAccrual = blockTime
 }
 
 func (p *Position) UpdateLastBonusAccrual(t time.Time) {
