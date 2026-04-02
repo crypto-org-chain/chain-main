@@ -11,4 +11,5 @@ var (
 	ErrTraceNotFound       = sdkerrors.Register(ModuleName, 1504, "class trace not found")
 	ErrInvalidVersion      = sdkerrors.Register(ModuleName, 1505, "invalid ICS721 version")
 	ErrMaxTransferChannels = sdkerrors.Register(ModuleName, 1506, "max nft-transfer channels")
+	ErrInvalidSourcePort   = sdkerrors.Register(ModuleName, 1507, "invalid source port")
 )
