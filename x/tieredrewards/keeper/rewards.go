@@ -121,6 +121,9 @@ func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.V
 // Formula: tokens * BonusApy * durationSeconds / SecondsPerYear.
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
 func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
+	if !position.IsDelegated() {
+		return math.ZeroInt()
+	}
 	if position.LastBonusAccrual.IsZero() {
 		return math.ZeroInt()
 	}
@@ -229,6 +232,10 @@ func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddr
 // claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
+	if !pos.IsDelegated() {
+		return sdk.Coins{}, nil
+	}
+
 	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
