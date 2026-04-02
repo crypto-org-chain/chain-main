@@ -32,18 +32,18 @@ func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.V
 
 // claimDelegatedPositionRewards refreshes a delegated position's in-memory reward state.
 // The caller is responsible for persisting the returned position.
-func (ms msgServer) claimDelegatedPositionRewards(ctx context.Context, pos types.Position) (types.Position, sdk.ValAddress, sdk.Coins, sdk.Coins, error) {
+func (ms msgServer) claimDelegatedPositionRewards(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
 	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 	if err != nil {
-		return types.Position{}, nil, nil, nil, err
+		return types.Position{}, nil, nil, err
 	}
 
 	pos, baseRewards, bonusRewards, err := ms.claimAndRefreshPosition(ctx, valAddr, pos)
 	if err != nil {
-		return types.Position{}, nil, nil, nil, err
+		return types.Position{}, nil, nil, err
 	}
 
-	return pos, valAddr, baseRewards, bonusRewards, nil
+	return pos, baseRewards, bonusRewards, nil
 }
 
 // applyDelegationToPosition updates a position's delegation fields and reconciles
@@ -84,7 +84,10 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	valAddr := sdk.MustValAddressFromBech32(msg.ValidatorAddress)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -136,7 +139,10 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	valAddr := sdk.MustValAddressFromBech32(msg.ValidatorAddress)
+	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -194,7 +200,10 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	valAddr := sdk.MustValAddressFromBech32(msg.Validator)
+	valAddr, err := sdk.ValAddressFromBech32(msg.Validator)
+	if err != nil {
+		return nil, err
+	}
 
 	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
@@ -246,7 +255,12 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, valAddr, _, _, err := ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 	if err != nil {
 		return nil, err
 	}
@@ -301,9 +315,17 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	dstValAddr := sdk.MustValAddressFromBech32(msg.DstValidator)
+	dstValAddr, err := sdk.ValAddressFromBech32(msg.DstValidator)
+	if err != nil {
+		return nil, err
+	}
 
-	pos, srcValAddr, _, _, err := ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
+
+	srcValAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 	if err != nil {
 		return nil, err
 	}
@@ -375,8 +397,12 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	}
 
 	if pos.IsDelegated() {
-		var valAddr sdk.ValAddress
-		pos, valAddr, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+		pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+		if err != nil {
+			return nil, err
+		}
+
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
 			return nil, err
 		}
@@ -476,7 +502,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 	// remove that cap and allow claiming bonus for the post-unlock window without having
 	// earned it under the exit rules — draining the bonus pool. Same pattern as AddToTierPosition.
 	if pos.IsDelegated() {
-		pos, _, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
+		pos, _, _, err = ms.claimDelegatedPositionRewards(ctx, pos)
 		if err != nil {
 			return nil, err
 		}
@@ -514,7 +540,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, _, baseRewards, bonusRewards, err := ms.claimDelegatedPositionRewards(ctx, pos)
+	pos, baseRewards, bonusRewards, err := ms.claimDelegatedPositionRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
