@@ -35,10 +35,6 @@ func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fra
 	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
 }
 
-func applyAmountSlash(pos *types.Position, slashAmount math.Int) {
-	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
-}
-
 func (k Keeper) getMappedSlashPosition(
 	ctx context.Context,
 	mappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes],
@@ -76,7 +72,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 		return nil
 	}
 
-	applyAmountSlash(&pos, slashAmount)
+	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
 
 	return k.setPosition(ctx, pos)
 }
@@ -92,7 +88,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		return nil
 	}
 
-	applyAmountSlash(&pos, slashAmount)
+	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
 
 	if pos.IsDelegated() && shareBurnt.IsPositive() {
 		newShares := pos.DelegatedShares.Sub(shareBurnt)
