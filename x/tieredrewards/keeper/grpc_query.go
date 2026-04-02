@@ -95,6 +95,13 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, err
 	}
 
+	if !pos.IsDelegated() {
+		return &types.QueryEstimatePositionRewardsResponse{
+			BaseRewards:  sdk.NewCoins(),
+			BonusRewards: sdk.NewCoins(),
+		}, nil
+	}
+
 	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 	if err != nil {
 		return nil, err
