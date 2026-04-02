@@ -667,6 +667,48 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitingPosition() {
 	s.Require().Equal(valAddr.String(), pos.Validator)
 }
 
+// TestMsgTierDelegate_StillUnbonding verifies that TierDelegate is rejected
+// when the position has pending staking unbondings (unbonding period not elapsed).
+func (s *KeeperSuite) TestMsgTierDelegate_StillUnbonding() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	s.Require().NoError(err)
+
+	// TierDelegate should be rejected while unbonding is pending
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionStillUnbonding)
+
+	// After completing unbonding, TierDelegate should succeed
+	s.completeStakingUnbonding(valAddr)
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+		Validator:  valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+}
+
 func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)

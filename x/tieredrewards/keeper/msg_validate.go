@@ -22,13 +22,21 @@ func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	return nil
 }
 
-func (k Keeper) validateDelegatePosition(pos types.Position, owner string) error {
+func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if pos.Owner != owner {
 		return types.ErrNotPositionOwner
 	}
 
 	if pos.IsDelegated() {
 		return types.ErrPositionAlreadyDelegated
+	}
+
+	hasUnbonding, err := k.stillUnbonding(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if hasUnbonding {
+		return types.ErrPositionStillUnbonding
 	}
 
 	return nil

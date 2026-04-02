@@ -196,7 +196,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.validateDelegatePosition(pos, msg.Owner); err != nil {
+	if err := ms.validateDelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
