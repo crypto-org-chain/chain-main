@@ -37,25 +37,6 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 	return h.k.settleRewardsForPositions(ctx, valAddr, positions, true)
 }
 
-// BeforeValidatorSlashed claims pending rewards then reduces Amount on all
-// positions by the slash fraction.
-func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
-	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
-	if err != nil {
-		return err
-	}
-	if len(positions) == 0 {
-		return nil
-	}
-
-	err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
-	if err != nil {
-		return err
-	}
-
-	return h.k.slashPositions(ctx, valAddr, positions, fraction)
-}
-
 // AfterValidatorBonded resets LastBonusAccrual for all positions on this
 // validator so bonus only accrues from when the validator is bonded again.
 func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
@@ -80,6 +61,37 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	return nil
 }
 
+// AfterValidatorRemoved cleans up validator reward ratio and withdrawal marker.
+func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	if err := h.k.ValidatorRewardRatio.Remove(ctx, valAddr); err != nil {
+		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
+	}
+	if err := h.k.ValidatorRewardsLastWithdrawalBlock.Remove(ctx, valAddr); err != nil {
+		h.k.logger(ctx).Error("failed to cleanup validator withdrawal marker on validator removal", "validator", valAddr.String(), "error", err)
+	}
+	return nil
+}
+
+// BeforeValidatorSlashed claims pending rewards then reduces Amount on all
+// positions by the slash fraction.
+func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
+	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if len(positions) == 0 {
+		return nil
+	}
+
+	err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
+	if err != nil {
+		return err
+	}
+
+	return h.k.slashPositions(ctx, valAddr, positions, fraction)
+}
+
+
 func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
@@ -94,8 +106,25 @@ func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64,
 	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
 }
 
-func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
-	return nil
+
+func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
+	return h.deleteCompletedPositionMappings(
+		ctx,
+		delAddr,
+		unbondingIds,
+		h.k.UnbondingDelegationMappings.Has,
+		h.k.deleteUnbondingPositionMapping,
+	)
+}
+
+func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
+	return h.deleteCompletedPositionMappings(
+		ctx,
+		delAddr,
+		unbondingIds,
+		h.k.RedelegationMappings.Has,
+		h.k.deleteRedelegationPositionMapping,
+	)
 }
 
 func (h Hooks) deleteCompletedPositionMappings(
@@ -124,43 +153,17 @@ func (h Hooks) deleteCompletedPositionMappings(
 	return nil
 }
 
-func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
-	return h.deleteCompletedPositionMappings(
-		ctx,
-		delAddr,
-		unbondingIds,
-		h.k.UnbondingDelegationMappings.Has,
-		h.k.deleteUnbondingPositionMapping,
-	)
-}
-
-func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
-	return h.deleteCompletedPositionMappings(
-		ctx,
-		delAddr,
-		unbondingIds,
-		h.k.RedelegationMappings.Has,
-		h.k.deleteRedelegationPositionMapping,
-	)
-}
-
 // No-op hooks.
+
+func (h Hooks) AfterUnbondingInitiated(_ context.Context, _ uint64) error {
+	return nil
+}
 
 func (h Hooks) AfterValidatorCreated(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
 
 func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
-	return nil
-}
-
-func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	if err := h.k.ValidatorRewardRatio.Remove(ctx, valAddr); err != nil {
-		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
-	}
-	if err := h.k.ValidatorRewardsLastWithdrawalBlock.Remove(ctx, valAddr); err != nil {
-		h.k.logger(ctx).Error("failed to cleanup validator withdrawal marker on validator removal", "validator", valAddr.String(), "error", err)
-	}
 	return nil
 }
 
