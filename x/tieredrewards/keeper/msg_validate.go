@@ -142,7 +142,7 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	}
 
 	if !pos.HasTriggeredExit() {
-		return types.ErrPositionNotReadyToWithdraw
+		return types.ErrExitNotTriggered
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
