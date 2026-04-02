@@ -14,7 +14,7 @@ import (
 // TierVotingPowerProvider is the interface the custom gov tally needs from
 // the tiered rewards module.
 type TierVotingPowerProvider interface {
-	GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error)
+	GetDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error)
 }
 
 // GovTallyStakingKeeper is the subset of staking keeper needed by the custom tally function.

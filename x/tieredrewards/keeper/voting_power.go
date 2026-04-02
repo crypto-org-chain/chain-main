@@ -15,7 +15,7 @@ import (
 // getVotingPowerForAddress returns the tier governance voting power for an address.
 // Power = DelegatedShares * BondedTokens / DelegatorShares for each delegated position.
 func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
-	active, err := k.GetActiveDelegatedPositionsByOwner(ctx, voter)
+	active, err := k.GetDelegatedPositionsByOwner(ctx, voter)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}
@@ -41,7 +41,7 @@ func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 	return power, nil
 }
 
-func (k Keeper) GetActiveDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error) {
+func (k Keeper) GetDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error) {
 	positions, err := k.getPositionsByOwner(ctx, voter)
 	if err != nil {
 		return nil, err

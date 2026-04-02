@@ -82,7 +82,7 @@ func NewCalculateVoteResultsAndVotingPowerFn(
 
 			// Tier-delegated voting power: deduct DelegatedShares from each validator
 			// so the module account's delegation is not double-counted.
-			tierPositions, err := tierKeeper.GetActiveDelegatedPositionsByOwner(ctx, voter)
+			tierPositions, err := tierKeeper.GetDelegatedPositionsByOwner(ctx, voter)
 			if err != nil {
 				return false, fmt.Errorf("error getting tier positions for %s: %w", vote.Voter, err)
 			}
