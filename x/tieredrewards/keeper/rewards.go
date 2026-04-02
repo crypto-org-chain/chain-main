@@ -229,13 +229,7 @@ func (k Keeper) claimAndRefreshPosition(ctx context.Context, valAddr sdk.ValAddr
 // claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
-
-	if hasNegative {
-		k.logger(ctx).Error("base rewards per share is negative, keeping previous checkpoint", "position", pos.String())
-		return sdk.Coins{}, nil
-	}
-
+	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
 	if delta.IsZero() {
