@@ -92,16 +92,15 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return err
 	}
 
-	return h.k.reconcileDistributionDelegationStakeAfterSlash(ctx, valAddr, fraction)
+	return h.k.updatePoolDelegationInfo(ctx, valAddr, fraction)
 }
 
-// reconcileDistributionDelegationStakeAfterSlash adjusts the distribution
-// starting stake for the tier module delegation after rewards have been
-// withdrawn in BeforeValidatorSlashed but before staking burns validator tokens.
-// Without this, the next withdrawal can compare a pre-slash starting stake
-// against a post-slash current stake and panic.
-func (k Keeper) reconcileDistributionDelegationStakeAfterSlash(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
-	if !fraction.IsPositive() {
+// updatePoolDelegationInfo refreshes the distribution
+// starting stake for the tier module pool since rewards are withdrawn in BeforeValidatorSlashed already.
+// Without this, the next reward claim will compare an outdated pre-slash stake with the lower current stake.
+func (k Keeper) updatePoolDelegationInfo(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
+	// fraction is [0,1] - guaranteed by updateValidatorSlashFraction.
+	if fraction.IsZero() {
 		return nil
 	}
 
