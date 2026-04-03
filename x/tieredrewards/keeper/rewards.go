@@ -246,7 +246,16 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 		return sdk.Coins{}, nil
 	}
 
-	delta := currentRatio.Sub(pos.BaseRewardsPerShare)
+	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
+	if hasNegative {
+		k.logger(ctx).Error(
+			"base rewards per share is negative, keeping previous checkpoint",
+			"position", pos.String(),
+			"current_ratio", currentRatio.String(),
+			"delta", delta.String(),
+		)
+		panic("negative base rewards per share delta")
+	}
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
 	if delta.IsZero() {
