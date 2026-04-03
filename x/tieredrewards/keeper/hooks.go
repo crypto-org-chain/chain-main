@@ -88,7 +88,44 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return err
 	}
 
-	return h.k.slashPositions(ctx, valAddr, positions, fraction)
+	if err := h.k.slashPositions(ctx, valAddr, positions, fraction); err != nil {
+		return err
+	}
+
+	return h.k.reconcileDistributionDelegationStakeAfterSlash(ctx, valAddr, fraction)
+}
+
+// reconcileDistributionDelegationStakeAfterSlash adjusts the distribution
+// starting stake for the tier module delegation after rewards have been
+// withdrawn in BeforeValidatorSlashed but before staking burns validator tokens.
+// Without this, the next withdrawal can compare a pre-slash starting stake
+// against a post-slash current stake and panic.
+func (k Keeper) reconcileDistributionDelegationStakeAfterSlash(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
+	if !fraction.IsPositive() {
+		return nil
+	}
+
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	hasInfo, err := k.distributionKeeper.HasDelegatorStartingInfo(ctx, valAddr, moduleAddr)
+	if err != nil {
+		return err
+	}
+	if !hasInfo {
+		return nil
+	}
+
+	startingInfo, err := k.distributionKeeper.GetDelegatorStartingInfo(ctx, valAddr, moduleAddr)
+	if err != nil {
+		return err
+	}
+
+	postSlashStake := startingInfo.Stake.MulTruncate(sdkmath.LegacyOneDec().Sub(fraction))
+	if postSlashStake.IsNegative() {
+		postSlashStake = sdkmath.LegacyZeroDec()
+	}
+	startingInfo.Stake = postSlashStake
+
+	return k.distributionKeeper.SetDelegatorStartingInfo(ctx, valAddr, moduleAddr, startingInfo)
 }
 
 func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {

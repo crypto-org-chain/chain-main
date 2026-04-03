@@ -2434,7 +2434,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
 	s.Require().Equal(sdkmath.NewInt(10000).String(), expectedReturn.String(),
 		"expected return should be 10000 (1 token lost to truncation)")
 
-	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(2_000_000), bondDenom)
 
 	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
@@ -2515,6 +2515,49 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 	s.Require().NoError(err)
 	s.Require().Equal(expectedReturn.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal the SDK return amount")
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	tier := newTestTier(1)
+	tier.BonusApy = sdkmath.LegacyZeroDec()
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	lockAmount := sdkmath.NewInt(10_000)
+	addr := sdk.AccAddress([]byte("slashed_undelegate__"))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  addr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	pos := positions[0]
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(1, 2)) // 1%
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.advancePastExitDuration()
+
+	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.CompletionTime.IsZero(), "undelegation should still succeed after a bonded slash")
 }
 
 // TestMsgAddToTierPosition_ReconcilesAmountWithShares: after

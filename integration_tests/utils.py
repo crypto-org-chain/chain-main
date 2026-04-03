@@ -228,9 +228,10 @@ def approve_proposal(
 ):
     proposal_id = get_proposal_id(rsp, msg)
     proposal = cluster.query_proposal(proposal_id)
+    amount = cluster.balance(cluster.address("ecosystem"))
     if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
         assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
-    amount = cluster.balance(cluster.address("ecosystem"))
+
     rsp = cluster.gov_deposit(
         "ecosystem",
         proposal_id,
@@ -240,6 +241,7 @@ def approve_proposal(
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+
     proposal = cluster.query_proposal(proposal_id)
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 

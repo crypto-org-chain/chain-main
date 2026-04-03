@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 import requests
 from dateutil.parser import isoparse
-from pystarport.ports import api_port
+from pystarport.ports import api_port, rpc_port
 
 from .utils import (
     approve_proposal,
@@ -17,6 +17,7 @@ from .utils import (
     query_command,
     wait_for_block_time,
     wait_for_new_blocks,
+    wait_for_port,
 )
 
 # ──────────────────────────────────────────────
@@ -61,6 +62,18 @@ def cluster(worker_index, tmp_path_factory):
         Path(__file__).parent / "configs/tieredrewards.jsonnet",
         worker_index,
         tmp_path_factory.mktemp("data"),
+    )
+
+
+@pytest.fixture(scope="function")
+def slashing_cluster(worker_index, tmp_path_factory):
+    """Use a fresh cluster so validator power shifts from earlier tests do not halt
+    consensus.
+    """
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/tieredrewards.jsonnet",
+        worker_index,
+        tmp_path_factory.mktemp("d"),
     )
 
 
@@ -125,6 +138,16 @@ def _tier_undelegate(cluster, owner, position_id, i=0):
     return _tx(cluster, "tier-undelegate", str(position_id), from_=owner, i=i)
 
 
+def _tier_delegate(cluster, owner, position_id, validator, i=0):
+    return _tx(cluster, "tier-delegate", str(position_id), validator, from_=owner, i=i)
+
+
+def _tier_redelegate(cluster, owner, position_id, dst_validator, i=0):
+    return _tx(
+        cluster, "tier-redelegate", str(position_id), dst_validator, from_=owner, i=i
+    )
+
+
 def _trigger_exit(cluster, owner, position_id, i=0):
     return _tx(cluster, "trigger-exit", str(position_id), from_=owner, i=i)
 
@@ -133,8 +156,38 @@ def _claim_rewards(cluster, owner, position_id, i=0):
     return _tx(cluster, "claim-tier-rewards", str(position_id), from_=owner, i=i)
 
 
+def _add_to_position(cluster, owner, position_id, amount, i=0):
+    return _tx(
+        cluster, "add-to-tier-position", str(position_id), str(amount), from_=owner, i=i
+    )
+
+
+def _clear_position(cluster, owner, position_id, i=0):
+    return _tx(cluster, "clear-position", str(position_id), from_=owner, i=i)
+
+
 def _withdraw(cluster, owner, position_id, i=0):
     return _tx(cluster, "withdraw-from-tier", str(position_id), from_=owner, i=i)
+
+
+def _broadcast_msg_tx(cluster, signer_name, msg, i=0, gas=300000, fees="5000basecro"):
+    """Broadcast a manually-crafted message tx by re-signing a generate-only tx."""
+    cli = cluster.cosmos_cli(i)
+    signer_addr = cluster.address(signer_name)
+
+    tx = cli.transfer(
+        signer_addr,
+        signer_addr,
+        f"1{DENOM}",
+        generate_only=True,
+        wait_tx=False,
+        gas=gas,
+        fees=fees,
+    )
+    tx["body"]["messages"] = [msg]
+
+    signed = cli.sign_tx_json(tx, signer_addr)
+    return cli.broadcast_tx_json(signed)
 
 
 def _fund_pool(cluster, from_name, amount_coin):
@@ -151,6 +204,19 @@ def _fund_pool(cluster, from_name, amount_coin):
     return cluster.transfer(from_addr, pool_addr, amount_coin)
 
 
+def _fund_pool_via_msg(cluster, from_name, amount, i=0):
+    return _broadcast_msg_tx(
+        cluster,
+        from_name,
+        {
+            "@type": "/chainmain.tieredrewards.v1.MsgFundTierPool",
+            "depositor": cluster.address(from_name),
+            "amount": [{"denom": DENOM, "amount": str(amount)}],
+        },
+        i=i,
+    )
+
+
 def _commit_delegation(
     cluster, delegator, validator, amount, tier_id, trigger_exit=False, i=0
 ):
@@ -165,7 +231,12 @@ def _query_position(cluster, position_id, i=0):
 
 
 def _query_positions_by_owner(cluster, owner, i=0):
-    return _rest_get(cluster, f"/chainmain/tieredrewards/v1/positions/{owner}", i)
+    try:
+        return _rest_get(cluster, f"/chainmain/tieredrewards/v1/positions/{owner}", i)
+    except requests.HTTPError as exc:
+        if exc.response.status_code == 404:
+            return {"positions": []}
+        raise
 
 
 def _query_tiers(cluster, i=0):
@@ -181,6 +252,55 @@ def _query_estimate_rewards(cluster, position_id, i=0):
 def _pool_balance(cluster):
     pool_addr = module_address(REWARDS_POOL_NAME)
     return cluster.balance(pool_addr, DENOM)
+
+
+def _assert_pool_balance_increased(balance_before, balance_after, source):
+    assert balance_after > balance_before, (
+        f"pool balance should increase after a successful {source} funding tx: "
+        f"before={balance_before}, after={balance_after}"
+    )
+
+
+def _assert_pool_received_amount(rsp, amount):
+    """Assert the rewards pool received the exact requested amount."""
+    pool_addr = module_address(REWARDS_POOL_NAME)
+    expected_amount = f"{amount}{DENOM}"
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "coin_received",
+        lambda attrs: attrs.get("receiver") == pool_addr
+        and attrs.get("amount") == expected_amount,
+    )
+    assert (
+        ev is not None
+    ), f"expected rewards pool to receive {expected_amount}: events={rsp['events']}"
+
+
+def _assert_pool_fund_tx(rsp, depositor, amount):
+    """Assert MsgFundTierPool funded the pool with the exact requested amount."""
+    expected_amount = f"{amount}{DENOM}"
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "coin_spent",
+        lambda attrs: attrs.get("spender") == depositor
+        and attrs.get("amount") == expected_amount,
+    )
+    assert ev is not None, (
+        f"expected depositor {depositor} to spend {expected_amount}: "
+        f"events={rsp['events']}"
+    )
+
+    _assert_pool_received_amount(rsp, amount)
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "message",
+        lambda attrs: attrs.get("action")
+        == "/chainmain.tieredrewards.v1.MsgFundTierPool",
+    )
+    assert ev is not None, f"expected MsgFundTierPool event: events={rsp['events']}"
 
 
 def _submit_gov_tier_proposal(cluster, proposer, msg_type, msg_body, title, summary):
@@ -201,6 +321,11 @@ def _submit_gov_tier_proposal(cluster, proposer, msg_type, msg_body, title, summ
 def _get_validator_addr(cluster, i=0):
     """Return the operator address of validator i."""
     return cluster.validators()[i]["operator_address"]
+
+
+def _get_node_validator_addr(cluster, i=0):
+    """Return the operator address for a specific node index."""
+    return cluster.address("validator", i=i, bech="val")
 
 
 def _before_ids(cluster, owner, i=0):
@@ -455,14 +580,10 @@ def test_fund_pool_via_bank_send(cluster):
     balance_before = _pool_balance(cluster)
     rsp = _fund_pool(cluster, "signer1", f"{fund_amount}{DENOM}")
     assert rsp["code"] == 0, rsp["raw_log"]
+    _assert_pool_received_amount(rsp, fund_amount)
 
     balance_after = _pool_balance(cluster)
-    # Pool must have grown by at least fund_amount minus per-block distributions.
-    # BeginBlocker can drain a few thousand basecro per block; use 1% tolerance.
-    assert balance_after >= balance_before + fund_amount - fund_amount // 100, (
-        f"pool should have grown by ~{fund_amount}: "
-        f"before={balance_before}, after={balance_after}"
-    )
+    _assert_pool_balance_increased(balance_before, balance_after, "bank-send")
 
 
 def test_claim_rewards_delegated(cluster):
@@ -582,6 +703,119 @@ def test_bonus_stops_after_exit_unlock(cluster):
         f"bonus rewards must be 0 after final claim post-exit_unlock_at, "
         f"got {bonus_after_list}"
     )
+
+
+def test_clear_exit_then_add_to_position(cluster):
+    """Clearing an exited position settles rewards, then allows adding again."""
+    owner = cluster.address("signer1")
+    validator = _get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 1000
+    add_amount = TIER_1_MIN * 2
+
+    rsp = _fund_pool(cluster, "signer1", f"1000000000{DENOM}")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    before = _before_ids(cluster, owner)
+    rsp = _lock_tier(cluster, owner, TIER_1_ID, amount, validator=validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = _new_pos_id(cluster, owner, before)
+
+    # Initialize LastBonusAccrual, then let rewards build before entering exit mode.
+    rsp = _claim_rewards(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    wait_for_new_blocks(cluster, 10)
+
+    rsp = _trigger_exit(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    pos_before_clear = _query_position(cluster, pos_id)["position"]
+    exit_unlock_at = isoparse(pos_before_clear["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    est_before_clear = _query_estimate_rewards(cluster, pos_id)
+    bonus_before = sum(
+        int(c.get("amount", "0")) for c in est_before_clear.get("bonus_rewards", [])
+    )
+    assert bonus_before > 0, "bonus should be pending before clearing exit"
+
+    balance_before_clear = cluster.balance(owner, DENOM)
+    rsp = _clear_position(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    balance_after_clear = cluster.balance(owner, DENOM)
+    assert (
+        balance_after_clear > balance_before_clear
+    ), "clear-position should settle rewards"
+
+    pos_after_clear = _query_position(cluster, pos_id)["position"]
+    assert (
+        pos_after_clear["exit_triggered_at"] == "0001-01-01T00:00:00Z"
+    ), "exit_triggered_at should be cleared"
+    assert (
+        pos_after_clear["exit_unlock_at"] == "0001-01-01T00:00:00Z"
+    ), "exit_unlock_at should be cleared"
+
+    est_after_clear = _query_estimate_rewards(cluster, pos_id)
+    bonus_after = sum(
+        int(c.get("amount", "0")) for c in est_after_clear.get("bonus_rewards", [])
+    )
+    assert (
+        bonus_after <= bonus_before
+    ), "clear-position should not increase the pending bonus window"
+
+    add_rsp = _add_to_position(cluster, owner, pos_id, add_amount)
+    assert add_rsp["code"] == 0, add_rsp["raw_log"]
+
+    pos_after_add = _query_position(cluster, pos_id)["position"]
+    assert int(pos_after_add["amount"]) > int(
+        pos_after_clear["amount"]
+    ), "position amount should grow after add-to-tier-position"
+
+
+def test_tier_redelegate_flow(cluster):
+    """Redelegating moves a delegated position to the destination validator."""
+    owner = cluster.address("signer2")
+    src_validator = _get_validator_addr(cluster, 0)
+    dst_validator = _get_validator_addr(cluster, 1)
+    amount = TIER_1_MIN * 1000
+
+    rsp = _fund_pool(cluster, "signer1", f"500000000{DENOM}")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    before = _before_ids(cluster, owner)
+    rsp = _lock_tier(cluster, owner, TIER_1_ID, amount, validator=src_validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = _new_pos_id(cluster, owner, before)
+
+    # Initialize LastBonusAccrual before checking reward settlement in redelegate.
+    rsp = _claim_rewards(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    wait_for_new_blocks(cluster, 5)
+
+    balance_before = cluster.balance(owner, DENOM)
+    rsp = _tier_redelegate(cluster, owner, pos_id, dst_validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventPositionRedelegated",
+        lambda attrs: "completion_time" in attrs,
+    )
+    assert ev is not None, "EventPositionRedelegated should be emitted"
+    assert ev["dst_validator"].strip('"') == dst_validator
+
+    pos = _query_position(cluster, pos_id)["position"]
+    assert pos["validator"] == dst_validator, "position should move to dst validator"
+    assert (
+        pos["delegated_shares"] != "0.000000000000000000"
+    ), "position should remain delegated"
+
+    balance_after = cluster.balance(owner, DENOM)
+    assert balance_after > balance_before, "redelegation should settle pending rewards"
+
+    wait_for_new_blocks(cluster, 2)
+    rsp = _claim_rewards(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
 
 
 # ──────────────────────────────────────────────
@@ -715,3 +949,111 @@ def test_update_params_via_governance(cluster):
     assert (
         float(updated["target_base_rewards_rate"]) == 0.0
     ), "target_base_rewards_rate should be 0 after governance update"
+
+
+def test_fund_pool_via_msg(cluster):
+    """MsgFundTierPool should fund the rewards pool without using the autocli path."""
+    fund_amount = 7_000_000
+
+    balance_before = _pool_balance(cluster)
+    rsp = _fund_pool_via_msg(cluster, "signer1", fund_amount)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    _assert_pool_fund_tx(rsp, cluster.address("signer1"), fund_amount)
+
+    balance_after = _pool_balance(cluster)
+    _assert_pool_balance_increased(balance_before, balance_after, "MsgFundTierPool")
+
+
+@pytest.mark.slow
+def test_slash_then_withdraw_succeeds(slashing_cluster):
+    """Slashed delegated position still exits, undelegates, and withdraws cleanly."""
+    cluster = slashing_cluster
+    owner = cluster.address("signer1")
+    validator = _get_node_validator_addr(cluster, 2)
+    amount = TIER_1_MIN * 20
+
+    rsp = _fund_pool(cluster, "signer1", f"100000000{DENOM}")
+    assert rsp["code"] == 0, rsp["raw_log"]
+    assert _pool_balance(cluster) > 0
+
+    before = _before_ids(cluster, owner)
+    rsp = _lock_tier(
+        cluster,
+        owner,
+        TIER_1_ID,
+        amount,
+        validator=validator,
+        trigger_exit=True,
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = _new_pos_id(cluster, owner, before)
+
+    pos_before_slash = _query_position(cluster, pos_id)["position"]
+    amount_before_slash = int(pos_before_slash["amount"])
+    exit_unlock_at = isoparse(pos_before_slash["exit_unlock_at"])
+
+    val_before = cluster.validator(validator)
+    tokens_before = int(val_before["tokens"])
+
+    wait_for_new_blocks(cluster, 5)
+    cluster.supervisor.stopProcess(f"{cluster.chain_id}-node2")
+    wait_for_new_blocks(cluster, 20)
+    cluster.supervisor.startProcess(f"{cluster.chain_id}-node2")
+    wait_for_port(rpc_port(cluster.base_port(2)))
+    wait_for_new_blocks(cluster, 2)
+
+    val_after = cluster.validator(validator)
+    tokens_after = int(val_after["tokens"])
+    assert tokens_after == int(
+        tokens_before * 0.99
+    ), "validator should be slashed by 1%"
+    assert val_after.get("jailed"), "validator should be jailed after downtime slash"
+
+    pos_after_slash = _query_position(cluster, pos_id)["position"]
+    amount_after_slash = int(pos_after_slash["amount"])
+    assert (
+        amount_after_slash < amount_before_slash
+    ), "position amount should decrease after validator slash"
+    assert (
+        pos_after_slash["delegated_shares"] != "0.000000000000000000"
+    ), "position should remain delegated after slash"
+
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    rsp = _tier_undelegate(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    unbond_data = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventPositionUndelegated",
+        lambda attrs: "completion_time" in attrs,
+    )
+    assert unbond_data is not None, "undelegate should emit completion_time"
+    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(
+        seconds=1
+    )
+
+    wait_for_block_time(cluster, completion_time)
+    wait_for_new_blocks(cluster, 1)
+
+    pos_after_undelegate = _query_position(cluster, pos_id)["position"]
+    withdraw_amount = int(pos_after_undelegate["amount"])
+    assert withdraw_amount <= amount_after_slash
+
+    balance_before = cluster.balance(owner, DENOM)
+    rsp = _withdraw(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    balance_after = cluster.balance(owner, DENOM)
+    assert balance_after >= balance_before + withdraw_amount - GAS_ALLOWANCE, (
+        f"expected balance increase of ~{withdraw_amount}: "
+        f"before={balance_before}, after={balance_after}"
+    )
+
+    try:
+        _query_position(cluster, pos_id)
+        assert False, f"position {pos_id} should be deleted after withdraw"
+    except requests.HTTPError as exc:
+        assert exc.response.status_code in (404, 500)
+        assert "not found" in exc.response.text.lower()

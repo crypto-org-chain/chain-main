@@ -5,21 +5,25 @@ local validator = import 'validator.jsonnet';
 {
   'tieredrewards-test': {
     validators: [validator {
+      coins: '40cro',
+      staked: '40cro',
       commission_rate: '0.000000000000000000',
-    }, validator],
-    accounts: default.accounts + default.signers,
+    }, validator, validator],
+    accounts: default.accounts + default.signers + default.reserves,
+    config: {
+      consensus: {
+        timeout_commit: '1s',
+      },
+    },
     genesis+: genesis {
       app_state+: {
-        // Increase voting_period so approve_proposal (deposit + 2 votes) completes
-        // within the window. genesis.jsonnet defaults to 10s which is too tight.
         gov+: {
           params+: {
-            voting_period: '30s',
-            max_deposit_period: '30s',
+            voting_period: '10s',
+            max_deposit_period: '1s',
             min_deposit: [{ denom: 'basecro', amount: '10000000' }],
           },
         },
-        // Disable mint inflation for clean reward accounting.
         mint: {
           minter: {
             inflation: '0.000000000000000000',
@@ -34,13 +38,17 @@ local validator = import 'validator.jsonnet';
             blocks_per_year: '63115',
           },
         },
+        slashing+: {
+          params+: {
+            signed_blocks_window: '10',
+            slash_fraction_downtime: '0.01',
+            downtime_jail_duration: '60s',
+          },
+        },
         tieredrewards: {
           params: {
             target_base_rewards_rate: '0.030000000000000000',
           },
-          // Two tiers with short exit durations suitable for integration tests.
-          // Tier 1: 5s exit — used for full exit-flow tests.
-          // Tier 2: 30s exit — used for testing "exit not yet elapsed" rejection.
           tiers: [
             {
               id: 1,

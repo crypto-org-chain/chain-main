@@ -30,6 +30,27 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultParams() {
 	s.Require().True(exported.Params.TargetBaseRewardsRate.IsZero())
 }
 
+func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {
+	tierModuleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
+
+	for _, addr := range []sdk.AccAddress{tierModuleAddr, rewardsPoolAddr} {
+		acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
+		if acc != nil {
+			s.app.AccountKeeper.RemoveAccount(s.ctx, acc)
+		}
+	}
+
+	s.keeper.InitGenesis(s.ctx, types.DefaultGenesisState())
+
+	for _, addr := range []sdk.AccAddress{tierModuleAddr, rewardsPoolAddr} {
+		acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
+		s.Require().NotNil(acc, "module account should exist after InitGenesis")
+		_, ok := acc.(sdk.ModuleAccountI)
+		s.Require().True(ok, "account at %s should be a module account", addr.String())
+	}
+}
+
 func (s *KeeperSuite) TestInitExportGenesis_ReImport() {
 	original := types.NewParams(
 		sdkmath.LegacyNewDecWithPrec(5, 2), // 0.05
