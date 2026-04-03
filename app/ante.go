@@ -1,6 +1,8 @@
 package app
 
 import (
+	"strings"
+
 	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
 	"github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
@@ -57,7 +59,14 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
 	}
 
-	return sdk.ChainAnteDecorators(anteDecorators...), nil
+	handler := sdk.ChainAnteDecorators(anteDecorators...)
+	return func(ctx sdk.Context, tx sdk.Tx, simulate bool) (sdk.Context, error) {
+		newCtx, err := handler(ctx, tx, simulate)
+		if err != nil && strings.Contains(err.Error(), "not found") && newsdkerrors.IsOf(err, sdkerrors.ErrUnknownAddress) {
+			return newCtx, newsdkerrors.Wrap(err, "send fund to create this account, this is not a keyring-backend issue")
+		}
+		return newCtx, err
+	}, nil
 }
 
 const (
@@ -76,36 +85,27 @@ func NewValidateMsgTransferDecorator() ValidateMsgTransferDecorator {
 }
 
 func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	// avoid breaking consensus
-	if !ctx.IsCheckTx() {
-		return next(ctx, tx, simulate)
-	}
-
-	msgs := tx.GetMsgs()
-	for _, msg := range msgs {
-		transfer, ok := msg.(*nfttypes.MsgTransfer)
+	for _, msg := range tx.GetMsgs() {
+		transferMsg, ok := msg.(*nfttypes.MsgTransfer)
 		if !ok {
 			continue
 		}
-
-		if len(transfer.ClassId) > MaxClassIDLength {
+		classID := transferMsg.ClassId
+		if len(classID) > MaxClassIDLength {
 			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "class id length must be less than %d", MaxClassIDLength)
 		}
-
-		if len(transfer.TokenIds) > MaxTokenIds {
-			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIds)
+		tokenIds := transferMsg.TokenIds
+		if len(tokenIds) > MaxTokenIds {
+			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token ids length must be less than %d", MaxTokenIds)
 		}
-
-		for _, tokenID := range transfer.TokenIds {
+		for _, tokenID := range tokenIds {
 			if len(tokenID) > MaxTokenIDLength {
 				return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "token id length must be less than %d", MaxTokenIDLength)
 			}
 		}
-
-		if len(transfer.Receiver) > MaximumReceiverLength {
+		if len(transferMsg.Receiver) > MaximumReceiverLength {
 			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "receiver length must be less than %d", MaximumReceiverLength)
 		}
 	}
-
 	return next(ctx, tx, simulate)
 }
