@@ -18,7 +18,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
-	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
@@ -39,7 +38,7 @@ func (s *IntegrationTestSuite) SetupSuite() {
 	cfg.ChainID = testutil.ChainID
 	cfg.AppConstructor = tieredrewardstestutil.GetApp
 	cfg.NumValidators = 2
-	cfg.TimeoutCommit = time.Second
+	cfg.TimeoutCommit = 200 * time.Millisecond
 
 	s.cfg = cfg
 	s.network, err = network.New(s.T(), s.T().TempDir(), cfg)
@@ -126,11 +125,18 @@ func (s *IntegrationTestSuite) mustExecTx(val *network.Validator, exec func() (s
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), &txResp), bz.String())
 	s.Require().Zero(txResp.Code, bz.String())
 
-	finalizedResp, err := clitestutil.GetTxResponse(s.network, val.ClientCtx, txResp.TxHash)
-	s.Require().NoError(err)
-	s.Require().Zero(finalizedResp.Code, finalizedResp.RawLog)
-
-	return finalizedResp
+	txClient := txtypes.NewServiceClient(val.ClientCtx)
+	for range 3 {
+		s.Require().NoError(s.network.WaitForNextBlock())
+		grpcResp, err := txClient.GetTx(context.Background(), &txtypes.GetTxRequest{Hash: txResp.TxHash})
+		if err == nil {
+			s.Require().NotNil(grpcResp.TxResponse)
+			s.Require().Zero(grpcResp.TxResponse.Code, grpcResp.TxResponse.RawLog)
+			return *grpcResp.TxResponse
+		}
+	}
+	s.FailNow("tx not queryable after 3 blocks", txResp.TxHash)
+	return sdk.TxResponse{}
 }
 
 func (s *IntegrationTestSuite) proposalIDFromTx(txResp sdk.TxResponse) uint64 {

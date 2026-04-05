@@ -35,8 +35,8 @@ import (
 
 const (
 	TestTierID            uint32 = 1
-	TestExitDuration             = time.Second
-	TestUnbondingDuration        = time.Second
+	TestExitDuration             = 200 * time.Millisecond
+	TestUnbondingDuration        = 200 * time.Millisecond
 )
 
 func GetApp(val network.ValidatorI) servertypes.Application {
