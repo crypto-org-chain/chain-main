@@ -225,28 +225,63 @@ def approve_proposal(
     msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
     wait_tx=True,
     broadcast_mode="sync",
+    top_up_deposit_in_voting_period=True,
 ):
     proposal_id = get_proposal_id(rsp, msg)
     proposal = cluster.query_proposal(proposal_id)
+    proposal_status = proposal["status"]
     amount = cluster.balance(cluster.address("ecosystem"))
-    if msg == ",/cosmos.gov.v1.MsgExecLegacyContent":
-        assert proposal["status"] == "PROPOSAL_STATUS_DEPOSIT_PERIOD", proposal
+    if proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD" or (
+        proposal_status == "PROPOSAL_STATUS_VOTING_PERIOD"
+        and top_up_deposit_in_voting_period
+    ):
+        top_up_wait_tx = wait_tx and proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD"
+        total_deposit_before = sum(
+            int(coin["amount"]) for coin in proposal.get("total_deposit", [])
+        )
+        rsp = cluster.gov_deposit(
+            "ecosystem",
+            proposal_id,
+            "1cro",
+            event_query_tx=top_up_wait_tx,
+            broadcast_mode=broadcast_mode,
+        )
+        assert rsp["code"] == 0, rsp["raw_log"]
 
-    rsp = cluster.gov_deposit(
-        "ecosystem",
-        proposal_id,
-        "1cro",
-        event_query_tx=wait_tx,
-        broadcast_mode=broadcast_mode,
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+        if top_up_wait_tx:
+            assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+        else:
+            wait_for_fn(
+                "governance deposit top-up",
+                lambda: (
+                    cluster.balance(cluster.address("ecosystem")) == amount - 100000000
+                    and sum(
+                        int(coin["amount"])
+                        for coin in cluster.query_proposal(proposal_id).get(
+                            "total_deposit", []
+                        )
+                    )
+                    >= total_deposit_before + 100000000
+                ),
+                timeout=30,
+                interval=0.5,
+            )
 
-    proposal = cluster.query_proposal(proposal_id)
+        proposal = cluster.query_proposal(proposal_id)
+
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
 
     if vote_option is not None:
+        voted_all = True
         for i in range(len(cluster.config["validators"])):
+            # Some validator sets can make the outcome irreversible before every
+            # validator has cast a vote. Stop once governance has finalized the
+            # proposal instead of submitting votes against an inactive proposal.
+            proposal = cluster.query_proposal(proposal_id)
+            if proposal["status"] != "PROPOSAL_STATUS_VOTING_PERIOD":
+                voted_all = False
+                break
+
             rsp = cluster.cosmos_cli(i).gov_vote(
                 "validator",
                 proposal_id,
@@ -254,11 +289,26 @@ def approve_proposal(
                 event_query_tx=wait_tx,
                 broadcast_mode=broadcast_mode,
             )
-            assert rsp["code"] == 0, rsp["raw_log"]
-        assert (
-            int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
-            == cluster.staking_pool()
-        ), "all voted"
+            if rsp["code"] != 0:
+                proposal = cluster.query_proposal(proposal_id)
+                if (
+                    "inactive proposal" in rsp["raw_log"]
+                    and proposal["status"] != "PROPOSAL_STATUS_VOTING_PERIOD"
+                ):
+                    voted_all = False
+                    break
+                assert rsp["code"] == 0, rsp["raw_log"]
+
+            proposal = cluster.query_proposal(proposal_id)
+            if proposal["status"] != "PROPOSAL_STATUS_VOTING_PERIOD":
+                voted_all = False
+                break
+
+        if voted_all:
+            assert (
+                int(cluster.query_tally(proposal_id, i=1)[vote_option + "_count"])
+                == cluster.staking_pool()
+            ), "all voted"
     else:
         assert cluster.query_tally(proposal_id) == {
             "yes_count": "0",

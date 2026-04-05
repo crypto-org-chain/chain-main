@@ -191,17 +191,14 @@ def _broadcast_msg_tx(cluster, signer_name, msg, i=0, gas=300000, fees="5000base
 
 
 def _fund_pool(cluster, from_name, amount_coin):
-    """Fund the rewards pool via a bank send to the module account.
-
-    MsgFundTierPool (fund-tier-pool CLI) panics in this binary due to a
-    known autocli incompatibility with repeated cosmos.base.v1beta1.Coin
-    positional arguments (proto descriptor mismatch in dynamicpb.Merge).
-    The handler is covered by keeper unit tests (TestFundTierPool_*).
-    Bank send produces the same observable result for integration purposes.
-    """
+    """Fund the rewards pool via a bank send to the module account."""
     from_addr = cluster.address(from_name)
     pool_addr = module_address(REWARDS_POOL_NAME)
     return cluster.transfer(from_addr, pool_addr, amount_coin)
+
+
+def _fund_pool_via_cli(cluster, from_name, amount_coin, i=0):
+    return _tx(cluster, "fund-tier-pool", amount_coin, from_=from_name, i=i)
 
 
 def _fund_pool_via_msg(cluster, from_name, amount, i=0):
@@ -316,6 +313,15 @@ def _submit_gov_tier_proposal(cluster, proposer, msg_type, msg_body, title, summ
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     return rsp
+
+
+def _approve_tieredrewards_proposal(cluster, rsp, msg):
+    return approve_proposal(
+        cluster,
+        rsp,
+        msg=msg,
+        top_up_deposit_in_voting_period=False,
+    )
 
 
 def _get_validator_addr(cluster, i=0):
@@ -568,22 +574,17 @@ def test_full_exit_flow(cluster):
 # ──────────────────────────────────────────────
 
 
-def test_fund_pool_via_bank_send(cluster):
-    """Pool balance grows when funded via a bank send to the module account.
-
-    TODO: test MsgFundTierPool (fund-tier-pool CLI) directly once the autocli
-    incompatibility with repeated cosmos.base.v1beta1.Coin positional arguments
-    is resolved (proto descriptor mismatch in dynamicpb.Merge).
-    """
+def test_fund_pool_via_cli(cluster):
+    """fund-tier-pool CLI should fund the rewards pool with the requested amount."""
     fund_amount = 10_000_000
 
     balance_before = _pool_balance(cluster)
-    rsp = _fund_pool(cluster, "signer1", f"{fund_amount}{DENOM}")
+    rsp = _fund_pool_via_cli(cluster, "signer1", f"{fund_amount}{DENOM}")
     assert rsp["code"] == 0, rsp["raw_log"]
-    _assert_pool_received_amount(rsp, fund_amount)
+    _assert_pool_fund_tx(rsp, cluster.address("signer1"), fund_amount)
 
     balance_after = _pool_balance(cluster)
-    _assert_pool_balance_increased(balance_before, balance_after, "bank-send")
+    _assert_pool_balance_increased(balance_before, balance_after, "fund-tier-pool CLI")
 
 
 def test_claim_rewards_delegated(cluster):
@@ -845,7 +846,7 @@ def test_add_tier_via_governance(cluster):
         title="Add Tier 3 (close_only)",
         summary="Add testing tier — initially close_only to verify ErrTierIsCloseOnly",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
+    _approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
 
     result = _query_tiers(cluster)
     ids = {int(t["id"]) for t in result.get("tiers", [])}
@@ -878,7 +879,7 @@ def test_update_tier_via_governance(cluster):
         title="Update Tier 3",
         summary="Update Tier 3 bonus_apy to 6% and remove close_only restriction",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    _approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     result = _query_tiers(cluster)
     tier3 = next(
@@ -903,7 +904,7 @@ def test_delete_tier_via_governance(cluster):
         title="Delete Tier 3",
         summary="Remove Tier 3 — no active positions",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_DELETE_TIER}")
+    _approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_DELETE_TIER}")
 
     result = _query_tiers(cluster)
     ids = {int(t["id"]) for t in result.get("tiers", [])}
@@ -943,7 +944,7 @@ def test_update_params_via_governance(cluster):
         "community", "submit-proposal", proposal
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
+    _approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
 
     updated = query_command(cluster, MODULE, "params")["params"]
     assert (
@@ -1057,3 +1058,81 @@ def test_slash_then_withdraw_succeeds(slashing_cluster):
     except requests.HTTPError as exc:
         assert exc.response.status_code in (404, 500)
         assert "not found" in exc.response.text.lower()
+
+
+def test_autocli_lock_tier_and_queries(cluster):
+    """Smoke test tieredrewards autocli tx/query paths end-to-end."""
+    owner = cluster.address("ecosystem")
+    validator = _get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 2
+
+    before = _before_ids(cluster, owner)
+    rsp = _tx(cluster, "lock-tier", str(TIER_1_ID), str(amount), validator, from_=owner)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = _new_pos_id(cluster, owner, before)
+
+    position_rsp = query_command(cluster, MODULE, "position", str(pos_id))
+    rest_position_rsp = _query_position(cluster, pos_id)
+    assert position_rsp == rest_position_rsp
+
+    position = position_rsp["position"]
+    assert position["owner"] == owner
+    assert int(position["tier_id"]) == TIER_1_ID
+    assert position["validator"] == validator
+    assert int(position["amount"]) == amount
+
+    owner_positions_rsp = query_command(cluster, MODULE, "positions-by-owner", owner)
+    rest_owner_positions_rsp = _query_positions_by_owner(cluster, owner)
+    assert owner_positions_rsp == rest_owner_positions_rsp
+
+    owner_positions = owner_positions_rsp.get("positions", [])
+    assert len(owner_positions) == len(before) + 1
+    assert any(
+        p["owner"] == owner
+        and int(p["tier_id"]) == TIER_1_ID
+        and p["validator"] == validator
+        and int(p["amount"]) == amount
+        for p in owner_positions
+    ), "positions-by-owner should include the newly created delegated position"
+
+    tiers_rsp = query_command(cluster, MODULE, "tiers")
+    rest_tiers_rsp = _query_tiers(cluster)
+    cli_tiers = {
+        **tiers_rsp,
+        "tiers": [
+            {
+                **tier,
+                "close_only": tier.get("close_only", False),
+            }
+            for tier in tiers_rsp.get("tiers", [])
+        ],
+    }
+    rest_tiers = {
+        **rest_tiers_rsp,
+        "tiers": [
+            {
+                **tier,
+                "close_only": tier.get("close_only", False),
+            }
+            for tier in rest_tiers_rsp.get("tiers", [])
+        ],
+    }
+    assert cli_tiers == rest_tiers
+
+    tier_ids = {int(t["id"]) for t in tiers_rsp.get("tiers", [])}
+    assert TIER_1_ID in tier_ids
+    assert TIER_2_ID in tier_ids
+
+    rewards_rsp = query_command(
+        cluster, MODULE, "estimate-position-rewards", str(pos_id)
+    )
+    rest_rewards_rsp = _query_estimate_rewards(cluster, pos_id)
+    assert rewards_rsp == rest_rewards_rsp
+
+    pool_balance_rsp = query_command(cluster, MODULE, "pool-balance")
+    cli_pool_amount = sum(
+        int(coin["amount"])
+        for coin in pool_balance_rsp.get("balance", [])
+        if coin["denom"] == DENOM
+    )
+    assert cli_pool_amount == _pool_balance(cluster)

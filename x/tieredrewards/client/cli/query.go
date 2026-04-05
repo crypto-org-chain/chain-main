@@ -1,0 +1,230 @@
+package cli
+
+import (
+	"context"
+
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"github.com/spf13/cobra"
+
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
+type queryRunFunc func(ctx context.Context, clientCtx client.Context, queryClient types.QueryClient, args []string) (proto.Message, error)
+
+// GetQueryCmd returns the query commands for the tieredrewards module.
+func GetQueryCmd() *cobra.Command {
+	queryCmd := &cobra.Command{
+		Use:                        types.ModuleName,
+		Short:                      "Querying commands for the tieredrewards module",
+		DisableFlagParsing:         true,
+		SuggestionsMinimumDistance: 2,
+		RunE:                       client.ValidateCmd,
+	}
+
+	queryCmd.AddCommand(
+		GetCmdQueryParams(),
+		GetCmdQueryTierPosition(),
+		GetCmdQueryTierPositionsByOwner(),
+		GetCmdQueryAllTierPositions(),
+		GetCmdQueryTiers(),
+		GetCmdQueryTierPoolBalance(),
+		GetCmdQueryEstimatePositionRewards(),
+		GetCmdQueryTierVotingPower(),
+		GetCmdQueryTotalDelegatedVotingPower(),
+	)
+
+	return queryCmd
+}
+
+func newQueryCmd(
+	use string,
+	args cobra.PositionalArgs,
+	short string,
+	run queryRunFunc,
+) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   use,
+		Args:  args,
+		Short: short,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			res, err := run(cmd.Context(), clientCtx, types.NewQueryClient(clientCtx), args)
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+func newPaginatedQueryCmd(
+	use string,
+	short string,
+	run func(context.Context, client.Context, *cobra.Command, types.QueryClient) (proto.Message, error),
+) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   use,
+		Args:  cobra.NoArgs,
+		Short: short,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			res, err := run(cmd.Context(), clientCtx, cmd, types.NewQueryClient(clientCtx))
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	return cmd
+}
+
+func GetCmdQueryParams() *cobra.Command {
+	return newQueryCmd(
+		"params",
+		cobra.NoArgs,
+		"Query the current tieredrewards parameters",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
+			return queryClient.Params(ctx, &types.QueryParamsRequest{})
+		},
+	)
+}
+
+func GetCmdQueryTierPosition() *cobra.Command {
+	return newQueryCmd(
+		"position [position-id]",
+		cobra.ExactArgs(1),
+		"Query a single tier position by ID",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			positionID, err := parseUint64Arg("position-id", args[0])
+			if err != nil {
+				return nil, err
+			}
+
+			return queryClient.TierPosition(ctx, &types.QueryTierPositionRequest{
+				PositionId: positionID,
+			})
+		},
+	)
+}
+
+func GetCmdQueryTierPositionsByOwner() *cobra.Command {
+	return newQueryCmd(
+		"positions-by-owner [owner]",
+		cobra.ExactArgs(1),
+		"Query all tier positions for an owner address",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
+				return nil, err
+			}
+
+			return queryClient.TierPositionsByOwner(ctx, &types.QueryTierPositionsByOwnerRequest{
+				Owner: args[0],
+			})
+		},
+	)
+}
+
+func GetCmdQueryAllTierPositions() *cobra.Command {
+	cmd := newPaginatedQueryCmd(
+		"positions",
+		"Query all tier positions (paginated)",
+		func(ctx context.Context, _ client.Context, cmd *cobra.Command, queryClient types.QueryClient) (proto.Message, error) {
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return nil, err
+			}
+
+			return queryClient.AllTierPositions(ctx, &types.QueryAllTierPositionsRequest{
+				Pagination: pageReq,
+			})
+		},
+	)
+	flags.AddPaginationFlagsToCmd(cmd, "positions")
+	return cmd
+}
+
+func GetCmdQueryTiers() *cobra.Command {
+	return newQueryCmd(
+		"tiers",
+		cobra.NoArgs,
+		"Query all tier definitions",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
+			return queryClient.Tiers(ctx, &types.QueryTiersRequest{})
+		},
+	)
+}
+
+func GetCmdQueryTierPoolBalance() *cobra.Command {
+	return newQueryCmd(
+		"pool-balance",
+		cobra.NoArgs,
+		"Query the bonus rewards pool balance",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
+			return queryClient.TierPoolBalance(ctx, &types.QueryTierPoolBalanceRequest{})
+		},
+	)
+}
+
+func GetCmdQueryEstimatePositionRewards() *cobra.Command {
+	return newQueryCmd(
+		"estimate-position-rewards [position-id]",
+		cobra.ExactArgs(1),
+		"Estimate pending base and bonus rewards for a position",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			positionID, err := parseUint64Arg("position-id", args[0])
+			if err != nil {
+				return nil, err
+			}
+
+			return queryClient.EstimatePositionRewards(ctx, &types.QueryEstimatePositionRewardsRequest{
+				PositionId: positionID,
+			})
+		},
+	)
+}
+
+func GetCmdQueryTierVotingPower() *cobra.Command {
+	return newQueryCmd(
+		"voting-power [voter]",
+		cobra.ExactArgs(1),
+		"Query governance voting power from delegated tier positions",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
+				return nil, err
+			}
+
+			return queryClient.TierVotingPower(ctx, &types.QueryTierVotingPowerRequest{
+				Voter: args[0],
+			})
+		},
+	)
+}
+
+func GetCmdQueryTotalDelegatedVotingPower() *cobra.Command {
+	return newQueryCmd(
+		"total-delegated-voting-power",
+		cobra.NoArgs,
+		"Query total governance voting power from delegated tier positions",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
+			return queryClient.TotalDelegatedVotingPower(ctx, &types.QueryTotalDelegatedVotingPowerRequest{})
+		},
+	)
+}

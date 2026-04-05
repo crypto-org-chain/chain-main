@@ -224,3 +224,75 @@ func TestMsgCommitDelegationToTier_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestMsgFundTierPool_Validate(t *testing.T) {
+	t.Parallel()
+
+	validDepositor := sdk.AccAddress([]byte("test_depositor______")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgFundTierPool
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgFundTierPool{
+				Depositor: validDepositor,
+				Amount:    sdk.NewCoins(sdk.NewInt64Coin("stake", 100)),
+			},
+		},
+		{
+			name: "invalid depositor",
+			msg: types.MsgFundTierPool{
+				Depositor: "invalid",
+				Amount:    sdk.NewCoins(sdk.NewInt64Coin("stake", 100)),
+			},
+			wantErr:     true,
+			errContains: "invalid depositor address",
+		},
+		{
+			name: "empty depositor",
+			msg: types.MsgFundTierPool{
+				Depositor: "",
+				Amount:    sdk.NewCoins(sdk.NewInt64Coin("stake", 100)),
+			},
+			wantErr:     true,
+			errContains: "invalid depositor address",
+		},
+		{
+			name: "zero amount",
+			msg: types.MsgFundTierPool{
+				Depositor: validDepositor,
+				Amount:    sdk.Coins{},
+			},
+			wantErr:     true,
+			errContains: "amount must be valid and non-zero",
+		},
+		{
+			name: "nil amount",
+			msg: types.MsgFundTierPool{
+				Depositor: validDepositor,
+				Amount:    nil,
+			},
+			wantErr:     true,
+			errContains: "amount must be valid and non-zero",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}

@@ -18,6 +18,7 @@ var (
 	_ sdk.Msg = &MsgClearPosition{}
 	_ sdk.Msg = &MsgClaimTierRewards{}
 	_ sdk.Msg = &MsgWithdrawFromTier{}
+	_ sdk.Msg = &MsgFundTierPool{}
 )
 
 func (msg MsgLockTier) Validate() error {
@@ -123,6 +124,18 @@ func (msg MsgClaimTierRewards) Validate() error {
 func (msg MsgWithdrawFromTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+func (msg MsgFundTierPool) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Depositor); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid depositor address")
+	}
+
+	if !msg.Amount.IsValid() || msg.Amount.IsZero() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidCoins, "amount must be valid and non-zero")
 	}
 
 	return nil
