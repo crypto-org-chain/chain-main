@@ -15,13 +15,13 @@ import (
 // query command returns, so it must be accepted as input.
 func TestCmdUpdateParams_ParsesDecimalFormats(t *testing.T) {
 	testCases := []struct {
-		name        string
-		args        []string
-		expErr      bool
-		expErrMsg   string
-		expSupply   sdkmath.Int
-		expDecay    sdkmath.LegacyDec
-		expBurned   int
+		name      string
+		args      []string
+		expErr    bool
+		expErrMsg string
+		expSupply sdkmath.Int
+		expDecay  sdkmath.LegacyDec
+		expBurned int
 	}{
 		{
 			name:      "short decimal format",
