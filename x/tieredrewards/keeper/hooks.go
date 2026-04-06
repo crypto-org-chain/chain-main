@@ -61,13 +61,10 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	return nil
 }
 
-// AfterValidatorRemoved cleans up validator reward ratio and withdrawal marker.
+// AfterValidatorRemoved cleans up validator reward ratio.
 func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	if err := h.k.ValidatorRewardRatio.Remove(ctx, valAddr); err != nil {
 		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
-	}
-	if err := h.k.ValidatorRewardsLastWithdrawalBlock.Remove(ctx, valAddr); err != nil {
-		h.k.logger(ctx).Error("failed to cleanup validator withdrawal marker on validator removal", "validator", valAddr.String(), "error", err)
 	}
 	return nil
 }

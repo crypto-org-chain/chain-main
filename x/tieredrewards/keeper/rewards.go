@@ -2,7 +2,9 @@ package keeper
 
 import (
 	"context"
+	"encoding/binary"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
@@ -33,13 +35,10 @@ func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 
 // collectValidatorDelegationRewards pulls accumulated staking distribution rewards from
 // x/distribution into the tier module account for the delegation to valAddr.
-func (k Keeper) collectValidatorDelegationRewards(ctx context.Context, valAddr sdk.ValAddress, currentBlockHeight uint64) (rewards sdk.Coins, collected bool, err error) {
-	lastWithdrawalBlock, err := k.ValidatorRewardsLastWithdrawalBlock.Get(ctx, valAddr)
-	if err == nil && lastWithdrawalBlock == currentBlockHeight {
+func (k Keeper) collectValidatorDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (rewards sdk.Coins, collected bool, err error) {
+	currentBlockHeight := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if lastBlock := k.getLastRewardsWithdrawalBlock(ctx, valAddr); lastBlock == currentBlockHeight {
 		return sdk.Coins{}, false, nil
-	}
-	if err != nil && !errors.Is(err, collections.ErrNotFound) {
-		return sdk.Coins{}, false, err
 	}
 
 	rewards, err = k.withdrawDelegationRewards(ctx, valAddr)
@@ -47,9 +46,7 @@ func (k Keeper) collectValidatorDelegationRewards(ctx context.Context, valAddr s
 		return sdk.Coins{}, false, err
 	}
 
-	if err := k.ValidatorRewardsLastWithdrawalBlock.Set(ctx, valAddr, currentBlockHeight); err != nil {
-		return sdk.Coins{}, false, err
-	}
+	k.setLastRewardsWithdrawalBlock(ctx, valAddr, currentBlockHeight)
 
 	return rewards, true, nil
 }
@@ -77,8 +74,7 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 		return sdk.DecCoins{}, nil
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	rewards, collected, err := k.collectValidatorDelegationRewards(ctx, valAddr, uint64(sdkCtx.BlockHeight()))
+	rewards, collected, err := k.collectValidatorDelegationRewards(ctx, valAddr)
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
@@ -98,6 +94,7 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 		return sdk.DecCoins{}, err
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsPerShareUpdated{
 		Validator:                 valAddr.String(),
 		RewardsWithdrawn:          rewards,
@@ -427,4 +424,26 @@ func (k Keeper) claimBonusRewardsWithValidator(ctx context.Context, pos *types.P
 	applyBonusAccrualCheckpoint(pos, blockTime)
 
 	return k.sendBonusFromRewardsPool(ctx, *pos, bonus)
+}
+
+// getLastRewardsWithdrawalBlock reads the last withdrawal block height for a validator
+// from the transient store. Returns 0 if not set (never withdrawn this block).
+func (k Keeper) getLastRewardsWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {
+	store := k.transientStoreService.OpenTransientStore(ctx)
+	bz, err := store.Get(valAddr)
+	if err != nil || bz == nil {
+		return 0
+	}
+	return binary.BigEndian.Uint64(bz)
+}
+
+// setLastRewardsWithdrawalBlock writes the last withdrawal block height for a validator
+// to the transient store. The value is automatically cleared at the end of the block.
+func (k Keeper) setLastRewardsWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress, blockHeight uint64) {
+	store := k.transientStoreService.OpenTransientStore(ctx)
+	bz := make([]byte, 8)
+	binary.BigEndian.PutUint64(bz, blockHeight)
+	if err := store.Set(valAddr, bz); err != nil {
+		panic(fmt.Errorf("failed to set last rewards withdrawal block: %w", err))
+	}
 }

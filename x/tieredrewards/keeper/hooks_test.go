@@ -420,8 +420,6 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 		},
 	})
 	s.Require().NoError(err)
-	err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Set(s.ctx, valAddr, uint64(123))
-	s.Require().NoError(err)
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
@@ -429,10 +427,6 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().False(hasRatio, "validator reward ratio should be cleaned after validator removal")
-
-	hasWithdrawalMarker, err := s.keeper.ValidatorRewardsLastWithdrawalBlock.Has(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().False(hasWithdrawalMarker, "validator withdrawal marker should be cleaned after validator removal")
 }
 
 // --- AfterUnbondingCompleted / AfterRedelegationCompleted hook tests ---

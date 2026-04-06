@@ -371,6 +371,7 @@ func New(
 	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		runtime.NewTransientStoreService(tkeys[tieredrewardstypes.TStoreKey]),
 		authAddr,
 		app.MintKeeper,
 		app.StakingKeeper,
@@ -1053,7 +1054,7 @@ func StoreKeys() (
 		circuittypes.StoreKey,
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
-	tkeys := storetypes.NewTransientStoreKeys()
+	tkeys := storetypes.NewTransientStoreKeys(tieredrewardstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys()
 
 	return keys, memKeys, tkeys

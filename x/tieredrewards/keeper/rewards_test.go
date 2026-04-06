@@ -500,8 +500,7 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	})
 	s.Require().NoError(err)
 
-	lastWithdrawalBlock, err := s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
-	s.Require().NoError(err)
+	lastWithdrawalBlock := s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
 	s.Require().Equal(currentHeight, lastWithdrawalBlock)
 
 	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
@@ -510,8 +509,7 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	})
 	s.Require().NoError(err)
 
-	lastWithdrawalBlock, err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
-	s.Require().NoError(err)
+	lastWithdrawalBlock = s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
 	s.Require().Equal(currentHeight, lastWithdrawalBlock, "same-block claim should keep withdrawal marker unchanged")
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -523,7 +521,6 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	})
 	s.Require().NoError(err)
 
-	lastWithdrawalBlock, err = s.keeper.ValidatorRewardsLastWithdrawalBlock.Get(s.ctx, valAddr)
-	s.Require().NoError(err)
+	lastWithdrawalBlock = s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
 	s.Require().Equal(nextHeight, lastWithdrawalBlock, "new block should update withdrawal marker")
 }

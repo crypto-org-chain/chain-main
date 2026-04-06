@@ -137,3 +137,7 @@ func (k Keeper) GetPositionsIdsByTier(ctx context.Context, tierId uint32) ([]uin
 func (k Keeper) GetPositionsByTier(ctx context.Context, tierId uint32) ([]types.Position, error) {
 	return k.getPositionsByTier(ctx, tierId)
 }
+
+func (k Keeper) GetLastWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {
+	return k.getLastRewardsWithdrawalBlock(ctx, valAddr)
+}
