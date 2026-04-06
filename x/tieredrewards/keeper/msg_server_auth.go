@@ -101,8 +101,8 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 }
 
 func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
-	if !msg.Amount.IsValid() || msg.Amount.IsZero() {
-		return nil, errors.Wrap(types.ErrInvalidAmount, "fund amount must be valid and non-zero")
+	if err := msg.Validate(); err != nil {
+		return nil, err
 	}
 
 	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
