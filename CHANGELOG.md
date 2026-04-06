@@ -8,6 +8,7 @@
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 - [#1252](https://github.com/crypto-org-chain/chain-main/pull/1252) fix: reject nft-transfer sends on non-nft port.
+- [#1256](https://github.com/crypto-org-chain/chain-main/pull/1256) fix(nft): owner key parsing for IBC-received NFTs.
 
 *July 9, 2025*
 

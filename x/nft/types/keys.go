@@ -40,7 +40,18 @@ var (
 func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string, err error) {
 	key = key[len(PrefixOwners)+len(delimiter):]
 	keys := bytes.Split(key, delimiter)
-	if len(keys) != 3 {
+
+	switch len(keys) {
+	case 3:
+		// standard denom: address/denom/token
+	case 4:
+		// IBC denom: address/ibc/hash/token
+		if string(keys[1]) == "ibc" {
+			keys = [][]byte{keys[0], []byte("ibc/" + string(keys[2])), keys[3]}
+		} else {
+			return address, denomID, tokenID, errors.New("wrong KeyOwner")
+		}
+	default:
 		return address, denomID, tokenID, errors.New("wrong KeyOwner")
 	}
 
