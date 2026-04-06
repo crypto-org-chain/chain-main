@@ -7,6 +7,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // --- UpdateParams ---
@@ -144,9 +146,16 @@ func (s *KeeperSuite) TestUpdateTier_Success() {
 	// Create tier first
 	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
 
-	// Update bonus APY
+	// Update params
 	updated := newTestTier(1)
-	updated.BonusApy = sdkmath.LegacyNewDecWithPrec(8, 2)
+	newBonusApy := sdkmath.LegacyNewDecWithPrec(8, 2)
+	newCloseOnly := true
+	newExitDuration := time.Hour * 24 * 365 * 2
+	newMinLockAmount := sdkmath.NewInt(10000)
+	updated.BonusApy = newBonusApy
+	updated.CloseOnly = newCloseOnly
+	updated.ExitDuration = newExitDuration
+	updated.MinLockAmount = newMinLockAmount
 
 	msg := &types.MsgUpdateTier{
 		Authority: authority,
@@ -158,29 +167,10 @@ func (s *KeeperSuite) TestUpdateTier_Success() {
 
 	got, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	s.Require().True(sdkmath.LegacyNewDecWithPrec(8, 2).Equal(got.BonusApy))
-}
-
-func (s *KeeperSuite) TestUpdateTier_SetCloseOnly() {
-	authority := s.keeper.GetAuthority()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
-
-	updated := newTestTier(1)
-	updated.CloseOnly = true
-
-	msg := &types.MsgUpdateTier{
-		Authority: authority,
-		Tier:      updated,
-	}
-
-	_, err := msgServer.UpdateTier(s.ctx, msg)
-	s.Require().NoError(err)
-
-	got, err := s.keeper.GetTier(s.ctx, 1)
-	s.Require().NoError(err)
-	s.Require().True(got.CloseOnly)
+	s.Require().True(newBonusApy.Equal(got.BonusApy))
+	s.Require().True(newCloseOnly == got.CloseOnly)
+	s.Require().True(newExitDuration == got.ExitDuration)
+	s.Require().True(newMinLockAmount.Equal(got.MinLockAmount))
 }
 
 func (s *KeeperSuite) TestUpdateTier_InvalidAuthority() {
@@ -210,18 +200,19 @@ func (s *KeeperSuite) TestUpdateTier_NotFound() {
 	s.Require().ErrorIs(err, types.ErrTierNotFound)
 }
 
-func (s *KeeperSuite) TestUpdateTier_InvalidTier() {
+func (s *KeeperSuite) TestUpdateTier_InvalidTierUpdate() {
 	authority := s.keeper.GetAuthority()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
+	invalidApy := sdkmath.LegacyNewDec(-1)
 
 	msg := &types.MsgUpdateTier{
 		Authority: authority,
 		Tier: types.Tier{
 			Id:            1,
 			ExitDuration:  time.Hour * 24 * 365,
-			BonusApy:      sdkmath.LegacyNewDec(-1), // invalid
+			BonusApy:      invalidApy,
 			MinLockAmount: sdkmath.NewInt(1000),
 		},
 	}
@@ -229,6 +220,171 @@ func (s *KeeperSuite) TestUpdateTier_InvalidTier() {
 	_, err := msgServer.UpdateTier(s.ctx, msg)
 	s.Require().Error(err)
 	s.Require().ErrorContains(err, "bonus apy")
+}
+
+func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Advance time so bonus accrues.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	baseRewardsDistributed := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
+
+	// Compute expected bonus using CalculateBonusRaw with the old tier.
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	// Lock amount equals genesis delegation, so tier module holds half the total stake.
+	expBase := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Update tier with new BonusApy
+	updated := newTestTier(1)
+	updated.BonusApy = sdkmath.LegacyNewDecWithPrec(8, 2)
+	_, err = msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
+		Authority: s.keeper.GetAuthority(),
+		Tier:      updated,
+	})
+	s.Require().NoError(err)
+
+	// Owner should have received exactly the expected base + bonus at the old rate.
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	actualRewards := balAfter.Amount.Sub(balBefore.Amount)
+	expectedTotal := expBase.Add(expBonus)
+	s.Require().True(expectedTotal.Equal(actualRewards),
+		"rewards mismatch: expected %s (base %s + bonus %s), got %s",
+		expectedTotal, expBase, expBonus, actualRewards)
+
+	// Position LastBonusAccrual should be advanced to current block time.
+	pos, err = s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().Equal(s.ctx.BlockTime(), pos.LastBonusAccrual)
+
+	// Subsequent claim should yield zero bonus (window was already consumed).
+	respClaim, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+	s.Require().True(respClaim.BonusRewards.IsZero(), "bonus should already be claimed by UpdateTier")
+}
+
+func (s *KeeperSuite) TestUpdateTier_NonApyChange_NoClaim() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+
+	// Advance time so bonus would accrue.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Update only CloseOnly — BonusApy stays the same.
+	updated := newTestTier(1)
+	updated.CloseOnly = true
+	_, err = msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
+		Authority: s.keeper.GetAuthority(),
+		Tier:      updated,
+	})
+	s.Require().NoError(err)
+
+	// No rewards should have been paid.
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().Equal(balBefore.Amount, balAfter.Amount)
+
+	// LastBonusAccrual should be unchanged.
+	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual)
+}
+
+func (s *KeeperSuite) TestUpdateTier_BonusApyChange_NoPositions() {
+	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	updated := newTestTier(1)
+	newBonusApy := sdkmath.LegacyNewDecWithPrec(8, 2)
+	updated.BonusApy = newBonusApy
+	_, err := msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
+		Authority: s.keeper.GetAuthority(),
+		Tier:      updated,
+	})
+	s.Require().NoError(err)
+
+	got, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().True(newBonusApy.Equal(got.BonusApy))
+}
+
+func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	// Do NOT fund the rewards pool — it stays empty.
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Advance time so bonus accrues.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	// Update tier with new BonusApy — should fail due to insufficient pool.
+	tier := newTestTier(1)
+	initialBonusApy := tier.BonusApy
+	updatedBonusApy := sdkmath.LegacyNewDecWithPrec(8, 2)
+	tier.BonusApy = updatedBonusApy
+	_, err = msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
+		Authority: s.keeper.GetAuthority(),
+		Tier:      tier,
+	})
+	s.Require().ErrorIs(err, types.ErrInsufficientBonusPool)
+
+	// Tier should NOT have been updated (tx failed).
+	got, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().True(initialBonusApy.Equal(got.BonusApy), "tier should still have old APY")
 }
 
 // --- DeleteTier ---

@@ -59,15 +59,17 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 		return nil, err
 	}
 
-	has, err := ms.hasTier(ctx, msg.Tier.Id)
+	oldTier, err := ms.getTier(ctx, msg.Tier.Id)
 	if err != nil {
 		return nil, err
 	}
-	if !has {
-		return nil, errors.Wrapf(types.ErrTierNotFound, "tier id %d", msg.Tier.Id)
+
+	if !oldTier.BonusApy.Equal(msg.Tier.BonusApy) {
+		if err := ms.claimRewardsForTier(ctx, msg.Tier.Id); err != nil {
+			return nil, err
+		}
 	}
 
-	// Updating BonusApy or ExitDuration affects all existing positions on this tier immediately.
 	if err := ms.setTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}

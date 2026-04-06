@@ -246,3 +246,16 @@ func (k Keeper) getPositionsByValidator(ctx context.Context, valAddr sdk.ValAddr
 	}
 	return k.getPositionsByIds(ctx, ids)
 }
+
+func (k Keeper) getPositionsIdsByTier(ctx context.Context, tierId uint32) ([]uint64, error) {
+	rng := collections.NewPrefixedPairRange[uint32, uint64](tierId)
+	return collectPairKeySetK2(ctx, k.PositionsByTier, rng)
+}
+
+func (k Keeper) getPositionsByTier(ctx context.Context, tierId uint32) ([]types.Position, error) {
+	ids, err := k.getPositionsIdsByTier(ctx, tierId)
+	if err != nil {
+		return nil, err
+	}
+	return k.getPositionsByIds(ctx, ids)
+}

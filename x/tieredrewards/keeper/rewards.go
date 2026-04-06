@@ -199,6 +199,64 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 	return nil
 }
 
+// claimRewardsForTier claims base and bonus rewards for all delegated
+// positions in the given tier.
+func (k Keeper) claimRewardsForTier(ctx context.Context, tierId uint32) error {
+	positions, err := k.getPositionsByTier(ctx, tierId)
+	if err != nil {
+		return err
+	}
+	if len(positions) == 0 {
+		return nil
+	}
+
+	// Group delegated positions by validator because updateBaseRewardsPerShare
+	// must be called once per validator batch.
+	byValidator := make(map[string][]types.Position)
+	for _, pos := range positions {
+		if !pos.IsDelegated() {
+			continue
+		}
+		byValidator[pos.Validator] = append(byValidator[pos.Validator], pos)
+	}
+
+	for valAddrStr, valPositions := range byValidator {
+		valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
+		if err != nil {
+			return err
+		}
+
+		currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+		if err != nil {
+			return err
+		}
+
+		validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+		if err != nil {
+			return err
+		}
+
+		tier, err := k.getTier(ctx, tierId)
+		if err != nil {
+			return err
+		}
+
+		for i := range valPositions {
+			if _, err := k.claimBaseRewards(ctx, &valPositions[i], currentRatio); err != nil {
+				return err
+			}
+			if _, err := k.claimBonusRewardsWithValidator(ctx, &valPositions[i], validator, tier, false); err != nil {
+				return err
+			}
+			if err := k.setPosition(ctx, valPositions[i]); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // claimAndRefreshPosition claims rewards for a single position and returns the
 // updated in-memory value so callers can finish their mutation and persist once.
 //
