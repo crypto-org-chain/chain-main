@@ -249,7 +249,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
 	if hasNegative {
 		k.logger(ctx).Error(
-			"base rewards per share is negative, keeping previous checkpoint",
+			"difference in base rewards per share is negative, keeping previous checkpoint",
 			"position", pos.String(),
 			"current_ratio", currentRatio.String(),
 			"delta", delta.String(),
