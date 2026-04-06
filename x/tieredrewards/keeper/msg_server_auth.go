@@ -100,41 +100,6 @@ func (ms msgServer) DeleteTier(ctx context.Context, msg *types.MsgDeleteTier) (*
 	return &types.MsgDeleteTierResponse{}, nil
 }
 
-func (ms msgServer) FundTierPool(ctx context.Context, msg *types.MsgFundTierPool) (*types.MsgFundTierPoolResponse, error) {
-	if err := msg.Validate(); err != nil {
-		return nil, err
-	}
-
-	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, coin := range msg.Amount {
-		if coin.Denom != bondDenom {
-			return nil, errors.Wrapf(types.ErrInvalidAmount, "fund amount must use bond denom %s only", bondDenom)
-		}
-	}
-
-	depositor, err := sdk.AccAddressFromBech32(msg.Depositor)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.bankKeeper.SendCoinsFromAccountToModule(ctx, depositor, types.RewardsPoolName, msg.Amount); err != nil {
-		return nil, err
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierPoolFunded{
-		Depositor: msg.Depositor,
-		Amount:    msg.Amount,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &types.MsgFundTierPoolResponse{}, nil
-}
-
 func (ms msgServer) emitTierChangedEvent(ctx context.Context, action types.TierChangeAction, tier types.Tier) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.EventManager().EmitTypedEvent(&types.EventTierChanged{
