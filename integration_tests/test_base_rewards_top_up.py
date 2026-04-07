@@ -14,7 +14,6 @@ from .utils import (
 )
 
 TIEREDREWARDS_MODULE = "tieredrewards"
-BANK_MODULE = "bank"
 PARAMS = "params"
 DENOM = "basecro"
 REWARDS_POOL_NAME = "rewards_pool"
@@ -22,8 +21,6 @@ MSG_UPDATE_PARAMS = "/chainmain.tieredrewards.v1.MsgUpdateParams"
 
 # Per-block top-up when fee collector is ~0: trunc(2e9 * 1.0 / 63115); see abci.go.
 TOPUP_FULL_SHORTFALL_BASECRO = "31688"
-# No MsgSend to fee_collector; use negligible on-chain rate so shortfall truncates to 0.
-NEGLIGIBLE_TARGET_RATE = "0.000000000000000001"
 
 pytestmark = pytest.mark.base_rewards
 
@@ -146,7 +143,7 @@ def test_pool_drains_to_zero(cluster):
 
 def test_chain_continues_after_pool_empty(cluster):
     """Test that the chain continues producing blocks after the pool is empty.
-    This verifies that an empty pool doesn't cause consensus errors.
+    This verifies that an empty pool doesn't cause consensus errors / panics.
     """
     # Ensure pool is empty from previous test
     pool_balance = _pool_balance(cluster)
@@ -161,26 +158,6 @@ def test_chain_continues_after_pool_empty(cluster):
     assert (
         height_after >= height_before + 5
     ), "chain should continue producing blocks with empty pool"
-
-
-def test_empty_pool_no_panic(cluster):
-    """BeginBlocker runs with an empty rewards pool: no panic and blocks keep advancing.
-
-    In this module-scoped cluster the pool is empty because earlier tests drained it
-    (and this test asserts it stays empty across new blocks).
-    """
-    pool_balance = _pool_balance(cluster)
-    assert pool_balance == 0
-
-    # Chain should still be producing blocks
-    wait_for_new_blocks(cluster, 2)
-
-    pool_balance = _pool_balance(cluster)
-    assert pool_balance == 0, "pool should still be empty"
-
-
-# total bonded = 2000000000; blocks_per_year = 63115; rate = 1.0; mint inflation = 0
-# => per-block target with empty fee collector truncates to 31688 basecro.
 
 
 def test_insufficient_pool_partial_drain(cluster):
@@ -267,40 +244,49 @@ def test_zero_rate_no_topup(cluster):
     assert pool_after == pool_before, "pool should be untouched when rate is zero"
 
 
-def test_fee_collector_sufficient_no_topup(cluster):
-    """No top-up when truncated shortfall is zero (cannot MsgSend to fee_collector)."""
-    params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
-    params["target_base_rewards_rate"] = NEGLIGIBLE_TARGET_RATE
+@pytest.fixture(scope="function")
+def inflation_cluster(worker_index, tmp_path_factory):
+    """Cluster with mint inflation enabled so the fee collector is funded each block."""
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/base_rewards_inflation.jsonnet",
+        worker_index,
+        tmp_path_factory.mktemp("data"),
+    )
 
-    authority = module_address("gov")
-    proposal_src = {
-        "messages": [
-            {
-                "@type": MSG_UPDATE_PARAMS,
-                "authority": authority,
-                "params": params,
-            }
-        ],
-        "deposit": "100000000basecro",
-        "title": "Negligible base rewards target",
-        "summary": "Set rate so BeginBlocker skips top-up",
-    }
-    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
-        "community", "submit-proposal", proposal_src
+
+def test_fee_collector_sufficient_no_topup(inflation_cluster):
+    """No top-up when the fee collector already covers the per-block target.
+
+    Uses a separate cluster with mint inflation enabled (13%) and a moderate
+    target_base_rewards_rate (3%).  The minted coins each block far exceed the
+    per-block target, so tieredrewards BeginBlocker never draws from the pool.
+
+    BeginBlocker order: mint → tieredrewards → distribution.  After mint runs,
+    the fee collector holds the freshly minted coins.  tieredrewards checks
+    this balance and sees no shortfall, so the pool stays untouched.
+    """
+    cluster = inflation_cluster
+
+    # Fund the rewards pool so we can verify it stays untouched
+    pool_addr = module_address(REWARDS_POOL_NAME)
+    rsp = cluster.transfer(
+        cluster.address("signer1"),
+        pool_addr,
+        "1000000basecro",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
+    wait_for_new_blocks(cluster, 1)
 
-    updated_params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
-    assert updated_params["target_base_rewards_rate"] == NEGLIGIBLE_TARGET_RATE
+    pool_before = _pool_balance(cluster)
+    assert pool_before > 0, "pool should have been funded"
 
-    pool_funds = _pool_balance(cluster)
-    assert pool_funds > 0, "pool should have funds"
-
-    wait_for_new_blocks(cluster, 3)
+    # Wait for several blocks — tieredrewards BeginBlocker runs each block
+    # but should not top up because the fee collector is well-funded by inflation
+    wait_for_new_blocks(cluster, 5)
 
     pool_after = _pool_balance(cluster)
 
-    assert (
-        pool_after == pool_funds
-    ), "pool should be untouched when there is no shortfall"
+    assert pool_after == pool_before, (
+        f"pool should be untouched when fee collector is sufficient; "
+        f"before={pool_before}, after={pool_after}"
+    )

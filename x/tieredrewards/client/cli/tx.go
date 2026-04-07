@@ -406,7 +406,6 @@ func GetCmdWithdrawFromTier() *cobra.Command {
 	)
 }
 
-
 func addGovProposalFlags(cmd *cobra.Command) {
 	cmd.Flags().String(govcli.FlagTitle, "", "Title of the governance proposal")
 	cmd.Flags().String(govcli.FlagSummary, "", "Summary of the governance proposal")

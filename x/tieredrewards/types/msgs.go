@@ -127,4 +127,3 @@ func (msg MsgWithdrawFromTier) Validate() error {
 
 	return nil
 }
-

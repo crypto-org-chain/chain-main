@@ -33,6 +33,7 @@ func (s *KeeperSuite) ctxWithVoteInfos() sdk.Context {
 }
 
 // drainFeeCollector moves all fee collector funds to a random address.
+// fee collector has totalSupply(~100T) × inflation(0.13) / BlocksPerYear(6311520) ≈ 2059726 from genesis
 func (s *KeeperSuite) drainFeeCollector() {
 	s.T().Helper()
 	feeCollectorAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, authtypes.FeeCollectorName).GetAddress()
