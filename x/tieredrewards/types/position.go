@@ -119,7 +119,7 @@ func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
 func (p *Position) ClearExit(blockTime time.Time) {
 	p.ExitTriggeredAt = time.Time{}
 	p.ExitUnlockAt = time.Time{}
-	// required so that positions who clear exit after exit lock duration won't have extra bonus accured
+	// required so that positions who clear exit after exit lock duration won't have extra bonus accrued
 	p.LastBonusAccrual = blockTime
 }
 

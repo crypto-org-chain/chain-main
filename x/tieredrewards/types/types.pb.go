@@ -239,7 +239,7 @@ func (m *Position) GetCreatedAtTime() time.Time {
 // ValidatorRewardRatio stores the cumulative base rewards per share for a validator.
 // Updated every time base rewards are withdrawn from x/distribution for this validator.
 // It is possible to have no base rewards per share when the position is created,
-// if the position is the first one delegated to a validator (no base rewards accured yet)
+// if the position is the first one delegated to a validator (no base rewards accrued yet)
 type ValidatorRewardRatio struct {
 	// cumulative_rewards_per_share is the running total of rewards per delegation share.
 	CumulativeRewardsPerShare github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,1,rep,name=cumulative_rewards_per_share,json=cumulativeRewardsPerShare,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"cumulative_rewards_per_share"`

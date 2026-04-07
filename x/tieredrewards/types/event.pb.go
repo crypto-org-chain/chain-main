@@ -211,9 +211,9 @@ func (m *EventPositionCreated) GetPosition() Position {
 	return Position{}
 }
 
-// EventDelegationCommited is emitted when a new position is created via CommitDelegationToTier.
+// EventDelegationCommitted is emitted when a new position is created via CommitDelegationToTier.
 type EventDelegationCommitted struct {
-	// committed_delegation holds the details of the delegation commited.
+	// committed_delegation holds the details of the delegation committed.
 	CommittedDelegation CommittedDelegation `protobuf:"bytes,1,opt,name=committed_delegation,json=committedDelegation,proto3" json:"committed_delegation"`
 	// position is the newly created position.
 	Position Position `protobuf:"bytes,2,opt,name=position,proto3" json:"position"`

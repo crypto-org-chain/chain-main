@@ -40,9 +40,9 @@ message EventPositionCreated {
   Position position = 1 [(gogoproto.nullable) = false];
 }
 
-// EventDelegationCommited is emitted when a new position is created via CommitDelegationToTier.
+// EventDelegationCommitted is emitted when a new position is created via CommitDelegationToTier.
 message EventDelegationCommitted {
-  // committed_delegation holds the details of the delegation commited.
+  // committed_delegation holds the details of the delegation committed.
   CommittedDelegation committed_delegation = 1 [(gogoproto.nullable) = false];
   // position is the newly created position.
   Position position = 2 [(gogoproto.nullable) = false];

@@ -103,7 +103,7 @@ message Position {
 // ValidatorRewardRatio stores the cumulative base rewards per share for a validator.
 // Updated every time base rewards are withdrawn from x/distribution for this validator.
 // It is possible to have no base rewards per share when the position is created,
-// if the position is the first one delegated to a validator (no base rewards accured yet)
+// if the position is the first one delegated to a validator (no base rewards accrued yet)
 message ValidatorRewardRatio {
   // cumulative_rewards_per_share is the running total of rewards per delegation share.
   repeated cosmos.base.v1beta1.DecCoin cumulative_rewards_per_share = 1 [
