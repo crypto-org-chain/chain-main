@@ -24,7 +24,7 @@
 
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
-- [#1257](https://github.com/crypto-org-chain/chain-main/pull/1258) fix(inflation): add manual CLI tx command for `update-params` to fix AutoCLI failing to parse `cosmos.Dec` fields (decay_rate)
+- [#1257](https://github.com/crypto-org-chain/chain-main/pull/1257) fix(inflation): add manual CLI tx command for `update-params` to fix AutoCLI failing to parse `cosmos.Dec` fields (decay_rate)
 
 *July 9, 2025*
 
