@@ -205,7 +205,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 	addAmount := sdkmath.NewInt(10_000_000)
 	commitAmount := sdkmath.NewInt(10_000_000)
 	exitImmediatelyLockAmount := sdkmath.NewInt(10_000_000)
-	fundAmount := sdkmath.NewInt(100)
 	deposit := sdk.NewCoin(s.cfg.BondDenom, sdkmath.OneInt()).String()
 	expeditedDeposit := sdk.NewCoin(s.cfg.BondDenom, sdkmath.NewInt(2)).String()
 
@@ -226,7 +225,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().True(tiersResp.Tiers[0].BonusApy.Equal(sdkmath.LegacyOneDec()))
 
 		poolBalance := s.mustQueryRewardsPoolBalance(val)
-		s.Require().True(poolBalance.Empty())
+		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).IsPositive(), "rewards pool should be funded at genesis")
 	})
 
 	s.Run("governance proposals", func() {
@@ -319,19 +318,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(uint32(2), deleteTierMsg.Id)
 	})
 
-	s.Run("fund pool and lock position", func() {
-		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
-			return tieredrewardstestutil.FundTierPoolExec(
-				val.ClientCtx,
-				owner,
-				sdk.NewCoin(s.cfg.BondDenom, fundAmount).String(),
-				s.defaultTxArgs()...,
-			)
-		})
-
-		poolBalance := s.mustQueryRewardsPoolBalance(val)
-		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).Equal(fundAmount))
-
+	s.Run("lock position", func() {
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.LockTierExec(
 				val.ClientCtx,
@@ -405,9 +392,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 				s.defaultTxArgs()...,
 			)
 		})
-
-		poolBalance := s.mustQueryRewardsPoolBalance(val)
-		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).LT(fundAmount))
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.TierRedelegateExec(
@@ -754,29 +738,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
 				)
 			},
 			wantContains: `invalid position-id "not-a-number"`,
-		},
-		{
-			name: "fund pool invalid coin",
-			exec: func() (sdktestutil.BufferWriter, error) {
-				return tieredrewardstestutil.FundTierPoolExec(
-					val.ClientCtx,
-					owner,
-					"not-a-coin",
-					s.defaultTxArgs()...,
-				)
-			},
-		},
-		{
-			name: "fund pool zero amount",
-			exec: func() (sdktestutil.BufferWriter, error) {
-				return tieredrewardstestutil.FundTierPoolExec(
-					val.ClientCtx,
-					owner,
-					sdk.NewCoin(s.cfg.BondDenom, sdkmath.ZeroInt()).String(),
-					s.defaultTxArgs()...,
-				)
-			},
-			wantContains: "amount must be valid and non-zero",
 		},
 		{
 			name: "lock tier invalid tier id",

@@ -170,48 +170,11 @@ def _withdraw(cluster, owner, position_id, i=0):
     return _tx(cluster, "withdraw-from-tier", str(position_id), from_=owner, i=i)
 
 
-def _broadcast_msg_tx(cluster, signer_name, msg, i=0, gas=300000, fees="5000basecro"):
-    """Broadcast a manually-crafted message tx by re-signing a generate-only tx."""
-    cli = cluster.cosmos_cli(i)
-    signer_addr = cluster.address(signer_name)
-
-    tx = cli.transfer(
-        signer_addr,
-        signer_addr,
-        f"1{DENOM}",
-        generate_only=True,
-        wait_tx=False,
-        gas=gas,
-        fees=fees,
-    )
-    tx["body"]["messages"] = [msg]
-
-    signed = cli.sign_tx_json(tx, signer_addr)
-    return cli.broadcast_tx_json(signed)
-
-
 def _fund_pool(cluster, from_name, amount_coin):
     """Fund the rewards pool via a bank send to the module account."""
     from_addr = cluster.address(from_name)
     pool_addr = module_address(REWARDS_POOL_NAME)
     return cluster.transfer(from_addr, pool_addr, amount_coin)
-
-
-def _fund_pool_via_cli(cluster, from_name, amount_coin, i=0):
-    return _tx(cluster, "fund-tier-pool", amount_coin, from_=from_name, i=i)
-
-
-def _fund_pool_via_msg(cluster, from_name, amount, i=0):
-    return _broadcast_msg_tx(
-        cluster,
-        from_name,
-        {
-            "@type": "/chainmain.tieredrewards.v1.MsgFundTierPool",
-            "depositor": cluster.address(from_name),
-            "amount": [{"denom": DENOM, "amount": str(amount)}],
-        },
-        i=i,
-    )
 
 
 def _commit_delegation(
@@ -249,55 +212,6 @@ def _query_estimate_rewards(cluster, position_id, i=0):
 def _pool_balance(cluster):
     pool_addr = module_address(REWARDS_POOL_NAME)
     return cluster.balance(pool_addr, DENOM)
-
-
-def _assert_pool_balance_increased(balance_before, balance_after, source):
-    assert balance_after > balance_before, (
-        f"pool balance should increase after a successful {source} funding tx: "
-        f"before={balance_before}, after={balance_after}"
-    )
-
-
-def _assert_pool_received_amount(rsp, amount):
-    """Assert the rewards pool received the exact requested amount."""
-    pool_addr = module_address(REWARDS_POOL_NAME)
-    expected_amount = f"{amount}{DENOM}"
-
-    ev = find_log_event_attrs(
-        rsp["events"],
-        "coin_received",
-        lambda attrs: attrs.get("receiver") == pool_addr
-        and attrs.get("amount") == expected_amount,
-    )
-    assert (
-        ev is not None
-    ), f"expected rewards pool to receive {expected_amount}: events={rsp['events']}"
-
-
-def _assert_pool_fund_tx(rsp, depositor, amount):
-    """Assert MsgFundTierPool funded the pool with the exact requested amount."""
-    expected_amount = f"{amount}{DENOM}"
-
-    ev = find_log_event_attrs(
-        rsp["events"],
-        "coin_spent",
-        lambda attrs: attrs.get("spender") == depositor
-        and attrs.get("amount") == expected_amount,
-    )
-    assert ev is not None, (
-        f"expected depositor {depositor} to spend {expected_amount}: "
-        f"events={rsp['events']}"
-    )
-
-    _assert_pool_received_amount(rsp, amount)
-
-    ev = find_log_event_attrs(
-        rsp["events"],
-        "message",
-        lambda attrs: attrs.get("action")
-        == "/chainmain.tieredrewards.v1.MsgFundTierPool",
-    )
-    assert ev is not None, f"expected MsgFundTierPool event: events={rsp['events']}"
 
 
 def _submit_gov_tier_proposal(cluster, proposer, msg_type, msg_body, title, summary):
@@ -572,19 +486,6 @@ def test_full_exit_flow(cluster):
 # ──────────────────────────────────────────────
 # Rewards (ADR-006 §1, §4, §5.8)
 # ──────────────────────────────────────────────
-
-
-def test_fund_pool_via_cli(cluster):
-    """fund-tier-pool CLI should fund the rewards pool with the requested amount."""
-    fund_amount = 10_000_000
-
-    balance_before = _pool_balance(cluster)
-    rsp = _fund_pool_via_cli(cluster, "signer1", f"{fund_amount}{DENOM}")
-    assert rsp["code"] == 0, rsp["raw_log"]
-    _assert_pool_fund_tx(rsp, cluster.address("signer1"), fund_amount)
-
-    balance_after = _pool_balance(cluster)
-    _assert_pool_balance_increased(balance_before, balance_after, "fund-tier-pool CLI")
 
 
 def test_claim_rewards_delegated(cluster):
@@ -950,19 +851,6 @@ def test_update_params_via_governance(cluster):
     assert (
         float(updated["target_base_rewards_rate"]) == 0.0
     ), "target_base_rewards_rate should be 0 after governance update"
-
-
-def test_fund_pool_via_msg(cluster):
-    """MsgFundTierPool should fund the rewards pool without using the autocli path."""
-    fund_amount = 7_000_000
-
-    balance_before = _pool_balance(cluster)
-    rsp = _fund_pool_via_msg(cluster, "signer1", fund_amount)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    _assert_pool_fund_tx(rsp, cluster.address("signer1"), fund_amount)
-
-    balance_after = _pool_balance(cluster)
-    _assert_pool_balance_increased(balance_before, balance_after, "MsgFundTierPool")
 
 
 @pytest.mark.slow

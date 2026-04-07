@@ -115,6 +115,12 @@ func NewChainMainTestNetworkFixture() network.TestFixture {
 		Address: moduleAddr,
 		Coins:   moduleFunding,
 	})
+	poolFunding := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1_000_000)))
+	poolAddr := authtypes.NewModuleAddress(tieredrewardstypes.RewardsPoolName).String()
+	bankGenesis.Balances = append(bankGenesis.Balances, banktypes.Balance{
+		Address: poolAddr,
+		Coins:   poolFunding,
+	})
 	bankGenesis.Supply = nil
 	genesisState[banktypes.ModuleName] = encCfg.Marshaler.MustMarshalJSON(&bankGenesis)
 
@@ -244,8 +250,4 @@ func ClaimTierRewardsExec(clientCtx client.Context, from, positionID string, ext
 
 func WithdrawFromTierExec(clientCtx client.Context, from, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecTxCmd(clientCtx, from, []string{positionID}, tieredrewardscli.GetCmdWithdrawFromTier, extraArgs...)
-}
-
-func FundTierPoolExec(clientCtx client.Context, from, amount string, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecTxCmd(clientCtx, from, []string{amount}, tieredrewardscli.GetCmdFundTierPool, extraArgs...)
 }

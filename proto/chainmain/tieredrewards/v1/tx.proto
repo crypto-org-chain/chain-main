@@ -59,9 +59,6 @@ service Msg {
   // WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,
   // sends the position's amount back to the owner, and deletes the position.
   rpc WithdrawFromTier(MsgWithdrawFromTier) returns (MsgWithdrawFromTierResponse);
-
-  // FundTierPool sends coins to the tier bonus rewards pool.
-  rpc FundTierPool(MsgFundTierPool) returns (MsgFundTierPoolResponse);
 }
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
@@ -365,23 +362,3 @@ message MsgWithdrawFromTierResponse {
     (amino.dont_omitempty)   = true
   ];
 }
-
-// MsgFundTierPool sends coins to the tier bonus rewards pool.
-// Any account may fund the pool.
-message MsgFundTierPool {
-  option (cosmos.msg.v1.signer) = "depositor";
-  option (amino.name)           = "chainmain/MsgFundTierPool";
-
-  // depositor is the address funding the pool.
-  string depositor = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-
-  // amount is the coins to deposit into the tier rewards pool.
-  repeated cosmos.base.v1beta1.Coin amount = 2 [
-    (gogoproto.nullable)     = false,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (amino.dont_omitempty)   = true
-  ];
-}
-
-// MsgFundTierPoolResponse defines the response for MsgFundTierPool.
-message MsgFundTierPoolResponse {}

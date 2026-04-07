@@ -36,7 +36,6 @@ func TestRegisterInterfaces_AllMsgTypes(t *testing.T) {
 		&types.MsgClearPosition{},
 		&types.MsgClaimTierRewards{},
 		&types.MsgWithdrawFromTier{},
-		&types.MsgFundTierPool{},
 	}
 
 	for _, msg := range msgs {

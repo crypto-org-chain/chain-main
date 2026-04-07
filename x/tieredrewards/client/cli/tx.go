@@ -41,7 +41,6 @@ func GetTxCmd() *cobra.Command {
 		GetCmdClearPosition(),
 		GetCmdClaimTierRewards(),
 		GetCmdWithdrawFromTier(),
-		GetCmdFundTierPool(),
 	)
 
 	return txCmd
@@ -407,24 +406,6 @@ func GetCmdWithdrawFromTier() *cobra.Command {
 	)
 }
 
-func GetCmdFundTierPool() *cobra.Command {
-	return newTxCmd(
-		"fund-tier-pool [amount]",
-		cobra.ExactArgs(1),
-		"Fund the tier bonus rewards pool",
-		func(clientCtx client.Context, cmd *cobra.Command, args []string) error {
-			amount, err := sdk.ParseCoinsNormalized(args[0])
-			if err != nil {
-				return err
-			}
-
-			return broadcastValidatedMsg(clientCtx, cmd, &types.MsgFundTierPool{
-				Depositor: clientCtx.GetFromAddress().String(),
-				Amount:    amount,
-			})
-		},
-	)
-}
 
 func addGovProposalFlags(cmd *cobra.Command) {
 	cmd.Flags().String(govcli.FlagTitle, "", "Title of the governance proposal")
