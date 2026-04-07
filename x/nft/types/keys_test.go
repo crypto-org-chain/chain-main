@@ -32,13 +32,26 @@ func TestSplitKeyDenomWithIBC(t *testing.T) {
 func TestSplitKeyOwnerWithIBC(t *testing.T) {
 	addr := sdk.AccAddress([]byte("cosmos1testaddr______"))
 	ibcDenom := "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
-	tokenID := "testtokenid"
 
-	key := types.KeyOwner(addr, ibcDenom, tokenID)
+	t.Run("simple token ID", func(t *testing.T) {
+		tokenID := "testtokenid"
+		key := types.KeyOwner(addr, ibcDenom, tokenID)
 
-	gotAddr, gotDenom, gotToken, err := types.SplitKeyOwner(key)
-	require.NoError(t, err)
-	require.Equal(t, addr, gotAddr)
-	require.Equal(t, ibcDenom, gotDenom)
-	require.Equal(t, tokenID, gotToken)
+		gotAddr, gotDenom, gotToken, err := types.SplitKeyOwner(key)
+		require.NoError(t, err)
+		require.Equal(t, addr, gotAddr)
+		require.Equal(t, ibcDenom, gotDenom)
+		require.Equal(t, tokenID, gotToken)
+	})
+
+	t.Run("token ID with slashes", func(t *testing.T) {
+		tokenID := "collection/series/42"
+		key := types.KeyOwner(addr, ibcDenom, tokenID)
+
+		gotAddr, gotDenom, gotToken, err := types.SplitKeyOwner(key)
+		require.NoError(t, err)
+		require.Equal(t, addr, gotAddr)
+		require.Equal(t, ibcDenom, gotDenom)
+		require.Equal(t, tokenID, gotToken)
+	})
 }
