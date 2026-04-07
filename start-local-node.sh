@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # ensure that ~/go/bin is in the path
 
