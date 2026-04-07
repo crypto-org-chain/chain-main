@@ -51,7 +51,7 @@ func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string,
 
 	denomID, tokenID, err = SplitKeyDenom(keys[1])
 
-	return
+	return address, denomID, tokenID, err
 }
 
 func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
@@ -74,7 +74,7 @@ func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
 		tokenID = string(key[idx+len(delimiter):])
 	}
 
-	return
+	return denomID, tokenID, err
 }
 
 // KeyOwner gets the key of a collection owned by an account address
