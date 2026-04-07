@@ -39,9 +39,9 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/tiers";
   }
 
-  // TierPoolBalance returns the current balance of the bonus rewards pool.
-  rpc TierPoolBalance(QueryTierPoolBalanceRequest) returns (QueryTierPoolBalanceResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/pool_balance";
+  // RewardsPoolBalance returns the current balance of the bonus rewards pool.
+  rpc RewardsPoolBalance(QueryRewardsPoolBalanceRequest) returns (QueryRewardsPoolBalanceResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/rewards_pool_balance";
   }
 
   // EstimatePositionRewards estimates pending base and bonus rewards for a position
@@ -112,12 +112,14 @@ message QueryTiersResponse {
   repeated Tier tiers = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
-// QueryTierPoolBalanceRequest is the request type for the Query/TierPoolBalance RPC method.
-message QueryTierPoolBalanceRequest {}
+// QueryRewardsPoolBalanceRequest is the request type for the Query/RewardsPoolBalance RPC method.
+message QueryRewardsPoolBalanceRequest {}
 
-// QueryTierPoolBalanceResponse is the response type for the Query/TierPoolBalance RPC method.
-message QueryTierPoolBalanceResponse {
-  repeated cosmos.base.v1beta1.Coin balance = 1 [
+// QueryRewardsPoolBalanceResponse is the response type for the Query/RewardsPoolBalance RPC method.
+message QueryRewardsPoolBalanceResponse {
+  // address is the  rewards pool address
+  string   address                          = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin balance = 2 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true

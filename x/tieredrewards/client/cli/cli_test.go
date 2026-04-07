@@ -21,7 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/network"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	txtypes "github.com/cosmos/cosmos-sdk/types/tx"
-	"github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
 type IntegrationTestSuite struct {
@@ -93,10 +93,10 @@ func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positio
 	return resp.Position
 }
 
-func (s *IntegrationTestSuite) mustQueryPoolBalance(val *network.Validator) sdk.Coins {
-	var resp tieredrewardstypes.QueryTierPoolBalanceResponse
+func (s *IntegrationTestSuite) mustQueryRewardsPoolBalance(val *network.Validator) sdk.Coins {
+	var resp tieredrewardstypes.QueryRewardsPoolBalanceResponse
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-		return tieredrewardstestutil.QueryTierPoolBalanceExec(val.ClientCtx)
+		return tieredrewardstestutil.QueryRewardsPoolBalanceExec(val.ClientCtx)
 	}, &resp)
 	return resp.Balance
 }
@@ -225,7 +225,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(tieredrewardstestutil.TestExitDuration, tiersResp.Tiers[0].ExitDuration)
 		s.Require().True(tiersResp.Tiers[0].BonusApy.Equal(sdkmath.LegacyOneDec()))
 
-		poolBalance := s.mustQueryPoolBalance(val)
+		poolBalance := s.mustQueryRewardsPoolBalance(val)
 		s.Require().True(poolBalance.Empty())
 	})
 
@@ -329,7 +329,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			)
 		})
 
-		poolBalance := s.mustQueryPoolBalance(val)
+		poolBalance := s.mustQueryRewardsPoolBalance(val)
 		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).Equal(fundAmount))
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
@@ -406,7 +406,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			)
 		})
 
-		poolBalance := s.mustQueryPoolBalance(val)
+		poolBalance := s.mustQueryRewardsPoolBalance(val)
 		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).LT(fundAmount))
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {

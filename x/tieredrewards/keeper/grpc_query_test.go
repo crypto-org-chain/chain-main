@@ -139,15 +139,15 @@ func (s *KeeperSuite) TestGRPCQueryTiers_Empty() {
 	s.Require().Empty(resp.Tiers)
 }
 
-// --- TierPoolBalance ---
+// --- RewardsPoolBalance ---
 
-func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_Empty() {
-	resp, err := s.queryClient.TierPoolBalance(s.ctx.Context(), &types.QueryTierPoolBalanceRequest{})
+func (s *KeeperSuite) TestGRPCQueryRewardsPoolBalance_Empty() {
+	resp, err := s.queryClient.RewardsPoolBalance(s.ctx.Context(), &types.QueryRewardsPoolBalanceRequest{})
 	s.Require().NoError(err)
 	s.Require().True(resp.Balance.IsZero())
 }
 
-func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
+func (s *KeeperSuite) TestGRPCQueryRewardsPoolBalance_WithFunds() {
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
 
@@ -155,9 +155,11 @@ func (s *KeeperSuite) TestGRPCQueryTierPoolBalance_WithFunds() {
 	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.RewardsPoolName, fundAmount)
 	s.Require().NoError(err)
 
-	resp, err := s.queryClient.TierPoolBalance(s.ctx.Context(), &types.QueryTierPoolBalanceRequest{})
+	resp, err := s.queryClient.RewardsPoolBalance(s.ctx.Context(), &types.QueryRewardsPoolBalanceRequest{})
 	s.Require().NoError(err)
 	s.Require().Equal(fundAmount, resp.Balance)
+	s.Require().NotEmpty(resp.Address)
+	s.Require().Equal(s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName).String(), resp.Address)
 }
 
 // --- EstimatePositionRewards ---

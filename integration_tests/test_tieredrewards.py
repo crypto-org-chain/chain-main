@@ -1129,10 +1129,10 @@ def test_autocli_lock_tier_and_queries(cluster):
     rest_rewards_rsp = _query_estimate_rewards(cluster, pos_id)
     assert rewards_rsp == rest_rewards_rsp
 
-    pool_balance_rsp = query_command(cluster, MODULE, "pool-balance")
+    rewards_pool_balance = query_command(cluster, MODULE, "rewards-pool-balance")
     cli_pool_amount = sum(
         int(coin["amount"])
-        for coin in pool_balance_rsp.get("balance", [])
+        for coin in rewards_pool_balance.get("balance", [])
         if coin["denom"] == DENOM
     )
     assert cli_pool_amount == _pool_balance(cluster)

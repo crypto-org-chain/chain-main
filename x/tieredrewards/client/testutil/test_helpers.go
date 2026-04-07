@@ -174,8 +174,8 @@ func QueryTiersExec(clientCtx client.Context, extraArgs ...string) (testutil.Buf
 	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryTiers)
 }
 
-func QueryTierPoolBalanceExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryTierPoolBalance)
+func QueryRewardsPoolBalanceExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRewardsPoolBalance)
 }
 
 func QueryEstimatePositionRewardsExec(clientCtx client.Context, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
