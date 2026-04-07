@@ -39,19 +39,8 @@ var (
 // SplitKeyOwner return the address,denom,id from the key of stored owner
 func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string, err error) {
 	key = key[len(PrefixOwners)+len(delimiter):]
-	keys := bytes.Split(key, delimiter)
-
-	switch len(keys) {
-	case 3:
-		// standard denom: address/denom/token
-	case 4:
-		// IBC denom: address/ibc/hash/token
-		if string(keys[1]) == "ibc" {
-			keys = [][]byte{keys[0], []byte("ibc/" + string(keys[2])), keys[3]}
-		} else {
-			return address, denomID, tokenID, errors.New("wrong KeyOwner")
-		}
-	default:
+	keys := bytes.SplitN(key, delimiter, 2)
+	if len(keys) < 2 {
 		return address, denomID, tokenID, errors.New("wrong KeyOwner")
 	}
 
@@ -60,34 +49,29 @@ func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string,
 		return address, denomID, tokenID, err
 	}
 
-	denomID = string(keys[1])
-	tokenID = string(keys[2])
+	denomID, tokenID, err = SplitKeyDenom(keys[1])
 
 	return
 }
 
 func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
-	keys := bytes.Split(key, delimiter)
-
-	switch len(keys) {
-	case 2:
-		{
-			denomID = string(keys[0])
-			tokenID = string(keys[1])
-		}
-	case 3:
-		{
-			if string(keys[0]) == "ibc" {
-				denomID = "ibc/" + string(keys[1])
-				tokenID = string(keys[2])
-			} else {
-				return denomID, tokenID, errors.New("wrong KeyOwner")
-			}
-		}
-	default:
-		{
+	if bytes.HasPrefix(key, []byte("ibc/")) {
+		// IBC denom: ibc/hash/tokenID (take remainder after second delimiter as tokenID)
+		rest := key[len("ibc/"):]
+		idx := bytes.Index(rest, delimiter)
+		if idx < 0 {
 			return denomID, tokenID, errors.New("wrong KeyOwner")
 		}
+		denomID = "ibc/" + string(rest[:idx])
+		tokenID = string(rest[idx+len(delimiter):])
+	} else {
+		// Standard denom: denom/tokenID (take remainder after first delimiter as tokenID)
+		idx := bytes.Index(key, delimiter)
+		if idx < 0 {
+			return denomID, tokenID, errors.New("wrong KeyOwner")
+		}
+		denomID = string(key[:idx])
+		tokenID = string(key[idx+len(delimiter):])
 	}
 
 	return
