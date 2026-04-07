@@ -67,9 +67,6 @@ func (p Position) Validate() error {
 		if !p.LastBonusAccrual.IsZero() {
 			return fmt.Errorf("last bonus accrual must not be set when not delegated")
 		}
-		if !p.HasTriggeredExit() && !p.Amount.IsZero() {
-			return fmt.Errorf("undelegated position must have exit triggered or zero amount")
-		}
 	}
 
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {

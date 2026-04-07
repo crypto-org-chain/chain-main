@@ -61,12 +61,10 @@ func TestPosition_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid undelegated position - non-zero amount without exit",
+			name: "valid undelegated position - non-zero amount without exit (e.g. after redeleg slash + AddToTier)",
 			modify: func(p *types.Position) {
 				p.ClearDelegation()
 			},
-			wantErr:     true,
-			errContains: "undelegated position must have exit triggered or zero amount",
 		},
 		{
 			name: "valid exiting position",
