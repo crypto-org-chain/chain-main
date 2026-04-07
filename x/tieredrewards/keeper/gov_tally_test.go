@@ -382,14 +382,17 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 		"undelegated tier + no staking should be zero power; got %s", totalPower)
 	s.Require().True(results[v1.OptionYes].IsZero())
 
-	// Sanity: verify the same address with delegated tier would be non-zero.
-	// (Re-insert vote since tally removed it, then delegate the position.)
-	// Complete staking unbonding so tokens return to the tier module account.
-	s.completeStakingUnbonding(valAddr)
-	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
-		Owner:      freshAddr.String(),
-		PositionId: 0,
-		Validator:  valAddr.String(),
+	// Sanity: verify a delegated tier position gives non-zero power.
+	// Create a new delegated position (the undelegated one can't be re-delegated
+	// because exit has elapsed).
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000))))
+	s.Require().NoError(err)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(5000),
+		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 

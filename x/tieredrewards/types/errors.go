@@ -30,4 +30,5 @@ var (
 	ErrExitNotTriggered             = errors.Register(ModuleName, 26, "exit has not been triggered")
 	ErrPositionUnbonding            = errors.Register(ModuleName, 27, "position is unbonding")
 	ErrPositionAmountZero           = errors.Register(ModuleName, 28, "position amount is zero")
+	ErrExitLockDurationElapsed      = errors.Register(ModuleName, 29, "exit lock duration has elapsed, clear position first")
 )

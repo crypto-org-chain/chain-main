@@ -478,7 +478,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().NotEqual(firstPageResp.Positions[0].Id, secondPageResp.Positions[0].Id)
 	})
 
-	s.Run("undelegate and redelegate position", func() {
+	s.Run("undelegate and withdraw position", func() {
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.TriggerExitFromTierExec(
 				val.ClientCtx,
@@ -505,18 +505,13 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.waitBlocks(1)
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
-			return tieredrewardstestutil.TierDelegateExec(
+			return tieredrewardstestutil.WithdrawFromTierExec(
 				val.ClientCtx,
 				owner,
 				"1",
-				dstValidator,
 				s.defaultTxArgs()...,
 			)
 		})
-
-		position = s.mustQueryPosition(val, "1")
-		s.Require().True(position.IsDelegated())
-		s.Require().Equal(dstValidator, position.Validator)
 	})
 
 	s.Run("lock with immediate exit and withdraw", func() {

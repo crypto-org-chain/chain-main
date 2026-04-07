@@ -295,7 +295,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if err := ms.validateRedelegatePosition(pos, msg.Owner, msg.DstValidator); err != nil {
+	if err := ms.validateRedelegatePosition(ctx, pos, msg.Owner, msg.DstValidator); err != nil {
 		return nil, err
 	}
 

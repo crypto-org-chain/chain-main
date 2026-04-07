@@ -145,3 +145,7 @@ func (p *Position) ClearDelegation() {
 func (p Position) HasTriggeredExit() bool {
 	return !p.ExitTriggeredAt.IsZero()
 }
+
+func (p Position) IsOwner(address string) bool {
+	return p.Owner == address
+}
