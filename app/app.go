@@ -437,7 +437,7 @@ func New(
 		Example of setting gov params:
 		govConfig.MaxMetadataLen = 10000
 	*/
-	tierTallyFn := tieredrewardskeeper.NewCalculateVoteResultsAndVotingPowerFn(
+	customVoteTallyFn := tieredrewardskeeper.NewCustomTallyTierVotesFn(
 		app.TieredRewardsKeeper,
 		app.StakingKeeper,
 		app.AccountKeeper,
@@ -448,7 +448,7 @@ func New(
 		app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.DistrKeeper,
 		app.MsgServiceRouter(), govConfig, authAddr,
-		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(tierTallyFn),
+		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(customVoteTallyFn),
 	)
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(

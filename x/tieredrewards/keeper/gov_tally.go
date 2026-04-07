@@ -13,11 +13,11 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// NewCalculateVoteResultsAndVotingPowerFn returns a tally function that includes
+// NewCustomTallyTierVotesFn returns a tally function that includes
 // tier-delegated voting power for each voter in addition to standard staking power.
 // To prevent double-counting, each position's DelegatedShares are added to the
 // validator's DelegatorDeductions before the second-pass tally.
-func NewCalculateVoteResultsAndVotingPowerFn(
+func NewCustomTallyTierVotesFn(
 	tierKeeper TierVotingPowerProvider,
 	sk GovTallyStakingKeeper,
 	ak GovTallyAccountKeeper,

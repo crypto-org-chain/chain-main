@@ -73,7 +73,7 @@ func (mockGovTallyAccountKeeper) AddressCodec() addresscodec.Codec {
 
 func TestNewCalculateVoteResultsAndVotingPowerFn_NotNil(t *testing.T) {
 	mock := mockTierVotingPower{positions: map[string][]types.Position{}}
-	fn := keeper.NewCalculateVoteResultsAndVotingPowerFn(mock, nil, nil)
+	fn := keeper.NewCustomTallyTierVotesFn(mock, nil, nil)
 	require.NotNil(t, fn, "should return a non-nil tally function")
 }
 
@@ -133,7 +133,7 @@ func (s *KeeperSuite) insertVote(proposalID uint64, voter sdk.AccAddress, opts [
 func (s *KeeperSuite) callCustomTally(proposalID uint64, validators map[string]v1.ValidatorGovInfo) (
 	sdkmath.LegacyDec, map[v1.VoteOption]sdkmath.LegacyDec,
 ) {
-	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: proposalID}
@@ -295,7 +295,7 @@ func (s *KeeperSuite) TestCustomTally_InvalidVoteWeight_ReturnsError() {
 		{Option: v1.OptionYes, Weight: "not-a-decimal"},
 	})
 
-	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: testProposalID}
@@ -333,7 +333,7 @@ func (s *KeeperSuite) TestCustomTally_InvalidValidatorVoteWeight_PreservesVote()
 		),
 	}
 
-	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		mockTierVotingPower{positions: map[string][]types.Position{}},
 		mockGovTallyStakingKeeper{},
 		mockGovTallyAccountKeeper{},
@@ -711,7 +711,7 @@ func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
 		positions: map[string][]types.Position{},
 		getErr:    sentinel,
 	}
-	tallyFn := keeper.NewCalculateVoteResultsAndVotingPowerFn(
+	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		errMock, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: testProposalID}
