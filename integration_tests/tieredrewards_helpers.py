@@ -4,10 +4,7 @@ import time
 import requests
 from pystarport.ports import api_port
 
-from .utils import (
-    approve_proposal,
-    module_address,
-)
+from .utils import approve_proposal, module_address
 
 # ──────────────────────────────────────────────
 # Constants
