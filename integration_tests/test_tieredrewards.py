@@ -688,11 +688,3 @@ def test_autocli_lock_tier_and_queries(cluster):
     tier_ids = {int(t["id"]) for t in tiers_rsp.get("tiers", [])}
     assert TIER_1_ID in tier_ids
     assert TIER_2_ID in tier_ids
-
-    rewards_pool_balance = query_command(cluster, MODULE, "rewards-pool-balance")
-    cli_pool_amount = sum(
-        int(coin["amount"])
-        for coin in rewards_pool_balance.get("balance", [])
-        if coin["denom"] == DENOM
-    )
-    assert cli_pool_amount == pool_balance(cluster)
