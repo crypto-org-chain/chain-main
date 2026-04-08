@@ -202,7 +202,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
+	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
+	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -344,7 +344,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	}
 
 	if pos.IsDelegated() {
-		pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
+		pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 		if err != nil {
 			return nil, err
 		}
@@ -444,7 +444,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	pos, _, _, err = ms.claimAndRefreshPosition(ctx, pos)
+	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +481,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, baseRewards, bonusRewards, err := ms.claimAndRefreshPosition(ctx, pos)
+	pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
