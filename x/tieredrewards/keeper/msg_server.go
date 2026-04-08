@@ -157,11 +157,6 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventDelegationCommitted{
-		CommittedDelegation: types.CommittedDelegation{
-			DelegatorAddress: msg.DelegatorAddress,
-			ValidatorAddress: msg.ValidatorAddress,
-			Amount:           msg.Amount,
-		},
 		Position: pos,
 	}); err != nil {
 		return nil, err
@@ -581,10 +576,8 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
-		PositionId: pos.Id,
-		TierId:     pos.TierId,
-		Owner:      pos.Owner,
-		Amount:     withdrawCoins,
+		Position: pos,
+		Amount:   withdrawCoins,
 	}); err != nil {
 		return nil, err
 	}
