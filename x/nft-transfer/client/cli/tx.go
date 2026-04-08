@@ -47,6 +47,10 @@ corresponding to the counterparty channel. Any timeout set to 0 is disabled.`),
 			classID := args[3]
 			tokenIDs := strings.Split(args[4], ",")
 
+			if srcPort != types.PortID {
+				return fmt.Errorf("invalid src-port %q: must be %q", srcPort, types.PortID)
+			}
+
 			if len(tokenIDs) == 0 {
 				return errors.New("tokenIDs cannot be empty")
 			}
