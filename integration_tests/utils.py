@@ -1120,6 +1120,26 @@ def assert_v6_circuit_is_working(cli, cluster):
     ], "x/circuit account should be unauthorized after reset" + str(rsp["accounts"])
 
 
+def submit_gov_proposal(cluster, proposer, msg_type, msg_body, title, summary):
+    """Submit a governance proposal with a single message that has an authority field.
+
+    Builds a standard proposal dict and submits it via gov_propose_since_cosmos_sdk_v0_50.
+    Asserts the transaction succeeds and returns the response.
+    """
+    authority = module_address("gov")
+    proposal = {
+        "messages": [{"@type": msg_type, "authority": authority, **msg_body}],
+        "deposit": "100000000basecro",
+        "title": title,
+        "summary": summary,
+    }
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
+        proposer, "submit-proposal", proposal
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    return rsp
+
+
 def find_event_proposal_id(events):
     for ev in events:
         if ev["type"] == "submit_proposal":
