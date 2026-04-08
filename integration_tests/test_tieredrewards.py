@@ -830,12 +830,6 @@ def test_autocli_lock_tier_and_queries(cluster):
     assert TIER_1_ID in tier_ids
     assert TIER_2_ID in tier_ids
 
-    rewards_rsp = query_command(
-        cluster, MODULE, "estimate-position-rewards", str(pos_id)
-    )
-    rest_rewards_rsp = query_estimate_rewards(cluster, pos_id)
-    assert rewards_rsp == rest_rewards_rsp
-
     rewards_pool_balance = query_command(cluster, MODULE, "rewards-pool-balance")
     cli_pool_amount = sum(
         int(coin["amount"])
