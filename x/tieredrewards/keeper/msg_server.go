@@ -30,9 +30,9 @@ func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.V
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// applyDelegationToPosition updates a position's delegation fields and reconciles
+// updateDelegation updates a position's delegation fields and reconciles
 // the stored amount from the validator's current share exchange rate.
-func (ms msgServer) applyDelegationToPosition(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
+func (ms msgServer) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
 	valAddr, err := sdk.ValAddressFromBech32(delegation.Validator)
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.applyDelegationToPosition(ctx, &pos, types.Delegation{
+	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 		Validator:           msg.Validator,
 		Shares:              newShares,
 		BaseRewardsPerShare: currentRatio,
@@ -326,7 +326,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	}
 
 	srcValidator := pos.Validator
-	if err := ms.applyDelegationToPosition(ctx, &pos, types.Delegation{
+	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 		Validator:           msg.DstValidator,
 		Shares:              newShares,
 		BaseRewardsPerShare: dstCurrentRatio,
@@ -392,7 +392,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		}
 
 		totalShares := pos.DelegatedShares.Add(newShares)
-		if err := ms.applyDelegationToPosition(ctx, &pos, types.Delegation{
+		if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 			Validator:           pos.Validator,
 			Shares:              totalShares,
 			BaseRewardsPerShare: pos.BaseRewardsPerShare,
