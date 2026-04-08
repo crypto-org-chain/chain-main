@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import requests
 from dateutil.parser import isoparse
-from pystarport.ports import rpc_port
 
 from .tieredrewards_helpers import (
     DENOM,
@@ -19,26 +18,20 @@ from .tieredrewards_helpers import (
     clear_position,
     commit_delegation,
     fund_pool,
-    get_node_validator_addr,
     get_validator_addr,
     lock_tier,
     new_pos_id,
     query_position,
-    tier_delegate,
     tier_redelegate,
     tier_undelegate,
     trigger_exit,
     withdraw,
 )
 from .utils import (
-    approve_proposal,
     cluster_fixture,
     find_log_event_attrs,
-    query_command,
-    submit_gov_proposal,
     wait_for_block_time,
     wait_for_new_blocks,
-    wait_for_port,
 )
 
 pytestmark = [pytest.mark.tieredrewards]
@@ -112,9 +105,8 @@ def test_lock_tier_with_trigger_exit(cluster):
 
     triggered = isoparse(pos["exit_triggered_at"])
     unlock = isoparse(pos["exit_unlock_at"])
-    assert (
-        unlock - triggered
-    ).total_seconds() == 5, f"exit duration should be 5s for Tier 1, got {(unlock - triggered).total_seconds()}s"
+    duration = (unlock - triggered).total_seconds()
+    assert duration == 5, f"exit duration should be 5s for Tier 1, got {duration}s"
 
 
 # ──────────────────────────────────────────────

@@ -103,7 +103,6 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	return newRatio, nil
 }
 
-
 // getLastRewardsWithdrawalBlock reads the last withdrawal block height for a validator
 // from the transient store. Returns 0 if not set (never withdrawn this block).
 func (k Keeper) getLastRewardsWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {

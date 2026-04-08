@@ -29,7 +29,6 @@ from .tieredrewards_helpers import (
 from .utils import (
     cluster_fixture,
     find_log_event_attrs,
-    module_address,
     query_command,
     submit_gov_proposal,
     wait_for_block_time,
@@ -382,7 +381,6 @@ def test_update_tier_min_lock_affects_new_positions(cluster):
 
     # Lock at new minimum succeeds
     before = before_ids(cluster, owner)
-    new_min_lock_amount = "10000000"
     rsp = lock_tier(cluster, owner, TIER_3_ID, 10_000_000, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     new_pos_id(cluster, owner, before)

@@ -1124,8 +1124,9 @@ def assert_v6_circuit_is_working(cli, cluster):
 def submit_gov_proposal(cluster, proposer, msg_type, msg_body, title, summary):
     """Submit a governance proposal with a single message that has an authority field.
 
-    Builds a standard proposal dict and submits it via gov_propose_since_cosmos_sdk_v0_50.
-    Asserts the transaction succeeds and returns the response.
+    Builds a standard proposal dict and submits it via
+    gov_propose_since_cosmos_sdk_v0_50. Asserts the transaction
+    succeeds and returns the response.
     """
     authority = module_address("gov")
     proposal = {

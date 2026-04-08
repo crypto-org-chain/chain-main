@@ -52,7 +52,6 @@ func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtype
 		TruncateInt()
 }
 
-
 func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 	accrualEnd := blockTime
 	if pos.CompletedExitLockDuration(blockTime) {
@@ -110,4 +109,3 @@ func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos types.Position
 
 	return bonusCoins, nil
 }
-
