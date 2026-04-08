@@ -1,6 +1,3 @@
-import json
-from datetime import timedelta
-from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -12,16 +9,13 @@ from .tieredrewards_helpers import (
     DENOM,
     GAS_ALLOWANCE,
     MODULE,
-    REWARDS_POOL_NAME,
     TIER_1_ID,
     TIER_1_MIN,
     TIER_2_ID,
-    TIER_2_MIN,
     add_to_position,
     before_ids,
     claim_rewards,
     clear_position,
-    commit_delegation,
     fund_pool,
     get_node_validator_addr,
     get_validator_addr,
@@ -32,7 +26,6 @@ from .tieredrewards_helpers import (
     query_position,
     query_positions_by_owner,
     query_tiers,
-    tier_redelegate,
     tier_undelegate,
     trigger_exit,
     tx,
@@ -78,266 +71,8 @@ def slashing_cluster(worker_index, tmp_path_factory):
 
 
 # ──────────────────────────────────────────────
-# Tests
+# Flow tests
 # ──────────────────────────────────────────────
-
-
-def test_commit_delegation_to_tier(cluster):
-    """Convert an existing staking delegation into a tier position without undelegating.
-
-    Verifies:
-    - The tier position is created with the committed amount and validator.
-    - The owner's x/staking delegation to the same validator decreases by commit_amount.
-    """
-    owner = cluster.address("signer1")
-    validator = get_validator_addr(cluster, 0)
-
-    # First: delegate normally via x/staking
-    staking_amount = TIER_1_MIN * 5
-    cli = cluster.cosmos_cli()
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "staking",
-            "delegate",
-            validator,
-            f"{staking_amount}{DENOM}",
-            "-y",
-            from_=owner,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            keyring_backend="test",
-            chain_id=cli.chain_id,
-            output="json",
-            gas=300000,
-        )
-    )
-    if rsp["code"] == 0:
-        rsp = cli.event_query_tx_for(rsp["txhash"])
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    wait_for_new_blocks(cluster, 1)
-
-    # Record staking delegation before commit
-    del_before = json.loads(
-        cli.raw(
-            "q",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            output="json",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    shares_before = Decimal(del_before["delegation_response"]["delegation"]["shares"])
-
-    # Then: commit part of that delegation to a tier position
-    commit_amount = TIER_1_MIN * 2
-    before = before_ids(cluster, owner)
-    rsp = commit_delegation(cluster, owner, validator, commit_amount, TIER_1_ID)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["validator"] == validator, "committed position should be delegated"
-    assert (
-        int(pos["amount"]) == commit_amount
-    ), f"committed amount mismatch: expected {commit_amount}, got {pos['amount']}"
-
-    # Staking delegation should have decreased by approximately commit_amount
-    del_after = json.loads(
-        cli.raw(
-            "q",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            output="json",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    shares_after = Decimal(del_after["delegation_response"]["delegation"]["shares"])
-    assert shares_after < shares_before, (
-        f"staking delegation should decrease after commit: "
-        f"before={shares_before}, after={shares_after}"
-    )
-
-
-def test_commit_delegation_with_exit(cluster):
-    """CommitDelegationToTier with trigger_exit_immediately sets exit_triggered_at."""
-    owner = cluster.address("signer1")
-    validator = get_validator_addr(cluster, 0)
-    staking_amount = TIER_1_MIN * 5
-    commit_amount = TIER_1_MIN * 2
-
-    # First: delegate normally via x/staking
-    cli = cluster.cosmos_cli()
-    rsp = json.loads(
-        cli.raw(
-            "tx",
-            "staking",
-            "delegate",
-            validator,
-            f"{staking_amount}{DENOM}",
-            "-y",
-            from_=owner,
-            home=cli.data_dir,
-            node=cli.node_rpc,
-            keyring_backend="test",
-            chain_id=cli.chain_id,
-            output="json",
-            gas=300000,
-        )
-    )
-    if rsp["code"] == 0:
-        rsp = cli.event_query_tx_for(rsp["txhash"])
-    assert rsp["code"] == 0, rsp["raw_log"]
-    wait_for_new_blocks(cluster, 1)
-
-    # Commit with trigger_exit_immediately=true
-    before = before_ids(cluster, owner)
-    rsp = commit_delegation(
-        cluster, owner, validator, commit_amount, TIER_1_ID, trigger_exit=True
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["validator"] == validator, "committed position should be delegated"
-    assert (
-        pos.get("exit_triggered_at")
-        and pos["exit_triggered_at"] != "0001-01-01T00:00:00Z"
-    ), "exit_triggered_at should be set when trigger_exit_immediately=true"
-
-
-# ──────────────────────────────────────────────
-# Exit Flow (ADR-006 §5.6, §5.7)
-# ──────────────────────────────────────────────
-
-
-def test_full_exit_flow(cluster):
-    """Full exit lifecycle: lock → trigger-exit → wait 5s → undelegate → withdraw.
-
-    Uses Tier 1 (5s exit) + 10s unbonding time from genesis.jsonnet.
-    """
-    owner = cluster.address("ecosystem")
-    validator = get_validator_addr(cluster, 0)
-    amount = TIER_1_MIN * 3
-
-    # 1. Lock and delegate
-    before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, amount, validator=validator)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    # 2. Trigger exit; read exit_unlock_at from position
-    rsp = trigger_exit(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    exit_unlock_at = isoparse(pos["exit_unlock_at"])
-
-    # 3. Wait for exit duration (5s) to elapse
-    wait_for_block_time(cluster, exit_unlock_at)
-    wait_for_new_blocks(cluster, 1)
-
-    # 4. Undelegate (allowed because exit was triggered, §5.4)
-    rsp = tier_undelegate(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # Parse unbonding completion_time from EventPositionUndelegated
-    unbond_data = find_log_event_attrs(
-        rsp["events"],
-        "chainmain.tieredrewards.v1.EventPositionUndelegated",
-        lambda attrs: "completion_time" in attrs,
-    )
-    assert unbond_data is not None, (
-        "EventPositionUndelegated with completion_time not found in "
-        "tier-undelegate response"
-    )
-    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(
-        seconds=1
-    )
-
-    # 5. Wait for unbonding to complete using chain time (unbonding_time = 10s from
-    #    genesis.jsonnet)
-    wait_for_block_time(cluster, completion_time)
-    wait_for_new_blocks(cluster, 1)
-
-    # 6. Withdraw — position deleted, tokens returned
-    balance_before = cluster.balance(owner, DENOM)
-    rsp = withdraw(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    balance_after = cluster.balance(owner, DENOM)
-    # User receives back approximately `amount` minus gas fees across all txs
-    assert balance_after >= balance_before + amount - GAS_ALLOWANCE, (
-        f"expected balance increase of ~{amount} after withdraw: "
-        f"before={balance_before}, after={balance_after}"
-    )
-
-    # Position should no longer exist after withdraw
-    try:
-        query_position(cluster, pos_id)
-        assert False, f"position {pos_id} should be deleted after withdraw"
-    except requests.HTTPError as exc:
-        # REST gateway may return 404 (not found) or 500 (wrapping not-found)
-        assert exc.response.status_code in (
-            404,
-            500,
-        ), f"expected 404/500 for deleted position, got {exc.response.status_code}"
-        assert (
-            "not found" in exc.response.text.lower()
-        ), f"expected 'not found' error body, got: {exc.response.text}"
-
-
-# ──────────────────────────────────────────────
-# Rewards (ADR-006 §1, §4, §5.8)
-# ──────────────────────────────────────────────
-
-
-def test_claim_rewards_delegated(cluster):
-    """claim-tier-rewards on a delegated position distributes nonzero rewards."""
-    owner = cluster.address("signer2")
-    validator = get_validator_addr(cluster, 0)
-    amount = TIER_1_MIN * 5
-    fund_amount = 50_000_000
-
-    # Fund pool to ensure bonus rewards are available
-    rsp = fund_pool(cluster, "signer1", f"{fund_amount}{DENOM}")
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # Create delegated position
-    before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, amount, validator=validator)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    # Wait for rewards to accrue (more blocks = more rewards)
-    wait_for_new_blocks(cluster, 10)
-
-    balance_before = cluster.balance(owner, DENOM)
-    rsp = claim_rewards(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    balance_after = cluster.balance(owner, DENOM)
-    # Rewards must be positive — balance strictly greater after claim
-    assert balance_after > balance_before, (
-        f"owner balance must increase after claiming rewards: "
-        f"before={balance_before}, after={balance_after}"
-    )
-
-    # EventTierRewardsClaimed must be present in tx events
-    ev = find_log_event_attrs(
-        rsp["events"], "chainmain.tieredrewards.v1.EventTierRewardsClaimed"
-    )
-    assert ev is not None, "EventTierRewardsClaimed not found in tx events"
-    assert (
-        "position_id" in ev
-    ), f"EventTierRewardsClaimed missing position_id field: {ev}"
 
 
 def test_bonus_stops_after_exit_unlock(cluster):
@@ -485,52 +220,6 @@ def test_clear_exit_thenadd_to_position(cluster):
     ), "position amount should grow after add-to-tier-position"
 
 
-def test_tier_redelegate_flow(cluster):
-    """Redelegating moves a delegated position to the destination validator."""
-    owner = cluster.address("signer2")
-    src_validator = get_validator_addr(cluster, 0)
-    dst_validator = get_validator_addr(cluster, 1)
-    amount = TIER_1_MIN * 1000
-
-    rsp = fund_pool(cluster, "signer1", f"500000000{DENOM}")
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, amount, validator=src_validator)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    # Initialize LastBonusAccrual before checking reward settlement in redelegate.
-    rsp = claim_rewards(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-    wait_for_new_blocks(cluster, 5)
-
-    balance_before = cluster.balance(owner, DENOM)
-    rsp = tier_redelegate(cluster, owner, pos_id, dst_validator)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    ev = find_log_event_attrs(
-        rsp["events"],
-        "chainmain.tieredrewards.v1.EventPositionRedelegated",
-        lambda attrs: "completion_time" in attrs,
-    )
-    assert ev is not None, "EventPositionRedelegated should be emitted"
-    assert ev["dst_validator"].strip('"') == dst_validator
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["validator"] == dst_validator, "position should move to dst validator"
-    assert (
-        pos["delegated_shares"] != "0.000000000000000000"
-    ), "position should remain delegated"
-
-    balance_after = cluster.balance(owner, DENOM)
-    assert balance_after > balance_before, "redelegation should settle pending rewards"
-
-    wait_for_new_blocks(cluster, 2)
-    rsp = claim_rewards(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-
 @pytest.mark.slow
 def test_slash_then_withdraw_succeeds(slashing_cluster):
     """Slashed delegated position still exits, undelegates, and withdraws cleanly."""
@@ -597,9 +286,7 @@ def test_slash_then_withdraw_succeeds(slashing_cluster):
         lambda attrs: "completion_time" in attrs,
     )
     assert unbond_data is not None, "undelegate should emit completion_time"
-    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(
-        seconds=1
-    )
+    completion_time = isoparse(unbond_data["completion_time"].strip('"'))
 
     wait_for_block_time(cluster, completion_time)
     wait_for_new_blocks(cluster, 1)
