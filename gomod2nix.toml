@@ -77,8 +77,8 @@ schema = 3
     version = "v0.1.4"
     hash = "sha256-lm0Ccc9zWs1ldWv1cArXuzRxq45zMir1ZNvoPY+9n7o="
   [mod."filippo.io/edwards25519"]
-    version = "v1.1.0"
-    hash = "sha256-9ACANrgWZSd5HYPfDZHY8DVbPSC9LOMgy8deq3rDOoc="
+    version = "v1.1.1"
+    hash = "sha256-Uv7VeL9tVGn+0lRfEaRJcTsU2WWlvNSjTpkbKzuuQhM="
   [mod."github.com/99designs/go-keychain"]
     version = "v0.0.0-20191008050251-8e49817e8af4"
     hash = "sha256-4EndKcspGC3GOPCmctXF1NnWzxWwMyY/OQpFMmr8Sc0="
