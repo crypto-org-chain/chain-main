@@ -296,8 +296,8 @@ schema = 3
     version = "v0.6.0"
     hash = "sha256-RtIG2qARd5sT10WQ7F3LR8YJhS8exs+KiuUiVf75bWg="
   [mod."github.com/go-logr/logr"]
-    version = "v1.4.2"
-    hash = "sha256-/W6qGilFlZNTb9Uq48xGZ4IbsVeSwJiAMLw4wiNYHLI="
+    version = "v1.4.3"
+    hash = "sha256-Nnp/dEVNMxLp3RSPDHZzGbI8BkSNuZMX0I0cjWKXXLA="
   [mod."github.com/go-logr/stdr"]
     version = "v1.2.2"
     hash = "sha256-rRweAP7XIb4egtT1f2gkz4sYOu7LDHmcJ5iNsJUd0sE="
@@ -551,8 +551,8 @@ schema = 3
     version = "v2.5.0"
     hash = "sha256-FPtPVF4+MF+Ybe9NI58i5mnGILvTKadk8JSZJQ8gD6s="
   [mod."github.com/stretchr/testify"]
-    version = "v1.10.0"
-    hash = "sha256-fJ4gnPr0vnrOhjQYQwJ3ARDKPsOtA7d4olQmQWR+wpI="
+    version = "v1.11.1"
+    hash = "sha256-sWfjkuKJyDllDEtnM8sb/pdLzPQmUYWYtmeWz/5suUc="
   [mod."github.com/subosito/gotenv"]
     version = "v1.6.0"
     hash = "sha256-LspbjTniiq2xAICSXmgqP7carwlNaLqnCTQfw2pa80A="
@@ -606,8 +606,8 @@ schema = 3
     version = "v0.24.0"
     hash = "sha256-4H+mGZgG2c9I1y0m8avF4qmt8LUKxxVsTqR8mKgP4yo="
   [mod."go.opentelemetry.io/auto/sdk"]
-    version = "v1.1.0"
-    hash = "sha256-cA9qCCu8P1NSJRxgmpfkfa5rKyn9X+Y/9FSmSd5xjyo="
+    version = "v1.2.1"
+    hash = "sha256-73bFYhnxNf4SfeQ52ebnwOWywdQbqc9lWawCcSgofvE="
   [mod."go.opentelemetry.io/contrib/detectors/gcp"]
     version = "v1.34.0"
     hash = "sha256-lNyMJUuDXwSNm3CFJKc3Of2VJ/M5SLs7hMWzgZMpfaU="
@@ -618,20 +618,20 @@ schema = 3
     version = "v0.54.0"
     hash = "sha256-LN3VAATkV+DxdH0XaYAVf+FkOuczSb5/QPA7pkIirrU="
   [mod."go.opentelemetry.io/otel"]
-    version = "v1.34.0"
-    hash = "sha256-hnuuTSxaf9yMO/23xWdcTGNzvnnJiqUiL4nzYwUV5bc="
+    version = "v1.40.0"
+    hash = "sha256-Cu9ZCLMAd9kGsmpnvoyqwm0IkF4Uk6Xo+8OsP9l+wUQ="
   [mod."go.opentelemetry.io/otel/metric"]
-    version = "v1.34.0"
-    hash = "sha256-JklGKJiMf1fpsE9pmnuLUq26g6wVp173v4GWJ7Xp5s4="
+    version = "v1.40.0"
+    hash = "sha256-+84fJNAYQ0A5DzH1YjHXCo162GgB7r19PsTHiAP9C8k="
   [mod."go.opentelemetry.io/otel/sdk"]
-    version = "v1.34.0"
-    hash = "sha256-Af0INyxxGvtDRMt2szun/m56z6Rzwnxw/ckk7b/hR3M="
+    version = "v1.40.0"
+    hash = "sha256-s7dLygR+1dYEL/vCJ87yInsJXHiGht5FMEkHxuxrcyE="
   [mod."go.opentelemetry.io/otel/sdk/metric"]
-    version = "v1.34.0"
-    hash = "sha256-jToGqaCoNGfypXaCgjl527zXyOrpACvhERcCqD8ogK4="
+    version = "v1.40.0"
+    hash = "sha256-AxFp+vdl8yp6HRK+R73ClzxaCNtuHvL/zo4cBDwnMoU="
   [mod."go.opentelemetry.io/otel/trace"]
-    version = "v1.34.0"
-    hash = "sha256-u11KJ4WTDtcb0tVv7d/HOdhq8Ea+c1QPBO8MbsCQu9Q="
+    version = "v1.40.0"
+    hash = "sha256-oPA3DfQ5vXhlVkBPksu/kKYBSrssefq4vtnd4vm9K8w="
   [mod."go.uber.org/mock"]
     version = "v0.5.2"
     hash = "sha256-gIBaF2FjbyT9EA2jcB9+lbtzqA8x6s8oMWJ+31jO0Bk="
@@ -660,8 +660,8 @@ schema = 3
     version = "v0.18.0"
     hash = "sha256-S8o6y7GOaYWeq+TzT8BB6T+1mg82Mu08V0TL3ukJprg="
   [mod."golang.org/x/sys"]
-    version = "v0.38.0"
-    hash = "sha256-1+i5EaG3JwH3KMtefzJLG5R6jbOeJM4GK3/LHBVnSy0="
+    version = "v0.40.0"
+    hash = "sha256-KDe+wMr7dfMFwKMJEljzk+f82pQWFFPoFHivjD7qJGg="
   [mod."golang.org/x/term"]
     version = "v0.37.0"
     hash = "sha256-w7OZlNTd5sAhnDxrl9lKpKc1U/s2+MyZnmQPllJopMQ="
