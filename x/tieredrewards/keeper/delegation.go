@@ -12,6 +12,36 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// reconcileAmountFromShares converts delegation shares to the actual withdrawable
+// token amount under the validator's current exchange rate.
+func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (math.Int, error) {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return math.Int{}, err
+	}
+	return val.TokensFromShares(shares).TruncateInt(), nil
+}
+
+// updateDelegation updates a position's delegation fields and reconciles
+// the stored amount from the validator's current share exchange rate.
+func (k Keeper) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
+	valAddr, err := sdk.ValAddressFromBech32(delegation.Validator)
+	if err != nil {
+		return err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	pos.WithDelegation(delegation, sdkCtx.BlockTime())
+
+	reconciledAmount, err := k.reconcileAmountFromShares(ctx, valAddr, delegation.Shares)
+	if err != nil {
+		return err
+	}
+	pos.UpdateAmount(reconciledAmount)
+
+	return nil
+}
+
 // delegate delegates tokens from the tier module account to a bonded validator.
 func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)

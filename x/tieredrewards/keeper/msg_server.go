@@ -5,8 +5,6 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	sdkmath "cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -18,36 +16,6 @@ type msgServer struct {
 
 func NewMsgServerImpl(k Keeper) types.MsgServer {
 	return &msgServer{Keeper: k}
-}
-
-// reconcileAmountFromShares converts delegation shares to the actual withdrawable
-// token amount under the validator's current exchange rate.
-func (ms msgServer) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAddress, shares sdkmath.LegacyDec) (sdkmath.Int, error) {
-	val, err := ms.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return sdkmath.Int{}, err
-	}
-	return val.TokensFromShares(shares).TruncateInt(), nil
-}
-
-// updateDelegation updates a position's delegation fields and reconciles
-// the stored amount from the validator's current share exchange rate.
-func (ms msgServer) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
-	valAddr, err := sdk.ValAddressFromBech32(delegation.Validator)
-	if err != nil {
-		return err
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pos.WithDelegation(delegation, sdkCtx.BlockTime())
-
-	reconciledAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, delegation.Shares)
-	if err != nil {
-		return err
-	}
-	pos.UpdateAmount(reconciledAmount)
-
-	return nil
 }
 
 func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*types.MsgLockTierResponse, error) {
