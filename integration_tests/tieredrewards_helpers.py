@@ -174,12 +174,12 @@ def pool_balance(cluster):
     return cluster.balance(pool_addr, DENOM)
 
 
-def approve_tieredrewards_proposal(cluster, rsp, msg):
+def approve_tieredrewards_proposal(cluster, rsp, msg, expect_status=None):
     return approve_proposal(
         cluster,
         rsp,
         msg=msg,
-        top_up_deposit_in_voting_period=False,
+        expect_status=expect_status,
     )
 
 

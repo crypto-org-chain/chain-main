@@ -225,7 +225,7 @@ def approve_proposal(
     msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
     wait_tx=True,
     broadcast_mode="sync",
-    top_up_deposit_in_voting_period=True,
+    expect_status=None,
 ):
     proposal_id = get_proposal_id(rsp, msg)
     proposal = cluster.query_proposal(proposal_id)
@@ -233,7 +233,6 @@ def approve_proposal(
     amount = cluster.balance(cluster.address("ecosystem"))
     if proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD" or (
         proposal_status == "PROPOSAL_STATUS_VOTING_PERIOD"
-        and top_up_deposit_in_voting_period
     ):
         top_up_wait_tx = wait_tx and proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD"
         total_deposit_before = sum(
@@ -323,7 +322,9 @@ def approve_proposal(
         cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=5)
     )
     proposal = cluster.query_proposal(proposal_id)
-    if vote_option == "yes":
+    if expect_status is not None:
+        assert proposal["status"] == expect_status, proposal
+    elif vote_option == "yes":
         assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
     else:
         assert proposal["status"] == "PROPOSAL_STATUS_REJECTED", proposal

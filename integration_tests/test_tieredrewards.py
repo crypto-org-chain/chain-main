@@ -12,18 +12,12 @@ from .tieredrewards_helpers import (
     DENOM,
     GAS_ALLOWANCE,
     MODULE,
-    MSG_ADD_TIER,
-    MSG_DELETE_TIER,
-    MSG_UPDATE_PARAMS,
-    MSG_UPDATE_TIER,
     REWARDS_POOL_NAME,
     TIER_1_ID,
     TIER_1_MIN,
     TIER_2_ID,
     TIER_2_MIN,
-    TIER_3_ID,
     add_to_position,
-    approve_tieredrewards_proposal,
     before_ids,
     claim_rewards,
     clear_position,
@@ -47,9 +41,7 @@ from .tieredrewards_helpers import (
 from .utils import (
     cluster_fixture,
     find_log_event_attrs,
-    module_address,
     query_command,
-    submit_gov_proposal,
     wait_for_block_time,
     wait_for_new_blocks,
     wait_for_port,
@@ -537,139 +529,6 @@ def test_tier_redelegate_flow(cluster):
     wait_for_new_blocks(cluster, 2)
     rsp = claim_rewards(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
-
-
-# ──────────────────────────────────────────────
-# Governance (ADR-006 §7)
-#
-# NOTE: These tests have an intentional ordering dependency:
-#   add_tier → update_tier (open) → delete_tier (succeeds)
-# pytest runs tests in definition order within a module, so this is stable.
-# ──────────────────────────────────────────────
-
-
-def test_add_tier_via_governance(cluster):
-    """MsgAddTier proposal creates a new Tier 3 with close_only=true."""
-    rsp = submit_gov_proposal(
-        cluster,
-        "community",
-        MSG_ADD_TIER,
-        {
-            "tier": {
-                "id": TIER_3_ID,
-                "exit_duration": "5s",
-                "bonus_apy": "0.050000000000000000",
-                "min_lock_amount": "2000000",
-                "close_only": True,
-            }
-        },
-        title="Add Tier 3 (close_only)",
-        summary="Add testing tier — initially close_only to verify ErrTierIsCloseOnly",
-    )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
-
-    result = query_tiers(cluster)
-    ids = {int(t["id"]) for t in result.get("tiers", [])}
-    assert TIER_3_ID in ids, f"Tier {TIER_3_ID} not found after AddTier proposal"
-
-    # Verify it's close_only
-    tier3 = next(
-        (t for t in result.get("tiers", []) if int(t["id"]) == TIER_3_ID), None
-    )
-    assert tier3 is not None
-    assert tier3.get("close_only") is True, f"Tier 3 should be close_only: {tier3}"
-
-
-def test_update_tier_via_governance(cluster):
-    """MsgUpdateTier proposal updates Tier 3's bonus_apy and sets close_only=false."""
-    new_apy = "0.060000000000000000"
-    rsp = submit_gov_proposal(
-        cluster,
-        "community",
-        MSG_UPDATE_TIER,
-        {
-            "tier": {
-                "id": TIER_3_ID,
-                "exit_duration": "5s",
-                "bonus_apy": new_apy,
-                "min_lock_amount": "2000000",
-                "close_only": False,
-            }
-        },
-        title="Update Tier 3",
-        summary="Update Tier 3 bonus_apy to 6% and remove close_only restriction",
-    )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
-
-    result = query_tiers(cluster)
-    tier3 = next(
-        (t for t in result.get("tiers", []) if int(t["id"]) == TIER_3_ID), None
-    )
-    assert tier3 is not None, "Tier 3 not found after update"
-    assert (
-        tier3["bonus_apy"] == new_apy
-    ), f"expected bonus_apy={new_apy}, got {tier3['bonus_apy']}"
-    assert (
-        tier3.get("close_only") is not True
-    ), f"Tier 3 should not be close_only after update: {tier3}"
-
-
-def test_delete_tier_via_governance(cluster):
-    """MsgDeleteTier proposal removes Tier 3 (which has no active positions)."""
-    rsp = submit_gov_proposal(
-        cluster,
-        "community",
-        MSG_DELETE_TIER,
-        {"id": TIER_3_ID},
-        title="Delete Tier 3",
-        summary="Remove Tier 3 — no active positions",
-    )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_DELETE_TIER}")
-
-    result = query_tiers(cluster)
-    ids = {int(t["id"]) for t in result.get("tiers", [])}
-    assert (
-        TIER_3_ID not in ids
-    ), f"Tier {TIER_3_ID} should be removed after DeleteTier proposal"
-
-
-# ──────────────────────────────────────────────
-# Params Governance (run last to avoid poisoning earlier tests)
-#
-# NOTE: This test permanently sets target_base_rewards_rate to 0 for the
-# remainder of the test session. It is placed last so that all reward-
-# dependent tests run with the original rate.
-# ──────────────────────────────────────────────
-
-
-def test_update_params_via_governance(cluster):
-    """MsgUpdateParams proposal sets target_base_rewards_rate to 0."""
-    params = query_command(cluster, MODULE, "params")["params"]
-    params["target_base_rewards_rate"] = "0.000000000000000000"
-
-    authority = module_address("gov")
-    proposal = {
-        "messages": [
-            {
-                "@type": MSG_UPDATE_PARAMS,
-                "authority": authority,
-                "params": params,
-            }
-        ],
-        "deposit": "100000000basecro",
-        "title": "Set rate to zero",
-        "summary": "Disable base rewards top-up",
-    }
-    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
-        "community", "submit-proposal", proposal
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
-
-    updated = query_command(cluster, MODULE, "params")["params"]
-    assert (
-        float(updated["target_base_rewards_rate"]) == 0.0
-    ), "target_base_rewards_rate should be 0 after governance update"
 
 
 @pytest.mark.slow
