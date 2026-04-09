@@ -1844,7 +1844,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating() {
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	// TierRedelegate internally claims rewards via ClaimAndRefreshPosition.
+	// TierRedelegate internally claims rewards.
 	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        delAddr.String(),
 		PositionId:   0,
@@ -1891,7 +1891,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	// TierUndelegate internally claims rewards via ClaimAndRefreshPosition.
+	// TierUndelegate internally claims rewards.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: 0,
