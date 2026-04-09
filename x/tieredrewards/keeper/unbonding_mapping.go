@@ -9,7 +9,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
-// --- Indexes ---
+// UnbondingMappingsIndexes defines the secondary indexes for unbonding mappings.
 type UnbondingMappingsIndexes struct {
 	ByPosition *indexes.Multi[uint64, uint64, uint64]
 }
