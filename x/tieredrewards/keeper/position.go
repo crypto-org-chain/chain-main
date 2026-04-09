@@ -40,7 +40,7 @@ func (k Keeper) createPosition(
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
-	blockHeight := sdkCtx.BlockHeight()
+	blockHeight := uint64(sdkCtx.BlockHeight())
 
 	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
 

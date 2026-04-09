@@ -17,13 +17,13 @@ type Delegation struct {
 	BaseRewardsPerShare sdk.DecCoins
 }
 
-func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight int64, delegation Delegation, createdAtTime time.Time) Position {
+func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
 	return Position{
 		Id:                  id,
 		Owner:               owner,
 		TierId:              tierId,
 		Amount:              amount,
-		CreatedAtHeight:     uint64(createdAtHeight),
+		CreatedAtHeight:     createdAtHeight,
 		CreatedAtTime:       createdAtTime,
 		Validator:           delegation.Validator,
 		DelegatedShares:     delegation.Shares,
