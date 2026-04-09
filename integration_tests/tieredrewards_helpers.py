@@ -21,7 +21,7 @@ MSG_DELETE_TIER = "/chainmain.tieredrewards.v1.MsgDeleteTier"
 
 # Genesis tiers (from tieredrewards.jsonnet)
 TIER_1_ID = 1  # exit_duration=5s,  bonus_apy=4%,  min_lock=1_000_000 basecro
-TIER_2_ID = 2  # exit_duration=30s, bonus_apy=2%,  min_lock=5_000_000 basecro
+TIER_2_ID = 2  # exit_duration=60s, bonus_apy=2%,  min_lock=5_000_000 basecro
 TIER_1_MIN = 1_000_000
 TIER_2_MIN = 5_000_000
 

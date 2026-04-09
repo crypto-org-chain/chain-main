@@ -14,6 +14,7 @@ from .tieredrewards_helpers import (
     TIER_1_ID,
     TIER_1_MIN,
     TIER_2_ID,
+    TIER_2_MIN,
     add_to_position,
     before_ids,
     claim_rewards,
@@ -170,11 +171,13 @@ def _setup_redeleg_slash(
     approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
 
     before = before_ids(cluster, owner)
+    # lock in tier 2 (exit duration = 60s) so that position will still be exiting
+    # if clearing position later
     rsp = lock_tier(
         cluster,
         owner,
-        TIER_1_ID,
-        TIER_1_MIN * 2,
+        TIER_2_ID,
+        TIER_2_MIN * 2,
         validator=validator2,
         trigger_exit=trigger_exit_before_redelegate,
     )
@@ -892,13 +895,13 @@ def test_slash_then_withdraw(slashing_cluster):
     cluster = slashing_cluster
     owner = cluster.address("signer1")
     validator = get_node_validator_addr(cluster, 2)
-    amount = TIER_1_MIN * 20
+    amount = TIER_2_MIN * 4
 
     rsp = fund_pool(cluster, "signer1", f"100000000{DENOM}")
     assert rsp["code"] == 0, rsp["raw_log"]
 
     before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, amount, validator=validator)
+    rsp = lock_tier(cluster, owner, TIER_2_ID, amount, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
@@ -951,7 +954,7 @@ def test_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_then_withdraw(slashing_cluster):
     """lock → redeleg slash (50%) → position still delegated with reduced amount →
     trigger exit → wait for exit →
@@ -988,7 +991,7 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
 # (creation_height >= infractionHeight) to be eligible for a slash.
@@ -1019,14 +1022,14 @@ def test_unbonding_slash_then_withdraw(slashing_cluster):
     )
     approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
 
-    lock_amount = TIER_1_MIN * 2
+    lock_amount = TIER_2_MIN * 2
 
     # Lock with immediate exit on v2
     before = before_ids(cluster, owner)
     rsp = lock_tier(
         cluster,
         owner,
-        TIER_1_ID,
+        TIER_2_ID,
         lock_amount,
         validator=validator2,
         trigger_exit=True,
@@ -1097,7 +1100,9 @@ def test_clear_position_after_slash(slashing_cluster):
     validator = get_node_validator_addr(cluster, 2)
 
     before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 20, validator=validator)
+    # lock in tier 2 (exit duration = 60s) so that position will still be exiting
+    # when clearing position later
+    rsp = lock_tier(cluster, owner, TIER_2_ID, TIER_2_MIN * 4, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
@@ -1134,7 +1139,7 @@ def test_clear_position_after_slash(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_clear_position_after_redeleg_slash(slashing_cluster):
     """lock → trigger exit → redeleg slash (50%) during exit →
     clear position → back to bonded with reduced amount.
@@ -1179,7 +1184,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_slash_all_then_withdraw(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit →
     wait for exit → undelegate →
@@ -1209,7 +1214,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator)
+    rsp = lock_tier(cluster, owner, TIER_2_ID, TIER_2_MIN * 2, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
@@ -1257,7 +1262,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
     """redeleg-slashed to zero → add tokens → delegate →
     trigger exit → wait for exit →
@@ -1296,7 +1301,7 @@ def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_all_then_withdraw(slashing_cluster):
     """redeleg-slashed to zero → trigger exit →
     wait for exit →
@@ -1339,7 +1344,7 @@ def test_redeleg_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_all_then_exit_and_delegate(slashing_cluster):
     """redeleg-slashed to zero → add tokens →
     trigger exit → delegate →
@@ -1384,7 +1389,7 @@ def test_redeleg_slash_all_then_exit_and_delegate(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
 # (creation_height >= infractionHeight) to be eligible for a slash.
@@ -1420,8 +1425,8 @@ def test_slash_all_during_unbonding_then_withdraw(slashing_cluster):
     rsp = lock_tier(
         cluster,
         owner,
-        TIER_1_ID,
-        TIER_1_MIN * 2,
+        TIER_2_ID,
+        TIER_2_MIN * 2,
         validator=validator2,
         trigger_exit=True,
     )
@@ -1475,7 +1480,7 @@ def test_slash_all_during_unbonding_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_clear_position_on_redeleg_slashed_all_exiting(slashing_cluster):
     """lock → trigger exit → redeleg slash (100%) during exit →
     clear position → undelegated with no exit.
@@ -1540,7 +1545,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator2)
+    rsp = lock_tier(cluster, owner, TIER_2_ID, TIER_2_MIN * 2, validator=validator2)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
@@ -1576,7 +1581,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
+@pytest.mark.flaky(max_runs=3)
 def test_clear_position_redeleg_slash_all_undelegated_exiting(
     slashing_cluster,
 ):
@@ -1651,7 +1656,7 @@ def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
-    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator)
+    rsp = lock_tier(cluster, owner, TIER_2_ID, TIER_2_MIN * 2, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 

@@ -59,7 +59,7 @@ local validator = import 'validator.jsonnet';
             },
             {
               id: 2,
-              exit_duration: '30s',
+              exit_duration: '60s',
               bonus_apy: '0.020000000000000000',
               min_lock_amount: '5000000',
               close_only: false,
