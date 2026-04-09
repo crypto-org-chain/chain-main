@@ -92,38 +92,6 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return h.k.updatePoolDelegationInfo(ctx, valAddr, fraction)
 }
 
-// updatePoolDelegationInfo refreshes the distribution
-// starting stake for the tier module pool since rewards are withdrawn in BeforeValidatorSlashed already.
-// Without this, the next reward claim will compare an outdated pre-slash stake with the lower current stake.
-func (k Keeper) updatePoolDelegationInfo(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
-	// fraction is [0,1] - guaranteed by updateValidatorSlashFraction.
-	if fraction.IsZero() {
-		return nil
-	}
-
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	hasInfo, err := k.distributionKeeper.HasDelegatorStartingInfo(ctx, valAddr, moduleAddr)
-	if err != nil {
-		return err
-	}
-	if !hasInfo {
-		return nil
-	}
-
-	startingInfo, err := k.distributionKeeper.GetDelegatorStartingInfo(ctx, valAddr, moduleAddr)
-	if err != nil {
-		return err
-	}
-
-	postSlashStake := startingInfo.Stake.MulTruncate(sdkmath.LegacyOneDec().Sub(fraction))
-	if postSlashStake.IsNegative() {
-		postSlashStake = sdkmath.LegacyZeroDec()
-	}
-	startingInfo.Stake = postSlashStake
-
-	return k.distributionKeeper.SetDelegatorStartingInfo(ctx, valAddr, moduleAddr, startingInfo)
-}
-
 func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
 	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
 }
