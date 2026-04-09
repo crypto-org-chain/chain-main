@@ -949,7 +949,7 @@ def test_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_redeleg_slash_then_withdraw(slashing_cluster):
     """lock → redeleg slash (50%) → position still delegated with reduced amount →
     trigger exit → wait for exit →
@@ -983,7 +983,7 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
 # (creation_height >= infractionHeight) to be eligible for a slash.
@@ -1129,7 +1129,7 @@ def test_clear_position_after_slash(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_clear_position_after_redeleg_slash(slashing_cluster):
     """lock → trigger exit → redeleg slash (50%) during exit →
     clear position → back to bonded with reduced amount.
@@ -1171,7 +1171,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_slash_all_then_withdraw(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit →
     wait for exit → undelegate →
@@ -1249,7 +1249,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
     """redeleg-slashed to zero → add tokens → delegate →
     trigger exit → wait for exit →
@@ -1288,7 +1288,7 @@ def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_redeleg_slash_all_then_withdraw(slashing_cluster):
     """redeleg-slashed to zero → trigger exit →
     wait for exit →
@@ -1331,7 +1331,7 @@ def test_redeleg_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_redeleg_slash_all_then_exit_and_delegate(slashing_cluster):
     """redeleg-slashed to zero → add tokens →
     trigger exit → delegate →
@@ -1376,7 +1376,7 @@ def test_redeleg_slash_all_then_exit_and_delegate(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
 # (creation_height >= infractionHeight) to be eligible for a slash.
@@ -1467,7 +1467,7 @@ def test_slash_all_during_unbonding_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_clear_position_on_redeleg_slashed_all_exiting(slashing_cluster):
     """lock → trigger exit → redeleg slash (100%) during exit →
     clear position → undelegated with no exit.
@@ -1568,7 +1568,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=5)
+@pytest.mark.flaky(max_runs=5)
 def test_clear_position_redeleg_slash_all_undelegated_exiting(
     slashing_cluster,
 ):

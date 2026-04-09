@@ -241,7 +241,7 @@ def test_commit_delegation_with_trigger_exit(cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(reruns=3)
+@pytest.mark.flaky(max_runs=5)
 def test_tier_delegate(slashing_cluster):
     """Delegate an undelegated position via redelegation slash + add.
 
