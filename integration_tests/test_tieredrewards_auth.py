@@ -171,7 +171,7 @@ def test_update_tier_open_close_only(cluster):
 def test_update_tier_lock_succeeds_after_open(cluster):
     """Locking on Tier 3 succeeds now that close_only is false.
 
-    Also funds the pool, claims to initialize LastBonusAccrual, and verifies
+    Also funds the pool, claims rewards, and verifies
     that LastBonusAccrual advances after the claim.
     """
     owner = cluster.address("signer1")
@@ -193,7 +193,7 @@ def test_update_tier_lock_succeeds_after_open(cluster):
     # Let some bonus accrue
     wait_for_new_blocks(cluster, 3)
 
-    # Claim rewards — initializes LastBonusAccrual
+    # Claim rewards — LastBonusAccrual should advance
     rsp = claim_rewards(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
 
