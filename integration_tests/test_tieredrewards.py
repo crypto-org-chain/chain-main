@@ -131,6 +131,7 @@ def _exit_undelegate_withdraw(cluster, owner, pos_id):
 
     return balance_after - balance_before
 
+
 # Tests that use this function should be marked with flaky as it is
 # not guaranteed that the redelegation will land within the 2-block
 # window (creation_height >= infractionHeight) to be eligible for
@@ -138,7 +139,10 @@ def _exit_undelegate_withdraw(cluster, owner, pos_id):
 
 
 def _setup_redeleg_slash(
-    cluster, owner, validator2, validator0,
+    cluster,
+    owner,
+    validator2,
+    validator0,
     slash_fraction="1.000000000000000000",
     trigger_exit_before_redelegate=False,
 ):
@@ -167,15 +171,17 @@ def _setup_redeleg_slash(
 
     before = before_ids(cluster, owner)
     rsp = lock_tier(
-        cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator2,
+        cluster,
+        owner,
+        TIER_1_ID,
+        TIER_1_MIN * 2,
+        validator=validator2,
         trigger_exit=trigger_exit_before_redelegate,
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
-    amount_before = int(
-        query_position(cluster, pos_id)["position"]["amount"]
-    )
+    amount_before = int(query_position(cluster, pos_id)["position"]["amount"])
 
     # Stop v2 FIRST, then redelegate so creation_height >= infractionHeight
     cluster.supervisor.stopProcess(f"{cluster.chain_id}-node2")
@@ -432,7 +438,6 @@ def test_clear_position_exit_elapsed(cluster):
     """
     owner = cluster.address("signer2")
     v0 = get_validator_addr(cluster, 0)
-    v1 = get_validator_addr(cluster, 1)
 
     before = before_ids(cluster, owner)
     rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=v0)
@@ -687,7 +692,6 @@ def test_redelegate_twice_during_exit(cluster):
     assert rsp["code"] != 0, "transitive redelegate should fail"
 
 
-
 # ──────────────────────────────────────────────
 # Reward flows
 # ──────────────────────────────────────────────
@@ -832,8 +836,7 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     bal_after = cluster.balance(owner, DENOM)
     assert bal_after > bal, (
-        f"redelegate should settle rewards: "
-        f"before={bal}, after={bal_after}"
+        f"redelegate should settle rewards: " f"before={bal}, after={bal_after}"
     )
 
     wait_for_new_blocks(cluster, 10)
@@ -851,8 +854,7 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     bal_after = cluster.balance(owner, DENOM)
     assert bal_after > bal, (
-        f"clear position should settle rewards: "
-        f"before={bal}, after={bal_after}"
+        f"clear position should settle rewards: " f"before={bal}, after={bal_after}"
     )
 
     wait_for_new_blocks(cluster, 10)
@@ -870,9 +872,9 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     bal_after = cluster.balance(owner, DENOM)
     assert bal_after > bal, (
-        f"undelegate should settle rewards: "
-        f"before={bal}, after={bal_after}"
+        f"undelegate should settle rewards: " f"before={bal}, after={bal_after}"
     )
+
 
 # ──────────────────────────────────────────────
 # Slash flows
@@ -965,16 +967,19 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
     wait_for_new_blocks(cluster, 2)
 
     pos_id = _setup_redeleg_slash(
-        cluster, owner, validator2, validator0,
+        cluster,
+        owner,
+        validator2,
+        validator0,
         slash_fraction="0.500000000000000000",
     )
 
     pos = query_position(cluster, pos_id)["position"]
     slashed_amount = int(pos["amount"])
     assert slashed_amount > 0, "partial slash should leave amount > 0"
-    assert pos["validator"] == validator0, (
-        "partial redeleg slash keeps delegation (shares not fully burnt)"
-    )
+    assert (
+        pos["validator"] == validator0
+    ), "partial redeleg slash keeps delegation (shares not fully burnt)"
     assert pos["delegated_shares"] != "0.000000000000000000"
 
     # Full exit — position is still delegated
@@ -1144,7 +1149,10 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
     wait_for_new_blocks(cluster, 2)
 
     pos_id = _setup_redeleg_slash(
-        cluster, owner, validator2, validator0,
+        cluster,
+        owner,
+        validator2,
+        validator0,
         slash_fraction="0.500000000000000000",
         trigger_exit_before_redelegate=True,
     )
@@ -1482,7 +1490,10 @@ def test_clear_position_on_redeleg_slashed_all_exiting(slashing_cluster):
     wait_for_new_blocks(cluster, 2)
 
     pos_id = _setup_redeleg_slash(
-        cluster, owner, validator2, validator0,
+        cluster,
+        owner,
+        validator2,
+        validator0,
         trigger_exit_before_redelegate=True,
     )
 
@@ -1529,9 +1540,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
-    rsp = lock_tier(
-        cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator2
-    )
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator2)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
@@ -1564,7 +1573,6 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert int(pos["amount"]) == 0
     assert pos["validator"] != "", "should still be delegated"
-
 
 
 @pytest.mark.slow
@@ -1614,6 +1622,7 @@ def test_clear_position_redeleg_slash_all_undelegated_exiting(
     assert int(pos["amount"]) == TIER_1_MIN * 2
     assert pos["validator"] == "", "should remain undelegated"
 
+
 @pytest.mark.slow
 def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit → wait for exit elapsed →
@@ -1642,9 +1651,7 @@ def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
-    rsp = lock_tier(
-        cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator
-    )
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 2, validator=validator)
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
