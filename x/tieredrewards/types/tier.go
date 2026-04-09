@@ -9,7 +9,7 @@ import (
 // Validate performs basic validation of a Tier.
 func (t Tier) Validate() error {
 	if t.Id == 0 {
-		return fmt.Errorf("tier id must be non-zero")
+		return ErrInvalidTierID
 	}
 
 	if t.ExitDuration <= 0 {

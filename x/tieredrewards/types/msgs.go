@@ -25,6 +25,10 @@ func (msg MsgLockTier) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	if msg.Id == 0 {
+		return ErrInvalidTierID
+	}
+
 	if !msg.Amount.IsPositive() {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "amount must be positive")
 	}
@@ -39,6 +43,10 @@ func (msg MsgLockTier) Validate() error {
 func (msg MsgCommitDelegationToTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.DelegatorAddress); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
+
+	if msg.Id == 0 {
+		return ErrInvalidTierID
 	}
 
 	if !msg.Amount.IsPositive() {

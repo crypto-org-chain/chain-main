@@ -53,6 +53,17 @@ func TestMsgLockTier_Validate(t *testing.T) {
 			},
 		},
 		{
+			name: "zero tier id",
+			msg: types.MsgLockTier{
+				Owner:            validOwner,
+				Id:               0,
+				Amount:           sdkmath.NewInt(1000),
+				ValidatorAddress: validValidator,
+			},
+			wantErr:     true,
+			errContains: "tier id must be non-zero",
+		},
+		{
 			name: "invalid owner",
 			msg: types.MsgLockTier{
 				Owner:  "invalid",
@@ -151,6 +162,17 @@ func TestMsgCommitDelegationToTier_Validate(t *testing.T) {
 				Amount:                 sdkmath.NewInt(1000),
 				TriggerExitImmediately: true,
 			},
+		},
+		{
+			name: "zero tier id",
+			msg: types.MsgCommitDelegationToTier{
+				DelegatorAddress: validDelegator,
+				ValidatorAddress: validValidator,
+				Id:               0,
+				Amount:           sdkmath.NewInt(1000),
+			},
+			wantErr:     true,
+			errContains: "tier id must be non-zero",
 		},
 		{
 			name: "invalid delegator",

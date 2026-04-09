@@ -31,4 +31,5 @@ var (
 	ErrPositionUnbonding            = errors.Register(ModuleName, 26, "position is unbonding")
 	ErrPositionAmountZero           = errors.Register(ModuleName, 27, "position amount is zero")
 	ErrExitLockDurationElapsed      = errors.Register(ModuleName, 28, "exit lock duration has elapsed, clear position first")
+	ErrInvalidTierID                = errors.Register(ModuleName, 29, "tier id must be non-zero")
 )
