@@ -1524,6 +1524,40 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 	s.Require().NoError(err)
 }
 
+// TestMsgClearPosition_UpdatesLastBonusAccrualAfterExitElapsed verifies that
+// ClearPosition past exit duration updates LastBonusAccrual to the current
+// block time, confirming reward settlement occurred.
+func (s *KeeperSuite) TestMsgClearPosition_UpdatesLastBonusAccrualAfterExitElapsed() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// Advance past exit duration
+	s.advancePastExitDuration()
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: 0,
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit())
+	s.Require().Equal(s.ctx.BlockTime(), pos.LastBonusAccrual,
+		"last_bonus_accrual should equal block time after ClearPosition")
+}
+
 func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
