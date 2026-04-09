@@ -291,9 +291,6 @@ nix-integration-test-solomachine: check-network
 nix-integration-test-upgrade: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade"
 
-nix-integration-test-tieredrewards: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m tieredrewards"
-
 nix-integration-test-ledger: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ledger"
 
