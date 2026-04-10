@@ -16,12 +16,10 @@ import (
 
 // Redelegation slash reduces both Amount and DelegatedShares.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-
 	lockAmount := sdkmath.NewInt(10000)
 	const unbondingId uint64 = 42
 
-	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, true)
+	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, true)
 	origShares := pos.DelegatedShares
 	s.Require().True(origShares.IsPositive())
 
@@ -44,12 +42,10 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 
 // When all shares are burnt, the position should clear its delegation and set amount to zero.
 func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-
 	lockAmount := sdkmath.NewInt(5000)
 	const unbondingId uint64 = 43
 
-	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, true)
+	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, true)
 	origShares := pos.DelegatedShares
 
 	// all tokens should be slashed if all shares are burnt
@@ -80,12 +76,10 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 
 // Unbonding delegation slash reduces Amount but keeps DelegatedShares unchanged.
 func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-
 	lockAmount := sdkmath.NewInt(6000)
 	const unbondingId uint64 = 45
 
-	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, false)
+	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, false)
 	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
@@ -102,12 +96,10 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 
 // Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
 func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-
 	lockAmount := sdkmath.NewInt(4000)
 	const unbondingId uint64 = 46
 
-	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, false)
+	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, false)
 
 	err := s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)

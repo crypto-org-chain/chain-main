@@ -194,36 +194,19 @@ func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkm
 // slash-by-unbondingId functions can find the position.
 // If redelegation is true, the mapping is stored in RedelegationMappings;
 // otherwise in UnbondingDelegationMappings.
-func (s *KeeperSuite) setupDelegatedPositionForSlash(valAddr sdk.ValAddress, bondDenom string, lockAmount sdkmath.Int, unbondingId uint64, redelegation bool) (sdk.AccAddress, types.Position) {
+func (s *KeeperSuite) setupDelegatedPositionForSlash(lockAmount sdkmath.Int, unbondingId uint64, redelegation bool) types.Position {
 	s.T().Helper()
-	addr := sdk.AccAddress([]byte("slash_test_addr_____"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Find the created position.
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos := positions[0]
+	pos := s.setupNewTierPosition(lockAmount, false)
 
 	if redelegation {
-		err = s.keeper.RedelegationMappings.Set(s.ctx, unbondingId, pos.Id)
+		err := s.keeper.RedelegationMappings.Set(s.ctx, unbondingId, pos.Id)
+		s.Require().NoError(err)
 	} else {
-		err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, unbondingId, pos.Id)
+		err := s.keeper.UnbondingDelegationMappings.Set(s.ctx, unbondingId, pos.Id)
+		s.Require().NoError(err)
 	}
-	s.Require().NoError(err)
 
-	return addr, pos
+	return pos
 }
 
 // createSecondValidator creates a second bonded validator for tests that need
