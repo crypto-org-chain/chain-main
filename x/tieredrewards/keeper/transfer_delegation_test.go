@@ -110,6 +110,35 @@ func (s *KeeperSuite) TestTransferDelegation_ZeroAmount() {
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
 
+func (s *KeeperSuite) TestTransferDelegation_TinyAmount() {
+	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(vals)
+	val := vals[0]
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+	s.Require().NoError(err)
+
+	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(dels)
+	del := dels[0]
+	delAddr, err := s.app.AccountKeeper.AddressCodec().StringToBytes(del.DelegatorAddress)
+	s.Require().NoError(err)
+
+	validator, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// Force an exchange rate where 1 token maps to < 1e-18 shares, so
+	// SharesFromTokens(1) truncates to zero shares and Unbond returns zero tokens.
+	validator.DelegatorShares = sdkmath.LegacyOneDec()
+	validator.Tokens = sdkmath.NewIntWithDecimal(1, 19)
+	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, validator))
+
+	_, err = s.keeper.TransferDelegation(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), sdkmath.OneInt())
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrTinyTransferDelegationAmount)
+}
+
 func (s *KeeperSuite) TestTransferDelegation_InvalidValidator() {
 	_, err := s.keeper.TransferDelegation(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
