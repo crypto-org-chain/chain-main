@@ -30,6 +30,17 @@ func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 	return ratio.CumulativeRewardsPerShare, nil
 }
 
+func (k Keeper) clearValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) error {
+	hasRatio, err := k.ValidatorRewardRatio.Has(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if !hasRatio {
+		return nil
+	}
+	return k.ValidatorRewardRatio.Remove(ctx, valAddr)
+}
+
 // collectDelegationRewards pulls accumulated staking distribution rewards from
 // x/distribution into the tier module account for the delegation to valAddr.
 func (k Keeper) collectDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (rewards sdk.Coins, collected bool, err error) {
@@ -60,6 +71,9 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 	delegation, err := k.stakingKeeper.GetDelegation(ctx, poolAddr, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoDelegation) {
+		if err := k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
+			return sdk.DecCoins{}, err
+		}
 		return sdk.DecCoins{}, nil
 	}
 	if err != nil {
@@ -68,6 +82,9 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 
 	totalShares := delegation.Shares
 	if totalShares.IsZero() {
+		if err := k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
+			return sdk.DecCoins{}, err
+		}
 		return sdk.DecCoins{}, nil
 	}
 
