@@ -156,3 +156,65 @@ func (s *KeeperSuite) TestCornerCase_ZeroAmountPositiveSharesState() {
 	s.Require().NoError(err)
 	s.Require().True(totalPower.IsZero(), "zero-amount delegated positions should not contribute to total delegated voting power")
 }
+
+// TestCornerCase_ClearPositionAfterRedelegationSlashAllSharesBurnt verifies
+// ClearPosition remains blocked after exit elapsed when a redelegation slash
+// burns all shares and clears delegation while redelegation mapping is active.
+func (s *KeeperSuite) TestCornerCase_ClearPositionAfterRedelegationSlashAllSharesBurnt() {
+	delAddr, srcValAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       srcValAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	redelegateResp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   lockResp.PositionId,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	posBeforeSlash, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posBeforeSlash.DelegatedShares.IsPositive(), "test setup failed: expected delegated shares before slash")
+	s.Require().True(posBeforeSlash.IsDelegated(), "test setup failed: position should be delegated before slash")
+
+	// Burn all shares through redelegation slash callback.
+	shareBurnt := posBeforeSlash.DelegatedShares.Add(sdkmath.LegacyOneDec())
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, redelegateResp.UnbondingId, posBeforeSlash.Amount, shareBurnt)
+	s.Require().NoError(err)
+
+	posAfterSlash, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterSlash.IsDelegated(), "delegation should be cleared when all shares are burnt")
+	s.Require().True(posAfterSlash.DelegatedShares.IsZero(), "delegated shares should be zero after full share burn")
+	s.Require().True(posAfterSlash.Amount.IsZero(), "amount should be zero after full share burn")
+	s.Require().True(posAfterSlash.HasTriggeredExit(), "slash should not clear exit trigger")
+
+	// Redelegation mapping should still block ClearPosition after exit elapsed.
+	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	redelegationIDs, err := redelegationIter.PrimaryKeys()
+	s.Require().NoError(err)
+	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should remain active for this corner case")
+
+	s.advancePastExitDuration()
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
+
+	posAfterClearAttempt, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posAfterClearAttempt.HasTriggeredExit(), "failed clear attempt should not reset exit state")
+	s.Require().False(posAfterClearAttempt.IsDelegated(), "failed clear attempt should keep cleared delegation state")
+}
