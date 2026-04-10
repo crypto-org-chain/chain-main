@@ -237,6 +237,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		TierId:         pos.TierId,
 		Owner:          pos.Owner,
 		Validator:      srcValidator,
+		UnbondingId:    unbondingId,
 		CompletionTime: completionTime,
 	}); err != nil {
 		return nil, err
@@ -245,6 +246,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	return &types.MsgTierUndelegateResponse{
 		CompletionTime: completionTime,
 		PositionId:     pos.Id,
+		UnbondingId:    unbondingId,
 	}, nil
 }
 
@@ -314,6 +316,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		SrcValidator:   srcValidator,
 		DstValidator:   msg.DstValidator,
 		NewShares:      newShares,
+		UnbondingId:    unbondingId,
 		CompletionTime: completionTime,
 	}); err != nil {
 		return nil, err
@@ -322,6 +325,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	return &types.MsgTierRedelegateResponse{
 		CompletionTime: completionTime,
 		PositionId:     pos.Id,
+		UnbondingId:    unbondingId,
 	}, nil
 }
 
