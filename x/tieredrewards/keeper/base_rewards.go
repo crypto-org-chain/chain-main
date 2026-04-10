@@ -35,12 +35,12 @@ func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 func (k Keeper) collectDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (rewards sdk.Coins, collected bool, err error) {
 	currentBlockHeight := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 	if lastBlock := k.getLastRewardsWithdrawalBlock(ctx, valAddr); lastBlock == currentBlockHeight {
-		return sdk.Coins{}, false, nil
+		return sdk.NewCoins(), false, nil
 	}
 
 	rewards, err = k.withdrawDelegationRewards(ctx, valAddr)
 	if err != nil {
-		return sdk.Coins{}, false, err
+		return sdk.NewCoins(), false, err
 	}
 
 	k.setLastRewardsWithdrawalBlock(ctx, valAddr, currentBlockHeight)

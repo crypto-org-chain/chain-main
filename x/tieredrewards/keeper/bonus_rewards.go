@@ -72,30 +72,30 @@ func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validato
 // sendBonusFromRewardsPool checks the rewards pool, transfers bonus to the owner, and emits EventBonusRewardsClaimed.
 func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos types.Position, bonus math.Int) (sdk.Coins, error) {
 	if bonus.IsZero() {
-		return sdk.Coins{}, nil
+		return sdk.NewCoins(), nil
 	}
 
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBalance := k.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
 
 	if poolBalance.Amount.LT(bonus) {
-		return sdk.Coins{}, errorsmod.Wrapf(types.ErrInsufficientBonusPool, "bonus pool has insufficient funds, position id: %d, bonus: %s, pool balance: %s", pos.Id, bonus.String(), poolBalance.Amount.String())
+		return sdk.NewCoins(), errorsmod.Wrapf(types.ErrInsufficientBonusPool, "bonus pool has insufficient funds, position id: %d, bonus: %s, pool balance: %s", pos.Id, bonus.String(), poolBalance.Amount.String())
 	}
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	bonusCoin := sdk.NewCoin(bondDenom, bonus)
 	bonusCoins := sdk.NewCoins(bonusCoin)
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -104,7 +104,7 @@ func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos types.Position
 		Owner:      pos.Owner,
 		Amount:     bonusCoin,
 	}); err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	return bonusCoins, nil

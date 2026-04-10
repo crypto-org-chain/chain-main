@@ -51,7 +51,6 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 				return err
 			}
 		}
-		// Checkpoint is already advanced in-memory by claimBonusRewardsWithValidator.
 		// Persist regardless of whether bonus was paid.
 		if err := k.setPosition(ctx, positions[i]); err != nil {
 			return err
@@ -167,7 +166,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
 	if !pos.IsDelegated() {
-		return sdk.Coins{}, nil
+		return sdk.NewCoins(), nil
 	}
 
 	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
@@ -183,21 +182,21 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 	pos.UpdateBaseRewardsPerShare(currentRatio)
 
 	if delta.IsZero() {
-		return sdk.Coins{}, nil
+		return sdk.NewCoins(), nil
 	}
 
 	posRewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
 	if posRewards.IsZero() {
-		return sdk.Coins{}, nil
+		return sdk.NewCoins(), nil
 	}
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, posRewards); err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -206,7 +205,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 		Owner:      pos.Owner,
 		Amount:     posRewards,
 	}); err != nil {
-		return sdk.Coins{}, err
+		return sdk.NewCoins(), err
 	}
 
 	return posRewards, nil
