@@ -8,10 +8,17 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
+
+func (s *KeeperSuite) resetQueryClient() {
+	queryHelper := baseapp.NewQueryServerTestHelper(s.ctx, s.app.InterfaceRegistry())
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServerImpl(s.app.TieredRewardsKeeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
+}
 
 // --- Params ---
 

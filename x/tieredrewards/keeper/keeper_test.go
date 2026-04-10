@@ -41,11 +41,6 @@ func TestKeeperSuite(t *testing.T) {
 	suite.Run(t, new(KeeperSuite))
 }
 
-func (s *KeeperSuite) resetQueryClient() {
-	queryHelper := baseapp.NewQueryServerTestHelper(s.ctx, s.app.InterfaceRegistry())
-	types.RegisterQueryServer(queryHelper, keeper.NewQueryServerImpl(s.app.TieredRewardsKeeper))
-	s.queryClient = types.NewQueryClient(queryHelper)
-}
 
 func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, string) {
 	s.T().Helper()
