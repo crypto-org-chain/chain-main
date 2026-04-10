@@ -246,3 +246,411 @@ func TestMsgCommitDelegationToTier_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestMsgTierDelegate_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+	validValidator := sdk.ValAddress([]byte("test_validator______")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgTierDelegate
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgTierDelegate{
+				Owner:      validOwner,
+				PositionId: 1,
+				Validator:  validValidator,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgTierDelegate{
+				Owner:      "invalid",
+				PositionId: 1,
+				Validator:  validValidator,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+		{
+			name: "invalid validator",
+			msg: types.MsgTierDelegate{
+				Owner:      validOwner,
+				PositionId: 1,
+				Validator:  "invalid",
+			},
+			wantErr:     true,
+			errContains: "invalid validator address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgTierUndelegate_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgTierUndelegate
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgTierUndelegate{
+				Owner:      validOwner,
+				PositionId: 1,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgTierUndelegate{
+				Owner:      "invalid",
+				PositionId: 1,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgTierRedelegate_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+	validValidator := sdk.ValAddress([]byte("test_validator______")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgTierRedelegate
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgTierRedelegate{
+				Owner:        validOwner,
+				PositionId:   1,
+				DstValidator: validValidator,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgTierRedelegate{
+				Owner:        "invalid",
+				PositionId:   1,
+				DstValidator: validValidator,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+		{
+			name: "invalid destination validator",
+			msg: types.MsgTierRedelegate{
+				Owner:        validOwner,
+				PositionId:   1,
+				DstValidator: "invalid",
+			},
+			wantErr:     true,
+			errContains: "invalid destination validator address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgAddToTierPosition_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgAddToTierPosition
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgAddToTierPosition{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(1000),
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgAddToTierPosition{
+				Owner:      "invalid",
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(1000),
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+		{
+			name: "zero amount",
+			msg: types.MsgAddToTierPosition{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.ZeroInt(),
+			},
+			wantErr:     true,
+			errContains: "amount must be positive",
+		},
+		{
+			name: "negative amount",
+			msg: types.MsgAddToTierPosition{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(-1),
+			},
+			wantErr:     true,
+			errContains: "amount must be positive",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgTriggerExitFromTier_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgTriggerExitFromTier
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgTriggerExitFromTier{
+				Owner:      validOwner,
+				PositionId: 1,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgTriggerExitFromTier{
+				Owner:      "invalid",
+				PositionId: 1,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgClearPosition_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgClearPosition
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgClearPosition{
+				Owner:      validOwner,
+				PositionId: 1,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgClearPosition{
+				Owner:      "invalid",
+				PositionId: 1,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgClaimTierRewards_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgClaimTierRewards
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgClaimTierRewards{
+				Owner:      validOwner,
+				PositionId: 1,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgClaimTierRewards{
+				Owner:      "invalid",
+				PositionId: 1,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestMsgWithdrawFromTier_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgWithdrawFromTier
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgWithdrawFromTier{
+				Owner:      validOwner,
+				PositionId: 1,
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgWithdrawFromTier{
+				Owner:      "invalid",
+				PositionId: 1,
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
