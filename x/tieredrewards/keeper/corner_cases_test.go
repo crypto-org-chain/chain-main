@@ -156,4 +156,3 @@ func (s *KeeperSuite) TestCornerCase_ZeroAmountPositiveSharesState() {
 	s.Require().NoError(err)
 	s.Require().True(totalPower.IsZero(), "zero-amount delegated positions should not contribute to total delegated voting power")
 }
-
