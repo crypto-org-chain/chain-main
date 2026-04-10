@@ -1,13 +1,9 @@
 package keeper_test
 
 import (
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
-
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // ---------------------------------------------------------------------------
@@ -17,9 +13,8 @@ import (
 // Redelegation slash reduces both Amount and DelegatedShares.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	lockAmount := sdkmath.NewInt(10000)
-	const unbondingId uint64 = 42
 
-	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, true)
+	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
 	origShares := pos.DelegatedShares
 	s.Require().True(origShares.IsPositive())
 
@@ -43,14 +38,13 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 // When all shares are burnt, the position should clear its delegation and set amount to zero.
 func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
 	lockAmount := sdkmath.NewInt(5000)
-	const unbondingId uint64 = 43
 
-	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, true)
-	origShares := pos.DelegatedShares
+	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
+	shares := pos.DelegatedShares
 
 	// all tokens should be slashed if all shares are burnt
 	slashTokens := lockAmount
-	shareBurnt := origShares.Add(sdkmath.LegacyOneDec())
+	shareBurnt := shares.Add(sdkmath.LegacyOneDec())
 
 	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err)
@@ -77,9 +71,8 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 // Unbonding delegation slash reduces Amount but keeps DelegatedShares unchanged.
 func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	lockAmount := sdkmath.NewInt(6000)
-	const unbondingId uint64 = 45
 
-	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, false)
+	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
 	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
@@ -97,9 +90,8 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 // Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
 func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 	lockAmount := sdkmath.NewInt(4000)
-	const unbondingId uint64 = 46
 
-	pos := s.setupDelegatedPositionForSlash(lockAmount, unbondingId, false)
+	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
 
 	err := s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)
@@ -125,36 +117,18 @@ func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
 // ---------------------------------------------------------------------------
 
 func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	addr := sdk.AccAddress([]byte("bonded_slash_addr___"))
-	lockAmount := sdkmath.NewInt(10000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	origShares := positions[0].DelegatedShares
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	origShares := pos.DelegatedShares
 
 	fraction := sdkmath.LegacyNewDecWithPrec(1, 1) // 10%
-	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
+	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.GetPosition(s.ctx, positions[0].Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.Require().True(updated.Amount.LT(lockAmount),
+	s.Require().True(updated.Amount.LT(pos.Amount),
 		"Amount should be reduced after bonded slash")
 	s.Require().True(updated.DelegatedShares.Equal(origShares),
 		"DelegatedShares must NOT change on bonded slash; got %s, want %s",

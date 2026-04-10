@@ -84,6 +84,47 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	return positions[0]
 }
 
+// setupRedelegatingPosition creates a position with redelegation
+func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
+	s.T().Helper()
+	pos := s.setupNewTierPosition(lockAmount, false)
+
+	dstValAddr, _ := s.createSecondValidator()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	res, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        pos.Owner,
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	
+	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	return updatedPos, res.UnbondingId
+}
+
+// setupUnbondingPosition creates a position and maps it to the given
+// unbonding ID via UnbondingDelegationMappings, simulating a position
+// whose unbonding delegation can be slashed.
+func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
+	s.T().Helper()
+	pos := s.setupNewTierPosition(lockAmount, true)
+	s.advancePastExitDuration()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	res, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	return updatedPos, res.UnbondingId
+}
+
 func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, string) {
 	s.T().Helper()
 
@@ -189,26 +230,6 @@ func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkm
 	s.Require().NoError(err)
 }
 
-// setupDelegatedPositionForSlash creates a funded address, locks a tier position with
-// delegation, and records an unbonding-ID → position-ID mapping so that the
-// slash-by-unbondingId functions can find the position.
-// If redelegation is true, the mapping is stored in RedelegationMappings;
-// otherwise in UnbondingDelegationMappings.
-func (s *KeeperSuite) setupDelegatedPositionForSlash(lockAmount sdkmath.Int, unbondingId uint64, redelegation bool) types.Position {
-	s.T().Helper()
-	pos := s.setupNewTierPosition(lockAmount, false)
-
-	if redelegation {
-		err := s.keeper.RedelegationMappings.Set(s.ctx, unbondingId, pos.Id)
-		s.Require().NoError(err)
-	} else {
-		err := s.keeper.UnbondingDelegationMappings.Set(s.ctx, unbondingId, pos.Id)
-		s.Require().NoError(err)
-	}
-
-	return pos
-}
-
 // createSecondValidator creates a second bonded validator for tests that need
 // cross-validator scenarios (redelegation, etc.)
 func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
@@ -260,6 +281,7 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	return valAddr, accAddr
 }
 
+// ctxWithVoteInfos sets the vote infos for the context
 func (s *KeeperSuite) ctxWithVoteInfos() sdk.Context {
 	s.T().Helper()
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
