@@ -30,9 +30,9 @@ func (k Keeper) getValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddr
 	return ratio.CumulativeRewardsPerShare, nil
 }
 
-// collectValidatorDelegationRewards pulls accumulated staking distribution rewards from
+// collectDelegationRewards pulls accumulated staking distribution rewards from
 // x/distribution into the tier module account for the delegation to valAddr.
-func (k Keeper) collectValidatorDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (rewards sdk.Coins, collected bool, err error) {
+func (k Keeper) collectDelegationRewards(ctx context.Context, valAddr sdk.ValAddress) (rewards sdk.Coins, collected bool, err error) {
 	currentBlockHeight := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 	if lastBlock := k.getLastRewardsWithdrawalBlock(ctx, valAddr); lastBlock == currentBlockHeight {
 		return sdk.Coins{}, false, nil
@@ -71,7 +71,7 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 		return sdk.DecCoins{}, nil
 	}
 
-	rewards, collected, err := k.collectValidatorDelegationRewards(ctx, valAddr)
+	rewards, collected, err := k.collectDelegationRewards(ctx, valAddr)
 	if err != nil {
 		return sdk.DecCoins{}, err
 	}
