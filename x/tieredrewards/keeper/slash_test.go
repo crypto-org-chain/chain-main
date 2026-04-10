@@ -14,43 +14,6 @@ import (
 // slashRedelegationPosition tests (AfterRedelegationSlashed)
 // ---------------------------------------------------------------------------
 
-// setupDelegatedPosition creates a funded address, locks a tier position with
-// delegation, and records an unbonding-ID → position-ID mapping so that the
-// slash-by-unbondingId functions can find the position.
-// If redelegation is true, the mapping is stored in RedelegationMappings;
-// otherwise in UnbondingDelegationMappings.
-func (s *KeeperSuite) setupDelegatedPosition(valAddr sdk.ValAddress, bondDenom string, lockAmount sdkmath.Int, unbondingId uint64, redelegation bool) (sdk.AccAddress, types.Position) {
-	s.T().Helper()
-	addr := sdk.AccAddress([]byte("slash_test_addr_____"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Find the created position.
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos := positions[0]
-
-	if redelegation {
-		err = s.keeper.RedelegationMappings.Set(s.ctx, unbondingId, pos.Id)
-	} else {
-		err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, unbondingId, pos.Id)
-	}
-	s.Require().NoError(err)
-
-	return addr, pos
-}
-
 // Redelegation slash reduces both Amount and DelegatedShares.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
@@ -58,7 +21,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesBoth() {
 	lockAmount := sdkmath.NewInt(10000)
 	const unbondingId uint64 = 42
 
-	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, true)
+	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, true)
 	origShares := pos.DelegatedShares
 	s.Require().True(origShares.IsPositive())
 
@@ -86,7 +49,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
 	lockAmount := sdkmath.NewInt(5000)
 	const unbondingId uint64 = 43
 
-	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, true)
+	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, true)
 	origShares := pos.DelegatedShares
 
 	// all tokens should be slashed if all shares are burnt
@@ -122,7 +85,7 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	lockAmount := sdkmath.NewInt(6000)
 	const unbondingId uint64 = 45
 
-	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, false)
+	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, false)
 	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
@@ -144,7 +107,7 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 	lockAmount := sdkmath.NewInt(4000)
 	const unbondingId uint64 = 46
 
-	_, pos := s.setupDelegatedPosition(valAddr, bondDenom, lockAmount, unbondingId, false)
+	_, pos := s.setupDelegatedPositionForSlash(valAddr, bondDenom, lockAmount, unbondingId, false)
 
 	err := s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)

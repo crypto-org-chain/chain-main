@@ -11,8 +11,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // --- MsgLockTier tests ---
@@ -310,63 +308,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_NoDelegation() {
 
 	_, err := msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().Error(err)
-}
-
-// allocateRewardsToValidator funds the distribution module and allocates
-// rewards to a validator so that WithdrawDelegationRewards returns them.
-func (s *KeeperSuite) allocateRewardsToValidator(valAddr sdk.ValAddress, amount sdkmath.Int, denom string) {
-	s.T().Helper()
-
-	// Fund the distribution module account so it can back the allocation.
-	rewardCoins := sdk.NewCoins(sdk.NewCoin(denom, amount))
-	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, distrtypes.ModuleName, rewardCoins)
-	s.Require().NoError(err)
-
-	// Allocate through distribution so the rewards show up in WithdrawDelegationRewards.
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	decRewards := sdk.NewDecCoinsFromCoins(rewardCoins...)
-	err = s.app.DistrKeeper.AllocateTokensToValidator(s.ctx, val, decRewards)
-	s.Require().NoError(err)
-}
-
-// setValidatorCommission overrides the genesis validator's commission rate.
-// The default genesis validator has 100% commission, which means delegators
-// receive nothing from AllocateTokensToValidator. This helper sets it to
-// a usable rate for reward tests.
-func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmath.LegacyDec) {
-	s.T().Helper()
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	val.Commission = stakingtypes.NewCommission(rate, sdkmath.LegacyOneDec(), sdkmath.LegacyZeroDec())
-	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
-}
-
-// completeStakingUnbonding advances block time past the staking unbonding
-// period and calls CompleteUnbonding so that the staking module returns tokens
-// from the NotBondedPool to the tier module account
-func (s *KeeperSuite) completeStakingUnbonding(valAddr sdk.ValAddress) {
-	s.T().Helper()
-	unbondingTime, err := s.app.StakingKeeper.UnbondingTime(s.ctx)
-	s.Require().NoError(err)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(unbondingTime + time.Second))
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.CompleteUnbonding(s.ctx, poolAddr, valAddr)
-	s.Require().NoError(err)
-}
-
-// advancePastExitDuration advances block time past the default test tier's exit duration.
-func (s *KeeperSuite) advancePastExitDuration() {
-	s.T().Helper()
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(newTestTier(1).ExitDuration + time.Hour))
-}
-
-// fundRewardsPool funds the tier bonus rewards pool with the given amount.
-func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
-	s.T().Helper()
-	coins := sdk.NewCoins(sdk.NewCoin(denom, amount))
-	err := banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.RewardsPoolName, coins)
-	s.Require().NoError(err)
 }
 
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_LockTier() {
@@ -2461,19 +2402,6 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffec
 		}
 	}
 	s.Require().True(found, "EventBonusRewardsClaimed should be emitted as side effect of AddToTierPosition on a delegated position")
-}
-
-// slashValidatorDirect slashes a bonded validator through the staking module,
-// changing the token/share exchange rate to non-1:1.
-func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) {
-	s.T().Helper()
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	consAddr, err := val.GetConsAddr()
-	s.Require().NoError(err)
-	power := val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
-	_, err = s.app.StakingKeeper.Slash(s.ctx, consAddr, s.ctx.BlockHeight(), power, fraction)
-	s.Require().NoError(err)
 }
 
 // TestMsgTierUndelegate_ReconcilesAmount: after TierUndelegate,

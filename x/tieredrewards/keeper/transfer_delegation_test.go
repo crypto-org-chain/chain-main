@@ -5,7 +5,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -171,56 +170,7 @@ func (s *KeeperSuite) TestTransferDelegation_InvalidFromAddress() {
 	s.Require().Error(err)
 }
 
-// createSecondValidator creates a second bonded validator for tests that need
-// cross-validator scenarios (redelegation, etc.)
-func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
-	s.T().Helper()
 
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-
-	privKey := secp256k1.GenPrivKey()
-	pubKey := privKey.PubKey()
-	valAddr := sdk.ValAddress(pubKey.Address())
-	accAddr := sdk.AccAddress(pubKey.Address())
-
-	// Fund the validator account
-	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
-	s.Require().NoError(err)
-	srcValAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, srcValAddr)
-	s.Require().NoError(err)
-	delAddr, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
-	s.Require().NoError(err)
-	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(2_000_000)))
-	err = s.app.BankKeeper.SendCoins(s.ctx, delAddr, accAddr, coins)
-	s.Require().NoError(err)
-
-	// Create validator
-	description := stakingtypes.NewDescription("val2", "", "", "", "")
-	commission := stakingtypes.NewCommissionRates(
-		sdkmath.LegacyNewDecWithPrec(10, 2),
-		sdkmath.LegacyNewDecWithPrec(20, 2),
-		sdkmath.LegacyNewDecWithPrec(1, 2),
-	)
-	createMsg, err := stakingtypes.NewMsgCreateValidator(
-		valAddr.String(), pubKey,
-		sdk.NewCoin(bondDenom, sdkmath.NewInt(1_000_000)),
-		description, commission, sdkmath.OneInt(),
-	)
-	s.Require().NoError(err)
-
-	stakingServer := stakingkeeper.NewMsgServerImpl(s.app.StakingKeeper)
-	_, err = stakingServer.CreateValidator(s.ctx, createMsg)
-	s.Require().NoError(err)
-
-	// Force the new validator into the bonded set
-	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
-	s.Require().NoError(err)
-
-	return valAddr, accAddr
-}
 
 func (s *KeeperSuite) TestTransferDelegation_RejectsActiveRedelegation() {
 	// Get genesis validator (bonded) and delegator

@@ -151,3 +151,15 @@ func (k Keeper) GetPositionsByTier(ctx context.Context, tierId uint32) ([]types.
 func (k Keeper) GetLastWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {
 	return k.getLastRewardsWithdrawalBlock(ctx, valAddr)
 }
+
+func (k Keeper) ClaimRewardsAndUpdatePositionsForTier(ctx context.Context, tierId uint32) error {
+	return k.claimRewardsAndUpdatePositionsForTier(ctx, tierId)
+}
+
+func (k Keeper) ClaimRewardsForPosition(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+	return k.claimRewardsForPosition(ctx, pos)
+}
+
+func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
+	return k.updateBaseRewardsPerShare(ctx, valAddr)
+}
