@@ -25,13 +25,15 @@ func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 	s.Require().NoError(err)
 }
 
-func (s *KeeperSuite) setupTier() {
+// setupTier creates a new tier with a given id
+func (s *KeeperSuite) setupTier(id uint32) {
 	s.T().Helper()
 
-	tier := newTestTier(1)
+	tier := newTestTier(id)
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 }
 
+// getStakingData returns the bonded validators and bond denom
 func (s *KeeperSuite) getStakingData() ([]stakingtypes.Validator, string) {
 	s.T().Helper()
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
@@ -41,13 +43,12 @@ func (s *KeeperSuite) getStakingData() ([]stakingtypes.Validator, string) {
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
 	return vals, bondDenom
-
 }
 
 // setupNewTierPosition creates a new tier position with the given lock amount and funds the rewards pool.
 func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
 	s.T().Helper()
-	s.setupTier()
+	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
 	val := vals[0]
 	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
@@ -66,10 +67,10 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	s.Require().NoError(err)
 
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
+		Owner:                  freshAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: triggerExitImmediately,
 	})
 	s.Require().NoError(err)
