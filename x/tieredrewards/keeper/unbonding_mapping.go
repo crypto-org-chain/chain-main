@@ -78,9 +78,12 @@ func (k Keeper) deleteUnbondingMappingsForPosition(ctx context.Context, position
 	return nil
 }
 
-// stillUnbonding returns true if there are unbonding ids for the position.
-func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
-	iter, err := k.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(ctx, positionId)
+func (k Keeper) hasPositionMapping(
+	ctx context.Context,
+	mappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes],
+	positionId uint64,
+) (bool, error) {
+	iter, err := mappings.Indexes.ByPosition.MatchExact(ctx, positionId)
 	if err != nil {
 		return false, err
 	}
@@ -89,6 +92,16 @@ func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, er
 		return false, err
 	}
 	return len(keys) > 0, nil
+}
+
+// stillUnbonding returns true if there are pending undelegation unbonding ids for the position.
+func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
+	return k.hasPositionMapping(ctx, k.UnbondingDelegationMappings, positionId)
+}
+
+// stillRedelegating returns true if there are pending redelegation unbonding ids for the position.
+func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+	return k.hasPositionMapping(ctx, k.RedelegationMappings, positionId)
 }
 
 // --- Redelegation mappings ---
