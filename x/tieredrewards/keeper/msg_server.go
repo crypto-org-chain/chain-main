@@ -448,6 +448,10 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
+	if !pos.HasTriggeredExit() {
+		return &types.MsgClearPositionResponse{PositionId: pos.Id}, nil
+	}
+
 	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 	if err != nil {
 		return nil, err

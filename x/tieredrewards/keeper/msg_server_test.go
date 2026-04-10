@@ -1486,7 +1486,9 @@ func (s *KeeperSuite) TestMsgClearPosition_UpdatesLastBonusAccrualAfterExitElaps
 	// Advance past exit duration
 	s.advancePastExitDuration()
 
-	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+	// Isolate events from this specific call.
+	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = msgServer.ClearPosition(freshCtx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
@@ -1522,18 +1524,32 @@ func (s *KeeperSuite) TestMsgClearPosition_WrongOwner() {
 }
 
 func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),
 		Id:               1,
-		Amount:           sdkmath.NewInt(1000),
+		Amount:           lockAmount,
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
 
-	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+	// Create claimable rewards and advance bonus accrual time to catch unintended side-effects.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10_000), bondDenom)
+
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Isolate events from this specific call.
+	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
+	_, err = msgServer.ClearPosition(freshCtx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
@@ -1541,7 +1557,20 @@ func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
 
 	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
 	s.Require().False(pos.HasTriggeredExit(), "position should still not be exiting")
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount), "clearing a non-exiting position must not claim rewards")
+	s.Require().Equal(posBefore.LastBonusAccrual, pos.LastBonusAccrual, "clearing a non-exiting position must not mutate accrual state")
+
+	foundExitCleared := false
+	for _, e := range freshCtx.EventManager().Events() {
+		if e.Type == "chainmain.tieredrewards.v1.EventExitCleared" {
+			foundExitCleared = true
+			break
+		}
+	}
+	s.Require().False(foundExitCleared, "clearing a non-exiting position must not emit EventExitCleared")
 }
 
 // TestMsgClearPosition_RejectsWhileUnbonding verifies that ClearPosition is
