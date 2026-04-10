@@ -2372,23 +2372,15 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_EmitsEvent() {
 // a side effect of the implicit reward claim before adding tokens.
 // This covers the skipped integration test test_add_to_position_reward_side_effect.
 func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect() {
-	addr, _, pos := s.setupPositionForBonusTest()
-
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 
 	// Advance time so bonus accrues (LastBonusAccrual is initialized at position creation by WithDelegation).
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
-	// Fund addr for the add operation; setupPositionForBonusTest exhausted its initial balance.
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
-	s.Require().NoError(err)
-
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
-	_, err = msgServer.AddToTierPosition(freshCtx, &types.MsgAddToTierPosition{
-		Owner:      addr.String(),
+	_, err := msgServer.AddToTierPosition(freshCtx, &types.MsgAddToTierPosition{
+		Owner:      pos.Owner,
 		PositionId: pos.Id,
 		Amount:     sdkmath.NewInt(1000),
 	})

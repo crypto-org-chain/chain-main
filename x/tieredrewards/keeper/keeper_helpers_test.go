@@ -25,6 +25,64 @@ func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 	s.Require().NoError(err)
 }
 
+func (s *KeeperSuite) setupTier() {
+	s.T().Helper()
+
+	tier := newTestTier(1)
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+}
+
+func (s *KeeperSuite) getStakingData() ([]stakingtypes.Validator, string) {
+	s.T().Helper()
+	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(vals)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	return vals, bondDenom
+
+}
+
+// setupNewTierPosition creates a new tier position with the given lock amount and funds the rewards pool.
+func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
+	s.T().Helper()
+	s.setupTier()
+	vals, bondDenom := s.getStakingData()
+	val := vals[0]
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(1)
+	s.ctx = s.ctx.WithBlockTime(time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC))
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	freshAddr := sdk.AccAddress([]byte("fresh_test_addr_____"))
+	// Over fund the account to avoid running out of funds during the test.
+	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: triggerExitImmediately,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+
+	return positions[0]
+}
+
 func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, string) {
 	s.T().Helper()
 
@@ -52,36 +110,6 @@ func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, s
 	s.ctx = s.ctx.WithBlockTime(time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC))
 
 	return delAddr, valAddr, bondDenom
-}
-
-// setupPositionForBonusTest creates a funded, delegated position and funds
-// the rewards pool so that bonus can actually be paid out.
-func (s *KeeperSuite) setupPositionForBonusTest() (sdk.AccAddress, sdk.ValAddress, types.Position) {
-	s.T().Helper()
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	addr := sdk.AccAddress([]byte("bonus_test_addr_____"))
-	lockAmount := sdkmath.NewInt(10000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-
-	return addr, valAddr, positions[0]
 }
 
 // jailAndUnbondValidator jails a validator and runs ApplyAndReturnValidatorSetUpdates
