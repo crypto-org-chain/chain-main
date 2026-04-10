@@ -31,6 +31,10 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 }
 
 func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTierPositionsRequest) (*types.QueryAllTierPositionsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	positions, pageResp, err := query.CollectionPaginate(
 		ctx,
 		q.k.Positions,
@@ -49,6 +53,10 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 }
 
 func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryTierPositionsByOwnerRequest) (*types.QueryTierPositionsByOwnerResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	owner, err := sdk.AccAddressFromBech32(req.Owner)
 	if err != nil {
 		return nil, err
@@ -63,6 +71,10 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 }
 
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	pos, err := q.k.getPosition(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
@@ -90,6 +102,10 @@ func (q queryServer) RewardsPoolBalance(ctx context.Context, _ *types.QueryRewar
 
 // EstimatePositionRewards estimates pending base and bonus rewards for a position.
 func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.QueryEstimatePositionRewardsRequest) (*types.QueryEstimatePositionRewardsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
 	pos, err := q.k.getPosition(ctx, req.PositionId)
 	if err != nil {
 		return nil, err

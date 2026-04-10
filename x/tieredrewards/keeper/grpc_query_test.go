@@ -5,6 +5,8 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -60,6 +62,14 @@ func (s *KeeperSuite) TestGRPCQueryTierPosition_NotFound() {
 	s.Require().Error(err)
 }
 
+func (s *KeeperSuite) TestGRPCQueryTierPosition_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TierPosition(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
+}
+
 // --- TierPositionsByOwner ---
 
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner() {
@@ -85,6 +95,14 @@ func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_Empty() {
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_InvalidAddress() {
 	_, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: "invalid"})
 	s.Require().Error(err)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TierPositionsByOwner(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
 }
 
 // --- AllTierPositions ---
@@ -125,6 +143,14 @@ func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
 	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{})
 	s.Require().NoError(err)
 	s.Require().Empty(resp.Positions)
+}
+
+func (s *KeeperSuite) TestGRPCQueryAllTierPositions_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.AllTierPositions(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
 }
 
 // --- Tiers ---
@@ -200,6 +226,14 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotDelegated() {
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotFound() {
 	_, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 999})
 	s.Require().Error(err)
+}
+
+func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.EstimatePositionRewards(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
 }
 
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
