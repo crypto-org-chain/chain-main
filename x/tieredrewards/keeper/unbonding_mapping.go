@@ -3,10 +3,10 @@ package keeper
 import (
 	"context"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	"cosmossdk.io/collections"
 	"cosmossdk.io/collections/indexes"
-
-	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 )
 
 // UnbondingMappingsIndexes defines the secondary indexes for unbonding mappings.

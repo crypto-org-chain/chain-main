@@ -68,7 +68,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		//TODO: add new tiers here if needed
+		// TODO: add new tiers here if needed
 
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
