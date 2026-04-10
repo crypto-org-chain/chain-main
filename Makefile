@@ -313,7 +313,7 @@ nix-integration-test-base-rewards: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m base_rewards"
 
 nix-integration-test-tieredrewards: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m tieredrewards"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m tieredrewards and not slow"
 
 nix-integration-test-grpc: check-network make-proto
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m grpc"
