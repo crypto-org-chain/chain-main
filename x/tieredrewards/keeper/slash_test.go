@@ -121,15 +121,25 @@ func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	origShares := pos.DelegatedShares
 
-	fraction := sdkmath.LegacyNewDecWithPrec(1, 1) // 10%
-	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
+	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// 1/3 slash yields a fractional amount so this test also pins truncation.
+	fraction := sdkmath.LegacyMustNewDecFromStr("0.333333333333333333")
+	expectedDec := valBefore.TokensFromShares(origShares).Mul(sdkmath.LegacyOneDec().Sub(fraction))
+	expectedAmount := expectedDec.TruncateInt()
+	s.Require().False(expectedDec.IsInteger(), "test assumption: expected post-slash amount should include fractional dust")
+
+	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.Require().True(updated.Amount.LT(pos.Amount),
-		"Amount should be reduced after bonded slash")
+	s.Require().True(updated.Amount.Equal(expectedAmount),
+		"Amount should equal truncated post-slash token value; got %s want %s",
+		updated.Amount, expectedAmount)
+	s.Require().True(updated.Amount.LT(pos.Amount), "Amount should be reduced after bonded slash")
 	s.Require().True(updated.DelegatedShares.Equal(origShares),
 		"DelegatedShares must NOT change on bonded slash; got %s, want %s",
 		updated.DelegatedShares, origShares)

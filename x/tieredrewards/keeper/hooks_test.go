@@ -79,13 +79,26 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
-	slashFraction := sdkmath.LegacyNewDecWithPrec(5, 2) // 5%
+	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// 1/3 slash intentionally produces a fractional post-slash token amount
+	// for common integer token values, so we can assert truncation behavior.
+	slashFraction := sdkmath.LegacyMustNewDecFromStr("0.333333333333333333")
+	expectedDec := valBefore.TokensFromShares(posBefore.DelegatedShares).Mul(sdkmath.LegacyOneDec().Sub(slashFraction))
+	expectedAmount := expectedDec.TruncateInt()
+	s.Require().False(expectedDec.IsInteger(), "test assumption: expected post-slash amount should include fractional dust")
+
 	hooks := s.keeper.Hooks()
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
 	s.Require().NoError(err)
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
+	s.Require().True(posAfter.Amount.Equal(expectedAmount),
+		"position amount should match truncated post-slash expectation; got %s want %s",
+		posAfter.Amount, expectedAmount,
+	)
 	s.Require().True(posAfter.Amount.LT(posBefore.Amount), "position amount should decrease after slash")
 }
 
