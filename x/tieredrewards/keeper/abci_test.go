@@ -11,6 +11,7 @@ import (
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
+
 // TestBeginBlocker_ZeroRate verifies that with a zero rate, no top-up occurs.
 func (s *KeeperSuite) TestBeginBlocker_ZeroRate() {
 	params := types.NewParams(sdkmath.LegacyZeroDec())

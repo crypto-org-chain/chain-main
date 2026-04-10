@@ -3,11 +3,12 @@ package keeper_test
 import (
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
+
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -97,7 +98,7 @@ func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.P
 		PositionId:   pos.Id,
 		DstValidator: dstValAddr.String(),
 	})
-	
+	s.Require().NoError(err)
 	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 

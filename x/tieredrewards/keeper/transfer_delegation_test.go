@@ -170,8 +170,6 @@ func (s *KeeperSuite) TestTransferDelegation_InvalidFromAddress() {
 	s.Require().Error(err)
 }
 
-
-
 func (s *KeeperSuite) TestTransferDelegation_RejectsActiveRedelegation() {
 	// Get genesis validator (bonded) and delegator
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)

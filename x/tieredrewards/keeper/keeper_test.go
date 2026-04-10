@@ -39,4 +39,3 @@ func (suite *KeeperSuite) SetupTest() {
 func TestKeeperSuite(t *testing.T) {
 	suite.Run(t, new(KeeperSuite))
 }
-
