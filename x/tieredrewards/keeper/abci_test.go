@@ -152,7 +152,12 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(vals)
 
-	consAddr, err := vals[0].GetConsAddr()
+	firstConsAddr, err := vals[0].GetConsAddr()
+	s.Require().NoError(err)
+	secondValAddr, _ := s.createSecondValidator()
+	secondVal, err := s.app.StakingKeeper.GetValidator(s.ctx, secondValAddr)
+	s.Require().NoError(err)
+	secondConsAddr, err := secondVal.GetConsAddr()
 	s.Require().NoError(err)
 
 	// Simulate two validators with power 1 and 6 (total 7).
@@ -160,8 +165,8 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	// Validator 1 (last) receives the remainder including the dust.
 	totalPower := int64(7)
 	s.ctx = s.ctx.WithVoteInfos([]abci.VoteInfo{
-		{Validator: abci.Validator{Address: consAddr, Power: 1}},
-		{Validator: abci.Validator{Address: consAddr, Power: 6}},
+		{Validator: abci.Validator{Address: firstConsAddr, Power: 1}},
+		{Validator: abci.Validator{Address: secondConsAddr, Power: 6}},
 	})
 
 	s.setExtremeRate()
@@ -185,6 +190,13 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	s.Require().False(topUpAmount.ModRaw(totalPower).IsZero(),
 		"test assumption: topUp amount (%s) must not be divisible by %d to produce dust", topUpAmount, totalPower)
 
+	firstValAddr, err := sdk.ValAddressFromBech32(vals[0].OperatorAddress)
+	s.Require().NoError(err)
+	firstOutstandingBefore, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, firstValAddr)
+	s.Require().NoError(err)
+	secondOutstandingBefore, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, secondValAddr)
+	s.Require().NoError(err)
+
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBefore := s.app.BankKeeper.GetBalance(s.ctx, poolAddr, sdk.DefaultBondDenom)
 	distrAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, distrtypes.ModuleName).GetAddress()
@@ -203,4 +215,25 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	s.Require().Equal(drained, distrReceived,
 		"distribution module must receive the full top-up amount (no dust lost); drained=%s received=%s",
 		drained, distrReceived)
+
+	firstOutstandingAfter, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, firstValAddr)
+	s.Require().NoError(err)
+	secondOutstandingAfter, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, secondValAddr)
+	s.Require().NoError(err)
+
+	firstAllocated := firstOutstandingAfter.Sub(firstOutstandingBefore)
+	secondAllocated := secondOutstandingAfter.Sub(secondOutstandingBefore)
+
+	topUpDec := sdk.NewDecCoins(sdk.NewDecCoin(sdk.DefaultBondDenom, drained))
+	firstExpected := topUpDec.MulDecTruncate(sdkmath.LegacyNewDec(1).QuoTruncate(sdkmath.LegacyNewDec(totalPower)))
+	secondExpected := topUpDec.Sub(firstExpected)
+
+	s.Require().True(firstAllocated.Equal(firstExpected),
+		"first validator should receive truncated 1/%d share; got=%s want=%s",
+		totalPower, firstAllocated, firstExpected,
+	)
+	s.Require().True(secondAllocated.Equal(secondExpected),
+		"last validator should receive the full remainder; got=%s want=%s",
+		secondAllocated, secondExpected,
+	)
 }
