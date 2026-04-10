@@ -22,6 +22,9 @@ func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 
 	power := math.LegacyZeroDec()
 	for _, pos := range active {
+		if pos.Amount.IsZero() {
+			continue
+		}
 		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
 			continue
@@ -62,6 +65,9 @@ func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
 		if !pos.IsDelegated() {
+			return false, nil
+		}
+		if pos.Amount.IsZero() {
 			return false, nil
 		}
 
