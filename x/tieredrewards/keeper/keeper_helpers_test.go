@@ -244,18 +244,28 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	valAddr := sdk.ValAddress(pubKey.Address())
 	accAddr := sdk.AccAddress(pubKey.Address())
 
-	// Fund the validator account
+	// Fund the new validator from a source-validator delegator with spendable balance.
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	srcValAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
 	s.Require().NoError(err)
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, srcValAddr)
 	s.Require().NoError(err)
-	delAddr, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
-	s.Require().NoError(err)
 	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(2_000_000)))
-	err = s.app.BankKeeper.SendCoins(s.ctx, delAddr, accAddr, coins)
-	s.Require().NoError(err)
+	var funded bool
+	for _, del := range dels {
+		delAddr, err := s.app.AccountKeeper.AddressCodec().StringToBytes(del.DelegatorAddress)
+		s.Require().NoError(err)
+		spendable := s.app.BankKeeper.SpendableCoins(s.ctx, delAddr)
+		if !spendable.IsAllGTE(coins) {
+			continue
+		}
+		err = s.app.BankKeeper.SendCoins(s.ctx, delAddr, accAddr, coins)
+		s.Require().NoError(err)
+		funded = true
+		break
+	}
+	s.Require().True(funded, "expected at least one existing delegator with enough spendable balance to fund validator creation")
 
 	// Create validator
 	description := stakingtypes.NewDescription("val2", "", "", "", "")
