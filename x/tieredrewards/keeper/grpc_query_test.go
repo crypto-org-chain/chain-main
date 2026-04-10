@@ -205,6 +205,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotFound() {
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	srv := keeper.NewQueryServerImpl(s.keeper)
 
 	// Set validator commission to 0% so all staking rewards go to delegators.
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -221,7 +222,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// Advance one block so the delegation's starting period in x/distribution
@@ -235,9 +236,14 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	// Advance 30 days to accrue bonus.
 	advanceDuration := 30 * 24 * time.Hour
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(advanceDuration))
-	s.resetQueryClient()
 
-	resp, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
+	ownerBalBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	moduleBalBefore := s.app.BankKeeper.GetBalance(s.ctx, moduleAddr, bondDenom)
+	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
+	rewardsPoolBalBefore := s.app.BankKeeper.GetBalance(s.ctx, rewardsPoolAddr, bondDenom)
+
+	resp, err := srv.EstimatePositionRewards(s.ctx, &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
 	s.Require().NoError(err)
 
 	// Base rewards: the genesis validator has one delegation of DefaultPowerReduction.
@@ -255,10 +261,20 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	expectedBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	expectedBonus := s.keeper.CalculateBonusRaw(posBefore, val, tier, s.ctx.BlockTime())
 	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
 	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
 		"bonus rewards should match what is calculated")
+	posAfter, err := s.keeper.GetPosition(s.ctx, 0)
+	s.Require().NoError(err)
+	s.Require().Equal(posBefore, posAfter, "position state must remain unchanged by estimation")
+
+	ownerBalAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	moduleBalAfter := s.app.BankKeeper.GetBalance(s.ctx, moduleAddr, bondDenom)
+	rewardsPoolBalAfter := s.app.BankKeeper.GetBalance(s.ctx, rewardsPoolAddr, bondDenom)
+	s.Require().Equal(ownerBalBefore, ownerBalAfter, "owner balance must not change")
+	s.Require().Equal(moduleBalBefore, moduleBalAfter, "tier module balance must not change")
+	s.Require().Equal(rewardsPoolBalBefore, rewardsPoolBalAfter, "rewards pool balance must not change")
 }
 
 // --- TierVotingPower ---
