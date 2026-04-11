@@ -74,14 +74,29 @@ func (s *KeeperSuite) TestGRPCQueryTierPosition_NilRequest() {
 
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner() {
 	owner := testPositionOwner
+	otherOwner := sdk.AccAddress([]byte("query_other_owner___")).String()
+
 	pos1 := newTestPosition(1, owner, 1)
 	pos2 := newTestPosition(2, owner, 2)
+	pos3 := newTestPosition(3, otherOwner, 1)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos3))
 
 	resp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: owner})
 	s.Require().NoError(err)
 	s.Require().Len(resp.Positions, 2)
+	expectedIDs := map[uint64]struct{}{
+		1: {},
+		2: {},
+	}
+	for _, pos := range resp.Positions {
+		s.Require().Equal(owner, pos.Owner, "query must only return positions owned by requested owner")
+		_, ok := expectedIDs[pos.Id]
+		s.Require().True(ok, "unexpected position id %d returned for owner %s", pos.Id, owner)
+		delete(expectedIDs, pos.Id)
+	}
+	s.Require().Empty(expectedIDs, "missing expected positions for owner %s", owner)
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_Empty() {
@@ -137,6 +152,24 @@ func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Pagination() {
 	})
 	s.Require().NoError(err)
 	s.Require().Len(resp2.Positions, 3)
+
+	// Pagination must return each position exactly once: no skips, no duplicates, no overlap between pages.
+	seen := make(map[uint64]struct{}, 5)
+	for _, p := range resp.Positions {
+		_, dup := seen[p.Id]
+		s.Require().False(dup, "duplicate position id %d within first page", p.Id)
+		seen[p.Id] = struct{}{}
+	}
+	for _, p := range resp2.Positions {
+		_, dup := seen[p.Id]
+		s.Require().False(dup, "duplicate position id %d across pages or within second page", p.Id)
+		seen[p.Id] = struct{}{}
+	}
+	s.Require().Len(seen, 5)
+	for i := uint64(1); i <= 5; i++ {
+		_, ok := seen[i]
+		s.Require().True(ok, "missing position id %d after paginating all pages", i)
+	}
 }
 
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
