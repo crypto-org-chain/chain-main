@@ -909,10 +909,10 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 		"Yes should be zero when validator not in map; got %s", results[v1.OptionYes])
 }
 
-// TestCustomTally_TierPositionOnUnbondingValidatorCounted verifies that tier
-// voting power uses delegated-position semantics even when validator is no
-// longer in the bonded validators map used by gov tally.
-func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorCounted() {
+// TestCustomTally_TierPositionOnUnbondingValidatorNotCounted verifies that a
+// tier position whose validator is unbonding/unbonded contributes zero voting
+// power, consistent with standard gov tally semantics.
+func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted() {
 	_, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -944,14 +944,12 @@ func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorCounted() 
 	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
-	expected := val.TokensFromShares(tierPositions[0].DelegatedShares)
-	s.Require().True(expected.IsPositive(), "tier voting power should be positive")
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
-	s.Require().True(totalPower.Equal(expected),
-		"tier position on unbonding validator should still count; got %s, want %s", totalPower, expected)
-	s.Require().True(results[v1.OptionYes].Equal(expected),
-		"Yes should equal tier voting power; got %s, want %s", results[v1.OptionYes], expected)
+	s.Require().True(totalPower.IsZero(),
+		"tier position on unbonding validator should not count; got %s", totalPower)
+	s.Require().True(results[v1.OptionYes].IsZero(),
+		"Yes should be zero for unbonding validator tier position; got %s", results[v1.OptionYes])
 }
 
 // TestCustomTally_ExitingPositionDoubleCountPrevented verifies that exiting

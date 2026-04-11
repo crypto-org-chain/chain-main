@@ -98,7 +98,7 @@ func NewCustomTallyTierVotesFn(
 					continue
 				}
 
-				if val, ok := validators[pos.Validator]; ok && !val.DelegatorShares.IsZero() {
+				if val, ok := validators[pos.Validator]; ok {
 					val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.DelegatedShares)
 					validators[pos.Validator] = val
 				}

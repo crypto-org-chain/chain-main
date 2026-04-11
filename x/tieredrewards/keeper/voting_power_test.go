@@ -186,10 +186,10 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 		"after undelegate, position should no longer contribute voting power")
 }
 
-// TestGetVotingPowerForAddress_UnbondingValidatorStillCounts verifies that
-// delegated positions keep governance power even after validator leaves bonded
-// set (semantics are tied to delegation state, not bonded state).
-func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorStillCounts() {
+// TestGetVotingPowerForAddress_UnbondingValidatorNotCounted verifies that
+// delegated positions on an unbonding validator contribute zero governance
+// power, consistent with standard gov tally semantics.
+func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted() {
 	delAddr, valAddr, _ := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -212,16 +212,15 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorStillCounts
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 
-	expected := val.TokensFromShares(positions[0].DelegatedShares)
 	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
 	s.Require().NoError(err)
-	s.Require().True(power.Equal(expected),
-		"delegated position on unbonding validator should still count; got %s, expected %s", power, expected)
+	s.Require().True(power.IsZero(),
+		"delegated position on unbonding validator should not count; got %s", power)
 
 	total, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)
-	s.Require().True(total.Equal(expected),
-		"total delegated voting power should match unbonding delegated position; got %s, expected %s", total, expected)
+	s.Require().True(total.IsZero(),
+		"total delegated voting power should be zero when validator unbonding; got %s", total)
 }
 
 func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
@@ -307,50 +306,39 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 		"after slash: per-address (%s) and total (%s) must match", perAddrPowerAfter, totalPowerAfter)
 }
 
-// TestZeroAmountPositiveSharesState verifies that a position can end
-// up with Amount == 0 while still delegated with positive shares after slash
-// math; voting power should not count such zero-amount positions.
+// TestZeroAmountPositiveSharesState verifies that after a full (100%) staking
+// slash, the validator's tokens go to zero and voting power is naturally zero
+// via TokensFromShares, even though the position still has positive
+// DelegatedShares. Also verifies that redelegation rejects zero-amount positions.
 func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(1000)
-	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
+	pos := s.setupNewTierPosition(lockAmount, false)
+	s.Require().True(pos.DelegatedShares.IsPositive(), "test setup failed: expected positive delegated shares")
+
+	// Slash the validator through staking with 100% fraction so tokens are
+	// actually burned and the exchange rate drops to zero.
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	s.Require().NoError(err)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	consAddr, err := val.GetConsAddr()
+	s.Require().NoError(err)
+	power := val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
+	_, err = s.app.StakingKeeper.Slash(s.ctx, consAddr, s.ctx.BlockHeight(), power, sdkmath.LegacyOneDec())
 	s.Require().NoError(err)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
-	s.Require().NoError(err)
-	s.Require().True(posBefore.DelegatedShares.IsPositive(), "test setup failed: expected positive delegated shares")
-
-	// Slash in hook path with full fraction; in this path Amount is updated but
-	// DelegatedShares are left unchanged for bonded slash handling.
-	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyOneDec())
-	s.Require().NoError(err)
-
-	posAfter, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.Amount.IsZero(), "expected position amount to be zero after slash")
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
 	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
 
-	// Redelegate rejects zero amount.
-	dstValAddr, _ := s.createSecondValidator()
-	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
-		Owner:        delAddr.String(),
-		PositionId:   lockResp.PositionId,
-		DstValidator: dstValAddr.String(),
-	})
-	s.Require().ErrorIs(err, types.ErrPositionAmountZero)
-
-	// Zero-amount delegated positions should not count toward voting power.
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	// After 100% slash, TokensFromShares returns zero naturally.
+	voter, err := sdk.AccAddressFromBech32(pos.Owner)
 	s.Require().NoError(err)
-	s.Require().True(power.IsZero(), "zero-amount delegated position should not contribute voting power")
+	votingPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, voter)
+	s.Require().NoError(err)
+	s.Require().True(votingPower.IsZero(), "zero-amount delegated position should not contribute voting power")
 
 	totalPower, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)

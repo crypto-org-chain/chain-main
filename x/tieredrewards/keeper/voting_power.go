@@ -5,11 +5,57 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"errors"
+
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+// validatorProvider captures the staking query needed to convert delegated
+// shares into governance voting power.
+type validatorProvider interface {
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+}
+
+// hasVotingPower defines whether a position has voting power.
+func hasVotingPower(pos types.Position, val stakingtypes.Validator) bool {
+	return val.IsBonded() && !val.DelegatorShares.IsZero() && pos.IsDelegated() && !pos.Amount.IsZero() && pos.DelegatedShares.IsPositive()
+}
+
+func tierVotingPowerForPosition(
+	ctx context.Context,
+	sk validatorProvider,
+	pos types.Position,
+	validatorCache map[string]stakingtypes.Validator,
+) (math.LegacyDec, error) {
+	val, ok := validatorCache[pos.Validator]
+	if !ok {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return math.LegacyZeroDec(), nil
+		}
+
+		val, err = sk.GetValidator(ctx, valAddr)
+		if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+			return math.LegacyZeroDec(), nil
+		}
+		if err != nil {
+			return math.LegacyZeroDec(), err
+		}
+
+		if validatorCache != nil {
+			validatorCache[pos.Validator] = val
+		}
+	}
+
+	if !hasVotingPower(pos, val) {
+		return math.LegacyZeroDec(), nil
+	}
+
+	return val.TokensFromShares(pos.DelegatedShares), nil
+}
 
 // getVotingPowerForAddress returns the tier governance voting power for an address.
 // Power is derived from delegated position shares via validator exchange rates.
