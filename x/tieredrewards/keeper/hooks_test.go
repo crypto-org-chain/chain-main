@@ -188,7 +188,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
 // (base rewards were claimed even though bonus was not paid).
 func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
+	pos := s.setupNewTierPosition(lockAmount, false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	_, bondDenom := s.getStakingData()
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())

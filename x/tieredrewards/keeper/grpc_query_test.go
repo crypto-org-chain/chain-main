@@ -261,7 +261,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NilRequest() {
 
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
+	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
