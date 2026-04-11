@@ -129,23 +129,14 @@ func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Posi
 func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
 	s.T().Helper()
 	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
-
-	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().NotEmpty(dels)
-	delAddrBytes, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
-	s.Require().NoError(err)
-	delAddr := sdk.AccAddress(delAddrBytes)
+	_, bondDenom := s.getStakingData()
+	delAddr, valAddr := s.getDelegator()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Over fund the account to avoid running out of funds during the test.
 	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
 	s.Require().NoError(err)
 
@@ -206,6 +197,21 @@ func (s *KeeperSuite) allocateRewardsToValidator(valAddr sdk.ValAddress, amount 
 	decRewards := sdk.NewDecCoinsFromCoins(rewardCoins...)
 	err = s.app.DistrKeeper.AllocateTokensToValidator(s.ctx, val, decRewards)
 	s.Require().NoError(err)
+}
+
+// getDelegator returns the genesis delegator address and validator address.
+func (s *KeeperSuite) getDelegator() (sdk.AccAddress, sdk.ValAddress) {
+	s.T().Helper()
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
+
+	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(dels)
+	delAddrBytes, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
+	s.Require().NoError(err)
+	return sdk.AccAddress(delAddrBytes), valAddr
 }
 
 // setValidatorCommission overrides the genesis validator's commission rate.
