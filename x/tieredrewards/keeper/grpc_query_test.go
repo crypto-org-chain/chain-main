@@ -446,8 +446,8 @@ func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Empty() {
 
 func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Delegated() {
 	lockAmount := sdkmath.NewInt(5000)
-	_ = s.setupNewTierPosition(lockAmount, false)
-	_ = s.setupNewTierPosition(lockAmount, false)
+	s.setupNewTierPosition(lockAmount, false)
+	s.setupNewTierPosition(lockAmount, false)
 
 	resp, err := s.queryClient.TotalDelegatedVotingPower(s.ctx.Context(), &types.QueryTotalDelegatedVotingPowerRequest{})
 	s.Require().NoError(err)
