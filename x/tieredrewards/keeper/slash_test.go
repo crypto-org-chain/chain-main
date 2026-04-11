@@ -61,7 +61,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
 
 // Unknown unbondingId is a no-op (non-tier delegation).
 func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
-	s.setupTierAndDelegator()
+	s.setupTier(1)
 
 	err := s.keeper.Hooks().AfterRedelegationSlashed(
 		s.ctx, 999, sdkmath.NewInt(100), sdkmath.LegacyNewDec(50))
@@ -103,7 +103,7 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 
 // Unknown unbonding IDs should be no-op for both unbonding slash callbacks.
 func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
-	s.setupTierAndDelegator()
+	s.setupTier(1)
 
 	err := s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, 999, sdkmath.NewInt(100))
 	s.Require().NoError(err)
