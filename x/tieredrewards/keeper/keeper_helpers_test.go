@@ -169,6 +169,15 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 
 // jailAndUnbondValidator jails a validator and runs ApplyAndReturnValidatorSetUpdates
 // so the validator actually transitions to unbonding (which fires the hooks).
+func (s *KeeperSuite) fundRandomAddr(denom string, amount sdkmath.Int) sdk.AccAddress {
+	s.T().Helper()
+	addr := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
+		sdk.NewCoins(sdk.NewCoin(denom, amount)))
+	s.Require().NoError(err)
+	return addr
+}
+
 func (s *KeeperSuite) jailAndUnbondValidator(valAddr sdk.ValAddress) {
 	s.T().Helper()
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
