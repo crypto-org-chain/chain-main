@@ -511,17 +511,7 @@ func (s *KeeperSuite) TestCustomTally_VotesRemovedAfterTally() {
 // After the double-count fix, the tier position's DelegatedShares are included
 // in DelegatorDeductions, so the second-pass does not count them twice.
 func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
-	vals, _ := s.getStakingData()
-	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
-
-	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().NotEmpty(dels)
-	delAddrBytes, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
-	s.Require().NoError(err)
-	delAddr := sdk.AccAddress(delAddrBytes)
+	delAddr, valAddr := s.getDelegator()
 
 	pos := s.setupNewTierPosition(sdkmath.NewInt(4000), false)
 
