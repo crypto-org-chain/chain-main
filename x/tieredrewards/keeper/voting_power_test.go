@@ -269,6 +269,56 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 		"after slash: per-address (%s) and total (%s) must match", perAddrPowerAfter, totalPowerAfter)
 }
 
+// TestZeroAmountPositiveSharesState verifies that a position can end
+// up with Amount == 0 while still delegated with positive shares after slash
+// math; voting power should not count such zero-amount positions.
+func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(1000)
+	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	posBefore, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posBefore.DelegatedShares.IsPositive(), "test setup failed: expected positive delegated shares")
+
+	// Slash in hook path with full fraction; in this path Amount is updated but
+	// DelegatedShares are left unchanged for bonded slash handling.
+	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyOneDec())
+	s.Require().NoError(err)
+
+	posAfter, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posAfter.Amount.IsZero(), "expected position amount to be zero after slash")
+	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
+	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
+
+	// Redelegate rejects zero amount.
+	dstValAddr, _ := s.createSecondValidator()
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   lockResp.PositionId,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrPositionAmountZero)
+
+	// Zero-amount delegated positions should not count toward voting power.
+	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().True(power.IsZero(), "zero-amount delegated position should not contribute voting power")
+
+	totalPower, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().True(totalPower.IsZero(), "zero-amount delegated positions should not contribute to total delegated voting power")
+}
+
 func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 	total, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)

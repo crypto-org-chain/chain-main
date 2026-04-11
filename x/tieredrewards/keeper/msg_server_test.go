@@ -1705,6 +1705,143 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsWithPendingRedelegation() {
 	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
 }
 
+// TestClearPositionAfterRedelegationSlashAllSharesBurnt verifies
+// ClearPosition remains blocked after exit elapsed when a redelegation slash
+// burns all shares and clears delegation while redelegation mapping is active.
+func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
+	delAddr, srcValAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 sdkmath.NewInt(1000),
+		ValidatorAddress:       srcValAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	redelegateResp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   lockResp.PositionId,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	posBeforeSlash, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posBeforeSlash.DelegatedShares.IsPositive(), "test setup failed: expected delegated shares before slash")
+	s.Require().True(posBeforeSlash.IsDelegated(), "test setup failed: position should be delegated before slash")
+
+	// Burn all shares through redelegation slash callback.
+	shareBurnt := posBeforeSlash.DelegatedShares.Add(sdkmath.LegacyOneDec())
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, redelegateResp.UnbondingId, posBeforeSlash.Amount, shareBurnt)
+	s.Require().NoError(err)
+
+	posAfterSlash, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterSlash.IsDelegated(), "delegation should be cleared when all shares are burnt")
+	s.Require().True(posAfterSlash.DelegatedShares.IsZero(), "delegated shares should be zero after full share burn")
+	s.Require().True(posAfterSlash.Amount.IsZero(), "amount should be zero after full share burn")
+	s.Require().True(posAfterSlash.HasTriggeredExit(), "slash should not clear exit trigger")
+
+	// Redelegation mapping should still block ClearPosition after exit elapsed.
+	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	redelegationIDs, err := redelegationIter.PrimaryKeys()
+	s.Require().NoError(err)
+	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should remain active for this corner case")
+
+	s.advancePastExitDuration()
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
+
+	posAfterClearAttempt, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().True(posAfterClearAttempt.HasTriggeredExit(), "failed clear attempt should not reset exit state")
+	s.Require().False(posAfterClearAttempt.IsDelegated(), "failed clear attempt should keep cleared delegation state")
+}
+
+// TestExitTriggerClearCycles_BonusAccrualCorrectness verifies that
+// repeated TriggerExit/ClearPosition cycles do not double-count or under-count
+// bonus accrual when cycle durations are identical.
+func (s *KeeperSuite) TestExitTriggerClearCycles_BonusAccrualCorrectness() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	cycleDuration := 24 * time.Hour
+
+	balBeforeCycle1 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(cycleDuration))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	posAfterCycle1, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterCycle1.HasTriggeredExit(), "clear should reset exit state")
+	s.Require().True(posAfterCycle1.IsDelegated(), "clear cycle should keep delegated position active")
+	s.Require().Equal(s.ctx.BlockTime(), posAfterCycle1.LastBonusAccrual, "clear should checkpoint bonus accrual at current time")
+
+	balAfterCycle1 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	cycle1Payout := balAfterCycle1.Amount.Sub(balBeforeCycle1.Amount)
+	s.Require().True(cycle1Payout.IsPositive(), "first cycle should pay positive bonus")
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(cycleDuration))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	posAfterCycle2, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterCycle2.HasTriggeredExit(), "clear should reset exit state in repeated cycle")
+	s.Require().True(posAfterCycle2.IsDelegated(), "repeated clear should keep delegated position active")
+	s.Require().Equal(s.ctx.BlockTime(), posAfterCycle2.LastBonusAccrual, "repeated clear should checkpoint to current time")
+
+	balAfterCycle2 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	cycle2Payout := balAfterCycle2.Amount.Sub(balAfterCycle1.Amount)
+	s.Require().True(cycle2Payout.IsPositive(), "second cycle should pay positive bonus")
+	s.Require().True(cycle2Payout.Equal(cycle1Payout),
+		"equal-duration cycles should pay equal bonus, got cycle1=%s cycle2=%s", cycle1Payout, cycle2Payout)
+}
+
 // --- MsgClaimTierRewards tests ---
 
 func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
