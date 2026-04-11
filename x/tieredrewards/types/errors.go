@@ -32,5 +32,4 @@ var (
 	ErrPositionAmountZero           = errors.Register(ModuleName, 27, "position amount is zero")
 	ErrExitLockDurationElapsed      = errors.Register(ModuleName, 28, "exit lock duration has elapsed, clear position first")
 	ErrInvalidTierID                = errors.Register(ModuleName, 29, "tier id must be non-zero")
-	ErrPositionRedelegation         = errors.Register(ModuleName, 30, "position has pending redelegation")
 )

@@ -182,13 +182,5 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionUnbonding
 	}
 
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
-	if err != nil {
-		return err
-	}
-	if redelegating {
-		return types.ErrPositionRedelegation
-	}
-
 	return nil
 }

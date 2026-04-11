@@ -2424,63 +2424,6 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().False(mappingExistsAfterWithdraw, "unbonding mapping should be cleaned after position deletion")
 }
 
-// TestMsgWithdrawFromTier_FailsWithPendingRedelegationMapping verifies that
-// withdrawal is blocked while redelegation mappings are still present, even
-// after undelegation unbonding has completed.
-func (s *KeeperSuite) TestMsgWithdrawFromTier_FailsWithPendingRedelegationMapping() {
-	delAddr, srcValAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	dstValAddr, _ := s.createSecondValidator()
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(1000),
-		ValidatorAddress:       srcValAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	// Create a redelegation mapping for the position.
-	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
-		Owner:        delAddr.String(),
-		PositionId:   0,
-		DstValidator: dstValAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Move to undelegation/withdrawal phase.
-	s.advancePastExitDuration()
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
-
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().NoError(err)
-
-	// Complete undelegation so only redelegation mapping remains.
-	s.completeStakingUnbonding(dstValAddr)
-
-	unbondingIter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	unbondingIds, err := unbondingIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().Empty(unbondingIds, "undelegation mappings should be removed after unbonding completion")
-
-	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	redelegationIds, err := redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIds, "redelegation mapping should still exist for this corner case")
-
-	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
-		Owner:      delAddr.String(),
-		PositionId: 0,
-	})
-	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
-}
-
 func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
