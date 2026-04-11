@@ -162,68 +162,6 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 	return pos, base, bonus, nil
 }
 
-// estimateRewardsForPosition calculates pending base and bonus rewards for a position
-// without applying payouts or persisting position checkpoint updates.
-func (k Keeper) estimateRewardsForPosition(ctx context.Context, pos types.Position) (sdk.Coins, sdk.Coins, error) {
-	if !pos.IsDelegated() {
-		return sdk.NewCoins(), sdk.NewCoins(), nil
-	}
-
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	currentRatio, err := k.estimateBaseRewardsPerShare(ctx, valAddr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	baseRewards := estimateBaseRewardsFromRatio(pos, currentRatio)
-
-	tier, err := k.getTier(ctx, pos.TierId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
-	bonusAmount := k.bonusAccrualAmount(pos, val, tier, blockTime, false)
-	bonusRewards, err := k.bonusCoinsIfPayable(ctx, pos, bonusAmount)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return baseRewards, bonusRewards, nil
-}
-
-func (k Keeper) estimateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	cacheCtx, _ := sdkCtx.CacheContext()
-	return k.updateBaseRewardsPerShare(cacheCtx, valAddr)
-}
-
-func estimateBaseRewardsFromRatio(pos types.Position, currentRatio sdk.DecCoins) sdk.Coins {
-	delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
-	if hasNegative {
-		panic("negative base rewards per share delta")
-	}
-	if delta.IsZero() {
-		return sdk.NewCoins()
-	}
-
-	posRewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
-	if posRewards.IsZero() {
-		return sdk.NewCoins()
-	}
-
-	return posRewards
-}
-
 // claimBaseRewards calculates and sends a position's accrued base rewards.
 // reward = DelegatedShares * (currentRatio - BaseRewardsPerShare)
 func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {

@@ -272,7 +272,6 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NilRequest() {
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	srv := keeper.NewQueryServerImpl(s.keeper)
 
 	// Set validator commission to 0% so all staking rewards go to delegators.
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -310,7 +309,12 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	rewardsPoolBalBefore := s.app.BankKeeper.GetBalance(s.ctx, rewardsPoolAddr, bondDenom)
 
-	resp, err := srv.EstimatePositionRewards(s.ctx, &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
+	// Call through a cache-wrapped context, matching the ABCI query path
+	// (baseapp.CreateQueryContext uses CacheMultiStoreWithVersion) so that
+	// state mutations from claimRewardsForPosition are discarded.
+	cacheCtx, _ := s.ctx.CacheContext()
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	resp, err := srv.EstimatePositionRewards(cacheCtx, &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
 	s.Require().NoError(err)
 
 	// Base rewards: the genesis validator has one delegation of DefaultPowerReduction.
