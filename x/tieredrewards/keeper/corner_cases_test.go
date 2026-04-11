@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -217,4 +219,79 @@ func (s *KeeperSuite) TestCornerCase_ClearPositionAfterRedelegationSlashAllShare
 	s.Require().NoError(err)
 	s.Require().True(posAfterClearAttempt.HasTriggeredExit(), "failed clear attempt should not reset exit state")
 	s.Require().False(posAfterClearAttempt.IsDelegated(), "failed clear attempt should keep cleared delegation state")
+}
+
+// TestCornerCase_ExitTriggerClearCycles_BonusAccrualCorrectness verifies that
+// repeated TriggerExit/ClearPosition cycles do not double-count or under-count
+// bonus accrual when cycle durations are identical.
+func (s *KeeperSuite) TestCornerCase_ExitTriggerClearCycles_BonusAccrualCorrectness() {
+	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	lockResp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	cycleDuration := 24 * time.Hour
+
+	balBeforeCycle1 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(cycleDuration))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	posAfterCycle1, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterCycle1.HasTriggeredExit(), "clear should reset exit state")
+	s.Require().True(posAfterCycle1.IsDelegated(), "clear cycle should keep delegated position active")
+	s.Require().Equal(s.ctx.BlockTime(), posAfterCycle1.LastBonusAccrual, "clear should checkpoint bonus accrual at current time")
+
+	balAfterCycle1 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	cycle1Payout := balAfterCycle1.Amount.Sub(balBeforeCycle1.Amount)
+	s.Require().True(cycle1Payout.IsPositive(), "first cycle should pay positive bonus")
+
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(cycleDuration))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: lockResp.PositionId,
+	})
+	s.Require().NoError(err)
+
+	posAfterCycle2, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
+	s.Require().NoError(err)
+	s.Require().False(posAfterCycle2.HasTriggeredExit(), "clear should reset exit state in repeated cycle")
+	s.Require().True(posAfterCycle2.IsDelegated(), "repeated clear should keep delegated position active")
+	s.Require().Equal(s.ctx.BlockTime(), posAfterCycle2.LastBonusAccrual, "repeated clear should checkpoint to current time")
+
+	balAfterCycle2 := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	cycle2Payout := balAfterCycle2.Amount.Sub(balAfterCycle1.Amount)
+	s.Require().True(cycle2Payout.IsPositive(), "second cycle should pay positive bonus")
+	s.Require().True(cycle2Payout.Equal(cycle1Payout),
+		"equal-duration cycles should pay equal bonus, got cycle1=%s cycle2=%s", cycle1Payout, cycle2Payout)
 }
