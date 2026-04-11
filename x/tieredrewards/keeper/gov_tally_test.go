@@ -124,6 +124,7 @@ func (s *KeeperSuite) buildValidatorsMap() map[string]v1.ValidatorGovInfo {
 
 // insertVote writes a vote directly into the gov Votes store.
 func (s *KeeperSuite) insertVote(proposalID uint64, voter sdk.AccAddress, opts []*v1.WeightedVoteOption) {
+	s.T().Helper()
 	vote := v1.Vote{
 		ProposalId: proposalID,
 		Voter:      voter.String(),
@@ -137,6 +138,7 @@ func (s *KeeperSuite) insertVote(proposalID uint64, voter sdk.AccAddress, opts [
 func (s *KeeperSuite) callCustomTally(proposalID uint64, validators map[string]v1.ValidatorGovInfo) (
 	sdkmath.LegacyDec, map[v1.VoteOption]sdkmath.LegacyDec,
 ) {
+	s.T().Helper()
 	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
@@ -149,6 +151,7 @@ func (s *KeeperSuite) callCustomTally(proposalID uint64, validators map[string]v
 // stakingPowerFor computes the staking voting power for delAddr on valAddr
 // using the given validators map (same formula the tally uses).
 func (s *KeeperSuite) stakingPowerFor(delAddr sdk.AccAddress, valAddr sdk.ValAddress, validators map[string]v1.ValidatorGovInfo) sdkmath.LegacyDec {
+	s.T().Helper()
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	if err != nil {
 		return sdkmath.LegacyZeroDec()
@@ -163,6 +166,7 @@ func (s *KeeperSuite) stakingPowerFor(delAddr sdk.AccAddress, valAddr sdk.ValAdd
 // tierPowerFor computes the exact tier voting power for an address from its
 // DelegatedShares using the validators map (same formula used by the tally).
 func (s *KeeperSuite) tierPowerFor(owner sdk.AccAddress, validators map[string]v1.ValidatorGovInfo) sdkmath.LegacyDec {
+	s.T().Helper()
 	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, owner)
 	s.Require().NoError(err)
 
@@ -185,41 +189,26 @@ func (s *KeeperSuite) tierPowerFor(owner sdk.AccAddress, validators map[string]v
 // power contracts and gov custom tally wiring stay consistent on the same
 // state.
 func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	yesVoter := sdk.AccAddress([]byte("query_tally_yes_____"))
-	noVoter := sdk.AccAddress([]byte("query_tally_no______"))
-	yesAmount := sdkmath.NewInt(7000)
-	noAmount := sdkmath.NewInt(4000)
-
+	// Get a baseline total power before creating any tier positions.
 	preTotalPowerResp, err := s.queryClient.TotalDelegatedVotingPower(
 		s.ctx.Context(),
 		&types.QueryTotalDelegatedVotingPowerRequest{},
 	)
 	s.Require().NoError(err)
 
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, yesVoter,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, yesAmount)))
+	yesAmount := sdkmath.NewInt(7000)
+	noAmount := sdkmath.NewInt(4000)
+	yesPos := s.setupNewTierPosition(yesAmount, false)
+	noPos := s.setupNewTierPosition(noAmount, false)
+	yesVoter, err := sdk.AccAddressFromBech32(yesPos.Owner)
 	s.Require().NoError(err)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, noVoter,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, noAmount)))
+	noVoter, err := sdk.AccAddressFromBech32(noPos.Owner)
+	s.Require().NoError(err)
+	valAddr, err := sdk.ValAddressFromBech32(yesPos.Validator)
 	s.Require().NoError(err)
 
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            yesVoter.String(),
-		Id:               1,
-		Amount:           yesAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            noVoter.String(),
-		Id:               1,
-		Amount:           noAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	// // Refresh query client after state changes.
+	// s.resetQueryClient()
 
 	// Query contract: each owner query returns only the caller's positions.
 	yesOwnerResp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{
@@ -289,28 +278,14 @@ func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
 // A voter with NO staking delegation but WITH a delegated tier position.
 // All voting power comes from tier.
 func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(8000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	freshAddr := sdk.AccAddress([]byte("fresh_tier_voter____"))
-	tierAmount := sdkmath.NewInt(8000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 
 	// Compute expected power from DelegatedShares (exact, not pos.Amount).
-	expected := s.tierPowerFor(freshAddr, validators)
+	expected := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expected.IsPositive(), "tier power should be positive")
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
@@ -326,17 +301,9 @@ func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
 // A voter with BOTH staking delegation and a delegated tier position.
 // Total = staking power + tier power.
 func (s *KeeperSuite) TestCustomTally_StakingPlusTier() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	tierAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPositionWithDelegator(sdkmath.NewInt(5000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
@@ -353,33 +320,19 @@ func (s *KeeperSuite) TestCustomTally_StakingPlusTier() {
 	s.Require().True(results[v1.OptionYes].Equal(expectedTotal))
 }
 
-// Weighted vote (60 % Yes / 40 % No) splits BOTH staking and tier power.
-func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsTierPower() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	freshAddr := sdk.AccAddress([]byte("weighted_voter______"))
-	tierAmount := sdkmath.NewInt(10000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+// Weighted vote (60 % Yes / 40 % No) splits owner's voting power
+func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsPower() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	opts := []*v1.WeightedVoteOption{
 		{Option: v1.OptionYes, Weight: "0.600000000000000000"},
 		{Option: v1.OptionNo, Weight: "0.400000000000000000"},
 	}
-	s.insertVote(testProposalID, freshAddr, opts)
+	s.insertVote(testProposalID, delAddr, opts)
 	validators := s.buildValidatorsMap()
 
-	tierPower := s.tierPowerFor(freshAddr, validators)
+	tierPower := s.tierPowerFor(delAddr, validators)
 	s.Require().True(tierPower.IsPositive())
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
@@ -398,7 +351,8 @@ func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsTierPower() {
 }
 
 func (s *KeeperSuite) TestCustomTally_InvalidVoteWeight_ReturnsError() {
-	delAddr, _, _ := s.setupTierAndDelegator()
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	s.insertVote(testProposalID, delAddr, []*v1.WeightedVoteOption{
 		{Option: v1.OptionYes, Weight: "not-a-decimal"},
@@ -459,30 +413,16 @@ func (s *KeeperSuite) TestCustomTally_InvalidValidatorVoteWeight_PreservesVote()
 
 // An undelegated tier position contributes zero tier voting power.
 func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	freshAddr := sdk.AccAddress([]byte("undel_tier_voter____"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000))))
-	s.Require().NoError(err)
-
 	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  freshAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(5000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: freshAddr.String(), PositionId: 0})
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
@@ -494,20 +434,12 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 	// Sanity: verify a delegated tier position gives non-zero power.
 	// Create a new delegated position (the undelegated one can't be re-delegated
 	// because exit has elapsed).
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(5000))))
-	s.Require().NoError(err)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(5000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos2 := s.setupNewTierPosition(sdkmath.NewInt(5000), false)
+	delAddr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
 
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr2, yesVoteOpts())
 	validators = s.buildValidatorsMap()
-	tierPower := s.tierPowerFor(freshAddr, validators)
+	tierPower := s.tierPowerFor(delAddr2, validators)
 	s.Require().True(tierPower.IsPositive(), "delegated tier should give positive power")
 
 	totalPower, _ = s.callCustomTally(testProposalID, validators)
@@ -517,32 +449,12 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 
 // Two voters: one with tier, one without. Totals are correct and independent.
 func (s *KeeperSuite) TestCustomTally_MultipleVoters() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	pos := s.setupNewTierPositionWithDelegator(sdkmath.NewInt(6000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	tierAmount := sdkmath.NewInt(6000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Second voter: only tier, no staking
-	otherAddr := sdk.AccAddress([]byte("other_tier_voter____"))
-	otherTierAmount := sdkmath.NewInt(3000)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, otherAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, otherTierAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            otherAddr.String(),
-		Id:               1,
-		Amount:           otherTierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos2 := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	otherAddr := sdk.MustAccAddressFromBech32(pos2.Owner)
 
 	// delAddr votes Yes, otherAddr votes No
 	s.insertVote(testProposalID, delAddr, yesVoteOpts())
@@ -569,15 +481,10 @@ func (s *KeeperSuite) TestCustomTally_MultipleVoters() {
 
 // After tally, all processed votes are removed from the gov store.
 func (s *KeeperSuite) TestCustomTally_VotesRemovedAfterTally() {
-	_, _, bondDenom := s.setupTierAndDelegator()
-
-	addr1 := sdk.AccAddress([]byte("remove_voter_1______"))
-	addr2 := sdk.AccAddress([]byte("remove_voter_2______"))
-	for _, addr := range []sdk.AccAddress{addr1, addr2} {
-		err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-			sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
-		s.Require().NoError(err)
-	}
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	pos2 := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	addr1 := sdk.MustAccAddressFromBech32(pos1.Owner)
+	addr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
 
 	s.insertVote(testProposalID, addr1, yesVoteOpts())
 	s.insertVote(testProposalID, addr2, noVoteOpts())
@@ -604,28 +511,26 @@ func (s *KeeperSuite) TestCustomTally_VotesRemovedAfterTally() {
 // After the double-count fix, the tier position's DelegatedShares are included
 // in DelegatorDeductions, so the second-pass does not count them twice.
 func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	freshAddr := sdk.AccAddress([]byte("tier_voter_valtest__"))
-	tierAmount := sdkmath.NewInt(4000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
+	vals, _ := s.getStakingData()
+	val := vals[0]
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 	s.Require().NoError(err)
 
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
+	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
+	s.Require().NotEmpty(dels)
+	delAddrBytes, err := s.app.AccountKeeper.AddressCodec().StringToBytes(dels[0].DelegatorAddress)
+	s.Require().NoError(err)
+	delAddr := sdk.AccAddress(delAddrBytes)
 
+	pos := s.setupNewTierPosition(sdkmath.NewInt(4000), false)
+
+	posAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	// Validator operator votes No → sets val.Vote in the first pass so the
 	// second pass tallies the remaining (non-deducted) delegator shares.
 	valAccAddr := sdk.AccAddress(valAddr)
 	s.insertVote(testProposalID, valAccAddr, noVoteOpts())
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, posAddr, yesVoteOpts())
 	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 
 	validators := s.buildValidatorsMap()
@@ -645,9 +550,9 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	}
 
 	// Get tier position's DelegatedShares (deducted from validator in the fix).
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
+	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, posAddr)
 	s.Require().NoError(err)
-	s.Require().Len(tierPositions, 1, "freshAddr should have one active tier position")
+	s.Require().Len(tierPositions, 1, "posAddr should have one active tier position")
 	tierPos := tierPositions[0]
 	tierTokenValue := tierPos.DelegatedShares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
@@ -675,7 +580,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 
 // No votes at all → zero totals, empty results.
 func (s *KeeperSuite) TestCustomTally_NoVotes() {
-	s.setupTierAndDelegator()
+	s.setupTier(1)
 	validators := s.buildValidatorsMap()
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
@@ -691,33 +596,20 @@ func (s *KeeperSuite) TestCustomTally_NoVotes() {
 // the validator's second-pass calculation, preventing double-counting of the
 // same economic stake.
 func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	valAccAddr := sdk.AccAddress(valAddr)
 	tierAmount := sdkmath.NewInt(5000)
-	freshAddr := sdk.AccAddress([]byte("dc_tier_voter_______"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
+	pos := s.setupNewTierPosition(tierAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAccAddr := sdk.AccAddress(valAddr)
 	// Only the tier voter and the validator itself vote.
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	s.insertVote(testProposalID, valAccAddr, noVoteOpts())
 
 	validators := s.buildValidatorsMap()
 	valInfo := validators[valAddr.String()]
 
 	// Get the tier position's DelegatedShares.
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
+	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 	tierPos := tierPositions[0]
@@ -759,38 +651,22 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 // TestCustomTally_ExitingTierPositionIncluded verifies that a tier position
 // with a triggered exit still contributes voting power per ADR-006 §8.5.
 func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIncluded() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	freshAddr := sdk.AccAddress([]byte("exiting_tier_voter__"))
-	tierAmount := sdkmath.NewInt(5000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	// Lock with immediate exit triggered — position stays delegated but is exiting.
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  freshAddr.String(),
-		Id:                     1,
-		Amount:                 tierAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// Verify position state: delegated but exiting.
-	allPositions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
+	allPositions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(allPositions, 1)
 	s.Require().True(allPositions[0].IsDelegated(), "position should still be delegated")
 	s.Require().True(allPositions[0].HasTriggeredExit(), "position should have triggered exit")
 
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 
 	// Per ADR-006 §8.5, exiting-but-delegated positions still count for
 	// governance voting power.
-	expectedPower := s.tierPowerFor(freshAddr, validators)
+	expectedPower := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expectedPower.IsPositive(),
 		"exiting but delegated position should have positive power")
 
@@ -805,7 +681,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIncluded() {
 // TestCustomTally_TierKeeperError verifies that an error from the tier keeper
 // is propagated correctly by the tally function.
 func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
-	_, _, bondDenom := s.setupTierAndDelegator()
+	_, bondDenom := s.getStakingData()
 
 	// Set up a voter with a vote in the store.
 	addr := sdk.AccAddress([]byte("error_tier_voter____"))
@@ -835,37 +711,27 @@ func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
 // two tier positions on the same validator has both positions' DelegatedShares
 // counted once each — neither double-counted nor dropped.
 func (s *KeeperSuite) TestCustomTally_MultiplePositionsSameValidator() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	// Position 1: 3000 tokens on the same validator.
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos1.Owner)
+	valAddr1 := sdk.MustValAddressFromBech32(pos1.Validator)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	freshAddr := sdk.AccAddress([]byte("multi_pos_voter_____"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(8000))))
-	s.Require().NoError(err)
-
-	// Position 1: 3000 tokens on the same validator.
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(3000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	// Position 2: 5000 tokens on the same validator.
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
 		Id:               1,
 		Amount:           sdkmath.NewInt(5000),
-		ValidatorAddress: valAddr.String(),
+		ValidatorAddress: valAddr1.String(),
 	})
 	s.Require().NoError(err)
 
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 
 	// tierPowerFor sums both positions' DelegatedShares-to-tokens.
-	expected := s.tierPowerFor(freshAddr, validators)
+	expected := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expected.IsPositive(), "two delegated positions should give positive power")
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
@@ -881,7 +747,7 @@ func (s *KeeperSuite) TestCustomTally_MultiplePositionsSameValidator() {
 // whose validator is not in the bonded validators map is gracefully skipped,
 // contributing zero voting power without panicking or returning an error.
 func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
-	s.setupTierAndDelegator() // ensures tier 1 exists
+	s.setupTier(1)
 
 	// Construct a position delegated to a validator that is NOT in the bonded map.
 	fakeValAddr := sdk.ValAddress([]byte("not_in_bonded_map___"))
@@ -913,22 +779,10 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 // tier position whose validator is unbonding/unbonded contributes zero voting
 // power, consistent with standard gov tally semantics.
 func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	freshAddr := sdk.AccAddress([]byte("unbonded_val_voter___"))
 	tierAmount := sdkmath.NewInt(5000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           tierAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(tierAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	s.jailAndUnbondValidator(valAddr)
 
@@ -936,12 +790,12 @@ func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 	s.Require().NotContains(validators, valAddr.String(),
 		"unbonding validator should not be in bonded validators map")
 
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
+	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 
@@ -957,35 +811,20 @@ func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted
 // have their DelegatedShares correctly deducted from the validator's
 // second-pass tally to prevent double-counting.
 func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	valAccAddr := sdk.AccAddress(valAddr)
-	tierAmount := sdkmath.NewInt(5000)
-	freshAddr := sdk.AccAddress([]byte("exit_dc_voter_______"))
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
-	s.Require().NoError(err)
-
-	// Lock with delegation and immediate exit trigger.
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  freshAddr.String(),
-		Id:                     1,
-		Amount:                 tierAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
 
 	// Tier voter votes Yes, validator votes No.
-	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	s.insertVote(testProposalID, valAccAddr, noVoteOpts())
 
 	validators := s.buildValidatorsMap()
 	valInfo := validators[valAddr.String()]
 
 	// The exiting position is still delegated, so it should contribute.
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
+	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1, "exiting position should be active for governance")
 	tierPos := tierPositions[0]

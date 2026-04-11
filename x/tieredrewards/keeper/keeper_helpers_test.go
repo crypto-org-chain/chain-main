@@ -29,6 +29,8 @@ func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 // setupTier creates a new tier with a given id
 func (s *KeeperSuite) setupTier(id uint32) {
 	s.T().Helper()
+	s.ctx = s.ctx.WithBlockHeight(1)
+	s.ctx = s.ctx.WithBlockTime(time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC))
 
 	tier := newTestTier(id)
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
@@ -55,12 +57,9 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 	s.Require().NoError(err)
 
-	s.ctx = s.ctx.WithBlockHeight(1)
-	s.ctx = s.ctx.WithBlockTime(time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC))
-
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	freshAddr := sdk.AccAddress([]byte("fresh_test_addr_____"))
+	freshAddr := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
 	// Over fund the account to avoid running out of funds during the test.
 	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
 	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
@@ -126,15 +125,11 @@ func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Posi
 	return updatedPos, res.UnbondingId
 }
 
-func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, string) {
+// setupNewTierPositionWithDelegator creates a new tier position with an address who has already delegated to a validator.
+func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
 	s.T().Helper()
-
-	tier := newTestTier(1)
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
-	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
-	s.Require().NoError(err)
-	s.Require().NotEmpty(vals)
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
 	val := vals[0]
 	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
 	s.Require().NoError(err)
@@ -146,13 +141,30 @@ func (s *KeeperSuite) setupTierAndDelegator() (sdk.AccAddress, sdk.ValAddress, s
 	s.Require().NoError(err)
 	delAddr := sdk.AccAddress(delAddrBytes)
 
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Over fund the account to avoid running out of funds during the test.
+	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
 	s.Require().NoError(err)
 
-	s.ctx = s.ctx.WithBlockHeight(1)
-	s.ctx = s.ctx.WithBlockTime(time.Date(2025, 10, 1, 0, 0, 0, 0, time.UTC))
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:                  delAddr.String(),
+		Id:                     1,
+		Amount:                 lockAmount,
+		ValidatorAddress:       valAddr.String(),
+		TriggerExitImmediately: triggerExitImmediately,
+	})
+	s.Require().NoError(err)
 
-	return delAddr, valAddr, bondDenom
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
+
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+
+	return positions[0]
 }
 
 // jailAndUnbondValidator jails a validator and runs ApplyAndReturnValidatorSetUpdates
