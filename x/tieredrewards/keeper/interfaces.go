@@ -21,6 +21,7 @@ type TierVotingPowerProvider interface {
 type GovTallyStakingKeeper interface {
 	ValidatorAddressCodec() addresscodec.Codec
 	IterateDelegations(ctx context.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) error
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
 }
 
 // GovTallyAccountKeeper is the subset of account keeper needed by the custom tally function.

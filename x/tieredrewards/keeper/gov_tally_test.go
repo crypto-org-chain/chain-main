@@ -65,6 +65,10 @@ func (mockGovTallyStakingKeeper) IterateDelegations(_ context.Context, _ sdk.Acc
 	return nil
 }
 
+func (mockGovTallyStakingKeeper) GetValidator(_ context.Context, _ sdk.ValAddress) (stakingtypes.Validator, error) {
+	return stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound
+}
+
 type mockGovTallyAccountKeeper struct{}
 
 func (mockGovTallyAccountKeeper) AddressCodec() addresscodec.Codec {
@@ -798,6 +802,51 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 		"position on non-bonded validator should contribute zero power; got %s", totalPower)
 	s.Require().True(results[v1.OptionYes].IsZero(),
 		"Yes should be zero when validator not in map; got %s", results[v1.OptionYes])
+}
+
+// TestCustomTally_TierPositionOnUnbondingValidatorCounted verifies that tier
+// voting power uses delegated-position semantics even when validator is no
+// longer in the bonded validators map used by gov tally.
+func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorCounted() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	freshAddr := sdk.AccAddress([]byte("unbonded_val_voter___"))
+	tierAmount := sdkmath.NewInt(5000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, tierAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           tierAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
+
+	s.insertVote(testProposalID, freshAddr, yesVoteOpts())
+	validators := s.buildValidatorsMap()
+	s.Require().NotContains(validators, valAddr.String(),
+		"unbonding validator should not be in bonded validators map")
+
+	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, freshAddr)
+	s.Require().NoError(err)
+	s.Require().Len(tierPositions, 1)
+	expected := val.TokensFromShares(tierPositions[0].DelegatedShares)
+	s.Require().True(expected.IsPositive(), "tier voting power should be positive")
+
+	totalPower, results := s.callCustomTally(testProposalID, validators)
+	s.Require().True(totalPower.Equal(expected),
+		"tier position on unbonding validator should still count; got %s, want %s", totalPower, expected)
+	s.Require().True(results[v1.OptionYes].Equal(expected),
+		"Yes should equal tier voting power; got %s, want %s", results[v1.OptionYes], expected)
 }
 
 // TestCustomTally_ExitingPositionDoubleCountPrevented verifies that exiting

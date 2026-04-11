@@ -186,6 +186,44 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 		"after undelegate, position should no longer contribute voting power")
 }
 
+// TestGetVotingPowerForAddress_UnbondingValidatorStillCounts verifies that
+// delegated positions keep governance power even after validator leaves bonded
+// set (semantics are tied to delegation state, not bonded state).
+func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorStillCounts() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
+
+	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+
+	expected := val.TokensFromShares(positions[0].DelegatedShares)
+	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().True(power.Equal(expected),
+		"delegated position on unbonding validator should still count; got %s, expected %s", power, expected)
+
+	total, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().True(total.Equal(expected),
+		"total delegated voting power should match unbonding delegated position; got %s, expected %s", total, expected)
+}
+
 func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)

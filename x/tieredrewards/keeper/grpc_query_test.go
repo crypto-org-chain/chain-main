@@ -420,6 +420,38 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 		"exiting but still delegated position should report voting power; got %s", resp.VotingPower)
 }
 
+func (s *KeeperSuite) TestGRPCQueryTierVotingPower_UnbondingValidatorStillCounts() {
+	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	lockAmount := sdkmath.NewInt(5000)
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            delAddr.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
+
+	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 1)
+	expected := val.TokensFromShares(positions[0].DelegatedShares)
+	s.Require().True(expected.IsPositive())
+
+	s.resetQueryClient()
+	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	s.Require().NoError(err)
+	s.Require().True(resp.VotingPower.Equal(expected),
+		"delegated position should still count when validator is unbonding; got %s, expected %s", resp.VotingPower, expected)
+}
+
 // --- TotalDelegatedVotingPower ---
 
 func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Empty() {

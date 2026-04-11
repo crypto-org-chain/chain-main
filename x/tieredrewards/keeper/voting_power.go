@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -13,7 +12,7 @@ import (
 )
 
 // getVotingPowerForAddress returns the tier governance voting power for an address.
-// Power = DelegatedShares * BondedTokens / DelegatorShares for each delegated position.
+// Power is derived from delegated position shares via validator exchange rates.
 func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
 	active, err := k.GetDelegatedPositionsByOwner(ctx, voter)
 	if err != nil {
@@ -21,25 +20,13 @@ func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddre
 	}
 
 	power := math.LegacyZeroDec()
+	vals := make(map[string]stakingtypes.Validator)
 	for _, pos := range active {
-		if pos.Amount.IsZero() {
-			continue
-		}
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-		if err != nil {
-			continue
-		}
-		val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-		if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-			continue
-		}
+		posPower, err := tierVotingPowerForPosition(ctx, k.stakingKeeper, pos, vals)
 		if err != nil {
 			return math.LegacyZeroDec(), err
 		}
-		if !val.IsBonded() || val.DelegatorShares.IsZero() {
-			continue
-		}
-		power = power.Add(pos.DelegatedShares.MulInt(val.BondedTokens()).Quo(val.DelegatorShares))
+		power = power.Add(posPower)
 	}
 	return power, nil
 }
@@ -64,36 +51,11 @@ func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 	vals := make(map[string]stakingtypes.Validator)
 
 	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
-		if !pos.IsDelegated() {
-			return false, nil
+		posPower, err := tierVotingPowerForPosition(ctx, k.stakingKeeper, pos, vals)
+		if err != nil {
+			return false, err
 		}
-		if pos.Amount.IsZero() {
-			return false, nil
-		}
-
-		val, ok := vals[pos.Validator]
-		if !ok {
-			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-			if err != nil {
-				return false, nil
-			}
-			v, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-			if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-				return false, nil
-			}
-			if err != nil {
-				return false, err
-			}
-			val = v
-			vals[pos.Validator] = val
-		}
-
-		if !val.IsBonded() || val.DelegatorShares.IsZero() {
-			return false, nil
-		}
-
-		power := pos.DelegatedShares.MulInt(val.BondedTokens()).Quo(val.DelegatorShares)
-		total = total.Add(power)
+		total = total.Add(posPower)
 		return false, nil
 	})
 	if err != nil {

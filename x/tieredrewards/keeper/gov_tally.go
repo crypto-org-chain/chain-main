@@ -29,6 +29,7 @@ func NewCustomTallyTierVotesFn(
 		validators map[string]v1.ValidatorGovInfo,
 	) (totalVoterPower math.LegacyDec, results map[v1.VoteOption]math.LegacyDec, err error) {
 		totalVotingPower := math.LegacyZeroDec()
+		tierVals := make(map[string]stakingtypes.Validator)
 
 		results = make(map[v1.VoteOption]math.LegacyDec)
 		results[v1.OptionYes] = math.LegacyZeroDec()
@@ -80,21 +81,28 @@ func NewCustomTallyTierVotesFn(
 				return false, err
 			}
 
-			// Tier-delegated voting power: deduct DelegatedShares from each validator
-			// so the module account's delegation is not double-counted.
+			// Tier-delegated voting power:
+			// - compute from position delegation/share state via keeper-level helper
+			// - still deduct DelegatedShares from bonded validator second-pass tally
+			//   when the validator is present in the gov validator map
 			tierPositions, err := tierKeeper.GetDelegatedPositionsByOwner(ctx, voter)
 			if err != nil {
 				return false, fmt.Errorf("error getting tier positions for %s: %w", vote.Voter, err)
 			}
 			for _, pos := range tierPositions {
-				val, ok := validators[pos.Validator]
-				if !ok || val.DelegatorShares.IsZero() {
+				tierPower, err := tierVotingPowerForPosition(ctx, sk, pos, tierVals)
+				if err != nil {
+					return false, fmt.Errorf("error calculating tier voting power for voter %s: %w", vote.Voter, err)
+				}
+				if tierPower.IsZero() {
 					continue
 				}
-				val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.DelegatedShares)
-				validators[pos.Validator] = val
 
-				tierPower := pos.DelegatedShares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
+				if val, ok := validators[pos.Validator]; ok && !val.DelegatorShares.IsZero() {
+					val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.DelegatedShares)
+					validators[pos.Validator] = val
+				}
+
 				if err := distributeVotingPower(vote.Options, tierPower, results); err != nil {
 					return false, fmt.Errorf("invalid vote weight for voter %s: %w", vote.Voter, err)
 				}
