@@ -2,10 +2,9 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
-
-	"errors"
 
 	"cosmossdk.io/math"
 

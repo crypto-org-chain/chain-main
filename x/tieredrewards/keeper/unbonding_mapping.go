@@ -99,11 +99,6 @@ func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, er
 	return k.hasPositionMapping(ctx, k.UnbondingDelegationMappings, positionId)
 }
 
-// stillRedelegating returns true if there are pending redelegation unbonding ids for the position.
-func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
-	return k.hasPositionMapping(ctx, k.RedelegationMappings, positionId)
-}
-
 // --- Redelegation mappings ---
 
 // setRedelegationPositionMapping stores redelegation unbondingId -> positionId.
