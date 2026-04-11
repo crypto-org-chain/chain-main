@@ -1486,9 +1486,7 @@ func (s *KeeperSuite) TestMsgClearPosition_UpdatesLastBonusAccrualAfterExitElaps
 	// Advance past exit duration
 	s.advancePastExitDuration()
 
-	// Isolate events from this specific call.
-	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
-	_, err = msgServer.ClearPosition(freshCtx, &types.MsgClearPosition{
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
