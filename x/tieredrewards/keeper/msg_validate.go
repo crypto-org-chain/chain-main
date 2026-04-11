@@ -139,14 +139,6 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.Position, o
 			return types.ErrPositionUnbonding
 		}
 
-		redelegating, err := k.stillRedelegating(ctx, pos.Id)
-		if err != nil {
-			return err
-		}
-		if redelegating {
-			return types.ErrPositionRedelegation
-		}
-
 		if !pos.IsDelegated() {
 			return types.ErrPositionNotDelegated
 		}

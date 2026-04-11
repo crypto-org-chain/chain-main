@@ -1666,9 +1666,10 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsAfterUnbondingCompleted() {
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
-// TestMsgClearPosition_RejectsWithPendingRedelegation verifies that ClearPosition
-// is rejected when redelegation mappings are still active after exit elapsed.
-func (s *KeeperSuite) TestMsgClearPosition_RejectsWithPendingRedelegation() {
+// TestMsgClearPosition_AllowsPendingRedelegationWhenStillDelegated verifies that
+// ClearPosition can clear exit after exit elapsed even if the staking-layer
+// redelegation is still pending, so long as the position remains delegated.
+func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDelegated() {
 	delAddr, srcValAddr, bondDenom := s.setupTierAndDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	dstValAddr, _ := s.createSecondValidator()
@@ -1702,7 +1703,19 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsWithPendingRedelegation() {
 		Owner:      delAddr.String(),
 		PositionId: 0,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit(), "clear should reset exit state")
+	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
+	s.Require().Equal(dstValAddr.String(), pos.Validator)
+
+	redelegationIter, err = s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	s.Require().NoError(err)
+	redelegationIDs, err = redelegationIter.PrimaryKeys()
+	s.Require().NoError(err)
+	s.Require().NotEmpty(redelegationIDs, "clearing exit should not delete pending redelegation tracking")
 }
 
 // TestClearPositionAfterRedelegationSlashAllSharesBurnt verifies
@@ -1746,7 +1759,8 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	s.Require().True(posAfterSlash.Amount.IsZero(), "amount should be zero after full share burn")
 	s.Require().True(posAfterSlash.HasTriggeredExit(), "slash should not clear exit trigger")
 
-	// Redelegation mapping should still block ClearPosition after exit elapsed.
+	// Redelegation mapping stays active here, but the clear failure reason is that
+	// the slash has already cleared delegation from the position.
 	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, lockResp.PositionId)
 	s.Require().NoError(err)
 	redelegationIDs, err := redelegationIter.PrimaryKeys()
@@ -1759,7 +1773,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 		Owner:      delAddr.String(),
 		PositionId: lockResp.PositionId,
 	})
-	s.Require().ErrorIs(err, types.ErrPositionRedelegation)
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 
 	posAfterClearAttempt, err := s.keeper.GetPosition(s.ctx, lockResp.PositionId)
 	s.Require().NoError(err)
