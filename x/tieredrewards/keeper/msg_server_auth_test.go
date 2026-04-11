@@ -223,20 +223,14 @@ func (s *KeeperSuite) TestUpdateTier_InvalidTierUpdate() {
 }
 
 func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
-
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
 
 	// Advance time so bonus accrues.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -246,13 +240,13 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
 
 	// Compute expected bonus using CalculateBonusRaw with the old tier.
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posNow, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	expBonus := s.keeper.CalculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
 	// Lock amount equals genesis delegation, so tier module holds half the total stake.
 	expBase := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
 
@@ -276,41 +270,32 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 		expectedTotal, expBase, expBonus, actualRewards)
 
 	// Position LastBonusAccrual should be advanced to current block time.
-	pos, err = s.keeper.GetPosition(s.ctx, uint64(0))
+	posNow, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(s.ctx.BlockTime(), pos.LastBonusAccrual)
+	s.Require().Equal(s.ctx.BlockTime(), posNow.LastBonusAccrual)
 
 	// Subsequent claim should yield zero bonus (window was already consumed).
 	respClaim, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
 		Owner:      delAddr.String(),
-		PositionId: 0,
+		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 	s.Require().True(respClaim.BonusRewards.IsZero(), "bonus should already be claimed by UpdateTier")
 }
 
 func (s *KeeperSuite) TestUpdateTier_NonApyChange_NoClaim() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
-
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Advance time so bonus would accrue.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
+	_, bondDenom := s.getStakingData()
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Update only CloseOnly — BonusApy stays the same.
@@ -327,7 +312,7 @@ func (s *KeeperSuite) TestUpdateTier_NonApyChange_NoClaim() {
 	s.Require().Equal(balBefore.Amount, balAfter.Amount)
 
 	// LastBonusAccrual should be unchanged.
-	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual)
 }
@@ -351,15 +336,19 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_NoPositions() {
 }
 
 func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 	// Do NOT fund the rewards pool — it stays empty.
 
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
+	freshAddr := s.fundRandomAddr(bondDenom, lockAmount)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
 		Id:               1,
 		Amount:           lockAmount,
 		ValidatorAddress: valAddr.String(),
