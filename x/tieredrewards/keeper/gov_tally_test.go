@@ -181,6 +181,111 @@ func (s *KeeperSuite) tierPowerFor(owner sdk.AccAddress, validators map[string]v
 // Integration tests
 // ---------------------------------------------------------------------------
 
+// TestQueryAndGovTallyWiring_TierPowerConsistency verifies query-layer voting
+// power contracts and gov custom tally wiring stay consistent on the same
+// state.
+func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
+	_, valAddr, bondDenom := s.setupTierAndDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	yesVoter := sdk.AccAddress([]byte("query_tally_yes_____"))
+	noVoter := sdk.AccAddress([]byte("query_tally_no______"))
+	yesAmount := sdkmath.NewInt(7000)
+	noAmount := sdkmath.NewInt(4000)
+
+	preTotalPowerResp, err := s.queryClient.TotalDelegatedVotingPower(
+		s.ctx.Context(),
+		&types.QueryTotalDelegatedVotingPowerRequest{},
+	)
+	s.Require().NoError(err)
+
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, yesVoter,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, yesAmount)))
+	s.Require().NoError(err)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, noVoter,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, noAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            yesVoter.String(),
+		Id:               1,
+		Amount:           yesAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            noVoter.String(),
+		Id:               1,
+		Amount:           noAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// Query contract: each owner query returns only the caller's positions.
+	yesOwnerResp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{
+		Owner: yesVoter.String(),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(yesOwnerResp.Positions, 1)
+	s.Require().Equal(yesVoter.String(), yesOwnerResp.Positions[0].Owner)
+	s.Require().Equal(valAddr.String(), yesOwnerResp.Positions[0].Validator)
+
+	noOwnerResp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{
+		Owner: noVoter.String(),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(noOwnerResp.Positions, 1)
+	s.Require().Equal(noVoter.String(), noOwnerResp.Positions[0].Owner)
+	s.Require().Equal(valAddr.String(), noOwnerResp.Positions[0].Validator)
+
+	// Independent oracle (non-query): expected power from position shares.
+	validators := s.buildValidatorsMap()
+	expectedYesPower := s.tierPowerFor(yesVoter, validators)
+	expectedNoPower := s.tierPowerFor(noVoter, validators)
+	expectedAddedPower := expectedYesPower.Add(expectedNoPower)
+	s.Require().True(expectedYesPower.IsPositive())
+	s.Require().True(expectedNoPower.IsPositive())
+
+	yesPowerResp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: yesVoter.String()})
+	s.Require().NoError(err)
+	s.Require().True(yesPowerResp.VotingPower.Equal(expectedYesPower),
+		"yes voter query power should match independent expected power; got %s, want %s",
+		yesPowerResp.VotingPower, expectedYesPower)
+
+	noPowerResp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: noVoter.String()})
+	s.Require().NoError(err)
+	s.Require().True(noPowerResp.VotingPower.Equal(expectedNoPower),
+		"no voter query power should match independent expected power; got %s, want %s",
+		noPowerResp.VotingPower, expectedNoPower)
+
+	totalPowerResp, err := s.queryClient.TotalDelegatedVotingPower(
+		s.ctx.Context(),
+		&types.QueryTotalDelegatedVotingPowerRequest{},
+	)
+	s.Require().NoError(err)
+	addedPower := totalPowerResp.VotingPower.Sub(preTotalPowerResp.VotingPower)
+	s.Require().True(addedPower.Equal(expectedAddedPower),
+		"total delegated voting power delta should equal added voters' power; got %s, want %s",
+		addedPower, expectedAddedPower)
+
+	// Gov tally wiring should consume the same underlying tier power values.
+	s.insertVote(testProposalID, yesVoter, yesVoteOpts())
+	s.insertVote(testProposalID, noVoter, noVoteOpts())
+
+	tallyTotal, results := s.callCustomTally(testProposalID, validators)
+	s.Require().True(tallyTotal.Equal(expectedAddedPower),
+		"tally total should equal independently expected tier power; got %s, want %s",
+		tallyTotal, expectedAddedPower)
+	s.Require().True(results[v1.OptionYes].Equal(expectedYesPower),
+		"yes tally should equal independent expected yes power; got %s, want %s",
+		results[v1.OptionYes], expectedYesPower)
+	s.Require().True(results[v1.OptionNo].Equal(expectedNoPower),
+		"no tally should equal independent expected no power; got %s, want %s",
+		results[v1.OptionNo], expectedNoPower)
+	s.Require().True(results[v1.OptionAbstain].IsZero())
+	s.Require().True(results[v1.OptionNoWithVeto].IsZero())
+}
+
 // A voter with NO staking delegation but WITH a delegated tier position.
 // All voting power comes from tier.
 func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
