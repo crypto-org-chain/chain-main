@@ -231,26 +231,16 @@ func (s *KeeperSuite) TestGRPCQueryRewardsPoolBalance_WithFunds() {
 // --- EstimatePositionRewards ---
 
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotDelegated() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(5000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
-	resp, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: 0})
+	resp, err := s.queryClient.EstimatePositionRewards(s.ctx.Context(), &types.QueryEstimatePositionRewardsRequest{PositionId: pos.Id})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero())
 	s.Require().True(resp.BonusRewards.IsZero())
@@ -270,23 +260,12 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NilRequest() {
 }
 
 func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndBonus() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Set validator commission to 0% so all staking rewards go to delegators.
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
-	// Fund bonus pool so bonus rewards can accrue.
-	s.fundRewardsPool(sdkmath.NewInt(1000000000), bondDenom)
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	_, bondDenom := s.getStakingData()
 
 	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
@@ -351,22 +330,12 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 // --- TierVotingPower ---
 
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(5000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
@@ -376,17 +345,9 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_Delegated() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	s.resetQueryClient()
 
 	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
@@ -422,17 +383,9 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_InvalidAddress() {
 // TestGRPCQueryTierVotingPower_ExitingPosition verifies that a position with a
 // triggered exit still contributes to voting power per ADR-006 §8.5.
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	s.resetQueryClient()
 
 	// Before triggering exit: should have positive voting power.
@@ -442,9 +395,10 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 		"active delegated position should contribute voting power; got %s", resp.VotingPower)
 
 	// Trigger exit.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
 		Owner:      delAddr.String(),
-		PositionId: 0,
+		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 	s.resetQueryClient()
@@ -458,17 +412,10 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierVotingPower_UnbondingValidatorNotCounted() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.jailAndUnbondValidator(valAddr)
 
@@ -498,36 +445,10 @@ func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Empty() {
 }
 
 func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_Delegated() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	_ = s.setupNewTierPosition(lockAmount, false)
+	_ = s.setupNewTierPosition(lockAmount, false)
 
-	otherAddr := sdk.AccAddress([]byte("other_delegator______"))
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, otherAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, otherAddr.String(), lockAmount))
-	shares, err := s.keeper.Delegate(s.ctx, valAddr, lockAmount)
-	s.Require().NoError(err)
-	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
-	s.Require().NoError(err)
-	currentRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
-	s.Require().NoError(err)
-	_, err = s.keeper.CreatePosition(s.ctx, otherAddr.String(), tier, lockAmount, types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              shares,
-		BaseRewardsPerShare: currentRatio,
-	}, false)
-	s.Require().NoError(err)
-
-	s.resetQueryClient()
 	resp, err := s.queryClient.TotalDelegatedVotingPower(s.ctx.Context(), &types.QueryTotalDelegatedVotingPowerRequest{})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount.MulRaw(2))))
