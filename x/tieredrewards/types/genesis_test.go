@@ -119,13 +119,13 @@ func TestValidateGenesis(t *testing.T) {
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator")
 	})
 
-	t.Run("invalid reward ratio payload", func(t *testing.T) {
+	t.Run("malformed validator reward ratio cumulative rewards per share", func(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.ValidatorRewardRatios[0].RewardRatio = types.ValidatorRewardRatio{
 			CumulativeRewardsPerShare: sdk.DecCoins{
 				{
-					Denom:  "bad denom",
-					Amount: sdkmath.LegacyNewDec(1),
+					Denom:  "basecro",
+					Amount: sdkmath.LegacyNewDec(-1),
 				},
 			},
 		}
