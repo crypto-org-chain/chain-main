@@ -10,22 +10,12 @@ import (
 )
 
 func (s *KeeperSuite) TestGetVotingPowerForAddress_NoDelegatedPositions() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	// Lock WITH delegation and immediate exit, then undelegate to get an undelegated position
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 sdkmath.NewInt(5000),
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
 
 	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
@@ -34,17 +24,9 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_NoDelegatedPositions() {
 }
 
 func (s *KeeperSuite) TestGetVotingPowerForAddress_DelegatedPosition() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
 	s.Require().NoError(err)
@@ -53,7 +35,10 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_DelegatedPosition() {
 }
 
 func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	// Position 1: delegated, 3000
+	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	tier2 := newTestTier(2)
 	tier2.MinLockAmount = sdkmath.NewInt(100)
@@ -61,17 +46,8 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Position 1: delegated, 3000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(3000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	// Position 2: delegated, 2000
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),
 		Id:               2,
 		Amount:           sdkmath.NewInt(2000),
@@ -89,7 +65,6 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 	})
 	s.Require().NoError(err)
 
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 2})
 	s.Require().NoError(err)
@@ -114,17 +89,9 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_NoPositions() {
 // position which has triggered exit (but is still delegated) still contributes
 // voting power per ADR-006 §8.5.
 func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// Before triggering exit: position is active, should have full voting power.
 	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
@@ -132,10 +99,11 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() 
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"active delegated position should contribute voting power; got %s", power)
 
-	// Trigger exit on the position (positionId 0 is the first one).
+	// Trigger exit on the position.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
 		Owner:      delAddr.String(),
-		PositionId: 0,
+		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 
@@ -150,18 +118,9 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() 
 // TestGetVotingPowerForAddress_AfterUndelegate tests the full lifecycle:
 // exit triggered → still has voting power; TierUndelegate → no voting power.
 func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  delAddr.String(),
-		Id:                     1,
-		Amount:                 lockAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// Exit has been triggered immediately: position is still delegated — per
 	// ADR-006 §8.5 it should still contribute voting power.
@@ -170,13 +129,12 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"exit triggered but still delegated: should have voting power; got %s", power)
 
-	// Fund rewards pool and advance past exit duration so undelegation is allowed.
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 	s.advancePastExitDuration()
 
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
-		PositionId: 0,
+		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 
@@ -190,17 +148,10 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 // delegated positions on an unbonding validator contribute zero governance
 // power, consistent with standard gov tally semantics.
 func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(5000)
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.jailAndUnbondValidator(valAddr)
 
@@ -224,20 +175,15 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted(
 }
 
 func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	// Delegated: 3000
+	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Delegated: 3000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(3000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	// Create a second position, delegate with immediate exit, then undelegate: 2000
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(2000),
@@ -246,7 +192,6 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 	})
 	s.Require().NoError(err)
 
-	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
 	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 1})
 	s.Require().NoError(err)
@@ -261,17 +206,10 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 // totalDelegatedVotingPower use share-based token value (not pos.Amount) after
 // a slash, and that they agree with each other.
 func (s *KeeperSuite) TestVotingPower_AfterSlash() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	perAddrPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
 	s.Require().NoError(err)
@@ -309,7 +247,7 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 // TestZeroAmountPositiveSharesState verifies that after a full (100%) staking
 // slash, the validator's tokens go to zero and voting power is naturally zero
 // via TokensFromShares, even though the position still has positive
-// DelegatedShares. Also verifies that redelegation rejects zero-amount positions.
+// DelegatedShares.
 func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -333,7 +271,6 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
 	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
 
-	// After 100% slash, TokensFromShares returns zero naturally.
 	voter, err := sdk.AccAddressFromBech32(pos.Owner)
 	s.Require().NoError(err)
 	votingPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, voter)
@@ -354,20 +291,15 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 // TestTotalDelegatedVotingPower_IncludesExiting verifies that positions with a
 // triggered exit are still included in the total per ADR-006 §8.5.
 func (s *KeeperSuite) TestTotalDelegatedVotingPower_IncludesExiting() {
-	delAddr, valAddr, _ := s.setupTierAndDelegator()
+	// Active delegated position: 3000
+	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Active delegated position: 3000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(3000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	// Delegated but immediately exiting: 2000
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(2000),
