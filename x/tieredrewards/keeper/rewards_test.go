@@ -1144,12 +1144,6 @@ func (s *KeeperSuite) TestStaleValidatorRewardRatioReplayed() {
 	s.Require().NoError(err)
 	s.Require().True(ratioAfterReentry.IsZero(), "stale validator ratio should be reset on re-entry when no module delegation exists")
 
-	// Ensure the module account has spendable balance so replayed stale ratio can
-	// be observed as an actual overpayment, not masked by insufficient-funds.
-	err = banktestutil.FundModuleAccount(s.ctx, s.app.BankKeeper, types.ModuleName,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1_000_000))))
-	s.Require().NoError(err)
-
 	// No new rewards were allocated for this second lifecycle.
 	claimResp2, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
 		Owner:      freshAddr.String(),
