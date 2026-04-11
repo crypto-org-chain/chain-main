@@ -9,7 +9,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // --- BeforeValidatorSlashed hook tests ---
@@ -18,29 +17,22 @@ import (
 // claims pending base rewards before applying the slash, so the position's
 // BaseRewardsPerShare snapshot is updated and cannot be double-claimed later.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Trigger the slash hook directly with a tiny fraction so positions are affected.
 	hooks := s.keeper.Hooks()
-	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2)) // 1% slash
+	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2)) // 1% slash
 	s.Require().NoError(err)
 
 	// Owner should have received base (and bonus) rewards that were settled before the slash.
@@ -48,9 +40,10 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
 	s.Require().True(balAfterSlash.Amount.GT(balBefore.Amount), "rewards should have been paid before slash")
 
 	// Calling ClaimTierRewards now should not pay base rewards again (already claimed in hook).
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	respClaim, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
 		Owner:      delAddr.String(),
-		PositionId: 0,
+		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 	s.Require().True(respClaim.BaseRewards.IsZero(), "base rewards should already be claimed by the slash hook")
@@ -62,21 +55,11 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
 // TestBeforeValidatorSlashed_ReducesPositionAmount verifies that the hook reduces
 // position.Amount by the expected slash fraction.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -93,7 +76,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.Amount.Equal(expectedAmount),
 		"position amount should match truncated post-slash expectation; got %s want %s",
@@ -106,39 +89,33 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 // after the hook, the position's LastBonusAccrual in the store reflects the time
 // the rewards were settled, not the pre-claim value.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotRevertLastBonusAccrual() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	claimTime := s.ctx.BlockTime().Add(time.Hour * 24)
 	s.ctx = s.ctx.WithBlockTime(claimTime)
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 
 	hooks := s.keeper.Hooks()
-	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// LastBonusAccrual must be updated to claimTime, not left at the initial block time.
-	s.Require().Equal(claimTime, pos.LastBonusAccrual, "LastBonusAccrual must be updated after slash hook")
+	s.Require().Equal(claimTime, posAfter.LastBonusAccrual, "LastBonusAccrual must be updated after slash hook")
 }
 
 // TestBeforeValidatorSlashed_NoPositions is a no-op for validators with no tier positions.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
-	_, valAddr, _ := s.setupTierAndDelegator()
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
 	hooks := s.keeper.Hooks()
 
 	// Should not error when there are no positions.
-	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 }
 
@@ -148,17 +125,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 // transitions back to bonded, LastBonusAccrual is reset to the current block time
 // so bonus does not over-accrue during the unbonding period.
 func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(1000),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate passage of time.
 	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
@@ -166,21 +134,24 @@ func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
 
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
-	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(newTime, pos.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
+	s.Require().Equal(newTime, posAfter.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
 }
 
 // TestAfterValidatorBonded_NoPositions is a no-op for validators with no tier positions.
 func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
-	_, valAddr, _ := s.setupTierAndDelegator()
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
 
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
-	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 }
 
@@ -189,29 +160,22 @@ func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
 // TestAfterValidatorBeginUnbonding_ClaimsRewards verifies that when a validator
 // begins unbonding, base and bonus rewards are claimed for all positions.
 func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
-	err = hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
+	err := hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -223,19 +187,11 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
 // without error, the slash is still applied, and BaseRewardsPerShare is updated
 // (base rewards were claimed even though bonus was not paid).
 func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Advance time so bonus accrues, but intentionally do NOT fund the bonus pool.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -271,42 +227,32 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 // TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain verifies that a 100% slash
 // reduces position.Amount to zero without triggering a validation error.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	hooks := s.keeper.Hooks()
 	// 100% slash — must not error even though position.Amount reaches zero.
-	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyOneDec())
+	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyOneDec())
 	s.Require().NoError(err, "100% slash should not cause an error")
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100% slash")
+	s.Require().True(posAfter.Amount.IsZero(), "position amount should be zero after 100% slash")
 }
 
 // TestBeforeValidatorSlashed_MultiplePositions verifies that the slash hook reduces
 // all positions delegated to the slashed validator.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
-	delAddr, valAddr, bondDenom := s.setupTierAndDelegator()
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-
-	// Create three positions on the same validator.
-	for range 3 {
+	// Create two more positions on the same validator (first was created by setupNewTierPosition).
+	for range 2 {
 		_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 			Owner:            delAddr.String(),
 			Id:               1,
@@ -316,23 +262,25 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 		s.Require().NoError(err)
 	}
 
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
+	s.Require().Len(positions, 3)
+
 	amountsBefore := make([]sdkmath.Int, 3)
-	for i := range 3 {
-		pos, err := s.keeper.GetPosition(s.ctx, uint64(i))
-		s.Require().NoError(err)
-		amountsBefore[i] = pos.Amount
+	for i, p := range positions {
+		amountsBefore[i] = p.Amount
 	}
 
 	slashFraction := sdkmath.LegacyNewDecWithPrec(10, 2) // 10%
 	hooks := s.keeper.Hooks()
-	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
+	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
 	s.Require().NoError(err)
 
-	for i := range 3 {
-		pos, err := s.keeper.GetPosition(s.ctx, uint64(i))
+	for i, p := range positions {
+		posAfter, err := s.keeper.GetPosition(s.ctx, p.Id)
 		s.Require().NoError(err)
-		s.Require().True(pos.Amount.LT(amountsBefore[i]),
-			"position %d amount should decrease after slash", i)
+		s.Require().True(posAfter.Amount.LT(amountsBefore[i]),
+			"position %d amount should decrease after slash", p.Id)
 	}
 }
 
@@ -341,36 +289,13 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 // settlement, without reloading from store, while still advancing checkpoints
 // and applying the slash to every position.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientBonusPool() {
-	_, valAddr, bondDenom := s.setupTierAndDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	s.setupNewTierPosition(lockAmount, false)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
-	addr1 := sdk.AccAddress([]byte("slash_mix_bonus_addr1_"))
-	addr2 := sdk.AccAddress([]byte("slash_mix_bonus_addr2_"))
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr1,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr2,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr1.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr2.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 365))
@@ -408,7 +333,10 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientB
 }
 
 func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
-	_, valAddr, _ := s.setupTierAndDelegator()
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
 	consAddr := sdk.ConsAddress(valAddr)
 	delAddr := sdk.AccAddress([]byte("noop_delegator_addr"))
 
@@ -423,11 +351,14 @@ func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
 }
 
 func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
-	_, valAddr, _ := s.setupTierAndDelegator()
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
+	err = s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
 		CumulativeRewardsPerShare: sdk.DecCoins{
 			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
 		},
