@@ -35,6 +35,8 @@ func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 
 	expectedBonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, expectedBonus))
 
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
 	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &pos, tier, false)
 	s.Require().NoError(err)
 	s.Require().Equal(expectedBonusCoins, bonus)
@@ -113,6 +115,10 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
 	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
 
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
 	// Jail + apply → unbonding (hook settles final bonus).
@@ -152,8 +158,6 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().NoError(err)
 
 	expectedBonus := s.keeper.CalculateBonusRaw(updated, val, tier, s.ctx.BlockTime())
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
 	expectedBonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, expectedBonus))
 
 	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &updated, tier, false)
@@ -193,6 +197,10 @@ func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
 	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
 
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
 	s.jailAndUnbondValidator(valAddr)
@@ -200,7 +208,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	// Advance time.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
@@ -598,6 +606,7 @@ func (s *KeeperSuite) TestBaseRewardsPerShare_UnchangedWhenUndelegated() {
 
 	// Advance past exit and undelegate.
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner: delAddr.String(), PositionId: pos.Id,
 	})
@@ -749,6 +758,7 @@ func (s *KeeperSuite) TestClaimBaseRewards_UndelegatedPosition() {
 
 	s.advancePastExitDuration()
 
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner: delAddr.String(), PositionId: pos.Id,
 	})
@@ -791,6 +801,7 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_ZeroShares() {
 
 	// Undelegate to remove the module's delegation shares.
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner: delAddr.String(), PositionId: pos.Id,
 	})
@@ -816,8 +827,11 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
 	delAddr := sdk.MustAccAddressFromBech32(posSetup.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	_, bondDenom := s.getStakingData()
+
 	s.advancePastExitDuration()
 
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner: delAddr.String(), PositionId: posSetup.Id,
 	})
@@ -911,6 +925,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	pos1Id := pos1Positions[0].Id
 
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner: addr2.String(), PositionId: pos1Id,
 	})

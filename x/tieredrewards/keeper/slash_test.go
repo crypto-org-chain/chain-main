@@ -72,11 +72,15 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	lockAmount := sdkmath.NewInt(6000)
 
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
 	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
 	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
-	err := s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingId, slashTokens)
+	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingId, slashTokens)
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -91,9 +95,13 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 	lockAmount := sdkmath.NewInt(4000)
 
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
 	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
 
-	err := s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
+	err = s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
 	s.Require().NoError(err)
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)

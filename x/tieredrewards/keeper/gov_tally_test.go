@@ -417,6 +417,9 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
 	s.advancePastExitDuration()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
@@ -702,17 +705,21 @@ func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
 // counted once each — neither double-counted nor dropped.
 func (s *KeeperSuite) TestCustomTally_MultiplePositionsSameValidator() {
 	// Position 1: 3000 tokens on the same validator.
-	pos1 := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	lockAmt1 := sdkmath.NewInt(3000)
+	pos1 := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos1.Owner)
 	valAddr1 := sdk.MustValAddressFromBech32(pos1.Validator)
 
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	// Position 2: 5000 tokens on the same validator.
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	lockAmt2 := sdkmath.NewInt(5000)
+	_, bondDenom := s.getStakingData()
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt2)))
+	s.Require().NoError(err)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),
 		Id:               1,
-		Amount:           sdkmath.NewInt(5000),
+		Amount:           lockAmt2,
 		ValidatorAddress: valAddr1.String(),
 	})
 	s.Require().NoError(err)

@@ -253,6 +253,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Update tier with new BonusApy
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	updated := newTestTier(1)
 	updated.BonusApy = sdkmath.LegacyNewDecWithPrec(8, 2)
 	_, err = msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{

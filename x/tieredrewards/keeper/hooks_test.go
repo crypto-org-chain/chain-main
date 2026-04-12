@@ -9,6 +9,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 // --- BeforeValidatorSlashed hook tests ---
@@ -250,6 +251,11 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Fund the owner with enough tokens for 2 more LockTier calls.
+	_, bondDenom := s.getStakingData()
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount.MulRaw(2))))
+	s.Require().NoError(err)
 
 	// Create two more positions on the same validator (first was created by setupNewTierPosition).
 	for range 2 {

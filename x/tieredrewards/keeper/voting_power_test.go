@@ -7,14 +7,17 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 func (s *KeeperSuite) TestGetVotingPowerForAddress_NoDelegatedPositions() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
 
 	s.advancePastExitDuration()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
 
@@ -36,9 +39,11 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_DelegatedPosition() {
 
 func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 	// Position 1: delegated, 3000
-	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	lockAmt1 := sdkmath.NewInt(3000)
+	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	tier2 := newTestTier(2)
 	tier2.MinLockAmount = sdkmath.NewInt(100)
@@ -46,11 +51,17 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	// Fund delAddr for the second and third LockTier calls.
+	lockAmt2 := sdkmath.NewInt(2000)
+	lockAmt3 := sdkmath.NewInt(1000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt2.Add(lockAmt3))))
+	s.Require().NoError(err)
+
 	// Position 2: delegated, 2000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:            delAddr.String(),
 		Id:               2,
-		Amount:           sdkmath.NewInt(2000),
+		Amount:           lockAmt2,
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().NoError(err)
@@ -59,13 +70,14 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
-		Amount:                 sdkmath.NewInt(1000),
+		Amount:                 lockAmt3,
 		ValidatorAddress:       valAddr.String(),
 		TriggerExitImmediately: true,
 	})
 	s.Require().NoError(err)
 
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 2})
 	s.Require().NoError(err)
 
@@ -121,6 +133,7 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
 
 	// Exit has been triggered immediately: position is still delegated — per
 	// ADR-006 §8.5 it should still contribute voting power.
@@ -132,6 +145,7 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	s.advancePastExitDuration()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
@@ -176,14 +190,21 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted(
 
 func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 	// Delegated: 3000
-	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	lockAmt1 := sdkmath.NewInt(3000)
+	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	// Fund delAddr for the second LockTier call.
+	lockAmt2 := sdkmath.NewInt(2000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt2)))
+	s.Require().NoError(err)
+
 	// Create a second position, delegate with immediate exit, then undelegate: 2000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(2000),
@@ -193,6 +214,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 	s.Require().NoError(err)
 
 	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 1})
 	s.Require().NoError(err)
 
@@ -292,14 +314,21 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 // triggered exit are still included in the total per ADR-006 §8.5.
 func (s *KeeperSuite) TestTotalDelegatedVotingPower_IncludesExiting() {
 	// Active delegated position: 3000
-	pos := s.setupNewTierPosition(sdkmath.NewInt(3000), false)
+	lockAmt1 := sdkmath.NewInt(3000)
+	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	// Fund delAddr for the second LockTier call.
+	lockAmt2 := sdkmath.NewInt(2000)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt2)))
+	s.Require().NoError(err)
+
 	// Delegated but immediately exiting: 2000
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 sdkmath.NewInt(2000),

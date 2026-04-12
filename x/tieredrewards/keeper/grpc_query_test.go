@@ -235,6 +235,9 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_NotDelegated() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
 	s.advancePastExitDuration()
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
@@ -281,6 +284,8 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	// Advance 30 days to accrue bonus.
 	advanceDuration := 30 * 24 * time.Hour
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(advanceDuration))
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
 	ownerBalBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
@@ -333,6 +338,9 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	s.advancePastExitDuration()
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
