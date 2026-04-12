@@ -60,10 +60,8 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	freshAddr := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
-	// Over fund the account to avoid running out of funds during the test.
-	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
 	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
@@ -74,8 +72,6 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 		TriggerExitImmediately: triggerExitImmediately,
 	})
 	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
 	positions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
 	s.Require().NoError(err)
@@ -134,10 +130,8 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Over fund the account to avoid running out of funds during the test.
-	fundAmount := lockAmount.Add(sdkmath.NewInt(100_000_000_000))
 	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, fundAmount)))
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
 	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
@@ -148,8 +142,6 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 		TriggerExitImmediately: triggerExitImmediately,
 	})
 	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
 	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
