@@ -256,31 +256,14 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_UpdatesOriginalSlice() {
 // fused reward-settlement loop can successfully pay earlier positions, then
 // persist checkpoints for a later position that hits ErrInsufficientBonusPool.
 func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
 	lockAmount1 := sdkmath.NewInt(10_000)
 	lockAmount2 := sdkmath.NewInt(20_000)
-
-	addr1 := s.fundRandomAddr(bondDenom, lockAmount1)
-	addr2 := s.fundRandomAddr(bondDenom, lockAmount2)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr1.String(),
-		Id:               1,
-		Amount:           lockAmount1,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            addr2.String(),
-		Id:               1,
-		Amount:           lockAmount2,
-		ValidatorAddress: valAddr.String(),
-	})
+	pos1 := s.setupNewTierPosition(lockAmount1, false)
+	pos2 := s.setupNewTierPosition(lockAmount2, false)
+	addr1 := sdk.MustAccAddressFromBech32(pos1.Owner)
+	addr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
+	vals, bondDenom := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
@@ -288,12 +271,12 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool()
 	positions1, err := s.keeper.GetPositionsByOwner(s.ctx, addr1)
 	s.Require().NoError(err)
 	s.Require().Len(positions1, 1)
-	pos1 := positions1[0]
+	pos1 = positions1[0]
 
 	positions2, err := s.keeper.GetPositionsByOwner(s.ctx, addr2)
 	s.Require().NoError(err)
 	s.Require().Len(positions2, 1)
-	pos2 := positions2[0]
+	pos2 = positions2[0]
 
 	tier, err := s.keeper.GetTier(s.ctx, pos1.TierId)
 	s.Require().NoError(err)

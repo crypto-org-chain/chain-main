@@ -337,24 +337,11 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_NoPositions() {
 }
 
 func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-	// Do NOT fund the rewards pool — it stays empty.
-
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	freshAddr := s.fundRandomAddr(bondDenom, lockAmount)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
 
 	// Advance time so bonus accrues.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -365,7 +352,8 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
 	initialBonusApy := tier.BonusApy
 	updatedBonusApy := sdkmath.LegacyNewDecWithPrec(8, 2)
 	tier.BonusApy = updatedBonusApy
-	_, err = msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.UpdateTier(s.ctx, &types.MsgUpdateTier{
 		Authority: s.keeper.GetAuthority(),
 		Tier:      tier,
 	})

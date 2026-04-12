@@ -466,26 +466,17 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_FirstPosition_CommitDelegati
 }
 
 func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio_CommitDelegationToTier() {
-	s.setupTier(1)
+	// Create first position with same amount as initial delegation
+	// Expects half the rewards to go to the tier module account
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
 	_, bondDenom := s.getStakingData()
-	delAddr, valAddr := s.getDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// The genesis validator has 100% commission — delegators get nothing.
 	// Set it to 0% so all allocated rewards go to delegators.
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
-	// Create first position with same amount as initial delegation
-	// Expects half the rewards to go to the tier module account
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	msg1 := &types.MsgLockTier{
-		Owner:            delAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	}
-	_, err := msgServer.LockTier(s.ctx, msg1)
-	s.Require().NoError(err)
 
 	// Advance the block so the delegation's starting period in x/distribution
 	// is finalized before rewards are allocated. Without this, the delegation
@@ -511,7 +502,7 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRat
 		Id:               1,
 		Amount:           commitAmount,
 	}
-
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
@@ -1010,7 +1001,6 @@ func (s *KeeperSuite) TestMsgTierRedelegate_SameValidator() {
 // TestMsgTierRedelegate_AmountZero verifies that TierRedelegate is rejected on a
 // zero-amount bonded position (slash from bonded validator)
 func (s *KeeperSuite) TestMsgTierRedelegate_AmountZero() {
-	s.setupTier(1)
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -1854,35 +1844,21 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 // returns ErrInsufficientBonusPool when accrued bonus cannot be paid, so the tx rolls
 // back and the user can retry later without losing base rewards to a partial claim.
 func (s *KeeperSuite) TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	freshAddr := s.fundRandomAddr(bondDenom, lockAmount)
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:            freshAddr.String(),
-		Id:               1,
-		Amount:           lockAmount,
-		ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
+	pos := s.setupNewTierPosition(lockAmount, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos := positions[0]
-	delAddr := freshAddr
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Advance time and allocate base rewards, but intentionally leave bonus pool empty.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24 * 365))
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
-	// Bonus pool remains at 0 — bonus accrued but pool cannot cover it.
 
+	// Bonus pool remains at 0 — bonus accrued but pool cannot cover it.
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Use a branched context so a failed message does not persist state (matches DeliverTx rollback).
@@ -2433,35 +2409,17 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	tier := newTestTier(1)
-	tier.BonusApy = sdkmath.LegacyZeroDec()
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
 	lockAmount := sdkmath.NewInt(10_000)
-	addr := sdk.AccAddress([]byte("slashed_undelegate__"))
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, addr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
-	s.Require().NoError(err)
-
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  addr.String(),
-		Id:                     1,
-		Amount:                 lockAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
+	pos:= s.setupNewTierPosition(lockAmount, true)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	addr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos := positions[0]
+	pos = positions[0]
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
@@ -2469,6 +2427,8 @@ func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.advancePastExitDuration()
+
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
@@ -2579,7 +2539,6 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_MultipleCalls_NoDivergence() {
 // account should have exactly enough tokens for withdrawal after the
 // reconciliation fix, without needing extra manual funding.
 func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
-	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
 	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
 	s.Require().NoError(err)
@@ -2697,7 +2656,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconcilesAmount() {
 // TestMsgTierDelegate_ReconcilesAmount: after LockTier at non-1:1
 // exchange rate, pos.Amount matches the actual share-backed token value.
 func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
-	s.setupTier(1)
 	lockAmount := sdkmath.NewInt(10001)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -2730,7 +2688,6 @@ func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
 // exchange rate, pos.Amount matches the destination validator's share-backed
 // token value.
 func (s *KeeperSuite) TestMsgTierRedelegate_ReconcilesAmount() {
-	s.setupTier(1)
 	lockAmount := sdkmath.NewInt(10001)
 	_, bondDenom := s.getStakingData()
 	pos := s.setupNewTierPosition(lockAmount, false)
