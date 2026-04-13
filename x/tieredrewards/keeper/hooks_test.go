@@ -120,69 +120,6 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 	s.Require().NoError(err)
 }
 
-// --- AfterValidatorBonded hook tests ---
-
-// TestAfterValidatorBonded_ResetsLastBonusAccrual verifies that when a validator
-// transitions back to bonded, LastBonusAccrual is reset to the current block time
-// so bonus does not over-accrue during the unbonding period.
-func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	// Simulate passage of time.
-	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
-	s.ctx = s.ctx.WithBlockTime(newTime)
-
-	consAddr := sdk.ConsAddress(valAddr)
-	hooks := s.keeper.Hooks()
-	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
-	s.Require().NoError(err)
-
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().Equal(newTime, posAfter.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
-}
-
-// TestAfterValidatorBonded_NoPositions is a no-op for validators with no tier positions.
-func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
-	s.setupTier(1)
-	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-
-	consAddr := sdk.ConsAddress(valAddr)
-	hooks := s.keeper.Hooks()
-	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
-	s.Require().NoError(err)
-}
-
-// --- AfterValidatorBeginUnbonding hook tests ---
-
-// TestAfterValidatorBeginUnbonding_ClaimsRewards verifies that when a validator
-// begins unbonding, base and bonus rewards are claimed for all positions.
-func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	_, bondDenom := s.getStakingData()
-
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
-	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
-
-	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-
-	consAddr := sdk.ConsAddress(valAddr)
-	hooks := s.keeper.Hooks()
-	err := hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
-	s.Require().NoError(err)
-
-	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "rewards should have been claimed when validator began unbonding")
-}
-
 // TestBeforeValidatorSlashed_InsufficientBonusPool verifies the ErrInsufficientBonusPool
 // path: when the bonus pool cannot cover the accrued bonus, the hook still completes
 // without error, the slash is still applied, and BaseRewardsPerShare is updated
@@ -338,24 +275,104 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientB
 		"second position amount should still be slashed")
 }
 
-func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
+// TestBeforeValidatorSlashed_UpdatesPoolDelegationInfo verifies that the hook
+// reduces the distribution module's DelegatorStartingInfo.Stake for the tier
+// module pool by the slash fraction. Without this, the next reward claim would
+// compare an outdated pre-slash stake with the lower post-slash stake, causing
+// a negative-rewards panic or incorrect payout.
+func (s *KeeperSuite) TestBeforeValidatorSlashed_UpdatesPoolDelegationInfo() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+
+	// Read starting info before slash.
+	infoBefore, err := s.app.DistrKeeper.GetDelegatorStartingInfo(s.ctx, valAddr, poolAddr)
+	s.Require().NoError(err)
+	s.Require().True(infoBefore.Stake.IsPositive(), "pool should have positive starting stake before slash")
+
+	slashFraction := sdkmath.LegacyNewDecWithPrec(25, 2) // 25%
+	hooks := s.keeper.Hooks()
+	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
+	s.Require().NoError(err)
+
+	// Read starting info after slash.
+	infoAfter, err := s.app.DistrKeeper.GetDelegatorStartingInfo(s.ctx, valAddr, poolAddr)
+	s.Require().NoError(err)
+
+	expectedStake := infoBefore.Stake.MulTruncate(sdkmath.LegacyOneDec().Sub(slashFraction))
+	s.Require().True(infoAfter.Stake.Equal(expectedStake),
+		"starting stake should be reduced by slash fraction; got %s want %s",
+		infoAfter.Stake, expectedStake)
+}
+
+// --- AfterValidatorBonded hook tests ---
+
+// TestAfterValidatorBonded_ResetsLastBonusAccrual verifies that when a validator
+// transitions back to bonded, LastBonusAccrual is reset to the current block time
+// so bonus does not over-accrue during the unbonding period.
+func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Simulate passage of time.
+	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
+	s.ctx = s.ctx.WithBlockTime(newTime)
+
+	consAddr := sdk.ConsAddress(valAddr)
+	hooks := s.keeper.Hooks()
+	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(newTime, posAfter.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
+}
+
+// TestAfterValidatorBonded_NoPositions is a no-op for validators with no tier positions.
+func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
 	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
 	s.Require().NoError(err)
-	consAddr := sdk.ConsAddress(valAddr)
-	delAddr := sdk.AccAddress([]byte("noop_delegator_addr"))
 
+	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
-	s.Require().NoError(hooks.BeforeValidatorModified(s.ctx, valAddr))
-	s.Require().NoError(hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr))
-	s.Require().NoError(hooks.AfterValidatorCreated(s.ctx, valAddr))
-	s.Require().NoError(hooks.BeforeDelegationCreated(s.ctx, delAddr, valAddr))
-	s.Require().NoError(hooks.BeforeDelegationSharesModified(s.ctx, delAddr, valAddr))
-	s.Require().NoError(hooks.BeforeDelegationRemoved(s.ctx, delAddr, valAddr))
-	s.Require().NoError(hooks.AfterDelegationModified(s.ctx, delAddr, valAddr))
+	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
 }
 
+// --- AfterValidatorBeginUnbonding hook tests ---
+
+// TestAfterValidatorBeginUnbonding_ClaimsRewards verifies that when a validator
+// begins unbonding, base and bonus rewards are claimed for all positions.
+func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	consAddr := sdk.ConsAddress(valAddr)
+	hooks := s.keeper.Hooks()
+	err := hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "rewards should have been claimed when validator began unbonding")
+}
+
+
+
+// --- AfterValidatorRemoved hook tests ---
 func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
@@ -413,7 +430,6 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_NoMapping_NoOp() {
 	err := hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{999})
 	s.Require().NoError(err, "should not error when unbonding ID has no mapping")
 }
-
 func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	hooks := s.keeper.Hooks()
 
@@ -446,3 +462,24 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	err := hooks.AfterRedelegationCompleted(s.ctx, poolAddr, valSrc, valDst, []uint64{888})
 	s.Require().NoError(err, "should not error when redelegation ID has no mapping")
 }
+
+// --- NoOp callbacks ---
+
+func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
+	s.Require().NoError(err)
+	consAddr := sdk.ConsAddress(valAddr)
+	delAddr := sdk.AccAddress([]byte("noop_delegator_addr"))
+
+	hooks := s.keeper.Hooks()
+	s.Require().NoError(hooks.BeforeValidatorModified(s.ctx, valAddr))
+	s.Require().NoError(hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr))
+	s.Require().NoError(hooks.AfterValidatorCreated(s.ctx, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationCreated(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationSharesModified(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.BeforeDelegationRemoved(s.ctx, delAddr, valAddr))
+	s.Require().NoError(hooks.AfterDelegationModified(s.ctx, delAddr, valAddr))
+}
+
