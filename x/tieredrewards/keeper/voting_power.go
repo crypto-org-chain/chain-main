@@ -33,7 +33,7 @@ func tierVotingPowerForPosition(
 	if !ok {
 		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
-			return math.LegacyZeroDec(), nil
+			return math.LegacyZeroDec(), err
 		}
 
 		val, err = sk.GetValidator(ctx, valAddr)

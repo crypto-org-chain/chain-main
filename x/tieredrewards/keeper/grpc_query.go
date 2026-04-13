@@ -61,9 +61,9 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 
 	owner, err := sdk.AccAddressFromBech32(req.Owner)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err)
 	}
-
+	
 	positions, pageResp, err := query.CollectionPaginate(
 		ctx,
 		q.k.PositionsByOwner,

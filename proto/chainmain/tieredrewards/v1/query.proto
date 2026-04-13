@@ -85,7 +85,7 @@ message QueryTierPositionResponse {
 
 // QueryTierPositionsByOwnerRequest is the request type for the Query/TierPositionsByOwner RPC method.
 message QueryTierPositionsByOwnerRequest {
-  string                                owner      = 1;
+  string                                owner      = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
   cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 

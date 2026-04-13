@@ -467,14 +467,12 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
-	consAddr := sdk.ConsAddress(valAddr)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	delAddr := sdk.AccAddress([]byte("noop_delegator_addr"))
 
 	hooks := s.keeper.Hooks()
+	s.Require().NoError(hooks.AfterUnbondingInitiated(s.ctx, 1))
 	s.Require().NoError(hooks.BeforeValidatorModified(s.ctx, valAddr))
-	s.Require().NoError(hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr))
 	s.Require().NoError(hooks.AfterValidatorCreated(s.ctx, valAddr))
 	s.Require().NoError(hooks.BeforeDelegationCreated(s.ctx, delAddr, valAddr))
 	s.Require().NoError(hooks.BeforeDelegationSharesModified(s.ctx, delAddr, valAddr))
