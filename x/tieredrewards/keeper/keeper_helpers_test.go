@@ -52,13 +52,12 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
 	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	freshAddr := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, freshAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
@@ -152,8 +151,7 @@ func (s *KeeperSuite) allocateRewardsToValidator(valAddr sdk.ValAddress, amount 
 func (s *KeeperSuite) getDelegator() (sdk.AccAddress, sdk.ValAddress) {
 	s.T().Helper()
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -225,8 +223,7 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	// Fund the new validator from a source-validator delegator with spendable balance.
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
-	srcValAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	srcValAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, srcValAddr)
 	s.Require().NoError(err)
 	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(2_000_000)))

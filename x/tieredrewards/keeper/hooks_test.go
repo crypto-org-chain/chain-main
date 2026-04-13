@@ -111,12 +111,11 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotRevertLastBonusAccrual()
 func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	hooks := s.keeper.Hooks()
 
 	// Should not error when there are no positions.
-	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 }
 
@@ -334,12 +333,11 @@ func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
 func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
-	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 }
 
@@ -374,12 +372,11 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
 func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err = s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
+	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
 		CumulativeRewardsPerShare: sdk.DecCoins{
 			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
 		},

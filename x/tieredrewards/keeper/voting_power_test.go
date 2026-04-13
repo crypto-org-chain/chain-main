@@ -283,8 +283,7 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 
 	// Slash the validator through staking with 100% fraction so tokens are
 	// actually burned and the exchange rate drops to zero.
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	consAddr, err := val.GetConsAddr()
@@ -299,8 +298,7 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
 	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
 
-	voter, err := sdk.AccAddressFromBech32(pos.Owner)
-	s.Require().NoError(err)
+	voter := sdk.MustAccAddressFromBech32(pos.Owner)
 	votingPower, err := s.keeper.GetVotingPowerByOwner(s.ctx, voter)
 	s.Require().NoError(err)
 	s.Require().True(votingPower.IsZero(), "zero-amount delegated position should not contribute voting power")

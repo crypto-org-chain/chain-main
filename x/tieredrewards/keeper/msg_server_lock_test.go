@@ -13,8 +13,7 @@ import (
 func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -43,8 +42,7 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -67,8 +65,7 @@ func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -79,7 +76,7 @@ func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
 		ValidatorAddress: valAddr.String(),
 	}
 
-	_, err = msgServer.LockTier(s.ctx, msg)
+	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrTierNotFound)
 }
@@ -87,8 +84,7 @@ func (s *KeeperSuite) TestMsgLockTier_TierNotFound() {
 func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -112,8 +108,7 @@ func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
 func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(999))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -124,15 +119,14 @@ func (s *KeeperSuite) TestMsgLockTier_BelowMinLock() {
 		ValidatorAddress: valAddr.String(),
 	}
 
-	_, err = msgServer.LockTier(s.ctx, msg)
+	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
 }
 
 func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -145,7 +139,7 @@ func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
 		ValidatorAddress: valAddr.String(),
 	}
 
-	_, err = msgServer.LockTier(s.ctx, msg)
+	_, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().NoError(err)
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)

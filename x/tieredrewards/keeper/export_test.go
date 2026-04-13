@@ -80,10 +80,7 @@ func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 }
 
 func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return sdk.NewCoins(), err
-	}
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {

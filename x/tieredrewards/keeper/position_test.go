@@ -222,14 +222,13 @@ func (s *KeeperSuite) TestGetPositionsIdsByOwner() {
 }
 
 func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
-	valAddr, err := sdk.ValAddressFromBech32(testPosValidator)
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
 
 	// Undelegated position — should NOT be in validator index
 	pos1 := newTestPosition(1, testPositionOwner, 1)
 	pos1.TriggerExit(pos1.CreatedAtTime, newTestTier(1).ExitDuration)
 	pos1.ClearDelegation()
-	err = s.keeper.SetPosition(s.ctx, pos1)
+	err := s.keeper.SetPosition(s.ctx, pos1)
 	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
@@ -248,14 +247,12 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
 }
 
 func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
-	valAddr1, err := sdk.ValAddressFromBech32(testPosValidator)
-	s.Require().NoError(err)
-	valAddr2, err := sdk.ValAddressFromBech32(testPosValidator2)
-	s.Require().NoError(err)
+	valAddr1 := sdk.MustValAddressFromBech32(testPosValidator)
+	valAddr2 := sdk.MustValAddressFromBech32(testPosValidator2)
 
 	// Create position delegated to validator 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err = s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
@@ -301,13 +298,12 @@ func (s *KeeperSuite) TestGetPositionsByOwner() {
 }
 
 func (s *KeeperSuite) TestGetPositionsByValidator() {
-	valAddr, err := sdk.ValAddressFromBech32(testPosValidator)
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
 
 	pos1 := newTestPosition(1, testPositionOwner, 1)
 	pos2 := newTestPosition(2, testPositionOwner, 1)
 
-	err = s.keeper.SetPosition(s.ctx, pos1)
+	err := s.keeper.SetPosition(s.ctx, pos1)
 	s.Require().NoError(err)
 	err = s.keeper.SetPosition(s.ctx, pos2)
 	s.Require().NoError(err)
@@ -344,8 +340,7 @@ func (s *KeeperSuite) TestGetPositionsByIds() {
 func (s *KeeperSuite) TestCreatePosition_Basic() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
@@ -381,8 +376,7 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
@@ -410,8 +404,7 @@ func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
 func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
@@ -441,8 +434,7 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 

@@ -17,7 +17,7 @@ import (
 // Claiming bonus while validator is bonded should yield positive bonus.
 func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
@@ -47,7 +47,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 // validator as unbonding and calculateBonus returns zero.
 func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_SettlesFinalBonus() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	unbondTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
 	s.ctx = s.ctx.WithBlockTime(unbondTime)
@@ -81,8 +81,8 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_InsufficientBonusPoolAdva
 // MsgClaimTierRewards returns zero bonus when the validator is not bonded.
 func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_ZeroBonus() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	addr, _ := sdk.AccAddressFromBech32(pos.Owner)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	addr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
@@ -113,7 +113,7 @@ func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_ZeroBonus() {
 // After the validator re-bonds, bonus accrual should resume from the new bonded time.
 func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
@@ -170,7 +170,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 // calculateBonus returns zero when the validator is not bonded.
 func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
@@ -195,7 +195,7 @@ func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 // forceAccrue=true still yields bonus even when the validator is not bonded.
 func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr, _ := sdk.ValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
@@ -222,7 +222,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 }
 
 // TestSettleRewardsForPositions_UpdatesOriginalSlice verifies:
-// ClaimBonusRewardsForPositions must update the caller's slice elements in-place
+// SettleRewardsForPositions must update the caller's slice elements in-place
 // (pointer semantics) so callers that hold the slice after the call see updated
 // LastBonusAccrual values — preventing double-claim of bonus rewards.
 func (s *KeeperSuite) TestSettleRewardsForPositions_UpdatesOriginalSlice() {
@@ -243,7 +243,7 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_UpdatesOriginalSlice() {
 
 	// After the call the slice element must reflect the updated LastBonusAccrual.
 	s.Require().NotEqual(originalLastAccrual, positions[0].LastBonusAccrual,
-		"ClaimBonusRewardsForPositions must update the slice element in-place")
+		"SettleRewardsForPositions must update the slice element in-place")
 
 	// Also confirm the store is in sync.
 	stored, err := s.keeper.GetPosition(s.ctx, positions[0].Id)
@@ -263,8 +263,7 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool()
 	addr1 := sdk.MustAccAddressFromBech32(pos1.Owner)
 	addr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
@@ -362,8 +361,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_DurationUsesIntegerSeconds() {
 func (s *KeeperSuite) TestCalculateBonusRaw_ZeroAmount() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -433,8 +431,7 @@ func (s *KeeperSuite) TestCalculateBonusRaw_SharesWorthless() {
 func (s *KeeperSuite) TestCalculateBonusRaw_ZeroLastBonusAccrual() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)

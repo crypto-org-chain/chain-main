@@ -321,8 +321,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 // reconciliation fix, without needing extra manual funding.
 func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Slash to get non-1:1 rate.

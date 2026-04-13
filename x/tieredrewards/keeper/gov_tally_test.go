@@ -200,12 +200,9 @@ func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
 	noAmount := sdkmath.NewInt(4000)
 	yesPos := s.setupNewTierPosition(yesAmount, false)
 	noPos := s.setupNewTierPosition(noAmount, false)
-	yesVoter, err := sdk.AccAddressFromBech32(yesPos.Owner)
-	s.Require().NoError(err)
-	noVoter, err := sdk.AccAddressFromBech32(noPos.Owner)
-	s.Require().NoError(err)
-	valAddr, err := sdk.ValAddressFromBech32(yesPos.Validator)
-	s.Require().NoError(err)
+	yesVoter := sdk.MustAccAddressFromBech32(yesPos.Owner)
+	noVoter := sdk.MustAccAddressFromBech32(noPos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(yesPos.Validator)
 
 	// // Refresh query client after state changes.
 	// s.resetQueryClient()

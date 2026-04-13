@@ -16,8 +16,7 @@ func (s *KeeperSuite) TestTransferDelegation_PartialTransfer() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(vals)
 	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -64,8 +63,7 @@ func (s *KeeperSuite) TestTransferDelegation_FullTransfer() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -115,8 +113,7 @@ func (s *KeeperSuite) TestTransferDelegation_TinyAmount() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(vals)
 	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -149,8 +146,7 @@ func (s *KeeperSuite) TestTransferDelegation_InsufficientTokens() {
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
 	val := vals[0]
-	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, valAddr)
 	s.Require().NoError(err)
@@ -203,8 +199,7 @@ func (s *KeeperSuite) TestTransferDelegation_RejectsActiveRedelegation() {
 	// Get genesis validator (bonded) and delegator
 	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
 	s.Require().NoError(err)
-	genesisValAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	genesisValAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	dels, err := s.app.StakingKeeper.GetValidatorDelegations(s.ctx, genesisValAddr)
 	s.Require().NoError(err)

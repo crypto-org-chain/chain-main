@@ -160,8 +160,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
-	valAddr, err := sdk.ValAddressFromBech32(vals[0].GetOperator())
-	s.Require().NoError(err)
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Slash the validator FIRST to create a non-1:1 exchange rate so that
@@ -171,7 +170,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
 	lockAmount := sdkmath.NewInt(10001) // odd number to maximize truncation
 	addr := s.fundRandomAddr(bondDenom, lockAmount)
 
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  addr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,

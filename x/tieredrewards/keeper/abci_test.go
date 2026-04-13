@@ -233,8 +233,7 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	s.Require().False(topUpAmount.ModRaw(totalPower).IsZero(),
 		"test assumption: topUp amount (%s) must not be divisible by %d to produce dust", topUpAmount, totalPower)
 
-	firstValAddr, err := sdk.ValAddressFromBech32(vals[0].OperatorAddress)
-	s.Require().NoError(err)
+	firstValAddr := sdk.MustValAddressFromBech32(vals[0].OperatorAddress)
 	firstOutstandingBefore, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, firstValAddr)
 	s.Require().NoError(err)
 	secondOutstandingBefore, err := s.app.DistrKeeper.GetValidatorOutstandingRewardsCoins(s.ctx, secondValAddr)
