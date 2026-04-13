@@ -109,10 +109,6 @@ func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) er
 	return k.lockFunds(ctx, owner, amount)
 }
 
-func (k Keeper) Delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
-	return k.delegate(ctx, valAddr, amount)
-}
-
 func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
 	return k.getValidatorRewardRatio(ctx, valAddr)
 }
@@ -138,14 +134,6 @@ func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, er
 
 func (k Keeper) CalculateBonusRaw(pos types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
 	return k.calculateBonusRaw(pos, validator, tier, blockTime)
-}
-
-func (k Keeper) GetPositionsIdsByTier(ctx context.Context, tierId uint32) ([]uint64, error) {
-	return k.getPositionsIdsByTier(ctx, tierId)
-}
-
-func (k Keeper) GetPositionsByTier(ctx context.Context, tierId uint32) ([]types.Position, error) {
-	return k.getPositionsByTier(ctx, tierId)
 }
 
 func (k Keeper) GetLastWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {
