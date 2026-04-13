@@ -126,20 +126,41 @@ func GetCmdQueryTierPosition() *cobra.Command {
 }
 
 func GetCmdQueryTierPositionsByOwner() *cobra.Command {
-	return newQueryCmd(
-		"positions-by-owner [owner]",
-		cobra.ExactArgs(1),
-		"Query all tier positions for an owner address",
-		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
-			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
-				return nil, err
+	cmd := &cobra.Command{
+		Use:   "positions-by-owner [owner]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query all tier positions for an owner address",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
 			}
 
-			return queryClient.TierPositionsByOwner(ctx, &types.QueryTierPositionsByOwnerRequest{
-				Owner: args[0],
+			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
+				return err
+			}
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.TierPositionsByOwner(cmd.Context(), &types.QueryTierPositionsByOwnerRequest{
+				Owner:      args[0],
+				Pagination: pageReq,
 			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
 		},
-	)
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "positions-by-owner")
+	return cmd
 }
 
 func GetCmdQueryAllTierPositions() *cobra.Command {

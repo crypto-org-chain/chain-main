@@ -3,6 +3,8 @@ package keeper
 import (
 	"context"
 
+	"cosmossdk.io/collections"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -62,12 +64,20 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 		return nil, err
 	}
 
-	positions, err := q.k.getPositionsByOwner(ctx, owner)
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByOwner,
+		req.Pagination,
+		func(key collections.Pair[sdk.AccAddress, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryTierPositionsByOwnerResponse{Positions: positions}, nil
+	return &types.QueryTierPositionsByOwnerResponse{Positions: positions, Pagination: pageResp}, nil
 }
 
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {

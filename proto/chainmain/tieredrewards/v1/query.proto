@@ -85,12 +85,14 @@ message QueryTierPositionResponse {
 
 // QueryTierPositionsByOwnerRequest is the request type for the Query/TierPositionsByOwner RPC method.
 message QueryTierPositionsByOwnerRequest {
-  string owner = 1;
+  string                                owner      = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
 }
 
 // QueryTierPositionsByOwnerResponse is the response type for the Query/TierPositionsByOwner RPC method.
 message QueryTierPositionsByOwnerResponse {
-  repeated Position positions = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryAllTierPositionsRequest is the request type for the Query/AllTierPositions RPC method.
