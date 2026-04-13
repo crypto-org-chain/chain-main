@@ -165,15 +165,20 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
 // TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect verifies that
 // AddToTierPosition on a delegated position emits EventBaseReawrdsClaimed and EventBonusRewardsClaimed after a successful claim.
 func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
-	lockAmt := sdkmath.NewInt(1000)
+	lockAmt := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmt, false)
 	_, bondDenom := s.getStakingData()
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	// Advance time so bonus accrues (LastBonusAccrual is initialized at position creation by WithDelegation).
+	// Advance block so the delegation's starting period is finalized,
+	// then allocate base rewards so EventBaseRewardsClaimed fires.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	addToPosAmt := sdkmath.NewInt(1000)

@@ -29,6 +29,10 @@ func tierVotingPowerForPosition(
 	pos types.Position,
 	validatorCache map[string]stakingtypes.Validator,
 ) (math.LegacyDec, error) {
+	if !pos.IsDelegated() {
+		return math.LegacyZeroDec(), nil
+	}
+
 	val, ok := validatorCache[pos.Validator]
 	if !ok {
 		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
