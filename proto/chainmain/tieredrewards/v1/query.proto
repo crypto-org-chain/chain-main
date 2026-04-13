@@ -50,10 +50,10 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/estimate_rewards/{position_id}";
   }
 
-  // TierVotingPower returns the governance voting power from delegated tier
+  // VotingPowerByOwner returns the governance voting power from delegated tier
   // positions for a given address.
-  rpc TierVotingPower(QueryTierVotingPowerRequest) returns (QueryTierVotingPowerResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/voting_power/{voter}";
+  rpc VotingPowerByOwner(QueryVotingPowerByOwnerRequest) returns (QueryVotingPowerByOwnerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/voting_power/{owner}";
   }
 
   // TotalDelegatedVotingPower returns the total governance voting power from
@@ -148,14 +148,14 @@ message QueryEstimatePositionRewardsResponse {
   ];
 }
 
-// QueryTierVotingPowerRequest is the request type for the Query/TierVotingPower RPC method.
-message QueryTierVotingPowerRequest {
-  // voter is the address to query tier voting power for.
-  string voter = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+// QueryVotingPowerByOwnerRequest is the request type for the Query/VotingPowerByOwner RPC method.
+message QueryVotingPowerByOwnerRequest {
+  // owner is the address to query voting power for.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
-// QueryTierVotingPowerResponse is the response type for the Query/TierVotingPower RPC method.
-message QueryTierVotingPowerResponse {
+// QueryVotingPowerByOwnerResponse is the response type for the Query/VotingPowerByOwner RPC method.
+message QueryVotingPowerByOwnerResponse {
   // voting_power is the sum of Amount for all delegated tier positions owned by the voter.
   string voting_power = 1 [
     (cosmos_proto.scalar)  = "cosmos.Dec",

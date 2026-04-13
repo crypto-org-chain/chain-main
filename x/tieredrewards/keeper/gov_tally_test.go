@@ -235,13 +235,13 @@ func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
 	s.Require().True(expectedYesPower.IsPositive())
 	s.Require().True(expectedNoPower.IsPositive())
 
-	yesPowerResp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: yesVoter.String()})
+	yesPowerResp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: yesVoter.String()})
 	s.Require().NoError(err)
 	s.Require().True(yesPowerResp.VotingPower.Equal(expectedYesPower),
 		"yes voter query power should match independent expected power; got %s, want %s",
 		yesPowerResp.VotingPower, expectedYesPower)
 
-	noPowerResp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: noVoter.String()})
+	noPowerResp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: noVoter.String()})
 	s.Require().NoError(err)
 	s.Require().True(noPowerResp.VotingPower.Equal(expectedNoPower),
 		"no voter query power should match independent expected power; got %s, want %s",
@@ -642,7 +642,7 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 }
 
 // TestCustomTally_ExitingTierPositionIncluded verifies that a tier position
-// with a triggered exit still contributes voting power per ADR-006 §8.5.
+// with a triggered exit still contributes voting power.
 func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIncluded() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)

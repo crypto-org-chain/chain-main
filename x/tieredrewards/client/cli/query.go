@@ -32,7 +32,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryTiers(),
 		GetCmdQueryRewardsPoolBalance(),
 		GetCmdQueryEstimatePositionRewards(),
-		GetCmdQueryTierVotingPower(),
+		GetCmdQueryVotingPowerByOwner(),
 		GetCmdQueryTotalDelegatedVotingPower(),
 	)
 
@@ -201,18 +201,18 @@ func GetCmdQueryEstimatePositionRewards() *cobra.Command {
 	)
 }
 
-func GetCmdQueryTierVotingPower() *cobra.Command {
+func GetCmdQueryVotingPowerByOwner() *cobra.Command {
 	return newQueryCmd(
-		"voting-power [voter]",
+		"voting-power [owner]",
 		cobra.ExactArgs(1),
-		"Query governance voting power from delegated tier positions",
+		"Query governance voting power from delegated tier positions for an owner address",
 		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
 			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
 				return nil, err
 			}
 
-			return queryClient.TierVotingPower(ctx, &types.QueryTierVotingPowerRequest{
-				Voter: args[0],
+			return queryClient.VotingPowerByOwner(ctx, &types.QueryVotingPowerByOwnerRequest{
+				Owner: args[0],
 			})
 		},
 	)

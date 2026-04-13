@@ -122,21 +122,21 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 	}, nil
 }
 
-func (q queryServer) TierVotingPower(ctx context.Context, req *types.QueryTierVotingPowerRequest) (*types.QueryTierVotingPowerResponse, error) {
+func (q queryServer) VotingPowerByOwner(ctx context.Context, req *types.QueryVotingPowerByOwnerRequest) (*types.QueryVotingPowerByOwnerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
-	voter, err := sdk.AccAddressFromBech32(req.Voter)
+	owner, err := sdk.AccAddressFromBech32(req.Owner)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid voter address: %s", err)
 	}
 
-	power, err := q.k.getVotingPowerForAddress(ctx, voter)
+	power, err := q.k.getVotingPowerForAddress(ctx, owner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryTierVotingPowerResponse{VotingPower: power}, nil
+	return &types.QueryVotingPowerByOwnerResponse{VotingPower: power}, nil
 }
 
 func (q queryServer) TotalDelegatedVotingPower(ctx context.Context, req *types.QueryTotalDelegatedVotingPowerRequest) (*types.QueryTotalDelegatedVotingPowerResponse, error) {

@@ -332,9 +332,9 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	s.Require().Equal(rewardsPoolBalBefore, rewardsPoolBalAfter, "rewards pool balance must not change")
 }
 
-// --- TierVotingPower ---
+// --- VotingPowerByOwner ---
 
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_NoDelegated() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -347,57 +347,57 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoDelegated() {
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
-	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	resp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.IsZero())
 }
 
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_Delegated() {
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_Delegated() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	s.resetQueryClient()
 
-	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	resp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)))
 }
 
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NoPositions() {
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_NoPositions() {
 	s.resetQueryClient()
 	addr := sdk.AccAddress([]byte("no_positions________")).String()
 
-	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: addr})
+	resp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: addr})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.IsZero())
 }
 
-// TestGRPCQueryTierVotingPower_NilRequest verifies the nil guard added to the
-// TierVotingPower handler returns InvalidArgument instead of panicking.
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_NilRequest() {
+// TestGRPCQueryVotingPowerByOwner_NilRequest verifies the nil guard added to the
+// VotingPowerByOwner handler returns InvalidArgument instead of panicking.
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_NilRequest() {
 	srv := keeper.NewQueryServerImpl(s.keeper)
-	_, err := srv.TierVotingPower(s.ctx, nil)
+	_, err := srv.VotingPowerByOwner(s.ctx, nil)
 	s.Require().Error(err)
 	s.Require().ErrorContains(err, "empty request")
 }
 
-// TestGRPCQueryTierVotingPower_InvalidAddress verifies that a malformed bech32
+// TestGRPCQueryVotingPowerByOwner_InvalidAddress verifies that a malformed bech32
 // address returns an error rather than panicking or returning zero power silently.
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_InvalidAddress() {
-	_, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: "not-a-valid-address"})
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_InvalidAddress() {
+	_, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: "not-a-valid-address"})
 	s.Require().Error(err)
 }
 
-// TestGRPCQueryTierVotingPower_ExitingPosition verifies that a position with a
+// TestGRPCQueryVotingPowerByOwner_ExitingPosition verifies that a position with a
 // triggered exit still contributes to voting power per ADR-006 §8.5.
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_ExitingPosition() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	s.resetQueryClient()
 
 	// Before triggering exit: should have positive voting power.
-	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	resp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"active delegated position should contribute voting power; got %s", resp.VotingPower)
@@ -413,13 +413,13 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_ExitingPosition() {
 
 	// After triggering exit: per ADR-006 §8.5, still-delegated positions
 	// continue to contribute voting power.
-	resp, err = s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	resp, err = s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"exiting but still delegated position should report voting power; got %s", resp.VotingPower)
 }
 
-func (s *KeeperSuite) TestGRPCQueryTierVotingPower_UnbondingValidatorNotCounted() {
+func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
@@ -436,7 +436,7 @@ func (s *KeeperSuite) TestGRPCQueryTierVotingPower_UnbondingValidatorNotCounted(
 	s.Require().Len(positions, 1)
 
 	s.resetQueryClient()
-	resp, err := s.queryClient.TierVotingPower(s.ctx.Context(), &types.QueryTierVotingPowerRequest{Voter: delAddr.String()})
+	resp, err := s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.IsZero(),
 		"delegated position on unbonding validator should not count; got %s", resp.VotingPower)

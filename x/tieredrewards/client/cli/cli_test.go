@@ -362,9 +362,9 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Len(allPositionsResp.Positions, 1)
 		s.Require().Equal(uint64(0), allPositionsResp.Positions[0].Id)
 
-		var votingPowerResp tieredrewardstypes.QueryTierVotingPowerResponse
+		var votingPowerResp tieredrewardstypes.QueryVotingPowerByOwnerResponse
 		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-			return tieredrewardstestutil.QueryTierVotingPowerExec(val.ClientCtx, owner)
+			return tieredrewardstestutil.QueryVotingPowerByOwnerExec(val.ClientCtx, owner)
 		}, &votingPowerResp)
 		s.Require().True(votingPowerResp.VotingPower.IsPositive())
 
@@ -568,7 +568,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
 		{
 			name: "query invalid voter",
 			exec: func() (sdktestutil.BufferWriter, error) {
-				return tieredrewardstestutil.QueryTierVotingPowerExec(val.ClientCtx, "not-an-address")
+				return tieredrewardstestutil.QueryVotingPowerByOwnerExec(val.ClientCtx, "not-an-address")
 			},
 		},
 		{

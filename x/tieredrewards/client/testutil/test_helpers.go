@@ -188,8 +188,8 @@ func QueryEstimatePositionRewardsExec(clientCtx client.Context, positionID strin
 	return ExecQueryCmd(clientCtx, append([]string{positionID}, extraArgs...), tieredrewardscli.GetCmdQueryEstimatePositionRewards)
 }
 
-func QueryTierVotingPowerExec(clientCtx client.Context, voter string, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecQueryCmd(clientCtx, append([]string{voter}, extraArgs...), tieredrewardscli.GetCmdQueryTierVotingPower)
+func QueryVotingPowerByOwnerExec(clientCtx client.Context, voter string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{voter}, extraArgs...), tieredrewardscli.GetCmdQueryVotingPowerByOwner)
 }
 
 func QueryTotalDelegatedVotingPowerExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
