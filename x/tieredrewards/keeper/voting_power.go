@@ -56,10 +56,10 @@ func tierVotingPowerForPosition(
 	return val.TokensFromShares(pos.DelegatedShares), nil
 }
 
-// getVotingPowerForAddress returns the tier governance voting power for an address.
+// getVotingPowerByOwner returns the tier governance voting power for an address.
 // Power is derived from delegated position shares via validator exchange rates.
-func (k Keeper) getVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
-	active, err := k.GetDelegatedPositionsByOwner(ctx, voter)
+func (k Keeper) getVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
+	active, err := k.GetDelegatedPositionsByOwner(ctx, owner)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}

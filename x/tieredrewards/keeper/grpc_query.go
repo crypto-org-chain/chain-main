@@ -131,7 +131,7 @@ func (q queryServer) VotingPowerByOwner(ctx context.Context, req *types.QueryVot
 		return nil, status.Errorf(codes.InvalidArgument, "invalid voter address: %s", err)
 	}
 
-	power, err := q.k.getVotingPowerForAddress(ctx, owner)
+	power, err := q.k.getVotingPowerByOwner(ctx, owner)
 	if err != nil {
 		return nil, err
 	}

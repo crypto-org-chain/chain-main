@@ -10,7 +10,7 @@ import (
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
-func (s *KeeperSuite) TestGetVotingPowerForAddress_NoDelegatedPositions() {
+func (s *KeeperSuite) TestGetVotingPowerByOwner_NoDelegatedPositions() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
@@ -21,23 +21,23 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_NoDelegatedPositions() {
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: pos.Id})
 	s.Require().NoError(err)
 
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.IsZero(), "undelegated position should contribute zero voting power")
 }
 
-func (s *KeeperSuite) TestGetVotingPowerForAddress_DelegatedPosition() {
+func (s *KeeperSuite) TestGetVotingPowerByOwner_DelegatedPosition() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"delegated position should contribute its full amount as voting power")
 }
 
-func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
+func (s *KeeperSuite) TestGetVotingPowerByOwner_MultiplePositions() {
 	// Position 1: delegated, 3000
 	lockAmt1 := sdkmath.NewInt(3000)
 	pos := s.setupNewTierPosition(lockAmt1, false)
@@ -81,7 +81,7 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 2})
 	s.Require().NoError(err)
 
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 
 	expected := sdkmath.LegacyNewDec(5000) // 3000 + 2000, not 1000
@@ -89,24 +89,24 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_MultiplePositions() {
 		"voting power should be sum of delegated positions only; got %s, expected %s", power, expected)
 }
 
-func (s *KeeperSuite) TestGetVotingPowerForAddress_NoPositions() {
+func (s *KeeperSuite) TestGetVotingPowerByOwner_NoPositions() {
 	addr := sdk.AccAddress([]byte("no_positions________"))
 
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, addr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().True(power.IsZero())
 }
 
-// TestGetVotingPowerForAddress_ExitingPositionStillCounts verifies that a
+// TestGetVotingPowerByOwner_ExitingPositionStillCounts verifies that a
 // position which has triggered exit (but is still delegated) still contributes
-// voting power per ADR-006 §8.5.
-func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() {
+// voting power.
+func (s *KeeperSuite) TestGetVotingPowerByOwner_ExitingPositionStillCounts() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// Before triggering exit: position is active, should have full voting power.
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"active delegated position should contribute voting power; got %s", power)
@@ -121,28 +121,32 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_ExitingPositionStillCounts() 
 
 	// After triggering exit: position is still delegated — per ADR-006 §8.5
 	// it should still contribute voting power.
-	power, err = s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err = s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"exiting but still delegated position should contribute voting power; got %s", power)
 }
 
-// TestGetVotingPowerForAddress_AfterUndelegate tests the full lifecycle:
-// exit triggered → still has voting power; TierUndelegate → no voting power.
-func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
+// TestGetVotingPowerByOwner_TriggerExitToUndelegate tests the full lifecycle:
+// exit triggered / exit duration elapsed → still has voting power
+// upon undelegate → no voting power.
+func (s *KeeperSuite) TestGetVotingPowerByOwner_TriggerExitToUndelegate() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 
-	// Exit has been triggered immediately: position is still delegated — per
-	// ADR-006 §8.5 it should still contribute voting power.
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	// Exit has been triggered immediately: position is still delegated 
+	// It should still contribute to voting power.
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
-		"exit triggered but still delegated: should have voting power; got %s", power)
+		"exit triggered but still delegated: should contribute to voting power; got %s", power)
 
 	s.advancePastExitDuration()
+
+	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
+	"after exit lock duration, position should no longer contribute to voting power; got %s", power)
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -152,16 +156,16 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_AfterUndelegate() {
 	})
 	s.Require().NoError(err)
 
-	power, err = s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err = s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.IsZero(),
 		"after undelegate, position should no longer contribute voting power")
 }
 
-// TestGetVotingPowerForAddress_UnbondingValidatorNotCounted verifies that
+// TestGetVotingPowerByOwner_UnbondingValidatorNotCounted verifies that
 // delegated positions on an unbonding validator contribute zero governance
 // power, consistent with standard gov tally semantics.
-func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted() {
+func (s *KeeperSuite) TestGetVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
@@ -177,7 +181,7 @@ func (s *KeeperSuite) TestGetVotingPowerForAddress_UnbondingValidatorNotCounted(
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 
-	power, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	power, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(power.IsZero(),
 		"delegated position on unbonding validator should not count; got %s", power)
@@ -224,7 +228,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 		"total delegated voting power should be 3000; got %s", total)
 }
 
-// TestVotingPower_AfterSlash verifies that both getVotingPowerForAddress and
+// TestVotingPower_AfterSlash verifies that both getVotingPowerByOwner and
 // totalDelegatedVotingPower use share-based token value (not pos.Amount) after
 // a slash, and that they agree with each other.
 func (s *KeeperSuite) TestVotingPower_AfterSlash() {
@@ -233,7 +237,7 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	perAddrPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	perAddrPower, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	totalPower, err := s.keeper.TotalDelegatedVotingPower(s.ctx)
 	s.Require().NoError(err)
@@ -252,7 +256,7 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 	s.Require().NoError(err)
 
 	// After slash: voting power should be less than lockAmount.
-	perAddrPowerAfter, err := s.keeper.GetVotingPowerForAddress(s.ctx, delAddr)
+	perAddrPowerAfter, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().True(perAddrPowerAfter.LT(sdkmath.LegacyNewDecFromInt(lockAmount)),
 		"per-address voting power should decrease after slash; got %s", perAddrPowerAfter)
@@ -295,7 +299,7 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 
 	voter, err := sdk.AccAddressFromBech32(pos.Owner)
 	s.Require().NoError(err)
-	votingPower, err := s.keeper.GetVotingPowerForAddress(s.ctx, voter)
+	votingPower, err := s.keeper.GetVotingPowerByOwner(s.ctx, voter)
 	s.Require().NoError(err)
 	s.Require().True(votingPower.IsZero(), "zero-amount delegated position should not contribute voting power")
 
@@ -311,7 +315,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_Empty() {
 }
 
 // TestTotalDelegatedVotingPower_IncludesExiting verifies that positions with a
-// triggered exit are still included in the total per ADR-006 §8.5.
+// triggered exit are still included in the total.
 func (s *KeeperSuite) TestTotalDelegatedVotingPower_IncludesExiting() {
 	// Active delegated position: 3000
 	lockAmt1 := sdkmath.NewInt(3000)

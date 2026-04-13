@@ -71,8 +71,8 @@ func (k Keeper) TransferDelegation(ctx context.Context, delegatorAddr, validator
 	return k.transferDelegation(ctx, delegatorAddr, validatorAddr, amount)
 }
 
-func (k Keeper) GetVotingPowerForAddress(ctx context.Context, voter sdk.AccAddress) (math.LegacyDec, error) {
-	return k.getVotingPowerForAddress(ctx, voter)
+func (k Keeper) GetVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
+	return k.getVotingPowerByOwner(ctx, owner)
 }
 
 func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
