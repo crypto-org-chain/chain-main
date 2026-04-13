@@ -7,6 +7,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"time"
 )
 
@@ -323,4 +324,39 @@ func (s *KeeperSuite) TestMsgTierRedelegate_TierCloseOnly() {
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
+}
+
+// TestMsgTierRedelegate_TransitiveRedelegation verifies that the SDK blocks
+// transitive redelegation: after A→B, attempting B→A while A→B is still
+// pending should fail with ErrTransitiveRedelegation.
+func (s *KeeperSuite) TestMsgTierRedelegate_TransitiveRedelegation() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	srcValAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+
+	// First redelegate: A → B.
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(dstValAddr.String(), pos.Validator, "position should be on validator B")
+
+	// Second redelegate: B → A while A→B is still pending.
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: srcValAddr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, stakingtypes.ErrTransitiveRedelegation)
 }

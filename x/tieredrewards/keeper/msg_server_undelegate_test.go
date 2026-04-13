@@ -323,3 +323,33 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
+
+// TestMsgTierUndelegate_TierCloseOnly_Succeeds verifies that TierUndelegate is
+// NOT blocked by CloseOnly — exit-path messages must always succeed.
+func (s *KeeperSuite) TestMsgTierUndelegate_TierCloseOnly_Succeeds() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// Set tier to CloseOnly.
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	// TierUndelegate — should succeed despite CloseOnly.
+	resp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.CompletionTime.IsZero(), "undelegation should succeed on CloseOnly tier")
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(pos.IsDelegated(), "position should be undelegated")
+}

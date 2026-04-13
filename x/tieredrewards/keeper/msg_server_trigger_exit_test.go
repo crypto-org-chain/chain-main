@@ -122,3 +122,62 @@ func (s *KeeperSuite) TestExitTriggerClearCycles_BonusAccrualCorrectness() {
 	s.Require().True(cycle2Payout.Equal(cycle1Payout),
 		"equal-duration cycles should pay equal bonus, got cycle1=%s cycle2=%s", cycle1Payout, cycle2Payout)
 }
+
+// TestMsgTriggerExitFromTier_Undelegated verifies that TriggerExit succeeds
+// on an undelegated position. The position was zeroed by a
+// redelegation slash, clearing delegation.
+func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Simulate redelegation slash: clear delegation and zero amount.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	s.Require().False(pos.IsDelegated(), "position should be undelegated")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+
+	// TriggerExit — should succeed on undelegated position.
+	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.ExitUnlockAt.IsZero())
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.HasTriggeredExit(), "exit should be triggered")
+	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
+	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+}
+
+// TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds verifies that TriggerExit
+// is NOT blocked by CloseOnly — exit-path messages must always succeed.
+func (s *KeeperSuite) TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Set tier to CloseOnly.
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	// TriggerExit — should succeed despite CloseOnly.
+	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().False(resp.ExitUnlockAt.IsZero(), "exit should be triggered")
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
+}

@@ -93,7 +93,8 @@ func (s *KeeperSuite) TestMsgLockTier_TierCloseOnly() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Set tier to close only
-	tier := newTestTier(1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
 	tier.CloseOnly = true
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 

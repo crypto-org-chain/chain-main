@@ -36,10 +36,6 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrExitLockDurationElapsed
 	}
 
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
-	}
-
 	tier, err := k.getTier(ctx, pos.TierId)
 	if err != nil {
 		return err
@@ -47,6 +43,10 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 
 	if tier.IsCloseOnly() {
 		return types.ErrTierIsCloseOnly
+	}
+
+	if pos.Amount.IsZero() {
+		return types.ErrPositionAmountZero
 	}
 
 	return nil

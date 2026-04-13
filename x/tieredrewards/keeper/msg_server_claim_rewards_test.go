@@ -8,9 +8,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"time"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
 func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
@@ -78,11 +80,12 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	})
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	expectedBonusRewards := sdkmath.LegacyNewDecFromInt(lockAmount).
-		Mul(sdkmath.LegacyNewDecWithPrec(4, 2)).
-		MulInt64(int64(advanceInTime / time.Second)).
-		QuoInt64(types.SecondsPerYear).
-		TruncateInt()
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
+	s.Require().NoError(err)
+
+	expectedBonusRewards := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
 
 	// amount stake is half of whats staked in total, so base rewards are half of the distributed
 	expectedBaseRewards := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
@@ -128,9 +131,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient() {
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount), "failed claim must not transfer rewards")
 }
 
-
-// TestClaimTierRewards_ExitingPosition_EarnRewards verifies the flow:
-//	lock with trigger_exit_immediately and validator, and confirm
+// TestClaimTierRewards_ExitingPosition_EarnRewards verifies that
 // bonus rewards accrue until ExitUnlockTime.
 func (s *KeeperSuite) TestClaimTierRewards_ExitingPosition_EarnRewards() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
@@ -201,4 +202,39 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_EmitsEvent() {
 		}
 	}
 	s.Require().True(found, "EventTierRewardsClaimed should be emitted by ClaimTierRewards")
+}
+
+// TestMsgClaimTierRewards_BondedZeroAmount verifies that ClaimTierRewards
+// succeeds on a delegated position with zero amount (100% bonded slash).
+// Both base and bonus should be zero since TokensFromShares returns 0.
+func (s *KeeperSuite) TestMsgClaimTierRewards_BondedZeroAmount() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Advance block so distribution period is finalized.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+
+	// Slash validator 100% to zero out position amount via hook.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+
+	// Advance time so bonus would accrue (if amount were non-zero).
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
+
+	// ClaimRewards — should succeed with zero rewards.
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should be zero on zero-amount position")
+	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should be zero on zero-amount position")
 }

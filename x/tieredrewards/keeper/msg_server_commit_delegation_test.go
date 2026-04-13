@@ -143,7 +143,8 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_TierCloseOnly() {
 	delAddr, valAddr := s.getDelegator()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	tier := newTestTier(1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
 	tier.CloseOnly = true
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
@@ -154,7 +155,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_TierCloseOnly() {
 		Amount:           sdkmath.NewInt(1000),
 	}
 
-	_, err := msgServer.CommitDelegationToTier(s.ctx, msg)
+	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
 }
 

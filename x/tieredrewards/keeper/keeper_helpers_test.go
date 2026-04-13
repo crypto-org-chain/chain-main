@@ -234,7 +234,9 @@ func (s *KeeperSuite) completeStakingUnbonding(valAddr sdk.ValAddress) {
 // advancePastExitDuration advances block time past the default test tier's exit duration.
 func (s *KeeperSuite) advancePastExitDuration() {
 	s.T().Helper()
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(newTestTier(1).ExitDuration + time.Hour))
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(tier.ExitDuration + time.Hour))
 }
 
 // slashValidatorDirect slashes a bonded validator through the staking module,

@@ -6,9 +6,10 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	"time"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	"time"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -87,11 +88,12 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_TierCloseOnly() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Set tier to close only
-	tier := newTestTier(1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
 	tier.CloseOnly = true
 	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
 
-	_, err := msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 		Amount:     sdkmath.NewInt(500),
@@ -161,10 +163,8 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
 }
 
 // TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect verifies that
-// AddToTierPosition on a delegated position emits EventBonusRewardsClaimed as
-// a side effect of the implicit reward claim before adding tokens.
-// This covers the skipped integration test test_add_to_position_reward_side_effect.
-func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffect() {
+// AddToTierPosition on a delegated position emits EventBaseReawrdsClaimed and EventBonusRewardsClaimed after a successful claim.
+func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	_, bondDenom := s.getStakingData()
@@ -187,14 +187,20 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsBonusRewardsClaimedSideEffec
 	})
 	s.Require().NoError(err)
 
-	found := false
+	foundBase := false
+	foundBonus := false
 	for _, e := range freshCtx.EventManager().Events() {
 		if e.Type == "chainmain.tieredrewards.v1.EventBonusRewardsClaimed" {
-			found = true
+			foundBonus = true
+		} else if e.Type == "chainmain.tieredrewards.v1.EventBaseRewardsClaimed" {
+			foundBase = true
+		}
+		if foundBase && foundBonus {
 			break
 		}
 	}
-	s.Require().True(found, "EventBonusRewardsClaimed should be emitted as side effect of AddToTierPosition on a delegated position")
+	s.Require().True(foundBase, "EventBaseRewardsClaimed should be emitted")
+	s.Require().True(foundBonus, "EventBonusRewardsClaimed should be emitted")
 }
 
 // TestMsgAddToTierPosition_ReconcilesAmountWithShares: after
@@ -333,4 +339,4 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
 	})
 	s.Require().Error(err, "AddToTier should fail on validator with invalid exchange rate")
 	s.Require().ErrorIs(err, stakingtypes.ErrDelegatorShareExRateInvalid)
-}	
+}

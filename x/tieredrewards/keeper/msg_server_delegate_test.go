@@ -173,7 +173,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 }
 
 // TestMsgTierDelegate_ExitElapsed verifies that TierDelegate is rejected when
-// exit has fully elapsed — user must ClearPosition first, or undelegate and withdraw.
+// exit has fully elapsed.
 func (s *KeeperSuite) TestMsgTierDelegate_ExitElapsed() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
