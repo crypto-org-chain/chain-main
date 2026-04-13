@@ -6,12 +6,33 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
+	addresscodec "cosmossdk.io/core/address"
+
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+// TierVotingPowerProvider is the interface the custom gov tally needs from
+// the tiered rewards module.
+type TierVotingPowerProvider interface {
+	GetDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error)
+}
+
+// GovTallyStakingKeeper is the subset of staking keeper needed by the custom tally function.
+type GovTallyStakingKeeper interface {
+	ValidatorAddressCodec() addresscodec.Codec
+	IterateDelegations(ctx context.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) error
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
+}
+
+// GovTallyAccountKeeper is the subset of account keeper needed by the custom tally function.
+type GovTallyAccountKeeper interface {
+	AddressCodec() addresscodec.Codec
+}
 
 // NewCustomTallyTierVotesFn returns a tally function that includes
 // tier-delegated voting power for each voter in addition to standard staking power.
