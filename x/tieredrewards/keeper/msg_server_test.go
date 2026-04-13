@@ -2180,8 +2180,6 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	s.Require().Equal(uint64(1), count)
 }
 
-// --- ADR-006 Deviation Fix Tests ---
-
 // TestMsgTierDelegate_ExitingPosition_ThenEarnRewards verifies the full ADR-006
 // §10 flow: lock with trigger_exit_immediately and validator, and confirm
 // bonus rewards accrue until ExitUnlockTime.
