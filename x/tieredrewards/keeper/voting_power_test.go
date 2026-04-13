@@ -119,7 +119,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_ExitingPositionStillCounts() {
 	})
 	s.Require().NoError(err)
 
-	// After triggering exit: position is still delegated — per ADR-006 §8.5
+	// After triggering exit: position is still delegated
 	// it should still contribute voting power.
 	power, err = s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)

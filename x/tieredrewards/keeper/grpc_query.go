@@ -138,7 +138,7 @@ func (q queryServer) VotingPowerByOwner(ctx context.Context, req *types.QueryVot
 	}
 	owner, err := sdk.AccAddressFromBech32(req.Owner)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid voter address: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err)
 	}
 
 	power, err := q.k.getVotingPowerByOwner(ctx, owner)
