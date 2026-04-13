@@ -145,6 +145,8 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_TriggerExitToUndelegate() {
 
 	s.advancePastExitDuration()
 
+	power, err = s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
+	s.Require().NoError(err)
 	s.Require().True(power.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
 	"after exit lock duration, position should no longer contribute to voting power; got %s", power)
 
