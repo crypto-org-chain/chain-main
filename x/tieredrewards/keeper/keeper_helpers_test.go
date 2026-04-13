@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -11,7 +10,6 @@ import (
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -78,47 +76,6 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	s.Require().Len(positions, 1)
 
 	return positions[0]
-}
-
-// setupRedelegatingPosition creates a position with redelegation
-func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
-	s.T().Helper()
-	pos := s.setupNewTierPosition(lockAmount, false)
-
-	dstValAddr, _ := s.createSecondValidator()
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	res, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
-		Owner:        pos.Owner,
-		PositionId:   pos.Id,
-		DstValidator: dstValAddr.String(),
-	})
-	s.Require().NoError(err)
-	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	return updatedPos, res.UnbondingId
-}
-
-// setupUnbondingPosition creates a position and maps it to the given
-// unbonding ID via UnbondingDelegationMappings, simulating a position
-// whose unbonding delegation can be slashed.
-func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
-	s.T().Helper()
-	pos := s.setupNewTierPosition(lockAmount, true)
-	s.advancePastExitDuration()
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	res, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      pos.Owner,
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	return updatedPos, res.UnbondingId
 }
 
 // setupNewTierPositionWithDelegator creates a new tier position with an address who has already delegated to a validator.
@@ -311,47 +268,4 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	s.Require().NoError(err)
 
 	return valAddr, accAddr
-}
-
-// ctxWithVoteInfos sets the vote infos for the context
-func (s *KeeperSuite) ctxWithVoteInfos() sdk.Context {
-	s.T().Helper()
-	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
-	s.Require().NoError(err)
-	s.Require().NotEmpty(vals)
-
-	var voteInfos []abci.VoteInfo
-	for _, val := range vals {
-		consAddr, err := val.GetConsAddr()
-		s.Require().NoError(err)
-		voteInfos = append(voteInfos, abci.VoteInfo{
-			Validator: abci.Validator{
-				Address: consAddr,
-				Power:   val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx)),
-			},
-		})
-	}
-	return s.ctx.WithVoteInfos(voteInfos)
-}
-
-// drainFeeCollector moves all fee collector funds to a random address.
-// fee collector has totalSupply(~100T) × inflation(0.13) / BlocksPerYear(6311520) ≈ 2059726 from genesis
-func (s *KeeperSuite) drainFeeCollector() {
-	s.T().Helper()
-	feeCollectorAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, authtypes.FeeCollectorName).GetAddress()
-	feeBalance := s.app.BankKeeper.GetAllBalances(s.ctx, feeCollectorAddr)
-	if feeBalance.IsAllPositive() {
-		randomAddr := sdk.AccAddress([]byte("random_addr_for_test"))
-		err := s.app.BankKeeper.SendCoins(s.ctx, feeCollectorAddr, randomAddr, feeBalance)
-		s.Require().NoError(err)
-	}
-}
-
-// setExtremeRate sets an extreme target rate (10000%) and returns the params.
-func (s *KeeperSuite) setExtremeRate() types.Params {
-	s.T().Helper()
-	params := types.NewParams(sdkmath.LegacyNewDec(100))
-	err := s.keeper.Params.Set(s.ctx, params)
-	s.Require().NoError(err)
-	return params
 }

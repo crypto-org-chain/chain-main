@@ -3,8 +3,52 @@ package keeper_test
 import (
 	sdkmath "cosmossdk.io/math"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
+// setupRedelegatingPosition creates a position with redelegation
+func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
+	s.T().Helper()
+	pos := s.setupNewTierPosition(lockAmount, false)
+
+	dstValAddr, _ := s.createSecondValidator()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	res, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        pos.Owner,
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	return updatedPos, res.UnbondingId
+}
+
+// setupUnbondingPosition creates a position and maps it to the given
+// unbonding ID via UnbondingDelegationMappings, simulating a position
+// whose unbonding delegation can be slashed.
+func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
+	s.T().Helper()
+	pos := s.setupNewTierPosition(lockAmount, true)
+	s.advancePastExitDuration()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	res, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	return updatedPos, res.UnbondingId
+}
 
 // ---------------------------------------------------------------------------
 // slashRedelegationPosition tests (AfterRedelegationSlashed)

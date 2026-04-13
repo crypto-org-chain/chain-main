@@ -12,6 +12,49 @@ import (
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 )
 
+// ctxWithVoteInfos sets the vote infos for the context
+func (s *KeeperSuite) ctxWithVoteInfos() sdk.Context {
+	s.T().Helper()
+	vals, err := s.app.StakingKeeper.GetBondedValidatorsByPower(s.ctx)
+	s.Require().NoError(err)
+	s.Require().NotEmpty(vals)
+
+	var voteInfos []abci.VoteInfo
+	for _, val := range vals {
+		consAddr, err := val.GetConsAddr()
+		s.Require().NoError(err)
+		voteInfos = append(voteInfos, abci.VoteInfo{
+			Validator: abci.Validator{
+				Address: consAddr,
+				Power:   val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx)),
+			},
+		})
+	}
+	return s.ctx.WithVoteInfos(voteInfos)
+}
+
+// drainFeeCollector moves all fee collector funds to a random address.
+// fee collector has totalSupply(~100T) × inflation(0.13) / BlocksPerYear(6311520) ≈ 2059726 from genesis
+func (s *KeeperSuite) drainFeeCollector() {
+	s.T().Helper()
+	feeCollectorAddr := s.app.AccountKeeper.GetModuleAccount(s.ctx, authtypes.FeeCollectorName).GetAddress()
+	feeBalance := s.app.BankKeeper.GetAllBalances(s.ctx, feeCollectorAddr)
+	if feeBalance.IsAllPositive() {
+		randomAddr := sdk.AccAddress([]byte("random_addr_for_test"))
+		err := s.app.BankKeeper.SendCoins(s.ctx, feeCollectorAddr, randomAddr, feeBalance)
+		s.Require().NoError(err)
+	}
+}
+
+// setExtremeRate sets an extreme target rate (10000%) and returns the params.
+func (s *KeeperSuite) setExtremeRate() types.Params {
+	s.T().Helper()
+	params := types.NewParams(sdkmath.LegacyNewDec(100))
+	err := s.keeper.Params.Set(s.ctx, params)
+	s.Require().NoError(err)
+	return params
+}
+
 // TestBeginBlocker_ZeroRate verifies that with a zero rate, no top-up occurs.
 func (s *KeeperSuite) TestBeginBlocker_ZeroRate() {
 	params := types.NewParams(sdkmath.LegacyZeroDec())
