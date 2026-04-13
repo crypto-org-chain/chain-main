@@ -63,7 +63,7 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err)
 	}
-	
+
 	positions, pageResp, err := query.CollectionPaginate(
 		ctx,
 		q.k.PositionsByOwner,

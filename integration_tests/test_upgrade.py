@@ -610,7 +610,9 @@ def assert_v7_tieredrewards_working(cluster):
         broadcast_mode="block",
     )
     new_balance = cluster.balance(reserve_addr, denom="basecro")
-    assert new_balance > old_balance, f"bank send failed: {old_balance} -> {new_balance}"
+    assert (
+        new_balance > old_balance
+    ), f"bank send failed: {old_balance} -> {new_balance}"
 
     wait_for_new_blocks(cluster, 1)
 
