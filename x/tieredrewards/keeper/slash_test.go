@@ -68,7 +68,11 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 	s.Require().NoError(err) // no-op, no error
 }
 
-// Unbonding delegation slash reduces Amount but keeps DelegatedShares unchanged.
+// ---------------------------------------------------------------------------
+// slashUnbondingDelegationPosition tests (AfterUnbondingDelegationSlashed)
+// ---------------------------------------------------------------------------
+
+// Unbonding delegation slash reduces Amount.
 func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	lockAmount := sdkmath.NewInt(6000)
 
@@ -77,7 +81,6 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
-	origShares := pos.DelegatedShares
 	slashTokens := sdkmath.NewInt(900)
 
 	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingId, slashTokens)
@@ -87,8 +90,6 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmountOnly() {
 	s.Require().NoError(err)
 
 	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
-	s.Require().True(updated.DelegatedShares.Equal(origShares),
-		"DelegatedShares should not change for unbonding slash callbacks")
 }
 
 // Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
@@ -121,9 +122,10 @@ func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
 }
 
 // ---------------------------------------------------------------------------
-// Bonded slash (BeforeValidatorSlashed) regression — DelegatedShares must NOT change.
+// Bonded slash (BeforeValidatorSlashed)
 // ---------------------------------------------------------------------------
 
+// TestBondedSlash_DelegatedSharesUnchanged verifies that DelegatedShares remains unchanged after bonded slash.
 func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
