@@ -40,6 +40,15 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrPositionAmountZero
 	}
 
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return err
+	}
+
+	if tier.IsCloseOnly() {
+		return types.ErrTierIsCloseOnly
+	}
+
 	return nil
 }
 
@@ -86,6 +95,15 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if pos.HasTriggeredExit() && pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
 		return types.ErrExitLockDurationElapsed
+	}
+
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return err
+	}
+
+	if tier.IsCloseOnly() {
+		return types.ErrTierIsCloseOnly
 	}
 
 	return nil
@@ -143,6 +161,15 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.Position, o
 			return types.ErrPositionNotDelegated
 		}
 
+	}
+
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return err
+	}
+
+	if tier.IsCloseOnly() {
+		return types.ErrTierIsCloseOnly
 	}
 
 	return nil

@@ -2408,7 +2408,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 
 func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 	lockAmount := sdkmath.NewInt(10_000)
-	pos:= s.setupNewTierPosition(lockAmount, true)
+	pos := s.setupNewTierPosition(lockAmount, true)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
@@ -2785,4 +2785,87 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
+}
+
+// TestMsgTierDelegate_TierCloseOnly verifies that TierDelegate is rejected
+// when the tier is set to CloseOnly.
+func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
+	lockAmt := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmt, false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Simulate redelegation slash: clear delegation and zero amount.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	// Add funds back so position has non-zero amount for delegation.
+	_, bondDenom := s.getStakingData()
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	s.Require().NoError(err)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+		Amount:     lockAmt,
+	})
+	s.Require().NoError(err)
+
+	// Set tier to close only.
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+		Validator:  valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
+}
+
+// TestMsgTierRedelegate_TierCloseOnly verifies that TierRedelegate is rejected
+// when the tier is set to CloseOnly.
+func (s *KeeperSuite) TestMsgTierRedelegate_TierCloseOnly() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	dstValAddr, _ := s.createSecondValidator()
+
+	// Set tier to close only.
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        delAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
+}
+
+// TestMsgClearPosition_TierCloseOnly verifies that ClearPosition is rejected
+// when the tier is set to CloseOnly.
+func (s *KeeperSuite) TestMsgClearPosition_TierCloseOnly() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Set tier to close only.
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+	tier.CloseOnly = true
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
 }
