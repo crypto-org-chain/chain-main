@@ -11,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // --- MsgLockTier tests ---
@@ -2868,4 +2869,295 @@ func (s *KeeperSuite) TestMsgClearPosition_TierCloseOnly() {
 		PositionId: pos.Id,
 	})
 	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
+}
+
+
+// TestMsgWithdrawFromTier_RedelegSlashedToZero verifies the full lifecycle of
+// a position that was zeroed by a redelegation slash: trigger exit, advance
+// past exit duration, then withdraw. The zero-amount withdrawal should succeed
+// and delete the position.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_RedelegSlashedToZero() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Simulate redelegation slash: clear delegation and zero amount.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	// Trigger exit and advance past exit duration.
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.advancePastExitDuration()
+
+	// Withdraw — zero-amount position should be cleanly deleted.
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsZero(),
+		"withdrawn amount should be zero")
+
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+// TestMsgWithdrawFromTier_UnbondingSlashedToZero verifies withdrawal of a
+// position whose unbonding delegation was slashed to zero. The position should
+// be cleanly deleted with zero returned.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
+	lockAmount := sdkmath.NewInt(5000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	// Undelegate — creates unbonding delegation.
+	undelegateResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	// Simulate unbonding slash to zero via hook.
+	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, pos.Amount)
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after unbonding slash")
+
+	s.completeStakingUnbonding(valAddr)
+
+	// Withdraw — zero-amount position should be cleanly deleted.
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsZero(),
+		"withdrawn amount should be zero")
+
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+
+// TestMsgClearPosition_BondedZeroExitInProgress verifies that ClearPosition
+// succeeds on a delegated position with zero amount whose exit is in progress
+// (not yet elapsed). The exit flag should be cleared.
+func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitInProgress() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash validator 100% to zero out position amount via hook.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+
+	// Trigger exit.
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	// Clear exit — should succeed even with zero amount.
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+}
+
+
+// TestMsgTierUndelegate_BondedZeroAmount verifies that TierUndelegate succeeds
+// on a delegated position with zero amount (100%% bonded slash). The staking
+// layer returns zero tokens and the position is cleanly undelegated.
+func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash validator 100% to zero out position amount via hook.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	s.advancePastExitDuration()
+
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().False(pos.IsDelegated(), "position should be undelegated")
+}
+
+
+// TestMsgWithdrawFromTier_UndelegatedWithFunds verifies the lifecycle of a
+// position that was zeroed by a redelegation slash, then replenished via
+// AddToTier (without re-delegation), then exited. The full added amount
+// should be returned on withdrawal.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Simulate redelegation slash: clear delegation and zero amount.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	// Add 2000 to position (undelegated — funds go to module account, not staked).
+	addAmount := sdkmath.NewInt(2000)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	s.Require().NoError(err)
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+		Amount:     addAmount,
+	})
+	s.Require().NoError(err)
+
+	// Trigger exit and advance past exit duration.
+	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.advancePastExitDuration()
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+
+	// Withdraw — should return the 2000 added funds.
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(addAmount),
+		"withdrawn amount should equal the 2000 added")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
+	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(addAmount)),
+		"owner should receive 2000 back")
+
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+
+// TestMsgAddToTierPosition_DelegatedToSlashedValidator verifies that AddToTier
+// fails when the position is delegated to a validator that has been 100%%
+// slashed, creating an invalid share/token exchange rate.
+func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash validator 100% — burns most tokens but may leave dust due to
+	// power truncation. The BeforeValidatorSlashed hook settles rewards and
+	// sets position amount to zero.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	// Force validator tokens to exactly zero so InvalidExRate() returns true.
+	// The 100% slash through staking may leave dust from power truncation.
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	val.Tokens = sdkmath.ZeroInt()
+	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, val))
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+
+	// Fund owner and attempt AddToTier — delegate should fail due to invalid exchange rate.
+	addAmount := sdkmath.NewInt(500)
+	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	s.Require().NoError(err)
+
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+		Amount:     addAmount,
+	})
+	s.Require().Error(err, "AddToTier should fail on validator with invalid exchange rate")
+	s.Require().ErrorIs(err, stakingtypes.ErrDelegatorShareExRateInvalid)
+}
+
+
+// TestMsgClearPosition_BondedZeroExitElapsed verifies that ClearPosition
+// succeeds on a delegated position with zero amount after exit has elapsed.
+// The exit flag should be cleared and the position remains delegated.
+func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitElapsed() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Slash validator 100% to zero out position amount via hook.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
+
+	// Advance past exit duration.
+	s.advancePastExitDuration()
+
+	// Clear exit — should succeed on delegated position past exit duration.
+	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
 }
