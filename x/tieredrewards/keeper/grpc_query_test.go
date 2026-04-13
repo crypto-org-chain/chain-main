@@ -389,7 +389,7 @@ func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_InvalidAddress() {
 }
 
 // TestGRPCQueryVotingPowerByOwner_ExitingPosition verifies that a position with a
-// triggered exit still contributes to voting power per ADR-006 §8.5.
+// triggered exit still contributes to voting power.
 func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_ExitingPosition() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -411,8 +411,7 @@ func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_ExitingPosition() {
 	s.Require().NoError(err)
 	s.resetQueryClient()
 
-	// After triggering exit: per ADR-006 §8.5, still-delegated positions
-	// continue to contribute voting power.
+	// After triggering exit: still-delegated positions continue to contribute voting power.
 	resp, err = s.queryClient.VotingPowerByOwner(s.ctx.Context(), &types.QueryVotingPowerByOwnerRequest{Owner: delAddr.String()})
 	s.Require().NoError(err)
 	s.Require().True(resp.VotingPower.Equal(sdkmath.LegacyNewDecFromInt(lockAmount)),
