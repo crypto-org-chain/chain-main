@@ -1,12 +1,12 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
-
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
@@ -190,9 +190,10 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
 	foundBase := false
 	foundBonus := false
 	for _, e := range freshCtx.EventManager().Events() {
-		if e.Type == "chainmain.tieredrewards.v1.EventBonusRewardsClaimed" {
+		switch e.Type {
+		case "chainmain.tieredrewards.v1.EventBonusRewardsClaimed":
 			foundBonus = true
-		} else if e.Type == "chainmain.tieredrewards.v1.EventBaseRewardsClaimed" {
+		case "chainmain.tieredrewards.v1.EventBaseRewardsClaimed":
 			foundBase = true
 		}
 		if foundBase && foundBonus {

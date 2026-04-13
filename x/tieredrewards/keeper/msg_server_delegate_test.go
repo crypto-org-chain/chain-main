@@ -39,7 +39,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	// Delegate position
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      delAddr.String(),
-		PositionId: pos.Id,	
+		PositionId: pos.Id,
 		Validator:  valAddr.String(),
 	})
 	s.Require().NoError(err)
@@ -346,4 +346,3 @@ func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
 	})
 	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
 }
-

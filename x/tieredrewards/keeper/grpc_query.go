@@ -3,11 +3,11 @@ package keeper
 import (
 	"context"
 
-	"cosmossdk.io/collections"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"cosmossdk.io/collections"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"

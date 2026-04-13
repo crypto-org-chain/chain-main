@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -8,7 +10,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	"time"
 )
 
 func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
@@ -153,7 +154,6 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsWhileUnbonding() {
 	})
 	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 }
-
 
 // TestMsgClearPosition_RejectsAfterUnbondingCompleted verifies that ClearPosition
 // is rejected on an undelegated position after unbonding completes.

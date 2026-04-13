@@ -2,13 +2,12 @@ package keeper_test
 
 import (
 	"errors"
+	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
-
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -78,6 +77,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
+	s.Require().NoError(err)
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)

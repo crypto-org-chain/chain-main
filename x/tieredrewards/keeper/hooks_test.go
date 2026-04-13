@@ -370,8 +370,6 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
 	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "rewards should have been claimed when validator began unbonding")
 }
 
-
-
 // --- AfterValidatorRemoved hook tests ---
 func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	s.setupTier(1)
@@ -430,6 +428,7 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_NoMapping_NoOp() {
 	err := hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{999})
 	s.Require().NoError(err, "should not error when unbonding ID has no mapping")
 }
+
 func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	hooks := s.keeper.Hooks()
 
@@ -482,4 +481,3 @@ func (s *KeeperSuite) TestHooks_NoOpCallbacks_ReturnNil() {
 	s.Require().NoError(hooks.BeforeDelegationRemoved(s.ctx, delAddr, valAddr))
 	s.Require().NoError(hooks.AfterDelegationModified(s.ctx, delAddr, valAddr))
 }
-

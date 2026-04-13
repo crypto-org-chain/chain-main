@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
+
 func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	owner := sdk.AccAddress([]byte("genesis_test_owner__")).String()
 	valAddr := sdk.ValAddress([]byte("genesis_test_val____"))
@@ -272,4 +273,3 @@ func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {
 		s.Require().True(ok, "account at %s should be a module account", addr.String())
 	}
 }
-

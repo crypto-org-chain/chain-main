@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"cosmossdk.io/collections"
-	"cosmossdk.io/math"
-	addresscodec "cosmossdk.io/core/address"
-
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	"cosmossdk.io/collections"
+	addresscodec "cosmossdk.io/core/address"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
