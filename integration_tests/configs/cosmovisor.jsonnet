@@ -24,19 +24,6 @@ config {
             ],
           },
         },
-        tieredrewards: {
-          params: {
-            target_base_rewards_rate: '0.030000000000000000',
-          },
-          tiers: [{
-            id: 1,
-            exit_duration: '5s',
-            bonus_apy: '0.040000000000000000',
-            min_lock_amount: '1000000',
-            close_only: false,
-          }],
-          next_position_id: '1',
-        },
       },
     },
   },
