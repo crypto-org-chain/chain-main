@@ -231,41 +231,18 @@ def approve_proposal(
     proposal = cluster.query_proposal(proposal_id)
     proposal_status = proposal["status"]
     amount = cluster.balance(cluster.address("ecosystem"))
-    if proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD" or (
-        proposal_status == "PROPOSAL_STATUS_VOTING_PERIOD"
-    ):
-        top_up_wait_tx = wait_tx and proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD"
-        total_deposit_before = sum(
-            int(coin["amount"]) for coin in proposal.get("total_deposit", [])
-        )
+    if proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD":
+        amount = cluster.balance(cluster.address("ecosystem"))
         rsp = cluster.gov_deposit(
             "ecosystem",
             proposal_id,
             "1cro",
-            event_query_tx=top_up_wait_tx,
+            event_query_tx=wait_tx,
             broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, rsp["raw_log"]
-
-        if top_up_wait_tx:
+        if wait_tx:
             assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
-        else:
-            wait_for_fn(
-                "governance deposit top-up",
-                lambda: (
-                    cluster.balance(cluster.address("ecosystem")) == amount - 100000000
-                    and sum(
-                        int(coin["amount"])
-                        for coin in cluster.query_proposal(proposal_id).get(
-                            "total_deposit", []
-                        )
-                    )
-                    >= total_deposit_before + 100000000
-                ),
-                timeout=30,
-                interval=0.5,
-            )
-
         proposal = cluster.query_proposal(proposal_id)
 
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
