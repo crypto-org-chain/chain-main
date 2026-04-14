@@ -593,11 +593,11 @@ def assert_v7_inflation_module_is_working(cluster):
 
 def assert_v7_tieredrewards_working(cluster):
     from .tieredrewards_helpers import (
+        MSG_ADD_TIER,
         get_node_validator_addr,
         lock_tier,
         query_positions_by_owner,
         query_tiers,
-        MSG_ADD_TIER,
     )
     from .utils import approve_proposal, submit_gov_proposal
 
