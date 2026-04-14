@@ -593,7 +593,7 @@ def assert_v7_inflation_module_is_working(cluster):
 
 def assert_v7_tieredrewards_working(cluster):
     from .tieredrewards_helpers import (
-        get_validator_addr,
+        get_node_validator_addr,
         lock_tier,
         query_positions_by_owner,
         query_tiers,
@@ -616,7 +616,7 @@ def assert_v7_tieredrewards_working(cluster):
     wait_for_new_blocks(cluster, 1)
 
     # Lock tier smoke test
-    validator_addr = get_validator_addr(cluster)
+    validator_addr = get_node_validator_addr(cluster)
     tiers = query_tiers(cluster)
     tier_id = tiers["tiers"][0]["id"]
     min_lock_amount = tiers["tiers"][0]["min_lock_amount"]
