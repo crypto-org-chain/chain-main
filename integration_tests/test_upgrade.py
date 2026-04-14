@@ -595,8 +595,8 @@ def assert_v7_tieredrewards_working(cluster):
     from .tieredrewards_helpers import (
         get_validator_addr,
         lock_tier,
-        query_tiers,
         query_positions_by_owner,
+        query_tiers,
     )
 
     # Bank send smoke test
