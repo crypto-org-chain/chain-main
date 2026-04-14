@@ -19,14 +19,13 @@ import (
 // TierVotingPowerProvider is the interface the custom gov tally needs from
 // the tiered rewards module.
 type TierVotingPowerProvider interface {
-	GetDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error)
+	GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error)
 }
 
 // GovTallyStakingKeeper is the subset of staking keeper needed by the custom tally function.
 type GovTallyStakingKeeper interface {
 	ValidatorAddressCodec() addresscodec.Codec
 	IterateDelegations(ctx context.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) error
-	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
 }
 
 // GovTallyAccountKeeper is the subset of account keeper needed by the custom tally function.
@@ -50,7 +49,6 @@ func NewCustomTallyTierVotesFn(
 		validators map[string]v1.ValidatorGovInfo,
 	) (totalVoterPower math.LegacyDec, results map[v1.VoteOption]math.LegacyDec, err error) {
 		totalVotingPower := math.LegacyZeroDec()
-		tierVals := make(map[string]stakingtypes.Validator)
 
 		results = make(map[v1.VoteOption]math.LegacyDec)
 		results[v1.OptionYes] = math.LegacyZeroDec()
@@ -106,16 +104,13 @@ func NewCustomTallyTierVotesFn(
 			// - compute from position delegation/share state via keeper-level helper
 			// - still deduct DelegatedShares from bonded validator second-pass tally
 			//   when the validator is present in the gov validator map
-			tierPositions, err := tierKeeper.GetDelegatedPositionsByOwner(ctx, voter)
+			positions, err := tierKeeper.GetPositionsByOwner(ctx, voter)
 			if err != nil {
 				return false, fmt.Errorf("error getting tier positions for %s: %w", vote.Voter, err)
 			}
-			for _, pos := range tierPositions {
-				tierPower, err := tierVotingPowerForPosition(ctx, sk, pos, tierVals)
-				if err != nil {
-					return false, fmt.Errorf("error calculating tier voting power for voter %s: %w", vote.Voter, err)
-				}
-				if tierPower.IsZero() {
+			for _, pos := range positions {
+				posPower := positionVotingPower(pos, validators)
+				if posPower.IsZero() {
 					continue
 				}
 
@@ -124,10 +119,10 @@ func NewCustomTallyTierVotesFn(
 					validators[pos.Validator] = val
 				}
 
-				if err := distributeVotingPower(vote.Options, tierPower, results); err != nil {
+				if err := distributeVotingPower(vote.Options, posPower, results); err != nil {
 					return false, fmt.Errorf("invalid vote weight for voter %s: %w", vote.Voter, err)
 				}
-				totalVotingPower = totalVotingPower.Add(tierPower)
+				totalVotingPower = totalVotingPower.Add(posPower)
 			}
 
 			votesToRemove = append(votesToRemove, key)

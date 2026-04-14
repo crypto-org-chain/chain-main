@@ -30,15 +30,13 @@ type mockTierVotingPower struct {
 	getErr    error
 }
 
-func (m mockTierVotingPower) GetDelegatedPositionsByOwner(_ context.Context, voter sdk.AccAddress) ([]types.Position, error) {
+func (m mockTierVotingPower) GetPositionsByOwner(_ context.Context, voter sdk.AccAddress) ([]types.Position, error) {
 	if m.getErr != nil {
 		return nil, m.getErr
 	}
 	var active []types.Position
 	for _, pos := range m.positions[voter.String()] {
-		if pos.IsDelegated() {
 			active = append(active, pos)
-		}
 	}
 	return active, nil
 }
@@ -167,7 +165,7 @@ func (s *KeeperSuite) stakingPowerFor(delAddr sdk.AccAddress, valAddr sdk.ValAdd
 // DelegatedShares using the validators map (same formula used by the tally).
 func (s *KeeperSuite) tierPowerFor(owner sdk.AccAddress, validators map[string]v1.ValidatorGovInfo) sdkmath.LegacyDec {
 	s.T().Helper()
-	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, owner)
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, owner)
 	s.Require().NoError(err)
 
 	total := sdkmath.LegacyZeroDec()
@@ -540,7 +538,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	}
 
 	// Get tier position's DelegatedShares (deducted from validator in the fix).
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, posAddr)
+	tierPositions, err := s.keeper.GetPositionsByOwner(s.ctx, posAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1, "posAddr should have one active tier position")
 	tierPos := tierPositions[0]
@@ -599,7 +597,7 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 	valInfo := validators[valAddr.String()]
 
 	// Get the tier position's DelegatedShares.
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	tierPositions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 	tierPos := tierPositions[0]
@@ -789,7 +787,7 @@ func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted
 	s.Require().NotContains(validators, valAddr.String(),
 		"unbonding validator should not be in bonded validators map")
 
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	tierPositions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 
@@ -818,7 +816,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
 	valInfo := validators[valAddr.String()]
 
 	// The exiting position is still delegated, so it should contribute.
-	tierPositions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	tierPositions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1, "exiting position should be active for governance")
 	tierPos := tierPositions[0]

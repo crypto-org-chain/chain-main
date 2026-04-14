@@ -43,10 +43,6 @@ func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
 	return k.deleteTier(ctx, tierId)
 }
 
-func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
-	return k.getPositionsByOwner(ctx, owner)
-}
-
 func (k Keeper) GetPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
 	return k.getPositionsByValidator(ctx, valAddr)
 }

@@ -179,7 +179,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 
@@ -290,6 +290,10 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	s.Require().NoError(err)
 	power := val.GetConsensusPower(s.app.StakingKeeper.PowerReduction(s.ctx))
 	_, err = s.app.StakingKeeper.Slash(s.ctx, consAddr, s.ctx.BlockHeight(), power, sdkmath.LegacyOneDec())
+	s.Require().NoError(err)
+
+	// Apply validator set updates so the slashed validator is removed from the bonded set.
+	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
 	s.Require().NoError(err)
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)

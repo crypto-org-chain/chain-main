@@ -430,7 +430,7 @@ func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_UnbondingValidatorNotCount
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	positions, err := s.keeper.GetDelegatedPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 

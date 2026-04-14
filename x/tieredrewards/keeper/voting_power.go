@@ -2,109 +2,84 @@ package keeper
 
 import (
 	"context"
-	"errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	v1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// validatorProvider captures the staking query needed to convert delegated
-// shares into governance voting power.
-type validatorProvider interface {
-	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)
-}
-
-// hasVotingPower defines whether a position has voting power.
-func hasVotingPower(pos types.Position, val stakingtypes.Validator) bool {
-	return val.IsBonded() && !val.DelegatorShares.IsZero() && pos.IsDelegated() && !pos.Amount.IsZero() && pos.DelegatedShares.IsPositive()
-}
-
-func tierVotingPowerForPosition(
-	ctx context.Context,
-	sk validatorProvider,
+func positionVotingPower(
 	pos types.Position,
-	validatorCache map[string]stakingtypes.Validator,
-) (math.LegacyDec, error) {
+	bondedVals map[string]v1.ValidatorGovInfo,
+) math.LegacyDec {
 	if !pos.IsDelegated() {
-		return math.LegacyZeroDec(), nil
+		return math.LegacyZeroDec()
 	}
+	val, ok := bondedVals[pos.Validator]
+	if !ok || val.DelegatorShares.IsZero() {
+		return math.LegacyZeroDec()
+	}
+	return pos.DelegatedShares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
+}
 
-	val, ok := validatorCache[pos.Validator]
-	if !ok {
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+// getCurrentValidators gets the current bonded validators from the staking keeper. Same implementation as in gov keeper.
+// decided against importing gov keeper just for this function.
+func (k Keeper) getCurrentValidators(ctx context.Context) (map[string]v1.ValidatorGovInfo, error) {
+	currValidators := make(map[string]v1.ValidatorGovInfo)
+	if err := k.stakingKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
+		valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		if err != nil {
-			return math.LegacyZeroDec(), err
+			return false
 		}
+		currValidators[validator.GetOperator()] = v1.NewValidatorGovInfo(
+			valBz,
+			validator.GetBondedTokens(),
+			validator.GetDelegatorShares(),
+			math.LegacyZeroDec(),
+			v1.WeightedVoteOptions{},
+		)
 
-		val, err = sk.GetValidator(ctx, valAddr)
-		if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-			return math.LegacyZeroDec(), nil
-		}
-		if err != nil {
-			return math.LegacyZeroDec(), err
-		}
-
-		if validatorCache != nil {
-			validatorCache[pos.Validator] = val
-		}
+		return false
+	}); err != nil {
+		return nil, err
 	}
 
-	if !hasVotingPower(pos, val) {
-		return math.LegacyZeroDec(), nil
-	}
-
-	return val.TokensFromShares(pos.DelegatedShares), nil
+	return currValidators, nil
 }
 
 // getVotingPowerByOwner returns the tier governance voting power for an address.
 // Power is derived from delegated position shares via validator exchange rates.
 func (k Keeper) getVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
-	active, err := k.GetDelegatedPositionsByOwner(ctx, owner)
+	positions, err := k.GetPositionsByOwner(ctx, owner)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}
 
 	power := math.LegacyZeroDec()
-	vals := make(map[string]stakingtypes.Validator)
-	for _, pos := range active {
-		posPower, err := tierVotingPowerForPosition(ctx, k.stakingKeeper, pos, vals)
-		if err != nil {
-			return math.LegacyZeroDec(), err
-		}
-		power = power.Add(posPower)
+	vals, err := k.getCurrentValidators(ctx)
+	if err != nil {
+		return math.LegacyZeroDec(), err
+	}
+	for _, p := range positions {
+		power = power.Add(positionVotingPower(p, vals))
 	}
 	return power, nil
 }
 
-func (k Keeper) GetDelegatedPositionsByOwner(ctx context.Context, voter sdk.AccAddress) ([]types.Position, error) {
-	positions, err := k.getPositionsByOwner(ctx, voter)
-	if err != nil {
-		return nil, err
-	}
-
-	var active []types.Position
-	for _, pos := range positions {
-		if pos.IsDelegated() {
-			active = append(active, pos)
-		}
-	}
-	return active, nil
-}
-
 func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
-	vals := make(map[string]stakingtypes.Validator)
 
-	err := k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
-		posPower, err := tierVotingPowerForPosition(ctx, k.stakingKeeper, pos, vals)
-		if err != nil {
-			return false, err
-		}
-		total = total.Add(posPower)
+	vals, err := k.getCurrentValidators(ctx)
+	if err != nil {
+		return math.LegacyZeroDec(), err
+	}
+
+	err = k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
+		total = total.Add(positionVotingPower(pos, vals))
 		return false, nil
 	})
 	if err != nil {

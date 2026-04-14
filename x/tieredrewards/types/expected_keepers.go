@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 
+	addresscodec "cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -24,6 +25,11 @@ type StakingKeeper interface {
 	BeginRedelegation(ctx context.Context, delAddr sdk.AccAddress, valSrcAddr, valDstAddr sdk.ValAddress, sharesAmount math.LegacyDec) (time.Time, math.LegacyDec, uint64, error)
 	ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (math.LegacyDec, error)
 	HasReceivingRedelegation(ctx context.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) (bool, error)
+	ValidatorAddressCodec() addresscodec.Codec
+	// iterate through bonded validators by operator address, execute func for each validator
+	IterateBondedValidatorsByPower(
+		context.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool),
+	) error
 }
 
 type AccountKeeper interface {

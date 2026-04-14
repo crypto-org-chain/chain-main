@@ -231,7 +231,7 @@ func (k Keeper) getPositionsByIds(ctx context.Context, ids []uint64) ([]types.Po
 	return positions, nil
 }
 
-func (k Keeper) getPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
+func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
 	ids, err := k.getPositionsIdsByOwner(ctx, owner)
 	if err != nil {
 		return nil, err
