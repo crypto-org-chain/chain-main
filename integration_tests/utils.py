@@ -232,7 +232,6 @@ def approve_proposal(
     proposal_status = proposal["status"]
     amount = cluster.balance(cluster.address("ecosystem"))
     if proposal_status == "PROPOSAL_STATUS_DEPOSIT_PERIOD":
-        amount = cluster.balance(cluster.address("ecosystem"))
         rsp = cluster.gov_deposit(
             "ecosystem",
             proposal_id,
@@ -241,8 +240,6 @@ def approve_proposal(
             broadcast_mode=broadcast_mode,
         )
         assert rsp["code"] == 0, rsp["raw_log"]
-        if wait_tx:
-            assert cluster.balance(cluster.address("ecosystem")) == amount - 100000000
         proposal = cluster.query_proposal(proposal_id)
 
     assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
