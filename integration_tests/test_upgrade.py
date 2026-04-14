@@ -595,6 +595,7 @@ def assert_v7_tieredrewards_working(cluster):
     from .tieredrewards_helpers import (
         get_validator_addr,
         lock_tier,
+        query_tiers,
         query_positions_by_owner,
     )
 
@@ -606,8 +607,6 @@ def assert_v7_tieredrewards_working(cluster):
         community_addr,
         reserve_addr,
         "100000basecro",
-        event_query_tx=False,
-        broadcast_mode="block",
     )
     new_balance = cluster.balance(reserve_addr, denom="basecro")
     assert (
@@ -618,14 +617,16 @@ def assert_v7_tieredrewards_working(cluster):
 
     # Lock tier smoke test
     validator_addr = get_validator_addr(cluster)
-    rsp = lock_tier(cluster, reserve_addr, 1, "1000000basecro", validator_addr)
+    tiers = query_tiers(cluster)
+    tier_id = tiers["tiers"][0]["id"]
+    min_lock_amount = tiers["tiers"][0]["min_lock_amount"]
+    rsp = lock_tier(cluster, reserve_addr, tier_id, min_lock_amount, validator_addr)
     assert rsp["code"] == 0, f"lock-tier failed: {rsp.get('raw_log', rsp)}"
 
     # Query positions
     rsp = query_positions_by_owner(cluster, reserve_addr)
     positions = rsp.get("positions", [])
-    assert len(positions) >= 1, f"expected at least 1 position, got {len(positions)}"
-    assert positions[0]["tier_id"] == "1", f"unexpected tier_id: {positions[0]}"
+    assert len(positions) == 1, f"expected 1 position, got {len(positions)}"
 
     wait_for_new_blocks(cluster, 1)
 

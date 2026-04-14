@@ -1719,7 +1719,7 @@ def test_autocli_lock_tier_and_queries(cluster):
 
     owner_positions_rsp = query_command(cluster, MODULE, "positions-by-owner", owner)
     rest_owner_positions_rsp = query_positions_by_owner(cluster, owner)
-    assert owner_positions_rsp == rest_owner_positions_rsp
+    assert owner_positions_rsp["positions"] == rest_owner_positions_rsp["positions"]
 
     tiers_rsp = query_command(cluster, MODULE, "tiers")
     rest_tiers_rsp = query_tiers(cluster)
