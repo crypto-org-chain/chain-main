@@ -35,9 +35,7 @@ func (m mockTierVotingPower) GetPositionsByOwner(_ context.Context, voter sdk.Ac
 		return nil, m.getErr
 	}
 	var active []types.Position
-	for _, pos := range m.positions[voter.String()] {
-			active = append(active, pos)
-	}
+	active = append(active, m.positions[voter.String()]...)
 	return active, nil
 }
 

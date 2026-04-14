@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 
-	addresscodec "cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
