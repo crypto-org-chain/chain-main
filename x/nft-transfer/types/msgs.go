@@ -55,6 +55,9 @@ func (msg MsgTransfer) ValidateBasic() error {
 	if err := host.PortIdentifierValidator(msg.SourcePort); err != nil {
 		return newsdkerrors.Wrap(err, "invalid source port ID")
 	}
+	if msg.SourcePort != PortID {
+		return newsdkerrors.Wrapf(ErrInvalidSourcePort, "source port must be %q", PortID)
+	}
 	if err := host.ChannelIdentifierValidator(msg.SourceChannel); err != nil {
 		return newsdkerrors.Wrap(err, "invalid source channel ID")
 	}

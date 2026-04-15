@@ -11,6 +11,9 @@ local validator = import 'validator.jsonnet';
           enable: true,
           'zero-copy': true,
           'snapshot-interval': 5,
+          // keep enough snapshots so historical queries after node restart
+          // can still find the snapshot at block0
+          'snapshot-keep-recent': 10,
         },
         store: {
           streamers: ['versiondb'],

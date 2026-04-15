@@ -10,6 +10,20 @@
 - [#1249](https://github.com/crypto-org-chain/chain-main/pull/1249) Implement tiered rewards module
 
 ### Improvements
+- [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
+- [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
+- [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling
+
+### Bugfixes
+- [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
+- [#1252](https://github.com/crypto-org-chain/chain-main/pull/1252) fix: reject nft-transfer sends on non-nft port.
+- [#1260](https://github.com/crypto-org-chain/chain-main/pull/1260) chore(lint): skip running nixfmt in vendor folder
+
+*July 9, 2025*
+
+## v7.0.0
+
+### Improvements
 - [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
 - [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
 - [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally

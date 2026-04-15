@@ -6,7 +6,13 @@ import pytest
 import tomlkit
 from pystarport.ports import rpc_port
 
-from .utils import cluster_fixture, wait_for_new_blocks, wait_for_port
+from .utils import (
+    BASECRO_DENOM,
+    cluster_fixture,
+    wait_for_block,
+    wait_for_new_blocks,
+    wait_for_port,
+)
 
 pytestmark = pytest.mark.normal
 
@@ -42,13 +48,15 @@ def test_versiondb_migration(cluster):
     cm_balance0 = cluster.balance(community_addr)
     rs_balance0 = cluster.balance(reserve_addr)
 
-    cluster.transfer(community_addr, reserve_addr, "1cro")
+    cro_1 = 100000000
+    coins_1 = f"{cro_1}{BASECRO_DENOM}"
+
+    rsp = cluster.transfer(community_addr, reserve_addr, coins_1)
+    assert rsp["code"] == 0, rsp
 
     block1 = cluster.block_height()
     cm_balance1 = cluster.balance(community_addr)
     rs_balance1 = cluster.balance(reserve_addr)
-
-    cro_1 = 100000000
 
     assert cm_balance1 == cm_balance0 - cro_1
     assert rs_balance1 == rs_balance0 + cro_1
@@ -104,6 +112,11 @@ def test_versiondb_migration(cluster):
     patch_app_db_backend(app_toml_path, "rocksdb")
 
     start_all_nodes(cluster)
+    # wait for consensus to be stable after restart
+    wait_for_new_blocks(cluster, 2)
+    # ensure both nodes have replayed up to block1 before historical queries
+    wait_for_block(node0, block1)
+    wait_for_block(node1, block1)
 
     # node0 supports historical queries with versiondb
     assert node0.balance(community_addr, height=block0) == cm_balance0
@@ -120,7 +133,9 @@ def test_versiondb_migration(cluster):
         node1.balance(community_addr, height=block0)
 
     # check the chain is still growing
-    cluster.transfer(community_addr, reserve_addr, "1cro")
+    rsp = cluster.transfer(community_addr, reserve_addr, coins_1)
+    # avoid the tx fails
+    assert rsp["code"] == 0, rsp
 
     cm_balance2 = cluster.balance(community_addr)
     rs_balance2 = cluster.balance(reserve_addr)
@@ -139,6 +154,10 @@ def test_versiondb_migration(cluster):
     patch_app_memiavl_enabled(app_toml_path, "true")
 
     start_all_nodes(cluster)
+    # wait for consensus to be stable after restart
+    wait_for_new_blocks(cluster, 2)
+    # ensure node1 has replayed up to block1 before historical queries
+    wait_for_block(node1, block1)
     # should be able to query node1's balance with memiavl
     assert node1.balance(community_addr, height=block0) == cm_balance0
     assert node1.balance(community_addr, height=block1) == cm_balance1

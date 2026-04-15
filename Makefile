@@ -200,7 +200,7 @@ lint:
 	@golangci-lint run
 	@go mod verify
 	@flake8 --show-source --count --statistics
-	@find . -name "*.nix" -type f | xargs nixfmt -c
+	@find . -name "*.nix" -type f -not -path "./vendor/*" | xargs nixfmt -c
 
 
 lint-fix:
@@ -209,7 +209,7 @@ lint-fix:
 	@go mod verify
 	@black --line-length 88 integration_tests/
 	@flake8 --show-source --count --statistics
-	@find . -name "*.nix" -type f | xargs nixfmt -c
+	@find . -name "*.nix" -type f -not -path "./vendor/*" | xargs nixfmt -c
 
 # a trick to make all the lint commands execute, return error when at least one fails.
 # golangci-lint is run in standalone job in ci
