@@ -19,6 +19,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                 if attempt == attempts - 1:
                     raise
                 time.sleep(3 * (attempt + 1))
+
     def event_query_tx_for(self, hash):
         try:
             return super().event_query_tx_for(hash)
