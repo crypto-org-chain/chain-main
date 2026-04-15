@@ -124,7 +124,7 @@ func (m *QueryClassTraceResponse) GetClassTrace() *ClassTrace {
 	return nil
 }
 
-// QueryConnectionsRequest is the request type for the Query/ClassTraces RPC
+// QueryClassTracesRequest is the request type for the Query/ClassTraces RPC
 // method
 type QueryClassTracesRequest struct {
 	// pagination defines an optional pagination for the request.

@@ -27,6 +27,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	authzkeeper "github.com/cosmos/cosmos-sdk/x/authz/keeper"
@@ -147,7 +148,7 @@ func TestFullAppSimulation(t *testing.T) {
 		simApp.BaseApp,
 		testutil.StateFn(simApp),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-		simtestutil.SimulationOperations(simApp, simApp.AppCodec(), config),
+		simtestutil.BuildSimulationOperations(simApp, simApp.AppCodec(), config, moduletestutil.MakeTestTxConfig()),
 		simApp.BlockedAddrs(),
 		config,
 		simApp.AppCodec(),
@@ -189,7 +190,7 @@ func TestAppImportExport(t *testing.T) {
 		simApp.BaseApp,
 		testutil.StateFn(simApp),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-		simtestutil.SimulationOperations(simApp, simApp.AppCodec(), config),
+		simtestutil.BuildSimulationOperations(simApp, simApp.AppCodec(), config, moduletestutil.MakeTestTxConfig()),
 		simApp.ModuleAccountAddrs(),
 		config,
 		simApp.AppCodec(),
@@ -306,7 +307,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		simApp.BaseApp,
 		testutil.StateFn(simApp),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-		simtestutil.SimulationOperations(simApp, simApp.AppCodec(), config),
+		simtestutil.BuildSimulationOperations(simApp, simApp.AppCodec(), config, moduletestutil.MakeTestTxConfig()),
 		simApp.ModuleAccountAddrs(),
 		config,
 		simApp.AppCodec(),
@@ -356,7 +357,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 		newApp.BaseApp,
 		testutil.StateFn(simApp),
 		simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-		simtestutil.SimulationOperations(newApp, newApp.AppCodec(), config),
+		simtestutil.BuildSimulationOperations(newApp, newApp.AppCodec(), config, moduletestutil.MakeTestTxConfig()),
 		simApp.ModuleAccountAddrs(),
 		config,
 		simApp.AppCodec(),
@@ -407,7 +408,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				simApp.BaseApp,
 				testutil.StateFn(simApp),
 				simtypes.RandomAccounts, // Replace with own random account function if using keys other than secp256k1
-				simtestutil.SimulationOperations(simApp, simApp.AppCodec(), config),
+				simtestutil.BuildSimulationOperations(simApp, simApp.AppCodec(), config, moduletestutil.MakeTestTxConfig()),
 				simApp.ModuleAccountAddrs(),
 				config,
 				simApp.AppCodec(),

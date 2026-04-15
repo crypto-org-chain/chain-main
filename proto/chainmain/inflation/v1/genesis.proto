@@ -1,0 +1,16 @@
+syntax = "proto3";
+package chainmain.inflation.v1;
+
+import "chainmain/inflation/v1/params.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/inflation/types";
+
+// GenesisState defines the inflation module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+
+  // decay_epoch_start is the block height at which decay began (set when decay is first enabled).
+  uint64 decay_epoch_start = 2;
+}

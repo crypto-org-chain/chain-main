@@ -37,9 +37,9 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/chainmain"
 	chainmainkeeper "github.com/crypto-org-chain/chain-main/v8/x/chainmain/keeper"
 	chainmaintypes "github.com/crypto-org-chain/chain-main/v8/x/chainmain/types"
-	maxsupply "github.com/crypto-org-chain/chain-main/v8/x/maxsupply"
-	maxsupplykeeper "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/keeper"
-	maxsupplytypes "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	inflation "github.com/crypto-org-chain/chain-main/v8/x/inflation"
+	inflationkeeper "github.com/crypto-org-chain/chain-main/v8/x/inflation/keeper"
+	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft"
 	nfttransfer "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer"
 	nfttransferkeeper "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
@@ -49,6 +49,9 @@ import (
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
 	supplykeeper "github.com/crypto-org-chain/chain-main/v8/x/supply/keeper"
 	supplytypes "github.com/crypto-org-chain/chain-main/v8/x/supply/types"
+	tieredrewards "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards"
+	tieredrewardskeeper "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
@@ -151,17 +154,24 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		minttypes.ModuleName:           {authtypes.Minter},
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
-		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
-		icatypes.ModuleName:            nil,
+		authtypes.FeeCollectorName:         nil,
+		distrtypes.ModuleName:              nil,
+		minttypes.ModuleName:               {authtypes.Minter},
+		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
+		govtypes.ModuleName:                {authtypes.Burner},
+		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:                nil,
+		tieredrewardstypes.RewardsPoolName: nil,
+		tieredrewardstypes.ModuleName:      {authtypes.Staking},
 	}
-	// module accounts that are allowed to receive tokens
-	allowedReceivingModAcc = map[string]bool{}
+	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
+	// receive tokens from external accounts via MsgSend, bypassing the default
+	// block on sends to module accounts.
+	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
+		tieredrewardstypes.RewardsPoolName: true,
+		tieredrewardstypes.ModuleName:      true,
+	}
 )
 
 var (
@@ -218,7 +228,8 @@ type ChainApp struct {
 	SupplyKeeper          supplykeeper.Keeper
 	NFTKeeper             nftkeeper.Keeper
 	CircuitKeeper         circuitkeeper.Keeper
-	MaxSupplyKeeper       maxsupplykeeper.Keeper
+	InflationKeeper       inflationkeeper.Keeper
+	TieredRewardsKeeper   tieredrewardskeeper.Keeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -330,6 +341,15 @@ func New(
 		address.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		address.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
 	)
+	// has to be before mint keeper since mint keeper uses the inflation keeper's DeflationCalculationFn
+	app.InflationKeeper = inflationkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[inflationtypes.StoreKey]),
+		logger,
+		app.BankKeeper,
+		app.StakingKeeper,
+		authAddr,
+	)
 	app.MintKeeper = mintkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[minttypes.StoreKey]),
@@ -338,6 +358,7 @@ func New(
 		app.BankKeeper,
 		authtypes.FeeCollectorName,
 		authAddr,
+		mintkeeper.WithMintFn(mintkeeper.DefaultMintFn(app.InflationKeeper.DeflationCalculationFn())),
 	)
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
@@ -347,6 +368,17 @@ func New(
 		app.StakingKeeper,
 		authtypes.FeeCollectorName,
 		authAddr,
+	)
+	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		runtime.NewTransientStoreService(tkeys[tieredrewardstypes.TStoreKey]),
+		authAddr,
+		app.MintKeeper,
+		app.StakingKeeper,
+		app.AccountKeeper,
+		app.BankKeeper,
+		app.DistrKeeper,
 	)
 	app.SlashingKeeper = slashingkeeper.NewKeeper(
 		appCodec,
@@ -373,6 +405,7 @@ func New(
 	app.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(
 		app.DistrKeeper.Hooks(),
 		app.SlashingKeeper.Hooks(),
+		app.TieredRewardsKeeper.Hooks(),
 	))
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), appCodec, app.MsgServiceRouter(), app.AccountKeeper)
@@ -405,12 +438,18 @@ func New(
 		Example of setting gov params:
 		govConfig.MaxMetadataLen = 10000
 	*/
+	customVoteTallyFn := tieredrewardskeeper.NewCustomTallyTierVotesFn(
+		app.TieredRewardsKeeper,
+		app.StakingKeeper,
+		app.AccountKeeper,
+	)
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.DistrKeeper,
 		app.MsgServiceRouter(), govConfig, authAddr,
+		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(customVoteTallyFn),
 	)
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
@@ -499,15 +538,6 @@ func New(
 	)
 	app.SetCircuitBreaker(&app.CircuitKeeper)
 
-	app.MaxSupplyKeeper = maxsupplykeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[maxsupplytypes.StoreKey]),
-		logger,
-		app.BankKeeper,
-		app.StakingKeeper,
-		authAddr,
-	)
-
 	// NOTE: Any module instantiated in the module manager that is later modified
 	// must be passed by reference here.
 	app.ModuleManager = module.NewManager(
@@ -548,7 +578,8 @@ func New(
 		supply.NewAppModule(app.SupplyKeeper),
 		nft.NewAppModule(appCodec, app.NFTKeeper, app.AccountKeeper, app.BankKeeper),
 		circuit.NewAppModule(appCodec, app.CircuitKeeper),
-		maxsupply.NewAppModule(appCodec, app.MaxSupplyKeeper),
+		inflation.NewAppModule(appCodec, app.InflationKeeper),
+		tieredrewards.NewAppModule(appCodec, app.TieredRewardsKeeper),
 	)
 
 	// BasicModuleManager defines the module BasicManager is in charge of setting up basic,
@@ -588,7 +619,8 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
-		maxsupplytypes.ModuleName,
+		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -600,6 +632,7 @@ func New(
 	app.ModuleManager.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		minttypes.ModuleName,
+		tieredrewardstypes.ModuleName, // has to be before distribution module to calculate how much more base rewards to distribute
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
@@ -619,7 +652,7 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
-		maxsupplytypes.ModuleName,
+		inflationtypes.ModuleName, // has to be after mint module to check supply cap
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -645,7 +678,8 @@ func New(
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
-		maxsupplytypes.ModuleName,
+		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
@@ -673,7 +707,8 @@ func New(
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
-		maxsupplytypes.ModuleName,
+		inflationtypes.ModuleName,
+		tieredrewardstypes.ModuleName,
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -840,7 +875,7 @@ func (app *ChainApp) ModuleAccountAddrs() map[string]bool {
 func (app *ChainApp) BlockedAddrs() map[string]bool {
 	blockedAddrs := make(map[string]bool)
 	for acc := range maccPerms {
-		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !allowedReceivingModAcc[acc]
+		blockedAddrs[authtypes.NewModuleAddress(acc).String()] = !moduleAccsAllowedToReceiveExternalFunds[acc]
 	}
 
 	return blockedAddrs
@@ -1011,13 +1046,14 @@ func StoreKeys() (
 		group.StoreKey,
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
-		maxsupplytypes.StoreKey,
+		inflationtypes.StoreKey,
+		tieredrewardstypes.StoreKey,
 		nfttypes.StoreKey,
 		consensusparamtypes.StoreKey,
 		circuittypes.StoreKey,
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
-	tkeys := storetypes.NewTransientStoreKeys()
+	tkeys := storetypes.NewTransientStoreKeys(tieredrewardstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys()
 
 	return keys, memKeys, tkeys
