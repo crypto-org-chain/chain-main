@@ -7,6 +7,7 @@ import (
 	"time"
 
 	maxsupplytypes "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
@@ -86,6 +87,13 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			"burned_addresses", maxSupplyParams.BurnedAddresses)
 
 		m[maxsupplytypes.ModuleName] = 1
+
+		// Remove stale KeyDenomName("") index entry if it exists.
+		// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
+		// which stored a name index entry for the empty string, blocking
+		// all subsequent IBC NFT class creation.
+		nftStore := sdkCtx.KVStore(app.keys[nfttypes.StoreKey])
+		nftStore.Delete(nfttypes.KeyDenomName(""))
 
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,

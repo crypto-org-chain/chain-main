@@ -164,7 +164,7 @@ func (k Keeper) processReceivedPacket(ctx sdk.Context, packet channeltypes.Packe
 		voucherClassID := classTrace.IBCClassID()
 
 		if !k.nftKeeper.HasDenomID(ctx, voucherClassID) {
-			if err := k.nftKeeper.IssueDenom(ctx, voucherClassID, "", "", data.ClassUri, escrowAddress); err != nil {
+			if err := k.nftKeeper.IssueDenom(ctx, voucherClassID, voucherClassID, "", data.ClassUri, escrowAddress); err != nil {
 				return err
 			}
 		}
