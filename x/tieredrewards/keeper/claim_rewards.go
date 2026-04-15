@@ -80,13 +80,14 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 	var validatorOrder []string
 	byValidator := make(map[string][]*types.Position)
 	for i := range positions {
-		if !positions[i].IsDelegated() {
+		pos := positions[i]
+		if !pos.IsDelegated() {
 			continue
 		}
-		if _, seen := byValidator[positions[i].Validator]; !seen {
-			validatorOrder = append(validatorOrder, positions[i].Validator)
+		if _, seen := byValidator[pos.Validator]; !seen {
+			validatorOrder = append(validatorOrder, pos.Validator)
 		}
-		byValidator[positions[i].Validator] = append(byValidator[positions[i].Validator], &positions[i])
+		byValidator[pos.Validator] = append(byValidator[pos.Validator], &pos)
 	}
 
 	for _, valAddrStr := range validatorOrder {
@@ -107,13 +108,14 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		}
 
 		for i := range valPositions {
-			if _, err := k.claimBaseRewards(ctx, valPositions[i], currentRatio); err != nil {
+			pos := valPositions[i]
+			if _, err := k.claimBaseRewards(ctx, pos, currentRatio); err != nil {
 				return err
 			}
-			if _, err := k.claimBonusRewards(ctx, valPositions[i], validator, tier, false); err != nil {
+			if _, err := k.claimBonusRewards(ctx, pos, validator, tier, false); err != nil {
 				return err
 			}
-			if err := k.setPosition(ctx, *valPositions[i]); err != nil {
+			if err := k.setPosition(ctx, *pos); err != nil {
 				return err
 			}
 		}
