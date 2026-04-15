@@ -71,17 +71,26 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		return nil
 	}
 
-	// Group delegated positions by validator because updateBaseRewardsPerShare
-	// must be called once per validator batch.
-	byValidator := make(map[string][]types.Position)
-	for _, pos := range positions {
-		if !pos.IsDelegated() {
-			continue
-		}
-		byValidator[pos.Validator] = append(byValidator[pos.Validator], pos)
+	tier, err := k.getTier(ctx, tierId)
+	if err != nil {
+		return err
 	}
 
-	for valAddrStr, valPositions := range byValidator {
+	// Group delegated positions by validator
+	var validatorOrder []string
+	byValidator := make(map[string][]*types.Position)
+	for i := range positions {
+		if !positions[i].IsDelegated() {
+			continue
+		}
+		if _, seen := byValidator[positions[i].Validator]; !seen {
+			validatorOrder = append(validatorOrder, positions[i].Validator)
+		}
+		byValidator[positions[i].Validator] = append(byValidator[positions[i].Validator], &positions[i])
+	}
+
+	for _, valAddrStr := range validatorOrder {
+		valPositions := byValidator[valAddrStr]
 		valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
 		if err != nil {
 			return err
@@ -97,19 +106,14 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 			return err
 		}
 
-		tier, err := k.getTier(ctx, tierId)
-		if err != nil {
-			return err
-		}
-
 		for i := range valPositions {
-			if _, err := k.claimBaseRewards(ctx, &valPositions[i], currentRatio); err != nil {
+			if _, err := k.claimBaseRewards(ctx, valPositions[i], currentRatio); err != nil {
 				return err
 			}
-			if _, err := k.claimBonusRewards(ctx, &valPositions[i], validator, tier, false); err != nil {
+			if _, err := k.claimBonusRewards(ctx, valPositions[i], validator, tier, false); err != nil {
 				return err
 			}
-			if err := k.setPosition(ctx, valPositions[i]); err != nil {
+			if err := k.setPosition(ctx, *valPositions[i]); err != nil {
 				return err
 			}
 		}
