@@ -162,12 +162,14 @@ var (
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:                nil,
 		tieredrewardstypes.RewardsPoolName: nil,
+		tieredrewardstypes.ModuleName:      {authtypes.Staking},
 	}
 	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
 	// receive tokens from external accounts via MsgSend, bypassing the default
 	// block on sends to module accounts.
 	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
 		tieredrewardstypes.RewardsPoolName: true,
+		tieredrewardstypes.ModuleName:      true,
 	}
 )
 
@@ -369,6 +371,7 @@ func New(
 	app.TieredRewardsKeeper = tieredrewardskeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[tieredrewardstypes.StoreKey]),
+		runtime.NewTransientStoreService(tkeys[tieredrewardstypes.TStoreKey]),
 		authAddr,
 		app.MintKeeper,
 		app.StakingKeeper,
@@ -401,6 +404,7 @@ func New(
 	app.StakingKeeper.SetHooks(stakingtypes.NewMultiStakingHooks(
 		app.DistrKeeper.Hooks(),
 		app.SlashingKeeper.Hooks(),
+		app.TieredRewardsKeeper.Hooks(),
 	))
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), appCodec, app.MsgServiceRouter(), app.AccountKeeper)
@@ -433,12 +437,18 @@ func New(
 		Example of setting gov params:
 		govConfig.MaxMetadataLen = 10000
 	*/
+	customVoteTallyFn := tieredrewardskeeper.NewCustomTallyTierVotesFn(
+		app.TieredRewardsKeeper,
+		app.StakingKeeper,
+		app.AccountKeeper,
+	)
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper, app.BankKeeper,
 		app.StakingKeeper, app.DistrKeeper,
 		app.MsgServiceRouter(), govConfig, authAddr,
+		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(customVoteTallyFn),
 	)
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
@@ -1044,7 +1054,7 @@ func StoreKeys() (
 		circuittypes.StoreKey,
 	}
 	keys := storetypes.NewKVStoreKeys(storeKeys...)
-	tkeys := storetypes.NewTransientStoreKeys()
+	tkeys := storetypes.NewTransientStoreKeys(tieredrewardstypes.TStoreKey)
 	memKeys := storetypes.NewMemoryStoreKeys()
 
 	return keys, memKeys, tkeys

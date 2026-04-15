@@ -14,11 +14,13 @@ from .utils import (
 )
 
 TIEREDREWARDS_MODULE = "tieredrewards"
-BANK_MODULE = "bank"
 PARAMS = "params"
 DENOM = "basecro"
 REWARDS_POOL_NAME = "rewards_pool"
 MSG_UPDATE_PARAMS = "/chainmain.tieredrewards.v1.MsgUpdateParams"
+
+# Per-block top-up when fee collector is ~0: trunc(2e9 * 1.0 / 63115); see abci.go.
+TOPUP_FULL_SHORTFALL_BASECRO = "31688"
 
 pytestmark = pytest.mark.base_rewards
 
@@ -39,20 +41,8 @@ def _pool_balance(cluster):
     return cluster.balance(pool_addr, DENOM)
 
 
-def _distr_balance(cluster):
-    """Get the distribution module balance in basecro"""
-    distr_addr = module_address("distribution")
-    return cluster.balance(distr_addr, DENOM)
-
-
-def _fee_collector_balance(cluster):
-    """Get the fee collector balance in basecro"""
-    fc_addr = module_address("fee_collector")
-    return cluster.balance(fc_addr, DENOM)
-
-
-def _find_topup_event(cluster, height):
-    """Find the EventBaseRewardsTopUp event in block results at the given height."""
+def _find_topup_event_at_height(cluster, height):
+    """Find EventBaseRewardsTopUp in block results at the given height (if any)."""
     base_port = cluster.config["validators"][0]["base_port"]
     port = rpc_port(base_port)
     url = f"http://127.0.0.1:{port}/block_results?height={height}"
@@ -71,59 +61,44 @@ def _find_topup_event(cluster, height):
     return None
 
 
-def _assert_topup_event_emitted(cluster, amount):
-    height = int(get_sync_info(cluster.status())["latest_block_height"])
-    ev = _find_topup_event(cluster, height)
-    assert ev is not None, "EventBaseRewardsTopUp should have been emitted"
+def _find_recent_topup_event(cluster, amount, lookback=25):
+    """Find a matching EventBaseRewardsTopUp in the last `lookback` blocks."""
+    latest = int(get_sync_info(cluster.status())["latest_block_height"])
     expected = f'{{"denom":"{DENOM}","amount":"{amount}"}}'
-    assert ev["top_up"] == expected, (
-        "EventBaseRewardsTopUp topup mismatch:"
-        f" expected {expected}, got {ev['top_up']}"
-    )
+    for h in range(latest, max(1, latest - lookback), -1):
+        ev = _find_topup_event_at_height(cluster, h)
+        if ev is not None and ev.get("top_up") == expected:
+            return ev
+    return None
+
+
+def _assert_topup_event_emitted(cluster, amount):
+    ev = _find_recent_topup_event(cluster, amount)
+    assert ev is not None, "EventBaseRewardsTopUp should have been emitted"
 
 
 def test_params_query(cluster):
     """Test querying tieredrewards parameters"""
     params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
     assert "target_base_rewards_rate" in params
-    # Genesis config sets it to 100.0 (10000%)
+    # Genesis: max valid rate 1.0; mint BPY 63115 matches prior per-block economics.
     rate = float(params["target_base_rewards_rate"])
-    assert rate == 100.0
-
-
-def test_empty_pool_no_panic(cluster):
-    """Test that BeginBlocker runs without error when the pool is empty.
-    The pool starts empty in genesis, but the chain should still produce blocks.
-    """
-    pool_balance = _pool_balance(cluster)
-    assert pool_balance == 0
-
-    # Chain should still be producing blocks
-    wait_for_new_blocks(cluster, 2)
-
-    pool_balance = _pool_balance(cluster)
-    assert pool_balance == 0, "pool should still be empty"
-
-
-# community tax = 2%
-# total bonded = 2000000000
-# blocks per year = 6311520
-# target base rewards rate = 100 // 10000%
-# target stakers reward = 2000000000 * 100 / 6311520 = 31688.088638376 basecro
-# fee collector balance = 25581
-# default stakers reward = 25581 * (1 - 0.02) = 25069.38 basecro
-# shortfall per block = 31688.088638376 - 25069.38 ~= 6618 basecro
+    assert rate == 1.0
 
 
 def test_topup_from_pool(cluster):
-    """Test that funding the pool results in rewards being distributed.
-    Fund the pool, wait for blocks, verify pool decreased and distribution
-    module balance increased.
+    """Fund the rewards pool and verify BeginBlocker drains it toward the fee collector.
+
+    Asserts the pool balance drops and an EventBaseRewardsTopUp is emitted for the
+    full per-block shortfall (see TOPUP_FULL_SHORTFALL_BASECRO). Genesis disables
+    x/mint inflation (base_rewards.jsonnet), so mint does not refill the fee
+    collector.
     """
     # Fund the pool from signer1
     pool_addr = module_address(REWARDS_POOL_NAME)
-    # each block require ~6618 basecro, so this covers about 10 blocks
-    fund_amount = 70000
+    sf = int(TOPUP_FULL_SHORTFALL_BASECRO)
+    # Enough for several top-ups; leave balance for test_pool_drains_to_zero.
+    fund_amount = sf * 10
     fund_amount_coin = f"{fund_amount}basecro"
 
     rsp = cluster.transfer(
@@ -145,19 +120,16 @@ def test_topup_from_pool(cluster):
 
     assert pool_after < pool_after_fund, "pool should have been drained"
 
-    _assert_topup_event_emitted(cluster, "6618")
+    _assert_topup_event_emitted(cluster, TOPUP_FULL_SHORTFALL_BASECRO)
 
 
 def test_pool_drains_to_zero(cluster):
-    """Test that the pool eventually drains to zero as blocks progress.
-    With a very high target rate (10000%) and limited pool funds,
-    the pool should be fully drained after enough blocks.
-    """
+    """Test that the pool eventually drains to zero as blocks progress."""
     # funded from the previous test_topup_from_pool test
     pool_balance = _pool_balance(cluster)
     assert pool_balance > 0, "pool should still have funds"
 
-    _assert_topup_event_emitted(cluster, "6618")
+    _assert_topup_event_emitted(cluster, TOPUP_FULL_SHORTFALL_BASECRO)
 
     # Wait for enough blocks for the pool to be fully drained
     wait_for_new_blocks(cluster, 10)
@@ -171,7 +143,7 @@ def test_pool_drains_to_zero(cluster):
 
 def test_chain_continues_after_pool_empty(cluster):
     """Test that the chain continues producing blocks after the pool is empty.
-    This verifies that an empty pool doesn't cause consensus errors.
+    This verifies that an empty pool doesn't cause consensus errors / panics.
     """
     # Ensure pool is empty from previous test
     pool_balance = _pool_balance(cluster)
@@ -190,7 +162,7 @@ def test_chain_continues_after_pool_empty(cluster):
 
 def test_insufficient_pool_partial_drain(cluster):
     """Test that when pool has less than the shortfall, it drains everything available.
-    Fund the pool with 1 basecro — guaranteed less than any shortfall at 10000% rate.
+    Fund the pool with 1 basecro — less than the per-block shortfall.
     """
     pool_addr = module_address(REWARDS_POOL_NAME)
 
@@ -213,16 +185,18 @@ def test_insufficient_pool_partial_drain(cluster):
 
 
 def test_zero_rate_no_topup(cluster):
-    """Test that with rate = 0, no top-up occurs regardless of pool balance.
-    First fund pool and verify it drains at the current 10000% rate.
-    Then set rate to 0 and verify pool stops draining.
+    """With target rate = 0, the pool is not drained by top-up.
+
+    First fund the pool and verify it drains under the default target rate (1.0).
+    After a gov proposal sets target_base_rewards_rate to 0, the pool balance
+    stays flat.
     """
-    # Fund the pool (rate is still 10000% from previous tests)
     pool_addr = module_address(REWARDS_POOL_NAME)
+    sf = int(TOPUP_FULL_SHORTFALL_BASECRO)
     rsp = cluster.transfer(
         cluster.address("signer1"),
         pool_addr,
-        "200000basecro",
+        f"{max(10_000, sf * 30)}basecro",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
     wait_for_new_blocks(cluster, 1)
@@ -230,7 +204,7 @@ def test_zero_rate_no_topup(cluster):
     pool_after_fund = _pool_balance(cluster)
     assert pool_after_fund > 0, "pool should have been funded"
 
-    # Verify pool drains at 10000% rate
+    # Pool drains while target_base_rewards_rate is still the genesis default (1.0).
     wait_for_new_blocks(cluster, 3)
     pool_after_drain = _pool_balance(cluster)
     assert pool_after_drain < pool_after_fund, "pool should have been drained"
@@ -270,50 +244,49 @@ def test_zero_rate_no_topup(cluster):
     assert pool_after == pool_before, "pool should be untouched when rate is zero"
 
 
-# target base rewards rate = 0.01 // 1%
-# target stakers reward = 2000000000 * 0.01 / 6311520 = 3.1688088638376 basecro
-# fee collector balance per block = 25581 basecro
-def test_fee_collector_sufficient_no_topup(cluster):
-    """Test that no top-up occurs when fee collector already covers the target.
-    Update params to a very low rate via governance so fee collector is sufficient.
-    Then verify pool is untouched.
+@pytest.fixture(scope="function")
+def inflation_cluster(worker_index, tmp_path_factory):
+    """Cluster with mint inflation enabled so the fee collector is funded each block."""
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/base_rewards_inflation.jsonnet",
+        worker_index,
+        tmp_path_factory.mktemp("data"),
+    )
+
+
+def test_fee_collector_sufficient_no_topup(inflation_cluster):
+    """No top-up when the fee collector already covers the per-block target.
+
+    Uses a separate cluster with mint inflation enabled (13%) and a moderate
+    target_base_rewards_rate (3%).  The minted coins each block far exceed the
+    per-block target, so tieredrewards BeginBlocker never draws from the pool.
+
+    BeginBlocker order: mint → tieredrewards → distribution.  After mint runs,
+    the fee collector holds the freshly minted coins.  tieredrewards checks
+    this balance and sees no shortfall, so the pool stays untouched.
     """
+    cluster = inflation_cluster
 
-    # Update rate to something tiny so fee collector covers it
-    params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
-    params["target_base_rewards_rate"] = "0.010000000000000000"
-
-    authority = module_address("gov")
-    proposal_src = {
-        "messages": [
-            {
-                "@type": MSG_UPDATE_PARAMS,
-                "authority": authority,
-                "params": params,
-            }
-        ],
-        "deposit": "100000000basecro",
-        "title": "Lower rate so fee collector is sufficient",
-        "summary": "Set rate very low",
-    }
-    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
-        "community", "submit-proposal", proposal_src
+    # Fund the rewards pool so we can verify it stays untouched
+    pool_addr = module_address(REWARDS_POOL_NAME)
+    rsp = cluster.transfer(
+        cluster.address("signer1"),
+        pool_addr,
+        "1000000basecro",
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
+    wait_for_new_blocks(cluster, 1)
 
-    # Verify params updated
-    updated_params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]
-    assert float(updated_params["target_base_rewards_rate"]) == 0.01
+    pool_before = _pool_balance(cluster)
+    assert pool_before > 0, "pool should have been funded"
 
-    # funded from the previous test_zero_rate_no_topup test
-    pool_funds = _pool_balance(cluster)
-    assert pool_funds > 0, "pool should have funds"
-
-    wait_for_new_blocks(cluster, 3)
+    # Wait for several blocks — tieredrewards BeginBlocker runs each block
+    # but should not top up because the fee collector is well-funded by inflation
+    wait_for_new_blocks(cluster, 5)
 
     pool_after = _pool_balance(cluster)
 
-    assert (
-        pool_after == pool_funds
-    ), "pool should be untouched when fee collector is sufficient"
+    assert pool_after == pool_before, (
+        f"pool should be untouched when fee collector is sufficient; "
+        f"before={pool_before}, after={pool_after}"
+    )

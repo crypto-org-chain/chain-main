@@ -564,6 +564,9 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # test v7 inflation module is working
     assert_v7_inflation_module_is_working(cluster)
 
+    # test v7 tieredrewards is working
+    assert_v7_tieredrewards_working(cluster)
+
 
 def assert_v7_inflation_module_is_working(cluster):
     cli = cluster.cosmos_cli()
@@ -586,6 +589,72 @@ def assert_v7_inflation_module_is_working(cluster):
     assert rsp["burned_addresses"] == expected_burned_addresses, rsp["burned_addresses"]
 
     print("v7.0.0 upgrade completed successfully")
+
+
+def assert_v7_tieredrewards_working(cluster):
+    from .tieredrewards_helpers import (
+        MSG_ADD_TIER,
+        get_node_validator_addr,
+        lock_tier,
+        query_positions_by_owner,
+        query_tiers,
+    )
+    from .utils import approve_proposal, submit_gov_proposal
+
+    # Bank send smoke test
+    community_addr = cluster.address("community")
+    reserve_addr = cluster.address("reserve")
+    old_balance = cluster.balance(reserve_addr, denom="basecro")
+    cluster.transfer(
+        community_addr,
+        reserve_addr,
+        "100000basecro",
+    )
+    new_balance = cluster.balance(reserve_addr, denom="basecro")
+    assert (
+        new_balance > old_balance
+    ), f"bank send failed: {old_balance} -> {new_balance}"
+
+    wait_for_new_blocks(cluster, 1)
+
+    # Add tier 1 via governance
+    rsp = submit_gov_proposal(
+        cluster,
+        "community",
+        MSG_ADD_TIER,
+        {
+            "tier": {
+                "id": 1,
+                "exit_duration": "5s",
+                "bonus_apy": "0.040000000000000000",
+                "min_lock_amount": "1000000",
+                "close_only": False,
+            }
+        },
+        title="Add Tier 1",
+        summary="Add tier 1 for smoke test",
+    )
+    approve_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
+
+    tiers = query_tiers(cluster)
+    tier_list = tiers.get("tiers", [])
+    assert len(tier_list) > 0, f"expected at least 1 tier after proposal, got: {tiers}"
+
+    # Lock tier smoke test
+    validator_addr = get_node_validator_addr(cluster)
+    tier_id = tier_list[0]["id"]
+    min_lock_amount = tier_list[0]["min_lock_amount"]
+    rsp = lock_tier(cluster, reserve_addr, tier_id, min_lock_amount, validator_addr)
+    assert rsp["code"] == 0, f"lock-tier failed: {rsp.get('raw_log', rsp)}"
+
+    # Query positions
+    rsp = query_positions_by_owner(cluster, reserve_addr)
+    positions = rsp.get("positions", [])
+    assert len(positions) == 1, f"expected 1 position, got {len(positions)}: {rsp}"
+
+    wait_for_new_blocks(cluster, 1)
+
+    print("v7.0.0 tieredrewards smoke test passed")
 
 
 def propose_n_execute_v7_upgrade(cluster):

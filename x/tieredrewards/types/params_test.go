@@ -34,9 +34,16 @@ func TestParams_Validate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "valid large rate",
-			params:  types.NewParams(sdkmath.LegacyNewDec(10)),
-			wantErr: false,
+			name:        "rate above 100% is rejected",
+			params:      types.NewParams(sdkmath.LegacyNewDecWithPrec(101, 2)),
+			wantErr:     true,
+			errContains: "must not exceed",
+		},
+		{
+			name:        "rate far above 100% is also rejected",
+			params:      types.NewParams(sdkmath.LegacyNewDec(10)),
+			wantErr:     true,
+			errContains: "must not exceed",
 		},
 		{
 			name:        "negative rate",
@@ -59,7 +66,7 @@ func TestParams_Validate(t *testing.T) {
 			if tt.wantErr {
 				require.Error(t, err)
 				if tt.errContains != "" {
-					require.Contains(t, err.Error(), tt.errContains)
+					require.ErrorContains(t, err, tt.errContains)
 				}
 			} else {
 				require.NoError(t, err)

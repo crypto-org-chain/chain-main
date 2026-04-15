@@ -2,12 +2,186 @@ syntax = "proto3";
 package chainmain.tieredrewards.v1;
 
 import "cosmos/base/v1beta1/coin.proto";
+import "chainmain/tieredrewards/v1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
 import "gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
+
+// TierChangeAction enumerates the type of change made to a tier.
+enum TierChangeAction {
+  TIER_CHANGE_ACTION_UNSPECIFIED = 0;
+  TIER_CHANGE_ACTION_NEW         = 1;
+  TIER_CHANGE_ACTION_UPDATE      = 2;
+  TIER_CHANGE_ACTION_DELETE      = 3;
+}
+
+// EventTierChanged is emitted when a tier is added, updated, or deleted.
+message EventTierChanged {
+  // action is the type of change (add, update, delete).
+  TierChangeAction action = 1;
+
+  // tier is the updated tier at the time of the change.
+  Tier tier = 2 [(gogoproto.nullable) = false];
+}
 
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 message EventBaseRewardsTopUp {
   // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
   cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
+}
+
+// EventPositionCreated is emitted when a new position is created via MsgLockTier.
+message EventPositionCreated {
+  // position is the newly created position.
+  Position position = 1 [(gogoproto.nullable) = false];
+}
+
+// EventDelegationCommitted is emitted when a new position is created via CommitDelegationToTier.
+message EventDelegationCommitted {
+  // position is the newly created position.
+  Position position = 1 [(gogoproto.nullable) = false];
+}
+
+// EventBaseRewardsClaimed is emitted when base staking rewards are claimed for a position.
+message EventBaseRewardsClaimed {
+  uint64   position_id                     = 1;
+  string   owner                           = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin amount = 3 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+// EventBonusRewardsClaimed is emitted when bonus APY rewards are claimed for a position.
+message EventBonusRewardsClaimed {
+  uint64                   position_id = 1;
+  string                   owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  cosmos.base.v1beta1.Coin amount      = 3 [(gogoproto.nullable) = false];
+}
+
+// EventBaseRewardsPerShareUpdated is emitted when the cumulative rewards-per-share
+// ratio is updated for a validator after withdrawing base rewards from x/distribution.
+message EventBaseRewardsPerShareUpdated {
+  // validator is the validator operator address.
+  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+
+  // rewards_withdrawn is the base rewards withdrawn from x/distribution in this update.
+  repeated cosmos.base.v1beta1.Coin rewards_withdrawn = 2 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+
+  // cumulative_rewards_per_share is the new cumulative ratio after the update.
+  repeated cosmos.base.v1beta1.DecCoin cumulative_rewards_per_share = 3 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+// EventPositionDelegated is emitted when a position is delegated to a validator via MsgTierDelegate.
+message EventPositionDelegated {
+  uint64 position_id = 1;
+  uint32 tier_id     = 2;
+  string owner       = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string validator   = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string shares      = 5 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// EventPositionUndelegated is emitted when a position begins undelegating via MsgTierUndelegate.
+message EventPositionUndelegated {
+  uint64                    position_id     = 1;
+  uint32                    tier_id         = 2;
+  string                    owner           = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string                    validator       = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  uint64                    unbonding_id    = 5;
+  google.protobuf.Timestamp completion_time = 6
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// EventPositionRedelegated is emitted when a position is redelegated via MsgTierRedelegate.
+message EventPositionRedelegated {
+  uint64 position_id   = 1;
+  uint32 tier_id       = 2;
+  string owner         = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string src_validator = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string dst_validator = 5 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string new_shares    = 6 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+  uint64                    unbonding_id    = 7;
+  google.protobuf.Timestamp completion_time = 8
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// EventPositionAmountAdded is emitted when tokens are added to a position via MsgAddToTierPosition.
+message EventPositionAmountAdded {
+  uint64 position_id  = 1;
+  uint32 tier_id      = 2;
+  string owner        = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string amount_added = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+  string new_total = 5 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+}
+
+// EventExitTriggered is emitted when exit is triggered for a position via MsgTriggerExitFromTier.
+message EventExitTriggered {
+  uint64                    position_id    = 1;
+  uint32                    tier_id        = 2;
+  string                    owner          = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  google.protobuf.Timestamp exit_unlock_at = 4
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+}
+
+// EventExitCleared is emitted when exit state is cleared via MsgClearPosition.
+message EventExitCleared {
+  uint64 position_id = 1;
+  uint32 tier_id     = 2;
+  string owner       = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+}
+
+// EventTierRewardsClaimed is emitted when rewards are claimed via MsgClaimTierRewards.
+message EventTierRewardsClaimed {
+  uint64   position_id                           = 1;
+  uint32   tier_id                               = 2;
+  string   owner                                 = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin base_rewards = 4 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+  repeated cosmos.base.v1beta1.Coin bonus_rewards = 5 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
+}
+
+// EventPositionWithdrawn is emitted when a position's locked tokens are withdrawn via MsgWithdrawFromTier.
+message EventPositionWithdrawn {
+  // position is the position at the time of withdrawal (state is deleted after this event).
+  Position position                        = 1 [(gogoproto.nullable) = false];
+  repeated cosmos.base.v1beta1.Coin amount = 2 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
 }
