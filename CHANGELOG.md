@@ -16,6 +16,8 @@
 - [#1252](https://github.com/crypto-org-chain/chain-main/pull/1252) fix: reject nft-transfer sends on non-nft port.
 - [#1256](https://github.com/crypto-org-chain/chain-main/pull/1256) fix(nft): owner key parsing for IBC-received NFTs.
 - [#1260](https://github.com/crypto-org-chain/chain-main/pull/1260) chore(lint): skip running nixfmt in vendor folder
+- [#1262](https://github.com/crypto-org-chain/chain-main/pull/1262) fix(x/nft-transfer): IBC NFT class creation passes voucher class ID as denom name instead of empty string.
+- [#1263](https://github.com/crypto-org-chain/chain-main/pull/1263) fix: remove unused error codes in tieredrewards module
 
 *July 9, 2025*
 
