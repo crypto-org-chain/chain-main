@@ -14,13 +14,13 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// transferDelegation transfers delegation shares from a delegator to the tier
+// transferDelegationToTier transfers delegation shares from a delegator to the tier
 // module on the same validator. The delegator's tokens are unbonded and
 // re-delegated from the module account.
 //
 // Only bonded validators are allowed. Blocks transfer if the delegator has an
 // active incoming redelegation to the validator.
-func (k Keeper) transferDelegation(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
 	if !amount.IsPositive() {
 		return math.LegacyDec{}, errorsmod.Wrap(
 			sdkerrors.ErrInvalidRequest,
@@ -70,12 +70,12 @@ func (k Keeper) transferDelegation(ctx context.Context, delegatorAddr, validator
 		return math.LegacyDec{}, err
 	}
 
-	returnAmount, err := k.stakingKeeper.Unbond(ctx, from, valAddr, shares)
+	newAmount, err := k.stakingKeeper.Unbond(ctx, from, valAddr, shares)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
 
-	if returnAmount.IsZero() {
+	if newAmount.IsZero() {
 		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
 	}
 
@@ -85,10 +85,73 @@ func (k Keeper) transferDelegation(ctx context.Context, delegatorAddr, validator
 		return math.LegacyDec{}, err
 	}
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, poolAddr, returnAmount, validator.GetStatus(), validator, false)
+	newShares, err := k.stakingKeeper.Delegate(ctx, poolAddr, newAmount, validator.GetStatus(), validator, false)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}
 
 	return newShares, nil
+}
+
+// transferDelegationFromTier transfers delegation shares from the tier module
+// account back to the owner on the same validator. The module's delegation is
+// unbonded and re-delegated from the owner's address. No unbonding period.
+func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+	owner, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	// Block transfer with active incoming redelegation: position owner could escape
+	// slashing at the source validator by moving the delegation back to the owner address.
+	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+	if redelegating {
+		return math.LegacyDec{}, errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
+	}
+
+	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+		return math.LegacyDec{}, types.ErrBadTransferDelegationDest
+	} else if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	if !validator.IsBonded() {
+		return math.LegacyDec{}, types.ErrValidatorNotBonded
+	}
+
+	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+
+	shares := pos.DelegatedShares
+	if !pos.ExitWithFullDelegation(amount) {
+		shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, moduleAddr, valAddr, amount)
+		if err != nil {
+			return math.LegacyDec{}, err
+		}
+	}
+
+	transferredAmount, err := k.stakingKeeper.Unbond(ctx, moduleAddr, valAddr, shares)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	if transferredAmount.IsZero() {
+		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
+	}
+
+	// Re-fetch validator after unbond since tokens and exchange rate changed.
+	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	transferredShares, err := k.stakingKeeper.Delegate(ctx, owner, transferredAmount, validator.GetStatus(), validator, false)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	return transferredShares, nil
 }

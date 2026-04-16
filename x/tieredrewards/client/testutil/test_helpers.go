@@ -251,3 +251,7 @@ func ClaimTierRewardsExec(clientCtx client.Context, from, positionID string, ext
 func WithdrawFromTierExec(clientCtx client.Context, from, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecTxCmd(clientCtx, from, []string{positionID}, tieredrewardscli.GetCmdWithdrawFromTier, extraArgs...)
 }
+
+func ExitTierWithDelegationExec(clientCtx client.Context, from, positionID, amount string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecTxCmd(clientCtx, from, []string{positionID, amount}, tieredrewardscli.GetCmdExitTierWithDelegation, extraArgs...)
+}
