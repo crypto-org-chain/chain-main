@@ -18,6 +18,9 @@
 - [#1262](https://github.com/crypto-org-chain/chain-main/pull/1262) fix(x/nft-transfer): IBC NFT class creation passes voucher class ID as denom name instead of empty string.
 - [#1263](https://github.com/crypto-org-chain/chain-main/pull/1263) fix: remove unused error codes in tieredrewards module
 
+### Chores:
+- [#1266](https://github.com/crypto-org-chain/chain-main/pull/1263) chore(deps): bump ibc to 10.5.1
+
 *July 9, 2025*
 
 ## v7.0.0
