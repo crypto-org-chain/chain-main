@@ -14,6 +14,7 @@ const (
 	MinDenomLen = 3
 	MaxDenomLen = 64
 	IBCDenomLen = 68
+	IBCPrefix   = "ibc/"
 
 	MaxTokenURILen = 256
 )
@@ -38,7 +39,7 @@ func ValidateDenomID(denomID string) error {
 
 // ValidateDenomIDWithIBC verifies whether the parameters are legal and considers IBC denom IDs when checking.
 func ValidateDenomIDWithIBC(denomID string) error {
-	if strings.HasPrefix(denomID, "ibc/") {
+	if strings.HasPrefix(denomID, IBCPrefix) {
 		if len(denomID) != IBCDenomLen {
 			return sdkerrors.Wrapf(ErrInvalidDenom, "the length of ibc denom(%s) only accepts value [%d]", denomID, IBCDenomLen)
 		}

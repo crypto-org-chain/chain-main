@@ -6,6 +6,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
 	newsdkerrors "cosmossdk.io/errors"
 
@@ -80,7 +81,7 @@ func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 
 	// deconstruct the token denomination into the denomination trace info
 	// to determine if the sender is the source chain
-	if strings.HasPrefix(classID, "ibc/") {
+	if strings.HasPrefix(classID, nfttypes.IBCPrefix) {
 		fullClassPath, err = k.ClassPathFromHash(ctx, classID)
 		if err != nil {
 			return channeltypes.Packet{}, err
