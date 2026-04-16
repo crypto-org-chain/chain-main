@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
-	maxsupplytypes "github.com/crypto-org-chain/chain-main/v8/x/maxsupply/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
+	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	sdkmath "cosmossdk.io/math"
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -54,39 +55,21 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		var _ok bool
-		maxSupplyParams := maxsupplytypes.DefaultParams()
-		// update max supply to 100B * 10^8 basecro
-		maxSupplyParams.MaxSupply, _ok = sdkmath.NewIntFromString("10000000000000000000")
-		if !_ok {
-			return map[string]uint64{}, fmt.Errorf("invalid max supply")
-		}
+		sdkCtx.Logger().Info("module migrations completed!")
 
-		chainID := sdkCtx.ChainID()
-
-		if strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet") {
-			// For mainnet or the integration test
-			maxSupplyParams.BurnedAddresses = []string{
-				"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
-			}
-		} else if strings.Contains(chainID, "testnet") {
-			// For testnet, use different burned addresses or configuration
-			maxSupplyParams.BurnedAddresses = []string{
-				"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
-			}
-		} else {
-			return map[string]uint64{}, fmt.Errorf("unknown upgrade chain ID: %s", chainID)
-		}
-
-		if err := app.MaxSupplyKeeper.SetParams(sdkCtx, maxSupplyParams); err != nil {
+		if err := updateInflationParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
 
-		sdkCtx.Logger().Info("maxsupply module initialized with params",
-			"max_supply", maxSupplyParams.MaxSupply.String(),
-			"burned_addresses", maxSupplyParams.BurnedAddresses)
+		if err := updateMintParams(app, sdkCtx); err != nil {
+			return map[string]uint64{}, err
+		}
 
-		m[maxsupplytypes.ModuleName] = 1
+		if err := updateTieredRewardsParams(app, sdkCtx); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		// TODO: add new tiers here if needed
 
 		// Remove stale KeyDenomName("") index entry if it exists.
 		// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
@@ -109,12 +92,101 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
-				maxsupplytypes.StoreKey,
+				inflationtypes.StoreKey,
+				tieredrewardstypes.StoreKey,
 			},
 		}
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
+}
+
+func updateInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating inflation params...")
+
+	inflationParams := inflationtypes.DefaultParams()
+
+	// update max supply to 100B * 10^8 basecro
+	var ok bool
+	inflationParams.MaxSupply, ok = math.NewIntFromString("10000000000000000000")
+	if !ok {
+		return fmt.Errorf("invalid max supply")
+	}
+
+	chainID := sdkCtx.ChainID()
+	switch {
+	case strings.Contains(chainID, "chaintest") || strings.Contains(chainID, "mainnet"):
+		inflationParams.BurnedAddresses = []string{
+			"cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv",
+		}
+	case strings.Contains(chainID, "testnet"):
+		inflationParams.BurnedAddresses = []string{
+			"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+		}
+	default:
+		return fmt.Errorf("unknown upgrade chain ID: %s", chainID)
+	}
+
+	inflationParams.DecayRate = math.LegacyMustNewDecFromStr("0.0680") // 6.80%
+
+	if err := app.InflationKeeper.SetParams(sdkCtx, inflationParams); err != nil {
+		return err
+	}
+	decayEpoch := uint64(sdkCtx.BlockHeight())
+	if err := app.InflationKeeper.SetDecayEpochStart(sdkCtx, decayEpoch); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("inflation module updated with params",
+		"max_supply", inflationParams.MaxSupply.String(),
+		"burned_addresses", inflationParams.BurnedAddresses,
+		"decay_rate", inflationParams.DecayRate.String(),
+		"decay_epoch_start", decayEpoch)
+
+	return nil
+}
+
+func updateMintParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating mint params...")
+	mintParams, err := app.MintKeeper.Params.Get(sdkCtx)
+	if err != nil {
+		return err
+	}
+
+	mintParams.InflationMax = math.LegacyMustNewDecFromStr("0.01") // 1%
+	mintParams.InflationMin = math.LegacyMustNewDecFromStr("0.01") // 1%
+	// Set inflation rate change for consistency with the new decay mechanism
+	mintParams.InflationRateChange = math.LegacyZeroDec()
+
+	if err := mintParams.Validate(); err != nil {
+		return err
+	}
+
+	if err := app.MintKeeper.Params.Set(sdkCtx, mintParams); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("mint module updated params",
+		"inflation_max", mintParams.InflationMax.String(),
+		"inflation_min", mintParams.InflationMin.String(),
+		"inflation_rate_change", mintParams.InflationRateChange.String())
+
+	return nil
+}
+
+func updateTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("updating tiered rewards params...")
+	tieredrewardsParams := tieredrewardstypes.DefaultParams()
+	tieredrewardsParams.TargetBaseRewardsRate = math.LegacyMustNewDecFromStr("0.03") // 3%
+
+	if err := app.TieredRewardsKeeper.SetParams(sdkCtx, tieredrewardsParams); err != nil {
+		return err
+	}
+
+	sdkCtx.Logger().Info("tieredrewards module updated params",
+		"target_base_rewards_rate", tieredrewardsParams.TargetBaseRewardsRate.String())
+
+	return nil
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
@@ -127,19 +199,19 @@ func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
 		expeditedAmount := minDeposit.Amount.MulRaw(govv1.DefaultMinExpeditedDepositTokensRatio)
 		govParams.ExpeditedMinDeposit = sdk.NewCoins(sdk.NewCoin(minDeposit.Denom, expeditedAmount))
 	}
-	threshold, err := sdkmath.LegacyNewDecFromStr(govParams.Threshold)
+	threshold, err := math.LegacyNewDecFromStr(govParams.Threshold)
 	if err != nil {
 		return fmt.Errorf("invalid threshold string: %w", err)
 	}
-	expeditedThreshold, err := sdkmath.LegacyNewDecFromStr(govParams.ExpeditedThreshold)
+	expeditedThreshold, err := math.LegacyNewDecFromStr(govParams.ExpeditedThreshold)
 	if err != nil {
 		return fmt.Errorf("invalid expedited threshold string: %w", err)
 	}
 	if expeditedThreshold.LTE(threshold) {
 		expeditedThreshold = threshold.Mul(DefaultThresholdRatio())
 	}
-	if expeditedThreshold.GT(sdkmath.LegacyOneDec()) {
-		expeditedThreshold = sdkmath.LegacyOneDec()
+	if expeditedThreshold.GT(math.LegacyOneDec()) {
+		expeditedThreshold = math.LegacyOneDec()
 	}
 	govParams.ExpeditedThreshold = expeditedThreshold.String()
 	if govParams.ExpeditedVotingPeriod != nil && govParams.VotingPeriod != nil && *govParams.ExpeditedVotingPeriod >= *govParams.VotingPeriod {
@@ -153,18 +225,18 @@ func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
 	return gov.Params.Set(ctx, govParams)
 }
 
-func DefaultThresholdRatio() sdkmath.LegacyDec {
+func DefaultThresholdRatio() math.LegacyDec {
 	return govv1.DefaultExpeditedThreshold.Quo(govv1.DefaultThreshold)
 }
 
-func DefaultPeriodRatio() sdkmath.LegacyDec {
+func DefaultPeriodRatio() math.LegacyDec {
 	return DurationToDec(govv1.DefaultExpeditedPeriod).Quo(DurationToDec(govv1.DefaultPeriod))
 }
 
-func DurationToDec(d time.Duration) sdkmath.LegacyDec {
-	return sdkmath.LegacyMustNewDecFromStr(fmt.Sprintf("%f", d.Seconds()))
+func DurationToDec(d time.Duration) math.LegacyDec {
+	return math.LegacyMustNewDecFromStr(fmt.Sprintf("%f", d.Seconds()))
 }
 
-func DecToDuration(d sdkmath.LegacyDec) time.Duration {
+func DecToDuration(d math.LegacyDec) time.Duration {
 	return time.Second * time.Duration(d.RoundInt64())
 }

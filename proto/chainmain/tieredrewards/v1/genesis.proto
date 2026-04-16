@@ -1,0 +1,39 @@
+syntax = "proto3";
+package chainmain.tieredrewards.v1;
+
+import "chainmain/tieredrewards/v1/params.proto";
+import "chainmain/tieredrewards/v1/types.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
+
+// ValidatorRewardRatioEntry wraps a validator address with its reward ratio for genesis export.
+message ValidatorRewardRatioEntry {
+  string               validator    = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  ValidatorRewardRatio reward_ratio = 2 [(gogoproto.nullable) = false];
+}
+
+// UnbondingMapping maps a staking unbonding ID to a tier position ID for genesis export.
+message UnbondingMapping {
+  uint64 unbonding_id = 1;
+  uint64 position_id  = 2;
+}
+
+// GenesisState defines the tieredrewards module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1 [(gogoproto.nullable) = false];
+  // tiers is the full set of tiers.
+  repeated Tier tiers = 2 [(gogoproto.nullable) = false];
+  // positions is the full set of positions.
+  repeated Position positions = 3 [(gogoproto.nullable) = false];
+  // next_position_id is the next auto-increment ID for positions.
+  uint64 next_position_id = 4;
+  // validator_reward_ratios is the cumulative reward ratio per validator.
+  repeated ValidatorRewardRatioEntry validator_reward_ratios = 5 [(gogoproto.nullable) = false];
+  // unbonding_delegation_mappings maps unbonding delegation IDs to tier position IDs.
+  repeated UnbondingMapping unbonding_delegation_mappings = 6 [(gogoproto.nullable) = false];
+  // redelegation_mappings maps redelegation IDs to tier position IDs.
+  repeated UnbondingMapping redelegation_mappings = 7 [(gogoproto.nullable) = false];
+}

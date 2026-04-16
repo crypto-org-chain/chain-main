@@ -388,3 +388,39 @@ jobs:
           name: debug_files_grpc
           path: debug_files_grpc.tar.gz
           if-no-files-found: ignore
+
+  test-tieredrewards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-tieredrewards
+      - name: Convert coverage data
+        run: |
+           nix profile install nixpkgs#go_1_25
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./profile.txt
+          flags: integration_tests_tieredrewards
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_tieredrewards.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: debug_files_tieredrewards
+          path: debug_files_tieredrewards.tar.gz
+          if-no-files-found: ignore

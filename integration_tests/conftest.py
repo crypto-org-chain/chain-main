@@ -8,14 +8,17 @@ from .utils import cluster_fixture
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks tests as slow")
+    config.addinivalue_line("markers", "base_rewards: marks base rewards tests")
     config.addinivalue_line("markers", "ledger: marks tests as ledger hardware test")
     config.addinivalue_line("markers", "grpc: marks grpc tests")
     config.addinivalue_line("markers", "upgrade: marks upgrade tests")
     config.addinivalue_line("markers", "normal: marks normal tests")
     config.addinivalue_line("markers", "ibc: marks ibc tests")
+    config.addinivalue_line("markers", "inflation: marks inflation tests")
     config.addinivalue_line("markers", "byzantine: marks byzantine tests")
     config.addinivalue_line("markers", "gov: marks gov tests")
     config.addinivalue_line("markers", "solomachine: marks solomachine tests")
+    config.addinivalue_line("markers", "tieredrewards: marks tieredrewards tests")
 
 
 @pytest.fixture(scope="session")
