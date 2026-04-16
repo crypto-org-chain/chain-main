@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -14,7 +15,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
-	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 )
 
 var _ types.QueryServer = Keeper{}
