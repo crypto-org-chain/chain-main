@@ -14,6 +14,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 )
 
 var _ types.QueryServer = Keeper{}
@@ -26,7 +27,7 @@ func (k Keeper) ClassTrace(c context.Context,
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	hash, err := types.ParseHexHash(strings.TrimPrefix(req.Hash, "ibc/"))
+	hash, err := types.ParseHexHash(strings.TrimPrefix(req.Hash, nfttypes.IBCPrefix))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid denom trace hash: %s, error: %s", hash.String(), err))
 	}

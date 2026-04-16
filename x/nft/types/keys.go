@@ -55,26 +55,26 @@ func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string,
 }
 
 func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
-	if bytes.HasPrefix(key, []byte("ibc/")) {
+	if bytes.HasPrefix(key, []byte(IBCPrefix)) {
 		// IBC denom: ibc/hash/tokenID (take remainder after second delimiter as tokenID)
-		rest := key[len("ibc/"):]
+		rest := key[len(IBCPrefix):]
 		idx := bytes.Index(rest, delimiter)
-		if idx < 0 {
-			return denomID, tokenID, errors.New("wrong KeyOwner")
+		if idx < 0 || idx != IBCDenomLen-len(IBCPrefix) {
+			return denomID, tokenID, errors.New("wrong KeyDenom")
 		}
-		denomID = "ibc/" + string(rest[:idx])
+		denomID = IBCPrefix + string(rest[:idx])
 		tokenID = string(rest[idx+len(delimiter):])
 	} else {
 		// Standard denom: denom/tokenID (take remainder after first delimiter as tokenID)
 		idx := bytes.Index(key, delimiter)
 		if idx < 0 {
-			return denomID, tokenID, errors.New("wrong KeyOwner")
+			return denomID, tokenID, errors.New("wrong KeyDenom")
 		}
 		denomID = string(key[:idx])
 		tokenID = string(key[idx+len(delimiter):])
 	}
 
-	return denomID, tokenID, err
+	return denomID, tokenID, nil
 }
 
 // KeyOwner gets the key of a collection owned by an account address

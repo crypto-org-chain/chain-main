@@ -11,6 +11,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 )
 
 // refundPacketToken will unescrow and send back the tokens back to sender
@@ -80,7 +81,7 @@ func (k Keeper) createOutgoingPacket(ctx sdk.Context,
 
 	// deconstruct the token denomination into the denomination trace info
 	// to determine if the sender is the source chain
-	if strings.HasPrefix(classID, "ibc/") {
+	if strings.HasPrefix(classID, nfttypes.IBCPrefix) {
 		fullClassPath, err = k.ClassPathFromHash(ctx, classID)
 		if err != nil {
 			return channeltypes.Packet{}, err
