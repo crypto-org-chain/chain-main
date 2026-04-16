@@ -11,6 +11,15 @@ from pystarport import cluster, cosmoscli
 
 
 class CosmosCLI(cosmoscli.CosmosCLI):
+    def _event_query_tx_for_with_retry(self, txhash, attempts=3):
+        for attempt in range(attempts):
+            try:
+                return self.event_query_tx_for(txhash)
+            except Exception:
+                if attempt == attempts - 1:
+                    raise
+                time.sleep(3 * (attempt + 1))
+
     def event_query_tx_for(self, hash):
         try:
             return super().event_query_tx_for(hash)
@@ -55,7 +64,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
         )
         if wait_tx:
             rsp = json.loads(rsp)
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def submit_gov_proposal(self, proposal, **kwargs):
@@ -71,7 +80,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
         if rsp["code"] == 0:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def gov_propose_before_cosmos_sdk_v0_46(
@@ -79,7 +88,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
     ):
         rsp = self.gov_propose(proposer, kind, proposal, **kwargs)
         if rsp["code"] == 0 and wait_tx:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def gov_propose_legacy(
@@ -160,7 +169,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     )
                 )
         if rsp["code"] == 0 and wait_tx:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def gov_propose_since_cosmos_sdk_v0_50(
@@ -237,7 +246,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
                     )
                 )
         if rsp["code"] == 0 and wait_tx:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def transfer(
@@ -269,7 +278,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
         if not generate_only and rsp["code"] == 0 and wait_tx:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def sign_tx(self, tx_file, signer):
@@ -306,7 +315,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             self.raw("tx", "broadcast", tx_file, node=self.node_rpc, **kwargs)
         )
         if wait_tx and rsp["code"] == 0:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def broadcast_tx_json(self, tx, wait_tx=True, **kwargs):
@@ -416,7 +425,7 @@ class CosmosCLI(cosmoscli.CosmosCLI):
             )
         )
         if rsp["code"] == 0 and event_query_tx:
-            rsp = self.event_query_tx_for(rsp["txhash"])
+            rsp = self._event_query_tx_for_with_retry(rsp["txhash"])
         return rsp
 
     def ibc_denom_trace(self, path, node):

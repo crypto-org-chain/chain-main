@@ -2,13 +2,19 @@
 
 ## UNRELEASED
 
+## Features
+- [#1261](https://github.com/crypto-org-chain/chain-main/pull/1261) Implement tokenomics (inflation decay, base rewards topup and tiered rewards module)
+
 ### Improvements
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
+- [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling
+
 ### Bugfixes
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 - [#1252](https://github.com/crypto-org-chain/chain-main/pull/1252) fix: reject nft-transfer sends on non-nft port.
 - [#1256](https://github.com/crypto-org-chain/chain-main/pull/1256) fix(nft): owner key parsing for IBC-received NFTs.
+- [#1260](https://github.com/crypto-org-chain/chain-main/pull/1260) chore(lint): skip running nixfmt in vendor folder
 
 *July 9, 2025*
 

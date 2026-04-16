@@ -87,11 +87,6 @@ func (msg MsgTransfer) ValidateBasic() error {
 	return nil
 }
 
-// GetSignBytes implements sdk.Msg.
-func (msg MsgTransfer) GetSignBytes() []byte {
-	return sdk.MustSortJSON(AminoCdc.MustMarshalJSON(&msg))
-}
-
 // GetSigners implements sdk.Msg
 func (msg MsgTransfer) GetSigners() []sdk.AccAddress {
 	signer, err := sdk.AccAddressFromBech32(msg.Sender)

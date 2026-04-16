@@ -200,15 +200,16 @@ lint:
 	@golangci-lint run
 	@go mod verify
 	@flake8 --show-source --count --statistics
-	@find . -name "*.nix" -type f | xargs nixfmt -c
+	@find . -name "*.nix" -type f -not -path "./vendor/*" | xargs nixfmt -c
 
 
 lint-fix:
 	@echo "--> Running linter"
 	@golangci-lint run --fix
 	@go mod verify
+	@black --line-length 88 integration_tests/
 	@flake8 --show-source --count --statistics
-	@find . -name "*.nix" -type f | xargs nixfmt -c
+	@find . -name "*.nix" -type f -not -path "./vendor/*" | xargs nixfmt -c
 
 # a trick to make all the lint commands execute, return error when at least one fails.
 # golangci-lint is run in standalone job in ci
@@ -282,7 +283,7 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine and not hybrid'"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine and not hybrid and not tieredrewards'"
 
 nix-integration-test-solomachine: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m solomachine"
@@ -304,6 +305,15 @@ nix-integration-test-byzantine: check-network
 
 nix-integration-test-gov: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m gov"
+
+nix-integration-test-inflation: check-network 
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m inflation"	
+
+nix-integration-test-base-rewards: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m base_rewards"
+
+nix-integration-test-tieredrewards: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'tieredrewards and not slow'"
 
 nix-integration-test-grpc: check-network make-proto
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m grpc"

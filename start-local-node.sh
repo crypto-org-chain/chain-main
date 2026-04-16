@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # ensure that ~/go/bin is in the path
 
@@ -54,4 +55,4 @@ chain-maind genesis collect-gentxs
 chain-maind genesis validate
 
 # Start the node (remove the --pruning=nothing flag if historical queries are not needed)
-chain-maind start --pruning=nothing --rpc.unsafe --trace --minimum-gas-prices 1000basecro
+chain-maind start --pruning=nothing --rpc.unsafe --trace --minimum-gas-prices 1000basecro --api.enable=true --api.address="tcp://0.0.0.0:1317"
