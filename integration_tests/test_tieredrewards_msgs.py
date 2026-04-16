@@ -18,6 +18,7 @@ from .tieredrewards_helpers import (
     claim_rewards,
     clear_position,
     commit_delegation,
+    exit_tier_with_delegation,
     fund_pool,
     get_node_validator_addr,
     get_validator_addr,
@@ -29,7 +30,6 @@ from .tieredrewards_helpers import (
     tier_undelegate,
     trigger_exit,
     withdraw,
-    exit_tier_with_delegation,
 )
 from .utils import (
     approve_proposal,
@@ -661,7 +661,9 @@ def test_exit_tier_with_delegation(cluster):
         )
     )
     shares = del_resp["delegation_response"]["delegation"]["shares"]
-    assert int(shares.split(".")[0]) > 0, "owner should have staking delegation after exit"
+    assert (
+        int(shares.split(".")[0]) > 0
+    ), "owner should have staking delegation after exit"
 
 
 def test_exit_tier_with_delegation_partial(cluster):
@@ -694,7 +696,9 @@ def test_exit_tier_with_delegation_partial(cluster):
 
     # Position should still exist with reduced amount
     pos_after = query_position(cluster, pos_id)["position"]
-    assert int(pos_after["amount"]) < amount, "amount should be reduced after partial exit"
+    assert (
+        int(pos_after["amount"]) < amount
+    ), "amount should be reduced after partial exit"
     assert pos_after["validator"] != "", "position should still be delegated"
 
     # User should have a staking delegation
@@ -711,4 +715,6 @@ def test_exit_tier_with_delegation_partial(cluster):
         )
     )
     shares = del_resp["delegation_response"]["delegation"]["shares"]
-    assert int(shares.split(".")[0]) > 0, "owner should have staking delegation after partial exit"
+    assert (
+        int(shares.split(".")[0]) > 0
+    ), "owner should have staking delegation after partial exit"
