@@ -45,7 +45,7 @@ func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, val
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		return math.LegacyDec{}, types.ErrBadTransferDelegationSrc
+		return math.LegacyDec{}, types.ErrTransferDelegationSrcNotFound
 	} else if err != nil {
 		return math.LegacyDec{}, err
 	}
@@ -114,7 +114,7 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		return math.LegacyDec{}, types.ErrBadTransferDelegationDest
+		return math.LegacyDec{}, types.ErrTransferDelegationDestNotFound
 	} else if err != nil {
 		return math.LegacyDec{}, err
 	}
