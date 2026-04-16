@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
