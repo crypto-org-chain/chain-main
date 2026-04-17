@@ -139,7 +139,7 @@ func (s *KeeperSuite) TestTransferDelegation_TinyAmount() {
 func (s *KeeperSuite) TestTransferDelegation_InvalidValidator() {
 	_, err := s.keeper.TransferDelegation(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, types.ErrBadTransferDelegationSrc)
+	s.Require().ErrorIs(err, types.ErrTransferDelegationSrcNotFound)
 }
 
 func (s *KeeperSuite) TestTransferDelegation_InsufficientTokens() {
