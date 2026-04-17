@@ -67,7 +67,7 @@ func (k Keeper) TransferDelegationToTier(ctx context.Context, delegatorAddr, val
 	return k.transferDelegationToTier(ctx, delegatorAddr, validatorAddr, amount)
 }
 
-func (k Keeper) TransferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+func (k Keeper) TransferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	return k.transferDelegationFromTier(ctx, pos, valAddr, amount)
 }
 

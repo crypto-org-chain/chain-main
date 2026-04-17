@@ -6,7 +6,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -591,10 +590,8 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	initialAmount := pos.Amount
-
 	// Transfer delegation from tier module back to the owner.
-	transferredShares, err := ms.transferDelegationFromTier(ctx, pos, valAddr, msg.Amount)
+	transferredShares, unbondedShares, transferredAmount, err := ms.transferDelegationFromTier(ctx, pos, valAddr, msg.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -611,7 +608,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			return nil, err
 		}
 	} else {
-		remainingShares := pos.DelegatedShares.Sub(transferredShares)
+		remainingShares := pos.DelegatedShares.Sub(unbondedShares)
 		ms.updateDelegation(ctx, &pos, types.Delegation{
 			Validator:           pos.Validator,
 			Shares:              remainingShares,
@@ -631,13 +628,6 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		if err := ms.setPosition(ctx, pos); err != nil {
 			return nil, err
 		}
-	}
-
-	var transferredAmount math.Int
-	if fullExit {
-		transferredAmount = initialAmount
-	} else {
-		transferredAmount = initialAmount.Sub(pos.Amount)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

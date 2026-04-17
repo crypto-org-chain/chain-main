@@ -288,3 +288,60 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_ActiveRedelegation() {
 	})
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
+
+// TestMsgExitTierWithDelegation_PartialAfterSlash verifies that a partial exit
+// after a validator slash correctly tracks remaining shares. The slash creates a
+// non-1:1 exchange rate so the Unbond→Delegate round-trip changes the
+// tokens-per-share ratio. The position's remaining DelegatedShares must equal
+// the shares actually removed from the module (not the owner's new shares).
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
+	lockAmount := sdkmath.NewInt(10000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Slash 10% to create a non-1:1 exchange rate.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2))
+
+	// Re-read position after slash hook updated it.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+
+	s.advancePastExitDuration()
+
+	// Partial exit: half the position amount.
+	exitAmount := pos.Amount.Quo(sdkmath.NewInt(2))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     exitAmount,
+	})
+	s.Require().NoError(err)
+
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(posAfter.IsDelegated())
+
+	// The position's DelegatedShares must match what the module actually has
+	// for this position. Query the module's total delegation on the validator.
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	s.Require().NoError(err)
+
+	// Module delegation includes only this position (single position on this validator).
+	s.Require().True(posAfter.DelegatedShares.Equal(moduleDel.Shares),
+		"position DelegatedShares (%s) must equal module's actual delegation shares (%s)",
+		posAfter.DelegatedShares, moduleDel.Shares)
+
+	// A subsequent full exit (TierUndelegate) using the stored shares must succeed.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err, "TierUndelegate should succeed with correct remaining shares")
+}

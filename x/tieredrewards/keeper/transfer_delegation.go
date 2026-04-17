@@ -96,62 +96,60 @@ func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, val
 // transferDelegationFromTier transfers delegation shares from the tier module
 // account back to the owner on the same validator. The module's delegation is
 // unbonded and re-delegated from the owner's address. No unbonding period.
-func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	// Block transfer with active incoming redelegation: position owner could escape
-	// slashing at the source validator by moving the delegation back to the owner address.
 	redelegating, err := k.stillRedelegating(ctx, pos.Id)
 	if err != nil {
-		return math.LegacyDec{}, err
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 	if redelegating {
-		return math.LegacyDec{}, errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		return math.LegacyDec{}, types.ErrTransferDelegationDestNotFound
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrTransferDelegationDestNotFound
 	} else if err != nil {
-		return math.LegacyDec{}, err
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
 	if !validator.IsBonded() {
-		return math.LegacyDec{}, types.ErrValidatorNotBonded
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrValidatorNotBonded
 	}
 
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 
-	shares := pos.DelegatedShares
+	unbondedShares := pos.DelegatedShares
 	if !pos.ExitWithFullDelegation(amount) {
-		shares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, moduleAddr, valAddr, amount)
+		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, moduleAddr, valAddr, amount)
 		if err != nil {
-			return math.LegacyDec{}, err
+			return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 		}
 	}
 
-	transferredAmount, err := k.stakingKeeper.Unbond(ctx, moduleAddr, valAddr, shares)
+	transferredAmount, err := k.stakingKeeper.Unbond(ctx, moduleAddr, valAddr, unbondedShares)
 	if err != nil {
-		return math.LegacyDec{}, err
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
 	if transferredAmount.IsZero() {
-		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrTinyTransferDelegationAmount
 	}
 
 	// Re-fetch validator after unbond since tokens and exchange rate changed.
 	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
-		return math.LegacyDec{}, err
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
-	transferredShares, err := k.stakingKeeper.Delegate(ctx, owner, transferredAmount, validator.GetStatus(), validator, false)
+	ownerNewShares, err := k.stakingKeeper.Delegate(ctx, owner, transferredAmount, validator.GetStatus(), validator, false)
 	if err != nil {
-		return math.LegacyDec{}, err
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
-	return transferredShares, nil
+	return ownerNewShares, unbondedShares, transferredAmount, nil
 }
