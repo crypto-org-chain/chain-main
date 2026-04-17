@@ -45,7 +45,7 @@ func (k Keeper) transferDelegation(ctx context.Context, delegatorAddr, validator
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
-		return math.LegacyDec{}, types.ErrBadTransferDelegationSrc
+		return math.LegacyDec{}, types.ErrTransferDelegationSrcNotFound
 	} else if err != nil {
 		return math.LegacyDec{}, err
 	}
