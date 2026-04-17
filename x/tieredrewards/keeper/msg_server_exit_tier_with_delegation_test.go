@@ -376,3 +376,106 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_BondedSlashZero() {
 	})
 	s.Require().ErrorIs(err, types.ErrInvalidAmount)
 }
+
+// TestMsgExitTierWithDelegation_FullExitAfterSlash verifies that a full exit
+// after a validator slash (non-1:1 exchange rate) works correctly. The user
+// passes the post-slash pos.Amount and ExitWithFullDelegation returns true,
+// so all DelegatedShares are used directly (no ValidateUnbondAmount truncation).
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
+	lockAmount := sdkmath.NewInt(10000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+
+	// Slash 10% to create a non-1:1 exchange rate.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2))
+
+	// Re-read position after slash hook updated it.
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.LT(lockAmount), "amount should be reduced after slash")
+	s.Require().True(pos.IsDelegated())
+
+	s.advancePastExitDuration()
+
+	// Full exit using post-slash amount.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     pos.Amount,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.FullExit)
+	s.Require().True(resp.TransferredAmount.IsPositive())
+
+	// Position should be deleted.
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
+
+	// Owner should have a staking delegation.
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(del.Shares.IsPositive())
+
+	// Module should have no remaining delegation on this validator.
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	s.Require().Error(err, "module delegation should be fully removed after full exit")
+}
+
+// TestMsgExitTierWithDelegation_FullExitNearTotalSlash verifies that a full
+// exit works when the validator has been slashed to near-zero. The position
+// has a very small Amount but DelegatedShares still holds shares. The full
+// exit should cleanly unbond all shares and delete the position.
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+
+	// Slash 99% — position amount goes very low but shares remain.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(99, 2))
+
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.IsDelegated())
+	s.Require().True(pos.DelegatedShares.IsPositive(), "shares should still exist")
+	s.Require().True(pos.Amount.IsPositive(), "amount should be small but positive after 99% slash")
+
+	s.advancePastExitDuration()
+
+	// Full exit with the tiny remaining amount.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     pos.Amount,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.FullExit)
+
+	// Position should be deleted.
+	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
+
+	// Owner should have a delegation (even if tiny).
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(del.Shares.IsPositive())
+
+	// Module should have no remaining delegation.
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	s.Require().Error(err, "module delegation should be fully removed")
+}
