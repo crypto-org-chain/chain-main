@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -344,4 +346,33 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err, "TierUndelegate should succeed with correct remaining shares")
+}
+
+// TestMsgExitTierWithDelegation_BondedSlashZero verifies that ExitTierWithDelegation
+// fails on a position slashed to zero while bonded (S11-e). The position is still
+// delegated (worthless shares) but Amount=0, so any positive exit amount exceeds it.
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_BondedSlashZero() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Slash 100% — position amount goes to zero but remains delegated.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
+	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100% slash")
+	s.Require().True(pos.IsDelegated(), "position should still be delegated")
+
+	s.advancePastExitDuration()
+
+	// Any positive amount exceeds pos.Amount (0) → ErrInvalidAmount.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     sdkmath.NewInt(1),
+	})
+	s.Require().ErrorIs(err, types.ErrInvalidAmount)
 }

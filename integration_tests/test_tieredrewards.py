@@ -696,6 +696,129 @@ def test_redelegate_twice_during_exit(cluster):
 
 
 # ──────────────────────────────────────────────
+# ExitTierWithDelegation
+# ──────────────────────────────────────────────
+
+
+def test_exit_tier_partial_then_undelegate(cluster):
+    """Partial ExitTierWithDelegation → TierUndelegate remainder → Withdraw."""
+    owner = cluster.address("ecosystem")
+    validator = get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 4
+
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(
+        cluster,
+        owner,
+        TIER_1_ID,
+        amount,
+        validator=validator,
+        trigger_exit=True,
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = new_pos_id(cluster, owner, before)
+
+    fund_pool(cluster, "community", f"10000000{DENOM}")
+    pos = query_position(cluster, pos_id)["position"]
+    exit_unlock_at = isoparse(pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    # Partial exit: half
+    half = amount // 2
+    rsp = exit_tier_with_delegation(cluster, owner, pos_id, half)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    pos_after = query_position(cluster, pos_id)["position"]
+    assert pos_after["validator"] != ""
+    remaining = int(pos_after["amount"])
+    assert remaining > 0
+
+    # Undelegate the remainder
+    rsp = tier_undelegate(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    pos_undel = query_position(cluster, pos_id)["position"]
+    assert pos_undel["delegated_shares"] == "0.000000000000000000"
+
+    # Wait for unbonding to complete
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventPositionUndelegated",
+        lambda attrs: "completion_time" in attrs,
+    )
+    completion = isoparse(ev["completion_time"].strip('"')) + timedelta(seconds=1)
+    wait_for_block_time(cluster, completion)
+    wait_for_new_blocks(cluster, 1)
+
+    # Withdraw
+    bal_before = cluster.balance(owner, DENOM)
+    rsp = withdraw(cluster, owner, pos_id)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    bal_after = cluster.balance(owner, DENOM)
+    assert bal_after > bal_before
+
+    # Position should be deleted
+    try:
+        query_position(cluster, pos_id)
+        assert False, "position should be deleted"
+    except requests.HTTPError as exc:
+        assert exc.response.status_code in (404, 500)
+
+
+def test_exit_tier_partial_then_full_exit(cluster):
+    """Two ExitTierWithDelegation calls: partial then full remainder."""
+    owner = cluster.address("signer1")
+    validator = get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 4
+
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(
+        cluster,
+        owner,
+        TIER_1_ID,
+        amount,
+        validator=validator,
+        trigger_exit=True,
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = new_pos_id(cluster, owner, before)
+
+    fund_pool(cluster, "community", f"10000000{DENOM}")
+    pos = query_position(cluster, pos_id)["position"]
+    exit_unlock_at = isoparse(pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    # First: partial exit (half)
+    half = amount // 2
+    rsp = exit_tier_with_delegation(cluster, owner, pos_id, half)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    pos_after = query_position(cluster, pos_id)["position"]
+    remaining = int(pos_after["amount"])
+    assert remaining > 0
+
+    # Second: exit the remainder (full exit)
+    rsp = exit_tier_with_delegation(cluster, owner, pos_id, remaining)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # Verify full_exit in event
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventExitTierWithDelegation",
+    )
+    assert ev is not None
+    assert ev["full_exit"] == "true"
+
+    # Position should be deleted
+    try:
+        query_position(cluster, pos_id)
+        assert False, "position should be deleted"
+    except requests.HTTPError as exc:
+        assert exc.response.status_code in (404, 500)
+
+# ──────────────────────────────────────────────
 # Reward flows
 # ──────────────────────────────────────────────
 
