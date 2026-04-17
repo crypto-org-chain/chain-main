@@ -577,20 +577,53 @@ func TestMsgClaimTierRewards_Validate(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "valid",
+			name: "valid single position",
 			msg: types.MsgClaimTierRewards{
-				Owner:      validOwner,
-				PositionId: 1,
+				Owner:       validOwner,
+				PositionIds: []uint64{1},
+			},
+		},
+		{
+			name: "valid multiple positions",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{1, 2, 3},
 			},
 		},
 		{
 			name: "invalid owner",
 			msg: types.MsgClaimTierRewards{
-				Owner:      "invalid",
-				PositionId: 1,
+				Owner:       "invalid",
+				PositionIds: []uint64{1},
 			},
 			wantErr:     true,
 			errContains: "invalid owner address",
+		},
+		{
+			name: "empty position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{},
+			},
+			wantErr:     true,
+			errContains: "must not be empty",
+		},
+		{
+			name: "nil position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner: validOwner,
+			},
+			wantErr:     true,
+			errContains: "must not be empty",
+		},
+		{
+			name: "duplicate position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{1, 2, 1},
+			},
+			wantErr:     true,
+			errContains: "duplicate",
 		},
 	}
 

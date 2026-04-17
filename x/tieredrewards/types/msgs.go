@@ -125,6 +125,18 @@ func (msg MsgClaimTierRewards) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	if len(msg.PositionIds) == 0 {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "position_ids must not be empty")
+	}
+
+	seen := make(map[uint64]struct{}, len(msg.PositionIds))
+	for _, id := range msg.PositionIds {
+		if _, dup := seen[id]; dup {
+			return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "duplicate position_id %d", id)
+		}
+		seen[id] = struct{}{}
+	}
+
 	return nil
 }
 

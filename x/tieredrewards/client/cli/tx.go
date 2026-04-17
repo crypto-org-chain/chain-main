@@ -381,14 +381,24 @@ func GetCmdClearPosition() *cobra.Command {
 }
 
 func GetCmdClaimTierRewards() *cobra.Command {
-	return newPositionTxCmd(
-		"claim-tier-rewards [position-id]",
-		"Claim base and bonus rewards for a delegated position",
-		func(owner string, positionID uint64) validatingMsg {
-			return &types.MsgClaimTierRewards{
-				Owner:      owner,
-				PositionId: positionID,
+	return newTxCmd(
+		"claim-tier-rewards [position-id ...]",
+		cobra.MinimumNArgs(1),
+		"Claim base and bonus rewards for one or more positions",
+		func(clientCtx client.Context, cmd *cobra.Command, args []string) error {
+			positionIds := make([]uint64, len(args))
+			for i, arg := range args {
+				id, err := parseUint64Arg("position-id", arg)
+				if err != nil {
+					return err
+				}
+				positionIds[i] = id
 			}
+
+			return broadcastValidatedMsg(clientCtx, cmd, &types.MsgClaimTierRewards{
+				Owner:       clientCtx.GetFromAddress().String(),
+				PositionIds: positionIds,
+			})
 		},
 	)
 }

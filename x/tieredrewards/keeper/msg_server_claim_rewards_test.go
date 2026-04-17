@@ -28,8 +28,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_NotDelegated() {
 	s.Require().NoError(err)
 
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should be zero when not delegated")
@@ -42,8 +42,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_WrongOwner() {
 
 	wrongAddr := sdk.AccAddress([]byte("wrong_owner_________"))
 	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      wrongAddr.String(),
-		PositionId: pos.Id,
+		Owner:       wrongAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
@@ -74,8 +74,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -120,8 +120,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_FailsWhenBonusPoolInsufficient() {
 	// Use a branched context so a failed message does not persist state (matches DeliverTx rollback).
 	cacheCtx, _ := s.ctx.CacheContext()
 	resp, err := msgServer.ClaimTierRewards(cacheCtx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().Error(err)
 	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
@@ -158,8 +158,8 @@ func (s *KeeperSuite) TestClaimTierRewards_ExitingPosition_EarnRewards() {
 
 	// Claim rewards — should succeed and pay both base + bonus
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	s.Require().False(resp.BaseRewards.IsZero() && resp.BonusRewards.IsZero(),
@@ -189,8 +189,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_EmitsEvent() {
 	// Isolate events from this specific call.
 	freshCtx := s.ctx.WithEventManager(sdk.NewEventManager())
 	_, err := msgServer.ClaimTierRewards(freshCtx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 
@@ -231,10 +231,103 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_BondedZeroAmount() {
 
 	// ClaimRewards — should succeed with zero rewards.
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should be zero on zero-amount position")
 	s.Require().True(resp.BonusRewards.IsZero(), "bonus rewards should be zero on zero-amount position")
+}
+
+// TestMsgClaimTierRewards_MultiplePositions verifies that ClaimTierRewards
+// can claim rewards for multiple positions in a single transaction.
+func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+
+	// Fund a single address and create two positions.
+	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+
+	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       addr.String(),
+		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
+	s.Require().False(claimResp.BaseRewards.IsZero(), "aggregated base rewards should be positive")
+	s.Require().False(claimResp.BonusRewards.IsZero(), "aggregated bonus rewards should be positive")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "owner should receive rewards")
+}
+
+// TestMsgClaimTierRewards_EmptyPositionIds verifies that an empty position_ids
+// array is rejected.
+func (s *KeeperSuite) TestMsgClaimTierRewards_EmptyPositionIds() {
+	s.setupTier(1)
+	addr := sdk.AccAddress([]byte("test_owner__________"))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       addr.String(),
+		PositionIds: []uint64{},
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "must not be empty")
+}
+
+// TestMsgClaimTierRewards_DuplicatePositionIds verifies that duplicate IDs are rejected.
+func (s *KeeperSuite) TestMsgClaimTierRewards_DuplicatePositionIds() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id, pos.Id},
+	})
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "duplicate")
+}
+
+// TestMsgClaimTierRewards_OneWrongOwner verifies that if any position in the
+// batch is not owned by the caller, the entire tx fails atomically.
+func (s *KeeperSuite) TestMsgClaimTierRewards_OneWrongOwner() {
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	delAddr := sdk.MustAccAddressFromBech32(pos1.Owner)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	// setupNewTierPosition creates a position with a different random address.
+	otherPos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	s.Require().NotEqual(pos1.Owner, otherPos.Owner, "positions should have different owners")
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos1.Id, otherPos.Id},
+	})
+	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }

@@ -109,8 +109,9 @@ def trigger_exit(cluster, owner, position_id, i=0):
     return tx(cluster, "trigger-exit", str(position_id), from_=owner, i=i)
 
 
-def claim_rewards(cluster, owner, position_id, i=0):
-    return tx(cluster, "claim-tier-rewards", str(position_id), from_=owner, i=i)
+def claim_rewards(cluster, owner, *position_ids, i=0):
+    args = ["claim-tier-rewards"] + [str(pid) for pid in position_ids]
+    return tx(cluster, *args, from_=owner, i=i)
 
 
 def add_to_position(cluster, owner, position_id, amount, i=0):

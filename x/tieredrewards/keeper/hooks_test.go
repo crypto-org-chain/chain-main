@@ -43,8 +43,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
 	// Calling ClaimTierRewards now should not pay base rewards again (already claimed in hook).
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	respClaim, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	s.Require().True(respClaim.BaseRewards.IsZero(), "base rewards should already be claimed by the slash hook")

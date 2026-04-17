@@ -480,39 +480,47 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
-		return nil, err
-	}
-
-	pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.setPosition(ctx, pos); err != nil {
-		return nil, err
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
-		PositionId:   pos.Id,
-		TierId:       pos.TierId,
-		Owner:        pos.Owner,
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
-	}); err != nil {
-		return nil, err
+	totalBase := sdk.NewCoins()
+	totalBonus := sdk.NewCoins()
+
+	for _, posId := range msg.PositionIds {
+		pos, err := ms.getPosition(ctx, posId)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
+			return nil, err
+		}
+
+		pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ms.setPosition(ctx, pos); err != nil {
+			return nil, err
+		}
+
+		if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
+			PositionId:   pos.Id,
+			TierId:       pos.TierId,
+			Owner:        pos.Owner,
+			BaseRewards:  baseRewards,
+			BonusRewards: bonusRewards,
+		}); err != nil {
+			return nil, err
+		}
+
+		totalBase = totalBase.Add(baseRewards...)
+		totalBonus = totalBonus.Add(bonusRewards...)
 	}
 
 	return &types.MsgClaimTierRewardsResponse{
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
-		PositionId:   pos.Id,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
+		PositionIds:  msg.PositionIds,
 	}, nil
 }
 
