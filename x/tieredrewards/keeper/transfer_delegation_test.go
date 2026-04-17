@@ -366,6 +366,31 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_InvalidOwnerAddress() {
 	s.Require().Error(err)
 }
 
+func (s *KeeperSuite) TestTransferDelegationFromTier_NotDelegated() {
+	lockAmount := sdkmath.NewInt(10000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Undelegate so position is no longer delegated.
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(pos.IsDelegated())
+
+	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, pos.Amount)
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
+}
+
 func (s *KeeperSuite) TestTransferDelegationFromTier_ActiveRedelegation() {
 	lockAmount := sdkmath.NewInt(10000)
 	pos := s.setupNewTierPosition(lockAmount, true)

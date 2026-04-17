@@ -103,6 +103,11 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 	}
 
 	// Defensive
+	if !pos.IsDelegated() {
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrapf(types.ErrPositionNotDelegated, "position %d is not delegated", pos.Id)
+	}
+
+	// Defensive
 	redelegating, err := k.stillRedelegating(ctx, pos.Id)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
