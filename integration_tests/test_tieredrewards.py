@@ -20,6 +20,7 @@ from .tieredrewards_helpers import (
     claim_rewards,
     clear_position,
     commit_delegation,
+    exit_tier_with_delegation,
     fund_pool,
     get_node_validator_addr,
     get_validator_addr,
@@ -817,6 +818,7 @@ def test_exit_tier_partial_then_full_exit(cluster):
         assert False, "position should be deleted"
     except requests.HTTPError as exc:
         assert exc.response.status_code in (404, 500)
+
 
 # ──────────────────────────────────────────────
 # Reward flows

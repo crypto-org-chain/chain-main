@@ -609,11 +609,14 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		}
 	} else {
 		remainingShares := pos.DelegatedShares.Sub(unbondedShares)
-		ms.updateDelegation(ctx, &pos, types.Delegation{
+		err := ms.updateDelegation(ctx, &pos, types.Delegation{
 			Validator:           pos.Validator,
 			Shares:              remainingShares,
 			BaseRewardsPerShare: pos.BaseRewardsPerShare,
 		})
+		if err != nil {
+			return nil, err
+		}
 
 		tier, err := ms.getTier(ctx, pos.TierId)
 		if err != nil {
