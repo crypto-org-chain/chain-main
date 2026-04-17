@@ -1572,7 +1572,7 @@ type MsgExitTierWithDelegationResponse struct {
 	PositionId uint64 `protobuf:"varint,1,opt,name=position_id,json=positionId,proto3" json:"position_id,omitempty"`
 	// transferred_amount is the actual tokens transferred back to the owner's delegation.
 	TransferredAmount cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=transferred_amount,json=transferredAmount,proto3,customtype=cosmossdk.io/math.Int" json:"transferred_amount"`
-	// transferred_amount is the shares transferred back to the owner's delegation.
+	// transferred_shares is the shares transferred back to the owner's delegation.
 	TransferredShares cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=transferred_shares,json=transferredShares,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"transferred_shares"`
 	// full_exit is true when the entire position was transferred and deleted.
 	FullExit bool `protobuf:"varint,4,opt,name=full_exit,json=fullExit,proto3" json:"full_exit,omitempty"`

@@ -405,7 +405,7 @@ message MsgExitTierWithDelegationResponse {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
-  // transferred_amount is the shares transferred back to the owner's delegation.
+  // transferred_shares is the shares transferred back to the owner's delegation.
   string transferred_shares = 3 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",

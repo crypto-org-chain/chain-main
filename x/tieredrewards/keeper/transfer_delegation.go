@@ -102,6 +102,7 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	// Defensive
 	redelegating, err := k.stillRedelegating(ctx, pos.Id)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
