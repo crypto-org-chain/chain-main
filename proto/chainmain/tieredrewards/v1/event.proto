@@ -30,7 +30,7 @@ message EventTierChanged {
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 message EventBaseRewardsTopUp {
   // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
-  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // EventPositionCreated is emitted when a new position is created via MsgLockTier.
