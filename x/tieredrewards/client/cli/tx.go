@@ -41,6 +41,7 @@ func GetTxCmd() *cobra.Command {
 		GetCmdClearPosition(),
 		GetCmdClaimTierRewards(),
 		GetCmdWithdrawFromTier(),
+		GetCmdExitTierWithDelegation(),
 	)
 
 	return txCmd
@@ -412,6 +413,31 @@ func GetCmdWithdrawFromTier() *cobra.Command {
 				Owner:      owner,
 				PositionId: positionID,
 			}
+		},
+	)
+}
+
+func GetCmdExitTierWithDelegation() *cobra.Command {
+	return newTxCmd(
+		"exit-tier-with-delegation [position-id] [amount]",
+		cobra.ExactArgs(2),
+		"Exit tier by transferring delegation back to owner (no unbonding period)",
+		func(clientCtx client.Context, cmd *cobra.Command, args []string) error {
+			positionID, err := parseUint64Arg("position-id", args[0])
+			if err != nil {
+				return err
+			}
+
+			amount, err := parseMathIntArg("amount", args[1])
+			if err != nil {
+				return err
+			}
+
+			return broadcastValidatedMsg(clientCtx, cmd, &types.MsgExitTierWithDelegation{
+				Owner:      clientCtx.GetFromAddress().String(),
+				PositionId: positionID,
+				Amount:     amount,
+			})
 		},
 	)
 }

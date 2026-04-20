@@ -184,3 +184,23 @@ message EventPositionWithdrawn {
   Position                 position = 1 [(gogoproto.nullable) = false];
   cosmos.base.v1beta1.Coin amount   = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
+
+// EventExitTierWithDelegation is emitted when a position exits by transferring
+// delegation back to the owner via MsgExitTierWithDelegation.
+message EventExitTierWithDelegation {
+  uint64 position_id        = 1;
+  uint32 tier_id            = 2;
+  string owner              = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string validator          = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string transferred_amount = 5 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false
+  ];
+  string transferred_shares = 6 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+  bool full_exit = 7;
+}

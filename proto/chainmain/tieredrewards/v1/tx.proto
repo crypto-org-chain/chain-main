@@ -59,6 +59,11 @@ service Msg {
   // WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,
   // sends the position's amount back to the owner, and deletes the position.
   rpc WithdrawFromTier(MsgWithdrawFromTier) returns (MsgWithdrawFromTierResponse);
+
+  // ExitTierWithDelegation exits a tier position by transferring the module's
+  // delegation back to the owner on the same validator (no unbonding period).
+  // Supports partial exits. Deletes the position if the full amount is transferred.
+  rpc ExitTierWithDelegation(MsgExitTierWithDelegation) returns (MsgExitTierWithDelegationResponse);
 }
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
@@ -359,4 +364,50 @@ message MsgWithdrawFromTier {
 message MsgWithdrawFromTierResponse {
   // amount is the coins sent back to the owner.
   cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// MsgExitTierWithDelegation exits a tier position by transferring the module's
+// delegation back to the owner on the same validator. No unbonding period.
+// Supports partial exits: only the specified amount is transferred.
+// If the full amount is transferred, the position is deleted.
+message MsgExitTierWithDelegation {
+  option (cosmos.msg.v1.signer) = "owner";
+  option (amino.name)           = "chainmain/MsgExitTierWithDelegation";
+
+  // owner is the position owner's address.
+  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+
+  // position_id is the ID of the position to exit.
+  uint64 position_id = 2;
+
+  // amount is the amount of tokens to transfer back to the owner's delegation.
+  string amount = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+}
+
+// MsgExitTierWithDelegationResponse defines the response for MsgExitTierWithDelegation.
+message MsgExitTierWithDelegationResponse {
+  // position_id echoes the exited position ID.
+  uint64 position_id = 1;
+
+  // transferred_amount is the actual tokens transferred back to the owner's delegation.
+  string transferred_amount = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+  // transferred_shares is the shares transferred back to the owner's delegation.
+  string transferred_shares = 3 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false
+  ];
+
+  // full_exit is true when the entire position was transferred and deleted.
+  bool full_exit = 4;
 }

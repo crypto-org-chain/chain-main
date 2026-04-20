@@ -63,8 +63,12 @@ func (k Keeper) HasPositionsForTier(ctx context.Context, tierId uint32) (bool, e
 	return k.hasPositionsForTier(ctx, tierId)
 }
 
-func (k Keeper) TransferDelegation(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
-	return k.transferDelegation(ctx, delegatorAddr, validatorAddr, amount)
+func (k Keeper) TransferDelegationToTier(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+	return k.transferDelegationToTier(ctx, delegatorAddr, validatorAddr, amount)
+}
+
+func (k Keeper) TransferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
+	return k.transferDelegationFromTier(ctx, pos, valAddr, amount)
 }
 
 func (k Keeper) GetVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {

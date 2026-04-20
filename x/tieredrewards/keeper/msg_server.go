@@ -5,6 +5,8 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -101,7 +103,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	shares, err := ms.transferDelegation(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
+	shares, err := ms.transferDelegationToTier(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -560,5 +562,94 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	return &types.MsgWithdrawFromTierResponse{
 		Amount: withdrawCoins,
+	}, nil
+}
+
+func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgExitTierWithDelegation) (*types.MsgExitTierWithDelegationResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.getPosition(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.validateExitTierWithDelegation(ctx, pos, msg.Owner, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	// Settle pending rewards before mutating the position.
+	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return nil, err
+	}
+
+	// Transfer delegation from tier module back to the owner.
+	transferredShares, unbondedShares, transferredAmount, err := ms.transferDelegationFromTier(ctx, pos, valAddr, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+
+	// Capture for event before potential deletion.
+	posId := pos.Id
+	tierId := pos.TierId
+	validator := pos.Validator
+
+	fullExit := pos.ExitWithFullDelegation(msg.Amount)
+
+	if fullExit {
+		if err := ms.deletePosition(ctx, pos); err != nil {
+			return nil, err
+		}
+	} else {
+		remainingShares := pos.DelegatedShares.Sub(unbondedShares)
+		err := ms.updateDelegation(ctx, &pos, types.Delegation{
+			Validator:           pos.Validator,
+			Shares:              remainingShares,
+			BaseRewardsPerShare: pos.BaseRewardsPerShare,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		tier, err := ms.getTier(ctx, pos.TierId)
+		if err != nil {
+			return nil, err
+		}
+		// actual remaining amount (post-transfer) must meet min lock.
+		if !tier.MeetsMinLockRequirement(pos.Amount) {
+			return nil, errorsmod.Wrapf(types.ErrMinLockAmountNotMet,
+				"remaining amount %s is below tier minimum %s", pos.Amount, tier.MinLockAmount)
+		}
+
+		if err := ms.setPosition(ctx, pos); err != nil {
+			return nil, err
+		}
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitTierWithDelegation{
+		PositionId:        posId,
+		TierId:            tierId,
+		Owner:             msg.Owner,
+		Validator:         validator,
+		TransferredAmount: transferredAmount,
+		TransferredShares: transferredShares,
+		FullExit:          fullExit,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgExitTierWithDelegationResponse{
+		PositionId:        posId,
+		TransferredAmount: transferredAmount,
+		TransferredShares: transferredShares,
+		FullExit:          fullExit,
 	}, nil
 }

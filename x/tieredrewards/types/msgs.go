@@ -18,6 +18,7 @@ var (
 	_ sdk.Msg = &MsgClearPosition{}
 	_ sdk.Msg = &MsgClaimTierRewards{}
 	_ sdk.Msg = &MsgWithdrawFromTier{}
+	_ sdk.Msg = &MsgExitTierWithDelegation{}
 )
 
 func (msg MsgLockTier) Validate() error {
@@ -143,6 +144,18 @@ func (msg MsgClaimTierRewards) Validate() error {
 func (msg MsgWithdrawFromTier) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	return nil
+}
+
+func (msg MsgExitTierWithDelegation) Validate() error {
+	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if !msg.Amount.IsPositive() {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "amount must be positive")
 	}
 
 	return nil

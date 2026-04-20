@@ -687,3 +687,70 @@ func TestMsgWithdrawFromTier_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestMsgExitTierWithDelegation_Validate(t *testing.T) {
+	t.Parallel()
+
+	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
+
+	tests := []struct {
+		name        string
+		msg         types.MsgExitTierWithDelegation
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid",
+			msg: types.MsgExitTierWithDelegation{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(1000),
+			},
+		},
+		{
+			name: "invalid owner",
+			msg: types.MsgExitTierWithDelegation{
+				Owner:      "invalid",
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(1000),
+			},
+			wantErr:     true,
+			errContains: "invalid owner address",
+		},
+		{
+			name: "zero amount",
+			msg: types.MsgExitTierWithDelegation{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.ZeroInt(),
+			},
+			wantErr:     true,
+			errContains: "amount must be positive",
+		},
+		{
+			name: "negative amount",
+			msg: types.MsgExitTierWithDelegation{
+				Owner:      validOwner,
+				PositionId: 1,
+				Amount:     sdkmath.NewInt(-1),
+			},
+			wantErr:     true,
+			errContains: "amount must be positive",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			err := tt.msg.Validate()
+			if tt.wantErr {
+				require.Error(t, err)
+				if tt.errContains != "" {
+					require.ErrorContains(t, err, tt.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
