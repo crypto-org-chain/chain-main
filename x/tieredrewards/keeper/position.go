@@ -180,7 +180,8 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return err
 	}
 
-	// guard, but should already be deleted by redelegation completion hook.
+	// guard, but should already be deleted by redelegation completion hook,
+	// unless a redelegation position gets slashed to zero after exit duration is elapsed and exits.
 	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
 		return err
 	}

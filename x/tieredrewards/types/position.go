@@ -151,3 +151,7 @@ func (p Position) HasTriggeredExit() bool {
 func (p Position) IsOwner(address string) bool {
 	return p.Owner == address
 }
+
+func (p Position) ExitWithFullDelegation(amount math.Int) bool {
+	return amount.Equal(p.Amount)
+}
