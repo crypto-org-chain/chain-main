@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 
-	errorsmod "cosmossdk.io/errors"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+
+	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 // settleRewardsForPositions settles base and bonus rewards for a batch of
