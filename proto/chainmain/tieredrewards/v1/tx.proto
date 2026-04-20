@@ -53,7 +53,7 @@ service Msg {
   // ClearPosition clears exit state for a position so the owner can add funds again.
   rpc ClearPosition(MsgClearPosition) returns (MsgClearPositionResponse);
 
-  // ClaimTierRewards claims base and bonus rewards for a delegated position.
+  // ClaimTierRewards claims base and bonus rewards for one or more delegated positions.
   rpc ClaimTierRewards(MsgClaimTierRewards) returns (MsgClaimTierRewardsResponse);
 
   // WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,

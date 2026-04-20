@@ -1804,7 +1804,7 @@ type MsgClient interface {
 	TriggerExitFromTier(ctx context.Context, in *MsgTriggerExitFromTier, opts ...grpc.CallOption) (*MsgTriggerExitFromTierResponse, error)
 	// ClearPosition clears exit state for a position so the owner can add funds again.
 	ClearPosition(ctx context.Context, in *MsgClearPosition, opts ...grpc.CallOption) (*MsgClearPositionResponse, error)
-	// ClaimTierRewards claims base and bonus rewards for a delegated position.
+	// ClaimTierRewards claims base and bonus rewards for one or more delegated positions.
 	ClaimTierRewards(ctx context.Context, in *MsgClaimTierRewards, opts ...grpc.CallOption) (*MsgClaimTierRewardsResponse, error)
 	// WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,
 	// sends the position's amount back to the owner, and deletes the position.
@@ -1985,7 +1985,7 @@ type MsgServer interface {
 	TriggerExitFromTier(context.Context, *MsgTriggerExitFromTier) (*MsgTriggerExitFromTierResponse, error)
 	// ClearPosition clears exit state for a position so the owner can add funds again.
 	ClearPosition(context.Context, *MsgClearPosition) (*MsgClearPositionResponse, error)
-	// ClaimTierRewards claims base and bonus rewards for a delegated position.
+	// ClaimTierRewards claims base and bonus rewards for one or more delegated positions.
 	ClaimTierRewards(context.Context, *MsgClaimTierRewards) (*MsgClaimTierRewardsResponse, error)
 	// WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,
 	// sends the position's amount back to the owner, and deletes the position.
