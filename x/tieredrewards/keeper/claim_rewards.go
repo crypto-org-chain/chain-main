@@ -171,7 +171,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 
 	tierCache := make(map[uint32]types.Tier)
 	var vals []string
-	groups := make(map[string]*positionsByVal)
+	valGroups := make(map[string]*positionsByVal)
 
 	for i := range positions {
 		pos := &positions[i]
@@ -185,7 +185,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		}
 
 		valAddrStr := pos.Validator
-		g, ok := groups[valAddrStr]
+		g, ok := valGroups[valAddrStr]
 		if !ok {
 			valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
 			if err != nil {
@@ -198,7 +198,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 			}
 
 			g = &positionsByVal{validator: val}
-			groups[valAddrStr] = g
+			valGroups[valAddrStr] = g
 			vals = append(vals, valAddrStr)
 		}
 
@@ -217,7 +217,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 	totalBonus := sdk.NewCoins()
 
 	for _, valAddrStr := range vals {
-		g := groups[valAddrStr]
+		g := valGroups[valAddrStr]
 
 		valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
 		if err != nil {
@@ -254,7 +254,11 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 	}
 
 	for i := range positions {
-		if err := k.setPosition(ctx, positions[i]); err != nil {
+		pos := &positions[i]
+		if !pos.IsDelegated() {
+			continue
+		}
+		if err := k.setPosition(ctx, *pos); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -277,13 +281,15 @@ func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Positio
 	events := make([]proto.Message, 0, len(positions))
 
 	for _, pos := range positions {
-		if !pos.IsDelegated() {
-			continue
-		}
 		// Defensive
 		if !pos.IsOwner(owner) {
 			return nil, errorsmod.Wrapf(types.ErrPositionInvalidOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
 		}
+
+		if !pos.IsDelegated() {
+			continue
+		}
+
 		// Defensive
 		if pos.Validator != valAddr.String() {
 			return nil, errorsmod.Wrapf(types.ErrPositionInvalidValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
@@ -319,7 +325,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Positio
 		total = total.Add(rewards...)
 	}
 
-	if total.IsAllPositive() {
+	if !total.IsZero() {
 		ownerAddr, err := sdk.AccAddressFromBech32(owner)
 		if err != nil {
 			return nil, err
@@ -357,6 +363,10 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 			return nil, errorsmod.Wrapf(types.ErrPositionInvalidOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
 		}
 
+		if !pos.IsDelegated() {
+			continue
+		}
+
 		// Defensive
 		if pos.Validator != val.OperatorAddress {
 			return nil, errorsmod.Wrapf(types.ErrPositionInvalidValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), val.OperatorAddress)
@@ -384,7 +394,7 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 		total = total.Add(bonusCoins...)
 	}
 
-	if total.IsAllPositive() {
+	if !total.IsZero() {
 		if _, err := k.bonusCoinsIfPayable(ctx, total); err != nil {
 			return nil, err
 		}
