@@ -363,7 +363,7 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 
 		// Defensive
 		if pos.TierId != tier.Id {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidTier, "position tier does not match tier, position: %s, tier: %s", pos.String(), tier.Id)
+			return nil, errorsmod.Wrapf(types.ErrPositionInvalidTier, "position tier does not match tier, position: %s, tier: %d", pos.String(), tier.Id)
 		}
 
 		bonus := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue)
