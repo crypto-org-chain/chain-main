@@ -180,8 +180,8 @@ func QueryTiersExec(clientCtx client.Context, extraArgs ...string) (testutil.Buf
 	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryTiers)
 }
 
-func QueryRewardsPoolBalanceExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRewardsPoolBalance)
+func QueryRewardsPoolBalancesExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRewardsPoolBalances)
 }
 
 func QueryEstimatePositionRewardsExec(clientCtx client.Context, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {

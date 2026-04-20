@@ -93,10 +93,10 @@ func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positio
 	return resp.Position
 }
 
-func (s *IntegrationTestSuite) mustQueryRewardsPoolBalance(val *network.Validator) sdk.Coins {
-	var resp tieredrewardstypes.QueryRewardsPoolBalanceResponse
+func (s *IntegrationTestSuite) mustQueryRewardsPoolBalances(val *network.Validator) sdk.Coins {
+	var resp tieredrewardstypes.QueryRewardsPoolBalancesResponse
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-		return tieredrewardstestutil.QueryRewardsPoolBalanceExec(val.ClientCtx)
+		return tieredrewardstestutil.QueryRewardsPoolBalancesExec(val.ClientCtx)
 	}, &resp)
 	return resp.Balance
 }
@@ -224,7 +224,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(tieredrewardstestutil.TestExitDuration, tiersResp.Tiers[0].ExitDuration)
 		s.Require().True(tiersResp.Tiers[0].BonusApy.Equal(sdkmath.LegacyOneDec()))
 
-		poolBalance := s.mustQueryRewardsPoolBalance(val)
+		poolBalance := s.mustQueryRewardsPoolBalances(val)
 		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).IsPositive(), "rewards pool should be funded at genesis")
 	})
 
