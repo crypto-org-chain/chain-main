@@ -83,11 +83,11 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier
 		return sdk.NewCoins(), err
 	}
 
-	return k.claimBonusRewards(ctx, pos, val, tier, forceAccrue)
+	return k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, val, tier, forceAccrue)
 }
 
 func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, pos, currentRatio)
+	return k.claimBaseRewards(ctx, []*types.Position{pos}, pos.Owner, sdk.MustValAddressFromBech32(pos.Validator))
 }
 
 func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {

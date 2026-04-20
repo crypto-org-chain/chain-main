@@ -480,10 +480,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	totalBase := sdk.NewCoins()
-	totalBonus := sdk.NewCoins()
-
+	positions := make([]types.Position, 0, len(msg.PositionIds))
 	for _, posId := range msg.PositionIds {
 		pos, err := ms.getPosition(ctx, posId)
 		if err != nil {
@@ -494,27 +491,22 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 			return nil, err
 		}
 
-		pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
+		positions = append(positions, pos)
+	}
 
-		if err := ms.setPosition(ctx, pos); err != nil {
-			return nil, err
-		}
+	totalBase, totalBonus, err := ms.claimRewardsForPositions(ctx, msg.Owner, positions)
+	if err != nil {
+		return nil, err
+	}
 
-		if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
-			PositionId:   pos.Id,
-			TierId:       pos.TierId,
-			Owner:        pos.Owner,
-			BaseRewards:  baseRewards,
-			BonusRewards: bonusRewards,
-		}); err != nil {
-			return nil, err
-		}
-
-		totalBase = totalBase.Add(baseRewards...)
-		totalBonus = totalBonus.Add(bonusRewards...)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
+		Owner:        msg.Owner,
+		PositionIds:  msg.PositionIds,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
+	}); err != nil {
+		return nil, err
 	}
 
 	return &types.MsgClaimTierRewardsResponse{
