@@ -358,9 +358,5 @@ message MsgWithdrawFromTier {
 // MsgWithdrawFromTierResponse defines the response for MsgWithdrawFromTier.
 message MsgWithdrawFromTierResponse {
   // amount is the coins sent back to the owner.
-  repeated cosmos.base.v1beta1.Coin amount = 1 [
-    (gogoproto.nullable)     = false,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (amino.dont_omitempty)   = true
-  ];
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }

@@ -540,9 +540,9 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	withdrawCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount))
+	withdrawCoins := sdk.NewCoin(bondDenom, pos.Amount)
 
-	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, withdrawCoins); err != nil {
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdrawCoins)); err != nil {
 		return nil, err
 	}
 

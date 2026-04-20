@@ -181,10 +181,6 @@ message EventTierRewardsClaimed {
 // EventPositionWithdrawn is emitted when a position's locked tokens are withdrawn via MsgWithdrawFromTier.
 message EventPositionWithdrawn {
   // position is the position at the time of withdrawal (state is deleted after this event).
-  Position position                        = 1 [(gogoproto.nullable) = false];
-  repeated cosmos.base.v1beta1.Coin amount = 2 [
-    (gogoproto.nullable)     = false,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (amino.dont_omitempty)   = true
-  ];
+  Position                 position = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin amount   = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
