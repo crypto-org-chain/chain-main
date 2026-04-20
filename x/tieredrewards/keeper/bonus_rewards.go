@@ -76,7 +76,7 @@ func (k Keeper) bonusCoinsIfPayable(ctx context.Context, bonus sdk.Coins) (sdk.C
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBalance := k.bankKeeper.GetAllBalances(ctx, poolAddr)
-	if bonus.IsAnyGT(poolBalance) {
+	if !poolBalance.IsAllGTE(bonus) {
 		return sdk.NewCoins(), errorsmod.Wrapf(types.ErrInsufficientBonusPool,
 			"bonus pool has insufficient funds, bonus: %s, pool balance: %s",
 			bonus.String(), poolBalance.String())

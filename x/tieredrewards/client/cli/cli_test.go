@@ -98,7 +98,7 @@ func (s *IntegrationTestSuite) mustQueryRewardsPoolBalances(val *network.Validat
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
 		return tieredrewardstestutil.QueryRewardsPoolBalancesExec(val.ClientCtx)
 	}, &resp)
-	return resp.Balance
+	return resp.Balances
 }
 
 func (s *IntegrationTestSuite) mustQueryAllPositions(val *network.Validator, extraArgs ...string) tieredrewardstypes.QueryAllTierPositionsResponse {
