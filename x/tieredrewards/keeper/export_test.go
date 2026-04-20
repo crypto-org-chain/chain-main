@@ -83,8 +83,8 @@ func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, owne
 	return k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, val, tier, forceAccrue)
 }
 
-func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, positions, owner, valAddr)
+func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress,ratio sdk.DecCoins) (sdk.Coins, error) {
+	return k.claimBaseRewards(ctx, positions, owner, valAddr, ratio)
 }
 
 func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {

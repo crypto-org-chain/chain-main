@@ -25,10 +25,15 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 		return err
 	}
 
+	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+
 	tierCache := make(map[uint32]types.Tier)
 
 	for i := range positions {
-		if _, err := k.claimBaseRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, valAddr); err != nil {
+		if _, err := k.claimBaseRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, valAddr, currentRatio); err != nil {
 			return err
 		}
 
@@ -100,9 +105,14 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 			return err
 		}
 
+		currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+		if err != nil {
+			return err
+		}
+
 		for i := range valPositions {
 			pos := valPositions[i]
-			if _, err := k.claimBaseRewards(ctx, []*types.Position{pos}, pos.Owner, valAddr); err != nil {
+			if _, err := k.claimBaseRewards(ctx, []*types.Position{pos}, pos.Owner, valAddr, currentRatio); err != nil {
 				return err
 			}
 			if _, err := k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, validator, tier, false); err != nil {
@@ -132,7 +142,12 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 		return types.Position{}, nil, nil, err
 	}
 
-	base, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr)
+	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
+
+	base, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -161,6 +176,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
 	type positionsByVal struct {
 		positions []*types.Position
+		ratio     sdk.DecCoins
 		validator stakingtypes.Validator
 	}
 
@@ -192,12 +208,17 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 				return nil, nil, err
 			}
 
+			ratio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+			if err != nil {
+				return nil, nil, err
+			}
+
 			val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			g = &positionsByVal{validator: val}
+			g = &positionsByVal{ratio: ratio, validator: val}
 			valGroups[valAddrStr] = g
 			vals = append(vals, valAddrStr)
 		}
@@ -224,7 +245,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 			return nil, nil, err
 		}
 
-		base, err := k.claimBaseRewards(ctx, g.positions, g.positions[0].Owner, valAddr)
+		base, err := k.claimBaseRewards(ctx, g.positions, g.positions[0].Owner, valAddr, g.ratio)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -269,14 +290,9 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 // claimBaseRewards computes base rewards for the given positions, updates their
 // BaseRewardsPerShare checkpoints, emits per-position EventBaseRewardsClaimed,
 // and performs a single batched bank send for the total.
-func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress) (sdk.Coins, error) {
+func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, currentRatio sdk.DecCoins) (sdk.Coins, error) {
 	total := sdk.NewCoins()
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
 
 	events := make([]proto.Message, 0, len(positions))
 
