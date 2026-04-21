@@ -20,8 +20,8 @@
 - [#1263](https://github.com/crypto-org-chain/chain-main/pull/1263) fix: remove unused error codes in tieredrewards module
 - [#1267](https://github.com/crypto-org-chain/chain-main/pull/1267) fix: refactor and add back error codes for tieredrewards module
 
-### Chores:
-- [#1266](https://github.com/crypto-org-chain/chain-main/pull/1263) chore(deps): bump ibc to 10.5.1
+### Chores
+- [#1266](https://github.com/crypto-org-chain/chain-main/pull/1266) chore(deps): bump ibc to 10.5.1
 
 *July 9, 2025*
 
