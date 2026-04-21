@@ -8,32 +8,7 @@ import (
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/math"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
-
-func (k Keeper) slashPositions(ctx context.Context, val sdk.ValAddress, positions []types.Position, fraction math.LegacyDec) error {
-	validator, err := k.stakingKeeper.GetValidator(ctx, val)
-	if err != nil {
-		return err
-	}
-	for i := range positions {
-		k.slash(&positions[i], validator, fraction)
-		if err := k.setPosition(ctx, positions[i]); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// slash updates a position's post-slash token amount from validator shares.
-// LegacyDec rounding may differ from SDK accounting by up to 1 basecro.
-// pos.Amount is reconciled with the SDK return value during TierUndelegate.
-func (k Keeper) slash(pos *types.Position, validator stakingtypes.Validator, fraction math.LegacyDec) {
-	postSlashTokens := validator.TokensFromShares(pos.DelegatedShares).Mul(math.LegacyOneDec().Sub(fraction)).TruncateInt()
-	pos.UpdateAmount(math.MaxInt(postSlashTokens, math.ZeroInt()))
-}
 
 func (k Keeper) getMappedSlashPosition(
 	ctx context.Context,

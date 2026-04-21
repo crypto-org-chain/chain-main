@@ -42,7 +42,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 	s.Require().Equal(expectedBonusCoins, bonus)
 }
 
-func (s *KeeperSuite) unbondThenRebondWithCheckpoints(valAddr sdk.ValAddress, toUnbond time.Duration, toRebond time.Duration) (time.Time, time.Time, sdkmath.LegacyDec) {
+func (s *KeeperSuite) unbondThenRebondWithCheckpoints(valAddr sdk.ValAddress, toUnbond, toRebond time.Duration) (time.Time, time.Time, sdkmath.LegacyDec) {
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(toUnbond))
 	unbondTime := s.ctx.BlockTime()
 	s.jailAndUnbondValidator(valAddr)

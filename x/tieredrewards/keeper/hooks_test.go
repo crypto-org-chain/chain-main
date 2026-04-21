@@ -449,7 +449,6 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
 	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
@@ -458,7 +457,7 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 		},
 	})
 	s.Require().NoError(err)
-	consAddr = s.recordUnbondingCheckpoint(valAddr)
+	consAddr := s.recordUnbondingCheckpoint(valAddr)
 	s.recordBondedCheckpointAt(valAddr, consAddr, s.ctx.BlockTime())
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)

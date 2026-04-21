@@ -13,14 +13,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.
-func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
-	if !validator.IsBonded() {
-		return math.ZeroInt()
-	}
-	return k.calculateBonusRaw(position, validator, tier, blockTime)
-}
-
 // calculateBonusRaw computes accrued bonus without checking validator status.
 // Formula: tokens * BonusApy * durationSeconds / SecondsPerYear.
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.

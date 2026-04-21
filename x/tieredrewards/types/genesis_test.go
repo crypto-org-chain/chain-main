@@ -12,6 +12,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// Malformed validator bech32 for genesis validation negative tests.
+const invalidValidatorBech32 = "invalid"
+
 func genesisTier(id uint32) types.Tier {
 	return types.Tier{
 		Id:            id,
@@ -118,7 +121,7 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("invalid validator address in reward ratio", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.ValidatorRewardRatios[0].Validator = "invalid"
+		genesis.ValidatorRewardRatios[0].Validator = invalidValidatorBech32
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address")
 	})
 
@@ -167,7 +170,7 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("invalid validator address in bonus pause checkpoints", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.ValidatorBonusPauseCheckpoints[0].Validator = "invalid"
+		genesis.ValidatorBonusPauseCheckpoints[0].Validator = invalidValidatorBech32
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus pause checkpoint")
 	})
 
@@ -185,7 +188,7 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("invalid validator address in bonus resume checkpoints", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.ValidatorBonusResumeCheckpoints[0].Validator = "invalid"
+		genesis.ValidatorBonusResumeCheckpoints[0].Validator = invalidValidatorBech32
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus resume checkpoint")
 	})
 
@@ -210,7 +213,7 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("invalid validator address in bonus pause rates", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.ValidatorBonusPauseRates[0].Validator = "invalid"
+		genesis.ValidatorBonusPauseRates[0].Validator = invalidValidatorBech32
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus pause rate")
 	})
 
