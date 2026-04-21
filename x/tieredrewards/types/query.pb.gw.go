@@ -823,7 +823,7 @@ var (
 
 	pattern_Query_Tiers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "tieredrewards", "v1", "tiers"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_RewardsPoolBalances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "tieredrewards", "v1", "rewards_pool_balance"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_RewardsPoolBalances_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"chainmain", "tieredrewards", "v1", "rewards_pool_balances"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_EstimatePositionRewards_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"chainmain", "tieredrewards", "v1", "estimate_rewards", "position_id"}, "", runtime.AssumeColonVerbOpt(false)))
 

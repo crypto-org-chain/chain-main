@@ -39,13 +39,12 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/tiers";
   }
 
-  // RewardsPoolBalances returns the current balance of the bonus rewards pool.
+  // RewardsPoolBalances returns the current balances of the rewards pool.
   rpc RewardsPoolBalances(QueryRewardsPoolBalancesRequest) returns (QueryRewardsPoolBalancesResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/rewards_pool_balance";
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/rewards_pool_balances";
   }
 
-  // EstimatePositionRewards estimates pending base and bonus rewards for a position
-  // without claiming them.
+  // EstimatePositionRewards estimates pending base and bonus rewards for a position.
   rpc EstimatePositionRewards(QueryEstimatePositionRewardsRequest) returns (QueryEstimatePositionRewardsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/estimate_rewards/{position_id}";
   }
