@@ -119,8 +119,8 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     assert "max_supply" in rsp
 
-    # Prepare new max supply (increase by 480000) and submit a proposal
-    new_max_supply = current_total_supply + 480000
+    # Prepare new max supply (increase by 500000) and submit a proposal
+    new_max_supply = current_total_supply + 500000
     rsp["max_supply"] = str(new_max_supply)
     proposal_src = _create_max_supply_proposal(rsp)
 

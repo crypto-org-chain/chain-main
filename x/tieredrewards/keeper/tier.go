@@ -21,7 +21,8 @@ func (k Keeper) getTier(ctx context.Context, id uint32) (types.Tier, error) {
 	return tier, nil
 }
 
-func (k Keeper) setTier(ctx context.Context, tier types.Tier) error {
+// SetTier writes a tier after validation. Used by governance messages, genesis, and chain upgrades.
+func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
 	if err := tier.Validate(); err != nil {
 		return err
 	}

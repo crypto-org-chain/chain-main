@@ -31,10 +31,6 @@ func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
 	return k.getTier(ctx, id)
 }
 
-func (k Keeper) SetTier(ctx context.Context, tier types.Tier) error {
-	return k.setTier(ctx, tier)
-}
-
 func (k Keeper) HasTier(ctx context.Context, id uint32) (bool, error) {
 	return k.hasTier(ctx, id)
 }

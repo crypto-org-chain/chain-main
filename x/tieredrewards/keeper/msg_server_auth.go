@@ -43,7 +43,7 @@ func (ms msgServer) AddTier(ctx context.Context, msg *types.MsgAddTier) (*types.
 		return nil, types.ErrTierAlreadyExists
 	}
 
-	if err := ms.setTier(ctx, msg.Tier); err != nil {
+	if err := ms.SetTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 		}
 	}
 
-	if err := ms.setTier(ctx, msg.Tier); err != nil {
+	if err := ms.SetTier(ctx, msg.Tier); err != nil {
 		return nil, err
 	}
 
