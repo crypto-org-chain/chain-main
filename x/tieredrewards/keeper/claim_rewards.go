@@ -68,7 +68,8 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 }
 
 // claimRewardsAndUpdatePositionsForTier claims base and bonus rewards for all delegated
-// positions in the given tier.
+// positions in the given tier. Positions are grouped by validator and owner for
+// batched bank sends.
 func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierId uint32) error {
 	positions, err := k.getPositionsByTier(ctx, tierId)
 	if err != nil {
@@ -83,46 +84,75 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		return err
 	}
 
-	// Group delegated positions by validator
-	var validatorOrder []string
-	byValidator := make(map[string][]*types.Position)
+	// Cache validator-level data once per unique validator.
+	type valData struct {
+		valAddr   sdk.ValAddress
+		ratio     sdk.DecCoins
+		validator stakingtypes.Validator
+	}
+	valCache := make(map[string]*valData)
+
+	// Group delegated positions by (validator, owner) for batched sends.
+	type valOwnerKey struct {
+		validator string
+		owner     string
+	}
+	type valOwnerGroup struct {
+		positions []*types.Position
+		val       *valData
+	}
+
+	var groupOrder []valOwnerKey
+	groups := make(map[valOwnerKey]*valOwnerGroup)
+
 	for i := range positions {
-		pos := positions[i]
+		pos := &positions[i]
 		if !pos.IsDelegated() {
 			continue
 		}
-		if _, seen := byValidator[pos.Validator]; !seen {
-			validatorOrder = append(validatorOrder, pos.Validator)
+
+		vd, ok := valCache[pos.Validator]
+		if !ok {
+			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+			if err != nil {
+				return err
+			}
+
+			ratio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+			if err != nil {
+				return err
+			}
+
+			validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+			if err != nil {
+				return err
+			}
+
+			vd = &valData{valAddr: valAddr, ratio: ratio, validator: validator}
+			valCache[pos.Validator] = vd
 		}
-		byValidator[pos.Validator] = append(byValidator[pos.Validator], &pos)
+
+		key := valOwnerKey{validator: pos.Validator, owner: pos.Owner}
+		g, ok := groups[key]
+		if !ok {
+			g = &valOwnerGroup{val: vd}
+			groups[key] = g
+			groupOrder = append(groupOrder, key)
+		}
+
+		g.positions = append(g.positions, pos)
 	}
 
-	for _, valAddrStr := range validatorOrder {
-		valPositions := byValidator[valAddrStr]
-		valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
-		if err != nil {
+	for _, key := range groupOrder {
+		g := groups[key]
+
+		if _, err := k.claimBaseRewards(ctx, g.positions, key.owner, g.val.valAddr, g.val.ratio); err != nil {
 			return err
 		}
-
-		currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-		if err != nil {
+		if _, err := k.claimBonusRewards(ctx, g.positions, key.owner, g.val.validator, tier, false); err != nil {
 			return err
 		}
-
-		validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-		if err != nil {
-			return err
-		}
-
-		for i := range valPositions {
-			pos := valPositions[i]
-			if _, err := k.claimBaseRewards(ctx, []*types.Position{pos}, pos.Owner, valAddr, currentRatio); err != nil {
-				return err
-			}
-			if _, err := k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, validator, tier, false); err != nil {
-				return err
-			}
-			// Use updatePosition since only reward checkpoints change.
+		for _, pos := range g.positions {
 			if err := k.updatePosition(ctx, *pos); err != nil {
 				return err
 			}
