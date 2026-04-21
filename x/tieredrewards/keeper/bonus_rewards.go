@@ -13,6 +13,38 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+type validatorBonusAccrualState struct {
+	pauseAt      time.Time
+	hasPause     bool
+	resumeAt     time.Time
+	hasResume    bool
+	pauseRate    math.LegacyDec
+	hasPauseRate bool
+}
+
+func (k Keeper) loadValidatorBonusAccrualState(ctx context.Context, valAddr sdk.ValAddress) (validatorBonusAccrualState, error) {
+	pauseAt, hasPause, err := k.getValidatorBonusPauseAt(ctx, valAddr)
+	if err != nil {
+		return validatorBonusAccrualState{}, err
+	}
+	resumeAt, hasResume, err := k.getValidatorBonusResumeAt(ctx, valAddr)
+	if err != nil {
+		return validatorBonusAccrualState{}, err
+	}
+	pauseRate, hasPauseRate, err := k.getValidatorBonusPauseRate(ctx, valAddr)
+	if err != nil {
+		return validatorBonusAccrualState{}, err
+	}
+	return validatorBonusAccrualState{
+		pauseAt:      pauseAt,
+		hasPause:     hasPause,
+		resumeAt:     resumeAt,
+		hasResume:    hasResume,
+		pauseRate:    pauseRate,
+		hasPauseRate: hasPauseRate,
+	}, nil
+}
+
 // calculateBonusRaw computes accrued bonus without checking validator status.
 // Formula: tokens * BonusApy * durationSeconds / SecondsPerYear.
 // accrualEnd is capped at ExitUnlockAt when the position is exiting.
@@ -53,12 +85,8 @@ func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 }
 
 // bonusAccrualAmount returns bonus owed for pos at blockTime. When forceAccrue is true,
-// bonded status is ignored (calculateBonusRaw).
-func (k Keeper) bonusAccrualAmount(ctx context.Context, pos types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool) (math.Int, error) {
-	if forceAccrue {
-		return k.calculateBonusRaw(pos, val, tier, blockTime), nil
-	}
-
+// bonded-status gating is ignored but validator pause/resume checkpoints are still enforced.
+func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool, bonusState validatorBonusAccrualState) (math.Int, error) {
 	if !pos.IsDelegated() || pos.LastBonusAccrual.IsZero() {
 		return math.ZeroInt(), nil
 	}
@@ -71,18 +99,9 @@ func (k Keeper) bonusAccrualAmount(ctx context.Context, pos types.Position, val 
 		return math.ZeroInt(), nil
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return math.ZeroInt(), err
-	}
-
 	tokens := val.TokensFromShares(pos.DelegatedShares)
-	pauseAt, hasPause, err := k.getValidatorBonusPauseAt(ctx, valAddr)
-	if err != nil {
-		return math.ZeroInt(), err
-	}
-	if !hasPause {
-		if !val.IsBonded() {
+	if !bonusState.hasPause {
+		if !forceAccrue && !val.IsBonded() {
 			return math.ZeroInt(), nil
 		}
 		durationSeconds := int64(accrualEnd.Sub(pos.LastBonusAccrual) / time.Second)
@@ -93,29 +112,20 @@ func (k Keeper) bonusAccrualAmount(ctx context.Context, pos types.Position, val 
 			TruncateInt(), nil
 	}
 
-	resumeAt, hasResume, err := k.getValidatorBonusResumeAt(ctx, valAddr)
-	if err != nil {
-		return math.ZeroInt(), err
-	}
-
-	pauseRate, hasPauseRate, err := k.getValidatorBonusPauseRate(ctx, valAddr)
-	if err != nil {
-		return math.ZeroInt(), err
-	}
 	pauseTokens := tokens
-	if hasPauseRate {
-		pauseTokens = pos.DelegatedShares.Mul(pauseRate)
+	if bonusState.hasPauseRate {
+		pauseTokens = pos.DelegatedShares.Mul(bonusState.pauseRate)
 	}
 
 	preDurationSeconds := int64(0)
-	preEnd := minTime(accrualEnd, pauseAt)
+	preEnd := minTime(accrualEnd, bonusState.pauseAt)
 	if preEnd.After(pos.LastBonusAccrual) {
 		preDurationSeconds = int64(preEnd.Sub(pos.LastBonusAccrual) / time.Second)
 	}
 
 	postDurationSeconds := int64(0)
-	if hasResume && !resumeAt.Before(pauseAt) {
-		postStart := maxTime(pos.LastBonusAccrual, resumeAt)
+	if bonusState.hasResume && !bonusState.resumeAt.Before(bonusState.pauseAt) {
+		postStart := maxTime(pos.LastBonusAccrual, bonusState.resumeAt)
 		if accrualEnd.After(postStart) {
 			postDurationSeconds = int64(accrualEnd.Sub(postStart) / time.Second)
 		}

@@ -26,6 +26,10 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 	if err != nil {
 		return err
 	}
+	bonusState, err := k.loadValidatorBonusAccrualState(ctx, valAddr)
+	if err != nil {
+		return err
+	}
 
 	tierCache := make(map[uint32]types.Tier)
 
@@ -43,7 +47,7 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 			tierCache[positions[i].TierId] = tier
 		}
 
-		_, err := k.claimBonusRewards(ctx, &positions[i], validator, tier, forceAccrue)
+		_, err := k.claimBonusRewardsWithState(ctx, &positions[i], validator, tier, forceAccrue, bonusState)
 		if err != nil {
 			if errors.Is(err, types.ErrInsufficientBonusPool) {
 				k.logger(ctx).Error(err.Error())
@@ -106,13 +110,17 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		if err != nil {
 			return err
 		}
+		bonusState, err := k.loadValidatorBonusAccrualState(ctx, valAddr)
+		if err != nil {
+			return err
+		}
 
 		for i := range valPositions {
 			pos := valPositions[i]
 			if _, err := k.claimBaseRewards(ctx, pos, currentRatio); err != nil {
 				return err
 			}
-			if _, err := k.claimBonusRewards(ctx, pos, validator, tier, false); err != nil {
+			if _, err := k.claimBonusRewardsWithState(ctx, pos, validator, tier, false, bonusState); err != nil {
 				return err
 			}
 			if err := k.setPosition(ctx, *pos); err != nil {
@@ -159,8 +167,12 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
+	bonusState, err := k.loadValidatorBonusAccrualState(ctx, valAddr)
+	if err != nil {
+		return types.Position{}, nil, nil, err
+	}
 
-	bonus, err := k.claimBonusRewards(ctx, &pos, val, tier, false)
+	bonus, err := k.claimBonusRewardsWithState(ctx, &pos, val, tier, false, bonusState)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -218,11 +230,23 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 }
 
 // claimBonusRewards calculates and pays the bonus for a position from the rewards pool.
-// When forceAccrue is true, bonus is settled regardless of validator bonded status.
+// When forceAccrue is true, bonded-status gating is ignored while pause/resume checkpoints remain enforced.
 func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return sdk.NewCoins(), err
+	}
+	bonusState, err := k.loadValidatorBonusAccrualState(ctx, valAddr)
+	if err != nil {
+		return sdk.NewCoins(), err
+	}
+	return k.claimBonusRewardsWithState(ctx, pos, val, tier, forceAccrue, bonusState)
+}
+
+func (k Keeper) claimBonusRewardsWithState(ctx context.Context, pos *types.Position, val stakingtypes.Validator, tier types.Tier, forceAccrue bool, bonusState validatorBonusAccrualState) (sdk.Coins, error) {
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
 
-	bonus, err := k.bonusAccrualAmount(ctx, *pos, val, tier, blockTime, forceAccrue)
+	bonus, err := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue, bonusState)
 	if err != nil {
 		return sdk.NewCoins(), err
 	}

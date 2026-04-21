@@ -277,7 +277,7 @@ func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 		"bonus should be zero when validator is not bonded; got %s", bonus)
 }
 
-// forceAccrue=true still yields bonus even when the validator is not bonded.
+// forceAccrue=true still yields bonus for eligible windows even when validator is not bonded.
 func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -299,11 +299,54 @@ func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue() {
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
 
-	// forceAccrue=true → calculateBonusRaw → ignores validator status.
+	// forceAccrue=true ignores bonded gating for eligible accrual windows.
 	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &pos, tier, true)
 	s.Require().NoError(err)
 	s.Require().False(bonus.IsZero(),
 		"forceAccrue=true should yield bonus even for an unbonded validator")
+}
+
+// Regression: forceAccrue=true must still respect pause/resume checkpoints and
+// must not accrue through an ongoing unbonding window.
+func (s *KeeperSuite) TestClaimBonusRewards_ForceAccrue_RespectsPauseCheckpoint() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	// Accrue while bonded, then enter unbonding (pause checkpoint is recorded).
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	unbondAt := s.ctx.BlockTime()
+	s.jailAndUnbondValidator(valAddr)
+
+	pauseAt, ok, err := s.keeper.GetValidatorBonusPauseAt(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(ok)
+	s.Require().Equal(unbondAt.Unix(), pauseAt.Unix())
+
+	pauseRate, err := s.keeper.ValidatorBonusPauseRate.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// Stay unbonding for longer.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
+	s.Require().NoError(err)
+
+	preDurationSeconds := int64(pauseAt.Sub(pos.LastBonusAccrual) / time.Second)
+	expected := pos.DelegatedShares.
+		Mul(pauseRate).
+		Mul(tier.BonusApy).
+		MulInt64(preDurationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+
+	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &pos, tier, true)
+	s.Require().NoError(err)
+	s.Require().Equal(expected.String(), bonus.AmountOf(bondDenom).String(),
+		"forceAccrue must respect pause checkpoint and exclude ongoing unbonding time")
 }
 
 // TestSettleRewardsForPositions_UpdatesOriginalSlice verifies:
