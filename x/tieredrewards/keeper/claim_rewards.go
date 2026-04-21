@@ -211,6 +211,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
 	type positionsByVal struct {
 		positions []*types.Position
+		valAddr   sdk.ValAddress
 		ratio     sdk.DecCoins
 		validator stakingtypes.Validator
 	}
@@ -253,7 +254,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 				return nil, nil, err
 			}
 
-			g = &positionsByVal{ratio: ratio, validator: val}
+			g = &positionsByVal{valAddr: valAddr, ratio: ratio, validator: val}
 			valGroups[valAddrStr] = g
 			vals = append(vals, valAddrStr)
 		}
@@ -275,12 +276,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 	for _, valAddrStr := range vals {
 		g := valGroups[valAddrStr]
 
-		valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		base, err := k.claimBaseRewards(ctx, g.positions, owner, valAddr, g.ratio)
+		base, err := k.claimBaseRewards(ctx, g.positions, owner, g.valAddr, g.ratio)
 		if err != nil {
 			return nil, nil, err
 		}
