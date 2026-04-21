@@ -191,14 +191,14 @@ func initializeDefaultTierDefinitions(ctx context.Context, app *ChainApp) error 
 		},
 		{
 			Id:            2,
-			ExitDuration:  3 * year,
-			BonusApy:      math.LegacyMustNewDecFromStr("0.03"),
+			ExitDuration:  2 * year,
+			BonusApy:      math.LegacyMustNewDecFromStr("0.04"),
 			MinLockAmount: math.ZeroInt(),
 		},
 		{
 			Id:            3,
 			ExitDuration:  4 * year,
-			BonusApy:      math.LegacyMustNewDecFromStr("0.05"),
+			BonusApy:      math.LegacyMustNewDecFromStr("0.07"),
 			MinLockAmount: math.ZeroInt(),
 		},
 	}
