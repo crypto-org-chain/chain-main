@@ -596,3 +596,55 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_BatchPoolExhaustion() {
 	s.Require().Error(err)
 	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
 }
+
+// TestMsgClaimTierRewards_AllUndelegated verifies that a batch claim where
+// ALL positions are undelegated succeeds with zero rewards.
+func (s *KeeperSuite) TestMsgClaimTierRewards_AllUndelegated() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+
+	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	// Undelegate both positions.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner: addr.String(), PositionId: resp1.PositionId,
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner: addr.String(), PositionId: resp2.PositionId,
+	})
+	s.Require().NoError(err)
+
+	// Batch claim on two undelegated positions — should succeed with zero rewards.
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       addr.String(),
+		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
+	s.Require().True(claimResp.BaseRewards.IsZero(), "base rewards should be zero for all-undelegated batch")
+	s.Require().True(claimResp.BonusRewards.IsZero(), "bonus rewards should be zero for all-undelegated batch")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	s.Require().Equal(balBefore.Amount.String(), balAfter.Amount.String(),
+		"balance should not change for all-undelegated batch")
+}
