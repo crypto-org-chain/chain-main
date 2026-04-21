@@ -168,6 +168,13 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	return nil
 }
 
+// updatePosition persists a position without reading the old value or diffing
+// secondary indexes. Use only when the caller guarantees that owner, tier, and
+// validator have not changed (e.g., after claiming rewards).
+func (k Keeper) updatePosition(ctx context.Context, pos types.Position) error {
+	return k.Positions.Set(ctx, pos.Id, pos)
+}
+
 // DeletePosition removes a position and cleans up secondary indexes.
 func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)

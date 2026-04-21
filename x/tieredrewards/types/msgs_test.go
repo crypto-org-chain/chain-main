@@ -565,6 +565,14 @@ func TestMsgClearPosition_Validate(t *testing.T) {
 	}
 }
 
+func makePositionIds(n int) []uint64 {
+	ids := make([]uint64, n)
+	for i := range ids {
+		ids[i] = uint64(i + 1)
+	}
+	return ids
+}
+
 func TestMsgClaimTierRewards_Validate(t *testing.T) {
 	t.Parallel()
 
@@ -624,6 +632,22 @@ func TestMsgClaimTierRewards_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "duplicate",
+		},
+		{
+			name: "exactly at max position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: makePositionIds(types.MaxClaimPositionIds),
+			},
+		},
+		{
+			name: "exceeds max position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: makePositionIds(types.MaxClaimPositionIds + 1),
+			},
+			wantErr:     true,
+			errContains: "too many position_ids",
 		},
 	}
 

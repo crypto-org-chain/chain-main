@@ -55,7 +55,8 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 			}
 		}
 		// Persist regardless of whether bonus was paid.
-		if err := k.setPosition(ctx, positions[i]); err != nil {
+		// Use updatePosition since only reward checkpoints change.
+		if err := k.updatePosition(ctx, positions[i]); err != nil {
 			return err
 		}
 	}
@@ -118,7 +119,8 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 			if _, err := k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, validator, tier, false); err != nil {
 				return err
 			}
-			if err := k.setPosition(ctx, *pos); err != nil {
+			// Use updatePosition since only reward checkpoints change.
+			if err := k.updatePosition(ctx, *pos); err != nil {
 				return err
 			}
 		}
@@ -279,7 +281,9 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		if !pos.IsDelegated() {
 			continue
 		}
-		if err := k.setPosition(ctx, *pos); err != nil {
+		// Use updatePosition (no index diff) since claiming only modifies
+		// reward checkpoints — owner, tier, and validator are unchanged.
+		if err := k.updatePosition(ctx, *pos); err != nil {
 			return nil, nil, err
 		}
 	}

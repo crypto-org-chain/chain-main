@@ -7,6 +7,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// MaxClaimPositionIds is the maximum number of position IDs that can be
+// claimed in a single MsgClaimTierRewards transaction.
+const MaxClaimPositionIds = 2000
+
 var (
 	_ sdk.Msg = &MsgLockTier{}
 	_ sdk.Msg = &MsgCommitDelegationToTier{}
@@ -128,6 +132,10 @@ func (msg MsgClaimTierRewards) Validate() error {
 
 	if len(msg.PositionIds) == 0 {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "position_ids must not be empty")
+	}
+
+	if len(msg.PositionIds) > MaxClaimPositionIds {
+		return errorsmod.Wrapf(sdkerrors.ErrInvalidRequest, "too many position_ids: %d, max: %d", len(msg.PositionIds), MaxClaimPositionIds)
 	}
 
 	seen := make(map[uint64]struct{}, len(msg.PositionIds))
