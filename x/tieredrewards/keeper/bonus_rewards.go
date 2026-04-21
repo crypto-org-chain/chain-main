@@ -45,37 +45,6 @@ func (k Keeper) loadValidatorBonusAccrualState(ctx context.Context, valAddr sdk.
 	}, nil
 }
 
-// calculateBonusRaw computes accrued bonus without checking validator status.
-// Formula: tokens * BonusApy * durationSeconds / SecondsPerYear.
-// accrualEnd is capped at ExitUnlockAt when the position is exiting.
-func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
-	if !position.IsDelegated() {
-		return math.ZeroInt()
-	}
-
-	if position.LastBonusAccrual.IsZero() {
-		return math.ZeroInt()
-	}
-
-	accrualEnd := blockTime
-	if position.CompletedExitLockDuration(blockTime) {
-		accrualEnd = position.ExitUnlockAt
-	}
-
-	if !accrualEnd.After(position.LastBonusAccrual) {
-		return math.ZeroInt()
-	}
-
-	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual) / time.Second)
-	tokens := validator.TokensFromShares(position.DelegatedShares)
-
-	return tokens.
-		Mul(tier.BonusApy).
-		MulInt64(durationSeconds).
-		QuoInt64(types.SecondsPerYear).
-		TruncateInt()
-}
-
 func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 	accrualEnd := blockTime
 	if pos.CompletedExitLockDuration(blockTime) {

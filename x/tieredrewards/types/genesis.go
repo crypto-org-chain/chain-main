@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"sort"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -119,9 +118,9 @@ func ValidateGenesis(data GenesisState) error {
 		}
 		seenResumeValidators[checkpoint.Validator] = struct{}{}
 	}
-	for _, validator := range sortedValidatorKeys(seenResumeValidators) {
-		if _, ok := seenPauseValidators[validator]; !ok {
-			return fmt.Errorf("bonus resume checkpoint without pause checkpoint for validator %s", validator)
+	for _, checkpoint := range data.ValidatorBonusResumeCheckpoints {
+		if _, ok := seenPauseValidators[checkpoint.Validator]; !ok {
+			return fmt.Errorf("bonus resume checkpoint without pause checkpoint for validator %s", checkpoint.Validator)
 		}
 	}
 
@@ -143,25 +142,16 @@ func ValidateGenesis(data GenesisState) error {
 		seenPauseRateValidators[rate.Validator] = struct{}{}
 	}
 
-	for _, validator := range sortedValidatorKeys(seenPauseValidators) {
-		if _, ok := seenPauseRateValidators[validator]; !ok {
-			return fmt.Errorf("missing bonus pause rate for validator %s", validator)
+	for _, checkpoint := range data.ValidatorBonusPauseCheckpoints {
+		if _, ok := seenPauseRateValidators[checkpoint.Validator]; !ok {
+			return fmt.Errorf("missing bonus pause rate for validator %s", checkpoint.Validator)
 		}
 	}
-	for _, validator := range sortedValidatorKeys(seenPauseRateValidators) {
-		if _, ok := seenPauseValidators[validator]; !ok {
-			return fmt.Errorf("bonus pause rate without pause checkpoint for validator %s", validator)
+	for _, rate := range data.ValidatorBonusPauseRates {
+		if _, ok := seenPauseValidators[rate.Validator]; !ok {
+			return fmt.Errorf("bonus pause rate without pause checkpoint for validator %s", rate.Validator)
 		}
 	}
 
 	return nil
-}
-
-func sortedValidatorKeys(seen map[string]struct{}) []string {
-	keys := make([]string, 0, len(seen))
-	for validator := range seen {
-		keys = append(keys, validator)
-	}
-	sort.Strings(keys)
-	return keys
 }

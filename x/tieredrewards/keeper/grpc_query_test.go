@@ -343,7 +343,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	expectedBonus := s.keeper.CalculateBonusRaw(posBefore, val, tier, s.ctx.BlockTime())
+	expectedBonus := s.calculateBonusRaw(posBefore, val, tier, s.ctx.BlockTime())
 	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
 	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
 		"bonus rewards should match what is calculated")

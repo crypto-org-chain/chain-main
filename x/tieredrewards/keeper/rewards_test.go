@@ -28,7 +28,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 	s.Require().NoError(err)
 
 	// Calculate expected bonus BEFORE claiming (pos.LastBonusAccrual is still old)
-	expectedBonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	expectedBonus := s.calculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
 
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
@@ -410,8 +410,8 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool()
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	bonus1 := s.keeper.CalculateBonusRaw(pos1, val, tier, s.ctx.BlockTime())
-	bonus2 := s.keeper.CalculateBonusRaw(pos2, val, tier, s.ctx.BlockTime())
+	bonus1 := s.calculateBonusRaw(pos1, val, tier, s.ctx.BlockTime())
+	bonus2 := s.calculateBonusRaw(pos2, val, tier, s.ctx.BlockTime())
 
 	s.Require().True(bonus1.IsPositive())
 	s.Require().True(bonus2.IsPositive())
@@ -471,7 +471,7 @@ func (s *KeeperSuite) TestClaimBonusRewards_DurationUsesIntegerSeconds() {
 	s.Require().NoError(err)
 
 	// Compute expected bonus using integer division.
-	expectedBonus := s.keeper.CalculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
+	expectedBonus := s.calculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
@@ -506,7 +506,7 @@ func (s *KeeperSuite) TestCalculateBonusRaw_ZeroAmount() {
 		Validator:        "",
 		LastBonusAccrual: s.ctx.BlockTime(),
 	}
-	bonus := s.keeper.CalculateBonusRaw(pos, val, tier, blockTime)
+	bonus := s.calculateBonusRaw(pos, val, tier, blockTime)
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero for undelegated position with zero shares")
 }
@@ -542,7 +542,7 @@ func (s *KeeperSuite) TestCalculateBonusRaw_SharesWorthless() {
 	s.Require().True(tokens.IsZero(),
 		"tokens from shares should be zero for slashed validator")
 
-	bonus := s.keeper.CalculateBonusRaw(pos, val, tier, blockTime)
+	bonus := s.calculateBonusRaw(pos, val, tier, blockTime)
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero when shares are worthless (validator slashed to zero)")
 
@@ -573,7 +573,7 @@ func (s *KeeperSuite) TestCalculateBonusRaw_ZeroLastBonusAccrual() {
 		Validator:       valAddr.String(),
 		// LastBonusAccrual is zero time.
 	}
-	bonus := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime().Add(30*24*time.Hour))
+	bonus := s.calculateBonusRaw(pos, val, tier, s.ctx.BlockTime().Add(30*24*time.Hour))
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero when LastBonusAccrual is zero time")
 }

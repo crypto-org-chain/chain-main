@@ -246,7 +246,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	s.Require().NoError(err)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expBonus := s.keeper.CalculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
+	expBonus := s.calculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
 	// Lock amount equals genesis delegation, so tier module holds half the total stake.
 	expBase := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
 

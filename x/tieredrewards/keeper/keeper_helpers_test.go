@@ -207,6 +207,31 @@ func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkm
 	s.Require().NoError(err)
 }
 
+// calculateBonusRaw is a test-only helper used to compute expected bonus values
+// without applying pause/resume checkpoint segmentation.
+func (s *KeeperSuite) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) sdkmath.Int {
+	s.T().Helper()
+	if !position.IsDelegated() || position.LastBonusAccrual.IsZero() {
+		return sdkmath.ZeroInt()
+	}
+
+	accrualEnd := blockTime
+	if position.CompletedExitLockDuration(blockTime) {
+		accrualEnd = position.ExitUnlockAt
+	}
+	if !accrualEnd.After(position.LastBonusAccrual) {
+		return sdkmath.ZeroInt()
+	}
+
+	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual) / time.Second)
+	tokens := validator.TokensFromShares(position.DelegatedShares)
+	return tokens.
+		Mul(tier.BonusApy).
+		MulInt64(durationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+}
+
 // createSecondValidator creates a second bonded validator for tests that need
 // cross-validator scenarios (redelegation, etc.)
 func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {

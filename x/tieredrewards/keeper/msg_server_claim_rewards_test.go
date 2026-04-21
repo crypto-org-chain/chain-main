@@ -85,7 +85,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
 
-	expectedBonusRewards := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	expectedBonusRewards := s.calculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
 
 	// amount stake is half of whats staked in total, so base rewards are half of the distributed
 	expectedBaseRewards := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
