@@ -207,7 +207,7 @@ func (s *KeeperSuite) slashValidatorDirect(valAddr sdk.ValAddress, fraction sdkm
 	s.Require().NoError(err)
 }
 
-// calculateBonusRaw is a test-only helper used to compute expected bonus values
+// calculateBonusRaw used to compute expected bonus values
 // without applying pause/resume checkpoint segmentation.
 func (s *KeeperSuite) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) sdkmath.Int {
 	s.T().Helper()
