@@ -12,6 +12,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
@@ -22,6 +23,26 @@ func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, err
 		}
 		return types.Position{}, errorsmod.Wrapf(err, "%s (position id %d)", types.ErrPositionStore.Error(), id)
 	}
+
+	if !pos.IsDelegated() {
+		return pos, nil
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	reconciledAmount, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		// Keep the stored amount as a fallback if validator metadata is unavailable.
+		if errors.Is(err, stakingtypes.ErrNoValidatorFound) {
+			return pos, nil
+		}
+		return types.Position{}, err
+	}
+
+	pos.UpdateAmount(reconciledAmount)
 	return pos, nil
 }
 

@@ -95,6 +95,15 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 			{UnbondingId: 44, PositionId: 2},
 			{UnbondingId: 45, PositionId: 3},
 		},
+		ValidatorBonusPauseCheckpoints: []types.ValidatorBonusCheckpointEntry{
+			{Validator: valAddr.String(), UnixTime: now.Add(-3 * time.Hour).Unix()},
+		},
+		ValidatorBonusResumeCheckpoints: []types.ValidatorBonusCheckpointEntry{
+			{Validator: valAddr.String(), UnixTime: now.Add(-time.Hour).Unix()},
+		},
+		ValidatorBonusPauseRates: []types.ValidatorBonusRateEntry{
+			{Validator: valAddr.String(), TokensPerShare: sdkmath.LegacyMustNewDecFromStr("1.123456789").String()},
+		},
 	}
 
 	// Import genesis.
@@ -156,6 +165,36 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(genesisState.RedelegationMappings[i].UnbondingId, m.UnbondingId)
 		s.Require().Equal(genesisState.RedelegationMappings[i].PositionId, m.PositionId)
 	}
+
+	s.Require().Len(exported.ValidatorBonusPauseCheckpoints, 1)
+	s.Require().Equal(
+		genesisState.ValidatorBonusPauseCheckpoints[0].Validator,
+		exported.ValidatorBonusPauseCheckpoints[0].Validator,
+	)
+	s.Require().Equal(
+		genesisState.ValidatorBonusPauseCheckpoints[0].UnixTime,
+		exported.ValidatorBonusPauseCheckpoints[0].UnixTime,
+	)
+
+	s.Require().Len(exported.ValidatorBonusResumeCheckpoints, 1)
+	s.Require().Equal(
+		genesisState.ValidatorBonusResumeCheckpoints[0].Validator,
+		exported.ValidatorBonusResumeCheckpoints[0].Validator,
+	)
+	s.Require().Equal(
+		genesisState.ValidatorBonusResumeCheckpoints[0].UnixTime,
+		exported.ValidatorBonusResumeCheckpoints[0].UnixTime,
+	)
+
+	s.Require().Len(exported.ValidatorBonusPauseRates, 1)
+	s.Require().Equal(
+		genesisState.ValidatorBonusPauseRates[0].Validator,
+		exported.ValidatorBonusPauseRates[0].Validator,
+	)
+	s.Require().Equal(
+		genesisState.ValidatorBonusPauseRates[0].TokensPerShare,
+		exported.ValidatorBonusPauseRates[0].TokensPerShare,
+	)
 }
 
 func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
@@ -258,6 +297,31 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.ValidatorRewardRatios)
 	s.Require().Empty(exported.UnbondingDelegationMappings)
 	s.Require().Empty(exported.RedelegationMappings)
+	s.Require().Empty(exported.ValidatorBonusPauseCheckpoints)
+	s.Require().Empty(exported.ValidatorBonusResumeCheckpoints)
+	s.Require().Empty(exported.ValidatorBonusPauseRates)
+}
+
+func (s *KeeperSuite) TestExportGenesis_ReconcilesLazyAmount() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10_000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	storedBefore, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	storedAfter, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(storedAfter.Amount.Equal(storedBefore.Amount), "raw stored amount should remain stale before lazy reconcile")
+
+	valAfterSlash, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedAmount := valAfterSlash.TokensFromShares(storedAfter.DelegatedShares).TruncateInt()
+
+	exported := s.keeper.ExportGenesis(s.ctx)
+	s.Require().Len(exported.Positions, 1)
+	s.Require().True(exported.Positions[0].Amount.Equal(expectedAmount), "exported genesis should use reconciled position amount")
 }
 
 func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {

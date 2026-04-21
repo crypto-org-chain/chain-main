@@ -130,6 +130,112 @@ func (m *UnbondingMapping) GetPositionId() uint64 {
 	return 0
 }
 
+// ValidatorBonusCheckpointEntry wraps a validator address with a bonus accrual checkpoint timestamp.
+type ValidatorBonusCheckpointEntry struct {
+	Validator string `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
+	UnixTime  int64  `protobuf:"varint,2,opt,name=unix_time,json=unixTime,proto3" json:"unix_time,omitempty"`
+}
+
+func (m *ValidatorBonusCheckpointEntry) Reset()         { *m = ValidatorBonusCheckpointEntry{} }
+func (m *ValidatorBonusCheckpointEntry) String() string { return proto.CompactTextString(m) }
+func (*ValidatorBonusCheckpointEntry) ProtoMessage()    {}
+func (*ValidatorBonusCheckpointEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{2}
+}
+func (m *ValidatorBonusCheckpointEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorBonusCheckpointEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorBonusCheckpointEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorBonusCheckpointEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorBonusCheckpointEntry.Merge(m, src)
+}
+func (m *ValidatorBonusCheckpointEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorBonusCheckpointEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorBonusCheckpointEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorBonusCheckpointEntry proto.InternalMessageInfo
+
+func (m *ValidatorBonusCheckpointEntry) GetValidator() string {
+	if m != nil {
+		return m.Validator
+	}
+	return ""
+}
+
+func (m *ValidatorBonusCheckpointEntry) GetUnixTime() int64 {
+	if m != nil {
+		return m.UnixTime
+	}
+	return 0
+}
+
+// ValidatorBonusRateEntry wraps a validator address with the paused tokens-per-share snapshot.
+type ValidatorBonusRateEntry struct {
+	Validator      string `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
+	TokensPerShare string `protobuf:"bytes,2,opt,name=tokens_per_share,json=tokensPerShare,proto3" json:"tokens_per_share,omitempty"`
+}
+
+func (m *ValidatorBonusRateEntry) Reset()         { *m = ValidatorBonusRateEntry{} }
+func (m *ValidatorBonusRateEntry) String() string { return proto.CompactTextString(m) }
+func (*ValidatorBonusRateEntry) ProtoMessage()    {}
+func (*ValidatorBonusRateEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{3}
+}
+func (m *ValidatorBonusRateEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorBonusRateEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorBonusRateEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorBonusRateEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorBonusRateEntry.Merge(m, src)
+}
+func (m *ValidatorBonusRateEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorBonusRateEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorBonusRateEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorBonusRateEntry proto.InternalMessageInfo
+
+func (m *ValidatorBonusRateEntry) GetValidator() string {
+	if m != nil {
+		return m.Validator
+	}
+	return ""
+}
+
+func (m *ValidatorBonusRateEntry) GetTokensPerShare() string {
+	if m != nil {
+		return m.TokensPerShare
+	}
+	return ""
+}
+
 // GenesisState defines the tieredrewards module's genesis state.
 type GenesisState struct {
 	// params defines all the parameters of the module.
@@ -146,13 +252,19 @@ type GenesisState struct {
 	UnbondingDelegationMappings []UnbondingMapping `protobuf:"bytes,6,rep,name=unbonding_delegation_mappings,json=unbondingDelegationMappings,proto3" json:"unbonding_delegation_mappings"`
 	// redelegation_mappings maps redelegation IDs to tier position IDs.
 	RedelegationMappings []UnbondingMapping `protobuf:"bytes,7,rep,name=redelegation_mappings,json=redelegationMappings,proto3" json:"redelegation_mappings"`
+	// validator_bonus_pause_checkpoints stores per-validator pause timestamps for lazy bonus accrual.
+	ValidatorBonusPauseCheckpoints []ValidatorBonusCheckpointEntry `protobuf:"bytes,8,rep,name=validator_bonus_pause_checkpoints,json=validatorBonusPauseCheckpoints,proto3" json:"validator_bonus_pause_checkpoints"`
+	// validator_bonus_resume_checkpoints stores per-validator resume timestamps for lazy bonus accrual.
+	ValidatorBonusResumeCheckpoints []ValidatorBonusCheckpointEntry `protobuf:"bytes,9,rep,name=validator_bonus_resume_checkpoints,json=validatorBonusResumeCheckpoints,proto3" json:"validator_bonus_resume_checkpoints"`
+	// validator_bonus_pause_rates stores per-validator paused tokens-per-share snapshots.
+	ValidatorBonusPauseRates []ValidatorBonusRateEntry `protobuf:"bytes,10,rep,name=validator_bonus_pause_rates,json=validatorBonusPauseRates,proto3" json:"validator_bonus_pause_rates"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
 func (m *GenesisState) String() string { return proto.CompactTextString(m) }
 func (*GenesisState) ProtoMessage()    {}
 func (*GenesisState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a29049b0cc2bdb31, []int{2}
+	return fileDescriptor_a29049b0cc2bdb31, []int{4}
 }
 func (m *GenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -230,9 +342,32 @@ func (m *GenesisState) GetRedelegationMappings() []UnbondingMapping {
 	return nil
 }
 
+func (m *GenesisState) GetValidatorBonusPauseCheckpoints() []ValidatorBonusCheckpointEntry {
+	if m != nil {
+		return m.ValidatorBonusPauseCheckpoints
+	}
+	return nil
+}
+
+func (m *GenesisState) GetValidatorBonusResumeCheckpoints() []ValidatorBonusCheckpointEntry {
+	if m != nil {
+		return m.ValidatorBonusResumeCheckpoints
+	}
+	return nil
+}
+
+func (m *GenesisState) GetValidatorBonusPauseRates() []ValidatorBonusRateEntry {
+	if m != nil {
+		return m.ValidatorBonusPauseRates
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ValidatorRewardRatioEntry)(nil), "chainmain.tieredrewards.v1.ValidatorRewardRatioEntry")
 	proto.RegisterType((*UnbondingMapping)(nil), "chainmain.tieredrewards.v1.UnbondingMapping")
+	proto.RegisterType((*ValidatorBonusCheckpointEntry)(nil), "chainmain.tieredrewards.v1.ValidatorBonusCheckpointEntry")
+	proto.RegisterType((*ValidatorBonusRateEntry)(nil), "chainmain.tieredrewards.v1.ValidatorBonusRateEntry")
 	proto.RegisterType((*GenesisState)(nil), "chainmain.tieredrewards.v1.GenesisState")
 }
 
@@ -241,40 +376,51 @@ func init() {
 }
 
 var fileDescriptor_a29049b0cc2bdb31 = []byte{
-	// 522 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x41, 0x6b, 0x13, 0x41,
-	0x18, 0xcd, 0xa6, 0x69, 0x24, 0xb3, 0x41, 0xca, 0xd0, 0xe2, 0x36, 0xd2, 0x6d, 0x1a, 0x44, 0x73,
-	0x30, 0xbb, 0x36, 0xe2, 0xad, 0xa0, 0x06, 0x45, 0x7b, 0x10, 0x4a, 0xaa, 0x01, 0xbd, 0x84, 0x49,
-	0x66, 0x98, 0x0e, 0x74, 0x67, 0x96, 0x99, 0xe9, 0xda, 0xfc, 0x0b, 0x7f, 0x8c, 0xe0, 0x5f, 0xe8,
-	0xb1, 0x78, 0xea, 0x49, 0x24, 0xf9, 0x23, 0xb2, 0xb3, 0xb3, 0x9b, 0x58, 0xe2, 0x82, 0xbd, 0x2c,
-	0x3b, 0xdf, 0xbc, 0xef, 0xbd, 0xc7, 0xf7, 0xe6, 0x03, 0xdd, 0xe9, 0x19, 0x62, 0x3c, 0x42, 0x8c,
-	0x87, 0x9a, 0x11, 0x49, 0xb0, 0x24, 0x5f, 0x91, 0xc4, 0x2a, 0x4c, 0x0e, 0x43, 0x4a, 0x38, 0x51,
-	0x4c, 0x05, 0xb1, 0x14, 0x5a, 0xc0, 0x56, 0x81, 0x0c, 0xfe, 0x42, 0x06, 0xc9, 0x61, 0xeb, 0x49,
-	0x09, 0x4b, 0x8c, 0x24, 0x8a, 0x2c, 0x49, 0xeb, 0x71, 0x09, 0x50, 0xcf, 0x62, 0x92, 0xe3, 0x76,
-	0xa7, 0x42, 0x45, 0x42, 0x8d, 0xcd, 0x29, 0xcc, 0x0e, 0xf6, 0x6a, 0x9b, 0x0a, 0x2a, 0xb2, 0x7a,
-	0xfa, 0x97, 0x55, 0x3b, 0x3f, 0x1c, 0xb0, 0x3b, 0x42, 0xe7, 0x0c, 0x23, 0x2d, 0xe4, 0xd0, 0x90,
-	0x0e, 0x91, 0x66, 0xe2, 0x2d, 0xd7, 0x72, 0x06, 0x5f, 0x82, 0x46, 0x92, 0x5f, 0x7a, 0x4e, 0xdb,
-	0xe9, 0x36, 0x06, 0x07, 0x3f, 0xbf, 0xf7, 0xf6, 0x2c, 0x71, 0xd1, 0xf8, 0x1a, 0x63, 0x49, 0x94,
-	0x3a, 0xd5, 0x92, 0x71, 0x3a, 0x5c, 0xf6, 0xc0, 0xcf, 0xa0, 0x99, 0x39, 0x1d, 0xcb, 0x94, 0xd5,
-	0xab, 0xb6, 0x9d, 0xae, 0xdb, 0x7f, 0x16, 0xfc, 0x7b, 0x26, 0xc1, 0x3a, 0x37, 0x83, 0xda, 0xd5,
-	0xaf, 0xfd, 0xca, 0xd0, 0x95, 0xcb, 0x52, 0x67, 0x04, 0xb6, 0x3e, 0xf1, 0x89, 0xe0, 0x98, 0x71,
-	0xfa, 0x01, 0xc5, 0x31, 0xe3, 0x14, 0x1e, 0x80, 0xe6, 0x45, 0x5e, 0x1b, 0x33, 0x6c, 0x2c, 0xd7,
-	0x86, 0x6e, 0x51, 0x3b, 0xc6, 0x70, 0x1f, 0xb8, 0xb1, 0x50, 0x4c, 0x33, 0xc1, 0x53, 0x44, 0xd5,
-	0x20, 0x40, 0x5e, 0x3a, 0xc6, 0x9d, 0x9b, 0x1a, 0x68, 0xbe, 0xcb, 0x12, 0x3c, 0xd5, 0x48, 0x13,
-	0xf8, 0x0a, 0xd4, 0xb3, 0x2c, 0x0c, 0x9d, 0xdb, 0xef, 0x94, 0xb9, 0x3f, 0x31, 0x48, 0xeb, 0xd7,
-	0xf6, 0xc1, 0x23, 0xb0, 0x99, 0x02, 0x95, 0x57, 0x6d, 0x6f, 0x74, 0xdd, 0x7e, 0xbb, 0x8c, 0xe0,
-	0x23, 0x23, 0xd2, 0xb6, 0x67, 0x4d, 0xf0, 0x3d, 0x68, 0xe4, 0xf6, 0x94, 0xb7, 0x61, 0x18, 0x1e,
-	0x95, 0x5a, 0xb0, 0x60, 0xcb, 0xb2, 0x6c, 0x86, 0x5d, 0xb0, 0xc5, 0xc9, 0xa5, 0x1e, 0xaf, 0x0e,
-	0xa0, 0x66, 0x06, 0x70, 0x3f, 0xad, 0x9f, 0x14, 0x43, 0x80, 0x0a, 0x3c, 0x28, 0x42, 0x1c, 0xaf,
-	0x26, 0xa8, 0xbc, 0x4d, 0xe3, 0xe0, 0xc5, 0xff, 0x46, 0x68, 0x1e, 0x94, 0xb5, 0xb4, 0x93, 0xac,
-	0x01, 0x28, 0x98, 0x80, 0xbd, 0x65, 0x7a, 0x98, 0x9c, 0x13, 0x8a, 0x8c, 0xcb, 0x28, 0x4b, 0x57,
-	0x79, 0x75, 0x23, 0xfd, 0xb4, 0x4c, 0xfa, 0xf6, 0x93, 0xb0, 0x8a, 0x0f, 0x0b, 0xe2, 0x37, 0x05,
-	0xaf, 0x45, 0x28, 0x48, 0xc1, 0x8e, 0x24, 0xeb, 0xf4, 0xee, 0xdd, 0x59, 0x6f, 0x7b, 0x95, 0x30,
-	0x17, 0x1a, 0x8c, 0xae, 0xe6, 0xbe, 0x73, 0x3d, 0xf7, 0x9d, 0xdf, 0x73, 0xdf, 0xf9, 0xb6, 0xf0,
-	0x2b, 0xd7, 0x0b, 0xbf, 0x72, 0xb3, 0xf0, 0x2b, 0x5f, 0x8e, 0x28, 0xd3, 0x67, 0x17, 0x93, 0x60,
-	0x2a, 0xa2, 0x70, 0x2a, 0x67, 0xb1, 0x16, 0x3d, 0x21, 0x69, 0xcf, 0x08, 0x87, 0xe6, 0xdb, 0x33,
-	0xcb, 0x7f, 0x79, 0x6b, 0xfd, 0xcd, 0xee, 0x4f, 0xea, 0x66, 0x97, 0x9f, 0xff, 0x09, 0x00, 0x00,
-	0xff, 0xff, 0x9f, 0xa7, 0xb9, 0x3d, 0x95, 0x04, 0x00, 0x00,
+	// 694 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0x4f, 0x6b, 0x13, 0x41,
+	0x18, 0xc6, 0xb3, 0xfd, 0x9f, 0x49, 0x29, 0x65, 0x68, 0xe9, 0xb6, 0xa5, 0xdb, 0x74, 0x11, 0xcd,
+	0xc1, 0x24, 0xb6, 0xc5, 0x83, 0x50, 0x50, 0xa3, 0xa2, 0x3d, 0x08, 0x61, 0x5b, 0x0b, 0x7a, 0x59,
+	0x26, 0xd9, 0x61, 0x33, 0xb4, 0x3b, 0xb3, 0xcc, 0x3b, 0x89, 0xe9, 0xc1, 0x9b, 0x27, 0xf1, 0xe0,
+	0x87, 0x11, 0xfc, 0x0a, 0x3d, 0x16, 0x4f, 0x9e, 0x44, 0xda, 0xbb, 0x9f, 0x41, 0x76, 0x76, 0xb2,
+	0x49, 0x4a, 0x0c, 0x55, 0x72, 0x29, 0xdd, 0x77, 0x9f, 0xf7, 0x79, 0x7e, 0xbc, 0xf3, 0x6e, 0x06,
+	0x95, 0x9a, 0x2d, 0xc2, 0x78, 0x44, 0x18, 0xaf, 0x2a, 0x46, 0x25, 0x0d, 0x24, 0x7d, 0x4f, 0x64,
+	0x00, 0xd5, 0xce, 0x6e, 0x35, 0xa4, 0x9c, 0x02, 0x83, 0x4a, 0x2c, 0x85, 0x12, 0x78, 0x23, 0x53,
+	0x56, 0x86, 0x94, 0x95, 0xce, 0xee, 0xc6, 0xbd, 0x31, 0x2e, 0x31, 0x91, 0x24, 0x32, 0x26, 0x1b,
+	0x77, 0xc7, 0x08, 0xd5, 0x79, 0x4c, 0x7b, 0xba, 0xf5, 0xa6, 0x80, 0x48, 0x80, 0xaf, 0x9f, 0xaa,
+	0xe9, 0x83, 0x79, 0xb5, 0x12, 0x8a, 0x50, 0xa4, 0xf5, 0xe4, 0xbf, 0xb4, 0xea, 0x7e, 0xb3, 0xd0,
+	0xfa, 0x09, 0x39, 0x63, 0x01, 0x51, 0x42, 0x7a, 0xda, 0xd4, 0x23, 0x8a, 0x89, 0x17, 0x5c, 0xc9,
+	0x73, 0xfc, 0x18, 0xe5, 0x3b, 0xbd, 0x97, 0xb6, 0x55, 0xb4, 0x4a, 0xf9, 0xda, 0xce, 0xf7, 0xaf,
+	0xe5, 0x2d, 0x63, 0x9c, 0x35, 0x3e, 0x0d, 0x02, 0x49, 0x01, 0x8e, 0x94, 0x64, 0x3c, 0xf4, 0xfa,
+	0x3d, 0xf8, 0x2d, 0x5a, 0x4c, 0x49, 0x7d, 0x99, 0xb8, 0xda, 0x53, 0x45, 0xab, 0x54, 0xd8, 0x7b,
+	0x50, 0xf9, 0xfb, 0x4c, 0x2a, 0xa3, 0x68, 0x6a, 0x33, 0x17, 0x3f, 0xb7, 0x73, 0x5e, 0x41, 0xf6,
+	0x4b, 0xee, 0x09, 0x5a, 0x7e, 0xc3, 0x1b, 0x82, 0x07, 0x8c, 0x87, 0xaf, 0x49, 0x1c, 0x33, 0x1e,
+	0xe2, 0x1d, 0xb4, 0xd8, 0xee, 0xd5, 0x7c, 0x16, 0x68, 0xe4, 0x19, 0xaf, 0x90, 0xd5, 0x0e, 0x03,
+	0xbc, 0x8d, 0x0a, 0xb1, 0x00, 0xa6, 0x98, 0xe0, 0x89, 0x62, 0x4a, 0x2b, 0x50, 0xaf, 0x74, 0x18,
+	0xb8, 0x1f, 0xd0, 0x56, 0x86, 0x50, 0x13, 0xbc, 0x0d, 0xcf, 0x5a, 0xb4, 0x79, 0x1a, 0x0b, 0xc6,
+	0xd5, 0x84, 0x86, 0xb2, 0x89, 0xf2, 0x6d, 0xce, 0xba, 0xbe, 0x62, 0x11, 0xd5, 0x00, 0xd3, 0xde,
+	0x42, 0x52, 0x38, 0x66, 0x11, 0x75, 0x3f, 0x5a, 0x68, 0x6d, 0x38, 0xdf, 0x23, 0x8a, 0x4e, 0x28,
+	0xb9, 0x84, 0x96, 0x95, 0x38, 0xa5, 0x1c, 0xfc, 0x98, 0x4a, 0x1f, 0x5a, 0x44, 0xa6, 0x00, 0x79,
+	0x6f, 0x29, 0xad, 0xd7, 0xa9, 0x3c, 0x4a, 0xaa, 0xee, 0xef, 0x79, 0xb4, 0xf8, 0x32, 0xdd, 0xe3,
+	0x23, 0x45, 0x14, 0xc5, 0x4f, 0xd0, 0x5c, 0xba, 0x91, 0x3a, 0xb8, 0xb0, 0xe7, 0x8e, 0x3b, 0xc3,
+	0xba, 0x56, 0x9a, 0x53, 0x33, 0x7d, 0xf8, 0x00, 0xcd, 0x26, 0x42, 0xb0, 0xa7, 0x8a, 0xd3, 0xa5,
+	0xc2, 0x5e, 0x71, 0x9c, 0xc1, 0x31, 0xa3, 0xd2, 0xb4, 0xa7, 0x4d, 0xf8, 0x15, 0xca, 0xf7, 0x0e,
+	0x09, 0xec, 0x69, 0xed, 0x70, 0x67, 0x2c, 0x82, 0x11, 0x1b, 0x97, 0x7e, 0x73, 0x32, 0x04, 0x4e,
+	0xbb, 0xca, 0x1f, 0x5c, 0x83, 0x19, 0xbd, 0x06, 0x4b, 0x49, 0xbd, 0x9e, 0xad, 0x02, 0x06, 0xb4,
+	0x96, 0xcd, 0xce, 0x1f, 0xdc, 0x63, 0xb0, 0x67, 0x35, 0xc1, 0xc3, 0x7f, 0x5d, 0x64, 0x7d, 0x8e,
+	0x06, 0x69, 0xb5, 0x33, 0x42, 0x00, 0xb8, 0x83, 0xb6, 0xfa, 0x3b, 0x1c, 0xd0, 0x33, 0x1a, 0x12,
+	0x4d, 0x19, 0xa5, 0x3b, 0x0e, 0xf6, 0x9c, 0x8e, 0xbe, 0x3f, 0x2e, 0xfa, 0xe6, 0x87, 0x61, 0x12,
+	0x37, 0x33, 0xe3, 0xe7, 0x99, 0xaf, 0x51, 0x00, 0x0e, 0xd1, 0xaa, 0xa4, 0xa3, 0xf2, 0xe6, 0xff,
+	0x3b, 0x6f, 0x65, 0xd0, 0x30, 0x0b, 0xfa, 0x64, 0xa1, 0x9d, 0xfe, 0x58, 0x1b, 0xc9, 0x8a, 0xfb,
+	0x31, 0x69, 0x03, 0xf5, 0x9b, 0xd9, 0x97, 0x06, 0xf6, 0x82, 0x4e, 0x7d, 0x74, 0xab, 0x01, 0x8f,
+	0xfa, 0x4c, 0x0d, 0x82, 0xd3, 0x19, 0x12, 0xd5, 0x93, 0x9c, 0xbe, 0x12, 0xf0, 0x67, 0x0b, 0xb9,
+	0x37, 0x61, 0x24, 0x85, 0x76, 0x34, 0x4c, 0x93, 0x9f, 0x0c, 0xcd, 0xf6, 0x30, 0x8d, 0xa7, 0x83,
+	0x06, 0x71, 0xba, 0x68, 0x73, 0xf4, 0x68, 0x24, 0x51, 0x14, 0x6c, 0xa4, 0x31, 0xf6, 0x6f, 0x8f,
+	0x91, 0xfd, 0x76, 0x18, 0x00, 0x7b, 0xc4, 0x38, 0x12, 0x0d, 0xd4, 0x4e, 0x2e, 0xae, 0x1c, 0xeb,
+	0xf2, 0xca, 0xb1, 0x7e, 0x5d, 0x39, 0xd6, 0x97, 0x6b, 0x27, 0x77, 0x79, 0xed, 0xe4, 0x7e, 0x5c,
+	0x3b, 0xb9, 0x77, 0x07, 0x21, 0x53, 0xad, 0x76, 0xa3, 0xd2, 0x14, 0x51, 0xb5, 0x29, 0xcf, 0x63,
+	0x25, 0xca, 0x42, 0x86, 0x65, 0xcd, 0x50, 0xd5, 0x7f, 0xcb, 0xfa, 0x62, 0xea, 0xde, 0xb8, 0x9a,
+	0xf4, 0xbd, 0xd4, 0x98, 0xd3, 0xf7, 0xcc, 0xfe, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc7, 0xd2,
+	0x35, 0xcd, 0x31, 0x07, 0x00, 0x00,
 }
 
 func (m *ValidatorRewardRatioEntry) Marshal() (dAtA []byte, err error) {
@@ -350,6 +496,78 @@ func (m *UnbondingMapping) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ValidatorBonusCheckpointEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorBonusCheckpointEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorBonusCheckpointEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.UnixTime != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.UnixTime))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Validator) > 0 {
+		i -= len(m.Validator)
+		copy(dAtA[i:], m.Validator)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Validator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValidatorBonusRateEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorBonusRateEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorBonusRateEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.TokensPerShare) > 0 {
+		i -= len(m.TokensPerShare)
+		copy(dAtA[i:], m.TokensPerShare)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.TokensPerShare)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Validator) > 0 {
+		i -= len(m.Validator)
+		copy(dAtA[i:], m.Validator)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Validator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -370,6 +588,48 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ValidatorBonusPauseRates) > 0 {
+		for iNdEx := len(m.ValidatorBonusPauseRates) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorBonusPauseRates[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x52
+		}
+	}
+	if len(m.ValidatorBonusResumeCheckpoints) > 0 {
+		for iNdEx := len(m.ValidatorBonusResumeCheckpoints) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorBonusResumeCheckpoints[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
+	if len(m.ValidatorBonusPauseCheckpoints) > 0 {
+		for iNdEx := len(m.ValidatorBonusPauseCheckpoints) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorBonusPauseCheckpoints[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x42
+		}
+	}
 	if len(m.RedelegationMappings) > 0 {
 		for iNdEx := len(m.RedelegationMappings) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -499,6 +759,39 @@ func (m *UnbondingMapping) Size() (n int) {
 	return n
 }
 
+func (m *ValidatorBonusCheckpointEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Validator)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.UnixTime != 0 {
+		n += 1 + sovGenesis(uint64(m.UnixTime))
+	}
+	return n
+}
+
+func (m *ValidatorBonusRateEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Validator)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	l = len(m.TokensPerShare)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	return n
+}
+
 func (m *GenesisState) Size() (n int) {
 	if m == nil {
 		return 0
@@ -536,6 +829,24 @@ func (m *GenesisState) Size() (n int) {
 	}
 	if len(m.RedelegationMappings) > 0 {
 		for _, e := range m.RedelegationMappings {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorBonusPauseCheckpoints) > 0 {
+		for _, e := range m.ValidatorBonusPauseCheckpoints {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorBonusResumeCheckpoints) > 0 {
+		for _, e := range m.ValidatorBonusResumeCheckpoints {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorBonusPauseRates) > 0 {
+		for _, e := range m.ValidatorBonusPauseRates {
 			l = e.Size()
 			n += 1 + l + sovGenesis(uint64(l))
 		}
@@ -731,6 +1042,221 @@ func (m *UnbondingMapping) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorBonusCheckpointEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorBonusCheckpointEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorBonusCheckpointEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Validator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UnixTime", wireType)
+			}
+			m.UnixTime = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.UnixTime |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorBonusRateEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorBonusRateEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorBonusRateEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Validator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TokensPerShare", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TokensPerShare = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipGenesis(dAtA[iNdEx:])
@@ -1000,6 +1526,108 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			}
 			m.RedelegationMappings = append(m.RedelegationMappings, UnbondingMapping{})
 			if err := m.RedelegationMappings[len(m.RedelegationMappings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorBonusPauseCheckpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorBonusPauseCheckpoints = append(m.ValidatorBonusPauseCheckpoints, ValidatorBonusCheckpointEntry{})
+			if err := m.ValidatorBonusPauseCheckpoints[len(m.ValidatorBonusPauseCheckpoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorBonusResumeCheckpoints", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorBonusResumeCheckpoints = append(m.ValidatorBonusResumeCheckpoints, ValidatorBonusCheckpointEntry{})
+			if err := m.ValidatorBonusResumeCheckpoints[len(m.ValidatorBonusResumeCheckpoints)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorBonusPauseRates", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorBonusPauseRates = append(m.ValidatorBonusPauseRates, ValidatorBonusRateEntry{})
+			if err := m.ValidatorBonusPauseRates[len(m.ValidatorBonusPauseRates)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

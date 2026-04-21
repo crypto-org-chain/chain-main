@@ -16,6 +16,9 @@ var (
 	UnbondingIdsByPositionKey     = collections.NewPrefix(10)
 	RedelegationIdToPositionIdKey = collections.NewPrefix(11)
 	RedelegationIdsByPositionKey  = collections.NewPrefix(12)
+	ValidatorBonusPauseAtKey      = collections.NewPrefix(13)
+	ValidatorBonusResumeAtKey     = collections.NewPrefix(14)
+	ValidatorBonusPauseRateKey    = collections.NewPrefix(15)
 )
 
 const (

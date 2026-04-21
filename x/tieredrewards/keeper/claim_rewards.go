@@ -222,7 +222,10 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos *types.Position, curre
 func (k Keeper) claimBonusRewards(ctx context.Context, pos *types.Position, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
 	blockTime := sdk.UnwrapSDKContext(ctx).BlockTime()
 
-	bonus := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue)
+	bonus, err := k.bonusAccrualAmount(ctx, *pos, val, tier, blockTime, forceAccrue)
+	if err != nil {
+		return sdk.NewCoins(), err
+	}
 	applyBonusAccrualCheckpoint(pos, blockTime)
 
 	return k.sendBonusFromRewardsPool(ctx, *pos, bonus)

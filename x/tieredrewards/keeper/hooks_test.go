@@ -53,8 +53,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
 	s.Require().Equal(balAfterSlash.Amount, balAfterClaim.Amount, "second claim should yield nothing extra")
 }
 
-// TestBeforeValidatorSlashed_ReducesPositionAmount verifies that the hook reduces
-// position.Amount by the expected slash fraction.
+// TestBeforeValidatorSlashed_ReducesPositionAmount verifies that the hook no
+// longer rewrites position.Amount eagerly.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -66,12 +66,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	// 1/3 slash intentionally produces a fractional post-slash token amount
-	// for common integer token values, so we can assert truncation behavior.
 	slashFraction := sdkmath.LegacyMustNewDecFromStr("0.333333333333333333")
-	expectedDec := valBefore.TokensFromShares(posBefore.DelegatedShares).Mul(sdkmath.LegacyOneDec().Sub(slashFraction))
-	expectedAmount := expectedDec.TruncateInt()
-	s.Require().False(expectedDec.IsInteger(), "test assumption: expected post-slash amount should include fractional dust")
 
 	hooks := s.keeper.Hooks()
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, slashFraction)
@@ -79,11 +74,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ReducesPositionAmount() {
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.Amount.Equal(expectedAmount),
-		"position amount should match truncated post-slash expectation; got %s want %s",
-		posAfter.Amount, expectedAmount,
-	)
-	s.Require().True(posAfter.Amount.LT(posBefore.Amount), "position amount should decrease after slash")
+	s.Require().True(posAfter.Amount.Equal(valBefore.TokensFromShares(posBefore.DelegatedShares).TruncateInt()),
+		"position amount should remain unchanged until staking slash updates validator exchange rate")
 }
 
 // TestBeforeValidatorSlashed_DoesNotRevertLastBonusAccrual verifies:
@@ -121,7 +113,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 
 // TestBeforeValidatorSlashed_InsufficientBonusPool verifies the ErrInsufficientBonusPool
 // path: when the bonus pool cannot cover the accrued bonus, the hook still completes
-// without error, the slash is still applied, and BaseRewardsPerShare is updated
+// without error and BaseRewardsPerShare is updated
 // (base rewards were claimed even though bonus was not paid).
 func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
@@ -151,8 +143,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 	posAfter, err := s.keeper.GetPosition(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
-	// Slash must still be applied.
-	s.Require().True(posAfter.Amount.LT(posBefore.Amount), "position amount should decrease even when bonus pool is empty")
+	s.Require().True(posAfter.Amount.Equal(posBefore.Amount),
+		"position amount should remain unchanged until staking slash updates validator exchange rate")
 
 	// Base rewards must still be claimed (BaseRewardsPerShare updated).
 	s.Require().NotEqual(oldRatio, posAfter.BaseRewardsPerShare,
@@ -162,7 +154,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_InsufficientBonusPool() {
 }
 
 // TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain verifies that a 100% slash
-// reduces position.Amount to zero without triggering a validation error.
+// hook call still succeeds without eagerly mutating position amount.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -175,11 +167,12 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.Amount.IsZero(), "position amount should be zero after 100% slash")
+	s.Require().True(posAfter.Amount.Equal(pos.Amount),
+		"position amount should remain unchanged until staking slash updates validator exchange rate")
 }
 
-// TestBeforeValidatorSlashed_MultiplePositions verifies that the slash hook reduces
-// all positions delegated to the slashed validator.
+// TestBeforeValidatorSlashed_MultiplePositions verifies that the slash hook can
+// process multiple positions without eagerly rewriting their amounts.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -221,15 +214,14 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	for i, p := range positions {
 		posAfter, err := s.keeper.GetPosition(s.ctx, p.Id)
 		s.Require().NoError(err)
-		s.Require().True(posAfter.Amount.LT(amountsBefore[i]),
-			"position %d amount should decrease after slash", p.Id)
+		s.Require().True(posAfter.Amount.Equal(amountsBefore[i]),
+			"position %d amount should remain unchanged before lazy reconciliation", p.Id)
 	}
 }
 
 // TestBeforeValidatorSlashed_MultiplePositions_InsufficientBonusPool verifies
 // that the hook can reuse the in-memory positions updated during reward
-// settlement, without reloading from store, while still advancing checkpoints
-// and applying the slash to every position.
+// settlement, without reloading from store, while still advancing checkpoints.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	s.setupNewTierPosition(lockAmount, false)
@@ -268,10 +260,10 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions_InsufficientB
 		"first position base rewards snapshot should be updated before slash")
 	s.Require().NotEqual(oldRatio1, pos1After.BaseRewardsPerShare,
 		"second position base rewards snapshot should be updated before slash")
-	s.Require().True(pos0After.Amount.LT(pos0Before.Amount),
-		"first position amount should still be slashed")
-	s.Require().True(pos1After.Amount.LT(pos1Before.Amount),
-		"second position amount should still be slashed")
+	s.Require().True(pos0After.Amount.Equal(pos0Before.Amount),
+		"first position amount should remain unchanged before lazy reconciliation")
+	s.Require().True(pos1After.Amount.Equal(pos1Before.Amount),
+		"second position amount should remain unchanged before lazy reconciliation")
 }
 
 // TestBeforeValidatorSlashed_UpdatesPoolDelegationInfo verifies that the hook
@@ -306,27 +298,81 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_UpdatesPoolDelegationInfo() {
 		infoAfter.Stake, expectedStake)
 }
 
+// TestBeforeValidatorSlashed_LazyAmountAccounting verifies that bonded slash no
+// longer rewrites stored position.Amount eagerly, and Amount is reconciled lazily
+// from shares after validator exchange rate changes.
+func (s *KeeperSuite) TestBeforeValidatorSlashed_LazyAmountAccounting() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	posBefore, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	fraction := sdkmath.LegacyNewDecWithPrec(10, 2) // 10%
+	expectedAmount := valBefore.TokensFromShares(posBefore.DelegatedShares).Mul(sdkmath.LegacyOneDec().Sub(fraction)).TruncateInt()
+
+	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, fraction)
+	s.Require().NoError(err)
+
+	// Raw stored position keeps its pre-slash amount until it is read/mutated.
+	storedAfter, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(storedAfter.Amount.Equal(posBefore.Amount),
+		"stored amount should remain unchanged before lazy reconciliation")
+
+	// Simulate staking slash updating validator exchange rate.
+	s.slashValidatorDirect(valAddr, fraction)
+
+	// Public position reads reconcile from current validator share exchange rate.
+	reconciledAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(reconciledAfter.Amount.Equal(expectedAmount),
+		"reconciled amount should match post-slash token value")
+}
+
 // --- AfterValidatorBonded hook tests ---
 
-// TestAfterValidatorBonded_ResetsLastBonusAccrual verifies that when a validator
-// transitions back to bonded, LastBonusAccrual is reset to the current block time
-// so bonus does not over-accrue during the unbonding period.
-func (s *KeeperSuite) TestAfterValidatorBonded_ResetsLastBonusAccrual() {
+func (s *KeeperSuite) recordUnbondingCheckpoint(valAddr sdk.ValAddress) sdk.ConsAddress {
+	consAddr := sdk.ConsAddress(valAddr)
+	err := s.keeper.Hooks().AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+	return consAddr
+}
+
+func (s *KeeperSuite) recordBondedCheckpointAt(valAddr sdk.ValAddress, consAddr sdk.ConsAddress, at time.Time) {
+	s.ctx = s.ctx.WithBlockTime(at)
+	err := s.keeper.Hooks().AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+}
+
+// TestAfterValidatorBonded_RecordsResumeCheckpoint verifies that the hook stores
+// a validator-level resume checkpoint without eagerly mutating all positions.
+func (s *KeeperSuite) TestAfterValidatorBonded_RecordsResumeCheckpoint() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	// Bonded checkpoint only makes sense after a pause checkpoint exists.
+	consAddr := s.recordUnbondingCheckpoint(valAddr)
 
 	// Simulate passage of time.
 	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
-	s.ctx = s.ctx.WithBlockTime(newTime)
+	s.recordBondedCheckpointAt(valAddr, consAddr, newTime)
 
-	consAddr := sdk.ConsAddress(valAddr)
-	hooks := s.keeper.Hooks()
-	err := hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
+	resumeAt, ok, err := s.keeper.GetValidatorBonusResumeAt(s.ctx, valAddr)
 	s.Require().NoError(err)
+	s.Require().True(ok, "resume checkpoint should be recorded")
+	s.Require().Equal(newTime.Unix(), resumeAt.Unix())
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(newTime, posAfter.LastBonusAccrual, "LastBonusAccrual should be reset to current block time")
+	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
+		"position checkpoint should not be eagerly rewritten")
 }
 
 // TestAfterValidatorBonded_NoPositions is a no-op for validators with no tier positions.
@@ -341,11 +387,29 @@ func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
 	s.Require().NoError(err)
 }
 
+func (s *KeeperSuite) TestAfterValidatorBonded_DuplicateKeepsEarliestResumeCheckpoint() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	consAddr := s.recordUnbondingCheckpoint(valAddr)
+
+	firstResume := s.ctx.BlockTime().Add(6 * time.Hour)
+	s.recordBondedCheckpointAt(valAddr, consAddr, firstResume)
+
+	secondResume := firstResume.Add(6 * time.Hour)
+	s.recordBondedCheckpointAt(valAddr, consAddr, secondResume)
+
+	resumeAt, ok, err := s.keeper.GetValidatorBonusResumeAt(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(ok)
+	s.Require().Equal(firstResume.Unix(), resumeAt.Unix(), "duplicate bonded hooks should not overwrite first resume checkpoint")
+}
+
 // --- AfterValidatorBeginUnbonding hook tests ---
 
-// TestAfterValidatorBeginUnbonding_ClaimsRewards verifies that when a validator
-// begins unbonding, base and bonus rewards are claimed for all positions.
-func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
+// TestAfterValidatorBeginUnbonding_RecordsPauseCheckpoint verifies that when a
+// validator begins unbonding, the hook records pause time lazily without eagerly
+// claiming rewards for all positions.
+func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_RecordsPauseCheckpoint() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -359,13 +423,25 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_ClaimsRewards() {
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	consAddr := sdk.ConsAddress(valAddr)
-	hooks := s.keeper.Hooks()
-	err := hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
-	s.Require().NoError(err)
+	_ = s.recordUnbondingCheckpoint(valAddr)
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "rewards should have been claimed when validator began unbonding")
+	s.Require().Equal(balBefore.Amount, balAfter.Amount, "hook should not eagerly pay rewards in lazy mode")
+
+	pauseAt, ok, err := s.keeper.GetValidatorBonusPauseAt(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(ok, "pause checkpoint should be recorded")
+	s.Require().Equal(s.ctx.BlockTime().Unix(), pauseAt.Unix())
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	pauseRate, err := s.keeper.ValidatorBonusPauseRate.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedRate := sdkmath.LegacyZeroDec()
+	if !val.GetDelegatorShares().IsZero() {
+		expectedRate = sdkmath.LegacyNewDecFromInt(val.GetTokens()).Quo(val.GetDelegatorShares())
+	}
+	s.Require().True(pauseRate.Equal(expectedRate), "pause rate checkpoint should snapshot validator tokens/share at unbonding")
 }
 
 // --- AfterValidatorRemoved hook tests ---
@@ -382,6 +458,8 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 		},
 	})
 	s.Require().NoError(err)
+	consAddr = s.recordUnbondingCheckpoint(valAddr)
+	s.recordBondedCheckpointAt(valAddr, consAddr, s.ctx.BlockTime())
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
@@ -389,6 +467,18 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().False(hasRatio, "validator reward ratio should be cleaned after validator removal")
+
+	hasPause, err := s.keeper.ValidatorBonusPauseAt.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasPause, "validator bonus pause checkpoint should be cleaned after validator removal")
+
+	hasResume, err := s.keeper.ValidatorBonusResumeAt.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasResume, "validator bonus resume checkpoint should be cleaned after validator removal")
+
+	hasPauseRate, err := s.keeper.ValidatorBonusPauseRate.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasPauseRate, "validator bonus pause rate should be cleaned after validator removal")
 }
 
 // --- AfterUnbondingCompleted / AfterRedelegationCompleted hook tests ---

@@ -49,6 +49,15 @@ func validFullGenesis() types.GenesisState {
 		RedelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 11, PositionId: 1},
 		},
+		ValidatorBonusPauseCheckpoints: []types.ValidatorBonusCheckpointEntry{
+			{Validator: testValidator, UnixTime: 100},
+		},
+		ValidatorBonusResumeCheckpoints: []types.ValidatorBonusCheckpointEntry{
+			{Validator: testValidator, UnixTime: 200},
+		},
+		ValidatorBonusPauseRates: []types.ValidatorBonusRateEntry{
+			{Validator: testValidator, TokensPerShare: sdkmath.LegacyMustNewDecFromStr("1.25").String()},
+		},
 	}
 }
 
@@ -154,5 +163,84 @@ func TestValidateGenesis(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.RedelegationMappings = append(genesis.RedelegationMappings, types.UnbondingMapping{UnbondingId: 11, PositionId: 1})
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegation ID")
+	})
+
+	t.Run("invalid validator address in bonus pause checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseCheckpoints[0].Validator = "invalid"
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus pause checkpoint")
+	})
+
+	t.Run("duplicate validator in bonus pause checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseCheckpoints = append(genesis.ValidatorBonusPauseCheckpoints, genesis.ValidatorBonusPauseCheckpoints[0])
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator")
+	})
+
+	t.Run("negative unix time in bonus pause checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseCheckpoints[0].UnixTime = -1
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "negative pause unix_time")
+	})
+
+	t.Run("invalid validator address in bonus resume checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusResumeCheckpoints[0].Validator = "invalid"
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus resume checkpoint")
+	})
+
+	t.Run("duplicate validator in bonus resume checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusResumeCheckpoints = append(genesis.ValidatorBonusResumeCheckpoints, genesis.ValidatorBonusResumeCheckpoints[0])
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator")
+	})
+
+	t.Run("negative unix time in bonus resume checkpoints", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusResumeCheckpoints[0].UnixTime = -1
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "negative resume unix_time")
+	})
+
+	t.Run("bonus resume checkpoint without pause checkpoint", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseCheckpoints = nil
+		genesis.ValidatorBonusPauseRates = nil
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "resume checkpoint without pause checkpoint")
+	})
+
+	t.Run("invalid validator address in bonus pause rates", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseRates[0].Validator = "invalid"
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address in bonus pause rate")
+	})
+
+	t.Run("invalid tokens_per_share in bonus pause rates", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseRates[0].TokensPerShare = "not-a-decimal"
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid tokens_per_share")
+	})
+
+	t.Run("negative tokens_per_share in bonus pause rates", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseRates[0].TokensPerShare = "-0.1"
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "negative tokens_per_share")
+	})
+
+	t.Run("duplicate validator in bonus pause rates", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseRates = append(genesis.ValidatorBonusPauseRates, genesis.ValidatorBonusPauseRates[0])
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator")
+	})
+
+	t.Run("missing bonus pause rate for pause checkpoint", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseRates = nil
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "missing bonus pause rate")
+	})
+
+	t.Run("bonus pause rate without pause checkpoint", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.ValidatorBonusPauseCheckpoints = nil
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "without pause checkpoint")
 	})
 }

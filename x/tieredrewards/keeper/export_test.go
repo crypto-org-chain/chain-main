@@ -148,3 +148,11 @@ func (k Keeper) ClaimRewardsForPosition(ctx context.Context, pos types.Position)
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
 	return k.updateBaseRewardsPerShare(ctx, valAddr)
 }
+
+func (k Keeper) GetValidatorBonusPauseAt(ctx context.Context, valAddr sdk.ValAddress) (time.Time, bool, error) {
+	return k.getValidatorBonusPauseAt(ctx, valAddr)
+}
+
+func (k Keeper) GetValidatorBonusResumeAt(ctx context.Context, valAddr sdk.ValAddress) (time.Time, bool, error) {
+	return k.getValidatorBonusResumeAt(ctx, valAddr)
+}

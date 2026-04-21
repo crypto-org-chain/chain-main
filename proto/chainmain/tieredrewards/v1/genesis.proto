@@ -20,6 +20,18 @@ message UnbondingMapping {
   uint64 position_id  = 2;
 }
 
+// ValidatorBonusCheckpointEntry wraps a validator address with a bonus accrual checkpoint timestamp.
+message ValidatorBonusCheckpointEntry {
+  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  int64  unix_time = 2;
+}
+
+// ValidatorBonusRateEntry wraps a validator address with the paused tokens-per-share snapshot.
+message ValidatorBonusRateEntry {
+  string validator        = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string tokens_per_share = 2;
+}
+
 // GenesisState defines the tieredrewards module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
@@ -36,4 +48,10 @@ message GenesisState {
   repeated UnbondingMapping unbonding_delegation_mappings = 6 [(gogoproto.nullable) = false];
   // redelegation_mappings maps redelegation IDs to tier position IDs.
   repeated UnbondingMapping redelegation_mappings = 7 [(gogoproto.nullable) = false];
+  // validator_bonus_pause_checkpoints stores per-validator pause timestamps for lazy bonus accrual.
+  repeated ValidatorBonusCheckpointEntry validator_bonus_pause_checkpoints = 8 [(gogoproto.nullable) = false];
+  // validator_bonus_resume_checkpoints stores per-validator resume timestamps for lazy bonus accrual.
+  repeated ValidatorBonusCheckpointEntry validator_bonus_resume_checkpoints = 9 [(gogoproto.nullable) = false];
+  // validator_bonus_pause_rates stores per-validator paused tokens-per-share snapshots.
+  repeated ValidatorBonusRateEntry validator_bonus_pause_rates = 10 [(gogoproto.nullable) = false];
 }

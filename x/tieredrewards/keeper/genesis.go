@@ -3,6 +3,8 @@ package keeper
 import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	sdkmath "cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -63,6 +65,40 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 			panic(err)
 		}
 	}
+
+	for _, checkpoint := range data.ValidatorBonusPauseCheckpoints {
+		valAddr, err := sdk.ValAddressFromBech32(checkpoint.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.setValidatorBonusPauseAtUnix(ctx, valAddr, checkpoint.UnixTime); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, checkpoint := range data.ValidatorBonusResumeCheckpoints {
+		valAddr, err := sdk.ValAddressFromBech32(checkpoint.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.setValidatorBonusResumeAtUnix(ctx, valAddr, checkpoint.UnixTime); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, rate := range data.ValidatorBonusPauseRates {
+		valAddr, err := sdk.ValAddressFromBech32(rate.Validator)
+		if err != nil {
+			panic(err)
+		}
+		decRate, err := sdkmath.LegacyNewDecFromStr(rate.TokensPerShare)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.setValidatorBonusPauseRate(ctx, valAddr, decRate); err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
@@ -81,7 +117,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	var positions []types.Position
-	err = k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
+	err = k.Positions.Walk(ctx, nil, func(positionID uint64, _ types.Position) (bool, error) {
+		pos, err := k.getPosition(ctx, positionID)
+		if err != nil {
+			return false, err
+		}
 		positions = append(positions, pos)
 		return false, nil
 	})
@@ -130,13 +170,52 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
+	var validatorBonusPauseCheckpoints []types.ValidatorBonusCheckpointEntry
+	err = k.ValidatorBonusPauseAt.Walk(ctx, nil, func(valAddr sdk.ValAddress, unixTime int64) (bool, error) {
+		validatorBonusPauseCheckpoints = append(validatorBonusPauseCheckpoints, types.ValidatorBonusCheckpointEntry{
+			Validator: valAddr.String(),
+			UnixTime:  unixTime,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var validatorBonusResumeCheckpoints []types.ValidatorBonusCheckpointEntry
+	err = k.ValidatorBonusResumeAt.Walk(ctx, nil, func(valAddr sdk.ValAddress, unixTime int64) (bool, error) {
+		validatorBonusResumeCheckpoints = append(validatorBonusResumeCheckpoints, types.ValidatorBonusCheckpointEntry{
+			Validator: valAddr.String(),
+			UnixTime:  unixTime,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var validatorBonusPauseRates []types.ValidatorBonusRateEntry
+	err = k.ValidatorBonusPauseRate.Walk(ctx, nil, func(valAddr sdk.ValAddress, tokensPerShare sdkmath.LegacyDec) (bool, error) {
+		validatorBonusPauseRates = append(validatorBonusPauseRates, types.ValidatorBonusRateEntry{
+			Validator:      valAddr.String(),
+			TokensPerShare: tokensPerShare.String(),
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.GenesisState{
-		Params:                      params,
-		Tiers:                       tiers,
-		Positions:                   positions,
-		NextPositionId:              nextPositionId,
-		ValidatorRewardRatios:       validatorRewardRatios,
-		UnbondingDelegationMappings: unbondingDelegationMappings,
-		RedelegationMappings:        redelegationMappings,
+		Params:                          params,
+		Tiers:                           tiers,
+		Positions:                       positions,
+		NextPositionId:                  nextPositionId,
+		ValidatorRewardRatios:           validatorRewardRatios,
+		UnbondingDelegationMappings:     unbondingDelegationMappings,
+		RedelegationMappings:            redelegationMappings,
+		ValidatorBonusPauseCheckpoints:  validatorBonusPauseCheckpoints,
+		ValidatorBonusResumeCheckpoints: validatorBonusResumeCheckpoints,
+		ValidatorBonusPauseRates:        validatorBonusPauseRates,
 	}
 }

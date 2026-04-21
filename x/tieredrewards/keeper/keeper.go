@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,7 +37,10 @@ type Keeper struct {
 	PositionCountByTier collections.Map[uint32, uint64]
 
 	// Cumulative rewards-per-share indexed by validator.
-	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
+	ValidatorRewardRatio    collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
+	ValidatorBonusPauseAt   collections.Map[sdk.ValAddress, int64]
+	ValidatorBonusResumeAt  collections.Map[sdk.ValAddress, int64]
+	ValidatorBonusPauseRate collections.Map[sdk.ValAddress, sdkmath.LegacyDec]
 
 	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
 	UnbondingDelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
@@ -87,24 +91,27 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:                   cdc,
-		storeService:          storeService,
-		transientStoreService: transientStoreService,
-		authority:             authority,
-		mintKeeper:            mintKeeper,
-		stakingKeeper:         stakingKeeper,
-		accountKeeper:         accountKeeper,
-		bankKeeper:            bankKeeper,
-		distributionKeeper:    distributionKeeper,
-		Params:                collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		Tiers:                 collections.NewMap(sb, types.TiersKey, "tiers", collections.Uint32Key, codec.CollValue[types.Tier](cdc)),
-		Positions:             collections.NewMap(sb, types.PositionsKey, "positions", collections.Uint64Key, codec.CollValue[types.Position](cdc)),
-		NextPositionId:        collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
-		PositionsByOwner:      collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
-		PositionsByTier:       collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
-		PositionsByValidator:  collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
-		PositionCountByTier:   collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
-		ValidatorRewardRatio:  collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		cdc:                     cdc,
+		storeService:            storeService,
+		transientStoreService:   transientStoreService,
+		authority:               authority,
+		mintKeeper:              mintKeeper,
+		stakingKeeper:           stakingKeeper,
+		accountKeeper:           accountKeeper,
+		bankKeeper:              bankKeeper,
+		distributionKeeper:      distributionKeeper,
+		Params:                  collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Tiers:                   collections.NewMap(sb, types.TiersKey, "tiers", collections.Uint32Key, codec.CollValue[types.Tier](cdc)),
+		Positions:               collections.NewMap(sb, types.PositionsKey, "positions", collections.Uint64Key, codec.CollValue[types.Position](cdc)),
+		NextPositionId:          collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
+		PositionsByOwner:        collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
+		PositionsByTier:         collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
+		PositionsByValidator:    collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
+		PositionCountByTier:     collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
+		ValidatorRewardRatio:    collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		ValidatorBonusPauseAt:   collections.NewMap(sb, types.ValidatorBonusPauseAtKey, "validator_bonus_pause_at", sdk.ValAddressKey, collections.Int64Value),
+		ValidatorBonusResumeAt:  collections.NewMap(sb, types.ValidatorBonusResumeAtKey, "validator_bonus_resume_at", sdk.ValAddressKey, collections.Int64Value),
+		ValidatorBonusPauseRate: collections.NewMap(sb, types.ValidatorBonusPauseRateKey, "validator_bonus_pause_rate", sdk.ValAddressKey, sdk.LegacyDecValue),
 		UnbondingDelegationMappings: collections.NewIndexedMap(
 			sb,
 			types.UnbondingIdToPositionIdKey,

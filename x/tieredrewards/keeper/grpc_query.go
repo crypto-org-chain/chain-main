@@ -41,8 +41,8 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 		ctx,
 		q.k.Positions,
 		req.Pagination,
-		func(_ uint64, pos types.Position) (types.Position, error) {
-			return pos, nil
+		func(positionID uint64, _ types.Position) (types.Position, error) {
+			return q.k.getPosition(ctx, positionID)
 		},
 	)
 	if err != nil {

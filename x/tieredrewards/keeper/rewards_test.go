@@ -42,96 +42,22 @@ func (s *KeeperSuite) TestClaimBonusRewards_BondedValidator() {
 	s.Require().Equal(expectedBonusCoins, bonus)
 }
 
-// AfterValidatorBeginUnbonding settles the final bonus (forceAccrue) and
-// advances LastBonusAccrual to block time. Subsequent claims see the
-// validator as unbonding and calculateBonus returns zero.
-func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_SettlesFinalBonus() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	unbondTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
-	s.ctx = s.ctx.WithBlockTime(unbondTime)
-
+func (s *KeeperSuite) unbondThenRebondWithCheckpoints(valAddr sdk.ValAddress, toUnbond time.Duration, toRebond time.Duration) (time.Time, time.Time, sdkmath.LegacyDec) {
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(toUnbond))
+	unbondTime := s.ctx.BlockTime()
 	s.jailAndUnbondValidator(valAddr)
 
-	// LastBonusAccrual should be advanced to the block time (not zeroed).
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pauseAt, ok, err := s.keeper.GetValidatorBonusPauseAt(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(unbondTime, updated.LastBonusAccrual,
-		"LastBonusAccrual should be advanced to block time after unbonding hook")
-}
+	s.Require().True(ok)
+	s.Require().Equal(unbondTime.Unix(), pauseAt.Unix())
 
-// If the hook tolerates an empty bonus pool, it must still persist the advanced
-// checkpoint so the pre-unbond accrual window is not repriced later.
-func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_InsufficientBonusPoolAdvancesCheckpoint() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	unbondTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
-	s.ctx = s.ctx.WithBlockTime(unbondTime)
-
-	s.jailAndUnbondValidator(valAddr)
-
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().Equal(unbondTime, updated.LastBonusAccrual,
-		"LastBonusAccrual should advance even when bonus pool is empty during unbonding hook")
-}
-
-// MsgClaimTierRewards returns zero bonus when the validator is not bonded.
-func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_ZeroBonus() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	addr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
-
-	// Jail + apply → unbonding (hook settles final bonus).
-	s.jailAndUnbondValidator(valAddr)
-
-	// Advance time further; the validator is still unbonding.
-	claimTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
-	s.ctx = s.ctx.WithBlockTime(claimTime)
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      addr.String(),
-		PositionId: pos.Id,
-	})
+	pauseRate, err := s.keeper.ValidatorBonusPauseRate.Get(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	s.Require().True(resp.BonusRewards.IsZero(),
-		"bonus should be zero for an unbonding validator; got %s", resp.BonusRewards)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(toRebond))
+	rebondTime := s.ctx.BlockTime()
 
-	// LastBonusAccrual should advance to current block time.
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().Equal(claimTime, updated.LastBonusAccrual,
-		"LastBonusAccrual should advance to block time even when bonus is zero")
-}
-
-// After the validator re-bonds, bonus accrual should resume from the new bonded time.
-func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
-
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
-
-	// Jail + apply → unbonding (hook settles final bonus).
-	s.jailAndUnbondValidator(valAddr)
-
-	// Verify LastBonusAccrual was advanced (not zeroed).
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().Equal(s.ctx.BlockTime(), updated.LastBonusAccrual)
-
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
-
-	// Unjail and apply to re-bond.
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	consAddr, err := val.GetConsAddr()
@@ -145,19 +71,90 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().NoError(err)
 	s.Require().True(val.IsBonded(), "validator should be bonded again after unjail + apply")
 
-	afterBonded, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	resumeAt, ok, err := s.keeper.GetValidatorBonusResumeAt(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(s.ctx.BlockTime(), afterBonded.LastBonusAccrual)
+	s.Require().True(ok)
+	s.Require().Equal(rebondTime.Unix(), resumeAt.Unix())
+
+	return unbondTime, rebondTime, pauseRate
+}
+
+// MsgClaimTierRewards while validator is unbonding should include only pre-unbond
+// accrual, priced by the pause-time tokens/share snapshot.
+func (s *KeeperSuite) TestClaimTierRewards_UnbondingValidator_PreUnbondBonusUsesPauseRateSnapshot() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	addr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
+	s.Require().NoError(err)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	unbondTime := s.ctx.BlockTime()
+	s.jailAndUnbondValidator(valAddr)
+
+	pauseRate, err := s.keeper.ValidatorBonusPauseRate.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// Simulate slash while validator stays unbonding.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(5, 1)) // 50%
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:      addr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	preDurationSeconds := int64(unbondTime.Sub(pos.LastBonusAccrual) / time.Second)
+	expectedBonus := pos.DelegatedShares.
+		Mul(pauseRate).
+		Mul(tier.BonusApy).
+		MulInt64(preDurationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
+	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
+	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
+		"pre-unbond bonus should be based on pause-rate snapshot, not post-slash claim-time rate")
+}
+
+// After the validator re-bonds, bonus accrual should resume from the new bonded time.
+func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	unbondTime, rebondTime, pauseRate := s.unbondThenRebondWithCheckpoints(valAddr, 30*24*time.Hour, 30*24*time.Hour)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	claimTime := s.ctx.BlockTime()
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
 
-	updated, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	expectedBonus := s.keeper.CalculateBonusRaw(updated, val, tier, s.ctx.BlockTime())
+	preDurationSeconds := int64(unbondTime.Sub(pos.LastBonusAccrual) / time.Second)
+	postDurationSeconds := int64(claimTime.Sub(rebondTime) / time.Second)
+	preBonusDec := updated.DelegatedShares.
+		Mul(pauseRate).
+		Mul(tier.BonusApy).
+		MulInt64(preDurationSeconds).
+		QuoInt64(types.SecondsPerYear)
+	postBonusDec := val.TokensFromShares(updated.DelegatedShares).
+		Mul(tier.BonusApy).
+		MulInt64(postDurationSeconds).
+		QuoInt64(types.SecondsPerYear)
+	expectedBonus := preBonusDec.Add(postBonusDec).TruncateInt()
 	expectedBonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, expectedBonus))
 
 	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &updated, tier, false)
@@ -167,10 +164,92 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().Equal(s.ctx.BlockTime(), updated.LastBonusAccrual)
 }
 
+// Regression: when pause/resume splits produce fractional bonuses per segment,
+// we should aggregate decimals first then truncate once to avoid extra loss.
+func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond_TruncateAfterAggregate() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	unbondTime, rebondTime, pauseRate := s.unbondThenRebondWithCheckpoints(valAddr, 11*time.Hour, time.Hour)
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(11 * time.Hour))
+
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
+	s.Require().NoError(err)
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	preDurationSeconds := int64(unbondTime.Sub(pos.LastBonusAccrual) / time.Second)
+	postDurationSeconds := int64(s.ctx.BlockTime().Sub(rebondTime) / time.Second)
+	preBonusDec := updated.DelegatedShares.
+		Mul(pauseRate).
+		Mul(tier.BonusApy).
+		MulInt64(preDurationSeconds).
+		QuoInt64(types.SecondsPerYear)
+	postBonusDec := val.TokensFromShares(updated.DelegatedShares).
+		Mul(tier.BonusApy).
+		MulInt64(postDurationSeconds).
+		QuoInt64(types.SecondsPerYear)
+
+	segmentTruncated := preBonusDec.TruncateInt().Add(postBonusDec.TruncateInt())
+	aggregateTruncated := preBonusDec.Add(postBonusDec).TruncateInt()
+	s.Require().True(aggregateTruncated.GT(segmentTruncated),
+		"test setup must exercise rounding carry across segments")
+
+	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &updated, tier, false)
+	s.Require().NoError(err)
+	s.Require().Equal(aggregateTruncated.String(), bonus.AmountOf(bondDenom).String())
+}
+
+// Multiple unbonding/bonded cycles before claim should not overcount bonus.
+// The second unbonding hook must reconcile the prior cycle before opening a new pause window.
+func (s *KeeperSuite) TestBonusAccrual_MultipleCyclesBeforeClaim_NoOvercount() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	consAddr := sdk.ConsAddress(valAddr)
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(10 * 24 * time.Hour))
+	s.jailAndUnbondValidator(valAddr)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(10 * 24 * time.Hour))
+	err = s.app.StakingKeeper.Unjail(s.ctx, consAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
+	s.Require().NoError(err)
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(10 * 24 * time.Hour))
+	secondUnbondAt := s.ctx.BlockTime()
+	s.jailAndUnbondValidator(valAddr)
+
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(secondUnbondAt, updated.LastBonusAccrual,
+		"second unbonding should reconcile previous pause/resume cycle before recording a new pause")
+
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(10 * 24 * time.Hour))
+	tier, err := s.keeper.Tiers.Get(s.ctx, updated.TierId)
+	s.Require().NoError(err)
+	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &updated, tier, false)
+	s.Require().NoError(err)
+	s.Require().True(bonus.IsZero(), "no additional bonus should accrue during ongoing unbonding")
+}
+
 // calculateBonus returns zero when the validator is not bonded.
 func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
@@ -179,13 +258,19 @@ func (s *KeeperSuite) TestCalculateBonus_UnbondedValidator_ReturnsZero() {
 	// Advance time so there would be a non-zero bonus if the validator were bonded.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
-	// Re-read position (hook advanced LastBonusAccrual).
+	// Re-read position for current lazy accounting state.
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
 
+	// First claim while unbonded consumes pre-unbond accrual.
+	_, err = s.keeper.ClaimBonusRewards(s.ctx, &pos, tier, false)
+	s.Require().NoError(err)
+
+	// Another claim in the same unbonded regime should yield zero.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
 	bonus, err := s.keeper.ClaimBonusRewards(s.ctx, &pos, tier, false)
 	s.Require().NoError(err)
 	s.Require().True(bonus.IsZero(),

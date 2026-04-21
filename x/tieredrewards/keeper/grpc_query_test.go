@@ -178,6 +178,33 @@ func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
 	s.Require().Empty(resp.Positions)
 }
 
+func (s *KeeperSuite) TestGRPCQueryAllTierPositions_ReconcilesLazyAmount() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10_000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	storedBefore, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+
+	storedAfter, err := s.keeper.Positions.Get(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(storedAfter.Amount.Equal(storedBefore.Amount), "raw stored amount should remain stale before lazy reconcile")
+
+	valAfterSlash, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedAmount := valAfterSlash.TokensFromShares(storedAfter.DelegatedShares).TruncateInt()
+
+	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 1)
+	s.Require().True(resp.Positions[0].Amount.Equal(expectedAmount), "all positions query should return reconciled amount")
+
+	posResp, err := s.queryClient.TierPosition(s.ctx.Context(), &types.QueryTierPositionRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().True(resp.Positions[0].Amount.Equal(posResp.Position.Amount), "all positions and single position queries should agree")
+}
+
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions_NilRequest() {
 	srv := keeper.NewQueryServerImpl(s.keeper)
 	_, err := srv.AllTierPositions(s.ctx, nil)

@@ -102,15 +102,17 @@ func (s *KeeperSuite) TestMsgTierRedelegate_SameValidator() {
 func (s *KeeperSuite) TestMsgTierRedelegate_AmountZero() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	// Simulate slash by zeroing amount
+	// Simulate bonded slash to zero validator tokens while delegated shares remain.
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
+
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	s.Require().True(pos.Amount.IsZero(), "position amount should reconcile to zero after full slash")
 
-	dstValidator := sdk.ValAddress([]byte("dst_validator________"))
+	dstValidator, _ := s.createSecondValidator()
 	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        delAddr.String(),
 		PositionId:   pos.Id,
