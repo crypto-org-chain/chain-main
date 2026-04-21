@@ -73,7 +73,7 @@ func (k Keeper) updateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAd
 	if errors.Is(err, stakingtypes.ErrNoDelegation) {
 		if err := k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
 			return sdk.DecCoins{}, err
-		}
+		}	
 		return sdk.DecCoins{}, nil
 	}
 	if err != nil {

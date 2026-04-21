@@ -104,11 +104,11 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		if err != nil {
 			return err
 		}
-	
+
 		validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 		if err != nil {
 			return err
-		}	
+		}
 
 		for i := range valPositions {
 			pos := valPositions[i]
@@ -193,7 +193,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		pos := &positions[i]
 		// Defensive
 		if !pos.IsOwner(owner) {
-			return nil, nil, errorsmod.Wrapf(types.ErrPositionInvalidOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
+			return nil, nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
 		}
 
 		if !pos.IsDelegated() {
@@ -245,7 +245,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 			return nil, nil, err
 		}
 
-		base, err := k.claimBaseRewards(ctx, g.positions, g.positions[0].Owner, valAddr, g.ratio)
+		base, err := k.claimBaseRewards(ctx, g.positions, owner, valAddr, g.ratio)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -266,7 +266,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 
 		for _, tierId := range tierIds {
 			tg := tGroups[tierId]
-			bonus, err := k.claimBonusRewards(ctx, tg.positions, g.positions[0].Owner, g.validator, tg.tier, false)
+			bonus, err := k.claimBonusRewards(ctx, tg.positions, owner, g.validator, tg.tier, false)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -299,7 +299,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Positio
 	for _, pos := range positions {
 		// Defensive
 		if !pos.IsOwner(owner) {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
+			return nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
 		}
 
 		if !pos.IsDelegated() {
@@ -308,7 +308,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Positio
 
 		// Defensive
 		if pos.Validator != valAddr.String() {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
+			return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
 		}
 
 		delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
@@ -376,7 +376,7 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 	for _, pos := range positions {
 		// Defensive
 		if !pos.IsOwner(owner) {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
+			return nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
 		}
 
 		if !pos.IsDelegated() {
@@ -385,12 +385,12 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 
 		// Defensive
 		if pos.Validator != val.OperatorAddress {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), val.OperatorAddress)
+			return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), val.OperatorAddress)
 		}
 
 		// Defensive
 		if pos.TierId != tier.Id {
-			return nil, errorsmod.Wrapf(types.ErrPositionInvalidTier, "position tier does not match tier, position: %s, tier: %d", pos.String(), tier.Id)
+			return nil, errorsmod.Wrapf(types.ErrNotPositionTier, "position tier does not match tier, position: %s, tier: %d", pos.String(), tier.Id)
 		}
 
 		bonus := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue)

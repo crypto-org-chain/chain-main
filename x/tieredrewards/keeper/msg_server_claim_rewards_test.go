@@ -250,6 +250,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	// Fund a single address and create two positions.
 	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
@@ -261,11 +262,34 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	})
 	s.Require().NoError(err)
 
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	// Read positions to get their DelegatedShares for expected bonus calculation.
+	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	s.Require().NoError(err)
+	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	s.Require().NoError(err)
+
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+
+	baseRewardsDistributed := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos1.TierId)
+	s.Require().NoError(err)
+
+	// Expected bonus: sum of each position's bonus.
+	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val, tier, s.ctx.BlockTime())
+	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val, tier, s.ctx.BlockTime())
+	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
+
+	// Expected base: the module has 2 * lockAmount delegated out of
+	// (genesis delegation + 2 * lockAmount) total. Base rewards are proportional.
+	// With lockAmount == DefaultPowerReduction (same as genesis delegation),
+	// module share = 2/3 of distributed rewards.
+	expectedTotalBase := baseRewardsDistributed.MulRaw(2).QuoRaw(3)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
 
@@ -275,11 +299,20 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	})
 	s.Require().NoError(err)
 	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
-	s.Require().False(claimResp.BaseRewards.IsZero(), "aggregated base rewards should be positive")
-	s.Require().False(claimResp.BonusRewards.IsZero(), "aggregated bonus rewards should be positive")
 
+	// Verify bonus rewards match expected.
+	s.Require().Equal(expectedTotalBonus.String(), claimResp.BonusRewards.AmountOf(bondDenom).String(),
+		"aggregated bonus rewards should match sum of per-position calculations")
+
+	// Verify base rewards match expected.
+	s.Require().Equal(expectedTotalBase.String(), claimResp.BaseRewards.AmountOf(bondDenom).String(),
+		"aggregated base rewards should match proportional share of distributed rewards")
+
+	// Verify balance increased by the sum of base + bonus.
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
-	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "owner should receive rewards")
+	expectedTotalRewards := expectedTotalBase.Add(expectedTotalBonus)
+	s.Require().Equal(expectedTotalRewards.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
+		"balance increase should equal total base + bonus rewards")
 }
 
 // TestMsgClaimTierRewards_EmptyPositionIds verifies that an empty position_ids
@@ -340,12 +373,14 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	valAddr0 := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 
-	// Create a second validator.
+	// Create a second validator (self-delegation = 1_000_000).
 	valAddr1, _ := s.createSecondValidator()
 
 	// Fund a single address and create two positions on different validators.
 	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.setValidatorCommission(valAddr0, sdkmath.LegacyZeroDec())
+	s.setValidatorCommission(valAddr1, sdkmath.LegacyZeroDec())
 
 	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr0.String(),
@@ -357,13 +392,36 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	})
 	s.Require().NoError(err)
 
-	s.setValidatorCommission(valAddr0, sdkmath.LegacyZeroDec())
-	s.setValidatorCommission(valAddr1, sdkmath.LegacyZeroDec())
+	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	s.Require().NoError(err)
+	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	s.Require().NoError(err)
+
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.allocateRewardsToValidator(valAddr0, sdkmath.NewInt(100), bondDenom)
-	s.allocateRewardsToValidator(valAddr1, sdkmath.NewInt(100), bondDenom)
+
+	baseDistributed := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr0, baseDistributed, bondDenom)
+	s.allocateRewardsToValidator(valAddr1, baseDistributed, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	val0, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr0)
+	s.Require().NoError(err)
+	val1, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr1)
+	s.Require().NoError(err)
+	tier, err := s.keeper.Tiers.Get(s.ctx, pos1.TierId)
+	s.Require().NoError(err)
+
+	// Expected bonus: sum from each validator.
+	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val0, tier, s.ctx.BlockTime())
+	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val1, tier, s.ctx.BlockTime())
+	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
+
+	// Expected base: on val0, module has lockAmount out of (genesis + lockAmount) = 1/2.
+	// On val1, module has lockAmount out of (self-del + lockAmount) = 1/2.
+	expectedBase0 := baseDistributed.QuoRaw(2)
+	expectedBase1 := baseDistributed.QuoRaw(2)
+	expectedTotalBase := expectedBase0.Add(expectedBase1)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
 
@@ -372,11 +430,16 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
 	})
 	s.Require().NoError(err)
-	s.Require().False(claimResp.BaseRewards.IsZero(), "aggregated base rewards should be positive")
-	s.Require().False(claimResp.BonusRewards.IsZero(), "aggregated bonus rewards should be positive")
+
+	s.Require().Equal(expectedTotalBonus.String(), claimResp.BonusRewards.AmountOf(bondDenom).String(),
+		"aggregated bonus rewards should match sum of per-position calculations")
+	s.Require().Equal(expectedTotalBase.String(), claimResp.BaseRewards.AmountOf(bondDenom).String(),
+		"aggregated base rewards should match proportional share across validators")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
-	s.Require().True(balAfter.Amount.GT(balBefore.Amount), "owner should receive rewards")
+	expectedTotal := expectedTotalBase.Add(expectedTotalBonus)
+	s.Require().Equal(expectedTotal.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
+		"balance increase should equal total base + bonus rewards")
 }
 
 // TestMsgClaimTierRewards_MultipleTiers verifies batch claiming across
@@ -390,6 +453,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 
 	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
@@ -401,19 +465,50 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	})
 	s.Require().NoError(err)
 
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	s.Require().NoError(err)
+	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	s.Require().NoError(err)
+
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+
+	baseDistributed := sdkmath.NewInt(100)
+	s.allocateRewardsToValidator(valAddr, baseDistributed, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	tier1, err := s.keeper.Tiers.Get(s.ctx, uint32(1))
+	s.Require().NoError(err)
+	tier2, err := s.keeper.Tiers.Get(s.ctx, uint32(2))
+	s.Require().NoError(err)
+
+	// Expected bonus: each position uses its own tier's BonusApy.
+	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val, tier1, s.ctx.BlockTime())
+	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val, tier2, s.ctx.BlockTime())
+	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
+
+	// Expected base: module has 2 * lockAmount out of (genesis + 2 * lockAmount) = 2/3.
+	expectedTotalBase := baseDistributed.MulRaw(2).QuoRaw(3)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
 
 	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
 		Owner:       addr.String(),
 		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
 	})
 	s.Require().NoError(err)
-	s.Require().False(claimResp.BaseRewards.IsZero())
-	s.Require().False(claimResp.BonusRewards.IsZero())
+
+	s.Require().Equal(expectedTotalBonus.String(), claimResp.BonusRewards.AmountOf(bondDenom).String(),
+		"aggregated bonus rewards should match sum of per-position calculations across tiers")
+	s.Require().Equal(expectedTotalBase.String(), claimResp.BaseRewards.AmountOf(bondDenom).String(),
+		"aggregated base rewards should match proportional share of distributed rewards")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	expectedTotal := expectedTotalBase.Add(expectedTotalBonus)
+	s.Require().Equal(expectedTotal.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
+		"balance increase should equal total base + bonus rewards")
 }
 
 // TestMsgClaimTierRewards_MixDelegatedAndUndelegated verifies that a batch

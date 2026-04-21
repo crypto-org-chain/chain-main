@@ -231,7 +231,7 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	for _, del := range dels {
 		delAddr, err := s.app.AccountKeeper.AddressCodec().StringToBytes(del.DelegatorAddress)
 		s.Require().NoError(err)
-		spendable := s.app.BankKeeper.GetAllBalances(s.ctx, delAddr)
+		spendable := s.app.BankKeeper.SpendableCoins(s.ctx, delAddr)
 		if !spendable.IsAllGTE(coins) {
 			continue
 		}

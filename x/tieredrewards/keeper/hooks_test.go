@@ -48,7 +48,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_ClaimsRewardsBeforeSlash() {
 	})
 	s.Require().NoError(err)
 	s.Require().True(respClaim.BaseRewards.IsZero(), "base rewards should already be claimed by the slash hook")
-
+	s.Require().True(respClaim.BonusRewards.IsZero(), "bonus rewards should already be claimed by the slash hook")
 	balAfterClaim := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.Require().Equal(balAfterSlash.Amount, balAfterClaim.Amount, "second claim should yield nothing extra")
 }

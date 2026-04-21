@@ -542,9 +542,9 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	withdrawCoins := sdk.NewCoin(bondDenom, pos.Amount)
+	withdraw := sdk.NewCoin(bondDenom, pos.Amount)
 
-	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdrawCoins)); err != nil {
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdraw)); err != nil {
 		return nil, err
 	}
 
@@ -555,13 +555,13 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
 		Position: pos,
-		Amount:   withdrawCoins,
+		Amount:   withdraw,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgWithdrawFromTierResponse{
-		Amount: withdrawCoins,
+		Amount: withdraw,
 	}, nil
 }
 
