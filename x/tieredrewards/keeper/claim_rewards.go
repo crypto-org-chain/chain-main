@@ -20,12 +20,12 @@ import (
 // bonus, the checkpoint is still advanced and the position persisted so the
 // accrual window is consumed — the unpaid bonus is forfeited.
 func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
-	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
 		return err
 	}
 
-	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
+	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
@@ -100,15 +100,15 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 			return err
 		}
 
-		validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-		if err != nil {
-			return err
-		}
-
 		currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 		if err != nil {
 			return err
 		}
+	
+		validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+		if err != nil {
+			return err
+		}	
 
 		for i := range valPositions {
 			pos := valPositions[i]
