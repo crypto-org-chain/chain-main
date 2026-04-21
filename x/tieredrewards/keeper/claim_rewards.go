@@ -49,7 +49,10 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 		_, err := k.claimBonusRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, validator, tier, forceAccrue)
 		if err != nil {
 			if errors.Is(err, types.ErrInsufficientBonusPool) {
-				k.logger(ctx).Error(err.Error())
+				k.logger(ctx).Error("insufficient bonus pool for position",
+					"position_id", positions[i].Id,
+					"error", err.Error(),
+				)
 			} else {
 				return err
 			}
