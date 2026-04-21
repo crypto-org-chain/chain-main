@@ -74,8 +74,8 @@ schema = 3
     version = "v0.14.0"
     hash = "sha256-wEnnFViCgrpk+EHvx7/60zj+5b4Z/QvvD0meNhDHMCE="
   [mod."cosmossdk.io/x/upgrade"]
-    version = "v0.1.4"
-    hash = "sha256-lm0Ccc9zWs1ldWv1cArXuzRxq45zMir1ZNvoPY+9n7o="
+    version = "v0.2.0"
+    hash = "sha256-jLxbW8D1PBG3wJICbiBydwiwLJLn9Ksal5XmJiMM8gk="
   [mod."filippo.io/edwards25519"]
     version = "v1.1.1"
     hash = "sha256-Uv7VeL9tVGn+0lRfEaRJcTsU2WWlvNSjTpkbKzuuQhM="
@@ -111,8 +111,8 @@ schema = 3
     version = "v1.8.3"
     hash = "sha256-Iaiw4a8Up0tB2iu8xdmXKHwXBGWBBGnqMGfZYWNc1ng="
   [mod."github.com/aws/aws-sdk-go"]
-    version = "v1.44.224"
-    hash = "sha256-zkewIYLOT+CvBDsxXnY2ZaFyoDdt/JCFQ2sCIdBmTFo="
+    version = "v1.49.0"
+    hash = "sha256-hbg+kWydUF+yUX9eNtee/pNZKnRGc8fuOcsSdQlAaGs="
   [mod."github.com/beorn7/perks"]
     version = "v1.0.1"
     hash = "sha256-h75GUqfwJKngCJQVE5Ao5wnO3cfKD9lSIteoLp/3xJ4="
@@ -206,8 +206,8 @@ schema = 3
     hash = "sha256-9kLtVepU5b3m2Sne8pBQNvF9LxM374LEmvuLWeYBfFU="
     replaced = "github.com/cosmos/iavl"
   [mod."github.com/cosmos/ibc-go/v10"]
-    version = "v10.1.1"
-    hash = "sha256-dYqLbQROlFKn+kXzTVmRyp8VD+mHOLuU1DdEj2+H+4k="
+    version = "v10.5.1"
+    hash = "sha256-QVBDLgDi8hjbLKLSHQV9c8YhHSrF9SIrHUUJLW6+yHM="
   [mod."github.com/cosmos/ics23/go"]
     version = "v0.11.0"
     hash = "sha256-mgU/pqp4kASmW/bP0z6PzssfjRp7GU9ioyvNlDdGC+E="

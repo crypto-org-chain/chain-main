@@ -24,7 +24,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	for _, tier := range data.Tiers {
-		if err := k.setTier(ctx, tier); err != nil {
+		if err := k.SetTier(ctx, tier); err != nil {
 			panic(err)
 		}
 	}

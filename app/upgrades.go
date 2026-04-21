@@ -69,7 +69,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		// TODO: add new tiers here if needed
+		if err := initializeDefaultTierDefinitions(ctx, app); err != nil {
+			return map[string]uint64{}, err
+		}
 
 		// Remove stale KeyDenomName("") index entry if it exists.
 		// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
@@ -171,6 +173,43 @@ func updateMintParams(app *ChainApp, sdkCtx sdk.Context) error {
 		"inflation_min", mintParams.InflationMin.String(),
 		"inflation_rate_change", mintParams.InflationRateChange.String())
 
+	return nil
+}
+
+// initializeDefaultTierDefinitions seeds the three launch tiers (exit delay, bonus APY, min lock).
+func initializeDefaultTierDefinitions(ctx context.Context, app *ChainApp) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.Logger().Info("initializing default tier definitions...")
+
+	year := time.Hour * 24 * 365
+	tiers := []tieredrewardstypes.Tier{
+		{
+			Id:            1,
+			ExitDuration:  year,
+			BonusApy:      math.LegacyMustNewDecFromStr("0.02"),
+			MinLockAmount: math.ZeroInt(),
+		},
+		{
+			Id:            2,
+			ExitDuration:  2 * year,
+			BonusApy:      math.LegacyMustNewDecFromStr("0.04"),
+			MinLockAmount: math.ZeroInt(),
+		},
+		{
+			Id:            3,
+			ExitDuration:  4 * year,
+			BonusApy:      math.LegacyMustNewDecFromStr("0.07"),
+			MinLockAmount: math.ZeroInt(),
+		},
+	}
+
+	for _, tier := range tiers {
+		if err := app.TieredRewardsKeeper.SetTier(ctx, tier); err != nil {
+			return fmt.Errorf("tieredrewards: set tier %d: %w", tier.Id, err)
+		}
+	}
+
+	sdkCtx.Logger().Info("default tier definitions initialized", "tier_count", len(tiers))
 	return nil
 }
 
