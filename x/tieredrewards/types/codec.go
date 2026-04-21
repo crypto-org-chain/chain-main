@@ -24,6 +24,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgClearPosition{}, "chainmain/MsgClearPosition")
 	legacy.RegisterAminoMsg(cdc, &MsgClaimTierRewards{}, "chainmain/MsgClaimTierRewards")
 	legacy.RegisterAminoMsg(cdc, &MsgWithdrawFromTier{}, "chainmain/MsgWithdrawFromTier")
+	legacy.RegisterAminoMsg(cdc, &MsgExitTierWithDelegation{}, "chainmain/MsgExitTierWithDelegation")
 }
 
 func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
@@ -43,6 +44,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgClearPosition{},
 		&MsgClaimTierRewards{},
 		&MsgWithdrawFromTier{},
+		&MsgExitTierWithDelegation{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

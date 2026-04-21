@@ -95,6 +95,17 @@ def tier_undelegate(cluster, owner, position_id, i=0):
     return tx(cluster, "tier-undelegate", str(position_id), from_=owner, i=i)
 
 
+def exit_tier_with_delegation(cluster, owner, position_id, amount, i=0):
+    return tx(
+        cluster,
+        "exit-tier-with-delegation",
+        str(position_id),
+        str(amount),
+        from_=owner,
+        i=i,
+    )
+
+
 def tier_delegate(cluster, owner, position_id, validator, i=0):
     return tx(cluster, "tier-delegate", str(position_id), validator, from_=owner, i=i)
 

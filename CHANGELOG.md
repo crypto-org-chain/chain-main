@@ -4,6 +4,7 @@
 
 ## Features
 - [#1261](https://github.com/crypto-org-chain/chain-main/pull/1261) Implement tokenomics (inflation decay, base rewards topup and tiered rewards module)
+- [#1265](https://github.com/crypto-org-chain/chain-main/pull/1265) feat(x/tieredrewards): add MsgExitTierWithDelegation - allow position to exit tier by transferring delegation back to owner directly.
 
 ### Improvements
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
@@ -17,6 +18,7 @@
 - [#1260](https://github.com/crypto-org-chain/chain-main/pull/1260) chore(lint): skip running nixfmt in vendor folder
 - [#1262](https://github.com/crypto-org-chain/chain-main/pull/1262) fix(x/nft-transfer): IBC NFT class creation passes voucher class ID as denom name instead of empty string.
 - [#1263](https://github.com/crypto-org-chain/chain-main/pull/1263) fix: remove unused error codes in tieredrewards module
+- [#1267](https://github.com/crypto-org-chain/chain-main/pull/1267) fix: refactor and add back error codes for tieredrewards module
 
 ### Chores:
 - [#1266](https://github.com/crypto-org-chain/chain-main/pull/1263) chore(deps): bump ibc to 10.5.1

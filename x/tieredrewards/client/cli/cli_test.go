@@ -539,6 +539,45 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, "2")
 		}, "")
 	})
+
+	s.Run("exit tier with delegation", func() {
+		exitWithDelegationAmount := sdkmath.NewInt(10_000_000)
+
+		// Lock a new position with immediate exit.
+		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.LockTierExec(
+				val.ClientCtx,
+				owner,
+				strconv.FormatUint(uint64(tieredrewardstestutil.TestTierID), 10),
+				exitWithDelegationAmount.String(),
+				validator,
+				append([]string{"--trigger-exit-immediately=true"}, s.defaultTxArgs()...)...,
+			)
+		})
+
+		position := s.mustQueryPosition(val, "3")
+		s.Require().True(position.HasTriggeredExit())
+		s.Require().True(position.IsDelegated())
+
+		// Wait for exit duration to elapse.
+		s.waitBlocks(1)
+
+		// Exit with delegation (full amount).
+		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.ExitTierWithDelegationExec(
+				val.ClientCtx,
+				owner,
+				"3",
+				exitWithDelegationAmount.String(),
+				s.defaultTxArgs()...,
+			)
+		})
+
+		// Position should be deleted.
+		s.assertCLIError(func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, "3")
+		}, "")
+	})
 }
 
 func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
