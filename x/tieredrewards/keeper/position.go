@@ -96,11 +96,11 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	if err := pos.Validate(); err != nil {
 		return err
 	}
-	oldPos, err := k.getPosition(ctx, pos.Id)
-	isNew := errors.Is(err, types.ErrPositionNotFound)
+	oldPos, err := k.Positions.Get(ctx, pos.Id)
+	isNew := errors.Is(err, collections.ErrNotFound)
 
 	if !isNew && err != nil {
-		return err
+		return errorsmod.Wrapf(err, "%s (position id %d)", types.ErrPositionStore.Error(), pos.Id)
 	}
 
 	if err := k.Positions.Set(ctx, pos.Id, pos); err != nil {
