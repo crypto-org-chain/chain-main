@@ -7,7 +7,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-
 var (
 	_ sdk.Msg = &MsgLockTier{}
 	_ sdk.Msg = &MsgCommitDelegationToTier{}
