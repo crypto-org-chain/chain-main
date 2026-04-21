@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"sort"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -118,7 +119,7 @@ func ValidateGenesis(data GenesisState) error {
 		}
 		seenResumeValidators[checkpoint.Validator] = struct{}{}
 	}
-	for validator := range seenResumeValidators {
+	for _, validator := range sortedValidatorKeys(seenResumeValidators) {
 		if _, ok := seenPauseValidators[validator]; !ok {
 			return fmt.Errorf("bonus resume checkpoint without pause checkpoint for validator %s", validator)
 		}
@@ -142,16 +143,25 @@ func ValidateGenesis(data GenesisState) error {
 		seenPauseRateValidators[rate.Validator] = struct{}{}
 	}
 
-	for validator := range seenPauseValidators {
+	for _, validator := range sortedValidatorKeys(seenPauseValidators) {
 		if _, ok := seenPauseRateValidators[validator]; !ok {
 			return fmt.Errorf("missing bonus pause rate for validator %s", validator)
 		}
 	}
-	for validator := range seenPauseRateValidators {
+	for _, validator := range sortedValidatorKeys(seenPauseRateValidators) {
 		if _, ok := seenPauseValidators[validator]; !ok {
 			return fmt.Errorf("bonus pause rate without pause checkpoint for validator %s", validator)
 		}
 	}
 
 	return nil
+}
+
+func sortedValidatorKeys(seen map[string]struct{}) []string {
+	keys := make([]string, 0, len(seen))
+	for validator := range seen {
+		keys = append(keys, validator)
+	}
+	sort.Strings(keys)
+	return keys
 }

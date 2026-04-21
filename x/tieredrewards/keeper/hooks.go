@@ -41,6 +41,8 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 
 		// A prior unbonding->bonded cycle is still pending. Reconcile once before
 		// opening the next pause window to avoid overwriting older checkpoints.
+		// Known worst-case: this path is O(N) over validator positions because we
+		// must settle the pending cycle before recording a new pause checkpoint.
 		positions, err := h.k.getPositionsByValidator(ctx, valAddr)
 		if err != nil {
 			return err
@@ -103,6 +105,20 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 
 // AfterValidatorRemoved cleans up validator reward ratio.
 func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
+	if err != nil {
+		h.k.logger(ctx).Error("failed to load validator positions on validator removal", "validator", valAddr.String(), "error", err)
+		return nil
+	}
+	if len(positions) > 0 {
+		// Settle before clearing checkpoints; otherwise pending pause/resume state
+		// may be lost and bonus accrual windows can be under-accounted.
+		if err := h.k.settleRewardsForPositions(ctx, valAddr, positions, false); err != nil {
+			h.k.logger(ctx).Error("failed to settle rewards on validator removal; preserving bonus checkpoints", "validator", valAddr.String(), "error", err)
+			return nil
+		}
+	}
+
 	if err := h.k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
 		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
 	}

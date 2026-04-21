@@ -480,6 +480,36 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_CleansRewardTrackingState() {
 	s.Require().False(hasPauseRate, "validator bonus pause rate should be cleaned after validator removal")
 }
 
+func (s *KeeperSuite) TestAfterValidatorRemoved_SettlesBeforeClearingCheckpoints() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(10_000), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+
+	// Build pending pause state without resume.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+	consAddr := s.recordUnbondingCheckpoint(valAddr)
+	removalTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
+	s.ctx = s.ctx.WithBlockTime(removalTime)
+
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom).Amount
+
+	err := s.keeper.Hooks().AfterValidatorRemoved(s.ctx, consAddr, valAddr)
+	s.Require().NoError(err)
+
+	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(removalTime, updated.LastBonusAccrual, "validator removal should settle rewards before clearing checkpoints")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom).Amount
+	s.Require().True(balAfter.GT(balBefore), "owner should receive settled rewards on validator removal")
+
+	hasPause, err := s.keeper.ValidatorBonusPauseAt.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(hasPause)
+}
+
 // --- AfterUnbondingCompleted / AfterRedelegationCompleted hook tests ---
 
 func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
