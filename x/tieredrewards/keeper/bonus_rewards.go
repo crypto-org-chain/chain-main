@@ -69,7 +69,7 @@ func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validato
 	return k.calculateBonus(pos, val, tier, blockTime)
 }
 
-func (k Keeper) bonusCoinsIfPayable(ctx context.Context, bonus sdk.Coins) (sdk.Coins, error) {
+func (k Keeper) checkBonusPoolBalance(ctx context.Context, bonus sdk.Coins) (sdk.Coins, error) {
 	if bonus.IsZero() {
 		return sdk.NewCoins(), nil
 	}

@@ -7,6 +7,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// MaxClaimPositionIds is the maximum number of position IDs that can be
+// claimed in a single MsgClaimTierRewards transaction.
+const MaxClaimPositionIds = 2000
+
 var (
 	_ sdk.Msg = &MsgLockTier{}
 	_ sdk.Msg = &MsgCommitDelegationToTier{}
@@ -120,10 +124,6 @@ func (msg MsgClearPosition) Validate() error {
 
 	return nil
 }
-
-// MaxClaimPositionIds is the maximum number of position IDs that can be
-// claimed in a single MsgClaimTierRewards transaction.
-const MaxClaimPositionIds = 2000
 
 func (msg MsgClaimTierRewards) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {

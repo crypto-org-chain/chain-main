@@ -58,7 +58,7 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 			}
 		}
 		// Persist regardless of whether bonus was paid.
-		if err := k.updatePosition(ctx, positions[i]); err != nil {
+		if err := k.setPositionUnsafe(ctx, positions[i]); err != nil {
 			return err
 		}
 	}
@@ -155,7 +155,7 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 			if !pos.IsDelegated() {
 				continue
 			}
-			if err := k.updatePosition(ctx, *pos); err != nil {
+			if err := k.setPositionUnsafe(ctx, *pos); err != nil {
 				return err
 			}
 		}
@@ -312,7 +312,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		if !pos.IsDelegated() {
 			continue
 		}
-		if err := k.updatePosition(ctx, *pos); err != nil {
+		if err := k.setPositionUnsafe(ctx, *pos); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -444,7 +444,7 @@ func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Positi
 	}
 
 	if !total.IsZero() {
-		if _, err := k.bonusCoinsIfPayable(ctx, total); err != nil {
+		if _, err := k.checkBonusPoolBalance(ctx, total); err != nil {
 			return nil, err
 		}
 
