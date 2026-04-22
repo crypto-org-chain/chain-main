@@ -79,6 +79,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 
 // slashRedelegationPosition reduces both Amount and DelegatedShares for
 // a position mapped to the given redelegation unbonding ID.
+// Rewards are claimed before position is slashed.
 func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
 	pos, found, err := k.getMappedSlashPosition(ctx, k.RedelegationMappings, unbondingId, k.deleteRedelegationPositionMapping)
 	if err != nil {
@@ -87,6 +88,18 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	if !found {
 		return nil
 	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return err
+	}
+
+	settled, err := k.settleRewardsForPositions(ctx, valAddr, []types.Position{pos}, false)
+	if err != nil {
+		return err
+	}
+
+	pos = settled[0]
 
 	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
 

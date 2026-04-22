@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
@@ -198,4 +200,121 @@ func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
 		"DelegatedShares must NOT change on bonded slash; got %s, want %s",
 		updated.DelegatedShares, origShares)
 	s.Require().True(updated.IsDelegated())
+}
+
+// ---------------------------------------------------------------------------
+// slashRedelegationPosition — reward claiming before slash
+// ---------------------------------------------------------------------------
+
+// TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash verifies that both
+// base and bonus rewards accrued at the pre-slash share count are paid out
+// before slashing occurs.
+func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
+
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	// Set zero commission so delegators receive base rewards.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	// Fund the bonus pool and allocate base rewards.
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(500_000), bondDenom)
+
+	// Advance block height so base rewards will be collected.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// Advance time so bonus accrues.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
+	s.Require().NoError(err)
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom)
+
+	// Slash via redelegation — this should claim all rewards first.
+	slashTokens := sdkmath.NewInt(1000)
+	shareBurnt := pos.DelegatedShares.Quo(sdkmath.LegacyNewDec(10))
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
+	s.Require().NoError(err)
+
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	// Base: BaseRewardsPerShare must have advanced.
+	s.Require().True(len(posAfter.BaseRewardsPerShare) > 0,
+		"BaseRewardsPerShare should be set after slash claims rewards")
+	s.Require().True(
+		!posAfter.BaseRewardsPerShare.Equal(posBefore.BaseRewardsPerShare),
+		"BaseRewardsPerShare should advance; before=%s, after=%s",
+		posBefore.BaseRewardsPerShare, posAfter.BaseRewardsPerShare)
+
+	// Checkpoint: LastBonusAccrual must have advanced.
+	s.Require().True(posAfter.LastBonusAccrual.After(posBefore.LastBonusAccrual),
+		"LastBonusAccrual should advance; before=%s, after=%s",
+		posBefore.LastBonusAccrual, posAfter.LastBonusAccrual)
+
+	// owner balance must have increased.
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom)
+	s.Require().True(balAfter.Amount.GT(balBefore.Amount),
+		"owner should have received rewards during redelegation slash; before=%s, after=%s",
+		balBefore.Amount, balAfter.Amount)
+}
+
+// TestSlashRedelegationPosition_InsufficientBonusPool verifies that
+// the slash proceeds even when the bonus pool cannot cover accrued bonus,
+// and that checkpoints are still advanced.
+func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	posBefore, unbondingId := s.setupRedelegatingPosition(lockAmount)
+
+	valAddr := sdk.MustValAddressFromBech32(posBefore.Validator)
+
+	// Set zero commission so delegators receive base rewards.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.Require().NoError(err)
+
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(500_000), bondDenom)
+	// Do NOT fund the bonus pool — it's empty.
+
+	// Advance block height so base rewards will be collected.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// Advance time so bonus would be positive if pool had funds.
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
+
+	// Slash should succeed despite empty bonus pool.
+	slashTokens := sdkmath.NewInt(1000)
+	shareBurnt := posBefore.DelegatedShares.Quo(sdkmath.LegacyNewDec(10))
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
+	s.Require().NoError(err, "slash should not fail when bonus pool is empty")
+
+	updated, err := s.keeper.GetPosition(s.ctx, posBefore.Id)
+	s.Require().NoError(err)
+	s.Require().True(updated.IsDelegated(), "position should still be delegated")
+	s.Require().True(updated.DelegatedShares.LT(posBefore.DelegatedShares),
+		"shares should be reduced despite insufficient bonus pool")
+	s.Require().True(updated.Amount.LT(posBefore.Amount),
+		"amount should be reduced despite insufficient bonus pool")
+
+	// Base: BaseRewardsPerShare must have advanced.
+	s.Require().True(len(updated.BaseRewardsPerShare) > 0,
+		"BaseRewardsPerShare should be set after slash claims rewards")
+	s.Require().True(
+		!updated.BaseRewardsPerShare.Equal(posBefore.BaseRewardsPerShare),
+		"BaseRewardsPerShare should advance; before=%s, after=%s",
+		posBefore.BaseRewardsPerShare, updated.BaseRewardsPerShare)
+
+	// LastBonusAccrual must still advance so bonus isn't double-counted later.
+	s.Require().True(updated.LastBonusAccrual.After(posBefore.LastBonusAccrual),
+		"LastBonusAccrual should advance even when bonus pool is empty; before=%s, after=%s",
+		posBefore.LastBonusAccrual, updated.LastBonusAccrual)
 }

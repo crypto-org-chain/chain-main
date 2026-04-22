@@ -83,7 +83,7 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Positio
 	return k.claimBaseRewards(ctx, positions, owner, valAddr, ratio)
 }
 
-func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
+func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) ([]types.Position, error) {
 	return k.settleRewardsForPositions(ctx, valAddr, positions, forceAccrue)
 }
 

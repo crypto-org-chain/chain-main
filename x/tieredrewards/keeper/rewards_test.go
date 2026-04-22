@@ -245,7 +245,7 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_UpdatesOriginalSlice() {
 	originalLastAccrual := positions[0].LastBonusAccrual
 
 	// claims both base and bonus rewards
-	err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
+	_, err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
 	s.Require().NoError(err)
 
 	// After the call the slice element must reflect the updated LastBonusAccrual.
@@ -301,7 +301,7 @@ func (s *KeeperSuite) TestSettleRewardsForPositions_MixedInsufficientBonusPool()
 	bal2Before := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)
 	positions := []types.Position{pos1, pos2}
 
-	err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
+	_, err = s.keeper.SettleRewardsForPositions(s.ctx, valAddr, positions, false)
 	s.Require().NoError(err)
 
 	bal1After := s.app.BankKeeper.GetBalance(s.ctx, addr1, bondDenom)
