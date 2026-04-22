@@ -19,29 +19,31 @@ import (
 // is insufficient. When the bonus pool cannot cover a position's accrued
 // bonus, the checkpoint is still advanced and the position persisted so the
 // accrual window is consumed — the unpaid bonus is forfeited.
-func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
+//
+// Returns the positions with advanced checkpoints (same slice, mutated in place).
+func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) ([]types.Position, error) {
 	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tierCache := make(map[uint32]types.Tier)
 
 	for i := range positions {
 		if _, err := k.claimBaseRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, valAddr, currentRatio); err != nil {
-			return err
+			return nil, err
 		}
 
 		tier, ok := tierCache[positions[i].TierId]
 		if !ok {
 			tier, err = k.getTier(ctx, positions[i].TierId)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			tierCache[positions[i].TierId] = tier
 		}
@@ -54,16 +56,16 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 					"error", err.Error(),
 				)
 			} else {
-				return err
+				return nil, err
 			}
 		}
 		// Persist regardless of whether bonus was paid.
 		if err := k.setPositionUnsafe(ctx, positions[i]); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return positions, nil
 }
 
 // claimRewardsAndUpdatePositionsForTier claims base and bonus rewards for all delegated

@@ -34,7 +34,8 @@ func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddre
 		return nil
 	}
 
-	return h.k.settleRewardsForPositions(ctx, valAddr, positions, true)
+	_, err = h.k.settleRewardsForPositions(ctx, valAddr, positions, true)
+	return err
 }
 
 // AfterValidatorBonded resets LastBonusAccrual for all positions on this
@@ -80,7 +81,7 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 		return nil
 	}
 
-	err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
+	positions, err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
 	if err != nil {
 		return err
 	}
