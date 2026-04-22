@@ -69,53 +69,18 @@ func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validato
 	return k.calculateBonus(pos, val, tier, blockTime)
 }
 
-func (k Keeper) bonusCoinsIfPayable(ctx context.Context, pos types.Position, bonus math.Int) (sdk.Coins, error) {
+func (k Keeper) sufficientBonusPoolBalance(ctx context.Context, bonus sdk.Coins) error {
 	if bonus.IsZero() {
-		return sdk.NewCoins(), nil
-	}
-
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return sdk.NewCoins(), err
+		return nil
 	}
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
-	poolBalance := k.bankKeeper.GetBalance(ctx, poolAddr, bondDenom)
-	if poolBalance.Amount.LT(bonus) {
-		return sdk.NewCoins(), errorsmod.Wrapf(types.ErrInsufficientBonusPool, "bonus pool has insufficient funds, position id: %d, bonus: %s, pool balance: %s", pos.Id, bonus.String(), poolBalance.Amount.String())
+	poolBalance := k.bankKeeper.GetAllBalances(ctx, poolAddr)
+	if !poolBalance.IsAllGTE(bonus) {
+		return errorsmod.Wrapf(types.ErrInsufficientBonusPool,
+			"bonus: %s, pool balance: %s",
+			bonus.String(), poolBalance.String())
 	}
 
-	return sdk.NewCoins(sdk.NewCoin(bondDenom, bonus)), nil
-}
-
-// sendBonusFromRewardsPool checks the rewards pool, transfers bonus to the owner, and emits EventBonusRewardsClaimed.
-func (k Keeper) sendBonusFromRewardsPool(ctx context.Context, pos types.Position, bonus math.Int) (sdk.Coins, error) {
-	bonusCoins, err := k.bonusCoinsIfPayable(ctx, pos, bonus)
-	if err != nil {
-		return sdk.NewCoins(), err
-	}
-	if bonusCoins.IsZero() {
-		return sdk.NewCoins(), nil
-	}
-
-	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
-	if err != nil {
-		return sdk.NewCoins(), err
-	}
-
-	bonusCoin := bonusCoins[0]
-	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {
-		return sdk.NewCoins(), err
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBonusRewardsClaimed{
-		PositionId: pos.Id,
-		Owner:      pos.Owner,
-		Amount:     bonusCoin,
-	}); err != nil {
-		return sdk.NewCoins(), err
-	}
-
-	return bonusCoins, nil
+	return nil
 }

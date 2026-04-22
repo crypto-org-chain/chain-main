@@ -30,7 +30,7 @@ message EventTierChanged {
 // EventBaseRewardsTopUp is emitted when the base rewards pool tops up validator rewards.
 message EventBaseRewardsTopUp {
   // topup is the additional rewards distributed to validators to achieve the target_base_rewards_rate.
-  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin top_up = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // EventPositionCreated is emitted when a new position is created via MsgLockTier.
@@ -47,9 +47,9 @@ message EventDelegationCommitted {
 
 // EventBaseRewardsClaimed is emitted when base staking rewards are claimed for a position.
 message EventBaseRewardsClaimed {
-  uint64   position_id                     = 1;
-  string   owner                           = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  repeated cosmos.base.v1beta1.Coin amount = 3 [
+  uint64   position_id                      = 1;
+  string   owner                            = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin rewards = 3 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
@@ -58,9 +58,13 @@ message EventBaseRewardsClaimed {
 
 // EventBonusRewardsClaimed is emitted when bonus APY rewards are claimed for a position.
 message EventBonusRewardsClaimed {
-  uint64                   position_id = 1;
-  string                   owner       = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  cosmos.base.v1beta1.Coin amount      = 3 [(gogoproto.nullable) = false];
+  uint64   position_id                      = 1;
+  string   owner                            = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated cosmos.base.v1beta1.Coin rewards = 3 [
+    (gogoproto.nullable)     = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
+    (amino.dont_omitempty)   = true
+  ];
 }
 
 // EventBaseRewardsPerShareUpdated is emitted when the cumulative rewards-per-share
@@ -160,15 +164,14 @@ message EventExitCleared {
 
 // EventTierRewardsClaimed is emitted when rewards are claimed via MsgClaimTierRewards.
 message EventTierRewardsClaimed {
-  uint64   position_id                           = 1;
-  uint32   tier_id                               = 2;
-  string   owner                                 = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  repeated cosmos.base.v1beta1.Coin base_rewards = 4 [
+  string          owner                          = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  repeated uint64 position_ids                   = 2;
+  repeated cosmos.base.v1beta1.Coin base_rewards = 3 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
   ];
-  repeated cosmos.base.v1beta1.Coin bonus_rewards = 5 [
+  repeated cosmos.base.v1beta1.Coin bonus_rewards = 4 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
@@ -178,12 +181,8 @@ message EventTierRewardsClaimed {
 // EventPositionWithdrawn is emitted when a position's locked tokens are withdrawn via MsgWithdrawFromTier.
 message EventPositionWithdrawn {
   // position is the position at the time of withdrawal (state is deleted after this event).
-  Position position                        = 1 [(gogoproto.nullable) = false];
-  repeated cosmos.base.v1beta1.Coin amount = 2 [
-    (gogoproto.nullable)     = false,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (amino.dont_omitempty)   = true
-  ];
+  Position                 position = 1 [(gogoproto.nullable) = false];
+  cosmos.base.v1beta1.Coin amount   = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // EventExitTierWithDelegation is emitted when a position exits by transferring

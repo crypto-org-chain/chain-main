@@ -75,19 +75,12 @@ func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 	return k.totalDelegatedVotingPower(ctx)
 }
 
-func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return sdk.NewCoins(), err
-	}
-
-	return k.claimBonusRewards(ctx, pos, val, tier, forceAccrue)
+func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, owner string, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
+	return k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, val, tier, forceAccrue)
 }
 
-func (k Keeper) ClaimBaseRewards(ctx context.Context, pos *types.Position, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, pos, currentRatio)
+func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, ratio sdk.DecCoins) (sdk.Coins, error) {
+	return k.claimBaseRewards(ctx, positions, owner, valAddr, ratio)
 }
 
 func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) ([]types.Position, error) {

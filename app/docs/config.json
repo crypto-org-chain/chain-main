@@ -114,6 +114,22 @@
           "TotalSupply": "TotalSupply_"
         }
       }
+    },
+    {
+      "url": "./tmp-swagger-gen/chainmain/inflation/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "InflationParams"
+        }
+      }
+    },
+    {
+      "url": "./tmp-swagger-gen/chainmain/tieredrewards/v1/query.swagger.json",
+      "operationIds": {
+        "rename": {
+          "Params": "TieredRewardsParams"
+        }
+      }
     }
   ]
 }
