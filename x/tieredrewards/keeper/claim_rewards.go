@@ -36,7 +36,7 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 
 	for i := range positions {
 		if _, err := k.claimBaseRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, valAddr, currentRatio); err != nil {
-			return nil,err
+			return nil, err
 		}
 
 		tier, ok := tierCache[positions[i].TierId]
@@ -61,7 +61,7 @@ func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAd
 		}
 		// Persist regardless of whether bonus was paid.
 		if err := k.setPositionUnsafe(ctx, positions[i]); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
