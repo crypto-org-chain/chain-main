@@ -208,7 +208,7 @@ func (s *KeeperSuite) TestBondedSlash_DelegatedSharesUnchanged() {
 
 // TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash verifies that both
 // base and bonus rewards accrued at the pre-slash share count are paid out
-// before shares are reduced, and that checkpoints are advanced.
+// before slashing occurs.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
@@ -225,8 +225,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(500_000), bondDenom)
 
-	// Advance block height so updateBaseRewardsPerShare will collect new rewards
-	// (it skips re-collection within the same block via transient store guard).
+	// Advance block height so base rewards will be collected.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 
 	// Advance time so bonus accrues.
@@ -273,27 +272,40 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
 // and that checkpoints are still advanced to prevent double-claiming.
 func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
+	posBefore, unbondingId := s.setupRedelegatingPosition(lockAmount)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	valAddr := sdk.MustValAddressFromBech32(posBefore.Validator)
+
+	// Set zero commission so delegators receive base rewards.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
 
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(500_000), bondDenom)
 	// Do NOT fund the bonus pool — it's empty.
+
+	// Advance block height so base rewards will be collected.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
 	// Advance time so bonus would be positive if pool had funds.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
 	// Slash should succeed despite empty bonus pool.
 	slashTokens := sdkmath.NewInt(1000)
-	shareBurnt := pos.DelegatedShares.Quo(sdkmath.LegacyNewDec(10))
+	shareBurnt := posBefore.DelegatedShares.Quo(sdkmath.LegacyNewDec(10))
 	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err, "slash should not fail when bonus pool is empty")
 
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPosition(s.ctx, posBefore.Id)
 	s.Require().NoError(err)
 	s.Require().True(updated.IsDelegated(), "position should still be delegated")
-	s.Require().True(updated.DelegatedShares.LT(pos.DelegatedShares),
+	s.Require().True(updated.DelegatedShares.LT(posBefore.DelegatedShares),
 		"shares should be reduced despite insufficient bonus pool")
+	s.Require().True(updated.Amount.LT(posBefore.Amount),
+		"amount should be reduced despite insufficient bonus pool")
 
+	// Base: BaseRewardsPerShare must have advanced.
 	s.Require().True(len(updated.BaseRewardsPerShare) > 0,
 		"BaseRewardsPerShare should be set after slash claims rewards")
 	s.Require().True(
