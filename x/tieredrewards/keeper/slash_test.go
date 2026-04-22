@@ -269,10 +269,14 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
 }
 
 // TestSlashRedelegationPosition_InsufficientBonusPool verifies that
-// the slash proceeds even when the bonus pool cannot cover accrued bonus.
+// the slash proceeds even when the bonus pool cannot cover accrued bonus,
+// and that checkpoints are still advanced to prevent double-claiming.
 func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
+
+	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
 
 	// Do NOT fund the bonus pool — it's empty.
 	// Advance time so bonus would be positive if pool had funds.
@@ -281,7 +285,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
 	// Slash should succeed despite empty bonus pool.
 	slashTokens := sdkmath.NewInt(1000)
 	shareBurnt := pos.DelegatedShares.Quo(sdkmath.LegacyNewDec(10))
-	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
 	s.Require().NoError(err, "slash should not fail when bonus pool is empty")
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
@@ -289,4 +293,16 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
 	s.Require().True(updated.IsDelegated(), "position should still be delegated")
 	s.Require().True(updated.DelegatedShares.LT(pos.DelegatedShares),
 		"shares should be reduced despite insufficient bonus pool")
+
+	s.Require().True(len(updated.BaseRewardsPerShare) > 0,
+		"BaseRewardsPerShare should be set after slash claims rewards")
+	s.Require().True(
+		!updated.BaseRewardsPerShare.Equal(posBefore.BaseRewardsPerShare),
+		"BaseRewardsPerShare should advance; before=%s, after=%s",
+		posBefore.BaseRewardsPerShare, updated.BaseRewardsPerShare)
+
+	// LastBonusAccrual must still advance so bonus isn't double-counted later.
+	s.Require().True(updated.LastBonusAccrual.After(posBefore.LastBonusAccrual),
+		"LastBonusAccrual should advance even when bonus pool is empty; before=%s, after=%s",
+		posBefore.LastBonusAccrual, updated.LastBonusAccrual)
 }
