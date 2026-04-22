@@ -12,6 +12,31 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// getTokensPerShare returns the validator's current token-per-share rate.
+func (k Keeper) getTokensPerShare(ctx context.Context, valAddr sdk.ValAddress) (math.LegacyDec, error) {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+	if val.GetDelegatorShares().IsZero() {
+		return math.LegacyZeroDec(), nil
+	}
+	return val.TokensFromShares(math.LegacyOneDec()), nil
+}
+
+// positionTokenValue returns the live token value of a position:
+// TokensFromShares for delegated, UndelegatedAmount for undelegated.
+func (k Keeper) positionTokenValue(ctx context.Context, pos types.Position) (math.Int, error) {
+	if !pos.IsDelegated() {
+		return pos.UndelegatedAmount, nil
+	}
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return math.Int{}, err
+	}
+	return k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+}
+
 // reconcileAmountFromShares converts delegation shares to the actual withdrawable
 // token amount under the validator's current exchange rate.
 func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (math.Int, error) {
@@ -19,26 +44,17 @@ func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAd
 	if err != nil {
 		return math.Int{}, err
 	}
+	if val.GetDelegatorShares().IsZero() {
+		return math.ZeroInt(), nil
+	}
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// updateDelegation updates a position's delegation fields and reconciles
-// the stored amount from the validator's current share exchange rate.
+// updateDelegation updates a position's delegation fields.
+// For delegated positions, UndelegatedAmount is always zero.
 func (k Keeper) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
-	valAddr, err := sdk.ValAddressFromBech32(delegation.Validator)
-	if err != nil {
-		return err
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.WithDelegation(delegation, sdkCtx.BlockTime())
-
-	reconciledAmount, err := k.reconcileAmountFromShares(ctx, valAddr, delegation.Shares)
-	if err != nil {
-		return err
-	}
-	pos.UpdateAmount(reconciledAmount)
-
 	return nil
 }
 
@@ -76,36 +92,4 @@ func (k Keeper) redelegate(ctx context.Context, srcValAddr, dstValAddr sdk.ValAd
 		return time.Time{}, math.LegacyDec{}, 0, err
 	}
 	return completionTime, newShares, unbondingId, nil
-}
-
-// updatePoolDelegationInfo refreshes the distribution
-// starting stake for the tier module pool since rewards are withdrawn in BeforeValidatorSlashed already.
-// Without this, the next reward claim will compare an outdated pre-slash stake with the lower current stake.
-func (k Keeper) updatePoolDelegationInfo(ctx context.Context, valAddr sdk.ValAddress, fraction math.LegacyDec) error {
-	// fraction is [0,1] - guaranteed by updateValidatorSlashFraction.
-	if fraction.IsZero() {
-		return nil
-	}
-
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	hasInfo, err := k.distributionKeeper.HasDelegatorStartingInfo(ctx, valAddr, moduleAddr)
-	if err != nil {
-		return err
-	}
-	if !hasInfo {
-		return nil
-	}
-
-	startingInfo, err := k.distributionKeeper.GetDelegatorStartingInfo(ctx, valAddr, moduleAddr)
-	if err != nil {
-		return err
-	}
-
-	postSlashStake := startingInfo.Stake.MulTruncate(math.LegacyOneDec().Sub(fraction))
-	if postSlashStake.IsNegative() {
-		postSlashStake = math.LegacyZeroDec()
-	}
-	startingInfo.Stake = postSlashStake
-
-	return k.distributionKeeper.SetDelegatorStartingInfo(ctx, valAddr, moduleAddr, startingInfo)
 }

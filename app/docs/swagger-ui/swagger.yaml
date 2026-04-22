@@ -25245,11 +25245,16 @@ paths:
                     type: integer
                     format: int64
                     description: tier_id references the Tier this position belongs to.
-                  amount:
+                  undelegated_amount:
                     type: string
                     description: >-
-                      amount is the total tokens locked in this position (bond
-                      denom).
+                      undelegated_amount holds the token value only for
+                      undelegated positions
+
+                      For delegated positions this field is always zero — the
+                      live token value is derived from
+
+                      validator.TokensFromShares(delegated_shares).
                   validator:
                     type: string
                     description: >-
@@ -25319,7 +25324,23 @@ paths:
                     description: >-
                       created_at_time is the block time when this position was
                       created.
+                  last_event_seq:
+                    type: string
+                    format: uint64
+                    description: >-
+                      last_event_seq is the sequence number of the last
+                      validator event this
+
+                      position has processed. Events with seq > last_event_seq
+                      are pending.
                 description: Position represents a single lock position in the tier.
+              token_value:
+                type: string
+                description: >-
+                  token_value is the computed token value: TokensFromShares for
+                  delegated positions,
+
+                  undelegated_amount for undelegated positions.
             description: >-
               QueryTierPositionResponse is the response type for the
               Query/TierPosition RPC method.
@@ -25379,11 +25400,16 @@ paths:
                       type: integer
                       format: int64
                       description: tier_id references the Tier this position belongs to.
-                    amount:
+                    undelegated_amount:
                       type: string
                       description: >-
-                        amount is the total tokens locked in this position (bond
-                        denom).
+                        undelegated_amount holds the token value only for
+                        undelegated positions
+
+                        For delegated positions this field is always zero — the
+                        live token value is derived from
+
+                        validator.TokensFromShares(delegated_shares).
                     validator:
                       type: string
                       description: >-
@@ -25453,6 +25479,15 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -25592,11 +25627,16 @@ paths:
                       type: integer
                       format: int64
                       description: tier_id references the Tier this position belongs to.
-                    amount:
+                    undelegated_amount:
                       type: string
                       description: >-
-                        amount is the total tokens locked in this position (bond
-                        denom).
+                        undelegated_amount holds the token value only for
+                        undelegated positions
+
+                        For delegated positions this field is always zero — the
+                        live token value is derived from
+
+                        validator.TokensFromShares(delegated_shares).
                     validator:
                       type: string
                       description: >-
@@ -25666,6 +25706,15 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -25973,7 +26022,7 @@ paths:
               voting_power:
                 type: string
                 description: >-
-                  voting_power is the sum of Amount for all delegated tier
+                  voting_power is the sum of token values for all delegated tier
                   positions owned by the voter.
             description: >-
               QueryVotingPowerByOwnerResponse is the response type for the
@@ -45798,9 +45847,16 @@ definitions:
         type: integer
         format: int64
         description: tier_id references the Tier this position belongs to.
-      amount:
+      undelegated_amount:
         type: string
-        description: amount is the total tokens locked in this position (bond denom).
+        description: >-
+          undelegated_amount holds the token value only for undelegated
+          positions
+
+          For delegated positions this field is always zero — the live token
+          value is derived from
+
+          validator.TokensFromShares(delegated_shares).
       validator:
         type: string
         description: >-
@@ -45860,6 +45916,12 @@ definitions:
         type: string
         format: date-time
         description: created_at_time is the block time when this position was created.
+      last_event_seq:
+        type: string
+        format: uint64
+        description: |-
+          last_event_seq is the sequence number of the last validator event this
+          position has processed. Events with seq > last_event_seq are pending.
     description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.QueryAllTierPositionsResponse:
     type: object
@@ -45880,9 +45942,16 @@ definitions:
               type: integer
               format: int64
               description: tier_id references the Tier this position belongs to.
-            amount:
+            undelegated_amount:
               type: string
-              description: amount is the total tokens locked in this position (bond denom).
+              description: >-
+                undelegated_amount holds the token value only for undelegated
+                positions
+
+                For delegated positions this field is always zero — the live
+                token value is derived from
+
+                validator.TokensFromShares(delegated_shares).
             validator:
               type: string
               description: >-
@@ -45950,6 +46019,15 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -46071,9 +46149,16 @@ definitions:
             type: integer
             format: int64
             description: tier_id references the Tier this position belongs to.
-          amount:
+          undelegated_amount:
             type: string
-            description: amount is the total tokens locked in this position (bond denom).
+            description: >-
+              undelegated_amount holds the token value only for undelegated
+              positions
+
+              For delegated positions this field is always zero — the live token
+              value is derived from
+
+              validator.TokensFromShares(delegated_shares).
           validator:
             type: string
             description: >-
@@ -46139,7 +46224,23 @@ definitions:
             type: string
             format: date-time
             description: created_at_time is the block time when this position was created.
+          last_event_seq:
+            type: string
+            format: uint64
+            description: >-
+              last_event_seq is the sequence number of the last validator event
+              this
+
+              position has processed. Events with seq > last_event_seq are
+              pending.
         description: Position represents a single lock position in the tier.
+      token_value:
+        type: string
+        description: >-
+          token_value is the computed token value: TokensFromShares for
+          delegated positions,
+
+          undelegated_amount for undelegated positions.
     description: >-
       QueryTierPositionResponse is the response type for the Query/TierPosition
       RPC method.
@@ -46162,9 +46263,16 @@ definitions:
               type: integer
               format: int64
               description: tier_id references the Tier this position belongs to.
-            amount:
+            undelegated_amount:
               type: string
-              description: amount is the total tokens locked in this position (bond denom).
+              description: >-
+                undelegated_amount holds the token value only for undelegated
+                positions
+
+                For delegated positions this field is always zero — the live
+                token value is derived from
+
+                validator.TokensFromShares(delegated_shares).
             validator:
               type: string
               description: >-
@@ -46232,6 +46340,15 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -46316,8 +46433,8 @@ definitions:
       voting_power:
         type: string
         description: >-
-          voting_power is the sum of Amount for all delegated tier positions
-          owned by the voter.
+          voting_power is the sum of token values for all delegated tier
+          positions owned by the voter.
     description: >-
       QueryVotingPowerByOwnerResponse is the response type for the
       Query/VotingPowerByOwner RPC method.

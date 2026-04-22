@@ -89,7 +89,13 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 	if err != nil {
 		return nil, err
 	}
-	return &types.QueryTierPositionResponse{Position: pos}, nil
+
+	tokenValue, err := q.k.positionTokenValue(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionResponse{Position: pos, TokenValue: tokenValue}, nil
 }
 
 func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {

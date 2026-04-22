@@ -21,7 +21,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back
@@ -50,6 +50,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
 	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set")
+	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
@@ -80,7 +81,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
@@ -103,7 +104,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero_ExitInProgress() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
@@ -129,7 +130,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back
@@ -213,7 +214,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, bondDenom := s.getStakingData()
@@ -247,7 +248,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, bondDenom := s.getStakingData()
@@ -275,37 +276,6 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	s.Require().Equal(uint64(0), posIds[0])
 }
 
-// TestMsgTierDelegate_ReconcilesAmount: after LockTier at non-1:1
-// exchange rate, pos.Amount matches the actual share-backed token value.
-func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
-	lockAmount := sdkmath.NewInt(10001)
-	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	addr := sdk.MustAccAddressFromBech32(pos.Owner)
-
-	// Slash to create non-1:1 exchange rate.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	posId := positions[0].Id
-
-	pos, err = s.keeper.GetPosition(s.ctx, posId)
-	s.Require().NoError(err)
-
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-
-	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
-		"pos.Amount must equal actual token value from shares after LockTier")
-
-	// With non-1:1 rate, reconciled amount should differ from original lockAmount.
-	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
-		"pos.Amount must differ from original lockAmount due to truncation")
-}
-
 // TestMsgTierDelegate_TierCloseOnly verifies that TierDelegate is rejected
 // when the tier is set to CloseOnly.
 func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
@@ -318,7 +288,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
+	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back so position has non-zero amount for delegation.

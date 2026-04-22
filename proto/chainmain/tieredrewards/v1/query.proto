@@ -80,6 +80,14 @@ message QueryTierPositionRequest {
 // QueryTierPositionResponse is the response type for the Query/TierPosition RPC method.
 message QueryTierPositionResponse {
   Position position = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // token_value is the computed token value: TokensFromShares for delegated positions,
+  // undelegated_amount for undelegated positions.
+  string token_value = 2 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // QueryTierPositionsByOwnerRequest is the request type for the Query/TierPositionsByOwner RPC method.
@@ -157,7 +165,7 @@ message QueryVotingPowerByOwnerRequest {
 
 // QueryVotingPowerByOwnerResponse is the response type for the Query/VotingPowerByOwner RPC method.
 message QueryVotingPowerByOwnerResponse {
-  // voting_power is the sum of Amount for all delegated tier positions owned by the voter.
+  // voting_power is the sum of token values for all delegated tier positions owned by the voter.
   string voting_power = 1 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",

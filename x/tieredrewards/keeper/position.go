@@ -29,7 +29,7 @@ func (k Keeper) createPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	amount math.Int,
+	undelegatedAmount math.Int,
 	delegation types.Delegation,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
@@ -42,7 +42,7 @@ func (k Keeper) createPosition(
 	blockTime := sdkCtx.BlockTime()
 	blockHeight := uint64(sdkCtx.BlockHeight())
 
-	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
+	pos := types.NewPosition(id, owner, tier.Id, undelegatedAmount, blockHeight, delegation, blockTime)
 
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)
@@ -105,8 +105,11 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 				return err
 			}
+			if err := k.increaseValidatorPositionCount(ctx, valAddr); err != nil {
+				return err
+			}
 		}
-		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
 			return err
 		}
 		return nil
@@ -136,10 +139,10 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
 			return err
 		}
-		if err := k.decreasePositionCount(ctx, oldPos.TierId); err != nil {
+		if err := k.decreasePositionCountForTier(ctx, oldPos.TierId); err != nil {
 			return err
 		}
-		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
 			return err
 		}
 	}
@@ -155,6 +158,9 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
 			return err
 		}
+		if err := k.decreaseValidatorPositionCount(ctx, oldVal); err != nil {
+			return err
+		}
 	}
 	if newDelegated && (!oldDelegated || changedValidator) {
 		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
@@ -162,6 +168,9 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			return err
 		}
 		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
+			return err
+		}
+		if err := k.increaseValidatorPositionCount(ctx, newVal); err != nil {
 			return err
 		}
 	}
@@ -210,8 +219,11 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 			return err
 		}
+		if err := k.decreaseValidatorPositionCount(ctx, valAddr); err != nil {
+			return err
+		}
 	}
-	return k.decreasePositionCount(ctx, pos.TierId)
+	return k.decreasePositionCountForTier(ctx, pos.TierId)
 }
 
 func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {

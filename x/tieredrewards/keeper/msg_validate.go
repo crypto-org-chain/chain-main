@@ -46,7 +46,7 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrTierIsCloseOnly
 	}
 
-	if pos.Amount.IsZero() {
+	if pos.UndelegatedAmount.IsZero() {
 		return types.ErrPositionAmountZero
 	}
 
@@ -85,8 +85,8 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
+	if !pos.DelegatedShares.IsPositive() {
+		return types.ErrPositionSharesZero
 	}
 
 	if pos.Validator == dstValidator {
@@ -231,8 +231,17 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
-	if amount.GT(pos.Amount) {
-		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position amount %s", amount, pos.Amount)
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return err
+	}
+	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		return err
+	}
+
+	if amount.GT(tokenValue) {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
 	}
 
 	redelegating, err := k.stillRedelegating(ctx, pos.Id)

@@ -9,7 +9,6 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Test-only wrappers for black-box tests (package keeper_test) that need access
@@ -75,16 +74,8 @@ func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 	return k.totalDelegatedVotingPower(ctx)
 }
 
-func (k Keeper) ClaimBonusRewards(ctx context.Context, pos *types.Position, owner string, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
-	return k.claimBonusRewards(ctx, []*types.Position{pos}, pos.Owner, val, tier, forceAccrue)
-}
-
 func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, ratio sdk.DecCoins) (sdk.Coins, error) {
 	return k.claimBaseRewards(ctx, positions, owner, valAddr, ratio)
-}
-
-func (k Keeper) SettleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) error {
-	return k.settleRewardsForPositions(ctx, valAddr, positions, forceAccrue)
 }
 
 func (k Keeper) GetAuthority() string {
@@ -118,8 +109,12 @@ func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, er
 	return k.stillUnbonding(ctx, positionId)
 }
 
-func (k Keeper) CalculateBonusRaw(pos types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
-	return k.calculateBonusRaw(pos, validator, tier, blockTime)
+func (k Keeper) ComputeSegmentBonus(pos *types.Position, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
+	return k.computeSegmentBonus(pos, tier, segmentStart, segmentEnd, tokensPerShare)
+}
+
+func (k Keeper) GetTokensPerShare(ctx context.Context, valAddr sdk.ValAddress) (math.LegacyDec, error) {
+	return k.getTokensPerShare(ctx, valAddr)
 }
 
 func (k Keeper) GetLastWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddress) uint64 {
@@ -136,4 +131,32 @@ func (k Keeper) ClaimRewardsForPosition(ctx context.Context, pos types.Position)
 
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
 	return k.updateBaseRewardsPerShare(ctx, valAddr)
+}
+
+func (k Keeper) PositionTokenValue(ctx context.Context, pos types.Position) (math.Int, error) {
+	return k.positionTokenValue(ctx, pos)
+}
+
+func (k Keeper) AppendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress, event types.ValidatorEvent) (uint64, error) {
+	return k.appendValidatorEvent(ctx, valAddr, event)
+}
+
+func (k Keeper) GetValidatorEventsSince(ctx context.Context, valAddr sdk.ValAddress, startSeq uint64) ([]ValidatorEventEntry, error) {
+	return k.getValidatorEventsSince(ctx, valAddr, startSeq)
+}
+
+func (k Keeper) GetValidatorEventLatestSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
+	return k.getValidatorEventLatestSeq(ctx, valAddr)
+}
+
+func (k Keeper) DecrementEventRefCount(ctx context.Context, valAddr sdk.ValAddress, seq uint64) error {
+	return k.decrementEventRefCount(ctx, valAddr, seq)
+}
+
+func (k Keeper) DeleteAllValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) error {
+	return k.deleteAllValidatorEvents(ctx, valAddr)
+}
+
+func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	return k.processEventsAndClaimBonus(ctx, pos, valAddr)
 }

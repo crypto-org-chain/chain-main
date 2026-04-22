@@ -129,8 +129,13 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 
+	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
+	}
+
 	unbondedShares := pos.DelegatedShares
-	if !pos.ExitWithFullDelegation(amount) {
+	if !pos.ExitWithFullDelegation(amount, tokenValue) {
 		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, moduleAddr, valAddr, amount)
 		if err != nil {
 			return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err

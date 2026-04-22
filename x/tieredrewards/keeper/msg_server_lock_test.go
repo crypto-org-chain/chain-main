@@ -32,11 +32,49 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
-	s.Require().True(sdkmath.NewInt(1000).Equal(pos.Amount))
+	s.Require().True(pos.UndelegatedAmount.IsZero(), "delegated positions have UndelegatedAmount=0")
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
+	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
+}
+
+func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
+	// Step 1: Create a first position to establish validator count.
+	lockAmt := sdkmath.NewInt(1000)
+	pos1 := s.setupNewTierPosition(lockAmt, false)
+	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
+
+	// Step 2: Record a slash event via the staking hook.
+	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	s.Require().NoError(err)
+
+	// Step 3: Create a second position via LockTier on the same validator.
+	_, bondDenom := s.getStakingData()
+	freshAddr := s.fundRandomAddr(bondDenom, lockAmt)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           lockAmt,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos2, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+
+	// Step 4: The second position's LastEventSeq should equal 1 (the slash event seq).
+	s.Require().Equal(uint64(1), pos2.LastEventSeq,
+		"new position should skip prior events; LastEventSeq should be 1 (the slash event)")
+
+	// Step 5: The first position's LastEventSeq should still be 0 (set at creation, before the slash).
+	pos1, err = s.keeper.GetPosition(s.ctx, pos1.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), pos1.LastEventSeq,
+		"first position's LastEventSeq should remain 0")
 }
 
 func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
@@ -236,33 +274,4 @@ func (s *KeeperSuite) TestMsgLockTier_UpdateBaseRewardsPerShare_SecondPositionGe
 	s.Require().True(actualRatio.Equal(expectedRatio),
 		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
 		actualRatio, expectedRatio)
-}
-
-// TestMsgLockTier_WithValidator_ReconcilesAmount: after LockTier with a
-// validator at non-1:1 exchange rate, pos.Amount matches the actual
-// share-backed token value, not the original msg.Amount.
-func (s *KeeperSuite) TestMsgLockTier_WithValidator_ReconcilesAmount() {
-	lockAmount := sdkmath.NewInt(10001)
-	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	// Slash to create non-1:1 exchange rate.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-	addr := sdk.MustAccAddressFromBech32(pos.Owner)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos = positions[0]
-
-	// pos.Amount must equal what the validator says the shares are worth.
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-
-	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
-		"pos.Amount must equal actual token value from shares after LockTier")
-
-	// With non-1:1 rate, reconciled amount should differ from msg.Amount.
-	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
-		"pos.Amount must differ from msg.Amount due to truncation")
 }

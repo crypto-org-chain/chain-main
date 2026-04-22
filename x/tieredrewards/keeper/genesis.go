@@ -3,6 +3,8 @@ package keeper
 import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"cosmossdk.io/collections"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -60,6 +62,36 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 
 	for _, mapping := range data.RedelegationMappings {
 		if err := k.setRedelegationPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, entry := range data.ValidatorEvents {
+		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.ValidatorEvents.Set(ctx, collections.Join(valAddr, entry.Sequence), entry.Event); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, entry := range data.ValidatorEventNextSeqs {
+		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.ValidatorEventNextSeq.Set(ctx, valAddr, entry.NextSeq); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, entry := range data.ValidatorPositionCounts {
+		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.PositionCountByValidator.Set(ctx, valAddr, entry.Count); err != nil {
 			panic(err)
 		}
 	}
@@ -130,6 +162,43 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
+	var validatorEvents []types.ValidatorEventEntry
+	err = k.ValidatorEvents.Walk(ctx, nil, func(key collections.Pair[sdk.ValAddress, uint64], event types.ValidatorEvent) (bool, error) {
+		validatorEvents = append(validatorEvents, types.ValidatorEventEntry{
+			Validator: key.K1().String(),
+			Sequence:  key.K2(),
+			Event:     event,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var validatorEventNextSeqs []types.ValidatorEventNextSeqEntry
+	err = k.ValidatorEventNextSeq.Walk(ctx, nil, func(valAddr sdk.ValAddress, nextSeq uint64) (bool, error) {
+		validatorEventNextSeqs = append(validatorEventNextSeqs, types.ValidatorEventNextSeqEntry{
+			Validator: valAddr.String(),
+			NextSeq:   nextSeq,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var validatorPositionCounts []types.ValidatorPositionCountEntry
+	err = k.PositionCountByValidator.Walk(ctx, nil, func(valAddr sdk.ValAddress, count uint64) (bool, error) {
+		validatorPositionCounts = append(validatorPositionCounts, types.ValidatorPositionCountEntry{
+			Validator: valAddr.String(),
+			Count:     count,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.GenesisState{
 		Params:                      params,
 		Tiers:                       tiers,
@@ -138,5 +207,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		ValidatorRewardRatios:       validatorRewardRatios,
 		UnbondingDelegationMappings: unbondingDelegationMappings,
 		RedelegationMappings:        redelegationMappings,
+		ValidatorEvents:             validatorEvents,
+		ValidatorEventNextSeqs:      validatorEventNextSeqs,
+		ValidatorPositionCounts:     validatorPositionCounts,
 	}
 }

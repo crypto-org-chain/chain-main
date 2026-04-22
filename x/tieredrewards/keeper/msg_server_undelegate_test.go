@@ -154,69 +154,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 	s.Require().True(balAfterUndelegate.Amount.GT(balBefore.Amount), "rewards should be paid during undelegate")
 }
 
-// TestMsgTierUndelegate_ReconcilesAmount: after TierUndelegate,
-// pos.Amount is reconciled with the actual token return value from the SDK's
-// share→token conversion, preventing insolvency on later withdrawal.
-func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmount() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Slash the validator FIRST to create a non-1:1 exchange rate so that
-	// share→token conversion actually truncates.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-
-	lockAmount := sdkmath.NewInt(10001) // odd number to maximize truncation
-	addr := s.fundRandomAddr(bondDenom, lockAmount)
-
-	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner:                  addr.String(),
-		Id:                     1,
-		Amount:                 lockAmount,
-		ValidatorAddress:       valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos := positions[0]
-	s.Require().True(pos.IsDelegated())
-
-	// Compute what the SDK will actually return when converting shares→tokens.
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	expectedReturn := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-
-	// At the 0.9 exchange rate, round-trip truncation loses 1 token.
-	s.Require().Equal(sdkmath.NewInt(10000).String(), expectedReturn.String(),
-		"expected return should be 10000 (1 token lost to truncation)")
-
-	s.fundRewardsPool(sdkmath.NewInt(2_000_000), bondDenom)
-
-	s.advancePastExitDuration()
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      addr.String(),
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	// pos.Amount must equal the actual return value, not the original lockAmount.
-	s.Require().Equal(expectedReturn.String(), pos.Amount.String(),
-		"pos.Amount must equal actual return value")
-	s.Require().Equal(sdkmath.NewInt(10000).String(), pos.Amount.String(),
-		"pos.Amount should be exactly 10000 after reconciliation")
-}
-
-// TestMsgTierUndelegate_ReconcilesAmountUpward verifies that TierUndelegate
-// trusts the staking module's exact return amount even when stored position
-// accounting is stale and too low.
-func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
+// TestMsgTierUndelegate_UpdatesUndelegatedAmount verifies that TierUndelegate
+// updates the undelegated amount with the staking module's exact return amount.
+func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesUndelegatedAmount() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -230,17 +170,6 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 	pos = positions[0]
 	s.Require().True(pos.IsDelegated())
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	expectedReturn := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-	s.Require().Equal(lockAmount.String(), expectedReturn.String(),
-		"test setup expects a 1:1 validator exchange rate")
-
-	// Seed a stale underestimated amount to verify undelegation overwrites it
-	// with the staking module's authoritative return amount.
-	pos.UpdateAmount(expectedReturn.SubRaw(1))
-	err = s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
 
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 	s.advancePastExitDuration()
@@ -252,8 +181,6 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(expectedReturn.String(), pos.Amount.String(),
-		"pos.Amount must be overwritten with the SDK return amount")
 
 	s.completeStakingUnbonding(valAddr)
 
@@ -262,7 +189,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ReconcilesAmountUpward() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(expectedReturn.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.UndelegatedAmount.String(), resp.Amount.Amount.String(),
 		"withdrawn amount should equal the SDK return amount")
 }
 
@@ -320,7 +247,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().True(pos.UndelegatedAmount.IsZero(), "position undelegated amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
 

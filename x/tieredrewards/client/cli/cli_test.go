@@ -334,7 +334,8 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(uint64(0), position.Id)
 		s.Require().Equal(owner, position.Owner)
 		s.Require().Equal(validator, position.Validator)
-		s.Require().True(position.Amount.Equal(lockAmount))
+		s.Require().True(position.UndelegatedAmount.IsZero(), "delegated position should have zero undelegated amount")
+		s.Require().True(position.DelegatedShares.IsPositive(), "delegated position should have positive shares")
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.AddToTierPositionExec(
@@ -347,7 +348,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position = s.mustQueryPosition(val, "0")
-		s.Require().True(position.Amount.Equal(lockAmount.Add(addAmount)))
+		s.Require().True(position.UndelegatedAmount.IsZero(), "delegated position should have zero undelegated amount after add")
 	})
 
 	s.Run("position queries and voting power", func() {

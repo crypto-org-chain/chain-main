@@ -40,6 +40,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.Equal(halfShares))
+	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
 	// Module should have delegation on the same validator
 	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
@@ -290,24 +291,28 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_UpdateBaseRewardsPerShare_Se
 		actualRatio, expectedRatio)
 }
 
-// TestMsgCommitDelegationToTier_ReconcilesAmount: after CommitDelegationToTier
-// at non-1:1 exchange rate, pos.Amount matches the actual share-backed token
-// value, not the original msg.Amount.
-func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconcilesAmount() {
-	s.setupTier(1)
-	delAddr, valAddr := s.getDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
+// TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents verifies that a
+// position created via CommitDelegationToTier gets LastEventSeq set to the
+// latest event, skipping any prior events on the validator.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents() {
+	// Create a first position to establish validator count.
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
 
-	// Slash to create non-1:1 exchange rate.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
+	// Record a slash event via the staking hook.
+	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	s.Require().NoError(err)
 
+	// CommitDelegationToTier from the genesis delegator on the same validator.
+	delAddr, _ := s.getDelegator()
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().NoError(err)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
 
-	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
 		DelegatorAddress: delAddr.String(),
 		ValidatorAddress: valAddr.String(),
 		Id:               1,
@@ -315,16 +320,17 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ReconcilesAmount() {
 	})
 	s.Require().NoError(err)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	pos2, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	pos := positions[0]
 
-	// Re-fetch validator for current exchange rate.
-	val, err = s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	// The new position's LastEventSeq should equal 1 (the slash event).
+	s.Require().Equal(uint64(1), pos2.LastEventSeq,
+		"new position should skip prior events; LastEventSeq should be 1")
+
+	// The first position's LastEventSeq should still be 0.
+	pos1, err = s.keeper.GetPosition(s.ctx, pos1.Id)
 	s.Require().NoError(err)
-	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-
-	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
-		"pos.Amount must equal actual token value from shares after CommitDelegationToTier")
+	s.Require().Equal(uint64(0), pos1.LastEventSeq,
+		"first position's LastEventSeq should remain 0")
 }
+

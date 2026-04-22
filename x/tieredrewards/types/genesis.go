@@ -89,5 +89,73 @@ func ValidateGenesis(data GenesisState) error {
 		}
 	}
 
+	// Validate validator events.
+	type eventKey struct {
+		validator string
+		seq       uint64
+	}
+	seenEvents := make(map[eventKey]struct{}, len(data.ValidatorEvents))
+	for i, entry := range data.ValidatorEvents {
+		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
+			return fmt.Errorf("invalid validator address in event at index %d: %w", i, err)
+		}
+		key := eventKey{validator: entry.Validator, seq: entry.Sequence}
+		if _, dup := seenEvents[key]; dup {
+			return fmt.Errorf("duplicate validator event (validator=%s, seq=%d) at index %d", entry.Validator, entry.Sequence, i)
+		}
+		seenEvents[key] = struct{}{}
+		if entry.Event.ReferenceCount == 0 {
+			return fmt.Errorf("validator event at index %d has zero reference count", i)
+		}
+	}
+
+	// Validate event next sequences.
+	seenNextSeq := make(map[string]struct{}, len(data.ValidatorEventNextSeqs))
+	for i, entry := range data.ValidatorEventNextSeqs {
+		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
+			return fmt.Errorf("invalid validator address in event next seq at index %d: %w", i, err)
+		}
+		if _, dup := seenNextSeq[entry.Validator]; dup {
+			return fmt.Errorf("duplicate validator %s in event next seqs at index %d", entry.Validator, i)
+		}
+		seenNextSeq[entry.Validator] = struct{}{}
+	}
+
+	// Validate position counts.
+	seenCountValidators := make(map[string]struct{}, len(data.ValidatorPositionCounts))
+	for i, entry := range data.ValidatorPositionCounts {
+		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
+			return fmt.Errorf("invalid validator address in position count at index %d: %w", i, err)
+		}
+		if _, dup := seenCountValidators[entry.Validator]; dup {
+			return fmt.Errorf("duplicate validator %s in position counts at index %d", entry.Validator, i)
+		}
+		seenCountValidators[entry.Validator] = struct{}{}
+	}
+
+	// Cross-validate: next_seq must be consistent with event sequences.
+	// Build max sequence per validator from events.
+	maxSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEvents {
+		if entry.Sequence > maxSeqByValidator[entry.Validator] {
+			maxSeqByValidator[entry.Validator] = entry.Sequence
+		}
+	}
+
+	// Cross-validate: next_seq must exceed max event sequence.
+	nextSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEventNextSeqs {
+		nextSeqByValidator[entry.Validator] = entry.NextSeq
+	}
+	for val, maxSeq := range maxSeqByValidator {
+		nextSeq, ok := nextSeqByValidator[val]
+		if !ok {
+			return fmt.Errorf("validator %s has events but no next_seq entry", val)
+		}
+		if nextSeq <= maxSeq {
+			return fmt.Errorf("validator %s next_seq (%d) must be greater than max event sequence (%d)", val, nextSeq, maxSeq)
+		}
+	}
+
 	return nil
 }

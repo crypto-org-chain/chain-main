@@ -30,12 +30,12 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CloseOnly:     true,
 	}
 
-	// Delegated position (tier 1).
+	// Delegated position (tier 1). UndelegatedAmount must be zero.
 	pos1 := types.Position{
 		Id:                  1,
 		Owner:               owner,
 		TierId:              1,
-		Amount:              sdkmath.NewInt(5000),
+		UndelegatedAmount:   sdkmath.ZeroInt(),
 		Validator:           valAddr.String(),
 		DelegatedShares:     sdkmath.LegacyNewDec(5000),
 		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(2, 4))),
@@ -44,12 +44,12 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:       now,
 	}
 
-	// Delegated position.
+	// Delegated position. UndelegatedAmount must be zero.
 	pos2 := types.Position{
 		Id:                  2,
 		Owner:               owner,
 		TierId:              2,
-		Amount:              sdkmath.NewInt(3000),
+		UndelegatedAmount:   sdkmath.ZeroInt(),
 		Validator:           valAddr.String(),
 		DelegatedShares:     sdkmath.LegacyNewDec(3000),
 		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(1, 4))),
@@ -61,15 +61,15 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	// Position with exit triggered.
 	exitTime := now.Add(-time.Hour * 24)
 	pos3 := types.Position{
-		Id:              3,
-		Owner:           owner,
-		TierId:          1,
-		Amount:          sdkmath.NewInt(2000),
-		DelegatedShares: sdkmath.LegacyZeroDec(),
-		ExitTriggeredAt: exitTime,
-		ExitUnlockAt:    exitTime.Add(time.Hour * 24 * 365),
-		CreatedAtHeight: 99,
-		CreatedAtTime:   now.Add(-time.Hour * 48),
+		Id:                3,
+		Owner:             owner,
+		TierId:            1,
+		UndelegatedAmount: sdkmath.NewInt(2000),
+		DelegatedShares:   sdkmath.LegacyZeroDec(),
+		ExitTriggeredAt:   exitTime,
+		ExitUnlockAt:      exitTime.Add(time.Hour * 24 * 365),
+		CreatedAtHeight:   99,
+		CreatedAtTime:     now.Add(-time.Hour * 48),
 	}
 
 	genesisState := &types.GenesisState{
@@ -94,6 +94,36 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		RedelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 44, PositionId: 2},
 			{UnbondingId: 45, PositionId: 3},
+		},
+		ValidatorEvents: []types.ValidatorEventEntry{
+			{
+				Validator: valAddr.String(),
+				Sequence:  1,
+				Event: types.ValidatorEvent{
+					Height:         100,
+					Timestamp:      now.Add(-10 * time.Second),
+					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
+					TokensPerShare: sdkmath.LegacyOneDec(),
+					ReferenceCount: 2,
+				},
+			},
+			{
+				Validator: valAddr.String(),
+				Sequence:  2,
+				Event: types.ValidatorEvent{
+					Height:         101,
+					Timestamp:      now.Add(-5 * time.Second),
+					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_UNBOND,
+					TokensPerShare: sdkmath.LegacyOneDec(),
+					ReferenceCount: 2,
+				},
+			},
+		},
+		ValidatorEventNextSeqs: []types.ValidatorEventNextSeqEntry{
+			{Validator: valAddr.String(), NextSeq: 3},
+		},
+		ValidatorPositionCounts: []types.ValidatorPositionCountEntry{
+			{Validator: valAddr.String(), Count: 2},
 		},
 	}
 
@@ -124,7 +154,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(orig.Id, pos.Id, "position ID mismatch at %d", i)
 		s.Require().Equal(orig.Owner, pos.Owner)
 		s.Require().Equal(orig.TierId, pos.TierId)
-		s.Require().True(orig.Amount.Equal(pos.Amount))
+		s.Require().True(orig.UndelegatedAmount.Equal(pos.UndelegatedAmount))
 		s.Require().Equal(orig.Validator, pos.Validator)
 		s.Require().True(orig.DelegatedShares.Equal(pos.DelegatedShares))
 		s.Require().True(orig.BaseRewardsPerShare.Equal(pos.BaseRewardsPerShare))
@@ -156,6 +186,29 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(genesisState.RedelegationMappings[i].UnbondingId, m.UnbondingId)
 		s.Require().Equal(genesisState.RedelegationMappings[i].PositionId, m.PositionId)
 	}
+
+	// Validator events.
+	s.Require().Len(exported.ValidatorEvents, 2)
+	for i, e := range exported.ValidatorEvents {
+		orig := genesisState.ValidatorEvents[i]
+		s.Require().Equal(orig.Validator, e.Validator, "event validator mismatch at %d", i)
+		s.Require().Equal(orig.Sequence, e.Sequence, "event sequence mismatch at %d", i)
+		s.Require().Equal(orig.Event.EventType, e.Event.EventType, "event type mismatch at %d", i)
+		s.Require().True(orig.Event.TokensPerShare.Equal(e.Event.TokensPerShare), "event tokens_per_share mismatch at %d", i)
+		s.Require().Equal(orig.Event.ReferenceCount, e.Event.ReferenceCount, "event reference count mismatch at %d", i)
+		s.Require().Equal(orig.Event.Height, e.Event.Height, "event height mismatch at %d", i)
+		s.Require().Equal(orig.Event.Timestamp.UTC(), e.Event.Timestamp.UTC(), "event timestamp mismatch at %d", i)
+	}
+
+	// Validator event next sequences.
+	s.Require().Len(exported.ValidatorEventNextSeqs, 1)
+	s.Require().Equal(genesisState.ValidatorEventNextSeqs[0].Validator, exported.ValidatorEventNextSeqs[0].Validator)
+	s.Require().Equal(genesisState.ValidatorEventNextSeqs[0].NextSeq, exported.ValidatorEventNextSeqs[0].NextSeq)
+
+	// Validator position counts.
+	s.Require().Len(exported.ValidatorPositionCounts, 1)
+	s.Require().Equal(genesisState.ValidatorPositionCounts[0].Validator, exported.ValidatorPositionCounts[0].Validator)
+	s.Require().Equal(genesisState.ValidatorPositionCounts[0].Count, exported.ValidatorPositionCounts[0].Count)
 }
 
 func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
@@ -173,20 +226,20 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 		},
 		Positions: []types.Position{
 			{
-				Id: 1, Owner: owner.String(), TierId: 1, Amount: sdkmath.NewInt(1000),
+				Id: 1, Owner: owner.String(), TierId: 1, UndelegatedAmount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
 			},
 			{
-				Id: 2, Owner: owner.String(), TierId: 1, Amount: sdkmath.NewInt(2000),
+				Id: 2, Owner: owner.String(), TierId: 1, UndelegatedAmount: sdkmath.ZeroInt(),
 				Validator: valAddr.String(), DelegatedShares: sdkmath.LegacyNewDec(2000),
 				LastBonusAccrual: now,
 				CreatedAtHeight:  11, CreatedAtTime: now,
 			},
 			// simulate a redelegation-slashed to zero position here. No delegation here and amount is zero
 			{
-				Id: 3, Owner: owner.String(), TierId: 2, Amount: sdkmath.ZeroInt(),
+				Id: 3, Owner: owner.String(), TierId: 2, UndelegatedAmount: sdkmath.ZeroInt(),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				CreatedAtHeight: 12, CreatedAtTime: now,
 			},
@@ -228,7 +281,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 		},
 		Positions: []types.Position{
 			{
-				Id: 5, Owner: owner, TierId: 1, Amount: sdkmath.NewInt(1000),
+				Id: 5, Owner: owner, TierId: 1, UndelegatedAmount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,

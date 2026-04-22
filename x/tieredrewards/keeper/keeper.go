@@ -33,10 +33,15 @@ type Keeper struct {
 	PositionsByTier      collections.KeySet[collections.Pair[uint32, uint64]]
 	PositionsByValidator collections.KeySet[collections.Pair[sdk.ValAddress, uint64]]
 
-	PositionCountByTier collections.Map[uint32, uint64]
+	PositionCountByTier      collections.Map[uint32, uint64]
+	PositionCountByValidator collections.Map[sdk.ValAddress, uint64]
 
 	// Cumulative rewards-per-share indexed by validator.
 	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
+
+	// Validator events for lazy processing: (valAddr, seq) -> ValidatorEvent.
+	ValidatorEvents    collections.Map[collections.Pair[sdk.ValAddress, uint64], types.ValidatorEvent]
+	ValidatorEventNextSeq collections.Map[sdk.ValAddress, uint64]
 
 	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
 	UnbondingDelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
@@ -104,7 +109,10 @@ func NewKeeper(
 		PositionsByTier:       collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
 		PositionsByValidator:  collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:   collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
+		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
 		ValidatorRewardRatio:  collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
+		ValidatorEvents:       collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
+		ValidatorEventNextSeq: collections.NewMap(sb, types.ValidatorEventNextSeqKey, "validator_event_next_seq", sdk.ValAddressKey, collections.Uint64Value),
 		UnbondingDelegationMappings: collections.NewIndexedMap(
 			sb,
 			types.UnbondingIdToPositionIdKey,

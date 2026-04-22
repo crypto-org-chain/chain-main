@@ -47,14 +47,15 @@ func (s *KeeperSuite) TestGRPCQueryParams_Default() {
 // --- TierPosition ---
 
 func (s *KeeperSuite) TestGRPCQueryTierPosition() {
-	pos := newTestPosition(1, testPositionOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos := s.setupNewTierPosition(sdkmath.NewInt(5000), false)
 
-	resp, err := s.queryClient.TierPosition(s.ctx.Context(), &types.QueryTierPositionRequest{PositionId: 1})
+	resp, err := s.queryClient.TierPosition(s.ctx.Context(), &types.QueryTierPositionRequest{PositionId: pos.Id})
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(1), resp.Position.Id)
-	s.Require().Equal(testPositionOwner, resp.Position.Owner)
-	s.Require().True(pos.Amount.Equal(resp.Position.Amount))
+	s.Require().Equal(pos.Id, resp.Position.Id)
+	s.Require().Equal(pos.Owner, resp.Position.Owner)
+	s.Require().True(pos.UndelegatedAmount.Equal(resp.Position.UndelegatedAmount))
+	// TokenValue should be positive for a delegated position.
+	s.Require().True(resp.TokenValue.IsPositive(), "token value should be positive for delegated position")
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierPosition_NotFound() {
@@ -313,10 +314,12 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	tier, err := s.keeper.Tiers.Get(s.ctx, 1)
 	s.Require().NoError(err)
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	expectedBonus := s.keeper.CalculateBonusRaw(posBefore, val, tier, s.ctx.BlockTime())
+	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	expectedBonus := s.keeper.ComputeSegmentBonus(&posBefore, tier, posBefore.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
 	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
 		"bonus rewards should match what is calculated")

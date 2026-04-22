@@ -134,12 +134,12 @@ message EventPositionAmountAdded {
   uint64 position_id  = 1;
   uint32 tier_id      = 2;
   string owner        = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string amount_added = 4 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+  string shares_added = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
-  string new_total = 5 [
+  string total_undelegated_amount = 5 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable)   = false
