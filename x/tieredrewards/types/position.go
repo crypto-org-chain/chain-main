@@ -164,11 +164,10 @@ func (p Position) IsOwner(address string) bool {
 	return p.Owner == address
 }
 
-func (p Position) ExitWithFullDelegation(amount math.Int, tokenValue math.Int) bool {
+func (p Position) ExitWithFullDelegation(amount, tokenValue math.Int) bool {
 	return amount.Equal(tokenValue)
 }
 
 func (p *Position) UpdateLastEventSeq(seq uint64) {
 	p.LastEventSeq = seq
 }
-

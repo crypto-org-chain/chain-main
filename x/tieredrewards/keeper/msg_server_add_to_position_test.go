@@ -213,8 +213,6 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
 	s.Require().True(foundBonus, "EventBonusRewardsClaimed should be emitted")
 }
 
-
-
 // TestMsgAddToTierPosition_DelegatedToSlashedValidator verifies that AddToTier
 // fails after a 100% slash when the validator ends up with an invalid
 // (zero token) exchange rate. The claim inside AddToTierPosition should

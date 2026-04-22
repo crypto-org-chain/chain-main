@@ -610,7 +610,6 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 		"balance increase should equal total base + bonus rewards")
 }
 
-
 // TestMsgClaimTierRewards_MixDelegatedAndUndelegated verifies that a batch
 // with some delegated and some undelegated positions claims only for delegated
 // ones and succeeds overall.
@@ -713,4 +712,3 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_AllUndelegated() {
 	s.Require().Equal(balBefore.Amount.String(), balAfter.Amount.String(),
 		"balance should not change for all-undelegated batch")
 }
-

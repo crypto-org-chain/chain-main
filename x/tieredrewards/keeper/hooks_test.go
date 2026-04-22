@@ -74,6 +74,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 	err := hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 }
+
 // TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain verifies that a 100% slash
 // records an event without error.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {

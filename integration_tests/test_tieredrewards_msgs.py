@@ -84,7 +84,8 @@ def test_lock_tier(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
-    resp = query_position(cluster, pos_id); pos = resp["position"]
+    resp = query_position(cluster, pos_id)
+    pos = resp["position"]
     assert pos["owner"] == owner
     assert int(pos["tier_id"]) == TIER_1_ID
     assert int(resp["token_value"]) == amount
@@ -174,7 +175,8 @@ def test_commit_delegation(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
-    resp = query_position(cluster, pos_id); pos = resp["position"]
+    resp = query_position(cluster, pos_id)
+    pos = resp["position"]
     assert pos["validator"] == validator
     assert int(resp["token_value"]) == commit_amount
 
@@ -466,7 +468,8 @@ def test_add_to_position_delegated(cluster):
     rsp = add_to_position(cluster, owner, pos_id, add_amount)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id); pos = resp["position"]
+    resp = query_position(cluster, pos_id)
+    pos = resp["position"]
     assert int(resp["token_value"]) == initial + add_amount
     assert pos["delegated_shares"] != "0.000000000000000000"
 
@@ -732,7 +735,8 @@ def test_exit_tier_with_delegation_partial(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # Position should still exist with reduced amount
-    resp_after = query_position(cluster, pos_id); pos_after = resp_after["position"]
+    resp_after = query_position(cluster, pos_id)
+    pos_after = resp_after["position"]
     assert (
         int(resp_after["token_value"]) < amount
     ), "amount should be reduced after partial exit"

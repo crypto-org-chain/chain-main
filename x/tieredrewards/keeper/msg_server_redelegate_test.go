@@ -98,7 +98,6 @@ func (s *KeeperSuite) TestMsgTierRedelegate_SameValidator() {
 	s.Require().ErrorIs(err, types.ErrRedelegationToSameValidator)
 }
 
-
 // TestMsgTierRedelegate_ExitInProgress verifies that TierRedelegate succeeds
 // when exit is in progress.
 func (s *KeeperSuite) TestMsgTierRedelegate_ExitInProgress() {
@@ -242,6 +241,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating() {
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should already be claimed during redelegate")
 }
+
 // TestMsgTierRedelegate_TierCloseOnly verifies that TierRedelegate is rejected
 // when the tier is set to CloseOnly.
 func (s *KeeperSuite) TestMsgTierRedelegate_TierCloseOnly() {

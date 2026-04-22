@@ -170,7 +170,6 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesUndelegatedAmount() {
 	pos = positions[0]
 	s.Require().True(pos.IsDelegated())
 
-
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 	s.advancePastExitDuration()
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{

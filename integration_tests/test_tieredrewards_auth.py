@@ -185,7 +185,8 @@ def test_update_tier_lock_succeeds_after_open(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
 
-    resp = query_position(cluster, pos_id); pos = resp["position"]
+    resp = query_position(cluster, pos_id)
+    pos = resp["position"]
     assert int(pos["tier_id"]) == TIER_3_ID
     assert int(resp["token_value"]) == 2_000_000
     accrual_before = pos["last_bonus_accrual"]

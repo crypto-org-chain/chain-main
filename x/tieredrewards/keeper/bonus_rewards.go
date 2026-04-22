@@ -46,7 +46,6 @@ func (k Keeper) computeSegmentBonus(pos *types.Position, tier types.Tier, segmen
 		TruncateInt()
 }
 
-
 func (k Keeper) sufficientBonusPoolBalance(ctx context.Context, bonus sdk.Coins) error {
 	if bonus.IsZero() {
 		return nil

@@ -54,7 +54,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	return k.setPosition(ctx, pos)
 }
 
-// slashRedelegationPosition reduces DelegatedShares 
+// slashRedelegationPosition reduces DelegatedShares
 // for a position mapped to the given redelegation unbonding ID.
 //
 // Because the position is still delegated to the destination validator, we
