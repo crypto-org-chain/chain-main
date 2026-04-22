@@ -269,7 +269,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsRewardsBeforeSlash() {
 
 // TestSlashRedelegationPosition_InsufficientBonusPool verifies that
 // the slash proceeds even when the bonus pool cannot cover accrued bonus,
-// and that checkpoints are still advanced to prevent double-claiming.
+// and that checkpoints are still advanced.
 func (s *KeeperSuite) TestSlashRedelegationPosition_InsufficientBonusPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	posBefore, unbondingId := s.setupRedelegatingPosition(lockAmount)
