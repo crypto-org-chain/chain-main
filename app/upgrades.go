@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	config "github.com/crypto-org-chain/chain-main/v8/app/config"
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
@@ -181,8 +182,8 @@ func initializeDefaultTierDefinitions(ctx context.Context, app *ChainApp) error 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.Logger().Info("initializing default tier definitions...")
 
-	// Bond denom is basecro (10^8 per CRO); min lock is 100 CRO for every tier.
-	minLock100CRO := math.NewInt(100).MulRaw(100_000_000)
+	// Bond denom is basecro; min lock is 100 CRO for every tier.
+	minLock100CRO := math.NewIntWithDecimal(100, int(config.CroExponent))
 
 	year := time.Hour * 24 * 365
 	tiers := []tieredrewardstypes.Tier{
