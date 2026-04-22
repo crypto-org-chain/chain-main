@@ -482,39 +482,39 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
+	positions := make([]types.Position, 0, len(msg.PositionIds))
+	for _, posId := range msg.PositionIds {
+		pos, err := ms.getPosition(ctx, posId)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
+			return nil, err
+		}
+
+		positions = append(positions, pos)
+	}
+
+	totalBase, totalBonus, err := ms.claimRewardsForPositions(ctx, msg.Owner, positions)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
-		return nil, err
-	}
-
-	pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
-		PositionId:   pos.Id,
-		TierId:       pos.TierId,
-		Owner:        pos.Owner,
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
+		Owner:        msg.Owner,
+		PositionIds:  msg.PositionIds,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgClaimTierRewardsResponse{
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
-		PositionId:   pos.Id,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
+		PositionIds:  msg.PositionIds,
 	}, nil
 }
 
@@ -542,9 +542,9 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	withdrawCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount))
+	withdraw := sdk.NewCoin(bondDenom, pos.Amount)
 
-	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, withdrawCoins); err != nil {
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdraw)); err != nil {
 		return nil, err
 	}
 
@@ -555,13 +555,13 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
 		Position: pos,
-		Amount:   withdrawCoins,
+		Amount:   withdraw,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgWithdrawFromTierResponse{
-		Amount: withdrawCoins,
+		Amount: withdraw,
 	}, nil
 }
 

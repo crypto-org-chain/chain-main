@@ -104,10 +104,10 @@ func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*ty
 	return &types.QueryTiersResponse{Tiers: tiers}, nil
 }
 
-func (q queryServer) RewardsPoolBalance(ctx context.Context, _ *types.QueryRewardsPoolBalanceRequest) (*types.QueryRewardsPoolBalanceResponse, error) {
+func (q queryServer) RewardsPoolBalances(ctx context.Context, _ *types.QueryRewardsPoolBalancesRequest) (*types.QueryRewardsPoolBalancesResponse, error) {
 	addr := q.k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
-	balances := q.k.bankKeeper.SpendableCoins(ctx, addr)
-	return &types.QueryRewardsPoolBalanceResponse{Address: addr.String(), Balance: balances}, nil
+	balances := q.k.bankKeeper.GetAllBalances(ctx, addr)
+	return &types.QueryRewardsPoolBalancesResponse{Address: addr.String(), Balances: balances}, nil
 }
 
 // EstimatePositionRewards estimates pending base and bonus rewards for a position.

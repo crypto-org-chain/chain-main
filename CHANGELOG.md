@@ -5,9 +5,11 @@
 ## Features
 - [#1261](https://github.com/crypto-org-chain/chain-main/pull/1261) Implement tokenomics (inflation decay, base rewards topup and tiered rewards module)
 - [#1265](https://github.com/crypto-org-chain/chain-main/pull/1265) feat(x/tieredrewards): add MsgExitTierWithDelegation - allow position to exit tier by transferring delegation back to owner directly.
+- [#1269](https://github.com/crypto-org-chain/chain-main/pull/1269) feat(x/tieredrewards): MsgClaimTierRewards now accepts multiple position IDs to claim rewards in a single transaction.
 - [#1271](https://github.com/crypto-org-chain/chain-main/pull/1271) feat(x/tieredrewards): add initial tier definitions in upgrade handler and allow zero MinLockAmount.
 
 ### Improvements
+
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 - [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling

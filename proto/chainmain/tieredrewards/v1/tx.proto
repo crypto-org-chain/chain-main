@@ -53,7 +53,7 @@ service Msg {
   // ClearPosition clears exit state for a position so the owner can add funds again.
   rpc ClearPosition(MsgClearPosition) returns (MsgClearPositionResponse);
 
-  // ClaimTierRewards claims base and bonus rewards for a delegated position.
+  // ClaimTierRewards claims base and bonus rewards for one or more delegated positions.
   rpc ClaimTierRewards(MsgClaimTierRewards) returns (MsgClaimTierRewardsResponse);
 
   // WithdrawFromTier withdraws locked tokens after the exit commitment has elapsed,
@@ -315,7 +315,7 @@ message MsgClearPositionResponse {
   uint64 position_id = 1;
 }
 
-// MsgClaimTierRewards claims base and bonus rewards for a delegated position.
+// MsgClaimTierRewards claims base and bonus rewards for one or more positions.
 message MsgClaimTierRewards {
   option (cosmos.msg.v1.signer) = "owner";
   option (amino.name)           = "chainmain/MsgClaimTierRewards";
@@ -323,28 +323,28 @@ message MsgClaimTierRewards {
   // owner is the position owner's address.
   string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // position_id is the ID of the position to claim rewards for.
-  uint64 position_id = 2;
+  // position_ids is the list of position IDs to claim rewards for.
+  repeated uint64 position_ids = 2;
 }
 
 // MsgClaimTierRewardsResponse defines the response for MsgClaimTierRewards.
 message MsgClaimTierRewardsResponse {
-  // base_rewards is the base staking rewards claimed.
+  // base_rewards is the aggregated base staking rewards claimed across all positions.
   repeated cosmos.base.v1beta1.Coin base_rewards = 1 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
   ];
 
-  // bonus_rewards is the bonus APY rewards claimed from the tier pool.
+  // bonus_rewards is the aggregated bonus APY rewards claimed from the tier pool.
   repeated cosmos.base.v1beta1.Coin bonus_rewards = 2 [
     (gogoproto.nullable)     = false,
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (amino.dont_omitempty)   = true
   ];
 
-  // position_id echoes the position rewards were claimed for.
-  uint64 position_id = 3;
+  // position_ids echoes the positions rewards were claimed for.
+  repeated uint64 position_ids = 3;
 }
 
 // MsgWithdrawFromTier withdraws locked tokens after the exit commitment has elapsed.
@@ -363,11 +363,7 @@ message MsgWithdrawFromTier {
 // MsgWithdrawFromTierResponse defines the response for MsgWithdrawFromTier.
 message MsgWithdrawFromTierResponse {
   // amount is the coins sent back to the owner.
-  repeated cosmos.base.v1beta1.Coin amount = 1 [
-    (gogoproto.nullable)     = false,
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
-    (amino.dont_omitempty)   = true
-  ];
+  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 }
 
 // MsgExitTierWithDelegation exits a tier position by transferring the module's

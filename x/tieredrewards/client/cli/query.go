@@ -30,7 +30,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryTierPositionsByOwner(),
 		GetCmdQueryAllTierPositions(),
 		GetCmdQueryTiers(),
-		GetCmdQueryRewardsPoolBalance(),
+		GetCmdQueryRewardsPoolBalances(),
 		GetCmdQueryEstimatePositionRewards(),
 		GetCmdQueryVotingPowerByOwner(),
 		GetCmdQueryTotalDelegatedVotingPower(),
@@ -193,13 +193,13 @@ func GetCmdQueryTiers() *cobra.Command {
 	)
 }
 
-func GetCmdQueryRewardsPoolBalance() *cobra.Command {
+func GetCmdQueryRewardsPoolBalances() *cobra.Command {
 	return newQueryCmd(
 		"rewards-pool-balance",
 		cobra.NoArgs,
 		"Query the rewards pool balance",
 		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
-			return queryClient.RewardsPoolBalance(ctx, &types.QueryRewardsPoolBalanceRequest{})
+			return queryClient.RewardsPoolBalances(ctx, &types.QueryRewardsPoolBalancesRequest{})
 		},
 	)
 }

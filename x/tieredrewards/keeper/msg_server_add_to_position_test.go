@@ -150,8 +150,8 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
 
 	// No new rewards have been allocated — a second claim should yield zero.
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	balAfterClaim := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)

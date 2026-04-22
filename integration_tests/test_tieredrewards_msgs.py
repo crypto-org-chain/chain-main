@@ -549,6 +549,43 @@ def test_claim_rewards(cluster):
     assert ev is not None, "EventTierRewardsClaimed not found"
 
 
+def test_claim_rewards_batch(cluster):
+    """Batch claim rewards for two positions in a single transaction."""
+    owner = cluster.address("signer1")
+    validator = get_validator_addr(cluster, 0)
+
+    rsp = fund_pool(cluster, "community", f"50000000{DENOM}")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # Create two positions
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 3, validator=validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id1 = new_pos_id(cluster, owner, before)
+
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 3, validator=validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id2 = new_pos_id(cluster, owner, before)
+
+    wait_for_new_blocks(cluster, 10)
+
+    balance_before = cluster.balance(owner, DENOM)
+    rsp = claim_rewards(cluster, owner, pos_id1, pos_id2)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    balance_after = cluster.balance(owner, DENOM)
+    assert (
+        balance_after > balance_before
+    ), "balance should increase after batch claiming rewards"
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventTierRewardsClaimed",
+    )
+    assert ev is not None, "EventTierRewardsClaimed not found"
+
+
 # ──────────────────────────────────────────────
 # MsgWithdrawFromTier
 # ──────────────────────────────────────────────

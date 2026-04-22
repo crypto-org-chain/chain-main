@@ -256,8 +256,8 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating() {
 
 	// No new rewards allocated — subsequent ClaimTierRewards on dst validator should yield zero base.
 	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
+		Owner:       delAddr.String(),
+		PositionIds: []uint64{pos.Id},
 	})
 	s.Require().NoError(err)
 	s.Require().True(resp.BaseRewards.IsZero(), "base rewards should already be claimed during redelegate")

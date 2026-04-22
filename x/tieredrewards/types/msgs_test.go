@@ -565,6 +565,14 @@ func TestMsgClearPosition_Validate(t *testing.T) {
 	}
 }
 
+func makePositionIds(n int) []uint64 {
+	ids := make([]uint64, n)
+	for i := range ids {
+		ids[i] = uint64(i + 1)
+	}
+	return ids
+}
+
 func TestMsgClaimTierRewards_Validate(t *testing.T) {
 	t.Parallel()
 
@@ -577,20 +585,69 @@ func TestMsgClaimTierRewards_Validate(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "valid",
+			name: "valid single position",
 			msg: types.MsgClaimTierRewards{
-				Owner:      validOwner,
-				PositionId: 1,
+				Owner:       validOwner,
+				PositionIds: []uint64{1},
+			},
+		},
+		{
+			name: "valid multiple positions",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{1, 2, 3},
 			},
 		},
 		{
 			name: "invalid owner",
 			msg: types.MsgClaimTierRewards{
-				Owner:      "invalid",
-				PositionId: 1,
+				Owner:       "invalid",
+				PositionIds: []uint64{1},
 			},
 			wantErr:     true,
 			errContains: "invalid owner address",
+		},
+		{
+			name: "empty position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{},
+			},
+			wantErr:     true,
+			errContains: "must not be empty",
+		},
+		{
+			name: "nil position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner: validOwner,
+			},
+			wantErr:     true,
+			errContains: "must not be empty",
+		},
+		{
+			name: "duplicate position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: []uint64{1, 2, 1},
+			},
+			wantErr:     true,
+			errContains: "duplicate",
+		},
+		{
+			name: "exactly at max position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: makePositionIds(types.MaxClaimPositionIds),
+			},
+		},
+		{
+			name: "exceeds max position_ids",
+			msg: types.MsgClaimTierRewards{
+				Owner:       validOwner,
+				PositionIds: makePositionIds(types.MaxClaimPositionIds + 1),
+			},
+			wantErr:     true,
+			errContains: "too many position_ids",
 		},
 	}
 
