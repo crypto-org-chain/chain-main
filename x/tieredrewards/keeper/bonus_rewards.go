@@ -69,18 +69,18 @@ func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validato
 	return k.calculateBonus(pos, val, tier, blockTime)
 }
 
-func (k Keeper) checkBonusPoolBalance(ctx context.Context, bonus sdk.Coins) (sdk.Coins, error) {
+func (k Keeper) sufficientBonusPoolBalance(ctx context.Context, bonus sdk.Coins) error {
 	if bonus.IsZero() {
-		return sdk.NewCoins(), nil
+		return nil
 	}
 
 	poolAddr := k.accountKeeper.GetModuleAddress(types.RewardsPoolName)
 	poolBalance := k.bankKeeper.GetAllBalances(ctx, poolAddr)
 	if !poolBalance.IsAllGTE(bonus) {
-		return sdk.NewCoins(), errorsmod.Wrapf(types.ErrInsufficientBonusPool,
-			"bonus pool has insufficient funds, bonus: %s, pool balance: %s",
+		return errorsmod.Wrapf(types.ErrInsufficientBonusPool,
+			"bonus: %s, pool balance: %s",
 			bonus.String(), poolBalance.String())
 	}
 
-	return bonus, nil
+	return nil
 }
