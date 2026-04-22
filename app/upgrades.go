@@ -181,25 +181,27 @@ func initializeDefaultTierDefinitions(ctx context.Context, app *ChainApp) error 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.Logger().Info("initializing default tier definitions...")
 
+	// Bond denom is basecro, min lock is 100 CRO for every tier.
+	minLock100CRO := math.NewInt(100).MulRaw(100_000_000)
 	year := time.Hour * 24 * 365
 	tiers := []tieredrewardstypes.Tier{
 		{
 			Id:            1,
 			ExitDuration:  year,
 			BonusApy:      math.LegacyMustNewDecFromStr("0.02"),
-			MinLockAmount: math.ZeroInt(),
+			MinLockAmount: minLock100CRO,
 		},
 		{
 			Id:            2,
 			ExitDuration:  2 * year,
 			BonusApy:      math.LegacyMustNewDecFromStr("0.04"),
-			MinLockAmount: math.ZeroInt(),
+			MinLockAmount: minLock100CRO,
 		},
 		{
 			Id:            3,
 			ExitDuration:  4 * year,
 			BonusApy:      math.LegacyMustNewDecFromStr("0.07"),
-			MinLockAmount: math.ZeroInt(),
+			MinLockAmount: minLock100CRO,
 		},
 	}
 
