@@ -90,7 +90,6 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Delegated() {
 // claimRewardsForPositions
 // ---------------------------------------------------------------------------
 
-
 // TestClaimRewardsForPositions_MixedDelegatedUndelegated verifies that when
 // batch-claiming for a mix of delegated and undelegated positions, only the
 // delegated position earns rewards and all positions are persisted.
@@ -256,8 +255,6 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 		"undelegated position checkpoint should not change during tier sweep")
 }
 
-
-
 // After the validator re-bonds, bonus accrual should resume from the new bonded time.
 func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
@@ -361,7 +358,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal seg1+seg2 exactly")
@@ -369,7 +366,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange
 	// Second claim at same time yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 
@@ -408,7 +405,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal pre-unbond segment only")
@@ -416,7 +413,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 	// Second claim yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 
@@ -471,7 +468,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleBond_ResumesBonus() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal pre-unbond + post-rebond segments exactly")
@@ -523,7 +520,7 @@ func (s *KeeperSuite) TestProcessEvents_SlashThenUnbond_TwoSegments() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal two bonded segments exactly (gap pays zero)")
@@ -584,7 +581,7 @@ func (s *KeeperSuite) TestProcessEvents_UnbondBondUnbond_ThreeTransitions() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal two bonded segments exactly (both gaps pay zero)")
@@ -640,7 +637,7 @@ func (s *KeeperSuite) TestProcessEvents_MultipleSlashes_RateDecreases() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal three segments exactly with decreasing rates")
@@ -684,7 +681,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 
 	bonus1, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedClaim1.String(), bonus1.AmountOf(bondDenom).String(),
 		"claim1 must equal seg1 exactly")
@@ -708,7 +705,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedClaim2.String(), bonus2.AmountOf(bondDenom).String(),
 		"claim2 must equal seg2 only (no double-counting seg1)")
@@ -716,7 +713,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 	// Third claim at same time yields zero.
 	bonus3, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 	s.Require().True(bonus3.IsZero(), "third claim at same time should yield zero")
 }
 
@@ -748,7 +745,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebon
 
 	bonus1, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(segPreUnbond.String(), bonus1.AmountOf(bondDenom).String(),
 		"claim1 must equal pre-unbond segment")
@@ -780,7 +777,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebon
 
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(segPostBond.String(), bonus2.AmountOf(bondDenom).String(),
 		"claim2 must equal post-rebond segment only (no gap overpay)")
@@ -816,7 +813,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimAfterExitUnlockAt_CappedBonus() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().Equal(expectedBonus.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must be capped at ExitUnlockAt")
@@ -824,7 +821,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimAfterExitUnlockAt_CappedBonus() {
 	// Second claim yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
 	s.Require().NoError(err)
-	s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 
@@ -874,4 +871,3 @@ func (s *KeeperSuite) TestProcessEvents_InsufficientPool_Error() {
 	s.Require().ErrorContains(err, "insufficient bonus pool",
 		"error should mention insufficient bonus pool")
 }
-
