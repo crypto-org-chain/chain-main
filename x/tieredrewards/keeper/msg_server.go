@@ -380,8 +380,6 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 
 		totalShares := pos.DelegatedShares.Add(newShares)
 
-		// Get latest seq if not updateDelegation will refresh it to zero,
-		// though technically lastEventSeq should already be updated when claiming rewards
 		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
 		if err != nil {
 			return nil, err
@@ -638,8 +636,6 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		if err != nil {
 			return nil, err
 		}
-		// Get latest seq if not updateDelegation will refresh it to zero,
-		// though technically lastEventSeq should already be updated when claiming rewards
 		err = ms.updateDelegation(ctx, &pos, types.Delegation{
 			Validator:           pos.Validator,
 			Shares:              remainingShares,
