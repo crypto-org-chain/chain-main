@@ -299,9 +299,13 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
-	if err != nil {
-		return nil, err
+	// unbondingId == 0 when the src validator is already unbonded.
+	// No redelegation entry is created, so no slash tracking mapping is needed.
+	if unbondingId > 0 {
+		err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	srcValidator := pos.Validator

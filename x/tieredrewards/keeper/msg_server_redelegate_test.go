@@ -360,3 +360,85 @@ func (s *KeeperSuite) TestMsgTierRedelegate_DstValidatorNotBonded() {
 	s.Require().NoError(err)
 	s.Require().Equal(valAddr.String(), posAfter.Validator, "position should stay on original validator")
 }
+
+// TestMsgTierRedelegate_FromUnbondedSrc_NoMapping verifies that when the source
+// validator is fully Unbonded.
+// A second redelegate succeeds immediately (no transitive redelegation block).
+func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
+	// Create second validator as source — we'll unbond it fully.
+	srcValAddr, _ := s.createSecondValidator()
+
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+
+	s.setupTier(1)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
+		ValidatorAddress: srcValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+
+	// Jail src validator → Unbonding status.
+	s.jailAndUnbondValidator(srcValAddr)
+
+	// Advance time past unbonding period to transition src to Unbonded.
+	unbondingTime, err := s.app.StakingKeeper.UnbondingTime(s.ctx)
+	s.Require().NoError(err)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(unbondingTime + time.Second))
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.Require().NoError(s.app.StakingKeeper.UnbondAllMatureValidators(s.ctx))
+
+	// Verify src is now Unbonded.
+	srcVal, err := s.app.StakingKeeper.GetValidator(s.ctx, srcValAddr)
+	s.Require().NoError(err)
+	s.Require().True(srcVal.IsUnbonded(), "src validator should be fully Unbonded")
+
+	// First redelegate: Unbonded src → bonded genesis validator.
+	vals, _ := s.getStakingData()
+	dstValAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        freshAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	// No mapping at key=0 — completeNow path returned unbondingId=0.
+	has, err := s.keeper.RedelegationMappings.Has(s.ctx, 0)
+	s.Require().NoError(err)
+	s.Require().False(has, "no mapping should exist at unbondingId=0")
+
+	// stillRedelegating is false — no redelegation entry was created.
+	redel, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(redel, "no redelegation entry for completeNow path")
+
+	// Unjail src so it's bonded again for the second redelegate destination.
+	consAddr, _ := srcVal.GetConsAddr()
+	s.Require().NoError(s.app.StakingKeeper.Unjail(s.ctx, consAddr))
+	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
+	s.Require().NoError(err)
+
+	// Second redelegate: genesis → src should succeed immediately
+	// (no transitive block since no redelegation entry exists from first redelegate).
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        freshAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: srcValAddr.String(),
+	})
+	s.Require().NoError(err, "second redelegate should succeed — no transitive block")
+
+	// Position should now be on src validator.
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(srcValAddr.String(), posAfter.Validator)
+}

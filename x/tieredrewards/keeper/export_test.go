@@ -129,6 +129,10 @@ func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, er
 	return k.stillUnbonding(ctx, positionId)
 }
 
+func (k Keeper) StillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+	return k.stillRedelegating(ctx, positionId)
+}
+
 func (k Keeper) ComputeSegmentBonus(pos *types.Position, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
 	return k.computeSegmentBonus(pos, tier, segmentStart, segmentEnd, tokensPerShare)
 }
