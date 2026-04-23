@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -137,7 +138,13 @@ func ValidateGenesis(data GenesisState) error {
 	for _, entry := range data.ValidatorEventSeqs {
 		currentSeqByValidator[entry.Validator] = entry.CurrentSeq
 	}
-	for val, maxSeq := range maxSeqByValidator {
+	sortedVals := make([]string, 0, len(maxSeqByValidator))
+	for val := range maxSeqByValidator {
+		sortedVals = append(sortedVals, val)
+	}
+	sort.Strings(sortedVals)
+	for _, val := range sortedVals {
+		maxSeq := maxSeqByValidator[val]
 		currentSeq, ok := currentSeqByValidator[val]
 		if !ok {
 			return fmt.Errorf("validator %s has events but no current_seq entry", val)
