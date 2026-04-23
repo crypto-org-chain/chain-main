@@ -412,7 +412,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	})
 	s.Require().NoError(err)
 
-	// No mapping at key=0 — completeNow path returned unbondingId=0.
+	// No mapping for unbondingId=0.
 	has, err := s.keeper.RedelegationMappings.Has(s.ctx, 0)
 	s.Require().NoError(err)
 	s.Require().False(has, "no mapping should exist at unbondingId=0")
@@ -442,3 +442,4 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err)
 	s.Require().Equal(srcValAddr.String(), posAfter.Validator)
 }
+
