@@ -1428,9 +1428,10 @@ def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
     rsp = tier_delegate(cluster, owner, pos_id, validator0)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    pos = query_position(cluster, pos_id)["position"]
+    resp = query_position(cluster, pos_id)
+    pos = resp["position"]
     assert pos["validator"] == validator0
-    assert int(pos["undelegated_amount"]) == TIER_1_MIN * 2
+    assert int(resp["token_value"]) == TIER_1_MIN * 2
 
     # Full exit
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
