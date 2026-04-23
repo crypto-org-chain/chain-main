@@ -503,7 +503,7 @@ def test_clear_position_redeleg_exit_elapsed(cluster):
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert pos["validator"] == v1
     assert pos["delegated_shares"] != "0.000000000000000000"
-    assert int(resp["position"]["amount"]) > 0
+    assert int(pos["amount"]) > 0
 
 
 # ──────────────────────────────────────────────
@@ -535,7 +535,7 @@ def test_redelegate_full_exit(cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert pos["validator"] == v1
-    assert int(resp["position"]["amount"]) == amount
+    assert int(pos["amount"]) == amount
 
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
     assert returned >= amount - GAS_ALLOWANCE
@@ -624,7 +624,7 @@ def test_redelegate_add_exit(cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert pos["validator"] == v1
-    assert int(resp["position"]["amount"]) >= initial + add_amount
+    assert int(pos["amount"]) >= initial + add_amount
 
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
     assert returned >= initial + add_amount - GAS_ALLOWANCE
@@ -666,7 +666,7 @@ def test_complex_redelegate_flow(cluster):
     pos = resp["position"]
     assert pos["validator"] == v1
     total = initial + add_amount
-    assert int(resp["position"]["amount"]) >= total
+    assert int(pos["amount"]) >= total
 
     # Full exit via redelegate
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
@@ -1109,7 +1109,7 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    slashed_amount = int(resp["position"]["amount"])
+    slashed_amount = int(pos["amount"])
     assert slashed_amount > 0, "partial slash should leave amount > 0"
     assert (
         pos["validator"] == validator0
@@ -1266,7 +1266,7 @@ def test_clear_position_after_slash(slashing_cluster):
     pos = resp["position"]
     assert pos["exit_triggered_at"] == ZERO_TIME
     assert pos["exit_unlock_at"] == ZERO_TIME
-    assert int(resp["position"]["amount"]) == amount_after
+    assert int(pos["amount"]) == amount_after
     assert pos["delegated_shares"] != "0.000000000000000000"
 
 
@@ -1296,9 +1296,9 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    assert int(resp["position"]["amount"]) > 0, "partial slash should leave amount > 0"
+    assert int(pos["amount"]) > 0, "partial slash should leave amount > 0"
     assert pos["exit_triggered_at"] != ZERO_TIME
-    amount_before_clear = int(resp["position"]["amount"])
+    amount_before_clear = int(pos["amount"])
 
     # Clear position — cancel exit after redeleg slash
     rsp = clear_position(cluster, owner, pos_id)
@@ -1308,7 +1308,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
     pos = resp["position"]
     assert pos["exit_triggered_at"] == ZERO_TIME
     assert pos["exit_unlock_at"] == ZERO_TIME
-    assert int(resp["position"]["amount"]) == amount_before_clear
+    assert int(pos["amount"]) == amount_before_clear
     assert pos["delegated_shares"] != "0.000000000000000000"
 
 
@@ -1362,7 +1362,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    assert int(resp["position"]["amount"]) == 0, "100% slash should zero token value"
+    assert int(pos["amount"]) == 0, "100% slash should zero token value"
     assert pos["validator"] == validator, "delegation should not be cleared"
 
     # Full exit lifecycle on worthless position
@@ -1429,7 +1429,7 @@ def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert pos["validator"] == validator0
-    assert int(resp["position"]["amount"]) == TIER_1_MIN * 2
+    assert int(pos["amount"]) == TIER_1_MIN * 2
 
     # Full exit
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
@@ -1702,7 +1702,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    assert int(resp["position"]["amount"]) == 0, "100% slash should zero token value"
+    assert int(pos["amount"]) == 0, "100% slash should zero token value"
     assert pos["validator"] != "", "direct slash keeps validator set"
     assert pos["exit_triggered_at"] != ZERO_TIME
 

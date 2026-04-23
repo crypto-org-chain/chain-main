@@ -188,7 +188,7 @@ def test_update_tier_lock_succeeds_after_open(cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert int(pos["tier_id"]) == TIER_3_ID
-    assert int(resp["position"]["amount"]) == 2_000_000
+    assert int(pos["amount"]) == 2_000_000
     accrual_before = pos["last_bonus_accrual"]
 
     # Let some bonus accrue

@@ -88,7 +88,7 @@ def test_lock_tier(cluster):
     pos = resp["position"]
     assert pos["owner"] == owner
     assert int(pos["tier_id"]) == TIER_1_ID
-    assert int(resp["position"]["amount"]) == amount
+    assert int(pos["amount"]) == amount
     assert pos["validator"] == validator
     assert pos["delegated_shares"] != "0.000000000000000000"
     assert pos["exit_triggered_at"] == ZERO_TIME
@@ -178,7 +178,7 @@ def test_commit_delegation(cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert pos["validator"] == validator
-    assert int(resp["position"]["amount"]) == commit_amount
+    assert int(pos["amount"]) == commit_amount
 
     # Staking delegation should have decreased
     del_after = json.loads(
@@ -470,7 +470,7 @@ def test_add_to_position_delegated(cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    assert int(resp["position"]["amount"]) == initial + add_amount
+    assert int(pos["amount"]) == initial + add_amount
     assert pos["delegated_shares"] != "0.000000000000000000"
 
 
