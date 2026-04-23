@@ -23,7 +23,6 @@ func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 // computeSegmentBonus computes bonus for a time segment using a snapshot rate.
 // Formula: shares * tokensPerShare * tier.BonusApy * durationSeconds / SecondsPerYear
 func (k Keeper) computeSegmentBonus(pos *types.Position, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
-	// Cap at ExitUnlockAt if position has completed exit.
 	if !pos.ExitUnlockAt.IsZero() && segmentEnd.After(pos.ExitUnlockAt) {
 		segmentEnd = pos.ExitUnlockAt
 	}

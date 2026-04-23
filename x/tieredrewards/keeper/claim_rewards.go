@@ -223,11 +223,6 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 		return sdk.NewCoins(), nil
 	}
 
-	tier, err := k.getTier(ctx, pos.TierId)
-	if err != nil {
-		return nil, err
-	}
-
 	events, err := k.getValidatorEventsSince(ctx, valAddr, pos.LastEventSeq)
 	if err != nil {
 		return nil, err
@@ -236,22 +231,22 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	blockTime := sdkCtx.BlockTime()
 
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	totalBonus := math.ZeroInt()
 	// Use the persisted bonded state from the last replay, not a hardcoded default.
 	// This prevents overpaying bonus for unbonded gaps between claims.
 	bonded := pos.LastKnownBonded
 	segmentStart := pos.LastBonusAccrual
 
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, entry := range events {
 		evt := entry.Event
 
 		if bonded {
-			// Compute bonus for the bonded segment [segmentStart, eventTime)
+			// Compute bonus for the bonded segment [segmentStart, eventTime]
 			// using the snapshot rate at the event.
 			bonus := k.computeSegmentBonus(pos, tier, segmentStart, evt.Timestamp, evt.TokensPerShare)
 			totalBonus = totalBonus.Add(bonus)
@@ -270,7 +265,7 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 		segmentStart = evt.Timestamp
 		pos.UpdateLastEventSeq(entry.Seq)
 
-		// Decrement reference count (garbage-collect if zero).
+		// Decrement reference count.
 		if err := k.decrementEventRefCount(ctx, valAddr, entry.Seq); err != nil {
 			return nil, err
 		}
@@ -280,7 +275,7 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	if err != nil {
 		return nil, err
 	}
-	// adding validator bond status check, so that a delegation to an unbonded validator cannot double claim
+	// Defensive: validator bond status check
 	if bonded && val.IsBonded() {
 		currentRate, err := k.getTokensPerShare(ctx, valAddr)
 		if err != nil {
@@ -296,6 +291,11 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 
 	if totalBonus.IsZero() {
 		return sdk.NewCoins(), nil
+	}
+
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, totalBonus))
