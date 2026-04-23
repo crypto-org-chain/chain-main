@@ -30,12 +30,12 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CloseOnly:     true,
 	}
 
-	// Delegated position (tier 1). UndelegatedAmount must be zero.
+	// Delegated position (tier 1). Amount must be zero.
 	pos1 := types.Position{
 		Id:                  1,
 		Owner:               owner,
 		TierId:              1,
-		UndelegatedAmount:   sdkmath.ZeroInt(),
+		Amount:              sdkmath.ZeroInt(),
 		Validator:           valAddr.String(),
 		DelegatedShares:     sdkmath.LegacyNewDec(5000),
 		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(2, 4))),
@@ -44,12 +44,12 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:       now,
 	}
 
-	// Delegated position. UndelegatedAmount must be zero.
+	// Delegated position. Amount must be zero.
 	pos2 := types.Position{
 		Id:                  2,
 		Owner:               owner,
 		TierId:              2,
-		UndelegatedAmount:   sdkmath.ZeroInt(),
+		Amount:              sdkmath.ZeroInt(),
 		Validator:           valAddr.String(),
 		DelegatedShares:     sdkmath.LegacyNewDec(3000),
 		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(1, 4))),
@@ -61,15 +61,15 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	// Position with exit triggered.
 	exitTime := now.Add(-time.Hour * 24)
 	pos3 := types.Position{
-		Id:                3,
-		Owner:             owner,
-		TierId:            1,
-		UndelegatedAmount: sdkmath.NewInt(2000),
-		DelegatedShares:   sdkmath.LegacyZeroDec(),
-		ExitTriggeredAt:   exitTime,
-		ExitUnlockAt:      exitTime.Add(time.Hour * 24 * 365),
-		CreatedAtHeight:   99,
-		CreatedAtTime:     now.Add(-time.Hour * 48),
+		Id:              3,
+		Owner:           owner,
+		TierId:          1,
+		Amount:          sdkmath.NewInt(2000),
+		DelegatedShares: sdkmath.LegacyZeroDec(),
+		ExitTriggeredAt: exitTime,
+		ExitUnlockAt:    exitTime.Add(time.Hour * 24 * 365),
+		CreatedAtHeight: 99,
+		CreatedAtTime:   now.Add(-time.Hour * 48),
 	}
 
 	genesisState := &types.GenesisState{
@@ -154,7 +154,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(orig.Id, pos.Id, "position ID mismatch at %d", i)
 		s.Require().Equal(orig.Owner, pos.Owner)
 		s.Require().Equal(orig.TierId, pos.TierId)
-		s.Require().True(orig.UndelegatedAmount.Equal(pos.UndelegatedAmount))
+		s.Require().True(orig.Amount.Equal(pos.Amount))
 		s.Require().Equal(orig.Validator, pos.Validator)
 		s.Require().True(orig.DelegatedShares.Equal(pos.DelegatedShares))
 		s.Require().True(orig.BaseRewardsPerShare.Equal(pos.BaseRewardsPerShare))
@@ -226,20 +226,20 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 		},
 		Positions: []types.Position{
 			{
-				Id: 1, Owner: owner.String(), TierId: 1, UndelegatedAmount: sdkmath.NewInt(1000),
+				Id: 1, Owner: owner.String(), TierId: 1, Amount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
 			},
 			{
-				Id: 2, Owner: owner.String(), TierId: 1, UndelegatedAmount: sdkmath.ZeroInt(),
+				Id: 2, Owner: owner.String(), TierId: 1, Amount: sdkmath.ZeroInt(),
 				Validator: valAddr.String(), DelegatedShares: sdkmath.LegacyNewDec(2000),
 				LastBonusAccrual: now,
 				CreatedAtHeight:  11, CreatedAtTime: now,
 			},
 			// simulate a redelegation-slashed to zero position here. No delegation here and amount is zero
 			{
-				Id: 3, Owner: owner.String(), TierId: 2, UndelegatedAmount: sdkmath.ZeroInt(),
+				Id: 3, Owner: owner.String(), TierId: 2, Amount: sdkmath.ZeroInt(),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				CreatedAtHeight: 12, CreatedAtTime: now,
 			},
@@ -281,7 +281,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 		},
 		Positions: []types.Position{
 			{
-				Id: 5, Owner: owner, TierId: 1, UndelegatedAmount: sdkmath.NewInt(1000),
+				Id: 5, Owner: owner, TierId: 1, Amount: sdkmath.NewInt(1000),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,

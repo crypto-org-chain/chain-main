@@ -22,7 +22,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, bondDenom := s.getStakingData()
@@ -39,7 +39,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(addPosAmt.Equal(pos.UndelegatedAmount), "amount should be 500 (added to zero)")
+	s.Require().True(addPosAmt.Equal(pos.Amount), "amount should be 500 (added to zero)")
 	s.Require().False(pos.IsDelegated(), "position should remain undelegated")
 }
 
@@ -65,7 +65,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.UndelegatedAmount.IsZero(), "delegated position UndelegatedAmount should be zero")
+	s.Require().True(posAfter.Amount.IsZero(), "delegated position Amount should be zero")
 	tokenValue, err := s.keeper.PositionTokenValue(s.ctx, posAfter)
 	s.Require().NoError(err)
 	s.Require().True(tokenValue.GTE(sdkmath.NewInt(1500)), "token value should be at least 1500")

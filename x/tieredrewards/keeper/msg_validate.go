@@ -46,7 +46,7 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrTierIsCloseOnly
 	}
 
-	if pos.UndelegatedAmount.IsZero() {
+	if pos.Amount.IsZero() {
 		return types.ErrPositionAmountZero
 	}
 

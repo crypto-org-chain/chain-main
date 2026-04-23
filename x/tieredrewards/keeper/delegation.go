@@ -25,10 +25,10 @@ func (k Keeper) getTokensPerShare(ctx context.Context, valAddr sdk.ValAddress) (
 }
 
 // positionTokenValue returns the live token value of a position:
-// TokensFromShares for delegated, UndelegatedAmount for undelegated.
+// TokensFromShares for delegated, Amount for undelegated.
 func (k Keeper) positionTokenValue(ctx context.Context, pos types.Position) (math.Int, error) {
 	if !pos.IsDelegated() {
-		return pos.UndelegatedAmount, nil
+		return pos.Amount, nil
 	}
 	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
 	if err != nil {
@@ -51,7 +51,7 @@ func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAd
 }
 
 // updateDelegation updates a position's delegation fields.
-// For delegated positions, UndelegatedAmount is always zero.
+// For delegated positions, Amount is always zero.
 func (k Keeper) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.WithDelegation(delegation, sdkCtx.BlockTime())

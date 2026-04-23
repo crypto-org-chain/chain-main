@@ -29,7 +29,7 @@ func (k Keeper) createPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	undelegatedAmount math.Int,
+	amount math.Int,
 	delegation types.Delegation,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
@@ -42,7 +42,7 @@ func (k Keeper) createPosition(
 	blockTime := sdkCtx.BlockTime()
 	blockHeight := uint64(sdkCtx.BlockHeight())
 
-	pos := types.NewPosition(id, owner, tier.Id, undelegatedAmount, blockHeight, delegation, blockTime)
+	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
 
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)

@@ -161,7 +161,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	newShares, err := ms.delegate(ctx, valAddr, pos.UndelegatedAmount)
+	newShares, err := ms.delegate(ctx, valAddr, pos.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +234,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	srcValidator := pos.Validator
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(returnAmount)
+	pos.UpdateAmount(returnAmount)
 
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 	} else {
-		pos.UpdateUndelegatedAmount(pos.UndelegatedAmount.Add(msg.Amount))
+		pos.UpdateAmount(pos.Amount.Add(msg.Amount))
 	}
 
 	if err := ms.setPosition(ctx, pos); err != nil {
@@ -402,11 +402,11 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionAmountAdded{
-		PositionId:             pos.Id,
-		TierId:                 pos.TierId,
-		Owner:                  pos.Owner,
-		SharesAdded:            newShares,
-		TotalUndelegatedAmount: pos.UndelegatedAmount,
+		PositionId:  pos.Id,
+		TierId:      pos.TierId,
+		Owner:       pos.Owner,
+		SharesAdded: newShares,
+		AmountAdded: msg.Amount,
 	}); err != nil {
 		return nil, err
 	}
@@ -561,7 +561,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	withdraw := sdk.NewCoin(bondDenom, pos.UndelegatedAmount)
+	withdraw := sdk.NewCoin(bondDenom, pos.Amount)
 
 	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdraw)); err != nil {
 		return nil, err

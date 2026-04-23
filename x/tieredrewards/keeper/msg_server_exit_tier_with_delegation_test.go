@@ -117,7 +117,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
 	// Position still exists.
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.UndelegatedAmount.IsZero(), "delegated position UndelegatedAmount should remain zero")
+	s.Require().True(posAfter.Amount.IsZero(), "delegated position Amount should remain zero")
 	s.Require().Equal(pos.DelegatedShares.Sub(exitShares), posAfter.DelegatedShares, "position shares should be reduced by the amount of exited shares")
 
 	// Second: exit the remainder using token value from remaining shares.
@@ -203,7 +203,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_NotDelegated() {
 	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
 		Owner:      pos.Owner,
 		PositionId: pos.Id,
-		Amount:     posAfter.UndelegatedAmount,
+		Amount:     posAfter.Amount,
 	})
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
@@ -401,7 +401,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_BondedSlashZero() {
 
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position amount should be zero after 100% slash")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 
 	s.advancePastExitDuration()

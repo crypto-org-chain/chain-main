@@ -85,7 +85,7 @@ func (s *IntegrationTestSuite) mustExecQuery(val *network.Validator, exec func()
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), resp), bz.String())
 }
 
-func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positionID string) tieredrewardstypes.Position {
+func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positionID string) tieredrewardstypes.PositionResponse {
 	var resp tieredrewardstypes.QueryTierPositionResponse
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
 		return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, positionID)
@@ -334,7 +334,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(uint64(0), position.Id)
 		s.Require().Equal(owner, position.Owner)
 		s.Require().Equal(validator, position.Validator)
-		s.Require().True(position.UndelegatedAmount.IsZero(), "delegated position should have zero undelegated amount")
+		s.Require().True(position.Amount.Equal(lockAmount), "amount should equal lock amount for delegated position")
 		s.Require().True(position.DelegatedShares.IsPositive(), "delegated position should have positive shares")
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
@@ -348,7 +348,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position = s.mustQueryPosition(val, "0")
-		s.Require().True(position.UndelegatedAmount.IsZero(), "delegated position should have zero undelegated amount after add")
+		s.Require().True(position.Amount.IsPositive(), "amount should be positive after add")
 	})
 
 	s.Run("position queries and voting power", func() {
@@ -419,7 +419,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "0")
-		s.Require().True(position.HasTriggeredExit())
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.ClearPositionExec(
@@ -431,7 +431,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position = s.mustQueryPosition(val, "0")
-		s.Require().False(position.HasTriggeredExit())
+		s.Require().False(!position.ExitTriggeredAt.IsZero())
 	})
 
 	s.Run("commit delegation and pagination", func() {
@@ -449,7 +449,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		position := s.mustQueryPosition(val, "1")
 		s.Require().Equal(uint64(1), position.Id)
 		s.Require().Equal(validator, position.Validator)
-		s.Require().True(position.IsDelegated())
+		s.Require().True(position.Validator != "")
 
 		firstPageResp := s.mustQueryAllPositions(val, "--limit=1", "--offset=0", "--count-total=true")
 		s.Require().Len(firstPageResp.Positions, 1)
@@ -485,7 +485,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "1")
-		s.Require().False(position.IsDelegated())
+		s.Require().False(position.Validator != "")
 
 		s.waitBlocks(1)
 
@@ -512,7 +512,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "2")
-		s.Require().True(position.HasTriggeredExit())
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
 
 		s.waitBlocks(1)
 
@@ -557,8 +557,8 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "3")
-		s.Require().True(position.HasTriggeredExit())
-		s.Require().True(position.IsDelegated())
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
+		s.Require().True(position.Validator != "")
 
 		// Wait for exit duration to elapse.
 		s.waitBlocks(1)

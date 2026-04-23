@@ -299,7 +299,7 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
-	s.Require().True(posAfter.UndelegatedAmount.IsZero(), "delegated position should still have zero undelegated amount after slash")
+	s.Require().True(posAfter.Amount.IsZero(), "delegated position should still have zero amount after slash")
 	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
 
 	voter := sdk.MustAccAddressFromBech32(pos.Owner)

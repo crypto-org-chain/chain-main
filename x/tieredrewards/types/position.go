@@ -18,12 +18,12 @@ type Delegation struct {
 	LastEventSeq        uint64
 }
 
-func NewPosition(id uint64, owner string, tierId uint32, undelegatedAmount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
+func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
 	return Position{
 		Id:                  id,
 		Owner:               owner,
 		TierId:              tierId,
-		UndelegatedAmount:   undelegatedAmount,
+		Amount:              amount,
 		CreatedAtHeight:     createdAtHeight,
 		CreatedAtTime:       createdAtTime,
 		Validator:           delegation.Validator,
@@ -41,12 +41,12 @@ func (p Position) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	if p.UndelegatedAmount.IsNil() {
-		return fmt.Errorf("undelegated amount cannot be nil")
+	if p.Amount.IsNil() {
+		return fmt.Errorf("amount cannot be nil")
 	}
 
-	if p.UndelegatedAmount.IsNegative() {
-		return fmt.Errorf("undelegated amount must not be negative: %s", p.UndelegatedAmount)
+	if p.Amount.IsNegative() {
+		return fmt.Errorf("amount must not be negative: %s", p.Amount)
 	}
 
 	if p.IsDelegated() {
@@ -61,8 +61,8 @@ func (p Position) Validate() error {
 		if !p.DelegatedShares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
 		}
-		if !p.UndelegatedAmount.IsZero() {
-			return fmt.Errorf("undelegated amount must be zero for delegated positions")
+		if !p.Amount.IsZero() {
+			return fmt.Errorf("amount must be zero for delegated positions")
 		}
 	} else {
 		if !p.DelegatedShares.IsNil() && !p.DelegatedShares.IsZero() {
@@ -119,7 +119,7 @@ func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
 	p.LastEventSeq = delegation.LastEventSeq
 	// Position is delegated as a whole
-	p.UndelegatedAmount = math.ZeroInt()
+	p.Amount = math.ZeroInt()
 	p.LastBonusAccrual = t
 	// Delegation is only allowed to bonded validators.
 	p.LastKnownBonded = true
@@ -147,8 +147,8 @@ func (p *Position) UpdateLastBonusAccrual(t time.Time) {
 	p.LastBonusAccrual = t
 }
 
-func (p *Position) UpdateUndelegatedAmount(amount math.Int) {
-	p.UndelegatedAmount = amount
+func (p *Position) UpdateAmount(amount math.Int) {
+	p.Amount = amount
 }
 
 func (p *Position) UpdateDelegatedShares(shares math.LegacyDec) {
@@ -182,4 +182,21 @@ func (p *Position) UpdateLastEventSeq(seq uint64) {
 
 func (p *Position) UpdateLastKnownBonded(bonded bool) {
 	p.LastKnownBonded = bonded
+}
+
+func PositionToPositionResponse(pos Position, tokenValue math.Int) PositionResponse {
+	return PositionResponse{
+		Id:                  pos.Id,
+		Owner:               pos.Owner,
+		TierId:              pos.TierId,
+		Amount:              tokenValue,
+		Validator:           pos.Validator,
+		DelegatedShares:     pos.DelegatedShares,
+		BaseRewardsPerShare: pos.BaseRewardsPerShare,
+		LastBonusAccrual:    pos.LastBonusAccrual,
+		ExitTriggeredAt:     pos.ExitTriggeredAt,
+		ExitUnlockAt:        pos.ExitUnlockAt,
+		CreatedAtHeight:     pos.CreatedAtHeight,
+		CreatedAtTime:       pos.CreatedAtTime,
+	}
 }

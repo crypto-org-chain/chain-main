@@ -32,7 +32,7 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "delegated positions have UndelegatedAmount=0")
+	s.Require().True(pos.Amount.IsZero(), "delegated positions have Amount=0")
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())

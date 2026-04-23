@@ -21,7 +21,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back
@@ -81,7 +81,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
@@ -104,7 +104,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero_ExitInProgress() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
@@ -130,7 +130,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back
@@ -214,7 +214,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, bondDenom := s.getStakingData()
@@ -248,7 +248,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	_, bondDenom := s.getStakingData()
@@ -288,7 +288,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add funds back so position has non-zero amount for delegation.

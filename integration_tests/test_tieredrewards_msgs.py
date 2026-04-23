@@ -88,7 +88,7 @@ def test_lock_tier(cluster):
     pos = resp["position"]
     assert pos["owner"] == owner
     assert int(pos["tier_id"]) == TIER_1_ID
-    assert int(resp["token_value"]) == amount
+    assert int(resp["position"]["amount"]) == amount
     assert pos["validator"] == validator
     assert pos["delegated_shares"] != "0.000000000000000000"
     assert pos["exit_triggered_at"] == ZERO_TIME
@@ -178,7 +178,7 @@ def test_commit_delegation(cluster):
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
     assert pos["validator"] == validator
-    assert int(resp["token_value"]) == commit_amount
+    assert int(resp["position"]["amount"]) == commit_amount
 
     # Staking delegation should have decreased
     del_after = json.loads(
@@ -309,7 +309,7 @@ def test_tier_delegate(slashing_cluster):
     wait_for_new_blocks(cluster, 2)
 
     pos_after_slash = query_position(cluster, pos_id)["position"]
-    assert int(pos_after_slash["undelegated_amount"]) == 0, (
+    assert int(pos_after_slash["amount"]) == 0, (
         "redelegation slash should zero the amount, " f"got {pos_after_slash['amount']}"
     )
 
@@ -319,7 +319,7 @@ def test_tier_delegate(slashing_cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     pos_after_add = query_position(cluster, pos_id)["position"]
-    assert int(pos_after_add["undelegated_amount"]) == add_amount
+    assert int(pos_after_add["amount"]) == add_amount
 
     # Step 5: TierDelegate to validator 0
     rsp = tier_delegate(cluster, owner, pos_id, validator0)
@@ -470,7 +470,7 @@ def test_add_to_position_delegated(cluster):
 
     resp = query_position(cluster, pos_id)
     pos = resp["position"]
-    assert int(resp["token_value"]) == initial + add_amount
+    assert int(resp["position"]["amount"]) == initial + add_amount
     assert pos["delegated_shares"] != "0.000000000000000000"
 
 
@@ -738,7 +738,7 @@ def test_exit_tier_with_delegation_partial(cluster):
     resp_after = query_position(cluster, pos_id)
     pos_after = resp_after["position"]
     assert (
-        int(resp_after["token_value"]) < amount
+        int(resp_after["position"]["amount"]) < amount
     ), "amount should be reduced after partial exit"
     assert pos_after["validator"] != "", "position should still be delegated"
 

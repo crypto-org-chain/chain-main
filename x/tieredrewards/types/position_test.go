@@ -58,14 +58,14 @@ func TestPosition_Validate(t *testing.T) {
 			name: "valid undelegated position with zero amount (slashed redelegation)",
 			modify: func(p *types.Position) {
 				p.ClearDelegation()
-				p.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+				p.UpdateAmount(sdkmath.ZeroInt())
 			},
 		},
 		{
 			name: "valid undelegated position - non-zero amount without exit (e.g. after redeleg slash + AddToTier)",
 			modify: func(p *types.Position) {
 				p.ClearDelegation()
-				p.UpdateUndelegatedAmount(sdkmath.NewInt(1000))
+				p.UpdateAmount(sdkmath.NewInt(1000))
 			},
 		},
 		{
@@ -92,23 +92,23 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "invalid owner address",
 		},
 		{
-			name: "nil undelegated amount",
+			name: "nil amount",
 			modify: func(p *types.Position) {
-				p.UpdateUndelegatedAmount(sdkmath.Int{})
+				p.UpdateAmount(sdkmath.Int{})
 			},
 			wantErr:     true,
-			errContains: "undelegated amount cannot be nil",
+			errContains: "amount cannot be nil",
 		},
 		{
-			name: "zero undelegated amount is valid (post-slash state)",
+			name: "zero amount is valid (post-slash state)",
 			modify: func(p *types.Position) {
-				p.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+				p.UpdateAmount(sdkmath.ZeroInt())
 			},
 		},
 		{
-			name: "negative undelegated amount",
+			name: "negative amount",
 			modify: func(p *types.Position) {
-				p.UpdateUndelegatedAmount(sdkmath.NewInt(-500))
+				p.UpdateAmount(sdkmath.NewInt(-500))
 			},
 			wantErr:     true,
 			errContains: "must not be negative",

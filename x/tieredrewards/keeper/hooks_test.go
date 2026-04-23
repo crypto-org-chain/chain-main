@@ -53,8 +53,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotModifyPosition() {
 	s.Require().NoError(err)
 
 	// Position should not be modified by the hook.
-	s.Require().Equal(posBefore.UndelegatedAmount, posAfter.UndelegatedAmount,
-		"position UndelegatedAmount should not change during slash hook (lazy)")
+	s.Require().Equal(posBefore.Amount, posAfter.Amount,
+		"position Amount should not change during slash hook (lazy)")
 	s.Require().Equal(posBefore.DelegatedShares, posAfter.DelegatedShares,
 		"position DelegatedShares should not change during slash hook (lazy)")
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
@@ -138,8 +138,8 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	for _, p := range positions {
 		posAfter, err := s.keeper.GetPosition(s.ctx, p.Id)
 		s.Require().NoError(err)
-		s.Require().Equal(p.UndelegatedAmount, posAfter.UndelegatedAmount,
-			"position %d UndelegatedAmount should not change during slash hook", p.Id)
+		s.Require().Equal(p.Amount, posAfter.Amount,
+			"position %d Amount should not change during slash hook", p.Id)
 	}
 }
 

@@ -53,9 +53,9 @@ func (s *KeeperSuite) TestGRPCQueryTierPosition() {
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, resp.Position.Id)
 	s.Require().Equal(pos.Owner, resp.Position.Owner)
-	s.Require().True(pos.UndelegatedAmount.Equal(resp.Position.UndelegatedAmount))
-	// TokenValue should be positive for a delegated position.
-	s.Require().True(resp.TokenValue.IsPositive(), "token value should be positive for delegated position")
+	// For delegated positions, resp.Position.Amount is the computed token value (TokensFromShares),
+	// not the stored Amount (which is zero for delegated positions).
+	s.Require().True(resp.Position.Amount.IsPositive(), "amount should be the computed token value for delegated position")
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierPosition_NotFound() {

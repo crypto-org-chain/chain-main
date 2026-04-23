@@ -430,7 +430,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_ActiveRedelegation() {
 	s.Require().NoError(err)
 
 	newValAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, newValAddr, pos.UndelegatedAmount)
+	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, newValAddr, pos.Amount)
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
 

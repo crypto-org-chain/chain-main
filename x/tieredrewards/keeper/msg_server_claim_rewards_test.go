@@ -223,7 +223,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_BondedZeroAmount() {
 
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 
 	// Advance time so bonus would accrue (if amount were non-zero).

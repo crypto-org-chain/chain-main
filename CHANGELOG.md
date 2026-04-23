@@ -7,7 +7,7 @@
 - [#1265](https://github.com/crypto-org-chain/chain-main/pull/1265) feat(x/tieredrewards): add MsgExitTierWithDelegation - allow position to exit tier by transferring delegation back to owner directly.
 - [#1269](https://github.com/crypto-org-chain/chain-main/pull/1269) feat(x/tieredrewards): MsgClaimTierRewards now accepts multiple position IDs to claim rewards in a single transaction.
 - [#1271](https://github.com/crypto-org-chain/chain-main/pull/1271) feat(x/tieredrewards): add initial tier definitions in upgrade handler and allow zero MinLockAmount.
-- [#1272](https://github.com/crypto-org-chain/chain-main/pull/1272) feat(x/tieredrewards): claim bonus rewards lazily upon validator event (unbonding/slashing), and rename amount to undelegatedAmount
+- [#1272](https://github.com/crypto-org-chain/chain-main/pull/1272) feat(x/tieredrewards): claim bonus rewards lazily upon validator event (unbonding/slashing), amount should be zero when delegated and populated when position is undelegated
 
 ### Improvements
 

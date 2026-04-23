@@ -49,7 +49,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 		return nil
 	}
 
-	pos.UpdateUndelegatedAmount(math.MaxInt(pos.UndelegatedAmount.Sub(slashAmount), math.ZeroInt()))
+	pos.UpdateAmount(math.MaxInt(pos.Amount.Sub(slashAmount), math.ZeroInt()))
 
 	return k.setPosition(ctx, pos)
 }
@@ -106,7 +106,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		} else {
 			pos.ClearDelegation()
 			// Defensive: ensures position amount is zero
-			pos.UpdateUndelegatedAmount(math.ZeroInt())
+			pos.UpdateAmount(math.ZeroInt())
 		}
 	}
 

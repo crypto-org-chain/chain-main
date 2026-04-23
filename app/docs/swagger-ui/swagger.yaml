@@ -25237,34 +25237,18 @@ paths:
                   id:
                     type: string
                     format: uint64
-                    description: id is the unique identifier for this position.
                   owner:
                     type: string
-                    description: owner is the address that owns this position.
                   tier_id:
                     type: integer
                     format: int64
-                    description: tier_id references the Tier this position belongs to.
-                  undelegated_amount:
+                  amount:
                     type: string
-                    description: >-
-                      undelegated_amount holds the token value only for
-                      undelegated positions
-
-                      For delegated positions this field is always zero — the
-                      live token value is derived from
-
-                      validator.TokensFromShares(delegated_shares).
+                    description: amount is the computed token value for this position.
                   validator:
                     type: string
-                    description: >-
-                      validator is the validator operator address if delegated;
-                      empty if not delegated.
                   delegated_shares:
                     type: string
-                    description: >-
-                      delegated_shares are the validator delegation shares for
-                      this position.
                   base_rewards_per_share:
                     type: array
                     items:
@@ -25283,75 +25267,32 @@ paths:
                         custom method
 
                         signatures required by gogoproto.
-                    description: >-
-                      base_rewards_per_share is the cumulative base rewards per
-                      share snapshot
-
-                      at the time this position was created or last claimed.
-
-                      Used to calculate the position's share of base rewards:
-                      reward = shares × (current_ratio − starting_ratio).
-
-                      It is possible to have no base rewards per share if the
-                      position is the first one delegated to the validator.
                   last_bonus_accrual:
                     type: string
                     format: date-time
-                    description: >-
-                      last_bonus_accrual is the last time bonus rewards was
-                      claimed.
                   exit_triggered_at:
                     type: string
                     format: date-time
-                    description: >-
-                      exit_triggered_at is the time when exit was triggered.
-                      Zero value means not exiting.
                   exit_unlock_at:
                     type: string
                     format: date-time
-                    description: >-
-                      exit_unlock_at is when the user can claim tokens
-                      (exit_triggered_at + tier.exit_duration).
                   created_at_height:
                     type: string
                     format: uint64
-                    description: >-
-                      created_at_height is the block height when this position
-                      was created.
                   created_at_time:
                     type: string
                     format: date-time
-                    description: >-
-                      created_at_time is the block time when this position was
-                      created.
-                  last_event_seq:
-                    type: string
-                    format: uint64
-                    description: >-
-                      last_event_seq is the sequence number of the last
-                      validator event this
-
-                      position has processed. Events with seq > last_event_seq
-                      are pending.
-                  last_known_bonded:
-                    type: boolean
-                    description: >-
-                      last_known_bonded tracks whether the validator was bonded
-                      after the last
-
-                      event replay. Used as the starting state for the next
-                      processEventsAndClaimBonus
-
-                      call. True when the position is first created (only bonded
-                      validators accepted).
-                description: Position represents a single lock position in the tier.
-              token_value:
-                type: string
                 description: >-
-                  token_value is the computed token value: TokensFromShares for
-                  delegated positions,
+                  PositionResponse is the query-facing representation of a
+                  position.
 
-                  undelegated_amount for undelegated positions.
+                  Unlike the stored Position, the `amount` field always contains
+                  the
+
+                  meaningful token value: TokensFromShares for delegated
+                  positions,
+
+                  or the stored amount for undelegated positions.
             description: >-
               QueryTierPositionResponse is the response type for the
               Query/TierPosition RPC method.
@@ -25403,34 +25344,18 @@ paths:
                     id:
                       type: string
                       format: uint64
-                      description: id is the unique identifier for this position.
                     owner:
                       type: string
-                      description: owner is the address that owns this position.
                     tier_id:
                       type: integer
                       format: int64
-                      description: tier_id references the Tier this position belongs to.
-                    undelegated_amount:
+                    amount:
                       type: string
-                      description: >-
-                        undelegated_amount holds the token value only for
-                        undelegated positions
-
-                        For delegated positions this field is always zero — the
-                        live token value is derived from
-
-                        validator.TokensFromShares(delegated_shares).
+                      description: amount is the computed token value for this position.
                     validator:
                       type: string
-                      description: >-
-                        validator is the validator operator address if
-                        delegated; empty if not delegated.
                     delegated_shares:
                       type: string
-                      description: >-
-                        delegated_shares are the validator delegation shares for
-                        this position.
                     base_rewards_per_share:
                       type: array
                       items:
@@ -25449,68 +25374,32 @@ paths:
                           custom method
 
                           signatures required by gogoproto.
-                      description: >-
-                        base_rewards_per_share is the cumulative base rewards
-                        per share snapshot
-
-                        at the time this position was created or last claimed.
-
-                        Used to calculate the position's share of base rewards:
-                        reward = shares × (current_ratio − starting_ratio).
-
-                        It is possible to have no base rewards per share if the
-                        position is the first one delegated to the validator.
                     last_bonus_accrual:
                       type: string
                       format: date-time
-                      description: >-
-                        last_bonus_accrual is the last time bonus rewards was
-                        claimed.
                     exit_triggered_at:
                       type: string
                       format: date-time
-                      description: >-
-                        exit_triggered_at is the time when exit was triggered.
-                        Zero value means not exiting.
                     exit_unlock_at:
                       type: string
                       format: date-time
-                      description: >-
-                        exit_unlock_at is when the user can claim tokens
-                        (exit_triggered_at + tier.exit_duration).
                     created_at_height:
                       type: string
                       format: uint64
-                      description: >-
-                        created_at_height is the block height when this position
-                        was created.
                     created_at_time:
                       type: string
                       format: date-time
-                      description: >-
-                        created_at_time is the block time when this position was
-                        created.
-                    last_event_seq:
-                      type: string
-                      format: uint64
-                      description: >-
-                        last_event_seq is the sequence number of the last
-                        validator event this
+                  description: >-
+                    PositionResponse is the query-facing representation of a
+                    position.
 
-                        position has processed. Events with seq > last_event_seq
-                        are pending.
-                    last_known_bonded:
-                      type: boolean
-                      description: >-
-                        last_known_bonded tracks whether the validator was
-                        bonded after the last
+                    Unlike the stored Position, the `amount` field always
+                    contains the
 
-                        event replay. Used as the starting state for the next
-                        processEventsAndClaimBonus
+                    meaningful token value: TokensFromShares for delegated
+                    positions,
 
-                        call. True when the position is first created (only
-                        bonded validators accepted).
-                  description: Position represents a single lock position in the tier.
+                    or the stored amount for undelegated positions.
               pagination:
                 type: object
                 properties:
@@ -25641,34 +25530,18 @@ paths:
                     id:
                       type: string
                       format: uint64
-                      description: id is the unique identifier for this position.
                     owner:
                       type: string
-                      description: owner is the address that owns this position.
                     tier_id:
                       type: integer
                       format: int64
-                      description: tier_id references the Tier this position belongs to.
-                    undelegated_amount:
+                    amount:
                       type: string
-                      description: >-
-                        undelegated_amount holds the token value only for
-                        undelegated positions
-
-                        For delegated positions this field is always zero — the
-                        live token value is derived from
-
-                        validator.TokensFromShares(delegated_shares).
+                      description: amount is the computed token value for this position.
                     validator:
                       type: string
-                      description: >-
-                        validator is the validator operator address if
-                        delegated; empty if not delegated.
                     delegated_shares:
                       type: string
-                      description: >-
-                        delegated_shares are the validator delegation shares for
-                        this position.
                     base_rewards_per_share:
                       type: array
                       items:
@@ -25687,68 +25560,32 @@ paths:
                           custom method
 
                           signatures required by gogoproto.
-                      description: >-
-                        base_rewards_per_share is the cumulative base rewards
-                        per share snapshot
-
-                        at the time this position was created or last claimed.
-
-                        Used to calculate the position's share of base rewards:
-                        reward = shares × (current_ratio − starting_ratio).
-
-                        It is possible to have no base rewards per share if the
-                        position is the first one delegated to the validator.
                     last_bonus_accrual:
                       type: string
                       format: date-time
-                      description: >-
-                        last_bonus_accrual is the last time bonus rewards was
-                        claimed.
                     exit_triggered_at:
                       type: string
                       format: date-time
-                      description: >-
-                        exit_triggered_at is the time when exit was triggered.
-                        Zero value means not exiting.
                     exit_unlock_at:
                       type: string
                       format: date-time
-                      description: >-
-                        exit_unlock_at is when the user can claim tokens
-                        (exit_triggered_at + tier.exit_duration).
                     created_at_height:
                       type: string
                       format: uint64
-                      description: >-
-                        created_at_height is the block height when this position
-                        was created.
                     created_at_time:
                       type: string
                       format: date-time
-                      description: >-
-                        created_at_time is the block time when this position was
-                        created.
-                    last_event_seq:
-                      type: string
-                      format: uint64
-                      description: >-
-                        last_event_seq is the sequence number of the last
-                        validator event this
+                  description: >-
+                    PositionResponse is the query-facing representation of a
+                    position.
 
-                        position has processed. Events with seq > last_event_seq
-                        are pending.
-                    last_known_bonded:
-                      type: boolean
-                      description: >-
-                        last_known_bonded tracks whether the validator was
-                        bonded after the last
+                    Unlike the stored Position, the `amount` field always
+                    contains the
 
-                        event replay. Used as the starting state for the next
-                        processEventsAndClaimBonus
+                    meaningful token value: TokensFromShares for delegated
+                    positions,
 
-                        call. True when the position is first created (only
-                        bonded validators accepted).
-                  description: Position represents a single lock position in the tier.
+                    or the stored amount for undelegated positions.
               pagination:
                 type: object
                 properties:
@@ -45866,40 +45703,24 @@ definitions:
           target_base_rewards_rate is the target base rewards rate for
           validators.
     description: Params holds parameters for the tieredrewards module.
-  chainmain.tieredrewards.v1.Position:
+  chainmain.tieredrewards.v1.PositionResponse:
     type: object
     properties:
       id:
         type: string
         format: uint64
-        description: id is the unique identifier for this position.
       owner:
         type: string
-        description: owner is the address that owns this position.
       tier_id:
         type: integer
         format: int64
-        description: tier_id references the Tier this position belongs to.
-      undelegated_amount:
+      amount:
         type: string
-        description: >-
-          undelegated_amount holds the token value only for undelegated
-          positions
-
-          For delegated positions this field is always zero — the live token
-          value is derived from
-
-          validator.TokensFromShares(delegated_shares).
+        description: amount is the computed token value for this position.
       validator:
         type: string
-        description: >-
-          validator is the validator operator address if delegated; empty if not
-          delegated.
       delegated_shares:
         type: string
-        description: >-
-          delegated_shares are the validator delegation shares for this
-          position.
       base_rewards_per_share:
         type: array
         items:
@@ -45914,59 +45735,26 @@ definitions:
 
             NOTE: The amount field is an Dec which implements the custom method
             signatures required by gogoproto.
-        description: >-
-          base_rewards_per_share is the cumulative base rewards per share
-          snapshot
-
-          at the time this position was created or last claimed.
-
-          Used to calculate the position's share of base rewards: reward =
-          shares × (current_ratio − starting_ratio).
-
-          It is possible to have no base rewards per share if the position is
-          the first one delegated to the validator.
       last_bonus_accrual:
         type: string
         format: date-time
-        description: last_bonus_accrual is the last time bonus rewards was claimed.
       exit_triggered_at:
         type: string
         format: date-time
-        description: >-
-          exit_triggered_at is the time when exit was triggered. Zero value
-          means not exiting.
       exit_unlock_at:
         type: string
         format: date-time
-        description: >-
-          exit_unlock_at is when the user can claim tokens (exit_triggered_at +
-          tier.exit_duration).
       created_at_height:
         type: string
         format: uint64
-        description: created_at_height is the block height when this position was created.
       created_at_time:
         type: string
         format: date-time
-        description: created_at_time is the block time when this position was created.
-      last_event_seq:
-        type: string
-        format: uint64
-        description: |-
-          last_event_seq is the sequence number of the last validator event this
-          position has processed. Events with seq > last_event_seq are pending.
-      last_known_bonded:
-        type: boolean
-        description: >-
-          last_known_bonded tracks whether the validator was bonded after the
-          last
-
-          event replay. Used as the starting state for the next
-          processEventsAndClaimBonus
-
-          call. True when the position is first created (only bonded validators
-          accepted).
-    description: Position represents a single lock position in the tier.
+    description: |-
+      PositionResponse is the query-facing representation of a position.
+      Unlike the stored Position, the `amount` field always contains the
+      meaningful token value: TokensFromShares for delegated positions,
+      or the stored amount for undelegated positions.
   chainmain.tieredrewards.v1.QueryAllTierPositionsResponse:
     type: object
     properties:
@@ -45978,34 +45766,18 @@ definitions:
             id:
               type: string
               format: uint64
-              description: id is the unique identifier for this position.
             owner:
               type: string
-              description: owner is the address that owns this position.
             tier_id:
               type: integer
               format: int64
-              description: tier_id references the Tier this position belongs to.
-            undelegated_amount:
+            amount:
               type: string
-              description: >-
-                undelegated_amount holds the token value only for undelegated
-                positions
-
-                For delegated positions this field is always zero — the live
-                token value is derived from
-
-                validator.TokensFromShares(delegated_shares).
+              description: amount is the computed token value for this position.
             validator:
               type: string
-              description: >-
-                validator is the validator operator address if delegated; empty
-                if not delegated.
             delegated_shares:
               type: string
-              description: >-
-                delegated_shares are the validator delegation shares for this
-                position.
             base_rewards_per_share:
               type: array
               items:
@@ -46024,66 +45796,26 @@ definitions:
                   method
 
                   signatures required by gogoproto.
-              description: >-
-                base_rewards_per_share is the cumulative base rewards per share
-                snapshot
-
-                at the time this position was created or last claimed.
-
-                Used to calculate the position's share of base rewards: reward =
-                shares × (current_ratio − starting_ratio).
-
-                It is possible to have no base rewards per share if the position
-                is the first one delegated to the validator.
             last_bonus_accrual:
               type: string
               format: date-time
-              description: last_bonus_accrual is the last time bonus rewards was claimed.
             exit_triggered_at:
               type: string
               format: date-time
-              description: >-
-                exit_triggered_at is the time when exit was triggered. Zero
-                value means not exiting.
             exit_unlock_at:
               type: string
               format: date-time
-              description: >-
-                exit_unlock_at is when the user can claim tokens
-                (exit_triggered_at + tier.exit_duration).
             created_at_height:
               type: string
               format: uint64
-              description: >-
-                created_at_height is the block height when this position was
-                created.
             created_at_time:
               type: string
               format: date-time
-              description: >-
-                created_at_time is the block time when this position was
-                created.
-            last_event_seq:
-              type: string
-              format: uint64
-              description: >-
-                last_event_seq is the sequence number of the last validator
-                event this
-
-                position has processed. Events with seq > last_event_seq are
-                pending.
-            last_known_bonded:
-              type: boolean
-              description: >-
-                last_known_bonded tracks whether the validator was bonded after
-                the last
-
-                event replay. Used as the starting state for the next
-                processEventsAndClaimBonus
-
-                call. True when the position is first created (only bonded
-                validators accepted).
-          description: Position represents a single lock position in the tier.
+          description: |-
+            PositionResponse is the query-facing representation of a position.
+            Unlike the stored Position, the `amount` field always contains the
+            meaningful token value: TokensFromShares for delegated positions,
+            or the stored amount for undelegated positions.
       pagination:
         type: object
         properties:
@@ -46196,34 +45928,18 @@ definitions:
           id:
             type: string
             format: uint64
-            description: id is the unique identifier for this position.
           owner:
             type: string
-            description: owner is the address that owns this position.
           tier_id:
             type: integer
             format: int64
-            description: tier_id references the Tier this position belongs to.
-          undelegated_amount:
+          amount:
             type: string
-            description: >-
-              undelegated_amount holds the token value only for undelegated
-              positions
-
-              For delegated positions this field is always zero — the live token
-              value is derived from
-
-              validator.TokensFromShares(delegated_shares).
+            description: amount is the computed token value for this position.
           validator:
             type: string
-            description: >-
-              validator is the validator operator address if delegated; empty if
-              not delegated.
           delegated_shares:
             type: string
-            description: >-
-              delegated_shares are the validator delegation shares for this
-              position.
           base_rewards_per_share:
             type: array
             items:
@@ -46242,71 +45958,26 @@ definitions:
                 method
 
                 signatures required by gogoproto.
-            description: >-
-              base_rewards_per_share is the cumulative base rewards per share
-              snapshot
-
-              at the time this position was created or last claimed.
-
-              Used to calculate the position's share of base rewards: reward =
-              shares × (current_ratio − starting_ratio).
-
-              It is possible to have no base rewards per share if the position
-              is the first one delegated to the validator.
           last_bonus_accrual:
             type: string
             format: date-time
-            description: last_bonus_accrual is the last time bonus rewards was claimed.
           exit_triggered_at:
             type: string
             format: date-time
-            description: >-
-              exit_triggered_at is the time when exit was triggered. Zero value
-              means not exiting.
           exit_unlock_at:
             type: string
             format: date-time
-            description: >-
-              exit_unlock_at is when the user can claim tokens
-              (exit_triggered_at + tier.exit_duration).
           created_at_height:
             type: string
             format: uint64
-            description: >-
-              created_at_height is the block height when this position was
-              created.
           created_at_time:
             type: string
             format: date-time
-            description: created_at_time is the block time when this position was created.
-          last_event_seq:
-            type: string
-            format: uint64
-            description: >-
-              last_event_seq is the sequence number of the last validator event
-              this
-
-              position has processed. Events with seq > last_event_seq are
-              pending.
-          last_known_bonded:
-            type: boolean
-            description: >-
-              last_known_bonded tracks whether the validator was bonded after
-              the last
-
-              event replay. Used as the starting state for the next
-              processEventsAndClaimBonus
-
-              call. True when the position is first created (only bonded
-              validators accepted).
-        description: Position represents a single lock position in the tier.
-      token_value:
-        type: string
-        description: >-
-          token_value is the computed token value: TokensFromShares for
-          delegated positions,
-
-          undelegated_amount for undelegated positions.
+        description: |-
+          PositionResponse is the query-facing representation of a position.
+          Unlike the stored Position, the `amount` field always contains the
+          meaningful token value: TokensFromShares for delegated positions,
+          or the stored amount for undelegated positions.
     description: >-
       QueryTierPositionResponse is the response type for the Query/TierPosition
       RPC method.
@@ -46321,34 +45992,18 @@ definitions:
             id:
               type: string
               format: uint64
-              description: id is the unique identifier for this position.
             owner:
               type: string
-              description: owner is the address that owns this position.
             tier_id:
               type: integer
               format: int64
-              description: tier_id references the Tier this position belongs to.
-            undelegated_amount:
+            amount:
               type: string
-              description: >-
-                undelegated_amount holds the token value only for undelegated
-                positions
-
-                For delegated positions this field is always zero — the live
-                token value is derived from
-
-                validator.TokensFromShares(delegated_shares).
+              description: amount is the computed token value for this position.
             validator:
               type: string
-              description: >-
-                validator is the validator operator address if delegated; empty
-                if not delegated.
             delegated_shares:
               type: string
-              description: >-
-                delegated_shares are the validator delegation shares for this
-                position.
             base_rewards_per_share:
               type: array
               items:
@@ -46367,66 +46022,26 @@ definitions:
                   method
 
                   signatures required by gogoproto.
-              description: >-
-                base_rewards_per_share is the cumulative base rewards per share
-                snapshot
-
-                at the time this position was created or last claimed.
-
-                Used to calculate the position's share of base rewards: reward =
-                shares × (current_ratio − starting_ratio).
-
-                It is possible to have no base rewards per share if the position
-                is the first one delegated to the validator.
             last_bonus_accrual:
               type: string
               format: date-time
-              description: last_bonus_accrual is the last time bonus rewards was claimed.
             exit_triggered_at:
               type: string
               format: date-time
-              description: >-
-                exit_triggered_at is the time when exit was triggered. Zero
-                value means not exiting.
             exit_unlock_at:
               type: string
               format: date-time
-              description: >-
-                exit_unlock_at is when the user can claim tokens
-                (exit_triggered_at + tier.exit_duration).
             created_at_height:
               type: string
               format: uint64
-              description: >-
-                created_at_height is the block height when this position was
-                created.
             created_at_time:
               type: string
               format: date-time
-              description: >-
-                created_at_time is the block time when this position was
-                created.
-            last_event_seq:
-              type: string
-              format: uint64
-              description: >-
-                last_event_seq is the sequence number of the last validator
-                event this
-
-                position has processed. Events with seq > last_event_seq are
-                pending.
-            last_known_bonded:
-              type: boolean
-              description: >-
-                last_known_bonded tracks whether the validator was bonded after
-                the last
-
-                event replay. Used as the starting state for the next
-                processEventsAndClaimBonus
-
-                call. True when the position is first created (only bonded
-                validators accepted).
-          description: Position represents a single lock position in the tier.
+          description: |-
+            PositionResponse is the query-facing representation of a position.
+            Unlike the stored Position, the `amount` field always contains the
+            meaningful token value: TokensFromShares for delegated positions,
+            or the stored amount for undelegated positions.
       pagination:
         type: object
         properties:

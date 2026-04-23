@@ -154,9 +154,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 	s.Require().True(balAfterUndelegate.Amount.GT(balBefore.Amount), "rewards should be paid during undelegate")
 }
 
-// TestMsgTierUndelegate_UpdatesUndelegatedAmount verifies that TierUndelegate
-// updates the undelegated amount with the staking module's exact return amount.
-func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesUndelegatedAmount() {
+// TestMsgTierUndelegate_UpdatesAmount verifies that TierUndelegate
+// updates the amount with the staking module's exact return amount.
+func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -188,7 +188,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesUndelegatedAmount() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.UndelegatedAmount.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
 		"withdrawn amount should equal the SDK return amount")
 }
 
@@ -246,7 +246,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position undelegated amount should be zero")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
 

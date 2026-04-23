@@ -36,7 +36,7 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
 	s.Require().Equal(pos.TierId, got.TierId)
-	s.Require().True(pos.UndelegatedAmount.Equal(got.UndelegatedAmount))
+	s.Require().True(pos.Amount.Equal(got.Amount))
 	s.Require().True(pos.DelegatedShares.Equal(got.DelegatedShares))
 	s.Require().Equal(pos.CreatedAtHeight, got.CreatedAtHeight)
 	s.Require().Equal(pos.Validator, got.Validator)
@@ -66,7 +66,7 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().Equal(uint64(1), count)
 
 	// Update same position — counter should not change.
-	// For delegated positions, UndelegatedAmount must remain zero, so we
+	// For delegated positions, Amount must remain zero, so we
 	// update DelegatedShares instead.
 	pos.UpdateDelegatedShares(sdkmath.LegacyNewDec(2000))
 	err = s.keeper.SetPosition(s.ctx, pos)
@@ -364,7 +364,7 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), pos.TierId)
-	s.Require().True(pos.UndelegatedAmount.IsZero())
+	s.Require().True(pos.Amount.IsZero())
 	s.Require().Equal(freshAddr.String(), pos.Owner)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -517,7 +517,7 @@ func (s *KeeperSuite) TestPositionCountByValidator_UndelegatedPosition() {
 
 	// Now undelegate it — clearing delegation makes it undelegated.
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.NewInt(1000))
+	pos.UpdateAmount(sdkmath.NewInt(1000))
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 

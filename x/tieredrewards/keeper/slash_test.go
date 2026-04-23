@@ -52,7 +52,7 @@ func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Posi
 // slashRedelegationPosition tests (AfterRedelegationSlashed)
 // ---------------------------------------------------------------------------
 
-// Redelegation slash reduces DelegatedShares. UndelegatedAmount stays at 0
+// Redelegation slash reduces DelegatedShares. Amount stays at 0
 // for delegated positions.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesDelegatedShares() {
 	lockAmount := sdkmath.NewInt(10000)
@@ -60,7 +60,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesDelegatedShares() {
 	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
 	origShares := pos.DelegatedShares
 	s.Require().True(origShares.IsPositive())
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "delegated position should have UndelegatedAmount = 0")
+	s.Require().True(pos.Amount.IsZero(), "delegated position should have Amount = 0")
 
 	// Use 10% of actual shares so the position stays delegated after slash.
 	slashTokens := sdkmath.NewInt(1000)
@@ -72,8 +72,8 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesDelegatedShares() {
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.Require().True(updated.UndelegatedAmount.IsZero(),
-		"UndelegatedAmount should remain zero for delegated position after redelegation slash")
+	s.Require().True(updated.Amount.IsZero(),
+		"Amount should remain zero for delegated position after redelegation slash")
 	s.Require().True(updated.DelegatedShares.Equal(origShares.Sub(shareBurnt)),
 		"DelegatedShares should be reduced; got %s, want %s", updated.DelegatedShares, origShares.Sub(shareBurnt))
 	s.Require().True(updated.IsDelegated(), "position should still be delegated")
@@ -99,7 +99,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
 	s.Require().False(updated.IsDelegated(),
 		"position should have cleared delegation when shareBurnt exceeds shares")
 	s.Require().True(updated.DelegatedShares.IsZero())
-	s.Require().True(updated.UndelegatedAmount.IsZero(),
+	s.Require().True(updated.Amount.IsZero(),
 		"Amount should be zero when all shares are destroyed")
 }
 
@@ -133,7 +133,7 @@ func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmount() {
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.Require().True(updated.UndelegatedAmount.Equal(lockAmount.Sub(slashTokens)))
+	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
 }
 
 // Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
@@ -151,7 +151,7 @@ func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
 
 	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(updated.UndelegatedAmount.IsZero(), "Amount should floor at zero when slash exceeds position amount")
+	s.Require().True(updated.Amount.IsZero(), "Amount should floor at zero when slash exceeds position amount")
 }
 
 // Unknown unbonding IDs should be no-op for both unbonding slash callbacks.

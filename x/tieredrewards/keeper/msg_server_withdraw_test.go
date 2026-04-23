@@ -301,7 +301,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	// Second position should still exist
 	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
 	s.Require().NoError(err)
-	s.Require().True(sdkmath.NewInt(2000).Equal(pos2.UndelegatedAmount))
+	s.Require().True(sdkmath.NewInt(2000).Equal(pos2.Amount))
 
 	// Owner should still have 1 position in index
 	posIds, err := s.keeper.GetPositionsIdsByOwner(s.ctx, delAddr)
@@ -339,7 +339,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 
 	s.advancePastExitDuration()
-	// Undelegate — this updates pos.UndelegatedAmount with actual return value.
+	// Undelegate — this updates pos.Amount with actual return value.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -360,8 +360,8 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.UndelegatedAmount.String(), resp.Amount.Amount.String(),
-		"withdrawn amount should equal undelegated amount")
+	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+		"withdrawn amount should equal amount")
 }
 
 // TestWithdrawFromTier_FailsWithPendingUnbonding verifies that withdrawal is
@@ -440,7 +440,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_RedelegSlashedToZero() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Trigger exit and advance past exit duration.
@@ -530,12 +530,12 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.Require().NoError(err)
 
 	// Simulate unbonding slash to zero via hook.
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, pos.UndelegatedAmount)
+	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, pos.Amount)
 	s.Require().NoError(err)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position amount should be zero after unbonding slash")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after unbonding slash")
 
 	s.completeStakingUnbonding(valAddr)
 
@@ -577,14 +577,14 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.Require().NoError(err)
 
 	// Simulate 50% unbonding slash via hook.
-	slashAmount := pos.UndelegatedAmount.QuoRaw(2)
+	slashAmount := pos.Amount.QuoRaw(2)
 	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, slashAmount)
 	s.Require().NoError(err)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	expectedRemaining := lockAmount.Sub(slashAmount)
-	s.Require().Equal(expectedRemaining.String(), pos.UndelegatedAmount.String(),
+	s.Require().Equal(expectedRemaining.String(), pos.Amount.String(),
 		"position amount should reflect partial slash")
 
 	s.completeStakingUnbonding(valAddr)
@@ -622,7 +622,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	// Add 2000 to position (undelegated — funds go to module account, not staked).

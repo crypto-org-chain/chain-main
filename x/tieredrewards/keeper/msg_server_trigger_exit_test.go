@@ -135,11 +135,11 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	pos.ClearDelegation()
-	pos.UpdateUndelegatedAmount(sdkmath.ZeroInt())
+	pos.UpdateAmount(sdkmath.ZeroInt())
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position amount should be zero")
+	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
 
 	// TriggerExit — should succeed on undelegated position.
 	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
@@ -153,7 +153,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "exit should be triggered")
 	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(pos.UndelegatedAmount.IsZero(), "position amount should still be zero")
+	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
 }
 
 // TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds verifies that TriggerExit

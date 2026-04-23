@@ -51,10 +51,10 @@ message Position {
   // tier_id references the Tier this position belongs to.
   uint32 tier_id = 3;
 
-  // undelegated_amount holds the token value only for undelegated positions
-  // For delegated positions this field is always zero — the live token value is derived from
+  // amount is the token amount for undelegated positions. For delegated positions
+  // this is always zero — the live token value is derived from
   // validator.TokensFromShares(delegated_shares).
-  string undelegated_amount = 4 [
+  string amount = 4 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable)   = false,
