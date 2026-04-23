@@ -120,7 +120,7 @@ func (k Keeper) hasValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) 
 	found := false
 	err := k.ValidatorEvents.Walk(ctx, rng, func(_ collections.Pair[sdk.ValAddress, uint64], _ types.ValidatorEvent) (bool, error) {
 		found = true
-		return true, nil // stop after first
+		return true, nil
 	})
 	return found, err
 }
