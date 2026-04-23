@@ -643,6 +643,93 @@ func (s *KeeperSuite) TestProcessEvents_MultipleSlashes_RateDecreases() {
 		"bonus must equal three segments exactly with decreasing rates")
 }
 
+// TestProcessEvents_AllThreeEventTypes_SlashUnbondBond verifies segmented bonus
+// across all three event types in a single flow:
+// create → 10d bonded → SLASH → 5d bonded → UNBOND → 20d gap → BOND → 10d bonded → claim
+// Expected bonus = seg1[T0,T_slash] + seg2[T_slash,T_unbond] + seg3[T_bond,T_now]
+// The 20d unbonded gap pays zero.
+func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	bondDenom, _ := s.app.StakingKeeper.BondDenom(s.ctx)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
+
+	tier, _ := s.keeper.Tiers.Get(s.ctx, pos.TierId)
+	T0 := pos.LastBonusAccrual
+
+	// --- Segment 1: 10 days bonded, then SLASH ---
+	s.ctx = s.ctx.WithBlockTime(T0.Add(10 * 24 * time.Hour))
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	T_slash := s.ctx.BlockTime()
+
+	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(5, 2)) // 5% slash
+
+	// Read the slash event's snapshot rate.
+	evt1, err := s.keeper.ValidatorEvents.Get(s.ctx, collections.Join(valAddr, uint64(1)))
+	s.Require().NoError(err)
+	rate1 := evt1.TokensPerShare
+
+	// --- Segment 2: 5 more days bonded, then UNBOND ---
+	s.ctx = s.ctx.WithBlockTime(T_slash.Add(5 * 24 * time.Hour))
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	T_unbond := s.ctx.BlockTime()
+
+	s.jailAndUnbondValidator(valAddr)
+
+	evt2, err := s.keeper.ValidatorEvents.Get(s.ctx, collections.Join(valAddr, uint64(2)))
+	s.Require().NoError(err)
+	rate2 := evt2.TokensPerShare
+
+	// --- Gap: 20 days unbonded (zero bonus) ---
+	s.ctx = s.ctx.WithBlockTime(T_unbond.Add(20 * 24 * time.Hour))
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	// --- Segment 3: re-bond, then 10 days bonded ---
+	val, _ := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	consAddr, _ := val.GetConsAddr()
+	s.Require().NoError(s.app.StakingKeeper.Unjail(s.ctx, consAddr))
+	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
+	s.Require().NoError(err)
+	T_bond := s.ctx.BlockTime()
+
+	s.ctx = s.ctx.WithBlockTime(T_bond.Add(10 * 24 * time.Hour))
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	T_now := s.ctx.BlockTime()
+
+	// Current rate for final segment.
+	currentRate, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// --- Claim and verify ---
+	pos, _ = s.keeper.GetPosition(s.ctx, pos.Id)
+
+	seg1 := s.keeper.ComputeSegmentBonus(&pos, tier, T0, T_slash, rate1)
+	seg2 := s.keeper.ComputeSegmentBonus(&pos, tier, T_slash, T_unbond, rate2)
+	seg3 := s.keeper.ComputeSegmentBonus(&pos, tier, T_bond, T_now, currentRate)
+	expectedTotal := seg1.Add(seg2).Add(seg3)
+
+	s.Require().True(seg1.IsPositive(), "seg1 (pre-slash bonded) should be positive")
+	s.Require().True(seg2.IsPositive(), "seg2 (post-slash bonded) should be positive")
+	s.Require().True(seg3.IsPositive(), "seg3 (post-rebond bonded) should be positive")
+
+	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
+		"bonus should equal seg1 + seg2 + seg3 (20d unbonded gap pays zero)")
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	// Verify decreasing rates: pre-slash > post-slash >= post-rebond.
+	s.Require().True(rate1.GT(rate2), "rate should decrease after slash: rate1=%s, rate2=%s", rate1, rate2)
+
+	// Second claim — zero.
+	pos, _ = s.keeper.GetPosition(s.ctx, pos.Id)
+	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(bonus2.IsZero(), "second claim should be zero")
+}
+
 // ---------------------------------------------------------------------------
 // ProcessEventsAndClaimBonus tests -- claim-at-different-junctures
 // ---------------------------------------------------------------------------
