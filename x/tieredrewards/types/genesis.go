@@ -123,6 +123,7 @@ func ValidateGenesis(data GenesisState) error {
 
 	// Validate position counts.
 	seenCountValidators := make(map[string]struct{}, len(data.ValidatorPositionCounts))
+	importedCounts := make(map[string]uint64, len(data.ValidatorPositionCounts))
 	for i, entry := range data.ValidatorPositionCounts {
 		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
 			return fmt.Errorf("invalid validator address in position count at index %d: %w", i, err)
@@ -131,6 +132,26 @@ func ValidateGenesis(data GenesisState) error {
 			return fmt.Errorf("duplicate validator %s in position counts at index %d", entry.Validator, i)
 		}
 		seenCountValidators[entry.Validator] = struct{}{}
+		importedCounts[entry.Validator] = entry.Count
+	}
+
+	// Cross-validate position counts against actual delegated positions.
+	expectedCounts := make(map[string]uint64)
+	for _, pos := range data.Positions {
+		if pos.IsDelegated() {
+			expectedCounts[pos.Validator]++
+		}
+	}
+	for val, expected := range expectedCounts {
+		got := importedCounts[val]
+		if got != expected {
+			return fmt.Errorf("validator %s position count mismatch: got %d, expected %d from positions", val, got, expected)
+		}
+	}
+	for val, got := range importedCounts {
+		if expectedCounts[val] == 0 {
+			return fmt.Errorf("validator %s has position count %d but no delegated positions", val, got)
+		}
 	}
 
 	// Cross-validate: next_seq must be consistent with event sequences.
