@@ -148,7 +148,7 @@ message ValidatorEvent {
 
   // tokens_per_share is the validator's token-per-share rate at event time,
   // used to snapshot the token value for bonus calculation.
-  string tokens_per_share = 5 [
+  string tokens_per_share = 4 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false,
@@ -157,5 +157,5 @@ message ValidatorEvent {
 
   // reference_count tracks how many positions still need to process this event.
   // When it reaches zero the event can be garbage-collected.
-  uint64 reference_count = 6;
+  uint64 reference_count = 5;
 }
