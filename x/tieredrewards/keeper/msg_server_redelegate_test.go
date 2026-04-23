@@ -334,3 +334,29 @@ func (s *KeeperSuite) TestPositionCountByValidator_Redelegate() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), dstCount, "destination validator should have 1 position after redelegate")
 }
+
+// TestMsgTierRedelegate_DstValidatorNotBonded verifies that redelegation
+// to a non-bonded (unbonding/unbonded) validator is blocked.
+func (s *KeeperSuite) TestMsgTierRedelegate_DstValidatorNotBonded() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	dstValAddr, _ := s.createSecondValidator()
+
+	// Jail the destination validator to make it unbonding.
+	s.jailAndUnbondValidator(dstValAddr)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        pos.Owner,
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+
+	// Position should remain on the original validator.
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(valAddr.String(), posAfter.Validator, "position should stay on original validator")
+}
