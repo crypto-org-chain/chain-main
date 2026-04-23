@@ -239,7 +239,7 @@ func TestPosition_Validate(t *testing.T) {
 				p.LastEventSeq = 1
 			},
 			wantErr:     true,
-			errContains: "last event seq must be set when not delegated",
+			errContains: "last event seq must not be set when not delegated",
 		},
 	}
 
