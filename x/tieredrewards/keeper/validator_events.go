@@ -115,11 +115,19 @@ func (k Keeper) decrementEventRefCount(ctx context.Context, valAddr sdk.ValAddre
 // for a validator. Used during validator removal cleanup.
 func (k Keeper) deleteAllValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) error {
 	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
+
+	var keys []collections.Pair[sdk.ValAddress, uint64]
 	err := k.ValidatorEvents.Walk(ctx, rng, func(key collections.Pair[sdk.ValAddress, uint64], _ types.ValidatorEvent) (bool, error) {
-		return false, k.ValidatorEvents.Remove(ctx, key)
+		keys = append(keys, key)
+		return false, nil
 	})
 	if err != nil {
 		return err
+	}
+	for _, key := range keys {
+		if err := k.ValidatorEvents.Remove(ctx, key); err != nil {
+			return err
+		}
 	}
 
 	has, err := k.ValidatorEventNextSeq.Has(ctx, valAddr)
