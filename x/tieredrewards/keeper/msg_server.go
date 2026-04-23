@@ -373,7 +373,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		newShares, err := ms.delegate(ctx, valAddr, msg.Amount)
+		newShares, err = ms.delegate(ctx, valAddr, msg.Amount)
 		if err != nil {
 			return nil, err
 		}
