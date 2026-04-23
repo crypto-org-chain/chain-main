@@ -241,6 +241,15 @@ func TestPosition_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "last event seq must not be set when not delegated",
 		},
+		{
+			name: "last known bonded true when not delegated",
+			modify: func(p *types.Position) {
+				p.ClearDelegation()
+				p.LastKnownBonded = true
+			},
+			wantErr:     true,
+			errContains: "last known bonded must not be true when not delegated",
+		},
 	}
 
 	for _, tt := range tests {

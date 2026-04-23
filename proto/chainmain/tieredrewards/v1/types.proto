@@ -104,6 +104,11 @@ message Position {
   // last_event_seq is the sequence number of the last validator event this
   // position has processed. Events with seq > last_event_seq are pending.
   uint64 last_event_seq = 13;
+
+  // last_known_bonded tracks whether the validator was bonded after the last
+  // event replay. Used as the starting state for the next processEventsAndClaimBonus
+  // call. True when the position is first created (only bonded validators accepted).
+  bool last_known_bonded = 14;
 }
 
 // ValidatorRewardRatio stores the cumulative base rewards per share for a validator.

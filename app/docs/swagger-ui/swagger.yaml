@@ -25333,6 +25333,17 @@ paths:
 
                       position has processed. Events with seq > last_event_seq
                       are pending.
+                  last_known_bonded:
+                    type: boolean
+                    description: >-
+                      last_known_bonded tracks whether the validator was bonded
+                      after the last
+
+                      event replay. Used as the starting state for the next
+                      processEventsAndClaimBonus
+
+                      call. True when the position is first created (only bonded
+                      validators accepted).
                 description: Position represents a single lock position in the tier.
               token_value:
                 type: string
@@ -25488,6 +25499,17 @@ paths:
 
                         position has processed. Events with seq > last_event_seq
                         are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -25715,6 +25737,17 @@ paths:
 
                         position has processed. Events with seq > last_event_seq
                         are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -45922,6 +45955,17 @@ definitions:
         description: |-
           last_event_seq is the sequence number of the last validator event this
           position has processed. Events with seq > last_event_seq are pending.
+      last_known_bonded:
+        type: boolean
+        description: >-
+          last_known_bonded tracks whether the validator was bonded after the
+          last
+
+          event replay. Used as the starting state for the next
+          processEventsAndClaimBonus
+
+          call. True when the position is first created (only bonded validators
+          accepted).
     description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.QueryAllTierPositionsResponse:
     type: object
@@ -46028,6 +46072,17 @@ definitions:
 
                 position has processed. Events with seq > last_event_seq are
                 pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -46233,6 +46288,17 @@ definitions:
 
               position has processed. Events with seq > last_event_seq are
               pending.
+          last_known_bonded:
+            type: boolean
+            description: >-
+              last_known_bonded tracks whether the validator was bonded after
+              the last
+
+              event replay. Used as the starting state for the next
+              processEventsAndClaimBonus
+
+              call. True when the position is first created (only bonded
+              validators accepted).
         description: Position represents a single lock position in the tier.
       token_value:
         type: string
@@ -46349,6 +46415,17 @@ definitions:
 
                 position has processed. Events with seq > last_event_seq are
                 pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
           description: Position represents a single lock position in the tier.
       pagination:
         type: object

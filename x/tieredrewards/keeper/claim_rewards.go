@@ -242,8 +242,9 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	}
 
 	totalBonus := math.ZeroInt()
-	// positions are created on bonded validators
-	bonded := true
+	// Use the persisted bonded state from the last replay, not a hardcoded default.
+	// This prevents overpaying bonus for unbonded gaps between claims.
+	bonded := pos.LastKnownBonded
 	segmentStart := pos.LastBonusAccrual
 
 	for _, entry := range events {
@@ -290,6 +291,8 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	}
 
 	applyBonusAccrualCheckpoint(pos, blockTime)
+	// Persist the bonded state so the next replay starts correctly.
+	pos.UpdateLastKnownBonded(bonded)
 
 	if totalBonus.IsZero() {
 		return sdk.NewCoins(), nil

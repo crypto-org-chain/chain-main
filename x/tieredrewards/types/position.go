@@ -31,6 +31,8 @@ func NewPosition(id uint64, owner string, tierId uint32, undelegatedAmount math.
 		BaseRewardsPerShare: delegation.BaseRewardsPerShare,
 		LastBonusAccrual:    createdAtTime,
 		LastEventSeq:        delegation.LastEventSeq,
+		// Delegated positions are only created on bonded validators.
+		LastKnownBonded: delegation.Validator != "",
 	}
 }
 
@@ -75,6 +77,9 @@ func (p Position) Validate() error {
 		if p.LastEventSeq != 0 {
 			return fmt.Errorf("last event seq must not be set when not delegated")
 		}
+		if p.LastKnownBonded {
+			return fmt.Errorf("last known bonded must not be true when not delegated")
+		}
 	}
 
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
@@ -116,6 +121,8 @@ func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	// Position is delegated as a whole
 	p.UndelegatedAmount = math.ZeroInt()
 	p.LastBonusAccrual = t
+	// Delegation is only allowed to bonded validators.
+	p.LastKnownBonded = true
 }
 
 func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
@@ -154,6 +161,7 @@ func (p *Position) ClearDelegation() {
 	p.BaseRewardsPerShare = sdk.DecCoins{}
 	p.LastBonusAccrual = time.Time{}
 	p.LastEventSeq = 0
+	p.LastKnownBonded = false
 }
 
 func (p Position) HasTriggeredExit() bool {
@@ -170,4 +178,8 @@ func (p Position) ExitWithFullDelegation(amount, tokenValue math.Int) bool {
 
 func (p *Position) UpdateLastEventSeq(seq uint64) {
 	p.LastEventSeq = seq
+}
+
+func (p *Position) UpdateLastKnownBonded(bonded bool) {
+	p.LastKnownBonded = bonded
 }
