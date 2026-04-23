@@ -361,6 +361,85 @@ func (s *KeeperSuite) TestMsgTierRedelegate_DstValidatorNotBonded() {
 	s.Require().Equal(valAddr.String(), posAfter.Validator, "position should stay on original validator")
 }
 
+// TestMsgTierRedelegate_FromUnbondingSrc verifies that TierRedelegate succeeds
+// when the source validator is Unbonding (jailed but unbonding period not yet elapsed).
+// Unlike the fully-Unbonded case, a redelegation entry IS created (unbondingId > 0)
+// and a RedelegationMappings entry is stored.
+func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
+	srcValAddr, _ := s.createSecondValidator()
+
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+
+	s.setupTier(1)
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()),
+		ValidatorAddress: srcValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+
+	// Jail src validator → transitions to Unbonding (not yet Unbonded).
+	s.jailAndUnbondValidator(srcValAddr)
+
+	srcVal, err := s.app.StakingKeeper.GetValidator(s.ctx, srcValAddr)
+	s.Require().NoError(err)
+	s.Require().True(srcVal.IsUnbonding(), "src validator should be Unbonding, not yet Unbonded")
+
+	// Redelegate: Unbonding src → bonded genesis validator.
+	vals, _ := s.getStakingData()
+	dstValAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+
+	redResp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        freshAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+	s.Require().False(redResp.CompletionTime.IsZero(), "completion time should be set")
+	s.Require().Greater(redResp.UnbondingId, uint64(0), "unbondingId should be non-zero for unbonding src")
+
+	// Position should now be on the destination validator.
+	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().Equal(dstValAddr.String(), posAfter.Validator)
+	s.Require().True(posAfter.DelegatedShares.IsPositive())
+
+	// RedelegationMappings should contain the entry (unlike the fully-Unbonded case).
+	has, err := s.keeper.RedelegationMappings.Has(s.ctx, redResp.UnbondingId)
+	s.Require().NoError(err)
+	s.Require().True(has, "redelegation mapping should exist for unbonding src redelegate")
+
+	// StillRedelegating should return true since the redelegation entry is active.
+	redelegating, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().True(redelegating, "position should still be redelegating")
+
+	// Attempt transitive redelegation: dst → src while src→dst is still pending.
+	// Unjail src so it's bonded again and eligible as a destination.
+	consAddr, _ := srcVal.GetConsAddr()
+	s.Require().NoError(s.app.StakingKeeper.Unjail(s.ctx, consAddr))
+	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
+	s.Require().NoError(err)
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        freshAddr.String(),
+		PositionId:   pos.Id,
+		DstValidator: srcValAddr.String(),
+	})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, stakingtypes.ErrTransitiveRedelegation,
+		"second redelegate should fail with transitive redelegation error")
+}
+
 // TestMsgTierRedelegate_FromUnbondedSrc_NoMapping verifies that when the source
 // validator is fully Unbonded.
 // A second redelegate succeeds immediately (no transitive redelegation block).
@@ -442,4 +521,3 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err)
 	s.Require().Equal(srcValAddr.String(), posAfter.Validator)
 }
-
