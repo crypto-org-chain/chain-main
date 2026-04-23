@@ -295,6 +295,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_UpdateBaseRewardsPerShare_Se
 // position created via CommitDelegationToTier gets LastEventSeq set to the
 // latest event, skipping any prior events on the validator.
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents() {
+	delAddr, _ := s.getDelegator()
 	// Create a first position to establish validator count.
 	pos1 := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
@@ -303,8 +304,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	// CommitDelegationToTier from the genesis delegator on the same validator.
-	delAddr, _ := s.getDelegator()
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().NoError(err)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
