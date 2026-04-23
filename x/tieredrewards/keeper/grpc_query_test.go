@@ -74,30 +74,17 @@ func (s *KeeperSuite) TestGRPCQueryTierPosition_NilRequest() {
 // --- TierPositionsByOwner ---
 
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner() {
-	owner := testPositionOwner
-	otherOwner := sdk.AccAddress([]byte("query_other_owner___")).String()
-
-	pos1 := newTestPosition(1, owner, 1)
-	pos2 := newTestPosition(2, owner, 2)
-	pos3 := newTestPosition(3, otherOwner, 1)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos1))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos2))
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos3))
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	_ = s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false) // another owner
+	owner := pos1.Owner
 
 	resp, err := s.queryClient.TierPositionsByOwner(s.ctx.Context(), &types.QueryTierPositionsByOwnerRequest{Owner: owner})
 	s.Require().NoError(err)
-	s.Require().Len(resp.Positions, 2)
-	expectedIDs := map[uint64]struct{}{
-		1: {},
-		2: {},
-	}
+	s.Require().Len(resp.Positions, 1)
 	for _, pos := range resp.Positions {
-		s.Require().Equal(owner, pos.Owner, "query must only return positions owned by requested owner")
-		_, ok := expectedIDs[pos.Id]
-		s.Require().True(ok, "unexpected position id %d returned for owner %s", pos.Id, owner)
-		delete(expectedIDs, pos.Id)
+		s.Require().Equal(owner, pos.Owner)
+		s.Require().True(pos.Amount.IsPositive(), "amount should be computed token value")
 	}
-	s.Require().Empty(expectedIDs, "missing expected positions for owner %s", owner)
 }
 
 func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_Empty() {
@@ -124,20 +111,21 @@ func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_NilRequest() {
 // --- AllTierPositions ---
 
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions() {
-	for i := uint64(1); i <= 5; i++ {
-		pos := newTestPosition(i, testPositionOwner, 1)
-		s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	for i := 0; i < 5; i++ {
+		s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	}
 
 	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{})
 	s.Require().NoError(err)
 	s.Require().Len(resp.Positions, 5)
+	for _, pos := range resp.Positions {
+		s.Require().True(pos.Amount.IsPositive(), "amount should be computed token value")
+	}
 }
 
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Pagination() {
-	for i := uint64(1); i <= 5; i++ {
-		pos := newTestPosition(i, testPositionOwner, 1)
-		s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	for i := 0; i < 5; i++ {
+		s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	}
 
 	resp, err := s.queryClient.AllTierPositions(s.ctx.Context(), &types.QueryAllTierPositionsRequest{
@@ -166,11 +154,7 @@ func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Pagination() {
 		s.Require().False(dup, "duplicate position id %d across pages or within second page", p.Id)
 		seen[p.Id] = struct{}{}
 	}
-	s.Require().Len(seen, 5)
-	for i := uint64(1); i <= 5; i++ {
-		_, ok := seen[i]
-		s.Require().True(ok, "missing position id %d after paginating all pages", i)
-	}
+	s.Require().Len(seen, 5, "pagination must return all 5 positions exactly once")
 }
 
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions_Empty() {
