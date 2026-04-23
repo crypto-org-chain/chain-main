@@ -184,19 +184,19 @@ func (p *Position) UpdateLastKnownBonded(bonded bool) {
 	p.LastKnownBonded = bonded
 }
 
-func PositionToPositionResponse(pos Position, tokenValue math.Int) PositionResponse {
+func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {
 	return PositionResponse{
-		Id:                  pos.Id,
-		Owner:               pos.Owner,
-		TierId:              pos.TierId,
+		Id:                  p.Id,
+		Owner:               p.Owner,
+		TierId:              p.TierId,
 		Amount:              tokenValue,
-		Validator:           pos.Validator,
-		DelegatedShares:     pos.DelegatedShares,
-		BaseRewardsPerShare: pos.BaseRewardsPerShare,
-		LastBonusAccrual:    pos.LastBonusAccrual,
-		ExitTriggeredAt:     pos.ExitTriggeredAt,
-		ExitUnlockAt:        pos.ExitUnlockAt,
-		CreatedAtHeight:     pos.CreatedAtHeight,
-		CreatedAtTime:       pos.CreatedAtTime,
+		Validator:           p.Validator,
+		DelegatedShares:     p.DelegatedShares,
+		BaseRewardsPerShare: p.BaseRewardsPerShare,
+		LastBonusAccrual:    p.LastBonusAccrual,
+		ExitTriggeredAt:     p.ExitTriggeredAt,
+		ExitUnlockAt:        p.ExitUnlockAt,
+		CreatedAtHeight:     p.CreatedAtHeight,
+		CreatedAtTime:       p.CreatedAtTime,
 	}
 }

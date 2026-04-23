@@ -46,7 +46,7 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return types.PositionToPositionResponse(pos, tokenValue), nil
+			return pos.ToPositionResponse(tokenValue), nil
 		},
 	)
 	if err != nil {
@@ -81,7 +81,7 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return types.PositionToPositionResponse(pos, tokenValue), nil
+			return pos.ToPositionResponse(tokenValue), nil
 		},
 		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
 	)
@@ -107,7 +107,7 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 		return nil, err
 	}
 
-	return &types.QueryTierPositionResponse{Position: types.PositionToPositionResponse(pos, tokenValue)}, nil
+	return &types.QueryTierPositionResponse{Position: pos.ToPositionResponse(tokenValue)}, nil
 }
 
 func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {
