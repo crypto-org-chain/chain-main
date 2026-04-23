@@ -17,23 +17,20 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	currentHeight := uint64(s.ctx.BlockHeight())
 
-	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	_, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	lastWithdrawalBlock := s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
 	s.Require().Equal(currentHeight, lastWithdrawalBlock)
 
-	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	// Re-read position from store after first claim.
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	lastWithdrawalBlock = s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
@@ -42,10 +39,11 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	nextHeight := uint64(s.ctx.BlockHeight())
 
-	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	// Re-read position from store after second claim.
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	s.Require().NoError(err)
+
+	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	lastWithdrawalBlock = s.keeper.GetLastWithdrawalBlock(s.ctx, valAddr)
@@ -56,8 +54,8 @@ func (s *KeeperSuite) TestBaseRewardsWithdrawal_MarkedOncePerBlock() {
 // the position's BaseRewardsPerShare matches the validator's current ratio.
 func (s *KeeperSuite) TestBaseRewardsPerShare_UpdatesOnClaim() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -68,11 +66,7 @@ func (s *KeeperSuite) TestBaseRewardsPerShare_UpdatesOnClaim() {
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(1000), bondDenom)
 
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	_, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -122,10 +116,7 @@ func (s *KeeperSuite) TestBaseRewardsPerShare_UnchangedWhenUndelegated() {
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(5000), bondDenom)
 
 	// Claim on the undelegated position -- should be a no-op for base rewards.
-	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{posAfter})
 	s.Require().NoError(err)
 
 	posAfter, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -141,7 +132,6 @@ func (s *KeeperSuite) TestValidatorRewardRatio_IncreasesEachBlock() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	_, bondDenom := s.getStakingData()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -151,10 +141,11 @@ func (s *KeeperSuite) TestValidatorRewardRatio_IncreasesEachBlock() {
 		s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 		s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
 
-		_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-			Owner:       delAddr.String(),
-			PositionIds: []uint64{pos.Id},
-		})
+		// Re-read position from store for each iteration.
+		pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+		s.Require().NoError(err)
+
+		_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 		s.Require().NoError(err)
 
 		ratio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
@@ -179,7 +170,6 @@ func (s *KeeperSuite) TestClaimBaseRewards_CorrectAmount() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	_, bondDenom := s.getStakingData()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -190,10 +180,7 @@ func (s *KeeperSuite) TestClaimBaseRewards_CorrectAmount() {
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.allocateRewardsToValidator(valAddr, rewardAmount, bondDenom)
 
-	rsp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       delAddr.String(),
-		PositionIds: []uint64{pos.Id},
-	})
+	base, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	// Compute expected: shares * (newRatio - oldRatio), truncated.
@@ -207,7 +194,7 @@ func (s *KeeperSuite) TestClaimBaseRewards_CorrectAmount() {
 
 	s.Require().True(expectedBaseAmount.IsPositive(),
 		"expected base reward should be positive")
-	s.Require().Equal(rsp.BaseRewards.AmountOf(bondDenom), expectedBaseAmount)
+	s.Require().Equal(base.AmountOf(bondDenom), expectedBaseAmount)
 }
 
 // TestClaimBaseRewards_ZeroDelta verifies that when the validator ratio
@@ -217,16 +204,17 @@ func (s *KeeperSuite) TestClaimBaseRewards_ZeroDelta() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	_, bondDenom := s.getStakingData()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Claim once to sync position checkpoint with validator ratio.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
-	_, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner: delAddr.String(), PositionIds: []uint64{pos.Id},
-	})
+	_, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
+	s.Require().NoError(err)
+
+	// Re-read position from store after first claim.
+	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Don't allocate any new rewards. Claim again on same block --
@@ -234,11 +222,9 @@ func (s *KeeperSuite) TestClaimBaseRewards_ZeroDelta() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
-	rsp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner: delAddr.String(), PositionIds: []uint64{pos.Id},
-	})
+	base, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
-	s.Require().True(rsp.BaseRewards.IsZero(),
+	s.Require().True(base.IsZero(),
 		"base rewards should be zero when ratio is unchanged")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -318,4 +304,72 @@ func (s *KeeperSuite) TestUpdateBaseRewardsPerShare_ZeroShares() {
 	updatedRatio, err := s.keeper.UpdateBaseRewardsPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(ratio, updatedRatio)
+}
+
+// TestStaleValidatorRewardRatioReplayed verifies stale validator
+// ratio is cleared when module delegation on that validator reaches zero, so a
+// later delegation lifecycle cannot replay historical base rewards.
+func (s *KeeperSuite) TestStaleValidatorRewardRatioReplayed() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, true)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// First lifecycle: claim rewards to leave a non-zero validator ratio.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(1000), bondDenom)
+
+	_, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
+	s.Require().NoError(err)
+
+	ratioAfterFirstClaim, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(ratioAfterFirstClaim.IsZero(), "test setup failed: expected a non-zero ratio after first claim")
+
+	// Fully close the first position so module delegation on the validator is removed.
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	s.completeStakingUnbonding(valAddr)
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	s.Require().Error(err, "expected no module delegation after position withdrawal")
+
+	staleRatio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(staleRatio.IsZero(), "test setup failed: expected historical ratio before re-entry")
+
+	// Second lifecycle: create a fresh position with no new rewards allocated.
+	pos2 := s.setupNewTierPosition(lockAmount, false)
+	addr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
+
+	ratioAfterReentry, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(ratioAfterReentry.IsZero(), "stale validator ratio should be reset on re-entry when no module delegation exists")
+
+	// No new rewards were allocated for this second lifecycle.
+	base, _, err := s.keeper.ClaimRewardsForPositions(s.ctx, addr2.String(), []types.Position{pos2})
+	s.Require().NoError(err)
+
+	s.Require().True(
+		base.AmountOf(bondDenom).IsZero(),
+		"second lifecycle claim should not replay historical base rewards when no new rewards were allocated",
+	)
 }

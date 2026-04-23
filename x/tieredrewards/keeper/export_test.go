@@ -129,6 +129,10 @@ func (k Keeper) ClaimRewardsForPosition(ctx context.Context, pos types.Position)
 	return k.claimRewardsForPosition(ctx, pos)
 }
 
+func (k Keeper) ClaimRewardsForPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
+	return k.claimRewardsForPositions(ctx, owner, positions)
+}
+
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {
 	return k.updateBaseRewardsPerShare(ctx, valAddr)
 }
