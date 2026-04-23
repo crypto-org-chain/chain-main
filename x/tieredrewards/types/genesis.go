@@ -109,16 +109,16 @@ func ValidateGenesis(data GenesisState) error {
 		}
 	}
 
-	// Validate event next sequences.
-	seenNextSeq := make(map[string]struct{}, len(data.ValidatorEventNextSeqs))
-	for i, entry := range data.ValidatorEventNextSeqs {
+	// Validate event current sequences.
+	seenCurrentSeq := make(map[string]struct{}, len(data.ValidatorEventSeqs))
+	for i, entry := range data.ValidatorEventSeqs {
 		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
-			return fmt.Errorf("invalid validator address in event next seq at index %d: %w", i, err)
+			return fmt.Errorf("invalid validator address in event current seq at index %d: %w", i, err)
 		}
-		if _, dup := seenNextSeq[entry.Validator]; dup {
-			return fmt.Errorf("duplicate validator %s in event next seqs at index %d", entry.Validator, i)
+		if _, dup := seenCurrentSeq[entry.Validator]; dup {
+			return fmt.Errorf("duplicate validator %s in event current seqs at index %d", entry.Validator, i)
 		}
-		seenNextSeq[entry.Validator] = struct{}{}
+		seenCurrentSeq[entry.Validator] = struct{}{}
 	}
 
 	// Validate position counts.
@@ -154,7 +154,7 @@ func ValidateGenesis(data GenesisState) error {
 		}
 	}
 
-	// Cross-validate: next_seq must be consistent with event sequences.
+	// Cross-validate: current_seq must be consistent with event sequences.
 	// Build max sequence per validator from events.
 	maxSeqByValidator := make(map[string]uint64)
 	for _, entry := range data.ValidatorEvents {
@@ -163,18 +163,20 @@ func ValidateGenesis(data GenesisState) error {
 		}
 	}
 
-	// Cross-validate: next_seq must exceed max event sequence.
-	nextSeqByValidator := make(map[string]uint64)
-	for _, entry := range data.ValidatorEventNextSeqs {
-		nextSeqByValidator[entry.Validator] = entry.NextSeq
+	// Cross-validate: current_seq must be >= max event sequence.
+	// current_seq is the last used seq, so it must be at least as large as the
+	// highest event seq (could be larger if events were garbage-collected).
+	currentSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEventSeqs {
+		currentSeqByValidator[entry.Validator] = entry.CurrentSeq
 	}
 	for val, maxSeq := range maxSeqByValidator {
-		nextSeq, ok := nextSeqByValidator[val]
+		currentSeq, ok := currentSeqByValidator[val]
 		if !ok {
-			return fmt.Errorf("validator %s has events but no next_seq entry", val)
+			return fmt.Errorf("validator %s has events but no current_seq entry", val)
 		}
-		if nextSeq <= maxSeq {
-			return fmt.Errorf("validator %s next_seq (%d) must be greater than max event sequence (%d)", val, nextSeq, maxSeq)
+		if currentSeq < maxSeq {
+			return fmt.Errorf("validator %s current_seq (%d) must be greater than or equal to max event sequence (%d)", val, currentSeq, maxSeq)
 		}
 	}
 

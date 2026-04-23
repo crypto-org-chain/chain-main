@@ -27,9 +27,9 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_RecordsSlashEvent() {
 	s.Require().NoError(err)
 
 	// Verify event was recorded.
-	nextSeq, err := s.keeper.ValidatorEventNextSeq.Get(s.ctx, valAddr)
+	currentSeq, err := s.keeper.ValidatorEventSeq.Get(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(2), nextSeq, "next-seq should be 2 after one event appended (first is 1)")
+	s.Require().Equal(uint64(1), currentSeq, "current-seq should be 1 after one event appended (first is 1)")
 
 	evt, err := s.keeper.ValidatorEvents.Get(s.ctx, collections.Join(valAddr, uint64(1)))
 	s.Require().NoError(err)
@@ -267,7 +267,7 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	s.Require().NoError(err)
 
 	// Set seq counter but NO events (simulating all events garbage-collected).
-	err = s.keeper.ValidatorEventNextSeq.Set(s.ctx, valAddr, uint64(5))
+	err = s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(5))
 	s.Require().NoError(err)
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
@@ -279,7 +279,7 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	s.Require().False(hasRatio, "reward ratio should be cleaned")
 
 	// Seq should be cleaned (no leftover events).
-	hasSeq, err := s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	hasSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().False(hasSeq, "event seq should be cleaned when no events remain")
 }
@@ -310,7 +310,7 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 		ReferenceCount: 1,
 	})
 	s.Require().NoError(err)
-	err = s.keeper.ValidatorEventNextSeq.Set(s.ctx, valAddr, uint64(2))
+	err = s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(1))
 	s.Require().NoError(err)
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
@@ -327,7 +327,7 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 	s.Require().True(hasEvent, "leftover events should be preserved")
 
 	// Seq should be PRESERVED.
-	hasSeq, err := s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	hasSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(hasSeq, "event seq should be preserved when leftover events exist")
 }

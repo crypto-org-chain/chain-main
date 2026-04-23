@@ -196,4 +196,3 @@ func (s *KeeperSuite) TestComputeSegmentBonus_CorrectAmount() {
 	bonusZeroShares := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), tokensPerShare)
 	s.Require().True(bonusZeroShares.IsZero(), "zero shares should yield zero bonus")
 }
-

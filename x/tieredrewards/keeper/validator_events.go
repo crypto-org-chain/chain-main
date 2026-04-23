@@ -21,7 +21,7 @@ type ValidatorEventEntry struct {
 // appendValidatorEvent auto-increments the event sequence for the validator
 // and stores the event. Returns the assigned sequence number.
 func (k Keeper) appendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress, event types.ValidatorEvent) (uint64, error) {
-	seq, err := k.nextValidatorEventSeq(ctx, valAddr)
+	seq, err := k.incrementValidatorEventSeq(ctx, valAddr)
 	if err != nil {
 		return 0, err
 	}
@@ -33,32 +33,23 @@ func (k Keeper) appendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress
 	return seq, nil
 }
 
-// nextValidatorEventSeq returns the current next-seq for a validator
-// and increments it atomically. First call returns 1.
-func (k Keeper) nextValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
-	current, err := k.ValidatorEventNextSeq.Get(ctx, valAddr)
+// incrementValidatorEventSeq reads the current (last used) seq for a validator,
+// increments it, persists the new value, and returns the new seq.
+// First call returns 1.
+func (k Keeper) incrementValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
+	current, err := k.ValidatorEventSeq.Get(ctx, valAddr)
 	if errors.Is(err, collections.ErrNotFound) {
-		current = 1 // first event gets seq 1
+		current = 0
 	} else if err != nil {
 		return 0, err
 	}
 
-	seq := current
-	if err := k.ValidatorEventNextSeq.Set(ctx, valAddr, seq+1); err != nil {
+	next := current + 1
+	if err := k.ValidatorEventSeq.Set(ctx, valAddr, next); err != nil {
 		return 0, err
 	}
 
-	return seq, nil
-}
-
-// getValidatorEventNextSeq returns the next-seq for a validator without incrementing it.
-// Returns 1 if no events have ever been appended (first event would get seq 1).
-func (k Keeper) getValidatorEventNextSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
-	seq, err := k.ValidatorEventNextSeq.Get(ctx, valAddr)
-	if errors.Is(err, collections.ErrNotFound) {
-		return 1, nil
-	}
-	return seq, err
+	return next, nil
 }
 
 // getValidatorEventLatestSeq returns the sequence number of the most recent
@@ -66,11 +57,11 @@ func (k Keeper) getValidatorEventNextSeq(ctx context.Context, valAddr sdk.ValAdd
 // Used when creating positions to set LastEventSeq so that only future events
 // are processed.
 func (k Keeper) getValidatorEventLatestSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
-	nextSeq, err := k.getValidatorEventNextSeq(ctx, valAddr)
-	if err != nil {
-		return 0, err
+	seq, err := k.ValidatorEventSeq.Get(ctx, valAddr)
+	if errors.Is(err, collections.ErrNotFound) {
+		return 0, nil
 	}
-	return nextSeq - 1, nil
+	return seq, err
 }
 
 // getValidatorEventsSince returns all events for a validator with sequence > startSeq,
@@ -111,15 +102,15 @@ func (k Keeper) decrementEventRefCount(ctx context.Context, valAddr sdk.ValAddre
 	return k.ValidatorEvents.Set(ctx, key, event)
 }
 
-// deleteValidatorEventSeq removes the next-seq entry
+// deleteValidatorEventSeq removes the current-seq entry
 // for a validator. Used during validator removal cleanup.
 func (k Keeper) deleteValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) error {
-	has, err := k.ValidatorEventNextSeq.Has(ctx, valAddr)
+	has, err := k.ValidatorEventSeq.Has(ctx, valAddr)
 	if err != nil {
 		return err
 	}
 	if has {
-		return k.ValidatorEventNextSeq.Remove(ctx, valAddr)
+		return k.ValidatorEventSeq.Remove(ctx, valAddr)
 	}
 	return nil
 }

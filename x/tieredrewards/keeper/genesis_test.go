@@ -119,8 +119,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 				},
 			},
 		},
-		ValidatorEventNextSeqs: []types.ValidatorEventNextSeqEntry{
-			{Validator: valAddr.String(), NextSeq: 3},
+		ValidatorEventSeqs: []types.ValidatorEventSeqEntry{
+			{Validator: valAddr.String(), CurrentSeq: 2},
 		},
 		ValidatorPositionCounts: []types.ValidatorPositionCountEntry{
 			{Validator: valAddr.String(), Count: 2},
@@ -200,10 +200,10 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(orig.Event.Timestamp.UTC(), e.Event.Timestamp.UTC(), "event timestamp mismatch at %d", i)
 	}
 
-	// Validator event next sequences.
-	s.Require().Len(exported.ValidatorEventNextSeqs, 1)
-	s.Require().Equal(genesisState.ValidatorEventNextSeqs[0].Validator, exported.ValidatorEventNextSeqs[0].Validator)
-	s.Require().Equal(genesisState.ValidatorEventNextSeqs[0].NextSeq, exported.ValidatorEventNextSeqs[0].NextSeq)
+	// Validator event current sequences.
+	s.Require().Len(exported.ValidatorEventSeqs, 1)
+	s.Require().Equal(genesisState.ValidatorEventSeqs[0].Validator, exported.ValidatorEventSeqs[0].Validator)
+	s.Require().Equal(genesisState.ValidatorEventSeqs[0].CurrentSeq, exported.ValidatorEventSeqs[0].CurrentSeq)
 
 	// Validator position counts.
 	s.Require().Len(exported.ValidatorPositionCounts, 1)

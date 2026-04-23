@@ -185,8 +185,8 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 3},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 2},
 		}
 		genesis.ValidatorPositionCounts = []types.ValidatorPositionCountEntry{
 			{Validator: testValidator, Count: 1},
@@ -194,7 +194,7 @@ func TestValidateGenesis(t *testing.T) {
 		require.NoError(t, types.ValidateGenesis(genesis))
 	})
 
-	t.Run("event sequence exceeds next_seq", func(t *testing.T) {
+	t.Run("event sequence exceeds current_seq", func(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.ValidatorEvents = []types.ValidatorEventEntry{
 			{
@@ -209,13 +209,13 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 2},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 2},
 		}
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "next_seq (2) must be greater than max event sequence (3)")
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "current_seq (2) must be greater than or equal to max event sequence (3)")
 	})
 
-	t.Run("events without next_seq entry", func(t *testing.T) {
+	t.Run("events without current_seq entry", func(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.ValidatorEvents = []types.ValidatorEventEntry{
 			{
@@ -230,9 +230,9 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		// No ValidatorEventNextSeqs
-		genesis.ValidatorEventNextSeqs = nil
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "has events but no next_seq entry")
+		// No ValidatorEventSeqs
+		genesis.ValidatorEventSeqs = nil
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "has events but no current_seq entry")
 	})
 
 	t.Run("zero reference count in event", func(t *testing.T) {
@@ -250,8 +250,8 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 2},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 1},
 		}
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "zero reference count")
 	})
@@ -282,8 +282,8 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 2},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 1},
 		}
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator event")
 	})
@@ -306,8 +306,8 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 2},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 2},
 		}
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "LastEventSeq (5) greater than validator")
 	})
@@ -337,8 +337,8 @@ func TestValidateGenesis(t *testing.T) {
 				},
 			},
 		}
-		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
-			{Validator: testValidator, NextSeq: 2},
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 2},
 		}
 		require.NoError(t, types.ValidateGenesis(genesis))
 	})

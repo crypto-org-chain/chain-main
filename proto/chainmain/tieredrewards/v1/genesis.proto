@@ -27,10 +27,10 @@ message ValidatorEventEntry {
   ValidatorEvent event     = 3 [(gogoproto.nullable) = false];
 }
 
-// ValidatorEventNextSeqEntry wraps a validator address with its next event sequence for genesis export.
-message ValidatorEventNextSeqEntry {
-  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
-  uint64 next_seq  = 2;
+// ValidatorEventSeqEntry wraps a validator address with its current (last used) event sequence for genesis export.
+message ValidatorEventSeqEntry {
+  string validator   = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  uint64 current_seq = 2;
 }
 
 // ValidatorPositionCountEntry wraps a validator address with its delegated position count for genesis export.
@@ -57,8 +57,8 @@ message GenesisState {
   repeated UnbondingMapping redelegation_mappings = 7 [(gogoproto.nullable) = false];
   // validator_events stores pending validator lifecycle events for lazy processing.
   repeated ValidatorEventEntry validator_events = 8 [(gogoproto.nullable) = false];
-  // validator_event_next_seqs stores the next event sequence per validator.
-  repeated ValidatorEventNextSeqEntry validator_event_next_seqs = 9 [(gogoproto.nullable) = false];
+  // validator_event_seqs stores the current (last used) event sequence per validator.
+  repeated ValidatorEventSeqEntry validator_event_seqs = 9 [(gogoproto.nullable) = false];
   // validator_position_counts stores the number of delegated positions per validator.
   repeated ValidatorPositionCountEntry validator_position_counts = 10 [(gogoproto.nullable) = false];
 }

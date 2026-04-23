@@ -33,10 +33,10 @@ func (s *KeeperSuite) TestAppendValidatorEvent_FirstEvent() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), seq, "first event should get seq 1")
 
-	// NextSeq should be 2.
-	nextSeq, err := s.keeper.ValidatorEventNextSeq.Get(s.ctx, valAddr)
+	// CurrentSeq should be 1.
+	currentSeq, err := s.keeper.ValidatorEventSeq.Get(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(2), nextSeq)
+	s.Require().Equal(uint64(1), currentSeq)
 
 	// Event should be stored.
 	stored, err := s.keeper.ValidatorEvents.Get(s.ctx, collections.Join(valAddr, uint64(1)))
@@ -57,9 +57,9 @@ func (s *KeeperSuite) TestAppendValidatorEvent_SequentialSeqs() {
 		s.Require().Equal(i, seq, "seq should increment")
 	}
 
-	nextSeq, err := s.keeper.ValidatorEventNextSeq.Get(s.ctx, valAddr)
+	currentSeq, err := s.keeper.ValidatorEventSeq.Get(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(6), nextSeq)
+	s.Require().Equal(uint64(5), currentSeq)
 }
 
 // --- getValidatorEventLatestSeq ---
@@ -220,9 +220,9 @@ func (s *KeeperSuite) TestDeleteValidatorEventSeq_CleansSeqOnly() {
 	s.Require().NoError(err)
 	s.Require().Len(entries, 3)
 
-	hasNextSeq, err := s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	hasCurrentSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().True(hasNextSeq)
+	s.Require().True(hasCurrentSeq)
 
 	// DeleteValidatorEventSeq only removes the seq counter, not events.
 	err = s.keeper.DeleteValidatorEventSeq(s.ctx, valAddr)
@@ -233,10 +233,10 @@ func (s *KeeperSuite) TestDeleteValidatorEventSeq_CleansSeqOnly() {
 	s.Require().NoError(err)
 	s.Require().Len(entries, 3, "events should NOT be deleted by DeleteValidatorEventSeq")
 
-	// NextSeq gone.
-	hasNextSeq, err = s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	// CurrentSeq gone.
+	hasCurrentSeq, err = s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().False(hasNextSeq, "next seq should be deleted")
+	s.Require().False(hasCurrentSeq, "current seq should be deleted")
 }
 
 func (s *KeeperSuite) TestDeleteValidatorEventSeq_NoOpForEmpty() {
@@ -284,7 +284,7 @@ func (s *KeeperSuite) TestHasValidatorEvents_FalseAfterAllDecremented() {
 	s.Require().False(has, "should be false after all events garbage-collected")
 
 	// Seq counter still exists.
-	hasSeq, err := s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	hasSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(hasSeq, "seq counter should still exist")
 }

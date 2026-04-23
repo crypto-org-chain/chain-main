@@ -17,7 +17,7 @@ var (
 	RedelegationIdToPositionIdKey = collections.NewPrefix(11)
 	RedelegationIdsByPositionKey  = collections.NewPrefix(12)
 	ValidatorEventsKey            = collections.NewPrefix(13)
-	ValidatorEventNextSeqKey      = collections.NewPrefix(14)
+	ValidatorEventSeqKey          = collections.NewPrefix(14)
 	PositionCountByValidatorKey   = collections.NewPrefix(15)
 )
 

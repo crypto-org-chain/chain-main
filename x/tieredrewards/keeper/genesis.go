@@ -76,12 +76,12 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, entry := range data.ValidatorEventNextSeqs {
+	for _, entry := range data.ValidatorEventSeqs {
 		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
 		if err != nil {
 			panic(err)
 		}
-		if err := k.ValidatorEventNextSeq.Set(ctx, valAddr, entry.NextSeq); err != nil {
+		if err := k.ValidatorEventSeq.Set(ctx, valAddr, entry.CurrentSeq); err != nil {
 			panic(err)
 		}
 	}
@@ -175,11 +175,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var validatorEventNextSeqs []types.ValidatorEventNextSeqEntry
-	err = k.ValidatorEventNextSeq.Walk(ctx, nil, func(valAddr sdk.ValAddress, nextSeq uint64) (bool, error) {
-		validatorEventNextSeqs = append(validatorEventNextSeqs, types.ValidatorEventNextSeqEntry{
-			Validator: valAddr.String(),
-			NextSeq:   nextSeq,
+	var validatorEventSeqs []types.ValidatorEventSeqEntry
+	err = k.ValidatorEventSeq.Walk(ctx, nil, func(valAddr sdk.ValAddress, currentSeq uint64) (bool, error) {
+		validatorEventSeqs = append(validatorEventSeqs, types.ValidatorEventSeqEntry{
+			Validator:  valAddr.String(),
+			CurrentSeq: currentSeq,
 		})
 		return false, nil
 	})
@@ -208,7 +208,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		UnbondingDelegationMappings: unbondingDelegationMappings,
 		RedelegationMappings:        redelegationMappings,
 		ValidatorEvents:             validatorEvents,
-		ValidatorEventNextSeqs:      validatorEventNextSeqs,
+		ValidatorEventSeqs:          validatorEventSeqs,
 		ValidatorPositionCounts:     validatorPositionCounts,
 	}
 }
