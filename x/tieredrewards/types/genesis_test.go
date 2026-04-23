@@ -284,4 +284,59 @@ func TestValidateGenesis(t *testing.T) {
 		}
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator event")
 	})
+
+	t.Run("delegated position LastEventSeq exceeds validator latest event seq", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// Position is delegated to testValidator. Set LastEventSeq = 5.
+		genesis.Positions[0].LastEventSeq = 5
+		// Validator has one event at seq 1.
+		genesis.ValidatorEvents = []types.ValidatorEventEntry{
+			{
+				Validator: testValidator,
+				Sequence:  1,
+				Event: types.ValidatorEvent{
+					Height:         100,
+					Timestamp:      time.Now(),
+					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
+					TokensPerShare: sdkmath.LegacyOneDec(),
+					ReferenceCount: 1,
+				},
+			},
+		}
+		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
+			{Validator: testValidator, NextSeq: 2},
+		}
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "LastEventSeq (5) greater than validator")
+	})
+
+	t.Run("delegated position LastEventSeq exceeds when no events exist", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// Position is delegated to testValidator. Set LastEventSeq = 1.
+		// But no events exist for the validator.
+		genesis.Positions[0].LastEventSeq = 1
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "LastEventSeq (1) greater than validator")
+	})
+
+	t.Run("delegated position LastEventSeq at latest event seq is valid", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// Position LastEventSeq = 1, validator has event at seq 1.
+		genesis.Positions[0].LastEventSeq = 1
+		genesis.ValidatorEvents = []types.ValidatorEventEntry{
+			{
+				Validator: testValidator,
+				Sequence:  1,
+				Event: types.ValidatorEvent{
+					Height:         100,
+					Timestamp:      time.Now(),
+					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
+					TokensPerShare: sdkmath.LegacyOneDec(),
+					ReferenceCount: 1,
+				},
+			},
+		}
+		genesis.ValidatorEventNextSeqs = []types.ValidatorEventNextSeqEntry{
+			{Validator: testValidator, NextSeq: 2},
+		}
+		require.NoError(t, types.ValidateGenesis(genesis))
+	})
 }

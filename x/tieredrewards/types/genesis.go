@@ -157,5 +157,21 @@ func ValidateGenesis(data GenesisState) error {
 		}
 	}
 
+	// Cross-validate: delegated position LastEventSeq must not exceed
+	// the validator's latest event sequence. A higher value would permanently
+	// skip events that were recorded for this position.
+	for i, pos := range data.Positions {
+		if !pos.IsDelegated() {
+			continue
+		}
+		latestSeq := maxSeqByValidator[pos.Validator] // 0 if no events
+		if pos.LastEventSeq > latestSeq {
+			return fmt.Errorf(
+				"position %d has LastEventSeq (%d) greater than validator %s latest event seq (%d) at index %d",
+				pos.Id, pos.LastEventSeq, pos.Validator, latestSeq, i,
+			)
+		}
+	}
+
 	return nil
 }
