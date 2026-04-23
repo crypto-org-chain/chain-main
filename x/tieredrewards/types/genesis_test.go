@@ -322,7 +322,42 @@ func TestValidateGenesis(t *testing.T) {
 
 	t.Run("delegated position LastEventSeq at latest event seq is valid", func(t *testing.T) {
 		genesis := validFullGenesis()
-		// Position LastEventSeq = 1, validator has event at seq 1.
+		// Position LastEventSeq = 0, validator has event at seq 1 with refcount=1.
+		// The position hasn't processed it yet, so refcount matches.
+		genesis.Positions[0].LastEventSeq = 0
+		genesis.ValidatorEvents = []types.ValidatorEventEntry{
+			{
+				Validator: testValidator,
+				Sequence:  1,
+				Event: types.ValidatorEvent{
+					Height:         100,
+					Timestamp:      time.Now(),
+					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
+					TokensPerShare: sdkmath.LegacyOneDec(),
+					ReferenceCount: 1,
+				},
+			},
+		}
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 1},
+		}
+		require.NoError(t, types.ValidateGenesis(genesis))
+	})
+
+	t.Run("delegated position processed all events — no events remain", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// Position LastEventSeq = 1 (processed event 1), no events remain (GC'd).
+		genesis.Positions[0].LastEventSeq = 1
+		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
+			{Validator: testValidator, CurrentSeq: 1},
+		}
+		require.NoError(t, types.ValidateGenesis(genesis))
+	})
+
+	t.Run("event refcount mismatch — too high", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// Position has LastEventSeq = 1 (already processed event 1),
+		// but event 1 still has ReferenceCount = 1 — mismatch.
 		genesis.Positions[0].LastEventSeq = 1
 		genesis.ValidatorEvents = []types.ValidatorEventEntry{
 			{
@@ -338,9 +373,9 @@ func TestValidateGenesis(t *testing.T) {
 			},
 		}
 		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
-			{Validator: testValidator, CurrentSeq: 2},
+			{Validator: testValidator, CurrentSeq: 1},
 		}
-		require.NoError(t, types.ValidateGenesis(genesis))
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "ReferenceCount 1 but 0 positions would process it")
 	})
 
 	t.Run("position count mismatch — count too high", func(t *testing.T) {

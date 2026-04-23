@@ -181,17 +181,39 @@ func ValidateGenesis(data GenesisState) error {
 	}
 
 	// Cross-validate: delegated position LastEventSeq must not exceed
-	// the validator's latest event sequence. A higher value would permanently
-	// skip events that were recorded for this position.
+	// the validator's current event sequence. The current seq is the last used
+	// seq number, which may be higher than the max event seq if events were
+	// garbage-collected after processing.
 	for i, pos := range data.Positions {
 		if !pos.IsDelegated() {
 			continue
 		}
-		latestSeq := maxSeqByValidator[pos.Validator] // 0 if no events
-		if pos.LastEventSeq > latestSeq {
+		maxAllowed := currentSeqByValidator[pos.Validator] // 0 if no seq entry
+		if pos.LastEventSeq > maxAllowed {
 			return fmt.Errorf(
-				"position %d has LastEventSeq (%d) greater than validator %s latest event seq (%d) at index %d",
-				pos.Id, pos.LastEventSeq, pos.Validator, latestSeq, i,
+				"position %d has LastEventSeq (%d) greater than validator %s latest seq (%d) at index %d",
+				pos.Id, pos.LastEventSeq, pos.Validator, maxAllowed, i,
+			)
+		}
+	}
+
+	// Cross-validate: each event's ReferenceCount must equal the number of
+	// delegated positions on that validator with LastEventSeq < event.Seq.
+	// A refcount too high means the event is never garbage-collected (storage leak).
+	// A refcount too low means the event is prematurely garbage-collected,
+	// causing positions that haven't processed it to skip the segment (under or over payment).
+	for i, entry := range data.ValidatorEvents {
+		var expected uint64
+		for _, pos := range data.Positions {
+			hasNotProcessed := pos.IsDelegated() && pos.Validator == entry.Validator && pos.LastEventSeq < entry.Sequence
+			if hasNotProcessed {
+				expected++
+			}
+		}
+		if entry.Event.ReferenceCount != expected {
+			return fmt.Errorf(
+				"validator %s event seq %d has ReferenceCount %d but %d positions would process it (index %d)",
+				entry.Validator, entry.Sequence, entry.Event.ReferenceCount, expected, i,
 			)
 		}
 	}
