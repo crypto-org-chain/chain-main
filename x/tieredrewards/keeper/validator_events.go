@@ -35,8 +35,6 @@ func (k Keeper) appendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress
 
 // nextValidatorEventSeq returns the current next-seq for a validator
 // and increments it atomically. First call returns 1.
-// nextValidatorEventSeq returns the next sequence number for a validator
-// and advances the stored counter past it. First call returns 1, and stores 2.
 func (k Keeper) nextValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
 	current, err := k.ValidatorEventNextSeq.Get(ctx, valAddr)
 	if errors.Is(err, collections.ErrNotFound) {
