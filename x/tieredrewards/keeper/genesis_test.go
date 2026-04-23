@@ -122,9 +122,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		ValidatorEventSeqs: []types.ValidatorEventSeqEntry{
 			{Validator: valAddr.String(), CurrentSeq: 2},
 		},
-		ValidatorPositionCounts: []types.ValidatorPositionCountEntry{
-			{Validator: valAddr.String(), Count: 2},
-		},
 	}
 
 	// Import genesis.
@@ -205,10 +202,11 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	s.Require().Equal(genesisState.ValidatorEventSeqs[0].Validator, exported.ValidatorEventSeqs[0].Validator)
 	s.Require().Equal(genesisState.ValidatorEventSeqs[0].CurrentSeq, exported.ValidatorEventSeqs[0].CurrentSeq)
 
-	// Validator position counts.
-	s.Require().Len(exported.ValidatorPositionCounts, 1)
-	s.Require().Equal(genesisState.ValidatorPositionCounts[0].Validator, exported.ValidatorPositionCounts[0].Validator)
-	s.Require().Equal(genesisState.ValidatorPositionCounts[0].Count, exported.ValidatorPositionCounts[0].Count)
+	// Validator position counts are rebuilt by setPosition during InitGenesis,
+	// not stored in genesis. Verify they were rebuilt correctly.
+	count, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(2), count, "position count should be rebuilt from positions")
 }
 
 func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {

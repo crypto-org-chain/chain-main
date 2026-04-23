@@ -86,15 +86,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, entry := range data.ValidatorPositionCounts {
-		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
-		if err != nil {
-			panic(err)
-		}
-		if err := k.PositionCountByValidator.Set(ctx, valAddr, entry.Count); err != nil {
-			panic(err)
-		}
-	}
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
@@ -187,18 +178,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var validatorPositionCounts []types.ValidatorPositionCountEntry
-	err = k.PositionCountByValidator.Walk(ctx, nil, func(valAddr sdk.ValAddress, count uint64) (bool, error) {
-		validatorPositionCounts = append(validatorPositionCounts, types.ValidatorPositionCountEntry{
-			Validator: valAddr.String(),
-			Count:     count,
-		})
-		return false, nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	return &types.GenesisState{
 		Params:                      params,
 		Tiers:                       tiers,
@@ -209,6 +188,5 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		RedelegationMappings:        redelegationMappings,
 		ValidatorEvents:             validatorEvents,
 		ValidatorEventSeqs:          validatorEventSeqs,
-		ValidatorPositionCounts:     validatorPositionCounts,
 	}
 }

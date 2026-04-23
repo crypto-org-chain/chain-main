@@ -33,12 +33,6 @@ message ValidatorEventSeqEntry {
   uint64 current_seq = 2;
 }
 
-// ValidatorPositionCountEntry wraps a validator address with its delegated position count for genesis export.
-message ValidatorPositionCountEntry {
-  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
-  uint64 count     = 2;
-}
-
 // GenesisState defines the tieredrewards module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
@@ -59,6 +53,4 @@ message GenesisState {
   repeated ValidatorEventEntry validator_events = 8 [(gogoproto.nullable) = false];
   // validator_event_seqs stores the current (last used) event sequence per validator.
   repeated ValidatorEventSeqEntry validator_event_seqs = 9 [(gogoproto.nullable) = false];
-  // validator_position_counts stores the number of delegated positions per validator.
-  repeated ValidatorPositionCountEntry validator_position_counts = 10 [(gogoproto.nullable) = false];
 }
