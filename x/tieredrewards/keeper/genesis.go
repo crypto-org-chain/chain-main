@@ -85,7 +85,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 			panic(err)
 		}
 	}
-
 }
 
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
