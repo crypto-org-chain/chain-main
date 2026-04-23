@@ -105,7 +105,7 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 				return err
 			}
-			if err := k.increaseValidatorPositionCount(ctx, valAddr); err != nil {
+			if err := k.increasePositionCountForValidator(ctx, valAddr); err != nil {
 				return err
 			}
 		}
@@ -158,7 +158,7 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
 			return err
 		}
-		if err := k.decreaseValidatorPositionCount(ctx, oldVal); err != nil {
+		if err := k.decreasePositionCountForValidator(ctx, oldVal); err != nil {
 			return err
 		}
 	}
@@ -170,7 +170,7 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
 			return err
 		}
-		if err := k.increaseValidatorPositionCount(ctx, newVal); err != nil {
+		if err := k.increasePositionCountForValidator(ctx, newVal); err != nil {
 			return err
 		}
 	}
@@ -219,7 +219,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 			return err
 		}
-		if err := k.decreaseValidatorPositionCount(ctx, valAddr); err != nil {
+		if err := k.decreasePositionCountForValidator(ctx, valAddr); err != nil {
 			return err
 		}
 	}

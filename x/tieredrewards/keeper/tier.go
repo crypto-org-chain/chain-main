@@ -119,7 +119,7 @@ func (k Keeper) getPositionCountForValidator(ctx context.Context, valAddr sdk.Va
 	return count, nil
 }
 
-func (k Keeper) increaseValidatorPositionCount(ctx context.Context, valAddr sdk.ValAddress) error {
+func (k Keeper) increasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
 	count, err := k.getPositionCountForValidator(ctx, valAddr)
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (k Keeper) increaseValidatorPositionCount(ctx context.Context, valAddr sdk.
 	return nil
 }
 
-func (k Keeper) decreaseValidatorPositionCount(ctx context.Context, valAddr sdk.ValAddress) error {
+func (k Keeper) decreasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
 	count, err := k.getPositionCountForValidator(ctx, valAddr)
 	if err != nil {
 		return err

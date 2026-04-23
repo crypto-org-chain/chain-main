@@ -58,6 +58,26 @@ func (k Keeper) HasPositionsForTier(ctx context.Context, tierId uint32) (bool, e
 	return k.hasPositionsForTier(ctx, tierId)
 }
 
+func (k Keeper) IncreasePositionCountForTier(ctx context.Context, tierId uint32) error {
+	return k.increasePositionCountForTier(ctx, tierId)
+}
+
+func (k Keeper) DecreasePositionCountForTier(ctx context.Context, tierId uint32) error {
+	return k.decreasePositionCountForTier(ctx, tierId)
+}
+
+func (k Keeper) GetPositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
+	return k.getPositionCountForValidator(ctx, valAddr)
+}
+
+func (k Keeper) IncreasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
+	return k.increasePositionCountForValidator(ctx, valAddr)
+}
+
+func (k Keeper) DecreasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
+	return k.decreasePositionCountForValidator(ctx, valAddr)
+}
+
 func (k Keeper) TransferDelegationToTier(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
 	return k.transferDelegationToTier(ctx, delegatorAddr, validatorAddr, amount)
 }

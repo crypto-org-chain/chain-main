@@ -6,6 +6,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func newTestTier(id uint32) types.Tier {
@@ -87,6 +89,99 @@ func (s *KeeperSuite) TestDeleteTier() {
 	has, err := s.keeper.HasTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().False(has)
+}
+
+// ---------------------------------------------------------------------------
+// Tier position count helpers
+// ---------------------------------------------------------------------------
+
+func (s *KeeperSuite) TestHasPositionsForTier_FalseWhenEmpty() {
+	s.setupTier(1)
+
+	has, err := s.keeper.HasPositionsForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().False(has)
+}
+
+func (s *KeeperSuite) TestHasPositionsForTier_TrueWhenPositionExists() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	has, err := s.keeper.HasPositionsForTier(s.ctx, pos.TierId)
+	s.Require().NoError(err)
+	s.Require().True(has)
+}
+
+func (s *KeeperSuite) TestGetPositionCountForTier_ZeroWhenEmpty() {
+	s.setupTier(1)
+
+	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), count)
+}
+
+func (s *KeeperSuite) TestIncreaseDecreasePositionCountForTier() {
+	s.setupTier(1)
+
+	// Increase twice.
+	s.Require().NoError(s.keeper.IncreasePositionCountForTier(s.ctx, 1))
+	s.Require().NoError(s.keeper.IncreasePositionCountForTier(s.ctx, 1))
+
+	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(2), count)
+
+	// Decrease once → 1.
+	s.Require().NoError(s.keeper.DecreasePositionCountForTier(s.ctx, 1))
+	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+
+	// Decrease again → 0, entry removed from store.
+	s.Require().NoError(s.keeper.DecreasePositionCountForTier(s.ctx, 1))
+	_, err = s.keeper.PositionCountByTier.Get(s.ctx, uint32(1))
+	s.Require().Error(err, "count entry should be removed when reaching 0")
+
+	// Decrease on 0 is a no-op.
+	s.Require().NoError(s.keeper.DecreasePositionCountForTier(s.ctx, 1))
+}
+
+// ---------------------------------------------------------------------------
+// Validator position count helpers
+// ---------------------------------------------------------------------------
+
+func (s *KeeperSuite) TestGetPositionCountForValidator_ZeroWhenEmpty() {
+	valAddr := sdk.ValAddress([]byte("val_empty___________"))
+
+	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), count)
+}
+
+func (s *KeeperSuite) TestIncreaseDecreaseValidatorPositionCount() {
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	// Increase twice.
+	s.Require().NoError(s.keeper.IncreasePositionCountForValidator(s.ctx, valAddr))
+	s.Require().NoError(s.keeper.IncreasePositionCountForValidator(s.ctx, valAddr))
+
+	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(2), count)
+
+	// Decrease once → 1.
+	s.Require().NoError(s.keeper.DecreasePositionCountForValidator(s.ctx, valAddr))
+	count, err = s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+
+	// Decrease again → 0, entry removed from store.
+	s.Require().NoError(s.keeper.DecreasePositionCountForValidator(s.ctx, valAddr))
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().Error(err, "count entry should be removed when reaching 0")
+
+	// Decrease on 0 is a no-op.
+	s.Require().NoError(s.keeper.DecreasePositionCountForValidator(s.ctx, valAddr))
 }
 
 func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithPositions() {
