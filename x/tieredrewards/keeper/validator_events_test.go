@@ -201,9 +201,9 @@ func (s *KeeperSuite) TestDecrementEventRefCount_NoOpForMissingEvent() {
 	s.Require().NoError(err)
 }
 
-// --- deleteAllValidatorEvents ---
+// --- deleteValidatorEventSeq / hasValidatorEvents ---
 
-func (s *KeeperSuite) TestDeleteAllValidatorEvents_CleansEverything() {
+func (s *KeeperSuite) TestDeleteValidatorEventSeq_CleansSeqOnly() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
@@ -224,14 +224,14 @@ func (s *KeeperSuite) TestDeleteAllValidatorEvents_CleansEverything() {
 	s.Require().NoError(err)
 	s.Require().True(hasNextSeq)
 
-	// Delete all.
-	err = s.keeper.DeleteAllValidatorEvents(s.ctx, valAddr)
+	// DeleteValidatorEventSeq only removes the seq counter, not events.
+	err = s.keeper.DeleteValidatorEventSeq(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	// All events gone.
+	// Events still exist.
 	entries, err = s.keeper.GetValidatorEventsSince(s.ctx, valAddr, 0)
 	s.Require().NoError(err)
-	s.Require().Empty(entries, "all events should be deleted")
+	s.Require().Len(entries, 3, "events should NOT be deleted by DeleteValidatorEventSeq")
 
 	// NextSeq gone.
 	hasNextSeq, err = s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
@@ -239,36 +239,52 @@ func (s *KeeperSuite) TestDeleteAllValidatorEvents_CleansEverything() {
 	s.Require().False(hasNextSeq, "next seq should be deleted")
 }
 
-func (s *KeeperSuite) TestDeleteAllValidatorEvents_DoesNotAffectOtherValidators() {
-	s.setupTier(1)
-	vals, _ := s.getStakingData()
-	valAddr1 := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	valAddr2, _ := s.createSecondValidator()
-
-	evt := s.makeEvent(types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH, 1)
-	_, err := s.keeper.AppendValidatorEvent(s.ctx, valAddr1, evt)
-	s.Require().NoError(err)
-	_, err = s.keeper.AppendValidatorEvent(s.ctx, valAddr2, evt)
-	s.Require().NoError(err)
-
-	// Delete val1 events only.
-	err = s.keeper.DeleteAllValidatorEvents(s.ctx, valAddr1)
-	s.Require().NoError(err)
-
-	// Val1 empty.
-	entries1, err := s.keeper.GetValidatorEventsSince(s.ctx, valAddr1, 0)
-	s.Require().NoError(err)
-	s.Require().Empty(entries1)
-
-	// Val2 untouched.
-	entries2, err := s.keeper.GetValidatorEventsSince(s.ctx, valAddr2, 0)
-	s.Require().NoError(err)
-	s.Require().Len(entries2, 1, "val2 events should not be affected")
-}
-
-func (s *KeeperSuite) TestDeleteAllValidatorEvents_NoOpForEmpty() {
+func (s *KeeperSuite) TestDeleteValidatorEventSeq_NoOpForEmpty() {
 	valAddr := sdk.ValAddress([]byte("val_no_events_______"))
 
-	err := s.keeper.DeleteAllValidatorEvents(s.ctx, valAddr)
-	s.Require().NoError(err, "should not error on validator with no events")
+	err := s.keeper.DeleteValidatorEventSeq(s.ctx, valAddr)
+	s.Require().NoError(err, "should not error on validator with no seq")
+}
+
+func (s *KeeperSuite) TestHasValidatorEvents_TrueWhenEventsExist() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	has, err := s.keeper.HasValidatorEvents(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(has, "should be false with no events")
+
+	evt := s.makeEvent(types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH, 1)
+	_, err = s.keeper.AppendValidatorEvent(s.ctx, valAddr, evt)
+	s.Require().NoError(err)
+
+	has, err = s.keeper.HasValidatorEvents(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(has, "should be true after appending event")
+}
+
+func (s *KeeperSuite) TestHasValidatorEvents_FalseAfterAllDecremented() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	// Append event with refCount=1.
+	evt := s.makeEvent(types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH, 1)
+	_, err := s.keeper.AppendValidatorEvent(s.ctx, valAddr, evt)
+	s.Require().NoError(err)
+
+	// Decrement to 0 — event is garbage-collected.
+	err = s.keeper.DecrementEventRefCount(s.ctx, valAddr, 1)
+	s.Require().NoError(err)
+
+	// hasValidatorEvents should be false even though seq counter still exists.
+	has, err := s.keeper.HasValidatorEvents(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().False(has, "should be false after all events garbage-collected")
+
+	// Seq counter still exists.
+	hasSeq, err := s.keeper.ValidatorEventNextSeq.Has(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(hasSeq, "seq counter should still exist")
 }

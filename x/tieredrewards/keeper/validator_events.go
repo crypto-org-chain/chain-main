@@ -111,25 +111,9 @@ func (k Keeper) decrementEventRefCount(ctx context.Context, valAddr sdk.ValAddre
 	return k.ValidatorEvents.Set(ctx, key, event)
 }
 
-// deleteAllValidatorEvents removes all events and the next-seq entry
+// deleteValidatorEventSeq removes the next-seq entry
 // for a validator. Used during validator removal cleanup.
-func (k Keeper) deleteAllValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) error {
-	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
-
-	var keys []collections.Pair[sdk.ValAddress, uint64]
-	err := k.ValidatorEvents.Walk(ctx, rng, func(key collections.Pair[sdk.ValAddress, uint64], _ types.ValidatorEvent) (bool, error) {
-		keys = append(keys, key)
-		return false, nil
-	})
-	if err != nil {
-		return err
-	}
-	for _, key := range keys {
-		if err := k.ValidatorEvents.Remove(ctx, key); err != nil {
-			return err
-		}
-	}
-
+func (k Keeper) deleteValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) error {
 	has, err := k.ValidatorEventNextSeq.Has(ctx, valAddr)
 	if err != nil {
 		return err
@@ -138,4 +122,14 @@ func (k Keeper) deleteAllValidatorEvents(ctx context.Context, valAddr sdk.ValAdd
 		return k.ValidatorEventNextSeq.Remove(ctx, valAddr)
 	}
 	return nil
+}
+
+func (k Keeper) hasValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) (bool, error) {
+	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
+	found := false
+	err := k.ValidatorEvents.Walk(ctx, rng, func(_ collections.Pair[sdk.ValAddress, uint64], _ types.ValidatorEvent) (bool, error) {
+		found = true
+		return true, nil // stop after first
+	})
+	return found, err
 }

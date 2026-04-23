@@ -157,8 +157,12 @@ func (k Keeper) DecrementEventRefCount(ctx context.Context, valAddr sdk.ValAddre
 	return k.decrementEventRefCount(ctx, valAddr, seq)
 }
 
-func (k Keeper) DeleteAllValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) error {
-	return k.deleteAllValidatorEvents(ctx, valAddr)
+func (k Keeper) DeleteValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) error {
+	return k.deleteValidatorEventSeq(ctx, valAddr)
+}
+
+func (k Keeper) HasValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) (bool, error) {
+	return k.hasValidatorEvents(ctx, valAddr)
 }
 
 func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
