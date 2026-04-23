@@ -73,7 +73,7 @@ func (p Position) Validate() error {
 			return fmt.Errorf("last bonus accrual must not be set when not delegated")
 		}
 		if p.LastEventSeq != 0 {
-			return fmt.Errorf("last event seq must be set when not delegated")
+			return fmt.Errorf("last event seq must not be set when not delegated")
 		}
 	}
 
