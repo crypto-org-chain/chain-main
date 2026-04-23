@@ -49,6 +49,9 @@ func validFullGenesis() types.GenesisState {
 		RedelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 11, PositionId: 1},
 		},
+		ValidatorPositionCounts: []types.ValidatorPositionCountEntry{
+			{Validator: testValidator, Count: 1},
+		},
 	}
 }
 
@@ -338,5 +341,32 @@ func TestValidateGenesis(t *testing.T) {
 			{Validator: testValidator, NextSeq: 2},
 		}
 		require.NoError(t, types.ValidateGenesis(genesis))
+	})
+
+	t.Run("position count mismatch — count too high", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// 1 delegated position on testValidator, but count says 5.
+		genesis.ValidatorPositionCounts = []types.ValidatorPositionCountEntry{
+			{Validator: testValidator, Count: 5},
+		}
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "position count mismatch")
+	})
+
+	t.Run("position count mismatch — count too low", func(t *testing.T) {
+		genesis := validFullGenesis()
+		// 1 delegated position on testValidator, but count says 0 (missing entry).
+		// No ValidatorPositionCounts entry → importedCounts[testValidator] = 0, expected = 1.
+		genesis.ValidatorPositionCounts = nil
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "position count mismatch")
+	})
+
+	t.Run("position count for validator with no positions", func(t *testing.T) {
+		genesis := validFullGenesis()
+		otherVal := sdk.ValAddress([]byte("other_validator_____")).String()
+		genesis.ValidatorPositionCounts = []types.ValidatorPositionCountEntry{
+			{Validator: testValidator, Count: 1},
+			{Validator: otherVal, Count: 3},
+		}
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "no delegated positions")
 	})
 }
