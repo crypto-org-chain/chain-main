@@ -126,6 +126,41 @@ func (s *KeeperSuite) TestComputeSegmentBonus_ZeroSegmentDuration() {
 		"bonus should be zero when segment duration is zero")
 }
 
+// TestComputeSegmentBonus_CappedAtExitUnlockAt verifies that when segmentEnd
+// exceeds ExitUnlockAt, the bonus is capped at ExitUnlockAt — not the full
+// segment duration. This prevents bonus accrual after the exit lock expires.
+func (s *KeeperSuite) TestComputeSegmentBonus_CappedAtExitUnlockAt() {
+	s.setupTier(1)
+	tier, _ := s.keeper.Tiers.Get(s.ctx, 1)
+	tier.BonusApy = sdkmath.LegacyNewDecWithPrec(4, 2) // 4%
+
+	now := s.ctx.BlockTime()
+	tokensPerShare := sdkmath.LegacyNewDec(1)
+	exitUnlockAt := now.Add(10 * 24 * time.Hour) // 10 days from now
+
+	pos := types.Position{
+		DelegatedShares: sdkmath.LegacyNewDec(1000),
+		ExitUnlockAt:    exitUnlockAt,
+	}
+
+	// Segment that extends 365 days past ExitUnlockAt.
+	segmentEnd := exitUnlockAt.Add(365 * 24 * time.Hour)
+	bonusCapped := s.keeper.ComputeSegmentBonus(&pos, tier, now, segmentEnd, tokensPerShare)
+
+	// Compare against exact 10-day bonus (capped at ExitUnlockAt).
+	bonusExact := s.keeper.ComputeSegmentBonus(&pos, tier, now, exitUnlockAt, tokensPerShare)
+
+	s.Require().Equal(bonusExact.String(), bonusCapped.String(),
+		"bonus should be capped at ExitUnlockAt regardless of segment end; capped=%s, exact=%s",
+		bonusCapped, bonusExact)
+	s.Require().True(bonusCapped.IsPositive(), "capped bonus should still be positive")
+
+	// Segment that starts AFTER ExitUnlockAt should yield zero.
+	bonusAfter := s.keeper.ComputeSegmentBonus(&pos, tier, exitUnlockAt, segmentEnd, tokensPerShare)
+	s.Require().True(bonusAfter.IsZero(),
+		"segment starting at ExitUnlockAt should yield zero bonus")
+}
+
 // TestComputeSegmentBonus_CorrectAmount verifies the exact formula:
 //
 //	bonus = shares × tokensPerShare × bonusApy × durationSeconds / SecondsPerYear
