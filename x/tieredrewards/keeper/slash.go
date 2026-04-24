@@ -61,7 +61,7 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 // claim pending rewards BEFORE reducing shares. Otherwise, base rewards
 // accrued at the pre-slash share count would be computed on fewer shares at
 // claim time, losing the difference.
-func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, slashAmount math.Int, shareBurnt math.LegacyDec) error {
+func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, shareBurnt math.LegacyDec) error {
 	pos, found, err := k.getMappedSlashPosition(ctx, k.RedelegationMappings, unbondingId, k.deleteRedelegationPositionMapping)
 	if err != nil {
 		return err

@@ -135,8 +135,8 @@ func (h Hooks) AfterUnbondingRedelegationSlashed(ctx context.Context, unbondingI
 
 // AfterRedelegationSlashed updates DelegatedShares when an active destination
 // delegation is slashed via redelegation.
-func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
-	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
+func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, _ sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
+	return h.k.slashRedelegationPosition(ctx, unbondingId, shareBurnt)
 }
 
 func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
