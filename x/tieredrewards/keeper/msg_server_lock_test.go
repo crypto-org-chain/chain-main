@@ -41,16 +41,16 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 }
 
 func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
-	// Step 1: Create a first position to establish validator count.
+	// Create a first position to establish validator count.
 	lockAmt := sdkmath.NewInt(1000)
 	pos1 := s.setupNewTierPosition(lockAmt, false)
 	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
 
-	// Step 2: Record a slash event via the staking hook.
+	// Record a slash event via the staking hook.
 	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	// Step 3: Create a second position via LockTier on the same validator.
+	// Create a second position via LockTier on the same validator.
 	_, bondDenom := s.getStakingData()
 	freshAddr := s.fundRandomAddr(bondDenom, lockAmt)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -66,11 +66,11 @@ func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
 	pos2, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
-	// Step 4: The second position's LastEventSeq should equal 1 (the slash event seq).
+	// The second position's LastEventSeq should equal 1 (the slash event seq).
 	s.Require().Equal(uint64(1), pos2.LastEventSeq,
 		"new position should skip prior events; LastEventSeq should be 1 (the slash event)")
 
-	// Step 5: The first position's LastEventSeq should still be 0 (set at creation, before the slash).
+	// The first position's LastEventSeq should still be 0 (set at creation, before the slash).
 	pos1, err = s.keeper.GetPosition(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,

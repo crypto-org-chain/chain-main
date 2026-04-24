@@ -752,6 +752,8 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 		DelegatedShares:  sdkmath.LegacyNewDec(5000),
 		Validator:        fakeValAddr.String(),
 		LastBonusAccrual: s.ctx.BlockTime(),
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
 	}
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 
