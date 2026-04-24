@@ -81,7 +81,7 @@ func (s *KeeperSuite) TestComputeSegmentBonus_SharesWorthless() {
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(val.GetTokens().IsZero(),
-		"validator tokens should be zero after 100%% slash")
+		"validator tokens should be zero after 100% slash")
 
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
