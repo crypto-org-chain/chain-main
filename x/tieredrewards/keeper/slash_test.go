@@ -52,8 +52,7 @@ func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Posi
 // slashRedelegationPosition tests (AfterRedelegationSlashed)
 // ---------------------------------------------------------------------------
 
-// Redelegation slash reduces DelegatedShares. Amount stays at 0
-// for delegated positions.
+// Redelegation slash reduces DelegatedShares.
 func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesDelegatedShares() {
 	lockAmount := sdkmath.NewInt(10000)
 

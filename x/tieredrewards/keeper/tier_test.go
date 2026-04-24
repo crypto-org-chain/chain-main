@@ -91,6 +91,44 @@ func (s *KeeperSuite) TestDeleteTier() {
 	s.Require().False(has)
 }
 
+func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithPositions() {
+	tier := newTestTier(1)
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	// Create a position in tier 1
+	pos := newTestPosition(1, testPositionOwner, 1)
+	err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	// Delete should fail
+	err = s.keeper.DeleteTier(s.ctx, 1)
+	s.Require().ErrorIs(err, types.ErrTierHasActivePositions)
+
+	// Tier should still exist
+	has, err := s.keeper.HasTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().True(has)
+}
+
+func (s *KeeperSuite) TestKeeperDeleteTier_SucceedsAfterPositionsRemoved() {
+	tier := newTestTier(1)
+	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
+
+	pos := newTestPosition(1, testPositionOwner, 1)
+	err := s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	// Remove position
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
+
+	// Now delete should succeed
+	s.Require().NoError(s.keeper.DeleteTier(s.ctx, 1))
+
+	has, err := s.keeper.HasTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().False(has)
+}
+
 // ---------------------------------------------------------------------------
 // Tier position count helpers
 // ---------------------------------------------------------------------------
@@ -182,42 +220,4 @@ func (s *KeeperSuite) TestIncreaseDecreaseValidatorPositionCount() {
 
 	// Decrease on 0 is a no-op.
 	s.Require().NoError(s.keeper.DecreasePositionCountForValidator(s.ctx, valAddr))
-}
-
-func (s *KeeperSuite) TestKeeperDeleteTier_FailsWithPositions() {
-	tier := newTestTier(1)
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
-	// Create a position in tier 1
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	// Delete should fail
-	err = s.keeper.DeleteTier(s.ctx, 1)
-	s.Require().ErrorIs(err, types.ErrTierHasActivePositions)
-
-	// Tier should still exist
-	has, err := s.keeper.HasTier(s.ctx, 1)
-	s.Require().NoError(err)
-	s.Require().True(has)
-}
-
-func (s *KeeperSuite) TestKeeperDeleteTier_SucceedsAfterPositionsRemoved() {
-	tier := newTestTier(1)
-	s.Require().NoError(s.keeper.SetTier(s.ctx, tier))
-
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	// Remove position
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
-
-	// Now delete should succeed
-	s.Require().NoError(s.keeper.DeleteTier(s.ctx, 1))
-
-	has, err := s.keeper.HasTier(s.ctx, 1)
-	s.Require().NoError(err)
-	s.Require().False(has)
 }

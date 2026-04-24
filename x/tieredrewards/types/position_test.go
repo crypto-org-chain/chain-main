@@ -100,12 +100,6 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "amount cannot be nil",
 		},
 		{
-			name: "zero amount is valid (post-slash state)",
-			modify: func(p *types.Position) {
-				p.UpdateAmount(sdkmath.ZeroInt())
-			},
-		},
-		{
 			name: "negative amount",
 			modify: func(p *types.Position) {
 				p.UpdateAmount(sdkmath.NewInt(-500))

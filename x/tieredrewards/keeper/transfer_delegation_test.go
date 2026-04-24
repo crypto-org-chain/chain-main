@@ -402,7 +402,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_NotDelegated() {
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, lockAmount)
+	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, pos.Amount)
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
