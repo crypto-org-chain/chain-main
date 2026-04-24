@@ -255,3 +255,30 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
 	s.Require().Error(err, "AddToTier should fail on validator with invalid exchange rate")
 	s.Require().ErrorIs(err, stakingtypes.ErrDelegatorShareExRateInvalid)
 }
+
+// TestMsgAddToTierPosition_DelegatedToJailedValidator verifies that AddToTier
+// fails when the position is delegated to a jailed (unbonding) validator,
+// because delegate() rejects non-bonded validators.
+func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToJailedValidator() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+
+	// Jail the validator — transitions to Unbonding.
+	s.jailAndUnbondValidator(valAddr)
+
+	// Fund owner for add.
+	addAmount := sdkmath.NewInt(500)
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
+		Owner:      delAddr.String(),
+		PositionId: pos.Id,
+		Amount:     addAmount,
+	})
+	s.Require().Error(err, "AddToTier should fail on jailed/unbonding validator")
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+}
