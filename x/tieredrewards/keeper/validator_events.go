@@ -11,9 +11,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// ValidatorEventEntry pairs a sequence number with a ValidatorEvent,
+// EventEntry pairs a sequence number with a ValidatorEvent,
 // used when iterating events for a validator.
-type ValidatorEventEntry struct {
+type EventEntry struct {
 	Seq   uint64
 	Event types.ValidatorEvent
 }
@@ -66,14 +66,14 @@ func (k Keeper) getValidatorEventLatestSeq(ctx context.Context, valAddr sdk.ValA
 
 // getValidatorEventsSince returns all events for a validator with sequence > startSeq,
 // in ascending order.
-func (k Keeper) getValidatorEventsSince(ctx context.Context, valAddr sdk.ValAddress, startSeq uint64) ([]ValidatorEventEntry, error) {
+func (k Keeper) getValidatorEventsSince(ctx context.Context, valAddr sdk.ValAddress, startSeq uint64) ([]EventEntry, error) {
 	// Range from (valAddr, startSeq+1) to end of valAddr prefix.
 	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr).
 		StartExclusive(startSeq)
 
-	var entries []ValidatorEventEntry
+	var entries []EventEntry
 	err := k.ValidatorEvents.Walk(ctx, rng, func(key collections.Pair[sdk.ValAddress, uint64], event types.ValidatorEvent) (bool, error) {
-		entries = append(entries, ValidatorEventEntry{Seq: key.K2(), Event: event})
+		entries = append(entries, EventEntry{Seq: key.K2(), Event: event})
 		return false, nil
 	})
 	if err != nil {

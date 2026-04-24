@@ -169,7 +169,7 @@ func (k Keeper) AppendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress
 	return k.appendValidatorEvent(ctx, valAddr, event)
 }
 
-func (k Keeper) GetValidatorEventsSince(ctx context.Context, valAddr sdk.ValAddress, startSeq uint64) ([]ValidatorEventEntry, error) {
+func (k Keeper) GetValidatorEventsSince(ctx context.Context, valAddr sdk.ValAddress, startSeq uint64) ([]EventEntry, error) {
 	return k.getValidatorEventsSince(ctx, valAddr, startSeq)
 }
 
