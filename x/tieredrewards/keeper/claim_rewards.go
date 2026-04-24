@@ -223,6 +223,11 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 		return sdk.NewCoins(), nil
 	}
 
+	// Defensive
+	if pos.Validator != valAddr.String() {
+		return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
+	}
+
 	events, err := k.getValidatorEventsSince(ctx, valAddr, pos.LastEventSeq)
 	if err != nil {
 		return nil, err
