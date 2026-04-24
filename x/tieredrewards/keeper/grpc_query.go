@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	stderrors "errors"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"google.golang.org/grpc/codes"
@@ -178,4 +179,141 @@ func (q queryServer) TotalDelegatedVotingPower(ctx context.Context, req *types.Q
 	}
 
 	return &types.QueryTotalDelegatedVotingPowerResponse{VotingPower: power}, nil
+}
+
+func (q queryServer) RawTierPosition(ctx context.Context, req *types.QueryRawTierPositionRequest) (*types.QueryRawTierPositionResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	pos, err := q.k.getPosition(ctx, req.PositionId)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionResponse{Position: pos}, nil
+}
+
+func (q queryServer) RawTierPositionsByOwner(ctx context.Context, req *types.QueryRawTierPositionsByOwnerRequest) (*types.QueryRawTierPositionsByOwnerResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	owner, err := sdk.AccAddressFromBech32(req.Owner)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address: %s", err)
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByOwner,
+		req.Pagination,
+		func(key collections.Pair[sdk.AccAddress, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionsByOwnerResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
+func (q queryServer) RawAllTierPositions(ctx context.Context, req *types.QueryRawAllTierPositionsRequest) (*types.QueryRawAllTierPositionsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.Positions,
+		req.Pagination,
+		func(_ uint64, pos types.Position) (types.Position, error) {
+			return pos, nil
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawAllTierPositionsResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
+
+func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidatorDataRequest) (*types.QueryValidatorDataResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	valAddr, err := sdk.ValAddressFromBech32(req.Validator)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address: %s", err)
+	}
+
+	resp := &types.QueryValidatorDataResponse{}
+
+	ratio, err := q.k.ValidatorRewardRatio.Get(ctx, valAddr)
+	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
+		return nil, err
+	}
+	resp.RewardRatio = ratio
+
+	count, err := q.k.PositionCountByValidator.Get(ctx, valAddr)
+	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
+		return nil, err
+	}
+	resp.PositionCount = count
+
+	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
+	err = q.k.ValidatorEvents.Walk(ctx, rng, func(_ collections.Pair[sdk.ValAddress, uint64], event types.ValidatorEvent) (bool, error) {
+		resp.Events = append(resp.Events, event)
+		return false, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	seq, err := q.k.ValidatorEventSeq.Get(ctx, valAddr)
+	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
+		return nil, err
+	}
+	resp.EventCurrentSeq = seq
+
+	return resp, nil
+}
+
+func (q queryServer) PositionMappings(ctx context.Context, req *types.QueryPositionMappingsRequest) (*types.QueryPositionMappingsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	resp := &types.QueryPositionMappingsResponse{}
+
+	unbondIter, err := q.k.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
+	if err != nil {
+		return nil, err
+	}
+	defer unbondIter.Close()
+	for ; unbondIter.Valid(); unbondIter.Next() {
+		pk, err := unbondIter.PrimaryKey()
+		if err != nil {
+			return nil, err
+		}
+		resp.UnbondingIds = append(resp.UnbondingIds, pk)
+	}
+
+	redelIter, err := q.k.RedelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
+	if err != nil {
+		return nil, err
+	}
+	defer redelIter.Close()
+	for ; redelIter.Valid(); redelIter.Next() {
+		pk, err := redelIter.PrimaryKey()
+		if err != nil {
+			return nil, err
+		}
+		resp.RedelegationIds = append(resp.RedelegationIds, pk)
+	}
+
+	return resp, nil
 }

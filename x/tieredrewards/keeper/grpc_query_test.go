@@ -454,3 +454,139 @@ func (s *KeeperSuite) TestGRPCQueryTotalDelegatedVotingPower_NilRequest() {
 	s.Require().Error(err)
 	s.Require().ErrorContains(err, "empty request")
 }
+
+// ---------------------------------------------------------------------------
+// Raw position queries
+// ---------------------------------------------------------------------------
+
+func (s *KeeperSuite) TestGRPCQueryRawTierPosition() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	resp, err := s.queryClient.RawTierPosition(s.ctx.Context(), &types.QueryRawTierPositionRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().Equal(pos.Id, resp.Position.Id)
+	s.Require().Equal(pos.Owner, resp.Position.Owner)
+	s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
+}
+
+func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByOwner() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	resp, err := s.queryClient.RawTierPositionsByOwner(s.ctx.Context(), &types.QueryRawTierPositionsByOwnerRequest{Owner: pos.Owner})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 1)
+	s.Require().Equal(pos.Id, resp.Positions[0].Id)
+	s.Require().True(resp.Positions[0].Amount.IsZero(), "raw delegated position amount should be zero")
+}
+
+func (s *KeeperSuite) TestGRPCQueryRawAllTierPositions() {
+	for i := 0; i < 3; i++ {
+		s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	}
+
+	resp, err := s.queryClient.RawAllTierPositions(s.ctx.Context(), &types.QueryRawAllTierPositionsRequest{})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 3)
+}
+
+// ---------------------------------------------------------------------------
+// Validator data
+// ---------------------------------------------------------------------------
+
+func (s *KeeperSuite) TestGRPCQueryValidatorData() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+
+	// Allocate rewards so ratio becomes non-zero.
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100_000), bondDenom)
+
+	// Claim to update the ratio in the store.
+	pos, _, _, err := s.keeper.ClaimRewardsForPosition(s.ctx, pos)
+	s.Require().NoError(err)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	// Record a slash event.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	s.Require().NoError(err)
+
+	resp, err := s.queryClient.ValidatorData(s.ctx.Context(), &types.QueryValidatorDataRequest{Validator: valAddr.String()})
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), resp.PositionCount)
+	s.Require().Len(resp.Events, 1)
+	s.Require().Equal(types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH, resp.Events[0].EventType)
+	s.Require().Equal(uint64(1), resp.EventCurrentSeq)
+
+	// Ratio should be non-zero after rewards were allocated and claimed.
+	s.Require().True(len(resp.RewardRatio.CumulativeRewardsPerShare) > 0,
+		"reward ratio should be non-zero after allocating and claiming rewards")
+}
+
+func (s *KeeperSuite) TestGRPCQueryValidatorData_Empty() {
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	resp, err := s.queryClient.ValidatorData(s.ctx.Context(), &types.QueryValidatorDataRequest{Validator: valAddr.String()})
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(0), resp.PositionCount)
+	s.Require().Empty(resp.Events)
+	s.Require().Equal(uint64(0), resp.EventCurrentSeq)
+
+	// No positions → no ratio entry. CumulativeRewardsPerShare should be nil/empty.
+	s.Require().Empty(resp.RewardRatio.CumulativeRewardsPerShare,
+		"reward ratio should be empty for validator with no positions")
+}
+
+// ---------------------------------------------------------------------------
+// Position mappings
+// ---------------------------------------------------------------------------
+
+func (s *KeeperSuite) TestGRPCQueryPositionMappings_AfterUndelegate() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), true)
+
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().Len(resp.UnbondingIds, 1, "should have 1 unbonding mapping")
+	s.Require().Empty(resp.RedelegationIds)
+}
+
+func (s *KeeperSuite) TestGRPCQueryPositionMappings_AfterRedelegate() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	dstValAddr, _ := s.createSecondValidator()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        pos.Owner,
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.UnbondingIds)
+	s.Require().Len(resp.RedelegationIds, 1, "should have 1 redelegation mapping")
+}
+
+func (s *KeeperSuite) TestGRPCQueryPositionMappings_Empty() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.UnbondingIds)
+	s.Require().Empty(resp.RedelegationIds)
+}

@@ -62,6 +62,31 @@ service Query {
       returns (QueryTotalDelegatedVotingPowerResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/total_delegated_voting_power";
   }
+
+  // RawTierPosition returns a single raw stored Position by ID (without computed amount).
+  rpc RawTierPosition(QueryRawTierPositionRequest) returns (QueryRawTierPositionResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/position/{position_id}";
+  }
+
+  // RawTierPositionsByOwner returns all raw stored Positions for a given owner address.
+  rpc RawTierPositionsByOwner(QueryRawTierPositionsByOwnerRequest) returns (QueryRawTierPositionsByOwnerResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions/{owner}";
+  }
+
+  // RawAllTierPositions returns all raw stored Positions with pagination.
+  rpc RawAllTierPositions(QueryRawAllTierPositionsRequest) returns (QueryRawAllTierPositionsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions";
+  }
+
+  // ValidatorData returns all validator-related data from the keeper for a given validator.
+  rpc ValidatorData(QueryValidatorDataRequest) returns (QueryValidatorDataResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/validator_data/{validator}";
+  }
+
+  // PositionMappings returns unbonding and redelegation mappings for a given position.
+  rpc PositionMappings(QueryPositionMappingsRequest) returns (QueryPositionMappingsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/position_mappings/{position_id}";
+  }
 }
 
 // QueryParamsRequest is the request type for the Query/Params RPC method.
@@ -179,4 +204,71 @@ message QueryTotalDelegatedVotingPowerResponse {
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
+}
+
+// QueryRawTierPositionRequest is the request type for the Query/RawTierPosition RPC method.
+message QueryRawTierPositionRequest {
+  uint64 position_id = 1;
+}
+
+// QueryRawTierPositionResponse is the response type for the Query/RawTierPosition RPC method.
+message QueryRawTierPositionResponse {
+  Position position = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+}
+
+// QueryRawTierPositionsByOwnerRequest is the request type for the Query/RawTierPositionsByOwner RPC method.
+message QueryRawTierPositionsByOwnerRequest {
+  string                                owner      = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryRawTierPositionsByOwnerResponse is the response type for the Query/RawTierPositionsByOwner RPC method.
+message QueryRawTierPositionsByOwnerResponse {
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRawAllTierPositionsRequest is the request type for the Query/RawAllTierPositions RPC method.
+message QueryRawAllTierPositionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryRawAllTierPositionsResponse is the response type for the Query/RawAllTierPositions RPC method.
+message QueryRawAllTierPositionsResponse {
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryValidatorDataRequest is the request type for the Query/ValidatorData RPC method.
+message QueryValidatorDataRequest {
+  string validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+}
+
+// QueryValidatorDataResponse is the response type for the Query/ValidatorData RPC method.
+message QueryValidatorDataResponse {
+  // reward_ratio is the cumulative rewards per share for this validator.
+  ValidatorRewardRatio reward_ratio = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // position_count is the number of positions delegated to this validator.
+  uint64 position_count = 2;
+
+  // events are the pending validator lifecycle events.
+  repeated ValidatorEvent events = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+
+  // event_current_seq is the current event sequence number for this validator.
+  uint64 event_current_seq = 4;
+}
+
+// QueryPositionMappingsRequest is the request type for the Query/PositionMappings RPC method.
+message QueryPositionMappingsRequest {
+  uint64 position_id = 1;
+}
+
+// QueryPositionMappingsResponse is the response type for the Query/PositionMappings RPC method.
+message QueryPositionMappingsResponse {
+  // unbonding_ids are all unbonding IDs mapped to this position.
+  repeated uint64 unbonding_ids = 1;
+
+  // redelegation_ids are all redelegation IDs mapped to this position.
+  repeated uint64 redelegation_ids = 2;
 }

@@ -25326,6 +25326,65 @@ paths:
           format: uint64
       tags:
         - Query
+  /chainmain/tieredrewards/v1/position_mappings/{position_id}:
+    get:
+      summary: >-
+        PositionMappings returns unbonding and redelegation mappings for a given
+        position.
+      operationId: PositionMappings
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              unbonding_ids:
+                type: array
+                items:
+                  type: string
+                  format: uint64
+                description: unbonding_ids are all unbonding IDs mapped to this position.
+              redelegation_ids:
+                type: array
+                items:
+                  type: string
+                  format: uint64
+                description: >-
+                  redelegation_ids are all redelegation IDs mapped to this
+                  position.
+            description: >-
+              QueryPositionMappingsResponse is the response type for the
+              Query/PositionMappings RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: position_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /chainmain/tieredrewards/v1/positions:
     get:
       summary: AllTierPositions returns all positions with pagination.
@@ -25702,6 +25761,646 @@ paths:
           type: boolean
       tags:
         - Query
+  /chainmain/tieredrewards/v1/raw/position/{position_id}:
+    get:
+      summary: >-
+        RawTierPosition returns a single raw stored Position by ID (without
+        computed amount).
+      operationId: RawTierPosition
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              position:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uint64
+                    description: id is the unique identifier for this position.
+                  owner:
+                    type: string
+                    description: owner is the address that owns this position.
+                  tier_id:
+                    type: integer
+                    format: int64
+                    description: tier_id references the Tier this position belongs to.
+                  amount:
+                    type: string
+                    description: >-
+                      amount is the token amount for undelegated positions. For
+                      delegated positions
+
+                      this is always zero — the live token value is derived from
+
+                      validator.TokensFromShares(delegated_shares).
+                  validator:
+                    type: string
+                    description: >-
+                      validator is the validator operator address if delegated;
+                      empty if not delegated.
+                  delegated_shares:
+                    type: string
+                    description: >-
+                      delegated_shares are the validator delegation shares for
+                      this position.
+                  base_rewards_per_share:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        DecCoin defines a token with a denomination and a
+                        decimal amount.
+
+
+                        NOTE: The amount field is an Dec which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    description: >-
+                      base_rewards_per_share is the cumulative base rewards per
+                      share snapshot
+
+                      at the time this position was created or last claimed.
+
+                      Used to calculate the position's share of base rewards:
+                      reward = shares × (current_ratio − starting_ratio).
+
+                      It is possible to have no base rewards per share if the
+                      position is the first one delegated to the validator.
+                  last_bonus_accrual:
+                    type: string
+                    format: date-time
+                    description: >-
+                      last_bonus_accrual is the last time bonus rewards was
+                      claimed.
+                  exit_triggered_at:
+                    type: string
+                    format: date-time
+                    description: >-
+                      exit_triggered_at is the time when exit was triggered.
+                      Zero value means not exiting.
+                  exit_unlock_at:
+                    type: string
+                    format: date-time
+                    description: >-
+                      exit_unlock_at is when the user can claim tokens
+                      (exit_triggered_at + tier.exit_duration).
+                  created_at_height:
+                    type: string
+                    format: uint64
+                    description: >-
+                      created_at_height is the block height when this position
+                      was created.
+                  created_at_time:
+                    type: string
+                    format: date-time
+                    description: >-
+                      created_at_time is the block time when this position was
+                      created.
+                  last_event_seq:
+                    type: string
+                    format: uint64
+                    description: >-
+                      last_event_seq is the sequence number of the last
+                      validator event this
+
+                      position has processed. Events with seq > last_event_seq
+                      are pending.
+                  last_known_bonded:
+                    type: boolean
+                    description: >-
+                      last_known_bonded tracks whether the validator was bonded
+                      after the last
+
+                      event replay. Used as the starting state for the next
+                      processEventsAndClaimBonus
+
+                      call. True when the position is first created (only bonded
+                      validators accepted).
+                description: Position represents a single lock position in the tier.
+            description: >-
+              QueryRawTierPositionResponse is the response type for the
+              Query/RawTierPosition RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: position_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
+  /chainmain/tieredrewards/v1/raw/positions:
+    get:
+      summary: RawAllTierPositions returns all raw stored Positions with pagination.
+      operationId: RawAllTierPositions
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              positions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uint64
+                      description: id is the unique identifier for this position.
+                    owner:
+                      type: string
+                      description: owner is the address that owns this position.
+                    tier_id:
+                      type: integer
+                      format: int64
+                      description: tier_id references the Tier this position belongs to.
+                    amount:
+                      type: string
+                      description: >-
+                        amount is the token amount for undelegated positions.
+                        For delegated positions
+
+                        this is always zero — the live token value is derived
+                        from
+
+                        validator.TokensFromShares(delegated_shares).
+                    validator:
+                      type: string
+                      description: >-
+                        validator is the validator operator address if
+                        delegated; empty if not delegated.
+                    delegated_shares:
+                      type: string
+                      description: >-
+                        delegated_shares are the validator delegation shares for
+                        this position.
+                    base_rewards_per_share:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          DecCoin defines a token with a denomination and a
+                          decimal amount.
+
+
+                          NOTE: The amount field is an Dec which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      description: >-
+                        base_rewards_per_share is the cumulative base rewards
+                        per share snapshot
+
+                        at the time this position was created or last claimed.
+
+                        Used to calculate the position's share of base rewards:
+                        reward = shares × (current_ratio − starting_ratio).
+
+                        It is possible to have no base rewards per share if the
+                        position is the first one delegated to the validator.
+                    last_bonus_accrual:
+                      type: string
+                      format: date-time
+                      description: >-
+                        last_bonus_accrual is the last time bonus rewards was
+                        claimed.
+                    exit_triggered_at:
+                      type: string
+                      format: date-time
+                      description: >-
+                        exit_triggered_at is the time when exit was triggered.
+                        Zero value means not exiting.
+                    exit_unlock_at:
+                      type: string
+                      format: date-time
+                      description: >-
+                        exit_unlock_at is when the user can claim tokens
+                        (exit_triggered_at + tier.exit_duration).
+                    created_at_height:
+                      type: string
+                      format: uint64
+                      description: >-
+                        created_at_height is the block height when this position
+                        was created.
+                    created_at_time:
+                      type: string
+                      format: date-time
+                      description: >-
+                        created_at_time is the block time when this position was
+                        created.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
+                  description: Position represents a single lock position in the tier.
+              pagination:
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    description: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently. It will be empty if
+                      there are no more results.
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+            description: >-
+              QueryRawAllTierPositionsResponse is the response type for the
+              Query/RawAllTierPositions RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
+  /chainmain/tieredrewards/v1/raw/positions/{owner}:
+    get:
+      summary: >-
+        RawTierPositionsByOwner returns all raw stored Positions for a given
+        owner address.
+      operationId: RawTierPositionsByOwner
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              positions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uint64
+                      description: id is the unique identifier for this position.
+                    owner:
+                      type: string
+                      description: owner is the address that owns this position.
+                    tier_id:
+                      type: integer
+                      format: int64
+                      description: tier_id references the Tier this position belongs to.
+                    amount:
+                      type: string
+                      description: >-
+                        amount is the token amount for undelegated positions.
+                        For delegated positions
+
+                        this is always zero — the live token value is derived
+                        from
+
+                        validator.TokensFromShares(delegated_shares).
+                    validator:
+                      type: string
+                      description: >-
+                        validator is the validator operator address if
+                        delegated; empty if not delegated.
+                    delegated_shares:
+                      type: string
+                      description: >-
+                        delegated_shares are the validator delegation shares for
+                        this position.
+                    base_rewards_per_share:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          denom:
+                            type: string
+                          amount:
+                            type: string
+                        description: >-
+                          DecCoin defines a token with a denomination and a
+                          decimal amount.
+
+
+                          NOTE: The amount field is an Dec which implements the
+                          custom method
+
+                          signatures required by gogoproto.
+                      description: >-
+                        base_rewards_per_share is the cumulative base rewards
+                        per share snapshot
+
+                        at the time this position was created or last claimed.
+
+                        Used to calculate the position's share of base rewards:
+                        reward = shares × (current_ratio − starting_ratio).
+
+                        It is possible to have no base rewards per share if the
+                        position is the first one delegated to the validator.
+                    last_bonus_accrual:
+                      type: string
+                      format: date-time
+                      description: >-
+                        last_bonus_accrual is the last time bonus rewards was
+                        claimed.
+                    exit_triggered_at:
+                      type: string
+                      format: date-time
+                      description: >-
+                        exit_triggered_at is the time when exit was triggered.
+                        Zero value means not exiting.
+                    exit_unlock_at:
+                      type: string
+                      format: date-time
+                      description: >-
+                        exit_unlock_at is when the user can claim tokens
+                        (exit_triggered_at + tier.exit_duration).
+                    created_at_height:
+                      type: string
+                      format: uint64
+                      description: >-
+                        created_at_height is the block height when this position
+                        was created.
+                    created_at_time:
+                      type: string
+                      format: date-time
+                      description: >-
+                        created_at_time is the block time when this position was
+                        created.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
+                  description: Position represents a single lock position in the tier.
+              pagination:
+                type: object
+                properties:
+                  next_key:
+                    type: string
+                    format: byte
+                    description: |-
+                      next_key is the key to be passed to PageRequest.key to
+                      query the next page most efficiently. It will be empty if
+                      there are no more results.
+                  total:
+                    type: string
+                    format: uint64
+                    title: >-
+                      total is total number of results available if
+                      PageRequest.count_total
+
+                      was set, its value is undefined otherwise
+                description: >-
+                  PageResponse is to be embedded in gRPC response messages where
+                  the
+
+                  corresponding request message has used PageRequest.
+
+                   message SomeResponse {
+                           repeated Bar results = 1;
+                           PageResponse page = 2;
+                   }
+            description: >-
+              QueryRawTierPositionsByOwnerResponse is the response type for the
+              Query/RawTierPositionsByOwner RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: owner
+          in: path
+          required: true
+          type: string
+        - name: pagination.key
+          description: |-
+            key is a value returned in PageResponse.next_key to begin
+            querying the next page most efficiently. Only one of offset or key
+            should be set.
+          in: query
+          required: false
+          type: string
+          format: byte
+        - name: pagination.offset
+          description: >-
+            offset is a numeric offset that can be used when key is unavailable.
+
+            It is less efficient than using key. Only one of offset or key
+            should
+
+            be set.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.limit
+          description: >-
+            limit is the total number of results to be returned in the result
+            page.
+
+            If left empty it will default to a value to be set by each app.
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: pagination.count_total
+          description: >-
+            count_total is set to true  to indicate that the result set should
+            include
+
+            a count of the total number of items available for pagination in
+            UIs.
+
+            count_total is only respected when offset is used. It is ignored
+            when key
+
+            is set.
+          in: query
+          required: false
+          type: boolean
+        - name: pagination.reverse
+          description: >-
+            reverse is set to true if results are to be returned in the
+            descending order.
+
+
+            Since: cosmos-sdk 0.43
+          in: query
+          required: false
+          type: boolean
+      tags:
+        - Query
   /chainmain/tieredrewards/v1/rewards_pool_balances:
     get:
       summary: RewardsPoolBalances returns the current balances of the rewards pool.
@@ -25873,6 +26572,144 @@ paths:
                     value:
                       type: string
                       format: byte
+      tags:
+        - Query
+  /chainmain/tieredrewards/v1/validator_data/{validator}:
+    get:
+      summary: >-
+        ValidatorData returns all validator-related data from the keeper for a
+        given validator.
+      operationId: ValidatorData
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              reward_ratio:
+                description: >-
+                  reward_ratio is the cumulative rewards per share for this
+                  validator.
+                type: object
+                properties:
+                  cumulative_rewards_per_share:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        denom:
+                          type: string
+                        amount:
+                          type: string
+                      description: >-
+                        DecCoin defines a token with a denomination and a
+                        decimal amount.
+
+
+                        NOTE: The amount field is an Dec which implements the
+                        custom method
+
+                        signatures required by gogoproto.
+                    description: >-
+                      cumulative_rewards_per_share is the running total of
+                      rewards per delegation share.
+                title: >-
+                  ValidatorRewardRatio stores the cumulative base rewards per
+                  share for a validator.
+
+                  Updated every time base rewards are withdrawn from
+                  x/distribution for this validator.
+
+                  It is possible to have no base rewards per share when the
+                  position is created,
+
+                  if the position is the first one delegated to a validator (no
+                  base rewards accrued yet)
+              position_count:
+                type: string
+                format: uint64
+                description: >-
+                  position_count is the number of positions delegated to this
+                  validator.
+              events:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    height:
+                      type: string
+                      format: int64
+                      description: height is the block height when the event occurred.
+                    timestamp:
+                      type: string
+                      format: date-time
+                      description: timestamp is the block time when the event occurred.
+                    event_type:
+                      description: event_type is the type of event.
+                      type: string
+                      enum:
+                        - VALIDATOR_EVENT_TYPE_UNSPECIFIED
+                        - VALIDATOR_EVENT_TYPE_SLASH
+                        - VALIDATOR_EVENT_TYPE_UNBOND
+                        - VALIDATOR_EVENT_TYPE_BOND
+                      default: VALIDATOR_EVENT_TYPE_UNSPECIFIED
+                    tokens_per_share:
+                      type: string
+                      description: >-
+                        tokens_per_share is the validator's token-per-share rate
+                        at event time,
+
+                        used to snapshot the token value for bonus calculation.
+                    reference_count:
+                      type: string
+                      format: uint64
+                      description: >-
+                        reference_count tracks how many positions still need to
+                        process this event.
+
+                        When it reaches zero the event can be garbage-collected.
+                  description: >-
+                    ValidatorEvent records a validator lifecycle event (slash,
+                    unbond, bond)
+
+                    for lazy processing during reward claims.
+                description: events are the pending validator lifecycle events.
+              event_current_seq:
+                type: string
+                format: uint64
+                description: >-
+                  event_current_seq is the current event sequence number for
+                  this validator.
+            description: >-
+              QueryValidatorDataResponse is the response type for the
+              Query/ValidatorData RPC method.
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: validator
+          in: path
+          required: true
+          type: string
       tags:
         - Query
   /chainmain/tieredrewards/v1/voting_power/{owner}:
@@ -45703,6 +46540,106 @@ definitions:
           target_base_rewards_rate is the target base rewards rate for
           validators.
     description: Params holds parameters for the tieredrewards module.
+  chainmain.tieredrewards.v1.Position:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uint64
+        description: id is the unique identifier for this position.
+      owner:
+        type: string
+        description: owner is the address that owns this position.
+      tier_id:
+        type: integer
+        format: int64
+        description: tier_id references the Tier this position belongs to.
+      amount:
+        type: string
+        description: >-
+          amount is the token amount for undelegated positions. For delegated
+          positions
+
+          this is always zero — the live token value is derived from
+
+          validator.TokensFromShares(delegated_shares).
+      validator:
+        type: string
+        description: >-
+          validator is the validator operator address if delegated; empty if not
+          delegated.
+      delegated_shares:
+        type: string
+        description: >-
+          delegated_shares are the validator delegation shares for this
+          position.
+      base_rewards_per_share:
+        type: array
+        items:
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            DecCoin defines a token with a denomination and a decimal amount.
+
+            NOTE: The amount field is an Dec which implements the custom method
+            signatures required by gogoproto.
+        description: >-
+          base_rewards_per_share is the cumulative base rewards per share
+          snapshot
+
+          at the time this position was created or last claimed.
+
+          Used to calculate the position's share of base rewards: reward =
+          shares × (current_ratio − starting_ratio).
+
+          It is possible to have no base rewards per share if the position is
+          the first one delegated to the validator.
+      last_bonus_accrual:
+        type: string
+        format: date-time
+        description: last_bonus_accrual is the last time bonus rewards was claimed.
+      exit_triggered_at:
+        type: string
+        format: date-time
+        description: >-
+          exit_triggered_at is the time when exit was triggered. Zero value
+          means not exiting.
+      exit_unlock_at:
+        type: string
+        format: date-time
+        description: >-
+          exit_unlock_at is when the user can claim tokens (exit_triggered_at +
+          tier.exit_duration).
+      created_at_height:
+        type: string
+        format: uint64
+        description: created_at_height is the block height when this position was created.
+      created_at_time:
+        type: string
+        format: date-time
+        description: created_at_time is the block time when this position was created.
+      last_event_seq:
+        type: string
+        format: uint64
+        description: |-
+          last_event_seq is the sequence number of the last validator event this
+          position has processed. Events with seq > last_event_seq are pending.
+      last_known_bonded:
+        type: boolean
+        description: >-
+          last_known_bonded tracks whether the validator was bonded after the
+          last
+
+          event replay. Used as the starting state for the next
+          processEventsAndClaimBonus
+
+          call. True when the position is first created (only bonded validators
+          accepted).
+    description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.PositionResponse:
     type: object
     properties:
@@ -45896,6 +46833,429 @@ definitions:
               target_base_rewards_rate is the target base rewards rate for
               validators.
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
+  chainmain.tieredrewards.v1.QueryPositionMappingsResponse:
+    type: object
+    properties:
+      unbonding_ids:
+        type: array
+        items:
+          type: string
+          format: uint64
+        description: unbonding_ids are all unbonding IDs mapped to this position.
+      redelegation_ids:
+        type: array
+        items:
+          type: string
+          format: uint64
+        description: redelegation_ids are all redelegation IDs mapped to this position.
+    description: >-
+      QueryPositionMappingsResponse is the response type for the
+      Query/PositionMappings RPC method.
+  chainmain.tieredrewards.v1.QueryRawAllTierPositionsResponse:
+    type: object
+    properties:
+      positions:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uint64
+              description: id is the unique identifier for this position.
+            owner:
+              type: string
+              description: owner is the address that owns this position.
+            tier_id:
+              type: integer
+              format: int64
+              description: tier_id references the Tier this position belongs to.
+            amount:
+              type: string
+              description: >-
+                amount is the token amount for undelegated positions. For
+                delegated positions
+
+                this is always zero — the live token value is derived from
+
+                validator.TokensFromShares(delegated_shares).
+            validator:
+              type: string
+              description: >-
+                validator is the validator operator address if delegated; empty
+                if not delegated.
+            delegated_shares:
+              type: string
+              description: >-
+                delegated_shares are the validator delegation shares for this
+                position.
+            base_rewards_per_share:
+              type: array
+              items:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  DecCoin defines a token with a denomination and a decimal
+                  amount.
+
+
+                  NOTE: The amount field is an Dec which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+              description: >-
+                base_rewards_per_share is the cumulative base rewards per share
+                snapshot
+
+                at the time this position was created or last claimed.
+
+                Used to calculate the position's share of base rewards: reward =
+                shares × (current_ratio − starting_ratio).
+
+                It is possible to have no base rewards per share if the position
+                is the first one delegated to the validator.
+            last_bonus_accrual:
+              type: string
+              format: date-time
+              description: last_bonus_accrual is the last time bonus rewards was claimed.
+            exit_triggered_at:
+              type: string
+              format: date-time
+              description: >-
+                exit_triggered_at is the time when exit was triggered. Zero
+                value means not exiting.
+            exit_unlock_at:
+              type: string
+              format: date-time
+              description: >-
+                exit_unlock_at is when the user can claim tokens
+                (exit_triggered_at + tier.exit_duration).
+            created_at_height:
+              type: string
+              format: uint64
+              description: >-
+                created_at_height is the block height when this position was
+                created.
+            created_at_time:
+              type: string
+              format: date-time
+              description: >-
+                created_at_time is the block time when this position was
+                created.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
+          description: Position represents a single lock position in the tier.
+      pagination:
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            description: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently. It will be empty if
+              there are no more results.
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+    description: >-
+      QueryRawAllTierPositionsResponse is the response type for the
+      Query/RawAllTierPositions RPC method.
+  chainmain.tieredrewards.v1.QueryRawTierPositionResponse:
+    type: object
+    properties:
+      position:
+        type: object
+        properties:
+          id:
+            type: string
+            format: uint64
+            description: id is the unique identifier for this position.
+          owner:
+            type: string
+            description: owner is the address that owns this position.
+          tier_id:
+            type: integer
+            format: int64
+            description: tier_id references the Tier this position belongs to.
+          amount:
+            type: string
+            description: >-
+              amount is the token amount for undelegated positions. For
+              delegated positions
+
+              this is always zero — the live token value is derived from
+
+              validator.TokensFromShares(delegated_shares).
+          validator:
+            type: string
+            description: >-
+              validator is the validator operator address if delegated; empty if
+              not delegated.
+          delegated_shares:
+            type: string
+            description: >-
+              delegated_shares are the validator delegation shares for this
+              position.
+          base_rewards_per_share:
+            type: array
+            items:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                DecCoin defines a token with a denomination and a decimal
+                amount.
+
+
+                NOTE: The amount field is an Dec which implements the custom
+                method
+
+                signatures required by gogoproto.
+            description: >-
+              base_rewards_per_share is the cumulative base rewards per share
+              snapshot
+
+              at the time this position was created or last claimed.
+
+              Used to calculate the position's share of base rewards: reward =
+              shares × (current_ratio − starting_ratio).
+
+              It is possible to have no base rewards per share if the position
+              is the first one delegated to the validator.
+          last_bonus_accrual:
+            type: string
+            format: date-time
+            description: last_bonus_accrual is the last time bonus rewards was claimed.
+          exit_triggered_at:
+            type: string
+            format: date-time
+            description: >-
+              exit_triggered_at is the time when exit was triggered. Zero value
+              means not exiting.
+          exit_unlock_at:
+            type: string
+            format: date-time
+            description: >-
+              exit_unlock_at is when the user can claim tokens
+              (exit_triggered_at + tier.exit_duration).
+          created_at_height:
+            type: string
+            format: uint64
+            description: >-
+              created_at_height is the block height when this position was
+              created.
+          created_at_time:
+            type: string
+            format: date-time
+            description: created_at_time is the block time when this position was created.
+          last_event_seq:
+            type: string
+            format: uint64
+            description: >-
+              last_event_seq is the sequence number of the last validator event
+              this
+
+              position has processed. Events with seq > last_event_seq are
+              pending.
+          last_known_bonded:
+            type: boolean
+            description: >-
+              last_known_bonded tracks whether the validator was bonded after
+              the last
+
+              event replay. Used as the starting state for the next
+              processEventsAndClaimBonus
+
+              call. True when the position is first created (only bonded
+              validators accepted).
+        description: Position represents a single lock position in the tier.
+    description: >-
+      QueryRawTierPositionResponse is the response type for the
+      Query/RawTierPosition RPC method.
+  chainmain.tieredrewards.v1.QueryRawTierPositionsByOwnerResponse:
+    type: object
+    properties:
+      positions:
+        type: array
+        items:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uint64
+              description: id is the unique identifier for this position.
+            owner:
+              type: string
+              description: owner is the address that owns this position.
+            tier_id:
+              type: integer
+              format: int64
+              description: tier_id references the Tier this position belongs to.
+            amount:
+              type: string
+              description: >-
+                amount is the token amount for undelegated positions. For
+                delegated positions
+
+                this is always zero — the live token value is derived from
+
+                validator.TokensFromShares(delegated_shares).
+            validator:
+              type: string
+              description: >-
+                validator is the validator operator address if delegated; empty
+                if not delegated.
+            delegated_shares:
+              type: string
+              description: >-
+                delegated_shares are the validator delegation shares for this
+                position.
+            base_rewards_per_share:
+              type: array
+              items:
+                type: object
+                properties:
+                  denom:
+                    type: string
+                  amount:
+                    type: string
+                description: >-
+                  DecCoin defines a token with a denomination and a decimal
+                  amount.
+
+
+                  NOTE: The amount field is an Dec which implements the custom
+                  method
+
+                  signatures required by gogoproto.
+              description: >-
+                base_rewards_per_share is the cumulative base rewards per share
+                snapshot
+
+                at the time this position was created or last claimed.
+
+                Used to calculate the position's share of base rewards: reward =
+                shares × (current_ratio − starting_ratio).
+
+                It is possible to have no base rewards per share if the position
+                is the first one delegated to the validator.
+            last_bonus_accrual:
+              type: string
+              format: date-time
+              description: last_bonus_accrual is the last time bonus rewards was claimed.
+            exit_triggered_at:
+              type: string
+              format: date-time
+              description: >-
+                exit_triggered_at is the time when exit was triggered. Zero
+                value means not exiting.
+            exit_unlock_at:
+              type: string
+              format: date-time
+              description: >-
+                exit_unlock_at is when the user can claim tokens
+                (exit_triggered_at + tier.exit_duration).
+            created_at_height:
+              type: string
+              format: uint64
+              description: >-
+                created_at_height is the block height when this position was
+                created.
+            created_at_time:
+              type: string
+              format: date-time
+              description: >-
+                created_at_time is the block time when this position was
+                created.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
+          description: Position represents a single lock position in the tier.
+      pagination:
+        type: object
+        properties:
+          next_key:
+            type: string
+            format: byte
+            description: |-
+              next_key is the key to be passed to PageRequest.key to
+              query the next page most efficiently. It will be empty if
+              there are no more results.
+          total:
+            type: string
+            format: uint64
+            title: >-
+              total is total number of results available if
+              PageRequest.count_total
+
+              was set, its value is undefined otherwise
+        description: |-
+          PageResponse is to be embedded in gRPC response messages where the
+          corresponding request message has used PageRequest.
+
+           message SomeResponse {
+                   repeated Bar results = 1;
+                   PageResponse page = 2;
+           }
+    description: >-
+      QueryRawTierPositionsByOwnerResponse is the response type for the
+      Query/RawTierPositionsByOwner RPC method.
   chainmain.tieredrewards.v1.QueryRewardsPoolBalancesResponse:
     type: object
     properties:
@@ -46119,6 +47479,102 @@ definitions:
     description: |-
       QueryTotalDelegatedVotingPowerResponse is the response type for the
       Query/TotalDelegatedVotingPower RPC method.
+  chainmain.tieredrewards.v1.QueryValidatorDataResponse:
+    type: object
+    properties:
+      reward_ratio:
+        description: reward_ratio is the cumulative rewards per share for this validator.
+        type: object
+        properties:
+          cumulative_rewards_per_share:
+            type: array
+            items:
+              type: object
+              properties:
+                denom:
+                  type: string
+                amount:
+                  type: string
+              description: >-
+                DecCoin defines a token with a denomination and a decimal
+                amount.
+
+
+                NOTE: The amount field is an Dec which implements the custom
+                method
+
+                signatures required by gogoproto.
+            description: >-
+              cumulative_rewards_per_share is the running total of rewards per
+              delegation share.
+        title: >-
+          ValidatorRewardRatio stores the cumulative base rewards per share for
+          a validator.
+
+          Updated every time base rewards are withdrawn from x/distribution for
+          this validator.
+
+          It is possible to have no base rewards per share when the position is
+          created,
+
+          if the position is the first one delegated to a validator (no base
+          rewards accrued yet)
+      position_count:
+        type: string
+        format: uint64
+        description: position_count is the number of positions delegated to this validator.
+      events:
+        type: array
+        items:
+          type: object
+          properties:
+            height:
+              type: string
+              format: int64
+              description: height is the block height when the event occurred.
+            timestamp:
+              type: string
+              format: date-time
+              description: timestamp is the block time when the event occurred.
+            event_type:
+              description: event_type is the type of event.
+              type: string
+              enum:
+                - VALIDATOR_EVENT_TYPE_UNSPECIFIED
+                - VALIDATOR_EVENT_TYPE_SLASH
+                - VALIDATOR_EVENT_TYPE_UNBOND
+                - VALIDATOR_EVENT_TYPE_BOND
+              default: VALIDATOR_EVENT_TYPE_UNSPECIFIED
+            tokens_per_share:
+              type: string
+              description: >-
+                tokens_per_share is the validator's token-per-share rate at
+                event time,
+
+                used to snapshot the token value for bonus calculation.
+            reference_count:
+              type: string
+              format: uint64
+              description: >-
+                reference_count tracks how many positions still need to process
+                this event.
+
+                When it reaches zero the event can be garbage-collected.
+          description: >-
+            ValidatorEvent records a validator lifecycle event (slash, unbond,
+            bond)
+
+            for lazy processing during reward claims.
+        description: events are the pending validator lifecycle events.
+      event_current_seq:
+        type: string
+        format: uint64
+        description: >-
+          event_current_seq is the current event sequence number for this
+          validator.
+    description: >-
+      QueryValidatorDataResponse is the response type for the
+      Query/ValidatorData RPC method.
   chainmain.tieredrewards.v1.QueryVotingPowerByOwnerResponse:
     type: object
     properties:
@@ -46161,3 +47617,84 @@ definitions:
           Existing positions can still trigger exit, undelegate, withdraw
           rewards, and claim.
     description: Tier defines a single tier stored in module state.
+  chainmain.tieredrewards.v1.ValidatorEvent:
+    type: object
+    properties:
+      height:
+        type: string
+        format: int64
+        description: height is the block height when the event occurred.
+      timestamp:
+        type: string
+        format: date-time
+        description: timestamp is the block time when the event occurred.
+      event_type:
+        description: event_type is the type of event.
+        type: string
+        enum:
+          - VALIDATOR_EVENT_TYPE_UNSPECIFIED
+          - VALIDATOR_EVENT_TYPE_SLASH
+          - VALIDATOR_EVENT_TYPE_UNBOND
+          - VALIDATOR_EVENT_TYPE_BOND
+        default: VALIDATOR_EVENT_TYPE_UNSPECIFIED
+      tokens_per_share:
+        type: string
+        description: >-
+          tokens_per_share is the validator's token-per-share rate at event
+          time,
+
+          used to snapshot the token value for bonus calculation.
+      reference_count:
+        type: string
+        format: uint64
+        description: >-
+          reference_count tracks how many positions still need to process this
+          event.
+
+          When it reaches zero the event can be garbage-collected.
+    description: |-
+      ValidatorEvent records a validator lifecycle event (slash, unbond, bond)
+      for lazy processing during reward claims.
+  chainmain.tieredrewards.v1.ValidatorEventType:
+    type: string
+    enum:
+      - VALIDATOR_EVENT_TYPE_UNSPECIFIED
+      - VALIDATOR_EVENT_TYPE_SLASH
+      - VALIDATOR_EVENT_TYPE_UNBOND
+      - VALIDATOR_EVENT_TYPE_BOND
+    default: VALIDATOR_EVENT_TYPE_UNSPECIFIED
+    description: |-
+      ValidatorEventType enumerates the types of validator lifecycle events
+      recorded for lazy processing.
+  chainmain.tieredrewards.v1.ValidatorRewardRatio:
+    type: object
+    properties:
+      cumulative_rewards_per_share:
+        type: array
+        items:
+          type: object
+          properties:
+            denom:
+              type: string
+            amount:
+              type: string
+          description: |-
+            DecCoin defines a token with a denomination and a decimal amount.
+
+            NOTE: The amount field is an Dec which implements the custom method
+            signatures required by gogoproto.
+        description: >-
+          cumulative_rewards_per_share is the running total of rewards per
+          delegation share.
+    title: >-
+      ValidatorRewardRatio stores the cumulative base rewards per share for a
+      validator.
+
+      Updated every time base rewards are withdrawn from x/distribution for this
+      validator.
+
+      It is possible to have no base rewards per share when the position is
+      created,
+
+      if the position is the first one delegated to a validator (no base rewards
+      accrued yet)
