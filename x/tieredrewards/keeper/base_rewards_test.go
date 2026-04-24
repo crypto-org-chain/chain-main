@@ -121,6 +121,7 @@ func (s *KeeperSuite) TestBaseRewardsPerShare_UnchangedWhenUndelegated() {
 
 	posAfter, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
+	s.Require().True(posAfter.BaseRewardsPerShare.IsZero(), "position's base rewards should be zero")
 	s.Require().Equal(ratioSnapshot, posAfter.BaseRewardsPerShare,
 		"undelegated position's BaseRewardsPerShare should not change")
 }
