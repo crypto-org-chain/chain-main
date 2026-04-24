@@ -579,6 +579,46 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, "3")
 		}, "")
 	})
+
+	s.Run("raw-position", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionExec(val.ClientCtx, "0")
+		}, &resp)
+		s.Require().Equal(owner, resp.Position.Owner)
+		s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
+		s.Require().True(resp.Position.DelegatedShares.IsPositive())
+	})
+
+	s.Run("raw-positions-by-owner", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionsByOwnerResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionsByOwnerExec(val.ClientCtx, owner)
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("raw-all-positions", func() {
+		var resp tieredrewardstypes.QueryRawAllTierPositionsResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawAllTierPositionsExec(val.ClientCtx)
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("validator-data", func() {
+		var resp tieredrewardstypes.QueryValidatorDataResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryValidatorDataExec(val.ClientCtx, validator)
+		}, &resp)
+	})
+
+	s.Run("position-mappings", func() {
+		var resp tieredrewardstypes.QueryPositionMappingsResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryPositionMappingsExec(val.ClientCtx, "0")
+		}, &resp)
+	})
 }
 
 func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
