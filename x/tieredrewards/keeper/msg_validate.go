@@ -209,6 +209,9 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	if unbonding {
 		return types.ErrPositionUnbonding
 	}
+	// no need to check for redelegation because unbonding only allowed after exit duration elapsed 
+	// and redelegation is not allowed after exit duration elapsed
+	// Therefore, any redelegation would have matured by the time any unbonding matures (same unbonding duration)
 
 	return nil
 }
