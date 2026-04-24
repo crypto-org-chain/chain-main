@@ -2,71 +2,15 @@ package keeper
 
 import (
 	"context"
-	"errors"
 
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
-
-// settleRewardsForPositions settles base and bonus rewards for a batch of
-// positions on the same validator. It is designed for hook paths (slash,
-// unbonding, bonding) where the caller must proceed even if the bonus pool
-// is insufficient. When the bonus pool cannot cover a position's accrued
-// bonus, the checkpoint is still advanced and the position persisted so the
-// accrual window is consumed — the unpaid bonus is forfeited.
-//
-// Returns the positions with advanced checkpoints (same slice, mutated in place).
-func (k Keeper) settleRewardsForPositions(ctx context.Context, valAddr sdk.ValAddress, positions []types.Position, forceAccrue bool) ([]types.Position, error) {
-	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	tierCache := make(map[uint32]types.Tier)
-
-	for i := range positions {
-		if _, err := k.claimBaseRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, valAddr, currentRatio); err != nil {
-			return nil, err
-		}
-
-		tier, ok := tierCache[positions[i].TierId]
-		if !ok {
-			tier, err = k.getTier(ctx, positions[i].TierId)
-			if err != nil {
-				return nil, err
-			}
-			tierCache[positions[i].TierId] = tier
-		}
-
-		_, err := k.claimBonusRewards(ctx, []*types.Position{&positions[i]}, positions[i].Owner, validator, tier, forceAccrue)
-		if err != nil {
-			if errors.Is(err, types.ErrInsufficientBonusPool) {
-				k.logger(ctx).Error("rewards pool insufficient for bonus rewards",
-					"position_id", positions[i].Id,
-					"error", err.Error(),
-				)
-			} else {
-				return nil, err
-			}
-		}
-		// Persist regardless of whether bonus was paid.
-		if err := k.setPositionUnsafe(ctx, positions[i]); err != nil {
-			return nil, err
-		}
-	}
-
-	return positions, nil
-}
 
 // claimRewardsAndUpdatePositionsForTier claims base and bonus rewards for all delegated
 // positions in the given tier. Positions are grouped by validator and owner for
@@ -80,20 +24,14 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		return nil
 	}
 
-	tier, err := k.getTier(ctx, tierId)
-	if err != nil {
-		return err
-	}
-
 	// Cache validator-level data once per unique validator.
 	type valData struct {
-		valAddr   sdk.ValAddress
-		ratio     sdk.DecCoins
-		validator stakingtypes.Validator
+		valAddr sdk.ValAddress
+		ratio   sdk.DecCoins
 	}
 	valCache := make(map[string]*valData)
 
-	// Group delegated positions by (validator, owner) for batched sends.
+	// Group delegated positions by (validator, owner) for batched base reward sends.
 	type valOwnerKey struct {
 		validator string
 		owner     string
@@ -124,12 +62,7 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 				return err
 			}
 
-			validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-			if err != nil {
-				return err
-			}
-
-			vd = &valData{valAddr: valAddr, ratio: ratio, validator: validator}
+			vd = &valData{valAddr: valAddr, ratio: ratio}
 			valCache[pos.Validator] = vd
 		}
 
@@ -150,13 +83,12 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		if _, err := k.claimBaseRewards(ctx, g.positions, key.owner, g.val.valAddr, g.val.ratio); err != nil {
 			return err
 		}
-		if _, err := k.claimBonusRewards(ctx, g.positions, key.owner, g.val.validator, tier, false); err != nil {
-			return err
-		}
+		// Process events and claim bonus for each position individually.
 		for _, pos := range g.positions {
-			if !pos.IsDelegated() {
-				continue
+			if _, err := k.processEventsAndClaimBonus(ctx, pos, g.val.valAddr); err != nil {
+				return err
 			}
+			// setPositionUnsafe to reduce gas consumption
 			if err := k.setPositionUnsafe(ctx, *pos); err != nil {
 				return err
 			}
@@ -191,17 +123,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 		return types.Position{}, nil, nil, err
 	}
 
-	tier, err := k.getTier(ctx, pos.TierId)
-	if err != nil {
-		return types.Position{}, nil, nil, err
-	}
-
-	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-	if err != nil {
-		return types.Position{}, nil, nil, err
-	}
-
-	bonus, err := k.claimBonusRewards(ctx, []*types.Position{&pos}, pos.Owner, val, tier, false)
+	bonus, err := k.processEventsAndClaimBonus(ctx, &pos, valAddr)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -217,15 +139,8 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		positions []*types.Position
 		valAddr   sdk.ValAddress
 		ratio     sdk.DecCoins
-		validator stakingtypes.Validator
 	}
 
-	type positionsByTier struct {
-		positions []*types.Position
-		tier      types.Tier
-	}
-
-	tierCache := make(map[uint32]types.Tier)
 	var vals []string
 	valGroups := make(map[string]*positionsByVal)
 
@@ -253,22 +168,9 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 				return nil, nil, err
 			}
 
-			val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			g = &positionsByVal{valAddr: valAddr, ratio: ratio, validator: val}
+			g = &positionsByVal{valAddr: valAddr, ratio: ratio}
 			valGroups[valAddrStr] = g
 			vals = append(vals, valAddrStr)
-		}
-
-		if _, ok := tierCache[pos.TierId]; !ok {
-			tier, err := k.getTier(ctx, pos.TierId)
-			if err != nil {
-				return nil, nil, err
-			}
-			tierCache[pos.TierId] = tier
 		}
 
 		g.positions = append(g.positions, pos)
@@ -286,22 +188,9 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		}
 		totalBase = totalBase.Add(base...)
 
-		var tierIds []uint32
-		tGroups := make(map[uint32]*positionsByTier)
-
+		// Process events and claim bonus per position.
 		for _, pos := range g.positions {
-			tg, ok := tGroups[pos.TierId]
-			if !ok {
-				tg = &positionsByTier{tier: tierCache[pos.TierId]}
-				tGroups[pos.TierId] = tg
-				tierIds = append(tierIds, pos.TierId)
-			}
-			tg.positions = append(tg.positions, pos)
-		}
-
-		for _, tierId := range tierIds {
-			tg := tGroups[tierId]
-			bonus, err := k.claimBonusRewards(ctx, tg.positions, owner, g.validator, tg.tier, false)
+			bonus, err := k.processEventsAndClaimBonus(ctx, pos, g.valAddr)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -314,12 +203,130 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 		if !pos.IsDelegated() {
 			continue
 		}
+		// setPositionUnsafe to reduce gas consumption
 		if err := k.setPositionUnsafe(ctx, *pos); err != nil {
 			return nil, nil, err
 		}
 	}
 
 	return totalBase, totalBonus, nil
+}
+
+// processEventsAndClaimBonus processes pending validator events for a position
+// and computes the bonus rewards owed. It walks through events since the position's
+// LastEventSeq, computing bonus for each bonded segment using snapshot rates.
+//
+// Returns the total bonus coins paid to the owner.
+func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	// Rewards should have been claimed before undelegation
+	if !pos.IsDelegated() {
+		return sdk.NewCoins(), nil
+	}
+
+	// Defensive
+	if pos.Validator != valAddr.String() {
+		return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
+	}
+
+	events, err := k.getValidatorEventsSince(ctx, valAddr, pos.LastEventSeq)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
+
+	totalBonus := math.ZeroInt()
+	// Use the persisted bonded state from the last replay, not a hardcoded default.
+	// This prevents overpaying bonus for unbonded gaps between claims.
+	bonded := pos.LastKnownBonded
+	segmentStart := pos.LastBonusAccrual
+
+	tier, err := k.getTier(ctx, pos.TierId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range events {
+		evt := entry.Event
+
+		if bonded {
+			// Compute bonus for the bonded segment [segmentStart, eventTime]
+			// using the snapshot rate at the event.
+			bonus := k.computeSegmentBonus(pos, tier, segmentStart, evt.Timestamp, evt.TokensPerShare)
+			totalBonus = totalBonus.Add(bonus)
+		}
+
+		// Update bonded state based on event type.
+		switch evt.EventType {
+		case types.ValidatorEventType_VALIDATOR_EVENT_TYPE_UNBOND:
+			bonded = false
+		case types.ValidatorEventType_VALIDATOR_EVENT_TYPE_BOND:
+			bonded = true
+		case types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH:
+			// Slash doesn't change bonded state.
+		}
+
+		segmentStart = evt.Timestamp
+		pos.UpdateLastEventSeq(entry.Seq)
+
+		// Decrement reference count.
+		if err := k.decrementEventRefCount(ctx, valAddr, entry.Seq); err != nil {
+			return nil, err
+		}
+	}
+
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+	// Defensive: validator bond status check
+	if bonded && val.IsBonded() {
+		currentRate, err := k.getTokensPerShare(ctx, valAddr)
+		if err != nil {
+			return nil, err
+		}
+		bonus := k.computeSegmentBonus(pos, tier, segmentStart, blockTime, currentRate)
+		totalBonus = totalBonus.Add(bonus)
+	}
+
+	applyBonusAccrualCheckpoint(pos, blockTime)
+	// Persist the bonded state so the next replay starts correctly.
+	pos.UpdateLastKnownBonded(bonded)
+
+	if totalBonus.IsZero() {
+		return sdk.NewCoins(), nil
+	}
+
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, totalBonus))
+
+	if err := k.sufficientBonusPoolBalance(ctx, bonusCoins); err != nil {
+		return nil, err
+	}
+
+	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {
+		return nil, err
+	}
+
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBonusRewardsClaimed{
+		PositionId: pos.Id,
+		Owner:      pos.Owner,
+		Rewards:    bonusCoins,
+	}); err != nil {
+		return nil, err
+	}
+
+	return bonusCoins, nil
 }
 
 // claimBaseRewards computes base rewards for the given positions, updates their
@@ -384,80 +391,6 @@ func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Positio
 		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, total); err != nil {
 			return nil, err
 		}
-		if err := sdkCtx.EventManager().EmitTypedEvents(events...); err != nil {
-			return nil, err
-		}
-	}
-
-	return total, nil
-}
-
-// claimBonusRewards computes bonus rewards for the given positions, updates their
-// LastBonusAccrual checkpoints, emits per-position EventBonusRewardsClaimed,
-// and performs a single batched bank send from the rewards pool.
-// When forceAccrue is true, bonus is settled regardless of validator bonded status.
-func (k Keeper) claimBonusRewards(ctx context.Context, positions []*types.Position, owner string, val stakingtypes.Validator, tier types.Tier, forceAccrue bool) (sdk.Coins, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
-	total := sdk.NewCoins()
-
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	events := make([]proto.Message, 0, len(positions))
-
-	for _, pos := range positions {
-		// Defensive
-		if !pos.IsOwner(owner) {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
-		}
-
-		if !pos.IsDelegated() {
-			continue
-		}
-
-		// Defensive
-		if pos.Validator != val.OperatorAddress {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), val.OperatorAddress)
-		}
-
-		// Defensive
-		if pos.TierId != tier.Id {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionTier, "position tier does not match tier, position: %s, tier: %d", pos.String(), tier.Id)
-		}
-
-		bonus := k.bonusAccrualAmount(*pos, val, tier, blockTime, forceAccrue)
-		applyBonusAccrualCheckpoint(pos, blockTime)
-
-		if bonus.IsZero() {
-			continue
-		}
-
-		bonusCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, bonus))
-
-		events = append(events, &types.EventBonusRewardsClaimed{
-			PositionId: pos.Id,
-			Owner:      pos.Owner,
-			Rewards:    bonusCoins,
-		})
-		total = total.Add(bonusCoins...)
-	}
-
-	if !total.IsZero() {
-		if err := k.sufficientBonusPoolBalance(ctx, total); err != nil {
-			return nil, err
-		}
-
-		ownerAddr, err := sdk.AccAddressFromBech32(owner)
-		if err != nil {
-			return nil, err
-		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, total); err != nil {
-			return nil, err
-		}
-
 		if err := sdkCtx.EventManager().EmitTypedEvents(events...); err != nil {
 			return nil, err
 		}

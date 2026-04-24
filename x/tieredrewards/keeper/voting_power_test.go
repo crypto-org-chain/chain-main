@@ -231,7 +231,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 }
 
 // TestVotingPower_AfterSlash verifies that both getVotingPowerByOwner and
-// totalDelegatedVotingPower use share-based token value (not pos.Amount) after
+// totalDelegatedVotingPower use share-based token value after
 // a slash, and that they agree with each other.
 func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
@@ -298,8 +298,8 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.Amount.IsZero(), "expected position amount to be zero after slash")
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
+	s.Require().True(posAfter.Amount.IsZero(), "delegated position should still have zero amount after slash")
 	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
 
 	voter := sdk.MustAccAddressFromBech32(pos.Owner)

@@ -34,4 +34,6 @@ var (
 	ErrInvalidTierID                  = errors.Register(ModuleName, 29, "tier id must be non-zero")
 	ErrNotPositionValidator           = errors.Register(ModuleName, 30, "position validator mismatch")
 	ErrNotPositionTier                = errors.Register(ModuleName, 31, "position tier mismatch")
+	ErrValidatorPositionCountStore    = errors.Register(ModuleName, 32, "validator position count store operation failed")
+	ErrPositionSharesZero             = errors.Register(ModuleName, 33, "position shares are zero")
 )

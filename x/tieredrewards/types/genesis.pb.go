@@ -130,6 +130,120 @@ func (m *UnbondingMapping) GetPositionId() uint64 {
 	return 0
 }
 
+// ValidatorEventEntry wraps a validator address, sequence number and event for genesis export.
+type ValidatorEventEntry struct {
+	Validator string         `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
+	Sequence  uint64         `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Event     ValidatorEvent `protobuf:"bytes,3,opt,name=event,proto3" json:"event"`
+}
+
+func (m *ValidatorEventEntry) Reset()         { *m = ValidatorEventEntry{} }
+func (m *ValidatorEventEntry) String() string { return proto.CompactTextString(m) }
+func (*ValidatorEventEntry) ProtoMessage()    {}
+func (*ValidatorEventEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{2}
+}
+func (m *ValidatorEventEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorEventEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorEventEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorEventEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorEventEntry.Merge(m, src)
+}
+func (m *ValidatorEventEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorEventEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorEventEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorEventEntry proto.InternalMessageInfo
+
+func (m *ValidatorEventEntry) GetValidator() string {
+	if m != nil {
+		return m.Validator
+	}
+	return ""
+}
+
+func (m *ValidatorEventEntry) GetSequence() uint64 {
+	if m != nil {
+		return m.Sequence
+	}
+	return 0
+}
+
+func (m *ValidatorEventEntry) GetEvent() ValidatorEvent {
+	if m != nil {
+		return m.Event
+	}
+	return ValidatorEvent{}
+}
+
+// ValidatorEventSeqEntry wraps a validator address with its current (last used) event sequence for genesis export.
+type ValidatorEventSeqEntry struct {
+	Validator  string `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator,omitempty"`
+	CurrentSeq uint64 `protobuf:"varint,2,opt,name=current_seq,json=currentSeq,proto3" json:"current_seq,omitempty"`
+}
+
+func (m *ValidatorEventSeqEntry) Reset()         { *m = ValidatorEventSeqEntry{} }
+func (m *ValidatorEventSeqEntry) String() string { return proto.CompactTextString(m) }
+func (*ValidatorEventSeqEntry) ProtoMessage()    {}
+func (*ValidatorEventSeqEntry) Descriptor() ([]byte, []int) {
+	return fileDescriptor_a29049b0cc2bdb31, []int{3}
+}
+func (m *ValidatorEventSeqEntry) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ValidatorEventSeqEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ValidatorEventSeqEntry.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ValidatorEventSeqEntry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ValidatorEventSeqEntry.Merge(m, src)
+}
+func (m *ValidatorEventSeqEntry) XXX_Size() int {
+	return m.Size()
+}
+func (m *ValidatorEventSeqEntry) XXX_DiscardUnknown() {
+	xxx_messageInfo_ValidatorEventSeqEntry.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ValidatorEventSeqEntry proto.InternalMessageInfo
+
+func (m *ValidatorEventSeqEntry) GetValidator() string {
+	if m != nil {
+		return m.Validator
+	}
+	return ""
+}
+
+func (m *ValidatorEventSeqEntry) GetCurrentSeq() uint64 {
+	if m != nil {
+		return m.CurrentSeq
+	}
+	return 0
+}
+
 // GenesisState defines the tieredrewards module's genesis state.
 type GenesisState struct {
 	// params defines all the parameters of the module.
@@ -146,13 +260,17 @@ type GenesisState struct {
 	UnbondingDelegationMappings []UnbondingMapping `protobuf:"bytes,6,rep,name=unbonding_delegation_mappings,json=unbondingDelegationMappings,proto3" json:"unbonding_delegation_mappings"`
 	// redelegation_mappings maps redelegation IDs to tier position IDs.
 	RedelegationMappings []UnbondingMapping `protobuf:"bytes,7,rep,name=redelegation_mappings,json=redelegationMappings,proto3" json:"redelegation_mappings"`
+	// validator_events stores pending validator lifecycle events for lazy processing.
+	ValidatorEvents []ValidatorEventEntry `protobuf:"bytes,8,rep,name=validator_events,json=validatorEvents,proto3" json:"validator_events"`
+	// validator_event_seqs stores the current (last used) event sequence per validator.
+	ValidatorEventSeqs []ValidatorEventSeqEntry `protobuf:"bytes,9,rep,name=validator_event_seqs,json=validatorEventSeqs,proto3" json:"validator_event_seqs"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }
 func (m *GenesisState) String() string { return proto.CompactTextString(m) }
 func (*GenesisState) ProtoMessage()    {}
 func (*GenesisState) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a29049b0cc2bdb31, []int{2}
+	return fileDescriptor_a29049b0cc2bdb31, []int{4}
 }
 func (m *GenesisState) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -230,9 +348,25 @@ func (m *GenesisState) GetRedelegationMappings() []UnbondingMapping {
 	return nil
 }
 
+func (m *GenesisState) GetValidatorEvents() []ValidatorEventEntry {
+	if m != nil {
+		return m.ValidatorEvents
+	}
+	return nil
+}
+
+func (m *GenesisState) GetValidatorEventSeqs() []ValidatorEventSeqEntry {
+	if m != nil {
+		return m.ValidatorEventSeqs
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*ValidatorRewardRatioEntry)(nil), "chainmain.tieredrewards.v1.ValidatorRewardRatioEntry")
 	proto.RegisterType((*UnbondingMapping)(nil), "chainmain.tieredrewards.v1.UnbondingMapping")
+	proto.RegisterType((*ValidatorEventEntry)(nil), "chainmain.tieredrewards.v1.ValidatorEventEntry")
+	proto.RegisterType((*ValidatorEventSeqEntry)(nil), "chainmain.tieredrewards.v1.ValidatorEventSeqEntry")
 	proto.RegisterType((*GenesisState)(nil), "chainmain.tieredrewards.v1.GenesisState")
 }
 
@@ -241,40 +375,48 @@ func init() {
 }
 
 var fileDescriptor_a29049b0cc2bdb31 = []byte{
-	// 522 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x41, 0x6b, 0x13, 0x41,
-	0x18, 0xcd, 0xa6, 0x69, 0x24, 0xb3, 0x41, 0xca, 0xd0, 0xe2, 0x36, 0xd2, 0x6d, 0x1a, 0x44, 0x73,
-	0x30, 0xbb, 0x36, 0xe2, 0xad, 0xa0, 0x06, 0x45, 0x7b, 0x10, 0x4a, 0xaa, 0x01, 0xbd, 0x84, 0x49,
-	0x66, 0x98, 0x0e, 0x74, 0x67, 0x96, 0x99, 0xe9, 0xda, 0xfc, 0x0b, 0x7f, 0x8c, 0xe0, 0x5f, 0xe8,
-	0xb1, 0x78, 0xea, 0x49, 0x24, 0xf9, 0x23, 0xb2, 0xb3, 0xb3, 0x9b, 0x58, 0xe2, 0x82, 0xbd, 0x2c,
-	0x3b, 0xdf, 0xbc, 0xef, 0xbd, 0xc7, 0xf7, 0xe6, 0x03, 0xdd, 0xe9, 0x19, 0x62, 0x3c, 0x42, 0x8c,
-	0x87, 0x9a, 0x11, 0x49, 0xb0, 0x24, 0x5f, 0x91, 0xc4, 0x2a, 0x4c, 0x0e, 0x43, 0x4a, 0x38, 0x51,
-	0x4c, 0x05, 0xb1, 0x14, 0x5a, 0xc0, 0x56, 0x81, 0x0c, 0xfe, 0x42, 0x06, 0xc9, 0x61, 0xeb, 0x49,
-	0x09, 0x4b, 0x8c, 0x24, 0x8a, 0x2c, 0x49, 0xeb, 0x71, 0x09, 0x50, 0xcf, 0x62, 0x92, 0xe3, 0x76,
-	0xa7, 0x42, 0x45, 0x42, 0x8d, 0xcd, 0x29, 0xcc, 0x0e, 0xf6, 0x6a, 0x9b, 0x0a, 0x2a, 0xb2, 0x7a,
-	0xfa, 0x97, 0x55, 0x3b, 0x3f, 0x1c, 0xb0, 0x3b, 0x42, 0xe7, 0x0c, 0x23, 0x2d, 0xe4, 0xd0, 0x90,
-	0x0e, 0x91, 0x66, 0xe2, 0x2d, 0xd7, 0x72, 0x06, 0x5f, 0x82, 0x46, 0x92, 0x5f, 0x7a, 0x4e, 0xdb,
-	0xe9, 0x36, 0x06, 0x07, 0x3f, 0xbf, 0xf7, 0xf6, 0x2c, 0x71, 0xd1, 0xf8, 0x1a, 0x63, 0x49, 0x94,
-	0x3a, 0xd5, 0x92, 0x71, 0x3a, 0x5c, 0xf6, 0xc0, 0xcf, 0xa0, 0x99, 0x39, 0x1d, 0xcb, 0x94, 0xd5,
-	0xab, 0xb6, 0x9d, 0xae, 0xdb, 0x7f, 0x16, 0xfc, 0x7b, 0x26, 0xc1, 0x3a, 0x37, 0x83, 0xda, 0xd5,
-	0xaf, 0xfd, 0xca, 0xd0, 0x95, 0xcb, 0x52, 0x67, 0x04, 0xb6, 0x3e, 0xf1, 0x89, 0xe0, 0x98, 0x71,
-	0xfa, 0x01, 0xc5, 0x31, 0xe3, 0x14, 0x1e, 0x80, 0xe6, 0x45, 0x5e, 0x1b, 0x33, 0x6c, 0x2c, 0xd7,
-	0x86, 0x6e, 0x51, 0x3b, 0xc6, 0x70, 0x1f, 0xb8, 0xb1, 0x50, 0x4c, 0x33, 0xc1, 0x53, 0x44, 0xd5,
-	0x20, 0x40, 0x5e, 0x3a, 0xc6, 0x9d, 0x9b, 0x1a, 0x68, 0xbe, 0xcb, 0x12, 0x3c, 0xd5, 0x48, 0x13,
-	0xf8, 0x0a, 0xd4, 0xb3, 0x2c, 0x0c, 0x9d, 0xdb, 0xef, 0x94, 0xb9, 0x3f, 0x31, 0x48, 0xeb, 0xd7,
-	0xf6, 0xc1, 0x23, 0xb0, 0x99, 0x02, 0x95, 0x57, 0x6d, 0x6f, 0x74, 0xdd, 0x7e, 0xbb, 0x8c, 0xe0,
-	0x23, 0x23, 0xd2, 0xb6, 0x67, 0x4d, 0xf0, 0x3d, 0x68, 0xe4, 0xf6, 0x94, 0xb7, 0x61, 0x18, 0x1e,
-	0x95, 0x5a, 0xb0, 0x60, 0xcb, 0xb2, 0x6c, 0x86, 0x5d, 0xb0, 0xc5, 0xc9, 0xa5, 0x1e, 0xaf, 0x0e,
-	0xa0, 0x66, 0x06, 0x70, 0x3f, 0xad, 0x9f, 0x14, 0x43, 0x80, 0x0a, 0x3c, 0x28, 0x42, 0x1c, 0xaf,
-	0x26, 0xa8, 0xbc, 0x4d, 0xe3, 0xe0, 0xc5, 0xff, 0x46, 0x68, 0x1e, 0x94, 0xb5, 0xb4, 0x93, 0xac,
-	0x01, 0x28, 0x98, 0x80, 0xbd, 0x65, 0x7a, 0x98, 0x9c, 0x13, 0x8a, 0x8c, 0xcb, 0x28, 0x4b, 0x57,
-	0x79, 0x75, 0x23, 0xfd, 0xb4, 0x4c, 0xfa, 0xf6, 0x93, 0xb0, 0x8a, 0x0f, 0x0b, 0xe2, 0x37, 0x05,
-	0xaf, 0x45, 0x28, 0x48, 0xc1, 0x8e, 0x24, 0xeb, 0xf4, 0xee, 0xdd, 0x59, 0x6f, 0x7b, 0x95, 0x30,
-	0x17, 0x1a, 0x8c, 0xae, 0xe6, 0xbe, 0x73, 0x3d, 0xf7, 0x9d, 0xdf, 0x73, 0xdf, 0xf9, 0xb6, 0xf0,
-	0x2b, 0xd7, 0x0b, 0xbf, 0x72, 0xb3, 0xf0, 0x2b, 0x5f, 0x8e, 0x28, 0xd3, 0x67, 0x17, 0x93, 0x60,
-	0x2a, 0xa2, 0x70, 0x2a, 0x67, 0xb1, 0x16, 0x3d, 0x21, 0x69, 0xcf, 0x08, 0x87, 0xe6, 0xdb, 0x33,
-	0xcb, 0x7f, 0x79, 0x6b, 0xfd, 0xcd, 0xee, 0x4f, 0xea, 0x66, 0x97, 0x9f, 0xff, 0x09, 0x00, 0x00,
-	0xff, 0xff, 0x9f, 0xa7, 0xb9, 0x3d, 0x95, 0x04, 0x00, 0x00,
+	// 648 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdd, 0x6e, 0xd3, 0x30,
+	0x18, 0x6d, 0xf6, 0x53, 0x56, 0x67, 0x82, 0xc9, 0x6c, 0x90, 0x15, 0x2d, 0xeb, 0x22, 0x04, 0x15,
+	0xa2, 0x09, 0x2b, 0xe2, 0x6e, 0x12, 0x30, 0x31, 0x60, 0x17, 0x48, 0x53, 0x0b, 0x93, 0xe0, 0x26,
+	0x64, 0x89, 0x95, 0x19, 0xad, 0x76, 0x6a, 0xbb, 0x61, 0xe3, 0x29, 0x78, 0x0a, 0x9e, 0x00, 0x09,
+	0x89, 0x27, 0xd8, 0xe5, 0xc4, 0x15, 0x57, 0x08, 0xb5, 0x2f, 0x82, 0xe2, 0x38, 0xe9, 0x8f, 0x4a,
+	0x54, 0xd0, 0x6e, 0xaa, 0xfa, 0xf3, 0xf9, 0xce, 0x39, 0x39, 0xf9, 0x1c, 0x83, 0xba, 0x7f, 0xec,
+	0x61, 0xd2, 0xf1, 0x30, 0x71, 0x04, 0x46, 0x0c, 0x05, 0x0c, 0x7d, 0xf4, 0x58, 0xc0, 0x9d, 0x78,
+	0xdb, 0x09, 0x11, 0x41, 0x1c, 0x73, 0x3b, 0x62, 0x54, 0x50, 0x58, 0xcd, 0x91, 0xf6, 0x18, 0xd2,
+	0x8e, 0xb7, 0xab, 0x77, 0x0b, 0x58, 0x22, 0x8f, 0x79, 0x1d, 0x45, 0x52, 0xbd, 0x53, 0x00, 0x14,
+	0x67, 0x11, 0xca, 0x70, 0xeb, 0x3e, 0xe5, 0x1d, 0xca, 0x5d, 0xb9, 0x72, 0xd2, 0x85, 0xda, 0x5a,
+	0x0d, 0x69, 0x48, 0xd3, 0x7a, 0xf2, 0x2f, 0xad, 0x5a, 0xdf, 0x34, 0xb0, 0x7e, 0xe8, 0x9d, 0xe0,
+	0xc0, 0x13, 0x94, 0xb5, 0x24, 0x69, 0xcb, 0x13, 0x98, 0xee, 0x11, 0xc1, 0xce, 0xe0, 0x63, 0x50,
+	0x89, 0xb3, 0x4d, 0x43, 0xab, 0x69, 0xf5, 0xca, 0xee, 0xd6, 0x8f, 0xaf, 0x8d, 0x0d, 0x45, 0x9c,
+	0x37, 0x3e, 0x0d, 0x02, 0x86, 0x38, 0x6f, 0x0b, 0x86, 0x49, 0xd8, 0x1a, 0xf6, 0xc0, 0xb7, 0x60,
+	0x39, 0x75, 0xea, 0xb2, 0x84, 0xd5, 0x98, 0xab, 0x69, 0x75, 0xbd, 0xf9, 0xc0, 0xfe, 0x7b, 0x26,
+	0xf6, 0x34, 0x37, 0xbb, 0x0b, 0xe7, 0xbf, 0x36, 0x4b, 0x2d, 0x9d, 0x0d, 0x4b, 0xd6, 0x21, 0x58,
+	0x79, 0x43, 0x8e, 0x28, 0x09, 0x30, 0x09, 0x5f, 0x79, 0x51, 0x84, 0x49, 0x08, 0xb7, 0xc0, 0x72,
+	0x2f, 0xab, 0xb9, 0x38, 0x90, 0x96, 0x17, 0x5a, 0x7a, 0x5e, 0xdb, 0x0f, 0xe0, 0x26, 0xd0, 0x23,
+	0xca, 0xb1, 0xc0, 0x94, 0x24, 0x88, 0x39, 0x89, 0x00, 0x59, 0x69, 0x3f, 0xb0, 0xbe, 0x6b, 0xe0,
+	0x7a, 0xee, 0x61, 0x2f, 0x46, 0x44, 0x5c, 0x52, 0x16, 0x55, 0xb0, 0xc4, 0x51, 0xb7, 0x87, 0x88,
+	0x8f, 0x94, 0x6c, 0xbe, 0x86, 0xcf, 0xc1, 0x22, 0x4a, 0xa4, 0x8c, 0x79, 0x19, 0xd0, 0xbd, 0x99,
+	0x02, 0x92, 0xe6, 0x54, 0x34, 0x69, 0xbb, 0xf5, 0x09, 0xdc, 0x18, 0xdf, 0x6e, 0xa3, 0xee, 0x25,
+	0xd9, 0xdf, 0x04, 0xba, 0xdf, 0x63, 0x0c, 0x11, 0xe1, 0x72, 0xd4, 0xcd, 0x82, 0x53, 0xa5, 0x36,
+	0xea, 0x5a, 0x5f, 0xca, 0x60, 0xf9, 0x45, 0x3a, 0xfa, 0x6d, 0xe1, 0x09, 0x04, 0x9f, 0x80, 0x72,
+	0x3a, 0xc4, 0x52, 0x4f, 0x6f, 0x5a, 0x45, 0x4f, 0x75, 0x20, 0x91, 0xea, 0x69, 0x54, 0x1f, 0xdc,
+	0x01, 0x8b, 0x09, 0x90, 0x1b, 0x73, 0xb5, 0xf9, 0xba, 0xde, 0xac, 0x15, 0x11, 0xbc, 0xc6, 0x88,
+	0x65, 0x61, 0xc8, 0x26, 0xf8, 0x12, 0x54, 0xb2, 0xf7, 0xca, 0x8d, 0x79, 0xc9, 0x70, 0xbb, 0xd0,
+	0x82, 0x02, 0x2b, 0x96, 0x61, 0x33, 0xac, 0x83, 0x15, 0x82, 0x4e, 0x85, 0x3b, 0x3a, 0x39, 0x0b,
+	0x32, 0x80, 0xab, 0x49, 0xfd, 0x20, 0x9f, 0x1e, 0xc8, 0xc1, 0xcd, 0x3c, 0x32, 0x77, 0x74, 0xf4,
+	0xb9, 0xb1, 0x28, 0x1d, 0x3c, 0xfa, 0xd7, 0xd9, 0x97, 0xaf, 0x4f, 0x59, 0x5a, 0x8b, 0xa7, 0x00,
+	0x38, 0x8c, 0xc1, 0xc6, 0x70, 0xec, 0x03, 0x74, 0x82, 0x42, 0x4f, 0xba, 0xec, 0xa4, 0xc7, 0x82,
+	0x1b, 0x65, 0x29, 0x7d, 0xbf, 0x48, 0x7a, 0xf2, 0x2c, 0x29, 0xc5, 0x5b, 0x39, 0xf1, 0xb3, 0x9c,
+	0x57, 0x21, 0x38, 0x0c, 0xc1, 0x1a, 0x43, 0xd3, 0xf4, 0xae, 0xfc, 0xb7, 0xde, 0xea, 0x28, 0x61,
+	0x2e, 0xf4, 0x1e, 0xac, 0x0c, 0x53, 0x95, 0x93, 0xce, 0x8d, 0x25, 0xa9, 0xe1, 0xcc, 0x7e, 0x52,
+	0x46, 0x83, 0xbc, 0x16, 0x8f, 0x6d, 0x71, 0xf8, 0x01, 0xac, 0x4e, 0x28, 0x24, 0x53, 0xce, 0x8d,
+	0x8a, 0x54, 0x69, 0xce, 0xae, 0x92, 0x1d, 0x38, 0x25, 0x04, 0xe3, 0xc9, 0x5d, 0xbe, 0x7b, 0x78,
+	0xde, 0x37, 0xb5, 0x8b, 0xbe, 0xa9, 0xfd, 0xee, 0x9b, 0xda, 0xe7, 0x81, 0x59, 0xba, 0x18, 0x98,
+	0xa5, 0x9f, 0x03, 0xb3, 0xf4, 0x6e, 0x27, 0xc4, 0xe2, 0xb8, 0x77, 0x64, 0xfb, 0xb4, 0xe3, 0xf8,
+	0xec, 0x2c, 0x12, 0xb4, 0x41, 0x59, 0xd8, 0x90, 0xe2, 0x8e, 0xfc, 0x6d, 0xc8, 0x3b, 0xe0, 0x74,
+	0xe2, 0x16, 0x90, 0x57, 0xc0, 0x51, 0x59, 0x7e, 0xd2, 0x1f, 0xfe, 0x09, 0x00, 0x00, 0xff, 0xff,
+	0x29, 0xd0, 0x6a, 0x91, 0x9c, 0x06, 0x00, 0x00,
 }
 
 func (m *ValidatorRewardRatioEntry) Marshal() (dAtA []byte, err error) {
@@ -350,6 +492,86 @@ func (m *UnbondingMapping) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *ValidatorEventEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorEventEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorEventEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	{
+		size, err := m.Event.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintGenesis(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x1a
+	if m.Sequence != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.Sequence))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Validator) > 0 {
+		i -= len(m.Validator)
+		copy(dAtA[i:], m.Validator)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Validator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ValidatorEventSeqEntry) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ValidatorEventSeqEntry) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ValidatorEventSeqEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.CurrentSeq != 0 {
+		i = encodeVarintGenesis(dAtA, i, uint64(m.CurrentSeq))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Validator) > 0 {
+		i -= len(m.Validator)
+		copy(dAtA[i:], m.Validator)
+		i = encodeVarintGenesis(dAtA, i, uint64(len(m.Validator)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *GenesisState) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -370,6 +592,34 @@ func (m *GenesisState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ValidatorEventSeqs) > 0 {
+		for iNdEx := len(m.ValidatorEventSeqs) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorEventSeqs[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x4a
+		}
+	}
+	if len(m.ValidatorEvents) > 0 {
+		for iNdEx := len(m.ValidatorEvents) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.ValidatorEvents[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintGenesis(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x42
+		}
+	}
 	if len(m.RedelegationMappings) > 0 {
 		for iNdEx := len(m.RedelegationMappings) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -499,6 +749,40 @@ func (m *UnbondingMapping) Size() (n int) {
 	return n
 }
 
+func (m *ValidatorEventEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Validator)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.Sequence != 0 {
+		n += 1 + sovGenesis(uint64(m.Sequence))
+	}
+	l = m.Event.Size()
+	n += 1 + l + sovGenesis(uint64(l))
+	return n
+}
+
+func (m *ValidatorEventSeqEntry) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Validator)
+	if l > 0 {
+		n += 1 + l + sovGenesis(uint64(l))
+	}
+	if m.CurrentSeq != 0 {
+		n += 1 + sovGenesis(uint64(m.CurrentSeq))
+	}
+	return n
+}
+
 func (m *GenesisState) Size() (n int) {
 	if m == nil {
 		return 0
@@ -536,6 +820,18 @@ func (m *GenesisState) Size() (n int) {
 	}
 	if len(m.RedelegationMappings) > 0 {
 		for _, e := range m.RedelegationMappings {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorEvents) > 0 {
+		for _, e := range m.ValidatorEvents {
+			l = e.Size()
+			n += 1 + l + sovGenesis(uint64(l))
+		}
+	}
+	if len(m.ValidatorEventSeqs) > 0 {
+		for _, e := range m.ValidatorEventSeqs {
 			l = e.Size()
 			n += 1 + l + sovGenesis(uint64(l))
 		}
@@ -727,6 +1023,241 @@ func (m *UnbondingMapping) Unmarshal(dAtA []byte) error {
 				b := dAtA[iNdEx]
 				iNdEx++
 				m.PositionId |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorEventEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorEventEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorEventEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Validator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sequence", wireType)
+			}
+			m.Sequence = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Sequence |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Event", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Event.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenesis(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ValidatorEventSeqEntry) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenesis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ValidatorEventSeqEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ValidatorEventSeqEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Validator = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CurrentSeq", wireType)
+			}
+			m.CurrentSeq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CurrentSeq |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1000,6 +1531,74 @@ func (m *GenesisState) Unmarshal(dAtA []byte) error {
 			}
 			m.RedelegationMappings = append(m.RedelegationMappings, UnbondingMapping{})
 			if err := m.RedelegationMappings[len(m.RedelegationMappings)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorEvents", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorEvents = append(m.ValidatorEvents, ValidatorEventEntry{})
+			if err := m.ValidatorEvents[len(m.ValidatorEvents)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValidatorEventSeqs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenesis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthGenesis
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValidatorEventSeqs = append(m.ValidatorEventSeqs, ValidatorEventSeqEntry{})
+			if err := m.ValidatorEventSeqs[len(m.ValidatorEventSeqs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

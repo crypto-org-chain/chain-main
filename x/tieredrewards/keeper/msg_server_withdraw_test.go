@@ -339,7 +339,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 
 	s.advancePastExitDuration()
-	// Undelegate — this reconciles pos.Amount with actual return value.
+	// Undelegate — this updates pos.Amount with actual return value.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
@@ -348,7 +348,6 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	reconciledAmount := pos.Amount
 
 	// Advance time past exit unlock.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
@@ -361,8 +360,8 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(reconciledAmount.String(), resp.Amount.Amount.String(),
-		"withdrawn amount should equal reconciled amount")
+	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+		"withdrawn amount should equal amount")
 }
 
 // TestWithdrawFromTier_FailsWithPendingUnbonding verifies that withdrawal is

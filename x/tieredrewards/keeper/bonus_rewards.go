@@ -10,47 +10,7 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
-
-// calculateBonus returns accrued bonus, yielding zero when the validator is not bonded.
-func (k Keeper) calculateBonus(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
-	if !validator.IsBonded() {
-		return math.ZeroInt()
-	}
-	return k.calculateBonusRaw(position, validator, tier, blockTime)
-}
-
-// calculateBonusRaw computes accrued bonus without checking validator status.
-// Formula: tokens * BonusApy * durationSeconds / SecondsPerYear.
-// accrualEnd is capped at ExitUnlockAt when the position is exiting.
-func (k Keeper) calculateBonusRaw(position types.Position, validator stakingtypes.Validator, tier types.Tier, blockTime time.Time) math.Int {
-	if !position.IsDelegated() {
-		return math.ZeroInt()
-	}
-
-	if position.LastBonusAccrual.IsZero() {
-		return math.ZeroInt()
-	}
-
-	accrualEnd := blockTime
-	if position.CompletedExitLockDuration(blockTime) {
-		accrualEnd = position.ExitUnlockAt
-	}
-
-	if !accrualEnd.After(position.LastBonusAccrual) {
-		return math.ZeroInt()
-	}
-
-	durationSeconds := int64(accrualEnd.Sub(position.LastBonusAccrual) / time.Second)
-	tokens := validator.TokensFromShares(position.DelegatedShares)
-
-	return tokens.
-		Mul(tier.BonusApy).
-		MulInt64(durationSeconds).
-		QuoInt64(types.SecondsPerYear).
-		TruncateInt()
-}
 
 func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 	accrualEnd := blockTime
@@ -60,13 +20,29 @@ func applyBonusAccrualCheckpoint(pos *types.Position, blockTime time.Time) {
 	pos.UpdateLastBonusAccrual(accrualEnd)
 }
 
-// bonusAccrualAmount returns bonus owed for pos at blockTime. When forceAccrue is true,
-// bonded status is ignored (calculateBonusRaw).
-func (k Keeper) bonusAccrualAmount(pos types.Position, val stakingtypes.Validator, tier types.Tier, blockTime time.Time, forceAccrue bool) math.Int {
-	if forceAccrue {
-		return k.calculateBonusRaw(pos, val, tier, blockTime)
+// computeSegmentBonus computes bonus for a time segment using a snapshot rate.
+// Formula: shares * tokensPerShare * tier.BonusApy * durationSeconds / SecondsPerYear
+func (k Keeper) computeSegmentBonus(pos *types.Position, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
+	if !pos.ExitUnlockAt.IsZero() && segmentEnd.After(pos.ExitUnlockAt) {
+		segmentEnd = pos.ExitUnlockAt
 	}
-	return k.calculateBonus(pos, val, tier, blockTime)
+
+	if !segmentEnd.After(segmentStart) {
+		return math.ZeroInt()
+	}
+
+	durationSeconds := int64(segmentEnd.Sub(segmentStart) / time.Second)
+	if durationSeconds <= 0 {
+		return math.ZeroInt()
+	}
+
+	tokens := pos.DelegatedShares.Mul(tokensPerShare)
+
+	return tokens.
+		Mul(tier.BonusApy).
+		MulInt64(durationSeconds).
+		QuoInt64(types.SecondsPerYear).
+		TruncateInt()
 }
 
 func (k Keeper) sufficientBonusPoolBalance(ctx context.Context, bonus sdk.Coins) error {

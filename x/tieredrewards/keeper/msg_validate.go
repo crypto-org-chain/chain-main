@@ -85,8 +85,8 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
+	if !pos.DelegatedShares.IsPositive() {
+		return types.ErrPositionSharesZero
 	}
 
 	if pos.Validator == dstValidator {
@@ -209,6 +209,9 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	if unbonding {
 		return types.ErrPositionUnbonding
 	}
+	// no need to check for redelegation because unbonding only allowed after exit duration elapsed
+	// and redelegation is not allowed after exit duration elapsed
+	// Therefore, any redelegation would have matured by the time any unbonding matures (same unbonding duration)
 
 	return nil
 }
@@ -231,8 +234,17 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
-	if amount.GT(pos.Amount) {
-		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position amount %s", amount, pos.Amount)
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return err
+	}
+	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		return err
+	}
+
+	if amount.GT(tokenValue) {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
 	}
 
 	redelegating, err := k.stillRedelegating(ctx, pos.Id)

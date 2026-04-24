@@ -3,6 +3,8 @@ package keeper
 import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"cosmossdk.io/collections"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -60,6 +62,26 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 
 	for _, mapping := range data.RedelegationMappings {
 		if err := k.setRedelegationPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, entry := range data.ValidatorEvents {
+		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.ValidatorEvents.Set(ctx, collections.Join(valAddr, entry.Sequence), entry.Event); err != nil {
+			panic(err)
+		}
+	}
+
+	for _, entry := range data.ValidatorEventSeqs {
+		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
+		if err != nil {
+			panic(err)
+		}
+		if err := k.ValidatorEventSeq.Set(ctx, valAddr, entry.CurrentSeq); err != nil {
 			panic(err)
 		}
 	}
@@ -130,6 +152,31 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
+	var validatorEvents []types.ValidatorEventEntry
+	err = k.ValidatorEvents.Walk(ctx, nil, func(key collections.Pair[sdk.ValAddress, uint64], event types.ValidatorEvent) (bool, error) {
+		validatorEvents = append(validatorEvents, types.ValidatorEventEntry{
+			Validator: key.K1().String(),
+			Sequence:  key.K2(),
+			Event:     event,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	var validatorEventSeqs []types.ValidatorEventSeqEntry
+	err = k.ValidatorEventSeq.Walk(ctx, nil, func(valAddr sdk.ValAddress, currentSeq uint64) (bool, error) {
+		validatorEventSeqs = append(validatorEventSeqs, types.ValidatorEventSeqEntry{
+			Validator:  valAddr.String(),
+			CurrentSeq: currentSeq,
+		})
+		return false, nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.GenesisState{
 		Params:                      params,
 		Tiers:                       tiers,
@@ -138,5 +185,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		ValidatorRewardRatios:       validatorRewardRatios,
 		UnbondingDelegationMappings: unbondingDelegationMappings,
 		RedelegationMappings:        redelegationMappings,
+		ValidatorEvents:             validatorEvents,
+		ValidatorEventSeqs:          validatorEventSeqs,
 	}
 }

@@ -15,6 +15,7 @@ type Delegation struct {
 	Validator           string
 	Shares              math.LegacyDec
 	BaseRewardsPerShare sdk.DecCoins
+	LastEventSeq        uint64
 }
 
 func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
@@ -29,6 +30,9 @@ func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, create
 		DelegatedShares:     delegation.Shares,
 		BaseRewardsPerShare: delegation.BaseRewardsPerShare,
 		LastBonusAccrual:    createdAtTime,
+		LastEventSeq:        delegation.LastEventSeq,
+		// Delegated positions are only created on bonded validators.
+		LastKnownBonded: delegation.Validator != "",
 	}
 }
 
@@ -38,11 +42,11 @@ func (p Position) Validate() error {
 	}
 
 	if p.Amount.IsNil() {
-		return fmt.Errorf("amount locked cannot be nil")
+		return fmt.Errorf("amount cannot be nil")
 	}
 
 	if p.Amount.IsNegative() {
-		return fmt.Errorf("amount locked must not be negative: %s", p.Amount)
+		return fmt.Errorf("amount must not be negative: %s", p.Amount)
 	}
 
 	if p.IsDelegated() {
@@ -57,6 +61,9 @@ func (p Position) Validate() error {
 		if !p.DelegatedShares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
 		}
+		if !p.Amount.IsZero() {
+			return fmt.Errorf("amount must be zero for delegated positions")
+		}
 	} else {
 		if !p.DelegatedShares.IsNil() && !p.DelegatedShares.IsZero() {
 			return fmt.Errorf("delegated shares must not be set when not delegated")
@@ -66,6 +73,12 @@ func (p Position) Validate() error {
 		}
 		if !p.LastBonusAccrual.IsZero() {
 			return fmt.Errorf("last bonus accrual must not be set when not delegated")
+		}
+		if p.LastEventSeq != 0 {
+			return fmt.Errorf("last event seq must not be set when not delegated")
+		}
+		if p.LastKnownBonded {
+			return fmt.Errorf("last known bonded must not be true when not delegated")
 		}
 	}
 
@@ -104,7 +117,12 @@ func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
 	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
+	p.LastEventSeq = delegation.LastEventSeq
+	// Position is delegated as a whole
+	p.Amount = math.ZeroInt()
 	p.LastBonusAccrual = t
+	// Delegation is only allowed to bonded validators.
+	p.LastKnownBonded = true
 }
 
 func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
@@ -142,6 +160,8 @@ func (p *Position) ClearDelegation() {
 	p.DelegatedShares = math.LegacyZeroDec()
 	p.BaseRewardsPerShare = sdk.DecCoins{}
 	p.LastBonusAccrual = time.Time{}
+	p.LastEventSeq = 0
+	p.LastKnownBonded = false
 }
 
 func (p Position) HasTriggeredExit() bool {
@@ -152,6 +172,31 @@ func (p Position) IsOwner(address string) bool {
 	return p.Owner == address
 }
 
-func (p Position) ExitWithFullDelegation(amount math.Int) bool {
-	return amount.Equal(p.Amount)
+func (p Position) ExitWithFullDelegation(amount, tokenValue math.Int) bool {
+	return amount.Equal(tokenValue)
+}
+
+func (p *Position) UpdateLastEventSeq(seq uint64) {
+	p.LastEventSeq = seq
+}
+
+func (p *Position) UpdateLastKnownBonded(bonded bool) {
+	p.LastKnownBonded = bonded
+}
+
+func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {
+	return PositionResponse{
+		Id:                  p.Id,
+		Owner:               p.Owner,
+		TierId:              p.TierId,
+		Amount:              tokenValue,
+		Validator:           p.Validator,
+		DelegatedShares:     p.DelegatedShares,
+		BaseRewardsPerShare: p.BaseRewardsPerShare,
+		LastBonusAccrual:    p.LastBonusAccrual,
+		ExitTriggeredAt:     p.ExitTriggeredAt,
+		ExitUnlockAt:        p.ExitUnlockAt,
+		CreatedAtHeight:     p.CreatedAtHeight,
+		CreatedAtTime:       p.CreatedAtTime,
+	}
 }

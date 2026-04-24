@@ -80,12 +80,13 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	s.Require().NoError(err)
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos.TierId)
 	s.Require().NoError(err)
 
-	expectedBonusRewards := s.keeper.CalculateBonusRaw(pos, val, tier, s.ctx.BlockTime())
+	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	expectedBonusRewards := s.keeper.ComputeSegmentBonus(&pos, tier, pos.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 
 	// amount stake is half of whats staked in total, so base rewards are half of the distributed
 	expectedBaseRewards := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
@@ -275,14 +276,14 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
 	tier, err := s.keeper.Tiers.Get(s.ctx, pos1.TierId)
 	s.Require().NoError(err)
 
 	// Expected bonus: sum of each position's bonus.
-	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val, tier, s.ctx.BlockTime())
-	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val, tier, s.ctx.BlockTime())
+	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: the module has 2 * lockAmount delegated out of
@@ -413,8 +414,10 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	s.Require().NoError(err)
 
 	// Expected bonus: sum from each validator.
-	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val0, tier, s.ctx.BlockTime())
-	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val1, tier, s.ctx.BlockTime())
+	tokensPerShare0 := val0.TokensFromShares(sdkmath.LegacyOneDec())
+	tokensPerShare1 := val1.TokensFromShares(sdkmath.LegacyOneDec())
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: on val0, module has lockAmount out of (genesis + lockAmount) = 1/2.
@@ -477,16 +480,16 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	s.allocateRewardsToValidator(valAddr, baseDistributed, bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
 	tier1, err := s.keeper.Tiers.Get(s.ctx, uint32(1))
 	s.Require().NoError(err)
 	tier2, err := s.keeper.Tiers.Get(s.ctx, uint32(2))
 	s.Require().NoError(err)
 
 	// Expected bonus: each position uses its own tier's BonusApy.
-	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val, tier1, s.ctx.BlockTime())
-	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val, tier2, s.ctx.BlockTime())
+	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
+	s.Require().NoError(err)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: module has 2 * lockAmount out of (genesis + 2 * lockAmount) = 2/3.
@@ -509,144 +512,6 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	expectedTotal := expectedTotalBase.Add(expectedTotalBonus)
 	s.Require().Equal(expectedTotal.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
 		"balance increase should equal total base + bonus rewards")
-}
-
-// TestMsgClaimTierRewards_MixDelegatedAndUndelegated verifies that a batch
-// with some delegated and some undelegated positions claims only for delegated
-// ones and succeeds overall.
-func (s *KeeperSuite) TestMsgClaimTierRewards_MixDelegatedAndUndelegated() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-
-	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Position 1: delegated
-	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	// Position 2: delegated (will be undelegated)
-	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
-	s.advancePastExitDuration()
-
-	// Undelegate position 2
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner: addr.String(), PositionId: resp2.PositionId,
-	})
-	s.Require().NoError(err)
-
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
-	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
-
-	// Batch claim both: pos1 (delegated) + pos2 (undelegated)
-	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       addr.String(),
-		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
-	})
-	s.Require().NoError(err)
-	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
-	s.Require().False(claimResp.BaseRewards.IsZero(),
-		"should have base rewards from delegated position")
-}
-
-// TestMsgClaimTierRewards_BatchPoolExhaustion verifies that if the aggregated
-// bonus across all positions exceeds the pool, the entire tx fails atomically.
-func (s *KeeperSuite) TestMsgClaimTierRewards_BatchPoolExhaustion() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-
-	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-	})
-	s.Require().NoError(err)
-
-	// Advance a full year to accrue significant bonus, but fund pool with tiny amount.
-	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(365 * 24 * time.Hour))
-	s.fundRewardsPool(sdkmath.NewInt(1), bondDenom)
-
-	// Use cache context to simulate DeliverTx rollback.
-	_, err = msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       addr.String(),
-		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
-	})
-	s.Require().Error(err)
-	s.Require().True(errors.Is(err, types.ErrInsufficientBonusPool))
-}
-
-// TestMsgClaimTierRewards_AllUndelegated verifies that a batch claim where
-// ALL positions are undelegated succeeds with zero rewards.
-func (s *KeeperSuite) TestMsgClaimTierRewards_AllUndelegated() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-
-	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
-		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
-		TriggerExitImmediately: true,
-	})
-	s.Require().NoError(err)
-
-	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
-	s.advancePastExitDuration()
-
-	// Undelegate both positions.
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner: addr.String(), PositionId: resp1.PositionId,
-	})
-	s.Require().NoError(err)
-	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner: addr.String(), PositionId: resp2.PositionId,
-	})
-	s.Require().NoError(err)
-
-	// Batch claim on two undelegated positions — should succeed with zero rewards.
-	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
-	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
-		Owner:       addr.String(),
-		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
-	})
-	s.Require().NoError(err)
-	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
-	s.Require().True(claimResp.BaseRewards.IsZero(), "base rewards should be zero for all-undelegated batch")
-	s.Require().True(claimResp.BonusRewards.IsZero(), "bonus rewards should be zero for all-undelegated batch")
-
-	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
-	s.Require().Equal(balBefore.Amount.String(), balAfter.Amount.String(),
-		"balance should not change for all-undelegated batch")
 }
 
 // TestMsgClaimTierRewards_MultipleValidatorsAndTiers verifies batch claiming
@@ -710,9 +575,11 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 	s.Require().NoError(err)
 
 	// Expected bonus: each position uses its own validator + tier.
-	expectedBonus1 := s.keeper.CalculateBonusRaw(pos1, val0, tier1, s.ctx.BlockTime())
-	expectedBonus2 := s.keeper.CalculateBonusRaw(pos2, val0, tier2, s.ctx.BlockTime())
-	expectedBonus3 := s.keeper.CalculateBonusRaw(pos3, val1, tier1, s.ctx.BlockTime())
+	tokensPerShare0 := val0.TokensFromShares(sdkmath.LegacyOneDec())
+	tokensPerShare1 := val1.TokensFromShares(sdkmath.LegacyOneDec())
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus3 := s.keeper.ComputeSegmentBonus(&pos3, tier1, pos3.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2).Add(expectedBonus3)
 
 	// Expected base: val0 has 2 positions (2/3 of total), val1 has 1 position (1/2 of total).
@@ -741,4 +608,107 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 	expectedTotal := expectedTotalBase.Add(expectedTotalBonus)
 	s.Require().Equal(expectedTotal.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
 		"balance increase should equal total base + bonus rewards")
+}
+
+// TestMsgClaimTierRewards_MixDelegatedAndUndelegated verifies that a batch
+// with some delegated and some undelegated positions claims only for delegated
+// ones and succeeds overall.
+func (s *KeeperSuite) TestMsgClaimTierRewards_MixDelegatedAndUndelegated() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+
+	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	// Position 1: delegated
+	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	// Position 2: delegated (will be undelegated)
+	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	// Undelegate position 2
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner: addr.String(), PositionId: resp2.PositionId,
+	})
+	s.Require().NoError(err)
+
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+
+	// Batch claim both: pos1 (delegated) + pos2 (undelegated)
+	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       addr.String(),
+		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
+	s.Require().False(claimResp.BaseRewards.IsZero(),
+		"should have base rewards from delegated position")
+}
+
+// TestMsgClaimTierRewards_AllUndelegated verifies that a batch claim where
+// ALL positions are undelegated succeeds with zero rewards.
+func (s *KeeperSuite) TestMsgClaimTierRewards_AllUndelegated() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+
+	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+		TriggerExitImmediately: true,
+	})
+	s.Require().NoError(err)
+
+	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	// Undelegate both positions.
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner: addr.String(), PositionId: resp1.PositionId,
+	})
+	s.Require().NoError(err)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner: addr.String(), PositionId: resp2.PositionId,
+	})
+	s.Require().NoError(err)
+
+	// Batch claim on two undelegated positions — should succeed with zero rewards.
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	claimResp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       addr.String(),
+		PositionIds: []uint64{resp1.PositionId, resp2.PositionId},
+	})
+	s.Require().NoError(err)
+	s.Require().Equal([]uint64{resp1.PositionId, resp2.PositionId}, claimResp.PositionIds)
+	s.Require().True(claimResp.BaseRewards.IsZero(), "base rewards should be zero for all-undelegated batch")
+	s.Require().True(claimResp.BonusRewards.IsZero(), "bonus rewards should be zero for all-undelegated batch")
+
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
+	s.Require().Equal(balBefore.Amount.String(), balAfter.Amount.String(),
+		"balance should not change for all-undelegated batch")
 }

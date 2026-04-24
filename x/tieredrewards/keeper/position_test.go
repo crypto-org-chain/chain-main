@@ -21,8 +21,9 @@ func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
 		Validator:           testPosValidator,
 		Shares:              sdkmath.LegacyNewDec(1000),
 		BaseRewardsPerShare: sdk.DecCoins{},
+		LastEventSeq:        0,
 	}
-	return types.NewPosition(id, owner, tierId, sdkmath.NewInt(1000), 100, del, time.Now())
+	return types.NewPosition(id, owner, tierId, sdkmath.ZeroInt(), 100, del, time.Now())
 }
 
 func (s *KeeperSuite) TestSetAndGetPosition() {
@@ -64,8 +65,10 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 
-	// Update same position — counter should not change
-	pos.UpdateAmount(sdkmath.NewInt(2000))
+	// Update same position — counter should not change.
+	// For delegated positions, Amount must remain zero, so we
+	// update DelegatedShares instead.
+	pos.UpdateDelegatedShares(sdkmath.LegacyNewDec(2000))
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
@@ -266,6 +269,7 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 		BaseRewardsPerShare: sdk.DecCoins{
 			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 		},
+		LastEventSeq: 0,
 	}, time.Now())
 	err = s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
@@ -355,11 +359,12 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 		Validator:           valAddr.String(),
 		Shares:              sdkmath.LegacyNewDec(1000),
 		BaseRewardsPerShare: sdk.DecCoins{},
+		LastEventSeq:        0,
 	}
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, lockAmount, delegation, false)
+	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), pos.TierId)
-	s.Require().True(lockAmount.Equal(pos.Amount))
+	s.Require().True(pos.Amount.IsZero())
 	s.Require().Equal(freshAddr.String(), pos.Owner)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -391,9 +396,10 @@ func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
 		Validator:           valAddr.String(),
 		Shares:              sdkmath.LegacyNewDec(1000),
 		BaseRewardsPerShare: rps,
+		LastEventSeq:        0,
 	}
 
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, lockAmount, delegation, false)
+	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -417,9 +423,10 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 		Validator:           valAddr.String(),
 		Shares:              sdkmath.LegacyNewDec(1000),
 		BaseRewardsPerShare: sdk.DecCoins{},
+		LastEventSeq:        0,
 	}
 
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, lockAmount, delegation, true)
+	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, true)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -446,13 +453,81 @@ func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 		Validator:           valAddr.String(),
 		Shares:              sdkmath.LegacyNewDec(1000),
 		BaseRewardsPerShare: sdk.DecCoins{},
+		LastEventSeq:        0,
 	}
-	pos1, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, lockAmount, delegation, false)
+	pos1, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 
 	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
-	pos2, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, lockAmount, delegation, false)
+	pos2, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 
 	s.Require().True(pos2.Id > pos1.Id)
+}
+
+// ---------------------------------------------------------------------------
+// PositionCountByValidator — increment / decrement via position lifecycle
+// ---------------------------------------------------------------------------
+
+// TestPositionCountByValidator_IncrementOnCreate verifies that creating a
+// delegated position increments the validator's position count.
+func (s *KeeperSuite) TestPositionCountByValidator_IncrementOnCreate() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	count, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+
+	// Create a second position on the same validator.
+	s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	count, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(2), count)
+}
+
+// TestPositionCountByValidator_DecrementOnDelete verifies that deleting a
+// delegated position decrements the validator's position count.
+func (s *KeeperSuite) TestPositionCountByValidator_DecrementOnDelete() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	count, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count)
+
+	err = s.keeper.DeletePosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	// Count should be removed (0 → entry deleted from store).
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().Error(err, "count entry should be removed when it reaches 0")
+}
+
+// TestPositionCountByValidator_UndelegatedPosition verifies that undelegated
+// positions do not affect the validator position count.
+func (s *KeeperSuite) TestPositionCountByValidator_UndelegatedPosition() {
+	// Create a delegated position first so we know the validator's count.
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+
+	countBefore, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().NoError(err)
+
+	// Now undelegate it — clearing delegation makes it undelegated.
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.NewInt(1000))
+	err = s.keeper.SetPosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	// Count should have decreased.
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().Error(err, "count should be removed after undelegating the only position")
+
+	// Delete the undelegated position — should not affect any validator count.
+	err = s.keeper.DeletePosition(s.ctx, pos)
+	s.Require().NoError(err)
+
+	_ = countBefore // used above
 }

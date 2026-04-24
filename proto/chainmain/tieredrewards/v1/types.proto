@@ -51,7 +51,9 @@ message Position {
   // tier_id references the Tier this position belongs to.
   uint32 tier_id = 3;
 
-  // amount is the total tokens locked in this position (bond denom).
+  // amount is the token amount for undelegated positions. For delegated positions
+  // this is always zero — the live token value is derived from
+  // validator.TokensFromShares(delegated_shares).
   string amount = 4 [
     (cosmos_proto.scalar)  = "cosmos.Int",
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
@@ -98,6 +100,53 @@ message Position {
   // created_at_time is the block time when this position was created.
   google.protobuf.Timestamp created_at_time = 12
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+
+  // last_event_seq is the sequence number of the last validator event this
+  // position has processed. Events with seq > last_event_seq are pending.
+  uint64 last_event_seq = 13;
+
+  // last_known_bonded tracks whether the validator was bonded after the last
+  // event replay. Used as the starting state for the next processEventsAndClaimBonus
+  // call. True when the position is first created (only bonded validators accepted).
+  bool last_known_bonded = 14;
+}
+
+// PositionResponse is the query-facing representation of a position.
+// Unlike the stored Position, the `amount` field always contains the
+// meaningful token value: TokensFromShares for delegated positions,
+// or the stored amount for undelegated positions.
+message PositionResponse {
+  uint64 id      = 1;
+  string owner   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
+  uint32 tier_id = 3;
+  // amount is the computed token value for this position.
+  string amount = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Int",
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+  string validator        = 5 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  string delegated_shares = 6 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+  repeated cosmos.base.v1beta1.DecCoin base_rewards_per_share = 7 [
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true
+  ];
+  google.protobuf.Timestamp last_bonus_accrual = 8
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  google.protobuf.Timestamp exit_triggered_at = 9
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  google.protobuf.Timestamp exit_unlock_at = 10
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  uint64                    created_at_height = 11;
+  google.protobuf.Timestamp created_at_time   = 12
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 
 // ValidatorRewardRatio stores the cumulative base rewards per share for a validator.
@@ -111,4 +160,40 @@ message ValidatorRewardRatio {
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true
   ];
+}
+
+// ValidatorEventType enumerates the types of validator lifecycle events
+// recorded for lazy processing.
+enum ValidatorEventType {
+  VALIDATOR_EVENT_TYPE_UNSPECIFIED = 0;
+  VALIDATOR_EVENT_TYPE_SLASH       = 1;
+  VALIDATOR_EVENT_TYPE_UNBOND      = 2;
+  VALIDATOR_EVENT_TYPE_BOND        = 3;
+}
+
+// ValidatorEvent records a validator lifecycle event (slash, unbond, bond)
+// for lazy processing during reward claims.
+message ValidatorEvent {
+  // height is the block height when the event occurred.
+  int64 height = 1;
+
+  // timestamp is the block time when the event occurred.
+  google.protobuf.Timestamp timestamp = 2
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+
+  // event_type is the type of event.
+  ValidatorEventType event_type = 3;
+
+  // tokens_per_share is the validator's token-per-share rate at event time,
+  // used to snapshot the token value for bonus calculation.
+  string tokens_per_share = 4 [
+    (cosmos_proto.scalar)  = "cosmos.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
+    (gogoproto.nullable)   = false,
+    (amino.dont_omitempty) = true
+  ];
+
+  // reference_count tracks how many positions still need to process this event.
+  // When it reaches zero the event can be garbage-collected.
+  uint64 reference_count = 5;
 }

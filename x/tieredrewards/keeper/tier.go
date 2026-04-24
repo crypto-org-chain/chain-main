@@ -8,6 +8,8 @@ import (
 
 	"cosmossdk.io/collections"
 	errorsmod "cosmossdk.io/errors"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (k Keeper) getTier(ctx context.Context, id uint32) (types.Tier, error) {
@@ -76,7 +78,7 @@ func (k Keeper) getPositionCountForTier(ctx context.Context, tierId uint32) (uin
 	return count, nil
 }
 
-func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error {
+func (k Keeper) increasePositionCountForTier(ctx context.Context, tierId uint32) error {
 	count, err := k.getPositionCountForTier(ctx, tierId)
 	if err != nil {
 		return err
@@ -87,7 +89,7 @@ func (k Keeper) increasePositionCount(ctx context.Context, tierId uint32) error 
 	return nil
 }
 
-func (k Keeper) decreasePositionCount(ctx context.Context, id uint32) error {
+func (k Keeper) decreasePositionCountForTier(ctx context.Context, id uint32) error {
 	count, err := k.getPositionCountForTier(ctx, id)
 	if err != nil {
 		return err
@@ -98,5 +100,49 @@ func (k Keeper) decreasePositionCount(ctx context.Context, id uint32) error {
 	if count == 1 {
 		return k.PositionCountByTier.Remove(ctx, id)
 	}
-	return k.PositionCountByTier.Set(ctx, id, count-1)
+
+	if err := k.PositionCountByTier.Set(ctx, id, count-1); err != nil {
+		return errorsmod.Wrapf(err, "%s (tier id %d)", types.ErrPositionCountStore.Error(), id)
+	}
+
+	return nil
+}
+
+func (k Keeper) getPositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
+	count, err := k.PositionCountByValidator.Get(ctx, valAddr)
+	if stderrors.Is(err, collections.ErrNotFound) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, errorsmod.Wrapf(err, "%s (validator %s)", types.ErrValidatorPositionCountStore.Error(), valAddr)
+	}
+	return count, nil
+}
+
+func (k Keeper) increasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
+	count, err := k.getPositionCountForValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if err := k.PositionCountByValidator.Set(ctx, valAddr, count+1); err != nil {
+		return errorsmod.Wrapf(err, "%s (validator %s)", types.ErrValidatorPositionCountStore.Error(), valAddr)
+	}
+	return nil
+}
+
+func (k Keeper) decreasePositionCountForValidator(ctx context.Context, valAddr sdk.ValAddress) error {
+	count, err := k.getPositionCountForValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+	if count == 1 {
+		return k.PositionCountByValidator.Remove(ctx, valAddr)
+	}
+	if err := k.PositionCountByValidator.Set(ctx, valAddr, count-1); err != nil {
+		return errorsmod.Wrapf(err, "%s (validator %s)", types.ErrValidatorPositionCountStore.Error(), valAddr)
+	}
+	return nil
 }

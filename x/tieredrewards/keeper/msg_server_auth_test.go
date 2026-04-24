@@ -239,14 +239,14 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	baseRewardsDistributed := sdkmath.NewInt(100)
 	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
 
-	// Compute expected bonus using CalculateBonusRaw with the old tier.
+	// Compute expected bonus using ComputeSegmentBonus with the old tier.
 	posNow, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expBonus := s.keeper.CalculateBonusRaw(posNow, val, tier, s.ctx.BlockTime())
+	expBonus := s.keeper.ComputeSegmentBonus(&posNow, tier, posNow.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	// Lock amount equals genesis delegation, so tier module holds half the total stake.
 	expBase := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
 

@@ -18,10 +18,10 @@ var (
 )
 
 func validPosition() types.Position {
-	return types.NewPosition(1, testOwner, 1, sdkmath.NewInt(1000), 100, types.Delegation{
+	return types.NewPosition(1, testOwner, 1, sdkmath.ZeroInt(), 100, types.Delegation{
 		Validator:           testValidator,
 		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
+		BaseRewardsPerShare: sdk.DecCoins{}, LastEventSeq: 0,
 	}, time.Now())
 }
 
@@ -43,6 +43,7 @@ func TestPosition_Validate(t *testing.T) {
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 		},
@@ -64,6 +65,7 @@ func TestPosition_Validate(t *testing.T) {
 			name: "valid undelegated position - non-zero amount without exit (e.g. after redeleg slash + AddToTier)",
 			modify: func(p *types.Position) {
 				p.ClearDelegation()
+				p.UpdateAmount(sdkmath.NewInt(1000))
 			},
 		},
 		{
@@ -90,21 +92,15 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "invalid owner address",
 		},
 		{
-			name: "nil amount locked",
+			name: "nil amount",
 			modify: func(p *types.Position) {
 				p.UpdateAmount(sdkmath.Int{})
 			},
 			wantErr:     true,
-			errContains: "amount locked cannot be nil",
+			errContains: "amount cannot be nil",
 		},
 		{
-			name: "zero amount locked is valid (post-slash state)",
-			modify: func(p *types.Position) {
-				p.UpdateAmount(sdkmath.ZeroInt())
-			},
-		},
-		{
-			name: "negative amount locked",
+			name: "negative amount",
 			modify: func(p *types.Position) {
 				p.UpdateAmount(sdkmath.NewInt(-500))
 			},
@@ -120,6 +116,7 @@ func TestPosition_Validate(t *testing.T) {
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 			wantErr:     true,
@@ -134,6 +131,7 @@ func TestPosition_Validate(t *testing.T) {
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 			wantErr:     true,
@@ -148,6 +146,7 @@ func TestPosition_Validate(t *testing.T) {
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 			wantErr:     true,
@@ -157,7 +156,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "non-zero delegated shares when not delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Shares: sdkmath.LegacyNewDec(100),
+					Shares:       sdkmath.LegacyNewDec(100),
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 			wantErr:     true,
@@ -170,6 +170,7 @@ func TestPosition_Validate(t *testing.T) {
 					BaseRewardsPerShare: sdk.DecCoins{
 						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
 					},
+					LastEventSeq: 0,
 				}, time.Now())
 			},
 			wantErr:     true,
@@ -178,7 +179,7 @@ func TestPosition_Validate(t *testing.T) {
 		{
 			name: "populated last bonus accrual when not delegated",
 			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{}, time.Now())
+				p.WithDelegation(types.Delegation{LastEventSeq: 0}, time.Now())
 			},
 			wantErr:     true,
 			errContains: "last bonus accrual must not be set when not delegated",
@@ -224,6 +225,24 @@ func TestPosition_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "created_at_time must be non-zero",
+		},
+		{
+			name: "non zero last event seq when not delegated",
+			modify: func(p *types.Position) {
+				p.ClearDelegation()
+				p.LastEventSeq = 1
+			},
+			wantErr:     true,
+			errContains: "last event seq must not be set when not delegated",
+		},
+		{
+			name: "last known bonded true when not delegated",
+			modify: func(p *types.Position) {
+				p.ClearDelegation()
+				p.LastKnownBonded = true
+			},
+			wantErr:     true,
+			errContains: "last known bonded must not be true when not delegated",
 		},
 	}
 

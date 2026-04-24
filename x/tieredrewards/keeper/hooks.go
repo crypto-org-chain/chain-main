@@ -22,75 +22,107 @@ func (k Keeper) Hooks() Hooks {
 	return Hooks{k}
 }
 
-// AfterValidatorBeginUnbonding settles all pending rewards for each position on
-// this validator. forceAccrue=true is required because the SDK has already changed
-// the validator status to Unbonding before firing this hook.
+// AfterValidatorBeginUnbonding records an UNBOND event.
+// Bonus for the pre-unbond segment is preserved via the snapshot rate.
 func (h Hooks) AfterValidatorBeginUnbonding(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
+	count, err := h.k.getPositionCountForValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
-	if len(positions) == 0 {
+	if count == 0 {
 		return nil
 	}
 
-	_, err = h.k.settleRewardsForPositions(ctx, valAddr, positions, true)
-	return err
-}
-
-// AfterValidatorBonded resets LastBonusAccrual for all positions on this
-// validator so bonus only accrues from when the validator is bonded again.
-func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
+	tokensPerShare, err := h.k.getTokensPerShare(ctx, valAddr)
 	if err != nil {
 		return err
-	}
-	if len(positions) == 0 {
-		return nil
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
-
-	for _, pos := range positions {
-		pos.UpdateLastBonusAccrual(blockTime)
-		if err := h.k.setPosition(ctx, pos); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	_, err = h.k.appendValidatorEvent(ctx, valAddr, types.ValidatorEvent{
+		Height:         sdkCtx.BlockHeight(),
+		Timestamp:      sdkCtx.BlockTime(),
+		EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_UNBOND,
+		TokensPerShare: tokensPerShare,
+		ReferenceCount: count,
+	})
+	return err
 }
 
-// AfterValidatorRemoved cleans up validator reward ratio.
-func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
-	if err := h.k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
-		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
-	}
-	return nil
-}
-
-// BeforeValidatorSlashed claims pending rewards then reduces Amount on all
-// positions by the slash fraction.
-func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
-	positions, err := h.k.getPositionsByValidator(ctx, valAddr)
+// AfterValidatorBonded records a BOND event.
+func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	count, err := h.k.getPositionCountForValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	}
-	if len(positions) == 0 {
+	if count == 0 {
 		return nil
 	}
 
-	positions, err = h.k.settleRewardsForPositions(ctx, valAddr, positions, false)
+	tokensPerShare, err := h.k.getTokensPerShare(ctx, valAddr)
 	if err != nil {
 		return err
 	}
 
-	if err := h.k.slashPositions(ctx, valAddr, positions, fraction); err != nil {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	_, err = h.k.appendValidatorEvent(ctx, valAddr, types.ValidatorEvent{
+		Height:         sdkCtx.BlockHeight(),
+		Timestamp:      sdkCtx.BlockTime(),
+		EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_BOND,
+		TokensPerShare: tokensPerShare,
+		ReferenceCount: count,
+	})
+	return err
+}
+
+// AfterValidatorRemoved cleans up validator reward ratio, events, and seq.
+// If leftover events exist (positions not yet claimed), nothing is cleaned —
+// the ratio and seq are still needed for future claims.
+func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
+	has, err := h.k.hasValidatorEvents(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if has {
+		h.k.logger(ctx).Error("leftover validator events found on validator removal, skipping cleanup", "validator", valAddr.String())
+		return nil
+	}
+
+	if err := h.k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
+		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
+	}
+	if err := h.k.deleteValidatorEventSeq(ctx, valAddr); err != nil {
+		h.k.logger(ctx).Error("failed to cleanup validator event sequence on validator removal", "validator", valAddr.String(), "error", err)
+	}
+	return nil
+}
+
+// BeforeValidatorSlashed records a SLASH event.
+// The distribution module handles slash accounting for all delegators
+// (including the tier module pool) via ValidatorSlashEvent records.
+func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddress, fraction sdkmath.LegacyDec) error {
+	count, err := h.k.getPositionCountForValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+
+	tokensPerShare, err := h.k.getTokensPerShare(ctx, valAddr)
+	if err != nil {
 		return err
 	}
 
-	return h.k.updatePoolDelegationInfo(ctx, valAddr, fraction)
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	_, err = h.k.appendValidatorEvent(ctx, valAddr, types.ValidatorEvent{
+		Height:         sdkCtx.BlockHeight(),
+		Timestamp:      sdkCtx.BlockTime(),
+		EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
+		TokensPerShare: tokensPerShare,
+		ReferenceCount: count,
+	})
+	return err
 }
 
 func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
@@ -103,8 +135,8 @@ func (h Hooks) AfterUnbondingRedelegationSlashed(ctx context.Context, unbondingI
 
 // AfterRedelegationSlashed updates DelegatedShares when an active destination
 // delegation is slashed via redelegation.
-func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
-	return h.k.slashRedelegationPosition(ctx, unbondingId, slashAmount, shareBurnt)
+func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, _ sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
+	return h.k.slashRedelegationPosition(ctx, unbondingId, shareBurnt)
 }
 
 func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
