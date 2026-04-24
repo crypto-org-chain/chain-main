@@ -200,8 +200,8 @@ def _setup_redeleg_slash(
     wait_for_port(rpc_port(cluster.base_port(2)))
     wait_for_new_blocks(cluster, 2)
 
-    resp = query_position(cluster, pos_id)
-    amount_after = int(resp["position"]["amount"])
+    pos = query_position(cluster, pos_id)["position"]
+    amount_after = int(pos["amount"])
     assert amount_after < amount_before, (
         f"redeleg slash should reduce amount: "
         f"before={amount_before}, after={amount_after}"
@@ -228,7 +228,7 @@ def test_basic_entry_exit_flow(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
     pos_id = new_pos_id(cluster, owner, before)
     pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) >= amount
+    assert int(pos["amount"]) == amount
     assert pos["validator"] == validator
 
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
@@ -253,8 +253,8 @@ def test_entry_add_then_exit_flow(cluster):
     rsp = add_to_position(cluster, owner, pos_id, add_amount)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    assert int(resp["position"]["amount"]) >= initial + add_amount
+    pos = query_position(cluster, pos_id)["position"]
+    assert int(pos["amount"]) == initial + add_amount
 
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
     assert returned >= initial + add_amount - GAS_ALLOWANCE
@@ -300,7 +300,7 @@ def test_basic_commit_delegation_exit_flow(cluster):
     pos_id = new_pos_id(cluster, owner, before)
 
     pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) >= amount
+    assert int(pos["amount"]) == amount
     assert pos["validator"] == validator
 
     returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
@@ -464,7 +464,7 @@ def test_clear_position_exit_elapsed(cluster):
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert pos["validator"] == v0
     assert pos["delegated_shares"] != "0.000000000000000000"
-    assert int(query_position(cluster, pos_id)["position"]["amount"]) > 0
+    assert int(pos["amount"]) > 0
 
 
 def test_clear_position_redeleg_exit_elapsed(cluster):
@@ -497,8 +497,7 @@ def test_clear_position_redeleg_exit_elapsed(cluster):
     rsp = clear_position(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["exit_triggered_at"] == ZERO_TIME
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert pos["validator"] == v1
@@ -532,8 +531,7 @@ def test_redelegate_full_exit(cluster):
     rsp = tier_redelegate(cluster, owner, pos_id, v1)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["validator"] == v1
     assert int(pos["amount"]) == amount
 
@@ -621,8 +619,7 @@ def test_redelegate_add_exit(cluster):
     rsp = add_to_position(cluster, owner, pos_id, add_amount)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["validator"] == v1
     assert int(pos["amount"]) >= initial + add_amount
 
@@ -662,8 +659,7 @@ def test_complex_redelegate_flow(cluster):
     rsp = tier_redelegate(cluster, owner, pos_id, v1)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["validator"] == v1
     total = initial + add_amount
     assert int(pos["amount"]) >= total
@@ -734,10 +730,9 @@ def test_exit_tier_partial_then_undelegate(cluster):
     rsp = exit_tier_with_delegation(cluster, owner, pos_id, half)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp_after = query_position(cluster, pos_id)
-    pos_after = resp_after["position"]
+    pos_after = query_position(cluster, pos_id)["position"]
     assert pos_after["validator"] != ""
-    remaining = int(resp_after["position"]["amount"])
+    remaining = int(pos_after["amount"])
     assert remaining > 0
 
     # Undelegate the remainder
@@ -801,8 +796,8 @@ def test_exit_tier_partial_then_full_exit(cluster):
     rsp = exit_tier_with_delegation(cluster, owner, pos_id, half)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp_after = query_position(cluster, pos_id)
-    remaining = int(resp_after["position"]["amount"])
+    pos_after = query_position(cluster, pos_id)["position"]
+    remaining = int(pos_after["amount"])
     assert remaining > 0
 
     # Second: exit the remainder (full exit)
@@ -1107,8 +1102,7 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
         slash_fraction="0.500000000000000000",
     )
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     slashed_amount = int(pos["amount"])
     assert slashed_amount > 0, "partial slash should leave amount > 0"
     assert (
@@ -1262,8 +1256,7 @@ def test_clear_position_after_slash(slashing_cluster):
     rsp = clear_position(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["exit_triggered_at"] == ZERO_TIME
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert int(pos["amount"]) == amount_after
@@ -1294,8 +1287,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
         trigger_exit_before_redelegate=True,
     )
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert int(pos["amount"]) > 0, "partial slash should leave amount > 0"
     assert pos["exit_triggered_at"] != ZERO_TIME
     amount_before_clear = int(pos["amount"])
@@ -1304,8 +1296,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
     rsp = clear_position(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["exit_triggered_at"] == ZERO_TIME
     assert pos["exit_unlock_at"] == ZERO_TIME
     assert int(pos["amount"]) == amount_before_clear
@@ -1360,9 +1351,8 @@ def test_slash_all_then_withdraw(slashing_cluster):
     wait_for_port(rpc_port(cluster.base_port(2)))
     wait_for_new_blocks(cluster, 2)
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
-    assert int(pos["amount"]) == 0, "100% slash should zero token value"
+    pos = query_position(cluster, pos_id)["position"]
+    assert int(pos["amount"]) == 0, "100% slash should zero amount"
     assert pos["validator"] == validator, "delegation should not be cleared"
 
     # Full exit lifecycle on worthless position
@@ -1426,8 +1416,7 @@ def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
     rsp = tier_delegate(cluster, owner, pos_id, validator0)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
+    pos = query_position(cluster, pos_id)["position"]
     assert pos["validator"] == validator0
     assert int(pos["amount"]) == TIER_1_MIN * 2
 
@@ -1700,9 +1689,8 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
     wait_for_port(rpc_port(cluster.base_port(2)))
     wait_for_new_blocks(cluster, 2)
 
-    resp = query_position(cluster, pos_id)
-    pos = resp["position"]
-    assert int(pos["amount"]) == 0, "100% slash should zero token value"
+    pos = query_position(cluster, pos_id)["position"]
+    assert int(pos["amount"]) == 0, "100% slash should zero amount"
     assert pos["validator"] != "", "direct slash keeps validator set"
     assert pos["exit_triggered_at"] != ZERO_TIME
 
@@ -1852,7 +1840,7 @@ def test_autocli_lock_tier_and_queries(cluster):
     assert position["owner"] == owner
     assert int(position["tier_id"]) == TIER_1_ID
     assert position["validator"] == validator
-    assert int(position_rsp["position"]["amount"]) == amount
+    assert int(position["amount"]) == amount
 
     owner_positions_rsp = query_command(cluster, MODULE, "positions-by-owner", owner)
     rest_owner_positions_rsp = query_positions_by_owner(cluster, owner)
