@@ -42,6 +42,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		LastBonusAccrual:    now,
 		CreatedAtHeight:     100,
 		CreatedAtTime:       now,
+		LastEventSeq:        0,
+		LastKnownBonded:     true,
 	}
 
 	// Delegated position. Amount must be zero.
@@ -56,6 +58,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		LastBonusAccrual:    now,
 		CreatedAtHeight:     101,
 		CreatedAtTime:       now,
+		LastEventSeq:        0,
+		LastKnownBonded:     true,
 	}
 
 	// Position with exit triggered.
@@ -70,6 +74,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		ExitUnlockAt:    exitTime.Add(time.Hour * 24 * 365),
 		CreatedAtHeight: 99,
 		CreatedAtTime:   now.Add(-time.Hour * 48),
+		LastKnownBonded: false,
 	}
 
 	genesisState := &types.GenesisState{
@@ -160,6 +165,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().Equal(orig.CreatedAtTime.UTC(), pos.CreatedAtTime.UTC())
 		s.Require().Equal(orig.ExitTriggeredAt.UTC(), pos.ExitTriggeredAt.UTC())
 		s.Require().Equal(orig.ExitUnlockAt.UTC(), pos.ExitUnlockAt.UTC())
+		s.Require().Equal(orig.LastEventSeq, pos.LastEventSeq)
+		s.Require().Equal(orig.LastKnownBonded, pos.LastKnownBonded)
 	}
 
 	// Sequence.
@@ -233,7 +240,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 				Id: 2, Owner: owner.String(), TierId: 1, Amount: sdkmath.ZeroInt(),
 				Validator: valAddr.String(), DelegatedShares: sdkmath.LegacyNewDec(2000),
 				LastBonusAccrual: now,
-				CreatedAtHeight:  11, CreatedAtTime: now,
+				CreatedAtHeight:  11, CreatedAtTime: now, LastEventSeq: 0, LastKnownBonded: true,
 			},
 			// simulate a redelegation-slashed to zero position here. No delegation here and amount is zero
 			{
