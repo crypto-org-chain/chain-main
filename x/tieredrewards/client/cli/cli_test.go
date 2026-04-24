@@ -348,7 +348,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position = s.mustQueryPosition(val, "0")
-		s.Require().True(position.Amount.IsPositive(), "amount should be positive after add")
+		s.Require().True(position.Amount.Equal(lockAmount.Add(addAmount)))
 	})
 
 	s.Run("position queries and voting power", func() {
