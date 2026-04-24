@@ -240,7 +240,6 @@ func (q queryServer) RawAllTierPositions(ctx context.Context, req *types.QueryRa
 	}, nil
 }
 
-
 func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidatorDataRequest) (*types.QueryValidatorDataResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
