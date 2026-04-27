@@ -21,7 +21,7 @@ message Params {
   // burned_addresses is a list of addresses that hold burned tokens
   repeated string burned_addresses = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 
-  // decay rate
+  // monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
   string decay_rate = 3 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
     (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
