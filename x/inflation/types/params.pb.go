@@ -32,7 +32,7 @@ type Params struct {
 	MaxSupply cosmossdk_io_math.Int `protobuf:"bytes,1,opt,name=max_supply,json=maxSupply,proto3,customtype=cosmossdk.io/math.Int" json:"max_supply"`
 	// burned_addresses is a list of addresses that hold burned tokens
 	BurnedAddresses []string `protobuf:"bytes,2,rep,name=burned_addresses,json=burnedAddresses,proto3" json:"burned_addresses,omitempty"`
-	// decay rate
+	// monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
 	DecayRate cosmossdk_io_math.LegacyDec `protobuf:"bytes,3,opt,name=decay_rate,json=decayRate,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"decay_rate"`
 }
 

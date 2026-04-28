@@ -28,6 +28,8 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryParams(),
 		GetCmdQueryTierPosition(),
 		GetCmdQueryTierPositionsByOwner(),
+		GetCmdQueryTierPositionsByTier(),
+		GetCmdQueryTierPositionsByValidator(),
 		GetCmdQueryAllTierPositions(),
 		GetCmdQueryTiers(),
 		GetCmdQueryRewardsPoolBalances(),
@@ -36,6 +38,8 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryTotalDelegatedVotingPower(),
 		GetCmdQueryRawTierPosition(),
 		GetCmdQueryRawTierPositionsByOwner(),
+		GetCmdQueryRawTierPositionsByTier(),
+		GetCmdQueryRawTierPositionsByValidator(),
 		GetCmdQueryRawAllTierPositions(),
 		GetCmdQueryValidatorData(),
 		GetCmdQueryPositionMappings(),
@@ -165,6 +169,83 @@ func GetCmdQueryTierPositionsByOwner() *cobra.Command {
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "positions-by-owner")
+	return cmd
+}
+
+func GetCmdQueryTierPositionsByTier() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "positions-by-tier [tier-id]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query all tier positions for a tier id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			tierID, err := parseUint32Arg("tier-id", args[0])
+			if err != nil {
+				return err
+			}
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.TierPositionsByTier(cmd.Context(), &types.QueryTierPositionsByTierRequest{
+				TierId:     tierID,
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "positions-by-tier")
+	return cmd
+}
+
+func GetCmdQueryTierPositionsByValidator() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "positions-by-validator [validator]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query all tier positions delegated to a validator",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			if _, err := sdk.ValAddressFromBech32(args[0]); err != nil {
+				return err
+			}
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.TierPositionsByValidator(cmd.Context(), &types.QueryTierPositionsByValidatorRequest{
+				Validator:  args[0],
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "positions-by-validator")
 	return cmd
 }
 
@@ -302,6 +383,73 @@ func GetCmdQueryRawTierPositionsByOwner() *cobra.Command {
 	}
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "raw-positions-by-owner")
+	return cmd
+}
+
+func GetCmdQueryRawTierPositionsByTier() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "raw-positions-by-tier [tier-id]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query raw stored positions for a tier id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			tierID, err := parseUint32Arg("tier-id", args[0])
+			if err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.RawTierPositionsByTier(cmd.Context(), &types.QueryRawTierPositionsByTierRequest{
+				TierId:     tierID,
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "raw-positions-by-tier")
+	return cmd
+}
+
+func GetCmdQueryRawTierPositionsByValidator() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "raw-positions-by-validator [validator]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query raw stored positions delegated to a validator",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			if _, err := sdk.ValAddressFromBech32(args[0]); err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.RawTierPositionsByValidator(cmd.Context(), &types.QueryRawTierPositionsByValidatorRequest{
+				Validator:  args[0],
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "raw-positions-by-validator")
 	return cmd
 }
 

@@ -30,6 +30,16 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/positions/{owner}";
   }
 
+  // TierPositionsByTier returns all positions for a given tier id.
+  rpc TierPositionsByTier(QueryTierPositionsByTierRequest) returns (QueryTierPositionsByTierResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions_by_tier/{tier_id}";
+  }
+
+  // TierPositionsByValidator returns all positions delegated to a given validator.
+  rpc TierPositionsByValidator(QueryTierPositionsByValidatorRequest) returns (QueryTierPositionsByValidatorResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions_by_validator/{validator}";
+  }
+
   // AllTierPositions returns all positions with pagination.
   rpc AllTierPositions(QueryAllTierPositionsRequest) returns (QueryAllTierPositionsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/positions";
@@ -71,6 +81,17 @@ service Query {
   // RawTierPositionsByOwner returns all raw stored Positions for a given owner address.
   rpc RawTierPositionsByOwner(QueryRawTierPositionsByOwnerRequest) returns (QueryRawTierPositionsByOwnerResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions/{owner}";
+  }
+
+  // RawTierPositionsByTier returns all raw stored Positions for a given tier id.
+  rpc RawTierPositionsByTier(QueryRawTierPositionsByTierRequest) returns (QueryRawTierPositionsByTierResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions_by_tier/{tier_id}";
+  }
+
+  // RawTierPositionsByValidator returns all raw stored Positions delegated to a given validator.
+  rpc RawTierPositionsByValidator(QueryRawTierPositionsByValidatorRequest)
+      returns (QueryRawTierPositionsByValidatorResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions_by_validator/{validator}";
   }
 
   // RawAllTierPositions returns all raw stored Positions with pagination.
@@ -116,6 +137,30 @@ message QueryTierPositionsByOwnerRequest {
 
 // QueryTierPositionsByOwnerResponse is the response type for the Query/TierPositionsByOwner RPC method.
 message QueryTierPositionsByOwnerResponse {
+  repeated PositionResponse              positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTierPositionsByTierRequest is the request type for the Query/TierPositionsByTier RPC method.
+message QueryTierPositionsByTierRequest {
+  uint32                                tier_id    = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryTierPositionsByTierResponse is the response type for the Query/TierPositionsByTier RPC method.
+message QueryTierPositionsByTierResponse {
+  repeated PositionResponse              positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTierPositionsByValidatorRequest is the request type for the Query/TierPositionsByValidator RPC method.
+message QueryTierPositionsByValidatorRequest {
+  string                                validator  = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryTierPositionsByValidatorResponse is the response type for the Query/TierPositionsByValidator RPC method.
+message QueryTierPositionsByValidatorResponse {
   repeated PositionResponse              positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
@@ -224,6 +269,30 @@ message QueryRawTierPositionsByOwnerRequest {
 
 // QueryRawTierPositionsByOwnerResponse is the response type for the Query/RawTierPositionsByOwner RPC method.
 message QueryRawTierPositionsByOwnerResponse {
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRawTierPositionsByTierRequest is the request type for the Query/RawTierPositionsByTier RPC method.
+message QueryRawTierPositionsByTierRequest {
+  uint32                                tier_id    = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryRawTierPositionsByTierResponse is the response type for the Query/RawTierPositionsByTier RPC method.
+message QueryRawTierPositionsByTierResponse {
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryRawTierPositionsByValidatorRequest is the request type for the Query/RawTierPositionsByValidator RPC method.
+message QueryRawTierPositionsByValidatorRequest {
+  string                                validator  = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryRawTierPositionsByValidatorResponse is the response type for the Query/RawTierPositionsByValidator RPC method.
+message QueryRawTierPositionsByValidatorResponse {
   repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
