@@ -248,8 +248,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 
-	// Fund a single address and create two positions.
 	addr := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
+	addr3 := s.fundRandomAddr(bondDenom, lockAmount.MulRaw(2))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -261,12 +261,17 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner: addr.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
 	})
+	resp3, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner: addr3.String(), Id: 1, Amount: lockAmount, ValidatorAddress: valAddr.String(),
+	})
 	s.Require().NoError(err)
 
 	// Read positions to get their DelegatedShares for expected bonus calculation.
 	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
 	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	s.Require().NoError(err)
+	_, err = s.keeper.GetPosition(s.ctx, resp3.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -286,11 +291,12 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
-	// Expected base: the module has 2 * lockAmount delegated out of
-	// (genesis delegation + 2 * lockAmount) total. Base rewards are proportional.
+	// Expected base: the module has 3 * lockAmount delegated out of
+	// (genesis delegation + 3 * lockAmount) total. Base rewards are proportional.
 	// With lockAmount == DefaultPowerReduction (same as genesis delegation),
-	// module share = 2/3 of distributed rewards.
-	expectedTotalBase := baseRewardsDistributed.MulRaw(2).QuoRaw(3)
+	// module share = 3/4 of distributed rewards.
+	// addr1 expected base = 2/4 of distributed rewards.
+	expectedTotalBase := baseRewardsDistributed.MulRaw(2).QuoRaw(4)
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, addr, bondDenom)
 
