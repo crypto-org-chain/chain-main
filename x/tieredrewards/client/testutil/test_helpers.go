@@ -172,6 +172,14 @@ func QueryTierPositionsByOwnerExec(clientCtx client.Context, owner string, extra
 	return ExecQueryCmd(clientCtx, append([]string{owner}, extraArgs...), tieredrewardscli.GetCmdQueryTierPositionsByOwner)
 }
 
+func QueryTierPositionsByTierExec(clientCtx client.Context, tierID string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{tierID}, extraArgs...), tieredrewardscli.GetCmdQueryTierPositionsByTier)
+}
+
+func QueryTierPositionsByValidatorExec(clientCtx client.Context, validator string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{validator}, extraArgs...), tieredrewardscli.GetCmdQueryTierPositionsByValidator)
+}
+
 func QueryAllTierPositionsExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryAllTierPositions)
 }
@@ -202,6 +210,14 @@ func QueryRawTierPositionExec(clientCtx client.Context, positionID string, extra
 
 func QueryRawTierPositionsByOwnerExec(clientCtx client.Context, owner string, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecQueryCmd(clientCtx, append([]string{owner}, extraArgs...), tieredrewardscli.GetCmdQueryRawTierPositionsByOwner)
+}
+
+func QueryRawTierPositionsByTierExec(clientCtx client.Context, tierID string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{tierID}, extraArgs...), tieredrewardscli.GetCmdQueryRawTierPositionsByTier)
+}
+
+func QueryRawTierPositionsByValidatorExec(clientCtx client.Context, validator string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{validator}, extraArgs...), tieredrewardscli.GetCmdQueryRawTierPositionsByValidator)
 }
 
 func QueryRawAllTierPositionsExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {

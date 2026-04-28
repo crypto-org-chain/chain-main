@@ -106,6 +106,77 @@ func (s *KeeperSuite) TestGRPCQueryTierPositionsByOwner_NilRequest() {
 	s.Require().ErrorContains(err, "empty request")
 }
 
+// --- TierPositionsByTier ---
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByTier() {
+	for i := 0; i < 3; i++ {
+		s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	}
+
+	resp, err := s.queryClient.TierPositionsByTier(s.ctx.Context(), &types.QueryTierPositionsByTierRequest{TierId: 1})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 3)
+	for _, pos := range resp.Positions {
+		s.Require().Equal(uint32(1), pos.TierId)
+		s.Require().True(pos.Amount.IsPositive(), "amount should be computed token value")
+	}
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByTier_Empty() {
+	s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	// Query a tier id with no positions.
+	resp, err := s.queryClient.TierPositionsByTier(s.ctx.Context(), &types.QueryTierPositionsByTierRequest{TierId: 99})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.Positions)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByTier_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TierPositionsByTier(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
+}
+
+// --- TierPositionsByValidator ---
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByValidator() {
+	pos1 := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	_ = s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	validator := pos1.Validator
+
+	resp, err := s.queryClient.TierPositionsByValidator(s.ctx.Context(), &types.QueryTierPositionsByValidatorRequest{Validator: validator})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 2)
+	for _, pos := range resp.Positions {
+		s.Require().Equal(validator, pos.Validator)
+		s.Require().True(pos.Amount.IsPositive(), "amount should be computed token value")
+	}
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByValidator_Empty() {
+	s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	otherVal := sdk.ValAddress([]byte("other_validator_____")).String()
+
+	resp, err := s.queryClient.TierPositionsByValidator(s.ctx.Context(), &types.QueryTierPositionsByValidatorRequest{Validator: otherVal})
+	s.Require().NoError(err)
+	s.Require().Empty(resp.Positions)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByValidator_InvalidAddress() {
+	_, err := s.queryClient.TierPositionsByValidator(s.ctx.Context(), &types.QueryTierPositionsByValidatorRequest{Validator: "not_valid"})
+	s.Require().Error(err)
+}
+
+func (s *KeeperSuite) TestGRPCQueryTierPositionsByValidator_NilRequest() {
+	srv := keeper.NewQueryServerImpl(s.keeper)
+	_, err := srv.TierPositionsByValidator(s.ctx, nil)
+	s.Require().Error(err)
+	s.Require().Equal(codes.InvalidArgument, status.Code(err))
+	s.Require().ErrorContains(err, "empty request")
+}
+
 // --- AllTierPositions ---
 
 func (s *KeeperSuite) TestGRPCQueryAllTierPositions() {
@@ -471,6 +542,26 @@ func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByOwner() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 
 	resp, err := s.queryClient.RawTierPositionsByOwner(s.ctx.Context(), &types.QueryRawTierPositionsByOwnerRequest{Owner: pos.Owner})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 1)
+	s.Require().Equal(pos.Id, resp.Positions[0].Id)
+	s.Require().True(resp.Positions[0].Amount.IsZero(), "raw delegated position amount should be zero")
+}
+
+func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByTier() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	resp, err := s.queryClient.RawTierPositionsByTier(s.ctx.Context(), &types.QueryRawTierPositionsByTierRequest{TierId: pos.TierId})
+	s.Require().NoError(err)
+	s.Require().Len(resp.Positions, 1)
+	s.Require().Equal(pos.Id, resp.Positions[0].Id)
+	s.Require().True(resp.Positions[0].Amount.IsZero(), "raw delegated position amount should be zero")
+}
+
+func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByValidator() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+
+	resp, err := s.queryClient.RawTierPositionsByValidator(s.ctx.Context(), &types.QueryRawTierPositionsByValidatorRequest{Validator: pos.Validator})
 	s.Require().NoError(err)
 	s.Require().Len(resp.Positions, 1)
 	s.Require().Equal(pos.Id, resp.Positions[0].Id)

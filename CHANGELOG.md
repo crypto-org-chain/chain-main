@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Features
+
+- [#1284](https://github.com/crypto-org-chain/chain-main/pull/1284) feat(x/tieredrewards): add gRPC queries and CLI commands to list positions by tier id or validator.
+
 *Apr 25, 2026*
 
 ## v7.0.0
