@@ -19,21 +19,16 @@ type Delegation struct {
 }
 
 func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
-	return Position{
-		Id:                  id,
-		Owner:               owner,
-		TierId:              tierId,
-		Amount:              amount,
-		CreatedAtHeight:     createdAtHeight,
-		CreatedAtTime:       createdAtTime,
-		Validator:           delegation.Validator,
-		DelegatedShares:     delegation.Shares,
-		BaseRewardsPerShare: delegation.BaseRewardsPerShare,
-		LastBonusAccrual:    createdAtTime,
-		LastEventSeq:        delegation.LastEventSeq,
-		// Delegated positions are only created on bonded validators.
-		LastKnownBonded: delegation.Validator != "",
+	p := Position{
+		Id:              id,
+		Owner:           owner,
+		TierId:          tierId,
+		Amount:          amount,
+		CreatedAtHeight: createdAtHeight,
+		CreatedAtTime:   createdAtTime,
 	}
+	p.WithDelegation(delegation, createdAtTime)
+	return p
 }
 
 func (p Position) Validate() error {
@@ -114,6 +109,9 @@ func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
 }
 
 func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
+	if delegation.Validator == "" {
+		return
+	}
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
 	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
