@@ -48,6 +48,22 @@ func newRedelegationMappingsIndexes(sb *collections.SchemaBuilder) UnbondingMapp
 	}
 }
 
+func (k Keeper) hasPositionMapping(
+	ctx context.Context,
+	mappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes],
+	positionId uint64,
+) (bool, error) {
+	iter, err := mappings.Indexes.ByPosition.MatchExact(ctx, positionId)
+	if err != nil {
+		return false, err
+	}
+	keys, err := iter.PrimaryKeys()
+	if err != nil {
+		return false, err
+	}
+	return len(keys) > 0, nil
+}
+
 // --- Unbonding (undelegation) Mappings ---
 
 // setUnbondingPositionMapping stores unbondingId -> positionId and updates indexes.
@@ -78,30 +94,9 @@ func (k Keeper) deleteUnbondingMappingsForPosition(ctx context.Context, position
 	return nil
 }
 
-func (k Keeper) hasPositionMapping(
-	ctx context.Context,
-	mappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes],
-	positionId uint64,
-) (bool, error) {
-	iter, err := mappings.Indexes.ByPosition.MatchExact(ctx, positionId)
-	if err != nil {
-		return false, err
-	}
-	keys, err := iter.PrimaryKeys()
-	if err != nil {
-		return false, err
-	}
-	return len(keys) > 0, nil
-}
-
 // stillUnbonding returns true if there are pending undelegation unbonding ids for the position.
 func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
 	return k.hasPositionMapping(ctx, k.UnbondingDelegationMappings, positionId)
-}
-
-// stillRedelegating returns true if there are pending redelegation ids for the position.
-func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
-	return k.hasPositionMapping(ctx, k.RedelegationMappings, positionId)
 }
 
 // --- Redelegation mappings ---
@@ -133,3 +128,9 @@ func (k Keeper) deleteRedelegationMappingsForPosition(ctx context.Context, posit
 	}
 	return nil
 }
+
+// stillRedelegating returns true if there are pending redelegation ids for the position.
+func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+	return k.hasPositionMapping(ctx, k.RedelegationMappings, positionId)
+}
+

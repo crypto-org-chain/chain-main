@@ -93,6 +93,69 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 	return &types.QueryTierPositionsByOwnerResponse{Positions: positions, Pagination: pageResp}, nil
 }
 
+func (q queryServer) TierPositionsByTier(ctx context.Context, req *types.QueryTierPositionsByTierRequest) (*types.QueryTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.PositionResponse, error) {
+			pos, err := q.k.getPosition(ctx, key.K2())
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			return pos.ToPositionResponse(tokenValue), nil
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionsByTierResponse{Positions: positions, Pagination: pageResp}, nil
+}
+
+func (q queryServer) TierPositionsByValidator(ctx context.Context, req *types.QueryTierPositionsByValidatorRequest) (*types.QueryTierPositionsByValidatorResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(req.Validator)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address: %s", err)
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByValidator,
+		req.Pagination,
+		func(key collections.Pair[sdk.ValAddress, uint64], _ collections.NoValue) (types.PositionResponse, error) {
+			pos, err := q.k.getPosition(ctx, key.K2())
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			return pos.ToPositionResponse(tokenValue), nil
+		},
+		query.WithCollectionPaginationPairPrefix[sdk.ValAddress, uint64](valAddr),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionsByValidatorResponse{Positions: positions, Pagination: pageResp}, nil
+}
+
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -214,6 +277,56 @@ func (q queryServer) RawTierPositionsByOwner(ctx context.Context, req *types.Que
 		return nil, err
 	}
 	return &types.QueryRawTierPositionsByOwnerResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
+func (q queryServer) RawTierPositionsByTier(ctx context.Context, req *types.QueryRawTierPositionsByTierRequest) (*types.QueryRawTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionsByTierResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
+func (q queryServer) RawTierPositionsByValidator(ctx context.Context, req *types.QueryRawTierPositionsByValidatorRequest) (*types.QueryRawTierPositionsByValidatorResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+	valAddr, err := sdk.ValAddressFromBech32(req.Validator)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address: %s", err)
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByValidator,
+		req.Pagination,
+		func(key collections.Pair[sdk.ValAddress, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[sdk.ValAddress, uint64](valAddr),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionsByValidatorResponse{
 		Positions:  positions,
 		Pagination: pageResp,
 	}, nil
