@@ -109,9 +109,6 @@ func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
 }
 
 func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
-	if delegation.Validator == "" {
-		return
-	}
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
 	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
