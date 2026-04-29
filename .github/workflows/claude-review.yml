@@ -54,9 +54,11 @@ jobs:
             const { data: pull } = await github.request('GET ' + prUrl);
             const repository = pull.head.repo.full_name;
             const ref = pull.head.ref;
+            const sha = pull.head.sha;
             const fs = require('fs');
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `repository=${repository}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `ref=${ref}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
 
       - name: Checkout PR head
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -64,6 +66,7 @@ jobs:
           repository: ${{ steps.pr.outputs.repository }}
           ref: ${{ steps.pr.outputs.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
@@ -81,8 +84,8 @@ jobs:
             {
               "model": "us.anthropic.claude-sonnet-4-6",
               "attribution": {
-                "commit": "",
-                "pr": ""
+                "commit": "${{ steps.pr.outputs.sha }}",
+                "pr": "${{ github.event.issue.number }}"
               }
             }
           prompt: |
@@ -97,15 +100,15 @@ jobs:
             - Security implications
             - Performance considerations
 
-            Identify all state-breaking changes and alert the user when they are detected (No breaking changes should be merged in release branches)
-            This includes :
+            Identify all state-breaking changes and alert the user when they are detected (No breaking changes should be merged in release branches).
+            This includes:
             - Consensus Impact: These changes demand that all validators upgrade to the new version to maintain network consensus.
-            - Module Changes: Examples include modifications to core module functionality, such as altering the transaction structure, 
+            - Module Changes: Examples include modifications to core module functionality, such as altering the transaction structure,
             changing how messages are signed, or changing state serialization (e.g., changing Amino JSON support).
             - In-Place Migrations: Modern Cosmos SDK upgrades use "in-place store migrations" to update data structures within the state machine to align with the new code.
-            - Required Procedures: Historically, these required exporting the entire chain state, running migration scripts on the JSON, 
+            - Required Procedures: Historically, these required exporting the entire chain state, running migration scripts on the JSON,
             and starting a new chain (Genesis migration), though in-place migration is now preferred.
-            
+
             The workspace is checked out to the PR head: ${{ steps.pr.outputs.repository }} at ref ${{ steps.pr.outputs.ref }} (not the default branch).
 
             Use `gh pr comment` for top-level feedback.
