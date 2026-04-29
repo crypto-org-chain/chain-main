@@ -44,6 +44,17 @@ func (k Keeper) createPosition(
 
 	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
 
+	delAddr := types.GetDelegationAddress(id)
+
+	ownerAddr, err := sdk.AccAddressFromBech32(owner)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	if err := k.routeBaseRewardsToOwner(ctx, delAddr, ownerAddr); err != nil {
+		return types.Position{}, err
+	}
+
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)
 	}
@@ -55,8 +66,8 @@ func (k Keeper) createPosition(
 	return pos, nil
 }
 
-// LockFunds locks the desired amount of funds into a position.
-func (k Keeper) lockFunds(ctx context.Context, owner string, amount math.Int) error {
+// lockFundsOld locks the desired amount of funds into a position.
+func (k Keeper) lockFundsOld(ctx context.Context, owner string, amount math.Int) error {
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -68,6 +79,20 @@ func (k Keeper) lockFunds(ctx context.Context, owner string, amount math.Int) er
 	}
 
 	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+}
+
+// lockFunds locks the desired amount of funds into a position.
+func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+}
+
+// routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
+func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr sdk.AccAddress, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 
 // SetPosition stores a position, validates it, and maintains secondary indexes.

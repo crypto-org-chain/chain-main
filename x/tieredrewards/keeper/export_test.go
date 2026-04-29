@@ -78,8 +78,8 @@ func (k Keeper) DecreasePositionCountForValidator(ctx context.Context, valAddr s
 	return k.decreasePositionCountForValidator(ctx, valAddr)
 }
 
-func (k Keeper) TransferDelegationToTier(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
-	return k.transferDelegationToTier(ctx, delegatorAddr, validatorAddr, amount)
+func (k Keeper) TransferDelegationToTierOld(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+	return k.transferDelegationToTierOld(ctx, delegatorAddr, validatorAddr, amount)
 }
 
 func (k Keeper) TransferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
@@ -103,7 +103,7 @@ func (k Keeper) GetAuthority() string {
 }
 
 func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) error {
-	return k.lockFunds(ctx, owner, amount)
+	return k.lockFundsOld(ctx, owner, amount)
 }
 
 func (k Keeper) GetValidatorRewardRatio(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {

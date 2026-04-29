@@ -42,11 +42,21 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().True(pos.DelegatedShares.Equal(halfShares))
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
-	// Module should have delegation on the same validator
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	// The position's delegation address holds the delegation.
+	posDelAddr := types.GetDelegationAddress(pos.Id)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().True(moduleDel.Shares.Equal(halfShares))
+	s.Require().True(posDel.Shares.Equal(halfShares))
+
+	// Verify that the module account does not hold a delegation.
+	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	s.Require().Error(err, "module account should not hold delegation")
+
+	// Verify that the distribution rewards for this delegation are routed to the owner.
+	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(delAddr.String(), withdrawAddr.String(), "withdraw addr should route to owner")
 }
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
@@ -79,17 +89,22 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().Error(err, "user delegation should be removed after full commit")
 
-	// Module should have the full delegation
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	// The position's delegation address holds the delegation.
+	posDelAddr := types.GetDelegationAddress(pos.Id)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
 	// Re-fetch validator after commit for current exchange rate
 	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	moduleDelTokens := valAfter.TokensFromShares(moduleDel.Shares).TruncateInt()
-	s.Require().True(moduleDelTokens.Equal(delTokensBefore), "module should have the full delegation")
+	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
+	s.Require().True(posDelTokens.Equal(delTokensBefore), "position's delegation address should have the full delegation")
+
+	// Verify that the module account does not hold a delegation.
+	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	s.Require().Error(err, "module account should not hold delegation")
 
 	// Validator tokens should be unchanged
 	s.Require().True(val.Tokens.Equal(valAfter.Tokens), "validator tokens should be unchanged")

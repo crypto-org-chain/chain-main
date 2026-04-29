@@ -58,8 +58,8 @@ func (k Keeper) updateDelegation(ctx context.Context, pos *types.Position, deleg
 	return nil
 }
 
-// delegate delegates tokens from the tier module account to a bonded validator.
-func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+// delegateOld delegates tokens from the tier module account to a bonded validator.
+func (k Keeper) delegateOld(ctx context.Context, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
@@ -72,6 +72,19 @@ func (k Keeper) delegate(ctx context.Context, valAddr sdk.ValAddress, amount mat
 	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
 
 	return k.stakingKeeper.Delegate(ctx, moduleAddr, amount, stakingtypes.Unbonded, val, true)
+}
+
+func (k Keeper) delegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
+	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
+	if err != nil {
+		return math.LegacyDec{}, err
+	}
+
+	if !val.IsBonded() {
+		return math.LegacyDec{}, types.ErrValidatorNotBonded
+	}
+
+	return k.stakingKeeper.Delegate(ctx, delAddr, amount, stakingtypes.Unbonded, val, true)
 }
 
 func (k Keeper) undelegate(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.Int, uint64, error) {

@@ -14,13 +14,25 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// transferDelegationToTier transfers delegation shares from a delegator to the tier
+// transferDelegationToTierOld transfers delegation shares from a delegator to the tier
 // module on the same validator. The delegator's tokens are unbonded and
 // re-delegated from the module account.
 //
 // Only bonded validators are allowed. Blocks transfer if the delegator has an
 // active incoming redelegation to the validator.
-func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+func (k Keeper) transferDelegationToTierOld(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
+	return k.transferDelegationToPosition(ctx, delegatorAddr, poolAddr, validatorAddr, amount)
+}
+
+// transferDelegationToPosition transfers delegation shares from 
+// the original owner to a position's delegation address on the same validator.
+// Shares are unbonded at the source and re-delegated from the destination
+// with no unbonding period.
+//
+// Only bonded validators are allowed. Blocks transfer if the delegator has an
+// active incoming redelegation to the validator.
+func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, posDelAddr sdk.AccAddress, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
 	if !amount.IsPositive() {
 		return math.LegacyDec{}, errorsmod.Wrap(
 			sdkerrors.ErrInvalidRequest,
@@ -28,7 +40,7 @@ func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, val
 		)
 	}
 
-	from, err := sdk.AccAddressFromBech32(delegatorAddr)
+	from, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
 		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
@@ -38,9 +50,8 @@ func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, val
 		return math.LegacyDec{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
 
-	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	if from.Equals(poolAddr) {
-		return math.LegacyDec{}, types.ErrTransferDelegationToPoolSelf
+	if from.Equals(posDelAddr) {
+		return math.LegacyDec{}, types.ErrTransferDelegationToPositionSelf
 	}
 
 	validator, err := k.stakingKeeper.GetValidator(ctx, valAddr)
@@ -85,7 +96,7 @@ func (k Keeper) transferDelegationToTier(ctx context.Context, delegatorAddr, val
 		return math.LegacyDec{}, err
 	}
 
-	newShares, err := k.stakingKeeper.Delegate(ctx, poolAddr, newAmount, validator.GetStatus(), validator, false)
+	newShares, err := k.stakingKeeper.Delegate(ctx, posDelAddr, newAmount, validator.GetStatus(), validator, false)
 	if err != nil {
 		return math.LegacyDec{}, err
 	}

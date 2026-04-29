@@ -35,21 +35,27 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	if err := ms.lockFunds(ctx, msg.Owner, msg.Amount); err != nil {
-		return nil, err
-	}
-
 	valAddr, err := sdk.ValAddressFromBech32(msg.ValidatorAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
+	ownerAddr, err := sdk.AccAddressFromBech32(msg.Owner)
 	if err != nil {
 		return nil, err
 	}
 
-	shares, err := ms.delegate(ctx, valAddr, msg.Amount)
+	id, err := ms.NextPositionId.Peek(ctx)
+	if err != nil {
+		return nil, err
+	}
+	delAddr := types.GetDelegationAddress(id)
+
+	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	shares, err := ms.delegate(ctx, delAddr, valAddr, msg.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +68,17 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	delegation := types.Delegation{
 		Validator:           msg.ValidatorAddress,
 		Shares:              shares,
-		BaseRewardsPerShare: currentRatio,
+		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
 		LastEventSeq:        latestSeq,
 	}
 	pos, err := ms.createPosition(ctx, msg.Owner, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
+	}
+
+	// Defensive
+	if pos.Id != id {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -99,12 +110,22 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	currentRatio, err := ms.updateBaseRewardsPerShare(ctx, valAddr)
+	ownerAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	shares, err := ms.transferDelegationToTier(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
+	id, err := ms.NextPositionId.Peek(ctx)
+	if err != nil {
+		return nil, err
+	}
+	delAddr := types.GetDelegationAddress(id)
+
+	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	shares, err := ms.transferDelegationToPosition(ctx, msg.DelegatorAddress, delAddr, msg.ValidatorAddress, msg.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -117,13 +138,18 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	delegation := types.Delegation{
 		Validator:           msg.ValidatorAddress,
 		Shares:              shares,
-		BaseRewardsPerShare: currentRatio,
+		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
 		LastEventSeq:        latestSeq,
 	}
 
 	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
+	}
+
+	// Defensive
+	if pos.Id != id {
+		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -161,7 +187,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	newShares, err := ms.delegate(ctx, valAddr, pos.Amount)
+	newShares, err := ms.delegateOld(ctx, valAddr, pos.Amount)
 	if err != nil {
 		return nil, err
 	}
@@ -362,7 +388,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	if err := ms.lockFunds(ctx, msg.Owner, msg.Amount); err != nil {
+	if err := ms.lockFundsOld(ctx, msg.Owner, msg.Amount); err != nil {
 		return nil, err
 	}
 	newShares := math.LegacyZeroDec()
@@ -377,7 +403,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		newShares, err = ms.delegate(ctx, valAddr, msg.Amount)
+		newShares, err = ms.delegateOld(ctx, valAddr, msg.Amount)
 		if err != nil {
 			return nil, err
 		}

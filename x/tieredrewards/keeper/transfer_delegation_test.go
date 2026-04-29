@@ -34,7 +34,7 @@ func (s *KeeperSuite) TestTransferDelegation_PartialTransfer() {
 	delHalfTokens := delTotalTokensBefore.Quo(sdkmath.NewInt(2))
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 
-	newShares, err := s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), delHalfTokens)
+	newShares, err := s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), delHalfTokens)
 	s.Require().NoError(err)
 
 	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -78,7 +78,7 @@ func (s *KeeperSuite) TestTransferDelegation_FullTransfer() {
 	delTokensBefore := valBefore.TokensFromShares(del.Shares).TruncateInt()
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 
-	newShares, err := s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), delTokensBefore)
+	newShares, err := s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), delTokensBefore)
 	s.Require().NoError(err)
 
 	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -105,7 +105,7 @@ func (s *KeeperSuite) TestTransferDelegation_ZeroAmount() {
 	s.Require().NoError(err)
 	val := vals[0]
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), val.GetOperator(), sdkmath.ZeroInt())
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), val.GetOperator(), sdkmath.ZeroInt())
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
@@ -133,13 +133,13 @@ func (s *KeeperSuite) TestTransferDelegation_TinyAmount() {
 	validator.Tokens = sdkmath.NewIntWithDecimal(1, 19)
 	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, validator))
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), sdkmath.OneInt())
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), sdkmath.OneInt())
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrTinyTransferDelegationAmount)
 }
 
 func (s *KeeperSuite) TestTransferDelegation_InvalidValidator() {
-	_, err := s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
+	_, err := s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrTransferDelegationSrcNotFound)
 }
@@ -160,7 +160,7 @@ func (s *KeeperSuite) TestTransferDelegation_InsufficientTokens() {
 	s.Require().NoError(err)
 	excessTokens := validator.TokensFromShares(del.Shares).TruncateInt().Add(sdkmath.NewInt(1000000))
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), excessTokens)
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress(delAddr).String(), valAddr.String(), excessTokens)
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
@@ -172,9 +172,9 @@ func (s *KeeperSuite) TestTransferDelegation_PoolCannotTransferToSelf() {
 
 	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, poolAddr.String(), val.GetOperator(), sdkmath.NewInt(1000))
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, poolAddr.String(), val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, types.ErrTransferDelegationToPoolSelf)
+	s.Require().ErrorIs(err, types.ErrTransferDelegationToPositionSelf)
 }
 
 func (s *KeeperSuite) TestTransferDelegation_NoDelegation() {
@@ -184,7 +184,7 @@ func (s *KeeperSuite) TestTransferDelegation_NoDelegation() {
 
 	randomAddr := sdk.AccAddress([]byte("addr_with_no_delegation"))
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, randomAddr.String(), val.GetOperator(), sdkmath.NewInt(1000))
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, randomAddr.String(), val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err, "should fail when delegator has no delegation")
 }
 
@@ -193,7 +193,7 @@ func (s *KeeperSuite) TestTransferDelegation_InvalidFromAddress() {
 	s.Require().NoError(err)
 	val := vals[0]
 
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, "invalid_address", val.GetOperator(), sdkmath.NewInt(1000))
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, "invalid_address", val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
 }
 
@@ -233,7 +233,7 @@ func (s *KeeperSuite) TestTransferDelegation_RejectsActiveRedelegation() {
 
 	// Try to transfer delegation at the second validator (bonded, but has active incoming redelegation).
 	// Should be blocked to prevent slash escape.
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, sdk.AccAddress(delAddr).String(), secondValAddr.String(), sdkmath.NewInt(50_000))
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, sdk.AccAddress(delAddr).String(), secondValAddr.String(), sdkmath.NewInt(50_000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
@@ -273,7 +273,7 @@ func (s *KeeperSuite) TestTransferDelegation_RejectsUnbondedValidator() {
 	s.Require().False(val.IsBonded(), "jailed validator should not be bonded")
 
 	// Try to transfer delegation on the now-jailed (unbonding) validator
-	_, err = s.keeper.TransferDelegationToTier(s.ctx, dstAccAddr.String(), dstValAddr.String(), sdkmath.NewInt(50_000))
+	_, err = s.keeper.TransferDelegationToTierOld(s.ctx, dstAccAddr.String(), dstValAddr.String(), sdkmath.NewInt(50_000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
