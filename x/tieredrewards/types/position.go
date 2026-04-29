@@ -33,13 +33,19 @@ func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, create
 		LastBonusAccrual:    createdAtTime,
 		LastEventSeq:        delegation.LastEventSeq,
 		// Delegated positions are only created on bonded validators.
-		LastKnownBonded: delegation.Validator != "",
+		LastKnownBonded:  delegation.Validator != "",
+		DelegatorAddress: GetDelegatorAddress(id).String(),
 	}
 }
 
 func (p Position) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(p.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if p.DelegatorAddress != GetDelegatorAddress(p.Id).String() {
+		return fmt.Errorf("delegator_address must equal GetDelegatorAddress(id): got %s, want %s",
+			p.DelegatorAddress, GetDelegatorAddress(p.Id).String())
 	}
 
 	if p.Amount.IsNil() {
@@ -185,7 +191,7 @@ func (p *Position) UpdateLastKnownBonded(bonded bool) {
 	p.LastKnownBonded = bonded
 }
 
-func GetDelegationAddress(id uint64) sdk.AccAddress {
+func GetDelegatorAddress(id uint64) sdk.AccAddress {
 	return authtypes.NewModuleAddress(fmt.Sprintf("tieredrewards/position/%d", id))
 }
 
@@ -203,5 +209,6 @@ func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {
 		ExitUnlockAt:        p.ExitUnlockAt,
 		CreatedAtHeight:     p.CreatedAtHeight,
 		CreatedAtTime:       p.CreatedAtTime,
+		DelegatorAddress:    p.DelegatorAddress,
 	}
 }

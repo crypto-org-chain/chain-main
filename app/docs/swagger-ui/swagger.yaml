@@ -25282,6 +25282,8 @@ paths:
                   created_at_time:
                     type: string
                     format: date-time
+                  delegator_address:
+                    type: string
                 description: >-
                   PositionResponse is the query-facing representation of a
                   position.
@@ -25448,6 +25450,8 @@ paths:
                     created_at_time:
                       type: string
                       format: date-time
+                    delegator_address:
+                      type: string
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
@@ -25634,6 +25638,8 @@ paths:
                     created_at_time:
                       type: string
                       format: date-time
+                    delegator_address:
+                      type: string
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
@@ -25885,6 +25891,11 @@ paths:
 
                       call. True when the position is first created (only bonded
                       validators accepted).
+                  delegator_address:
+                    type: string
+                    title: >-
+                      delegator_address is the deterministic per-position
+                      account delegates to the validator on behalf of the owner
                 description: Position represents a single lock position in the tier.
             description: >-
               QueryRawTierPositionResponse is the response type for the
@@ -26044,6 +26055,12 @@ paths:
 
                         call. True when the position is first created (only
                         bonded validators accepted).
+                    delegator_address:
+                      type: string
+                      title: >-
+                        delegator_address is the deterministic per-position
+                        account delegates to the validator on behalf of the
+                        owner
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -26284,6 +26301,12 @@ paths:
 
                         call. True when the position is first created (only
                         bonded validators accepted).
+                    delegator_address:
+                      type: string
+                      title: >-
+                        delegator_address is the deterministic per-position
+                        account delegates to the validator on behalf of the
+                        owner
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -46639,6 +46662,11 @@ definitions:
 
           call. True when the position is first created (only bonded validators
           accepted).
+      delegator_address:
+        type: string
+        title: >-
+          delegator_address is the deterministic per-position account delegates
+          to the validator on behalf of the owner
     description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.PositionResponse:
     type: object
@@ -46687,6 +46715,8 @@ definitions:
       created_at_time:
         type: string
         format: date-time
+      delegator_address:
+        type: string
     description: |-
       PositionResponse is the query-facing representation of a position.
       Unlike the stored Position, the `amount` field always contains the
@@ -46748,6 +46778,8 @@ definitions:
             created_at_time:
               type: string
               format: date-time
+            delegator_address:
+              type: string
           description: |-
             PositionResponse is the query-facing representation of a position.
             Unlike the stored Position, the `amount` field always contains the
@@ -46966,6 +46998,11 @@ definitions:
 
                 call. True when the position is first created (only bonded
                 validators accepted).
+            delegator_address:
+              type: string
+              title: >-
+                delegator_address is the deterministic per-position account
+                delegates to the validator on behalf of the owner
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47107,6 +47144,11 @@ definitions:
 
               call. True when the position is first created (only bonded
               validators accepted).
+          delegator_address:
+            type: string
+            title: >-
+              delegator_address is the deterministic per-position account
+              delegates to the validator on behalf of the owner
         description: Position represents a single lock position in the tier.
     description: >-
       QueryRawTierPositionResponse is the response type for the
@@ -47226,6 +47268,11 @@ definitions:
 
                 call. True when the position is first created (only bonded
                 validators accepted).
+            delegator_address:
+              type: string
+              title: >-
+                delegator_address is the deterministic per-position account
+                delegates to the validator on behalf of the owner
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47333,6 +47380,8 @@ definitions:
           created_at_time:
             type: string
             format: date-time
+          delegator_address:
+            type: string
         description: |-
           PositionResponse is the query-facing representation of a position.
           Unlike the stored Position, the `amount` field always contains the
@@ -47397,6 +47446,8 @@ definitions:
             created_at_time:
               type: string
               format: date-time
+            delegator_address:
+              type: string
           description: |-
             PositionResponse is the query-facing representation of a position.
             Unlike the stored Position, the `amount` field always contains the

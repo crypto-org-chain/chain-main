@@ -743,17 +743,18 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 	freshAddr := sdk.AccAddress([]byte("fake_val_voter______"))
 
 	pos := types.Position{
-		Id:               999,
-		Owner:            freshAddr.String(),
-		TierId:           1,
-		Amount:           sdkmath.ZeroInt(),
-		CreatedAtHeight:  1,
-		CreatedAtTime:    s.ctx.BlockTime(),
-		DelegatedShares:  sdkmath.LegacyNewDec(5000),
-		Validator:        fakeValAddr.String(),
-		LastBonusAccrual: s.ctx.BlockTime(),
-		LastEventSeq:     0,
-		LastKnownBonded:  true,
+		Id:                999,
+		Owner:             freshAddr.String(),
+		TierId:            1,
+		Amount:            sdkmath.ZeroInt(),
+		CreatedAtHeight:   1,
+		CreatedAtTime:     s.ctx.BlockTime(),
+		DelegatedShares:   sdkmath.LegacyNewDec(5000),
+		Validator:         fakeValAddr.String(),
+		LastBonusAccrual:  s.ctx.BlockTime(),
+		LastEventSeq:      0,
+		LastKnownBonded:   true,
+		DelegatorAddress: types.GetDelegatorAddress(999).String(),
 	}
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 

@@ -17,10 +17,13 @@ import (
 // This assumes that the delegation withdrawAddress has been set to the position's owner address.
 func (k Keeper) claimBaseRewards(
 	ctx context.Context,
-	id uint64,
+	pos types.Position,
 	valAddr sdk.ValAddress,
 ) (sdk.Coins, error) {
-	delAddr := types.GetDelegationAddress(id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, err
+	}
 	return k.distributionKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
 }
 

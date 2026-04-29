@@ -245,6 +245,22 @@ func TestPosition_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "last known bonded must not be true when not delegated",
 		},
+		{
+			name: "delegator_address does not match position id",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = types.GetDelegatorAddress(p.Id + 1).String()
+			},
+			wantErr:     true,
+			errContains: "delegator_address must equal",
+		},
+		{
+			name: "empty delegator_address",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = ""
+			},
+			wantErr:     true,
+			errContains: "delegator_address must equal",
+		},
 	}
 
 	for _, tt := range tests {
@@ -285,52 +301,52 @@ func TestPosition_ClearExit(t *testing.T) {
 	require.NoError(t, pos.Validate())
 }
 
-// TestGetDelegationAddress_Deterministic verifies that GetDelegationAddress
+// TestGetDelegatorAddress_Deterministic verifies that GetDelegatorAddress
 // is a pure function of the position id — repeated calls produce the same
 // address.
-func TestGetDelegationAddress_Deterministic(t *testing.T) {
+func TestGetDelegatorAddress_Deterministic(t *testing.T) {
 	t.Parallel()
 
 	for _, id := range []uint64{0, 1, 42, 1_000_000, 1 << 63} {
-		first := types.GetDelegationAddress(id)
-		second := types.GetDelegationAddress(id)
-		require.Equal(t, first, second, "GetDelegationAddress must be deterministic for position id %d", id)
+		first := types.GetDelegatorAddress(id)
+		second := types.GetDelegatorAddress(id)
+		require.Equal(t, first, second, "GetDelegatorAddress must be deterministic for position id %d", id)
 		require.Len(t, first, 20, "derived address must be 20 bytes")
 	}
 }
 
-// TestGetDelegationAddress_UniquePerID verifies that distinct position ids
-// produce distinct delegation addresses.
-func TestGetDelegationAddress_UniquePerID(t *testing.T) {
+// TestGetDelegatorAddress_UniquePerID verifies that distinct position ids
+// produce distinct delegator addresses.
+func TestGetDelegatorAddress_UniquePerID(t *testing.T) {
 	t.Parallel()
 
 	const n = 1000
 	seen := make(map[string]uint64, n)
 	for i := uint64(0); i < n; i++ {
-		addr := types.GetDelegationAddress(i)
+		addr := types.GetDelegatorAddress(i)
 		key := string(addr)
 		if prev, dup := seen[key]; dup {
-			t.Fatalf("collision: position %d and %d derived to the same delegation address %s", prev, i, addr.String())
+			t.Fatalf("collision: position %d and %d derived to the same delegator address %s", prev, i, addr.String())
 		}
 		seen[key] = i
 	}
-	require.Len(t, seen, n, "expected %d unique delegation addresses", n)
+	require.Len(t, seen, n, "expected %d unique delegator addresses", n)
 }
 
-// TestGetDelegationAddress_DistinctFromModuleAccount verifies that a position's
-// delegation address never collides with the tieredrewards module account or
+// TestGetDelegatorAddress_DistinctFromModuleAccount verifies that a position's
+// delegator address never collides with the tieredrewards module account or
 // the rewards-pool account.
-func TestGetDelegationAddress_DistinctFromModuleAccount(t *testing.T) {
+func TestGetDelegatorAddress_DistinctFromModuleAccount(t *testing.T) {
 	t.Parallel()
 
 	moduleAddr := authtypes.NewModuleAddress(types.ModuleName)
 	poolAddr := authtypes.NewModuleAddress(types.RewardsPoolName)
 
 	for _, id := range []uint64{0, 1, 42} {
-		delAddr := types.GetDelegationAddress(id)
+		delAddr := types.GetDelegatorAddress(id)
 		require.False(t, delAddr.Equals(moduleAddr),
-			"position %d delegation address must differ from the tieredrewards module address", id)
+			"position %d delegator address must differ from the tieredrewards module address", id)
 		require.False(t, delAddr.Equals(poolAddr),
-			"position %d delegation address must differ from the rewards pool address", id)
+			"position %d delegator address must differ from the rewards pool address", id)
 	}
 }

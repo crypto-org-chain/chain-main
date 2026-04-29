@@ -193,6 +193,6 @@ func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	return k.processEventsAndClaimBonus(ctx, pos, valAddr)
 }
 
-func (k Keeper) ClaimBaseRewards(ctx context.Context, id uint64, valAddr sdk.ValAddress) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, id, valAddr)
+func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	return k.claimBaseRewards(ctx, pos, valAddr)
 }

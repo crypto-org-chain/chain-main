@@ -109,6 +109,9 @@ message Position {
   // event replay. Used as the starting state for the next processEventsAndClaimBonus
   // call. True when the position is first created (only bonded validators accepted).
   bool last_known_bonded = 14;
+
+  // delegator_address is the deterministic per-position account delegates to the validator on behalf of the owner
+  string delegator_address = 15 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // PositionResponse is the query-facing representation of a position.
@@ -147,6 +150,7 @@ message PositionResponse {
   uint64                    created_at_height = 11;
   google.protobuf.Timestamp created_at_time   = 12
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+  string delegator_address = 13 [(cosmos_proto.scalar) = "cosmos.AddressString"];
 }
 
 // ValidatorRewardRatio stores the cumulative base rewards per share for a validator.

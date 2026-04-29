@@ -44,7 +44,7 @@ func (k Keeper) createPosition(
 
 	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
 
-	delAddr := types.GetDelegationAddress(id)
+	delAddr := types.GetDelegatorAddress(id)
 
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {

@@ -42,8 +42,8 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().True(pos.DelegatedShares.Equal(halfShares))
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
-	// The position's delegation address holds the delegation.
-	posDelAddr := types.GetDelegationAddress(pos.Id)
+	// The position's delegator address holds the delegation.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(posDel.Shares.Equal(halfShares))
@@ -89,8 +89,8 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().Error(err, "user delegation should be removed after full commit")
 
-	// The position's delegation address holds the delegation.
-	posDelAddr := types.GetDelegationAddress(pos.Id)
+	// The position's delegator address holds the delegation.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
@@ -99,7 +99,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	s.Require().NoError(err)
 
 	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
-	s.Require().True(posDelTokens.Equal(delTokensBefore), "position's delegation address should have the full delegation")
+	s.Require().True(posDelTokens.Equal(delTokensBefore), "position's delegator address should have the full delegation")
 
 	// Verify that the module account does not hold a delegation.
 	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)

@@ -49,7 +49,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	if err != nil {
 		return nil, err
 	}
-	delAddr := types.GetDelegationAddress(id)
+	delAddr := types.GetDelegatorAddress(id)
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	if err != nil {
 		return nil, err
 	}
-	delAddr := types.GetDelegationAddress(id)
+	delAddr := types.GetDelegatorAddress(id)
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
 		return nil, err
