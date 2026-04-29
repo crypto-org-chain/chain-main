@@ -297,7 +297,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_Basic() {
 	// Compute token value from shares for the full amount.
 	tokenValue := valBefore.TokensFromShares(pos.DelegatedShares).TruncateInt()
 
-	returnShares, _, _, err := s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, tokenValue)
+	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().NoError(err)
 	s.Require().True(returnShares.IsPositive())
 
@@ -332,7 +332,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_Partial() {
 	tokenValue := valBefore.TokensFromShares(pos.DelegatedShares).TruncateInt()
 	halfAmount := tokenValue.Quo(sdkmath.NewInt(2))
 
-	returnShares, _, _, err := s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, halfAmount)
+	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, halfAmount)
 	s.Require().NoError(err)
 	s.Require().True(returnShares.IsPositive())
 
@@ -361,7 +361,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_ValidatorNotBonded() {
 	s.Require().NoError(err)
 	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
 
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, tokenValue)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
 
@@ -377,7 +377,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_InvalidOwnerAddress() {
 	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
 
 	pos.Owner = "invalid_address"
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, tokenValue)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().Error(err)
 }
 
@@ -402,7 +402,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_NotDelegated() {
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, pos.Amount)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, pos.Amount)
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
@@ -430,7 +430,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_ActiveRedelegation() {
 	s.Require().NoError(err)
 
 	newValAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	_, _, _, err = s.keeper.TransferDelegationFromTier(s.ctx, pos, newValAddr, pos.Amount)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, newValAddr, pos.Amount)
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
 
@@ -463,7 +463,7 @@ func (s *KeeperSuite) TestTransferDelegationFromTier_OwnerHasExistingDelegation(
 	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
 
 	// Transfer tier delegation back to owner.
-	returnShares, _, _, err := s.keeper.TransferDelegationFromTier(s.ctx, pos, valAddr, tokenValue)
+	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().NoError(err)
 	s.Require().True(returnShares.IsPositive())
 

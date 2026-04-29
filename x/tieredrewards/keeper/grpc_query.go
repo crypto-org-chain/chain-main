@@ -140,7 +140,7 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, err
 	}
 
-	_, baseRewards, bonusRewards, err := q.k.claimRewardsForPosition(ctx, pos)
+	_, baseRewards, bonusRewards, err := q.k.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}

@@ -82,8 +82,8 @@ func (k Keeper) TransferDelegationToTierOld(ctx context.Context, delegatorAddr, 
 	return k.transferDelegationToTierOld(ctx, delegatorAddr, validatorAddr, amount)
 }
 
-func (k Keeper) TransferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
-	return k.transferDelegationFromTier(ctx, pos, valAddr, amount)
+func (k Keeper) TransferDelegationFromPosition(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
+	return k.transferDelegationFromPosition(ctx, pos, valAddr, amount)
 }
 
 func (k Keeper) GetVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
@@ -145,16 +145,16 @@ func (k Keeper) GetLastWithdrawalBlock(ctx context.Context, valAddr sdk.ValAddre
 	return k.getLastRewardsWithdrawalBlock(ctx, valAddr)
 }
 
-func (k Keeper) ClaimRewardsAndUpdatePositionsForTier(ctx context.Context, tierId uint32) error {
-	return k.claimRewardsAndUpdatePositionsForTier(ctx, tierId)
+func (k Keeper) ClaimRewardsAndUpdateTierPositions(ctx context.Context, tierId uint32) error {
+	return k.claimRewardsAndUpdateTierPositions(ctx, tierId)
 }
 
 func (k Keeper) ClaimRewardsForPosition(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
-	return k.claimRewardsForPosition(ctx, pos)
+	return k.claimRewards(ctx, pos)
 }
 
-func (k Keeper) ClaimRewardsForPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
-	return k.claimRewardsForPositions(ctx, owner, positions)
+func (k Keeper) ClaimRewardsAndUpdatesPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
+	return k.claimRewardsAndUpdatesPositions(ctx, owner, positions)
 }
 
 func (k Keeper) UpdateBaseRewardsPerShare(ctx context.Context, valAddr sdk.ValAddress) (sdk.DecCoins, error) {

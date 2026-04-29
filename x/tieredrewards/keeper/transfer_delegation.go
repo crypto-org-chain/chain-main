@@ -25,7 +25,7 @@ func (k Keeper) transferDelegationToTierOld(ctx context.Context, delegatorAddr, 
 	return k.transferDelegationToPosition(ctx, delegatorAddr, poolAddr, validatorAddr, amount)
 }
 
-// transferDelegationToPosition transfers delegation shares from 
+// transferDelegationToPosition transfers delegation shares from
 // the original owner to a position's delegation address on the same validator.
 // Shares are unbonded at the source and re-delegated from the destination
 // with no unbonding period.
@@ -104,13 +104,19 @@ func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, 
 	return newShares, nil
 }
 
-// transferDelegationFromTier transfers delegation shares from the tier module
-// account back to the owner on the same validator. The module's delegation is
-// unbonded and re-delegated from the owner's address. No unbonding period.
-func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
+// transferDelegationFromPosition transfers delegation shares from the position's
+// delegator address back to the owner on the same validator. The position's
+// delegation is unbonded and re-delegated from the owner's address. No
+// unbonding period.
+func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	posDelAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid position delegator address")
 	}
 
 	// Defensive
@@ -138,8 +144,6 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrValidatorNotBonded
 	}
 
-	moduleAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-
 	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
@@ -147,13 +151,13 @@ func (k Keeper) transferDelegationFromTier(ctx context.Context, pos types.Positi
 
 	unbondedShares := pos.DelegatedShares
 	if !pos.ExitWithFullDelegation(amount, tokenValue) {
-		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, moduleAddr, valAddr, amount)
+		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, posDelAddr, valAddr, amount)
 		if err != nil {
 			return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 		}
 	}
 
-	transferredAmount, err := k.stakingKeeper.Unbond(ctx, moduleAddr, valAddr, unbondedShares)
+	transferredAmount, err := k.stakingKeeper.Unbond(ctx, posDelAddr, valAddr, unbondedShares)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}

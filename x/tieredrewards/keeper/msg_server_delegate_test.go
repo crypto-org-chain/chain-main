@@ -193,7 +193,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitElapsed() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Delegate after exit elapsed — should be rejected.
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{

@@ -128,13 +128,13 @@ func (s *KeeperSuite) TestClaimRewardsForPositions_MixedDelegatedUndelegated() {
 	s.fundRewardsPool(sdkmath.NewInt(100_000_000), bondDenom)
 
 	// Batch claim for owner of pos0 (delegated).
-	base0, bonus0, err := s.keeper.ClaimRewardsForPositions(s.ctx, addr0.String(), []types.Position{pos0})
+	base0, bonus0, err := s.keeper.ClaimRewardsAndUpdatesPositions(s.ctx, addr0.String(), []types.Position{pos0})
 	s.Require().NoError(err)
 	s.Require().True(base0.IsAllPositive(), "delegated position should earn base rewards")
 	s.Require().True(bonus0.IsAllPositive(), "delegated position should earn bonus rewards")
 
 	// Batch claim for owner of pos1 (undelegated).
-	base1, bonus1, err := s.keeper.ClaimRewardsForPositions(s.ctx, addr1.String(), []types.Position{pos1After})
+	base1, bonus1, err := s.keeper.ClaimRewardsAndUpdatesPositions(s.ctx, addr1.String(), []types.Position{pos1After})
 	s.Require().NoError(err)
 	s.Require().True(base1.IsZero(), "undelegated position should earn zero base rewards")
 	s.Require().True(bonus1.IsZero(), "undelegated position should earn zero bonus rewards")
@@ -179,7 +179,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_ClaimsAll() {
 	bal2Before := s.app.BankKeeper.GetBalance(s.ctx, addr2, bondDenom)
 
 	// Tier sweep.
-	err := s.keeper.ClaimRewardsAndUpdatePositionsForTier(s.ctx, 1)
+	err := s.keeper.ClaimRewardsAndUpdateTierPositions(s.ctx, 1)
 	s.Require().NoError(err)
 
 	// Both owners should receive rewards.
@@ -244,7 +244,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(1000), bondDenom)
 
-	err = s.keeper.ClaimRewardsAndUpdatePositionsForTier(s.ctx, 1)
+	err = s.keeper.ClaimRewardsAndUpdateTierPositions(s.ctx, 1)
 	s.Require().NoError(err)
 
 	// Undelegated position should not have its checkpoint updated.
@@ -271,7 +271,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.jailAndUnbondValidator(valAddr)
 
 	// Claim to process the UNBOND event and advance LastBonusAccrual.
-	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
+	_, _, err = s.keeper.ClaimRewardsAndUpdatesPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	// Verify LastBonusAccrual was advanced to current block time.
@@ -303,7 +303,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().NoError(err)
 
 	// Claim to process the BOND event and advance LastBonusAccrual.
-	_, _, err = s.keeper.ClaimRewardsForPositions(s.ctx, delAddr.String(), []types.Position{pos})
+	_, _, err = s.keeper.ClaimRewardsAndUpdatesPositions(s.ctx, delAddr.String(), []types.Position{pos})
 	s.Require().NoError(err)
 
 	updated, err = s.keeper.GetPosition(s.ctx, pos.Id)

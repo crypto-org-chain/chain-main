@@ -36,7 +36,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 
 	// Advance time past staking unbonding period and complete unbonding so
 	// the staking module returns tokens to the tier module account.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -88,7 +88,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
 
 	// Advance time past staking unbonding period and complete unbonding so
 	// the staking module returns tokens to the tier module account.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
@@ -220,7 +220,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Now withdraw — requires exit commitment elapsed and unbonding completed
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
@@ -285,7 +285,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	})
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Withdraw only the first position
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -352,7 +352,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	// Advance time past exit unlock.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Withdrawal should succeed — the module has exactly enough tokens.
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -417,7 +417,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 	s.Require().False(hasUnbonding, "unbonding mapping should be cleaned up after hook")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Withdrawal should now pass since unbonding entries are cleaned up.
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -484,7 +484,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_TierCloseOnly_Succeeds() {
 	s.Require().NoError(err)
 
 	// Complete unbonding.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Set tier to CloseOnly.
 	tier, err := s.keeper.GetTier(s.ctx, 1)
@@ -537,7 +537,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.Require().NoError(err)
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after unbonding slash")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Withdraw — zero-amount position should be cleanly deleted.
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -587,7 +587,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.Require().Equal(expectedRemaining.String(), pos.Amount.String(),
 		"position amount should reflect partial slash")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
