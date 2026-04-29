@@ -75,7 +75,6 @@ func (k Keeper) undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr 
 	return k.stakingKeeper.Undelegate(ctx, delAddr, valAddr, shares)
 }
 
-
 func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, dstValAddr)
 	if err != nil {

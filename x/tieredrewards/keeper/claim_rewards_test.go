@@ -36,7 +36,7 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
 	pos, err := s.keeper.GetPosition(s.ctx, posSetup.Id)
 	s.Require().NoError(err)
 
-	updated, base, bonus, err := s.keeper.ClaimRewardsForPosition(s.ctx, pos)
+	updated, base, bonus, err := s.keeper.ClaimRewards(s.ctx, pos)
 	s.Require().NoError(err)
 	s.Require().True(base.IsZero(), "base should be zero for undelegated position")
 	s.Require().True(bonus.IsZero(), "bonus should be zero for undelegated position")
@@ -46,8 +46,7 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
 }
 
 // TestClaimRewardsForPosition_Delegated verifies that claimRewardsForPosition
-// returns base+bonus rewards for a delegated position and updates the
-// position's BaseRewardsPerShare checkpoint.
+// returns base+bonus rewards for a delegated position.
 func (s *KeeperSuite) TestClaimRewardsForPosition_Delegated() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
@@ -56,34 +55,16 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Delegated() {
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	ratioBefore := pos.BaseRewardsPerShare
-
 	// Allocate rewards, advance block and time so both base and bonus accrue.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(1000), bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(100_000_000), bondDenom)
 
-	updated, base, bonus, err := s.keeper.ClaimRewardsForPosition(s.ctx, pos)
+	_, base, bonus, err := s.keeper.ClaimRewards(s.ctx, pos)
 	s.Require().NoError(err)
 	s.Require().True(base.IsAllPositive(), "base should be positive for delegated position")
 	s.Require().True(bonus.IsAllPositive(), "bonus should be positive for delegated position")
-
-	// Checkpoint should have advanced.
-	diff, hasNeg := updated.BaseRewardsPerShare.SafeSub(ratioBefore)
-	s.Require().False(hasNeg, "BaseRewardsPerShare should not decrease")
-	s.Require().False(diff.IsZero(),
-		"BaseRewardsPerShare should increase after claim: before=%s, after=%s",
-		ratioBefore, updated.BaseRewardsPerShare)
-
-	// Persist the updated position and verify it matches what was returned.
-	err = s.keeper.SetPosition(s.ctx, updated)
-	s.Require().NoError(err)
-
-	persisted, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().Equal(updated.BaseRewardsPerShare, persisted.BaseRewardsPerShare,
-		"persisted checkpoint should match returned position")
 }
 
 // ---------------------------------------------------------------------------
@@ -189,22 +170,6 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_ClaimsAll() {
 		"addr1 should receive rewards from tier sweep")
 	s.Require().True(bal2After.Amount.GT(bal2Before.Amount),
 		"addr2 should receive rewards from tier sweep")
-
-	// Both positions' BaseRewardsPerShare should be updated to the current ratio.
-	ratio, err := s.keeper.GetValidatorRewardRatio(s.ctx, valAddr)
-	s.Require().NoError(err)
-
-	posA, err := s.keeper.GetPosition(s.ctx, pos1.Id)
-	s.Require().NoError(err)
-	positions2, err := s.keeper.GetPositionsByOwner(s.ctx, addr2)
-	s.Require().NoError(err)
-	s.Require().Len(positions2, 1)
-	posB := positions2[0]
-
-	s.Require().Equal(ratio, posA.BaseRewardsPerShare,
-		"pos0 checkpoint should match validator ratio after tier sweep")
-	s.Require().Equal(ratio, posB.BaseRewardsPerShare,
-		"pos1 checkpoint should match validator ratio after tier sweep")
 }
 
 // TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated verifies that

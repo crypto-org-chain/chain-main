@@ -91,7 +91,7 @@ func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress
 }
 
 // routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
-func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr sdk.AccAddress, ownerAddr sdk.AccAddress) error {
+func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
 	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 

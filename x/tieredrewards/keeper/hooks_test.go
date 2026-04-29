@@ -251,7 +251,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 // --- AfterValidatorRemoved hook tests ---
 
 // TestAfterValidatorRemoved_NoEvents_CleansSeq verifies that when no events
-// remain, the hook clears the reward ratio and event seq counter.
+// remain, the hook clears the event seq counter.
 func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
@@ -259,24 +259,12 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
-		CumulativeRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
-		},
-	})
-	s.Require().NoError(err)
-
 	// Set seq counter but NO events (simulating all events garbage-collected).
-	err = s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(5))
+	err := s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(5))
 	s.Require().NoError(err)
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
-
-	// Ratio should be cleaned.
-	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().False(hasRatio, "reward ratio should be cleaned")
 
 	// Seq should be cleaned (no leftover events).
 	hasSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
@@ -293,16 +281,9 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
-		CumulativeRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
-		},
-	})
-	s.Require().NoError(err)
-
 	// Seed a leftover event and seq.
 	sdkCtx := sdk.UnwrapSDKContext(s.ctx)
-	err = s.keeper.ValidatorEvents.Set(s.ctx, collections.Join(valAddr, uint64(1)), types.ValidatorEvent{
+	err := s.keeper.ValidatorEvents.Set(s.ctx, collections.Join(valAddr, uint64(1)), types.ValidatorEvent{
 		Height:         sdkCtx.BlockHeight(),
 		Timestamp:      sdkCtx.BlockTime(),
 		EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
@@ -315,11 +296,6 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
-
-	// Ratio should also be PRESERVED.
-	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().True(hasRatio, "reward ratio should be preserved when leftover events exist")
 
 	// Events should be PRESERVED (not deleted).
 	hasEvent, err := s.keeper.ValidatorEvents.Has(s.ctx, collections.Join(valAddr, uint64(1)))

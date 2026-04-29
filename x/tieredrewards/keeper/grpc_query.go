@@ -251,12 +251,6 @@ func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidato
 
 	resp := &types.QueryValidatorDataResponse{}
 
-	ratio, err := q.k.ValidatorRewardRatio.Get(ctx, valAddr)
-	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
-		return nil, err
-	}
-	resp.RewardRatio = ratio
-
 	count, err := q.k.PositionCountByValidator.Get(ctx, valAddr)
 	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
 		return nil, err

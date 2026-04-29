@@ -75,9 +75,9 @@ func (h Hooks) AfterValidatorBonded(ctx context.Context, _ sdk.ConsAddress, valA
 	return err
 }
 
-// AfterValidatorRemoved cleans up validator reward ratio, events, and seq.
-// If leftover events exist (positions not yet claimed), nothing is cleaned —
-// the ratio and seq are still needed for future claims.
+// AfterValidatorRemoved cleans up validator events and seq if no leftover
+// events reference them. If leftover events exist (positions not yet claimed),
+// nothing is cleaned — the seq is still needed for future claims.
 func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, valAddr sdk.ValAddress) error {
 	has, err := h.k.hasValidatorEvents(ctx, valAddr)
 	if err != nil {
@@ -88,9 +88,6 @@ func (h Hooks) AfterValidatorRemoved(ctx context.Context, _ sdk.ConsAddress, val
 		return nil
 	}
 
-	if err := h.k.clearValidatorRewardRatio(ctx, valAddr); err != nil {
-		h.k.logger(ctx).Error("failed to cleanup validator reward ratio on validator removal", "validator", valAddr.String(), "error", err)
-	}
 	if err := h.k.deleteValidatorEventSeq(ctx, valAddr); err != nil {
 		h.k.logger(ctx).Error("failed to cleanup validator event sequence on validator removal", "validator", valAddr.String(), "error", err)
 	}

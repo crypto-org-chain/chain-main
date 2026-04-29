@@ -496,19 +496,13 @@ func (s *KeeperSuite) TestGRPCQueryValidatorData() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	_, bondDenom := s.getStakingData()
 
-	// Allocate rewards so ratio becomes non-zero.
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100_000), bondDenom)
 
-	// Claim to update the ratio in the store.
-	pos, _, _, err := s.keeper.ClaimRewardsForPosition(s.ctx, pos)
-	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
-
 	// Record a slash event.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-	err = s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
+	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
 	resp, err := s.queryClient.ValidatorData(s.ctx.Context(), &types.QueryValidatorDataRequest{Validator: valAddr.String()})
@@ -517,10 +511,6 @@ func (s *KeeperSuite) TestGRPCQueryValidatorData() {
 	s.Require().Len(resp.Events, 1)
 	s.Require().Equal(types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH, resp.Events[0].EventType)
 	s.Require().Equal(uint64(1), resp.EventCurrentSeq)
-
-	// Ratio should be non-zero after rewards were allocated and claimed.
-	s.Require().True(len(resp.RewardRatio.CumulativeRewardsPerShare) > 0,
-		"reward ratio should be non-zero after allocating and claiming rewards")
 }
 
 func (s *KeeperSuite) TestGRPCQueryValidatorData_Empty() {
@@ -532,10 +522,6 @@ func (s *KeeperSuite) TestGRPCQueryValidatorData_Empty() {
 	s.Require().Equal(uint64(0), resp.PositionCount)
 	s.Require().Empty(resp.Events)
 	s.Require().Equal(uint64(0), resp.EventCurrentSeq)
-
-	// No positions → no ratio entry. CumulativeRewardsPerShare should be nil/empty.
-	s.Require().Empty(resp.RewardRatio.CumulativeRewardsPerShare,
-		"reward ratio should be empty for validator with no positions")
 }
 
 // ---------------------------------------------------------------------------

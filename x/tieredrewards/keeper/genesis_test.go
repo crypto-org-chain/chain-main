@@ -44,7 +44,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:       now,
 		LastEventSeq:        0,
 		LastKnownBonded:     true,
-		DelegatorAddress:   types.GetDelegatorAddress(1).String(),
+		DelegatorAddress:    types.GetDelegatorAddress(1).String(),
 	}
 
 	// Delegated position. Amount must be zero.
@@ -61,22 +61,22 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:       now,
 		LastEventSeq:        0,
 		LastKnownBonded:     true,
-		DelegatorAddress:   types.GetDelegatorAddress(2).String(),
+		DelegatorAddress:    types.GetDelegatorAddress(2).String(),
 	}
 
 	// Position with exit triggered.
 	exitTime := now.Add(-time.Hour * 24)
 	pos3 := types.Position{
-		Id:                3,
-		Owner:             owner,
-		TierId:            1,
-		Amount:            sdkmath.NewInt(2000),
-		DelegatedShares:   sdkmath.LegacyZeroDec(),
-		ExitTriggeredAt:   exitTime,
-		ExitUnlockAt:      exitTime.Add(time.Hour * 24 * 365),
-		CreatedAtHeight:   99,
-		CreatedAtTime:     now.Add(-time.Hour * 48),
-		LastKnownBonded:   false,
+		Id:               3,
+		Owner:            owner,
+		TierId:           1,
+		Amount:           sdkmath.NewInt(2000),
+		DelegatedShares:  sdkmath.LegacyZeroDec(),
+		ExitTriggeredAt:  exitTime,
+		ExitUnlockAt:     exitTime.Add(time.Hour * 24 * 365),
+		CreatedAtHeight:  99,
+		CreatedAtTime:    now.Add(-time.Hour * 48),
+		LastKnownBonded:  false,
 		DelegatorAddress: types.GetDelegatorAddress(3).String(),
 	}
 
@@ -85,16 +85,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		Tiers:          []types.Tier{tier1, tier2},
 		Positions:      []types.Position{pos1, pos2, pos3},
 		NextPositionId: 4,
-		ValidatorRewardRatios: []types.ValidatorRewardRatioEntry{
-			{
-				Validator: valAddr.String(),
-				RewardRatio: types.ValidatorRewardRatio{
-					CumulativeRewardsPerShare: sdk.NewDecCoins(
-						sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(5, 4)),
-					),
-				},
-			},
-		},
 		UnbondingDelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 42, PositionId: 2},
 			{UnbondingId: 43, PositionId: 3},
@@ -174,12 +164,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 
 	// Sequence.
 	s.Require().Equal(genesisState.NextPositionId, exported.NextPositionId)
-
-	// Validator reward ratios.
-	s.Require().Len(exported.ValidatorRewardRatios, 1)
-	s.Require().Equal(genesisState.ValidatorRewardRatios[0].Validator, exported.ValidatorRewardRatios[0].Validator)
-	s.Require().True(genesisState.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare.Equal(
-		exported.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare))
 
 	// Unbonding delegation mappings.
 	s.Require().Len(exported.UnbondingDelegationMappings, 2)
@@ -320,7 +304,6 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.Tiers)
 	s.Require().Empty(exported.Positions)
 	s.Require().Equal(uint64(0), exported.NextPositionId)
-	s.Require().Empty(exported.ValidatorRewardRatios)
 	s.Require().Empty(exported.UnbondingDelegationMappings)
 	s.Require().Empty(exported.RedelegationMappings)
 }

@@ -132,10 +132,6 @@ func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.LastKnownBonded = true
 }
 
-func (p *Position) UpdateBaseRewardsPerShare(brps sdk.DecCoins) {
-	p.BaseRewardsPerShare = brps
-}
-
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
 	p.ExitTriggeredAt = blockTime
 	p.ExitUnlockAt = blockTime.Add(duration)

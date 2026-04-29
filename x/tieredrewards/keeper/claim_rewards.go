@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -273,74 +272,4 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	}
 
 	return bonusCoins, nil
-}
-
-// claimBaseRewardsOld computes base rewards for the given positions, updates their
-// BaseRewardsPerShare checkpoints, emits per-position EventBaseRewardsClaimed,
-// and performs a single batched bank send for the total.
-func (k Keeper) claimBaseRewardsOld(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	total := sdk.NewCoins()
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	events := make([]proto.Message, 0, len(positions))
-
-	for _, pos := range positions {
-		// Defensive
-		if !pos.IsOwner(owner) {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
-		}
-
-		if !pos.IsDelegated() {
-			continue
-		}
-
-		// Defensive
-		if pos.Validator != valAddr.String() {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
-		}
-
-		delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
-		if hasNegative {
-			k.logger(ctx).Error(
-				"negative base rewards per share delta",
-				"position", pos.String(),
-				"current_ratio", currentRatio.String(),
-				"delta", delta.String(),
-			)
-			panic("negative base rewards per share delta")
-		}
-		pos.UpdateBaseRewardsPerShare(currentRatio)
-
-		if delta.IsZero() {
-			continue
-		}
-
-		rewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
-		if rewards.IsZero() {
-			continue
-		}
-
-		events = append(events, &types.EventBaseRewardsClaimed{
-			PositionId: pos.Id,
-			Owner:      pos.Owner,
-			Rewards:    rewards,
-		})
-
-		total = total.Add(rewards...)
-	}
-
-	if !total.IsZero() {
-		ownerAddr, err := sdk.AccAddressFromBech32(owner)
-		if err != nil {
-			return nil, err
-		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, total); err != nil {
-			return nil, err
-		}
-		if err := sdkCtx.EventManager().EmitTypedEvents(events...); err != nil {
-			return nil, err
-		}
-	}
-
-	return total, nil
 }

@@ -44,16 +44,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, entry := range data.ValidatorRewardRatios {
-		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
-		if err != nil {
-			panic(err)
-		}
-		if err := k.ValidatorRewardRatio.Set(ctx, valAddr, entry.RewardRatio); err != nil {
-			panic(err)
-		}
-	}
-
 	for _, mapping := range data.UnbondingDelegationMappings {
 		if err := k.setUnbondingPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
 			panic(err)
@@ -116,18 +106,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var validatorRewardRatios []types.ValidatorRewardRatioEntry
-	err = k.ValidatorRewardRatio.Walk(ctx, nil, func(valAddr sdk.ValAddress, ratio types.ValidatorRewardRatio) (bool, error) {
-		validatorRewardRatios = append(validatorRewardRatios, types.ValidatorRewardRatioEntry{
-			Validator:   valAddr.String(),
-			RewardRatio: ratio,
-		})
-		return false, nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	var unbondingDelegationMappings []types.UnbondingMapping
 	err = k.UnbondingDelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		unbondingDelegationMappings = append(unbondingDelegationMappings, types.UnbondingMapping{
@@ -182,7 +160,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		Tiers:                       tiers,
 		Positions:                   positions,
 		NextPositionId:              nextPositionId,
-		ValidatorRewardRatios:       validatorRewardRatios,
 		UnbondingDelegationMappings: unbondingDelegationMappings,
 		RedelegationMappings:        redelegationMappings,
 		ValidatorEvents:             validatorEvents,

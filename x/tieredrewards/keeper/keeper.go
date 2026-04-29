@@ -16,10 +16,9 @@ import (
 
 // Keeper of the tieredrewards store.
 type Keeper struct {
-	cdc                   codec.BinaryCodec
-	storeService          storetypes.KVStoreService
-	transientStoreService storetypes.TransientStoreService
-	authority             string
+	cdc          codec.BinaryCodec
+	storeService storetypes.KVStoreService
+	authority    string
 
 	Schema collections.Schema
 	Params collections.Item[types.Params]
@@ -35,9 +34,6 @@ type Keeper struct {
 
 	PositionCountByTier      collections.Map[uint32, uint64]
 	PositionCountByValidator collections.Map[sdk.ValAddress, uint64]
-
-	// Cumulative rewards-per-share indexed by validator.
-	ValidatorRewardRatio collections.Map[sdk.ValAddress, types.ValidatorRewardRatio]
 
 	// Validator events for lazy processing: (valAddr, seq) -> ValidatorEvent.
 	ValidatorEvents   collections.Map[collections.Pair[sdk.ValAddress, uint64], types.ValidatorEvent]
@@ -58,7 +54,6 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
-	transientStoreService storetypes.TransientStoreService,
 	authority string,
 	mintKeeper types.MintKeeper,
 	stakingKeeper types.StakingKeeper,
@@ -94,7 +89,6 @@ func NewKeeper(
 	k := Keeper{
 		cdc:                      cdc,
 		storeService:             storeService,
-		transientStoreService:    transientStoreService,
 		authority:                authority,
 		mintKeeper:               mintKeeper,
 		stakingKeeper:            stakingKeeper,
@@ -110,7 +104,6 @@ func NewKeeper(
 		PositionsByValidator:     collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:      collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
-		ValidatorRewardRatio:     collections.NewMap(sb, types.ValidatorRewardRatioKey, "validator_reward_ratio", sdk.ValAddressKey, codec.CollValue[types.ValidatorRewardRatio](cdc)),
 		ValidatorEvents:          collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
 		ValidatorEventSeq:        collections.NewMap(sb, types.ValidatorEventSeqKey, "validator_event_current_seq", sdk.ValAddressKey, collections.Uint64Value),
 		UnbondingDelegationMappings: collections.NewIndexedMap(
