@@ -139,37 +139,32 @@ func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64,
 	return h.k.slashRedelegationPosition(ctx, unbondingId, shareBurnt)
 }
 
-func (h Hooks) AfterUnbondingCompleted(ctx context.Context, delAddr sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
+func (h Hooks) AfterUnbondingCompleted(ctx context.Context, _ sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
 	return h.deleteCompletedPositionMappings(
 		ctx,
-		delAddr,
 		unbondingIds,
 		h.k.UnbondingDelegationMappings.Has,
 		h.k.deleteUnbondingPositionMapping,
 	)
 }
 
-func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
+func (h Hooks) AfterRedelegationCompleted(ctx context.Context, _ sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
 	return h.deleteCompletedPositionMappings(
 		ctx,
-		delAddr,
 		unbondingIds,
 		h.k.RedelegationMappings.Has,
 		h.k.deleteRedelegationPositionMapping,
 	)
 }
 
+// deleteCompletedPositionMappings clears any of our unbonding/redelegation
+// mappings whose ids completed in this hook.
 func (h Hooks) deleteCompletedPositionMappings(
 	ctx context.Context,
-	delAddr sdk.AccAddress,
 	unbondingIds []uint64,
 	hasMapping func(context.Context, uint64) (bool, error),
 	deleteMapping func(context.Context, uint64) error,
 ) error {
-	poolAddr := h.k.accountKeeper.GetModuleAddress(types.ModuleName)
-	if !delAddr.Equals(poolAddr) {
-		return nil
-	}
 	for _, id := range unbondingIds {
 		has, err := hasMapping(ctx, id)
 		if err != nil {
