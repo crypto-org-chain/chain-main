@@ -94,8 +94,8 @@ func (k Keeper) TotalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 	return k.totalDelegatedVotingPower(ctx)
 }
 
-func (k Keeper) ClaimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, ratio sdk.DecCoins) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, positions, owner, valAddr, ratio)
+func (k Keeper) ClaimBaseRewardsOld(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, ratio sdk.DecCoins) (sdk.Coins, error) {
+	return k.claimBaseRewardsOld(ctx, positions, owner, valAddr, ratio)
 }
 
 func (k Keeper) GetAuthority() string {
@@ -191,4 +191,8 @@ func (k Keeper) HasValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) 
 
 func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
 	return k.processEventsAndClaimBonus(ctx, pos, valAddr)
+}
+
+func (k Keeper) ClaimBaseRewards(ctx context.Context, id uint64, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	return k.claimBaseRewards(ctx, id, valAddr)
 }

@@ -12,6 +12,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// claimBaseRewards claims the outstanding base rewards held
+// by the given position's delegation for a single validator.
+// This assumes that the delegation withdrawAddress has been set to the position's owner address.
+func (k Keeper) claimBaseRewards(
+	ctx context.Context,
+	id uint64,
+	valAddr sdk.ValAddress,
+) (sdk.Coins, error) {
+	delAddr := types.GetDelegationAddress(id)
+	return k.distributionKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
+}
+
 // claimRewardsAndUpdatePositionsForTier claims base and bonus rewards for all delegated
 // positions in the given tier. Positions are grouped by validator and owner for
 // batched bank sends.
@@ -80,7 +92,7 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 	for _, key := range groupOrder {
 		g := groups[key]
 
-		if _, err := k.claimBaseRewards(ctx, g.positions, key.owner, g.val.valAddr, g.val.ratio); err != nil {
+		if _, err := k.claimBaseRewardsOld(ctx, g.positions, key.owner, g.val.valAddr, g.val.ratio); err != nil {
 			return err
 		}
 		// Process events and claim bonus for each position individually.
@@ -118,7 +130,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 		return types.Position{}, nil, nil, err
 	}
 
-	base, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio)
+	base, err := k.claimBaseRewardsOld(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -182,7 +194,7 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 	for _, valAddrStr := range vals {
 		g := valGroups[valAddrStr]
 
-		base, err := k.claimBaseRewards(ctx, g.positions, owner, g.valAddr, g.ratio)
+		base, err := k.claimBaseRewardsOld(ctx, g.positions, owner, g.valAddr, g.ratio)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -329,10 +341,10 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	return bonusCoins, nil
 }
 
-// claimBaseRewards computes base rewards for the given positions, updates their
+// claimBaseRewardsOld computes base rewards for the given positions, updates their
 // BaseRewardsPerShare checkpoints, emits per-position EventBaseRewardsClaimed,
 // and performs a single batched bank send for the total.
-func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, currentRatio sdk.DecCoins) (sdk.Coins, error) {
+func (k Keeper) claimBaseRewardsOld(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, currentRatio sdk.DecCoins) (sdk.Coins, error) {
 	total := sdk.NewCoins()
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 

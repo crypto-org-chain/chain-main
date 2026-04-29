@@ -257,7 +257,7 @@ func (s *KeeperSuite) TestClaimBaseRewards_UndelegatedPosition() {
 
 	// Direct call to ClaimBaseRewards with any ratio -- should return empty.
 	currentRatio := sdk.NewDecCoins(sdk.NewDecCoin(bondDenom, sdkmath.NewInt(999)))
-	base, err := s.keeper.ClaimBaseRewards(s.ctx, []*types.Position{&posAfter}, delAddr.String(), sdk.MustValAddressFromBech32(vals[0].GetOperator()), currentRatio)
+	base, err := s.keeper.ClaimBaseRewardsOld(s.ctx, []*types.Position{&posAfter}, delAddr.String(), sdk.MustValAddressFromBech32(vals[0].GetOperator()), currentRatio)
 	s.Require().NoError(err)
 	s.Require().True(base.IsZero(),
 		"claimBaseRewards on undelegated position should return empty")

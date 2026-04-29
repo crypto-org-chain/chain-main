@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 type Delegation struct {
@@ -182,6 +183,10 @@ func (p *Position) UpdateLastEventSeq(seq uint64) {
 
 func (p *Position) UpdateLastKnownBonded(bonded bool) {
 	p.LastKnownBonded = bonded
+}
+
+func GetDelegationAddress(id uint64) sdk.AccAddress {
+	return authtypes.NewModuleAddress(fmt.Sprintf("tieredrewards/position/%d", id))
 }
 
 func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {

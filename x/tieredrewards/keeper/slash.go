@@ -83,7 +83,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 			return err
 		}
 
-		if _, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio); err != nil {
+		if _, err := k.claimBaseRewardsOld(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio); err != nil {
 			return err
 		}
 
