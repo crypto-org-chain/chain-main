@@ -1,4 +1,4 @@
-package v8
+package v7testnet
 
 import (
 	"fmt"
@@ -12,23 +12,23 @@ import (
 // whose prefix appears in `prefixes`. Callers typically pass StateToPurge()
 // to preserve Params + Tiers, or AllPrefixes() for a complete wipe.
 //
-// The frozen pre-v8 layout captured in this package (including
+// The frozen pre-rewrite layout captured in this package (including
 // ValidatorRewardRatioKeyPrefix at prefix 8, which no longer exists in
 // types/keys.go) is what may still exist on-chain at upgrade time, so this
 // function iterates those exact bytes rather than anything from
 // x/tieredrewards/types.
 //
-// Pre-v8 residue in staking (delegations held by the tier module account)
+// Pre-rewrite residue in staking (delegations held by the tier module account)
 // and bank (balance at the module account) is NOT handled here — the caller
 // must sweep those separately if required; on testnet, see
-// sweepOldTierModuleResiduals in app/upgrades.go.
+// sweepOldTierModuleResidualsTestnet in app/upgrades.go.
 //
 // Returns the deletion count per prefix (keyed by hex-formatted prefix bytes)
 // for upgrade-time audit.
 func PurgeOldTieredRewardsState(ctx sdk.Context, storeKey storetypes.StoreKey, prefixes [][]byte) (map[string]int, error) {
 	store := ctx.KVStore(storeKey)
 	counts := make(map[string]int, len(prefixes))
-	logger := ctx.Logger().With("module", "x/tieredrewards", "upgrade", "v8")
+	logger := ctx.Logger().With("module", "x/tieredrewards", "upgrade", "v7.0.0-testnet")
 
 	for _, prefix := range prefixes {
 		// Collect keys first, delete after — iterator invalidation otherwise.

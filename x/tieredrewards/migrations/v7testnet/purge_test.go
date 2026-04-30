@@ -1,4 +1,4 @@
-package v8_test
+package v7testnet_test
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
-	v8 "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/migrations/v8"
+	v7testnet "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/migrations/v7testnet"
 	"github.com/stretchr/testify/require"
 
 	"cosmossdk.io/log"
@@ -44,13 +44,13 @@ func TestPurgeOldTieredRewardsState_AllPrefixes(t *testing.T) {
 	store := ctx.KVStore(key)
 
 	// Seed two entries under every frozen prefix.
-	prefixes := v8.AllPrefixes()
+	prefixes := v7testnet.AllPrefixes()
 	for _, p := range prefixes {
 		seed(store, p, []byte{0x01}, []byte("a"))
 		seed(store, p, []byte{0x02}, []byte("b"))
 	}
-	// Also seed an out-of-band key that is NOT under any v8 prefix. Pick a
-	// prefix byte guaranteed to lie past the highest v8 prefix so it won't
+	// Also seed an out-of-band key that is NOT under any frozen prefix. Pick a
+	// prefix byte guaranteed to lie past the highest frozen prefix so it won't
 	// collide with the purge.
 	highest := byte(0)
 	for _, p := range prefixes {
@@ -61,7 +61,7 @@ func TestPurgeOldTieredRewardsState_AllPrefixes(t *testing.T) {
 	foreign := []byte{highest + 1, 0xFF}
 	store.Set(foreign, []byte("keep-me"))
 
-	counts, err := v8.PurgeOldTieredRewardsState(ctx, key, prefixes)
+	counts, err := v7testnet.PurgeOldTieredRewardsState(ctx, key, prefixes)
 	require.NoError(t, err)
 
 	// Every prefix should report two deletions.
@@ -92,21 +92,21 @@ func TestPurgeOldTieredRewardsState_StateToPurge_PreservesParamsAndTiers(t *test
 	ctx, key := newTestStore(t)
 	store := ctx.KVStore(key)
 
-	for _, p := range v8.AllPrefixes() {
+	for _, p := range v7testnet.AllPrefixes() {
 		seed(store, p, []byte{0x01}, []byte("a"))
 	}
 
-	counts, err := v8.PurgeOldTieredRewardsState(ctx, key, v8.StateToPurge())
+	counts, err := v7testnet.PurgeOldTieredRewardsState(ctx, key, v7testnet.StateToPurge())
 	require.NoError(t, err)
 
 	// StateToPurge must NOT include Params or Tiers.
-	require.NotContains(t, counts, string(formatPrefix(v8.ParamsKeyPrefix)),
+	require.NotContains(t, counts, string(formatPrefix(v7testnet.ParamsKeyPrefix)),
 		"StateToPurge should not touch Params")
-	require.NotContains(t, counts, string(formatPrefix(v8.TiersKeyPrefix)),
+	require.NotContains(t, counts, string(formatPrefix(v7testnet.TiersKeyPrefix)),
 		"StateToPurge should not touch Tiers")
 
 	// Params + Tiers bytes must survive.
-	for _, p := range [][]byte{v8.ParamsKeyPrefix, v8.TiersKeyPrefix} {
+	for _, p := range [][]byte{v7testnet.ParamsKeyPrefix, v7testnet.TiersKeyPrefix} {
 		iter := storetypes.KVStorePrefixIterator(store, p)
 		hasKey := iter.Valid()
 		require.NoError(t, iter.Close())
@@ -114,7 +114,7 @@ func TestPurgeOldTieredRewardsState_StateToPurge_PreservesParamsAndTiers(t *test
 	}
 
 	// Everything in StateToPurge must be empty.
-	for _, p := range v8.StateToPurge() {
+	for _, p := range v7testnet.StateToPurge() {
 		iter := storetypes.KVStorePrefixIterator(store, p)
 		hasKey := iter.Valid()
 		require.NoError(t, iter.Close())
@@ -125,10 +125,10 @@ func TestPurgeOldTieredRewardsState_StateToPurge_PreservesParamsAndTiers(t *test
 func TestPurgeOldTieredRewardsState_EmptyStore(t *testing.T) {
 	ctx, key := newTestStore(t)
 
-	counts, err := v8.PurgeOldTieredRewardsState(ctx, key, v8.AllPrefixes())
+	counts, err := v7testnet.PurgeOldTieredRewardsState(ctx, key, v7testnet.AllPrefixes())
 	require.NoError(t, err)
 
-	for _, p := range v8.AllPrefixes() {
+	for _, p := range v7testnet.AllPrefixes() {
 		require.Equal(t, 0, counts[string(formatPrefix(p))],
 			"prefix %x should report 0 deletions on empty store", p)
 	}
