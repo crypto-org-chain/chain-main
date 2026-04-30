@@ -276,7 +276,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_RejectsUnbondedValidator(
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
 
-// --- TransferDelegationFromPosition tests ---
+// --- transferDelegationFromPosition tests ---
 
 func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 	lockAmount := sdkmath.NewInt(10000)

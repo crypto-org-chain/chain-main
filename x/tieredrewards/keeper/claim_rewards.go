@@ -15,6 +15,9 @@ import (
 // by the given position's delegation for a single validator.
 // This assumes that the delegation withdrawAddress has been set to the position's owner address.
 func (k Keeper) claimBaseRewards(ctx context.Context, pos types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	if !pos.IsDelegated() {
+		return sdk.NewCoins(), nil
+	}
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
 		return nil, err
