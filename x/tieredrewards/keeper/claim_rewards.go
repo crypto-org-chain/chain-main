@@ -51,21 +51,15 @@ func (k Keeper) claimRewardsAndUpdateTierPositions(ctx context.Context, tierId u
 		return nil
 	}
 
-	valCache := make(map[string]sdk.ValAddress)
-
 	for i := range positions {
 		pos := &positions[i]
 		if !pos.IsDelegated() {
 			continue
 		}
 
-		valAddr, ok := valCache[pos.Validator]
-		if !ok {
-			valAddr, err = sdk.ValAddressFromBech32(pos.Validator)
-			if err != nil {
-				return err
-			}
-			valCache[pos.Validator] = valAddr
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return err
 		}
 
 		if _, err := k.claimBaseRewards(ctx, *pos, valAddr); err != nil {
@@ -113,8 +107,6 @@ func (k Keeper) claimRewards(ctx context.Context, pos types.Position) (types.Pos
 
 // claimRewardsAndUpdatesPositions claims base and bonus rewards for multiple positions.
 func (k Keeper) claimRewardsAndUpdatesPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
-	valCache := make(map[string]sdk.ValAddress)
-
 	totalBase := sdk.NewCoins()
 	totalBonus := sdk.NewCoins()
 
@@ -129,14 +121,9 @@ func (k Keeper) claimRewardsAndUpdatesPositions(ctx context.Context, owner strin
 			continue
 		}
 
-		valAddr, ok := valCache[pos.Validator]
-		if !ok {
-			var err error
-			valAddr, err = sdk.ValAddressFromBech32(pos.Validator)
-			if err != nil {
-				return nil, nil, err
-			}
-			valCache[pos.Validator] = valAddr
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return nil, nil, err
 		}
 
 		base, err := k.claimBaseRewards(ctx, *pos, valAddr)
