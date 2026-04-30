@@ -20,9 +20,9 @@ var (
 
 func validPosition() types.Position {
 	return types.NewPosition(1, testOwner, 1, sdkmath.ZeroInt(), 100, types.Delegation{
-		Validator:           testValidator,
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{}, LastEventSeq: 0,
+		Validator:    testValidator,
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}, time.Now())
 }
 
@@ -39,11 +39,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "valid delegated position",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyNewDec(1000),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyNewDec(1000),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -112,11 +109,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "negative delegated shares when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyNewDec(-1),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyNewDec(-1),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -127,11 +121,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "invalid validator address when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: "not_valid",
-					Shares:    sdkmath.LegacyNewDec(100),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    "not_valid",
+					Shares:       sdkmath.LegacyNewDec(100),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -142,11 +133,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "zero delegated shares when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyZeroDec(),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyZeroDec(),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -163,19 +151,6 @@ func TestPosition_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "delegated shares must not be set when not delegated",
-		},
-		{
-			name: "populated base rewards per share when not delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "base rewards per share must not be set when not delegated",
 		},
 		{
 			name: "populated last bonus accrual when not delegated",

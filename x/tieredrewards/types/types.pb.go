@@ -7,8 +7,6 @@ import (
 	cosmossdk_io_math "cosmossdk.io/math"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
-	types "github.com/cosmos/cosmos-sdk/types"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -151,30 +149,25 @@ type Position struct {
 	Validator string `protobuf:"bytes,5,opt,name=validator,proto3" json:"validator,omitempty"`
 	// delegated_shares are the validator delegation shares for this position.
 	DelegatedShares cosmossdk_io_math.LegacyDec `protobuf:"bytes,6,opt,name=delegated_shares,json=delegatedShares,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"delegated_shares"`
-	// base_rewards_per_share is the cumulative base rewards per share snapshot
-	// at the time this position was created or last claimed.
-	// Used to calculate the position's share of base rewards: reward = shares × (current_ratio − starting_ratio).
-	// It is possible to have no base rewards per share if the position is the first one delegated to the validator.
-	BaseRewardsPerShare github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,7,rep,name=base_rewards_per_share,json=baseRewardsPerShare,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"base_rewards_per_share"`
+	// delegator_address is the deterministic per-position account that delegates to the validator on behalf of the owner.
+	DelegatorAddress string `protobuf:"bytes,7,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
 	// last_bonus_accrual is the last time bonus rewards was claimed.
 	LastBonusAccrual time.Time `protobuf:"bytes,8,opt,name=last_bonus_accrual,json=lastBonusAccrual,proto3,stdtime" json:"last_bonus_accrual"`
-	// exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
-	ExitTriggeredAt time.Time `protobuf:"bytes,9,opt,name=exit_triggered_at,json=exitTriggeredAt,proto3,stdtime" json:"exit_triggered_at"`
-	// exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
-	ExitUnlockAt time.Time `protobuf:"bytes,10,opt,name=exit_unlock_at,json=exitUnlockAt,proto3,stdtime" json:"exit_unlock_at"`
-	// created_at_height is the block height when this position was created.
-	CreatedAtHeight uint64 `protobuf:"varint,11,opt,name=created_at_height,json=createdAtHeight,proto3" json:"created_at_height,omitempty"`
-	// created_at_time is the block time when this position was created.
-	CreatedAtTime time.Time `protobuf:"bytes,12,opt,name=created_at_time,json=createdAtTime,proto3,stdtime" json:"created_at_time"`
 	// last_event_seq is the sequence number of the last validator event this
 	// position has processed. Events with seq > last_event_seq are pending.
-	LastEventSeq uint64 `protobuf:"varint,13,opt,name=last_event_seq,json=lastEventSeq,proto3" json:"last_event_seq,omitempty"`
+	LastEventSeq uint64 `protobuf:"varint,9,opt,name=last_event_seq,json=lastEventSeq,proto3" json:"last_event_seq,omitempty"`
 	// last_known_bonded tracks whether the validator was bonded after the last
 	// event replay. Used as the starting state for the next processEventsAndClaimBonus
 	// call. True when the position is first created (only bonded validators accepted).
-	LastKnownBonded bool `protobuf:"varint,14,opt,name=last_known_bonded,json=lastKnownBonded,proto3" json:"last_known_bonded,omitempty"`
-	// delegator_address is the deterministic per-position account delegates to the validator on behalf of the owner
-	DelegatorAddress string `protobuf:"bytes,15,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	LastKnownBonded bool `protobuf:"varint,10,opt,name=last_known_bonded,json=lastKnownBonded,proto3" json:"last_known_bonded,omitempty"`
+	// exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
+	ExitTriggeredAt time.Time `protobuf:"bytes,11,opt,name=exit_triggered_at,json=exitTriggeredAt,proto3,stdtime" json:"exit_triggered_at"`
+	// exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
+	ExitUnlockAt time.Time `protobuf:"bytes,12,opt,name=exit_unlock_at,json=exitUnlockAt,proto3,stdtime" json:"exit_unlock_at"`
+	// created_at_height is the block height when this position was created.
+	CreatedAtHeight uint64 `protobuf:"varint,13,opt,name=created_at_height,json=createdAtHeight,proto3" json:"created_at_height,omitempty"`
+	// created_at_time is the block time when this position was created.
+	CreatedAtTime time.Time `protobuf:"bytes,14,opt,name=created_at_time,json=createdAtTime,proto3,stdtime" json:"created_at_time"`
 }
 
 func (m *Position) Reset()         { *m = Position{} }
@@ -238,11 +231,11 @@ func (m *Position) GetValidator() string {
 	return ""
 }
 
-func (m *Position) GetBaseRewardsPerShare() github_com_cosmos_cosmos_sdk_types.DecCoins {
+func (m *Position) GetDelegatorAddress() string {
 	if m != nil {
-		return m.BaseRewardsPerShare
+		return m.DelegatorAddress
 	}
-	return nil
+	return ""
 }
 
 func (m *Position) GetLastBonusAccrual() time.Time {
@@ -250,6 +243,20 @@ func (m *Position) GetLastBonusAccrual() time.Time {
 		return m.LastBonusAccrual
 	}
 	return time.Time{}
+}
+
+func (m *Position) GetLastEventSeq() uint64 {
+	if m != nil {
+		return m.LastEventSeq
+	}
+	return 0
+}
+
+func (m *Position) GetLastKnownBonded() bool {
+	if m != nil {
+		return m.LastKnownBonded
+	}
+	return false
 }
 
 func (m *Position) GetExitTriggeredAt() time.Time {
@@ -280,27 +287,6 @@ func (m *Position) GetCreatedAtTime() time.Time {
 	return time.Time{}
 }
 
-func (m *Position) GetLastEventSeq() uint64 {
-	if m != nil {
-		return m.LastEventSeq
-	}
-	return 0
-}
-
-func (m *Position) GetLastKnownBonded() bool {
-	if m != nil {
-		return m.LastKnownBonded
-	}
-	return false
-}
-
-func (m *Position) GetDelegatorAddress() string {
-	if m != nil {
-		return m.DelegatorAddress
-	}
-	return ""
-}
-
 // PositionResponse is the query-facing representation of a position.
 // Unlike the stored Position, the `amount` field always contains the
 // meaningful token value: TokensFromShares for delegated positions,
@@ -310,16 +296,15 @@ type PositionResponse struct {
 	Owner  string `protobuf:"bytes,2,opt,name=owner,proto3" json:"owner,omitempty"`
 	TierId uint32 `protobuf:"varint,3,opt,name=tier_id,json=tierId,proto3" json:"tier_id,omitempty"`
 	// amount is the computed token value for this position.
-	Amount              cosmossdk_io_math.Int                       `protobuf:"bytes,4,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
-	Validator           string                                      `protobuf:"bytes,5,opt,name=validator,proto3" json:"validator,omitempty"`
-	DelegatedShares     cosmossdk_io_math.LegacyDec                 `protobuf:"bytes,6,opt,name=delegated_shares,json=delegatedShares,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"delegated_shares"`
-	BaseRewardsPerShare github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,7,rep,name=base_rewards_per_share,json=baseRewardsPerShare,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"base_rewards_per_share"`
-	LastBonusAccrual    time.Time                                   `protobuf:"bytes,8,opt,name=last_bonus_accrual,json=lastBonusAccrual,proto3,stdtime" json:"last_bonus_accrual"`
-	ExitTriggeredAt     time.Time                                   `protobuf:"bytes,9,opt,name=exit_triggered_at,json=exitTriggeredAt,proto3,stdtime" json:"exit_triggered_at"`
-	ExitUnlockAt        time.Time                                   `protobuf:"bytes,10,opt,name=exit_unlock_at,json=exitUnlockAt,proto3,stdtime" json:"exit_unlock_at"`
-	CreatedAtHeight     uint64                                      `protobuf:"varint,11,opt,name=created_at_height,json=createdAtHeight,proto3" json:"created_at_height,omitempty"`
-	CreatedAtTime       time.Time                                   `protobuf:"bytes,12,opt,name=created_at_time,json=createdAtTime,proto3,stdtime" json:"created_at_time"`
-	DelegatorAddress    string                                      `protobuf:"bytes,13,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	Amount           cosmossdk_io_math.Int       `protobuf:"bytes,4,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
+	Validator        string                      `protobuf:"bytes,5,opt,name=validator,proto3" json:"validator,omitempty"`
+	DelegatedShares  cosmossdk_io_math.LegacyDec `protobuf:"bytes,6,opt,name=delegated_shares,json=delegatedShares,proto3,customtype=cosmossdk.io/math.LegacyDec" json:"delegated_shares"`
+	DelegatorAddress string                      `protobuf:"bytes,7,opt,name=delegator_address,json=delegatorAddress,proto3" json:"delegator_address,omitempty"`
+	LastBonusAccrual time.Time                   `protobuf:"bytes,8,opt,name=last_bonus_accrual,json=lastBonusAccrual,proto3,stdtime" json:"last_bonus_accrual"`
+	ExitTriggeredAt  time.Time                   `protobuf:"bytes,9,opt,name=exit_triggered_at,json=exitTriggeredAt,proto3,stdtime" json:"exit_triggered_at"`
+	ExitUnlockAt     time.Time                   `protobuf:"bytes,10,opt,name=exit_unlock_at,json=exitUnlockAt,proto3,stdtime" json:"exit_unlock_at"`
+	CreatedAtHeight  uint64                      `protobuf:"varint,11,opt,name=created_at_height,json=createdAtHeight,proto3" json:"created_at_height,omitempty"`
+	CreatedAtTime    time.Time                   `protobuf:"bytes,12,opt,name=created_at_time,json=createdAtTime,proto3,stdtime" json:"created_at_time"`
 }
 
 func (m *PositionResponse) Reset()         { *m = PositionResponse{} }
@@ -383,11 +368,11 @@ func (m *PositionResponse) GetValidator() string {
 	return ""
 }
 
-func (m *PositionResponse) GetBaseRewardsPerShare() github_com_cosmos_cosmos_sdk_types.DecCoins {
+func (m *PositionResponse) GetDelegatorAddress() string {
 	if m != nil {
-		return m.BaseRewardsPerShare
+		return m.DelegatorAddress
 	}
-	return nil
+	return ""
 }
 
 func (m *PositionResponse) GetLastBonusAccrual() time.Time {
@@ -425,62 +410,6 @@ func (m *PositionResponse) GetCreatedAtTime() time.Time {
 	return time.Time{}
 }
 
-func (m *PositionResponse) GetDelegatorAddress() string {
-	if m != nil {
-		return m.DelegatorAddress
-	}
-	return ""
-}
-
-// ValidatorRewardRatio stores the cumulative base rewards per share for a validator.
-// Updated every time base rewards are withdrawn from x/distribution for this validator.
-// It is possible to have no base rewards per share when the position is created,
-// if the position is the first one delegated to a validator (no base rewards accrued yet)
-type ValidatorRewardRatio struct {
-	// cumulative_rewards_per_share is the running total of rewards per delegation share.
-	CumulativeRewardsPerShare github_com_cosmos_cosmos_sdk_types.DecCoins `protobuf:"bytes,1,rep,name=cumulative_rewards_per_share,json=cumulativeRewardsPerShare,proto3,castrepeated=github.com/cosmos/cosmos-sdk/types.DecCoins" json:"cumulative_rewards_per_share"`
-}
-
-func (m *ValidatorRewardRatio) Reset()         { *m = ValidatorRewardRatio{} }
-func (m *ValidatorRewardRatio) String() string { return proto.CompactTextString(m) }
-func (*ValidatorRewardRatio) ProtoMessage()    {}
-func (*ValidatorRewardRatio) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5704e10ee9ad3b2f, []int{3}
-}
-func (m *ValidatorRewardRatio) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *ValidatorRewardRatio) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_ValidatorRewardRatio.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *ValidatorRewardRatio) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ValidatorRewardRatio.Merge(m, src)
-}
-func (m *ValidatorRewardRatio) XXX_Size() int {
-	return m.Size()
-}
-func (m *ValidatorRewardRatio) XXX_DiscardUnknown() {
-	xxx_messageInfo_ValidatorRewardRatio.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ValidatorRewardRatio proto.InternalMessageInfo
-
-func (m *ValidatorRewardRatio) GetCumulativeRewardsPerShare() github_com_cosmos_cosmos_sdk_types.DecCoins {
-	if m != nil {
-		return m.CumulativeRewardsPerShare
-	}
-	return nil
-}
-
 // ValidatorEvent records a validator lifecycle event (slash, unbond, bond)
 // for lazy processing during reward claims.
 type ValidatorEvent struct {
@@ -502,7 +431,7 @@ func (m *ValidatorEvent) Reset()         { *m = ValidatorEvent{} }
 func (m *ValidatorEvent) String() string { return proto.CompactTextString(m) }
 func (*ValidatorEvent) ProtoMessage()    {}
 func (*ValidatorEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_5704e10ee9ad3b2f, []int{4}
+	return fileDescriptor_5704e10ee9ad3b2f, []int{3}
 }
 func (m *ValidatorEvent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -564,7 +493,6 @@ func init() {
 	proto.RegisterType((*Tier)(nil), "chainmain.tieredrewards.v1.Tier")
 	proto.RegisterType((*Position)(nil), "chainmain.tieredrewards.v1.Position")
 	proto.RegisterType((*PositionResponse)(nil), "chainmain.tieredrewards.v1.PositionResponse")
-	proto.RegisterType((*ValidatorRewardRatio)(nil), "chainmain.tieredrewards.v1.ValidatorRewardRatio")
 	proto.RegisterType((*ValidatorEvent)(nil), "chainmain.tieredrewards.v1.ValidatorEvent")
 }
 
@@ -573,75 +501,68 @@ func init() {
 }
 
 var fileDescriptor_5704e10ee9ad3b2f = []byte{
-	// 1084 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x57, 0x4d, 0x6f, 0x23, 0x35,
-	0x18, 0xee, 0xa4, 0xdd, 0xb6, 0x71, 0x9b, 0x8f, 0x9a, 0xb2, 0x4c, 0xbb, 0xdb, 0x24, 0x54, 0x2b,
-	0xa8, 0x8a, 0x32, 0x43, 0x8b, 0x84, 0x38, 0x20, 0xa1, 0xa4, 0x09, 0x34, 0xa2, 0xdb, 0x96, 0x49,
-	0x5a, 0x3e, 0x2e, 0x83, 0x33, 0xe3, 0x9d, 0x58, 0xc9, 0xd8, 0x59, 0x8f, 0x93, 0x6e, 0x7e, 0x03,
-	0x97, 0xbd, 0x81, 0xf8, 0x05, 0x88, 0x03, 0x5a, 0x89, 0xfe, 0x88, 0x95, 0xb8, 0xac, 0x7a, 0x42,
-	0x1c, 0x76, 0x51, 0x7b, 0xe0, 0x2f, 0x70, 0x44, 0xf6, 0x38, 0xe9, 0xe7, 0x0a, 0x55, 0x85, 0x5b,
-	0x2f, 0x49, 0xfc, 0x7e, 0x3c, 0x7e, 0xfd, 0xfa, 0x79, 0x5e, 0x39, 0xe0, 0x1d, 0xaf, 0x85, 0x08,
-	0x0d, 0x11, 0xa1, 0xb6, 0x20, 0x98, 0x63, 0x9f, 0xe3, 0x03, 0xc4, 0xfd, 0xc8, 0xee, 0xaf, 0xd9,
-	0x62, 0xd0, 0xc5, 0x91, 0xd5, 0xe5, 0x4c, 0x30, 0xb8, 0x38, 0x8a, 0xb3, 0xce, 0xc5, 0x59, 0xfd,
-	0xb5, 0xc5, 0x39, 0x14, 0x12, 0xca, 0x6c, 0xf5, 0x19, 0x87, 0x2f, 0x2e, 0x78, 0x2c, 0x0a, 0x59,
-	0xe4, 0xaa, 0x95, 0x1d, 0x2f, 0xb4, 0x2b, 0x17, 0xaf, 0xec, 0x26, 0x8a, 0xb0, 0xdd, 0x5f, 0x6b,
-	0x62, 0x81, 0xd6, 0x6c, 0x8f, 0x11, 0xaa, 0xfd, 0xf3, 0x01, 0x0b, 0x58, 0x9c, 0x27, 0x7f, 0x0d,
-	0xb3, 0x02, 0xc6, 0x82, 0x0e, 0xb6, 0xd5, 0xaa, 0xd9, 0x7b, 0x64, 0xfb, 0x3d, 0x8e, 0x04, 0x61,
-	0xc3, 0xac, 0xfc, 0x45, 0xbf, 0x20, 0x21, 0x8e, 0x04, 0x0a, 0xbb, 0x71, 0xc0, 0xf2, 0xaf, 0x09,
-	0x30, 0xd1, 0x20, 0x98, 0xc3, 0x34, 0x48, 0x10, 0xdf, 0x34, 0x0a, 0xc6, 0x4a, 0xca, 0x49, 0x10,
-	0x1f, 0x3e, 0x04, 0x29, 0xfc, 0x84, 0x08, 0x77, 0x08, 0x68, 0x26, 0x0a, 0xc6, 0xca, 0xcc, 0xfa,
-	0x82, 0x15, 0x23, 0x5a, 0x43, 0x44, 0xab, 0xa2, 0x03, 0xca, 0xa9, 0xe7, 0x2f, 0xf3, 0x63, 0x3f,
-	0xbc, 0xca, 0x1b, 0x3f, 0xfd, 0xf5, 0x6c, 0xd5, 0x70, 0x66, 0x65, 0xfa, 0xd0, 0x09, 0xeb, 0x20,
-	0xd9, 0x64, 0xb4, 0x17, 0xb9, 0xa8, 0x3b, 0x30, 0xc7, 0x0b, 0xc6, 0x4a, 0xb2, 0xfc, 0xa1, 0x8c,
-	0xff, 0xe3, 0x65, 0xfe, 0x5e, 0x7c, 0xf2, 0xc8, 0x6f, 0x5b, 0x84, 0xd9, 0x21, 0x12, 0x2d, 0x6b,
-	0x0b, 0x07, 0xc8, 0x1b, 0x54, 0xb0, 0x77, 0x74, 0x58, 0x04, 0xba, 0x4d, 0x15, 0xec, 0xc5, 0xc0,
-	0xd3, 0x0a, 0xa8, 0xd4, 0x1d, 0xc0, 0xaf, 0x40, 0x26, 0x24, 0xd4, 0xed, 0x30, 0xaf, 0xed, 0xa2,
-	0x90, 0xf5, 0xa8, 0x30, 0x27, 0x14, 0xf4, 0xfb, 0x1a, 0xfa, 0xcd, 0xcb, 0xd0, 0x35, 0x2a, 0xce,
-	0x80, 0xd6, 0xa8, 0x88, 0x41, 0x53, 0x21, 0xa1, 0x5b, 0xcc, 0x6b, 0x97, 0x14, 0x0c, 0x5c, 0x02,
-	0xc0, 0xeb, 0xb0, 0x08, 0xbb, 0x8c, 0x76, 0x06, 0xe6, 0x9d, 0x82, 0xb1, 0x32, 0xed, 0x24, 0x95,
-	0x65, 0x87, 0x76, 0x06, 0xcb, 0x7f, 0x4f, 0x81, 0xe9, 0x5d, 0x16, 0x11, 0x75, 0xb4, 0xd3, 0xce,
-	0x4d, 0xa8, 0xce, 0x59, 0xe0, 0x0e, 0x3b, 0xa0, 0x98, 0xab, 0x8e, 0x25, 0xcb, 0xe6, 0xd1, 0x61,
-	0x71, 0x5e, 0x6f, 0x57, 0xf2, 0x7d, 0x8e, 0xa3, 0xa8, 0x2e, 0x38, 0xa1, 0x81, 0x13, 0x87, 0xc1,
-	0xb7, 0xc0, 0x94, 0xe4, 0x8e, 0x4b, 0x7c, 0xd5, 0x98, 0x94, 0x33, 0x29, 0x97, 0x35, 0x1f, 0x6e,
-	0x82, 0xc9, 0x1b, 0x9e, 0x4a, 0xe7, 0xc3, 0x4f, 0x40, 0xb2, 0x8f, 0x3a, 0xc4, 0x47, 0x82, 0x71,
-	0x75, 0x9a, 0x64, 0xf9, 0xed, 0xa3, 0xc3, 0xe2, 0x92, 0x8e, 0xdf, 0x1f, 0xfa, 0xce, 0xd7, 0x77,
-	0x9a, 0x03, 0x11, 0xc8, 0xfa, 0xb8, 0x83, 0x03, 0x24, 0xb0, 0xef, 0x46, 0x2d, 0xc4, 0x71, 0x64,
-	0x4e, 0xde, 0xe8, 0x16, 0x33, 0x23, 0xbc, 0xba, 0x82, 0x83, 0xdf, 0x19, 0xe0, 0xae, 0x24, 0xbf,
-	0xab, 0x25, 0xe4, 0x76, 0x31, 0x8f, 0xb7, 0x32, 0xa7, 0x0a, 0xe3, 0x2b, 0x33, 0xeb, 0xf7, 0x2d,
-	0x8d, 0x21, 0xa3, 0x2c, 0x2d, 0x11, 0x09, 0xb8, 0xc1, 0x08, 0x2d, 0x7f, 0x24, 0xeb, 0xf8, 0xf9,
-	0x55, 0xfe, 0xbd, 0x80, 0x88, 0x56, 0xaf, 0x69, 0x79, 0x2c, 0xd4, 0x02, 0xd3, 0x5f, 0xc5, 0xc8,
-	0x6f, 0x6b, 0xed, 0xea, 0x9c, 0x28, 0xae, 0xe4, 0x0d, 0x89, 0xe7, 0xc4, 0x9b, 0xee, 0x62, 0xae,
-	0xca, 0x81, 0x5f, 0x02, 0xd8, 0x41, 0x91, 0x70, 0x35, 0x69, 0x3d, 0x8f, 0xf7, 0x50, 0xc7, 0x9c,
-	0x56, 0x1a, 0x58, 0xbc, 0xa4, 0x81, 0xc6, 0x50, 0x55, 0xb1, 0x08, 0x9e, 0x8e, 0x44, 0x90, 0x95,
-	0x20, 0x65, 0xc5, 0xd7, 0x18, 0x02, 0xee, 0x81, 0x39, 0xa5, 0x2b, 0xc1, 0x49, 0x10, 0xc8, 0x89,
-	0xe1, 0x22, 0x61, 0x26, 0xaf, 0x8b, 0x9b, 0x91, 0x18, 0x8d, 0x21, 0x44, 0x49, 0xc0, 0x1d, 0x90,
-	0x56, 0xb0, 0x3d, 0x1a, 0xab, 0x41, 0x98, 0xe0, 0xba, 0x98, 0x4a, 0xb0, 0x7b, 0x2a, 0xbf, 0x24,
-	0xe0, 0x2a, 0x98, 0xf3, 0x38, 0x56, 0xf7, 0x8d, 0x84, 0xdb, 0xc2, 0x24, 0x68, 0x09, 0x73, 0x46,
-	0x91, 0x3c, 0xa3, 0x1d, 0x25, 0xb1, 0xa9, 0xcc, 0xf0, 0x0b, 0x90, 0x39, 0x13, 0x2b, 0x47, 0x8c,
-	0x39, 0x7b, 0xdd, 0xdd, 0x53, 0x23, 0x50, 0x19, 0x02, 0x1f, 0x80, 0xb4, 0xea, 0x3f, 0xee, 0x63,
-	0x2a, 0xdc, 0x08, 0x3f, 0x36, 0x53, 0x6a, 0xef, 0x59, 0x69, 0xad, 0x4a, 0x63, 0x1d, 0x3f, 0x96,
-	0x45, 0xaa, 0xa8, 0x36, 0x65, 0x07, 0x54, 0xde, 0x95, 0x8f, 0x7d, 0x33, 0xad, 0xd4, 0x9a, 0x91,
-	0x8e, 0xcf, 0xa5, 0xbd, 0xac, 0xcc, 0xb0, 0x0a, 0xe6, 0x34, 0xe5, 0x18, 0x77, 0x51, 0x4c, 0x74,
-	0x33, 0xf3, 0x2f, 0x12, 0xcd, 0x8e, 0x52, 0xb4, 0x7d, 0xf9, 0x97, 0x29, 0x90, 0x1d, 0x4a, 0xdf,
-	0xc1, 0x51, 0x97, 0xd1, 0x08, 0xdf, 0x8e, 0x80, 0xdb, 0x11, 0x70, 0x3b, 0x02, 0xfe, 0xeb, 0x11,
-	0x70, 0xa5, 0x60, 0x53, 0xd7, 0x16, 0xec, 0x33, 0x03, 0xcc, 0x8f, 0xd8, 0x1d, 0xdf, 0xb1, 0x23,
-	0xdf, 0x24, 0xf0, 0x7b, 0x03, 0xdc, 0xf7, 0x7a, 0x61, 0xaf, 0x83, 0x04, 0xe9, 0x5f, 0xc5, 0x39,
-	0xe3, 0x7f, 0xe5, 0xdc, 0xc2, 0xe9, 0xde, 0x17, 0x98, 0xb7, 0xfc, 0x5b, 0x02, 0xa4, 0x47, 0x25,
-	0xab, 0x61, 0x07, 0xef, 0x82, 0x49, 0x7d, 0x01, 0x72, 0xca, 0x8c, 0x3b, 0x7a, 0x05, 0x3f, 0x03,
-	0xc9, 0xd1, 0x93, 0x4e, 0x3f, 0xd1, 0xae, 0xd1, 0xf1, 0xd3, 0x5c, 0xf8, 0x10, 0x80, 0x78, 0xd6,
-	0xca, 0x5a, 0xd5, 0x14, 0x4a, 0xaf, 0x5b, 0xd6, 0xeb, 0x9f, 0xb7, 0xd6, 0xf9, 0x02, 0x1b, 0x83,
-	0x2e, 0x76, 0x92, 0x78, 0xf8, 0x13, 0x7e, 0x0b, 0xb2, 0x82, 0xb5, 0x31, 0x3d, 0xdb, 0xcf, 0x89,
-	0x1b, 0x4d, 0x8b, 0x74, 0x8c, 0x37, 0x92, 0xe7, 0xbb, 0x20, 0xc3, 0xf1, 0x23, 0xcc, 0x31, 0xf5,
-	0xb0, 0xeb, 0xa9, 0x19, 0x79, 0x47, 0x71, 0x33, 0x3d, 0x32, 0x6f, 0x48, 0xeb, 0xea, 0x8f, 0x06,
-	0x80, 0x97, 0x8b, 0x85, 0x0f, 0x40, 0x61, 0xbf, 0xb4, 0x55, 0xab, 0x94, 0x1a, 0x3b, 0x8e, 0x5b,
-	0xdd, 0xaf, 0x6e, 0x37, 0xdc, 0xc6, 0xd7, 0xbb, 0x55, 0x77, 0x6f, 0xbb, 0xbe, 0x5b, 0xdd, 0xa8,
-	0x7d, 0x5a, 0xab, 0x56, 0xb2, 0x63, 0x30, 0x07, 0x16, 0xaf, 0x8c, 0xaa, 0x6f, 0x95, 0xea, 0x9b,
-	0x59, 0x03, 0xe6, 0xc1, 0xbd, 0xd7, 0xa0, 0x94, 0x77, 0xb6, 0x2b, 0xd9, 0x04, 0x5c, 0x02, 0x0b,
-	0x57, 0x06, 0x28, 0xf7, 0x78, 0x79, 0xff, 0xf9, 0x71, 0xce, 0x78, 0x71, 0x9c, 0x33, 0xfe, 0x3c,
-	0xce, 0x19, 0x4f, 0x4f, 0x72, 0x63, 0x2f, 0x4e, 0x72, 0x63, 0xbf, 0x9f, 0xe4, 0xc6, 0xbe, 0xf9,
-	0xf8, 0x2c, 0xa3, 0xf8, 0xa0, 0x2b, 0x58, 0x91, 0xf1, 0xa0, 0xa8, 0x6e, 0xc4, 0x56, 0x9f, 0x45,
-	0xf5, 0xff, 0xe4, 0xc9, 0x85, 0x7f, 0x28, 0x8a, 0x6b, 0xcd, 0x49, 0x75, 0xf9, 0x1f, 0xfc, 0x13,
-	0x00, 0x00, 0xff, 0xff, 0x9b, 0x33, 0x47, 0xd4, 0xc9, 0x0c, 0x00, 0x00,
+	// 975 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x56, 0xcf, 0x6f, 0x1b, 0x45,
+	0x14, 0xf6, 0x3a, 0x89, 0x9b, 0x9d, 0xc4, 0x3f, 0x32, 0x2a, 0xb0, 0x71, 0x15, 0xdb, 0x44, 0x15,
+	0x44, 0x91, 0xbc, 0x4b, 0x8b, 0xc4, 0x09, 0x09, 0xd9, 0xb5, 0x21, 0x16, 0x69, 0x12, 0x6c, 0x27,
+	0xfc, 0xb8, 0x2c, 0x93, 0xdd, 0xe9, 0x7a, 0x64, 0xef, 0x8c, 0x3b, 0x3b, 0x4e, 0xea, 0xff, 0xa2,
+	0x47, 0xc4, 0x89, 0x23, 0x47, 0x24, 0xf2, 0x47, 0x54, 0xe2, 0x52, 0xe5, 0x84, 0x38, 0x14, 0x94,
+	0x1c, 0x90, 0xf8, 0x2b, 0xd0, 0xbc, 0x5d, 0x3b, 0x4d, 0x93, 0x0a, 0x42, 0x94, 0x13, 0xbd, 0x58,
+	0x3b, 0xef, 0x7d, 0xf3, 0xcd, 0x9b, 0x99, 0xef, 0x1b, 0x3f, 0xf4, 0x9e, 0xd7, 0x23, 0x8c, 0x87,
+	0x84, 0x71, 0x47, 0x31, 0x2a, 0xa9, 0x2f, 0xe9, 0x21, 0x91, 0x7e, 0xe4, 0x1c, 0xdc, 0x73, 0xd4,
+	0x78, 0x48, 0x23, 0x7b, 0x28, 0x85, 0x12, 0xb8, 0x38, 0xc5, 0xd9, 0xe7, 0x70, 0xf6, 0xc1, 0xbd,
+	0xe2, 0x12, 0x09, 0x19, 0x17, 0x0e, 0xfc, 0xc6, 0xf0, 0xe2, 0xb2, 0x27, 0xa2, 0x50, 0x44, 0x2e,
+	0x8c, 0x9c, 0x78, 0x90, 0xa4, 0x6e, 0x07, 0x22, 0x10, 0x71, 0x5c, 0x7f, 0x25, 0xd1, 0x52, 0x20,
+	0x44, 0x30, 0xa0, 0x0e, 0x8c, 0xf6, 0x47, 0x8f, 0x1c, 0x7f, 0x24, 0x89, 0x62, 0x82, 0x27, 0xf9,
+	0xf2, 0xab, 0x79, 0xc5, 0x42, 0x1a, 0x29, 0x12, 0x0e, 0x63, 0xc0, 0xea, 0xcf, 0x69, 0x34, 0xdb,
+	0x65, 0x54, 0xe2, 0x1c, 0x4a, 0x33, 0xdf, 0x32, 0x2a, 0xc6, 0x5a, 0xb6, 0x9d, 0x66, 0x3e, 0x7e,
+	0x88, 0xb2, 0xf4, 0x09, 0x53, 0xee, 0x84, 0xd0, 0x4a, 0x57, 0x8c, 0xb5, 0x85, 0xfb, 0xcb, 0x76,
+	0xcc, 0x68, 0x4f, 0x18, 0xed, 0x46, 0x02, 0xa8, 0x67, 0x9f, 0xbd, 0x28, 0xa7, 0xbe, 0xfb, 0xbd,
+	0x6c, 0xfc, 0xf8, 0xe7, 0x4f, 0xeb, 0x46, 0x7b, 0x51, 0x4f, 0x9f, 0x24, 0x71, 0x07, 0x99, 0xfb,
+	0x82, 0x8f, 0x22, 0x97, 0x0c, 0xc7, 0xd6, 0x4c, 0xc5, 0x58, 0x33, 0xeb, 0x1f, 0x69, 0xfc, 0x6f,
+	0x2f, 0xca, 0x77, 0xe2, 0x7d, 0x46, 0x7e, 0xdf, 0x66, 0xc2, 0x09, 0x89, 0xea, 0xd9, 0x9b, 0x34,
+	0x20, 0xde, 0xb8, 0x41, 0xbd, 0xe3, 0xa3, 0x2a, 0x4a, 0x8e, 0xa1, 0x41, 0xbd, 0x98, 0x78, 0x1e,
+	0x88, 0x6a, 0xc3, 0x31, 0xfe, 0x0a, 0xe5, 0x43, 0xc6, 0xdd, 0x81, 0xf0, 0xfa, 0x2e, 0x09, 0xc5,
+	0x88, 0x2b, 0x6b, 0x16, 0xa8, 0x3f, 0x48, 0xa8, 0xdf, 0xba, 0x48, 0xdd, 0xe2, 0xea, 0x25, 0xd2,
+	0x16, 0x57, 0x31, 0x69, 0x36, 0x64, 0x7c, 0x53, 0x78, 0xfd, 0x1a, 0xd0, 0xe0, 0x15, 0x84, 0xbc,
+	0x81, 0x88, 0xa8, 0x2b, 0xf8, 0x60, 0x6c, 0xcd, 0x55, 0x8c, 0xb5, 0xf9, 0xb6, 0x09, 0x91, 0x6d,
+	0x3e, 0x18, 0xaf, 0xfe, 0x95, 0x41, 0xf3, 0x3b, 0x22, 0x62, 0xb0, 0xb5, 0xb3, 0x93, 0x9b, 0x85,
+	0x93, 0xb3, 0xd1, 0x9c, 0x38, 0xe4, 0x54, 0xc2, 0x89, 0x99, 0x75, 0xeb, 0xf8, 0xa8, 0x7a, 0x3b,
+	0x59, 0xae, 0xe6, 0xfb, 0x92, 0x46, 0x51, 0x47, 0x49, 0xc6, 0x83, 0x76, 0x0c, 0xc3, 0xef, 0xa0,
+	0x5b, 0x5a, 0x1b, 0x2e, 0xf3, 0xe1, 0x60, 0xb2, 0xed, 0x8c, 0x1e, 0xb6, 0x7c, 0xbc, 0x81, 0x32,
+	0xd7, 0xdc, 0x55, 0x32, 0x1f, 0x7f, 0x82, 0xcc, 0x03, 0x32, 0x60, 0x3e, 0x51, 0x42, 0xc2, 0x6e,
+	0xcc, 0xfa, 0xbb, 0xc7, 0x47, 0xd5, 0x95, 0x04, 0xbf, 0x37, 0xc9, 0x9d, 0xaf, 0xef, 0x6c, 0x0e,
+	0x26, 0xa8, 0xe0, 0xd3, 0x01, 0x0d, 0x88, 0xa2, 0xbe, 0x1b, 0xf5, 0x88, 0xa4, 0x91, 0x95, 0xb9,
+	0xd6, 0x2d, 0xe6, 0xa7, 0x7c, 0x1d, 0xa0, 0xc3, 0x4d, 0xb4, 0x94, 0x84, 0x84, 0x74, 0x49, 0x5c,
+	0x88, 0x75, 0xeb, 0x1f, 0x8e, 0xb0, 0x30, 0x9d, 0x92, 0xc4, 0xf1, 0x97, 0x08, 0x0f, 0x48, 0xa4,
+	0xdc, 0x44, 0x6d, 0x9e, 0x27, 0x47, 0x64, 0x60, 0xcd, 0x83, 0x78, 0x8b, 0x17, 0xc4, 0xdb, 0x9d,
+	0xd8, 0x21, 0x56, 0xef, 0xd3, 0xa9, 0x7a, 0x0b, 0x9a, 0xa4, 0x0e, 0x42, 0x8b, 0x29, 0xf0, 0x5d,
+	0x94, 0x03, 0x62, 0x7a, 0x40, 0xb9, 0x72, 0x23, 0xfa, 0xd8, 0x32, 0xe1, 0xca, 0x17, 0x75, 0xb4,
+	0xa9, 0x83, 0x1d, 0xfa, 0x18, 0xaf, 0xa3, 0x25, 0x40, 0xf5, 0xb9, 0x38, 0xe4, 0xba, 0x08, 0x9f,
+	0xfa, 0x16, 0x02, 0xfd, 0xe4, 0x75, 0xe2, 0x73, 0x1d, 0xaf, 0x43, 0x18, 0xef, 0xa2, 0x25, 0xb0,
+	0x98, 0x92, 0x2c, 0x08, 0xf4, 0xe3, 0xe0, 0x12, 0x65, 0x2d, 0x5c, 0xb5, 0xd2, 0xbc, 0xe6, 0xe8,
+	0x4e, 0x28, 0x6a, 0x0a, 0x6f, 0xa3, 0x1c, 0xd0, 0x8e, 0x78, 0x6c, 0x0c, 0x65, 0x2d, 0x5e, 0x95,
+	0x13, 0xbc, 0xbb, 0x0b, 0xf3, 0x6b, 0x4a, 0xef, 0xc9, 0x93, 0x14, 0xae, 0x9e, 0x28, 0xb7, 0x47,
+	0x59, 0xd0, 0x53, 0x56, 0x16, 0x36, 0x9f, 0x4f, 0x12, 0x35, 0xb5, 0x01, 0x61, 0xfc, 0x05, 0xca,
+	0xbf, 0x84, 0xd5, 0xaf, 0x8d, 0x95, 0xbb, 0xea, 0xea, 0xd9, 0x29, 0xa9, 0x86, 0xac, 0xfe, 0x90,
+	0x41, 0x85, 0x89, 0xd9, 0xda, 0x34, 0x1a, 0x0a, 0x1e, 0xd1, 0x37, 0xa6, 0xfb, 0x7f, 0x98, 0xee,
+	0x52, 0x8b, 0x98, 0x37, 0x60, 0x11, 0x74, 0x03, 0x16, 0x59, 0xf8, 0xd7, 0x16, 0x59, 0xbc, 0xa6,
+	0x45, 0x7e, 0x49, 0xa3, 0xdc, 0x54, 0x4f, 0xf0, 0x16, 0xe1, 0xb7, 0x51, 0x26, 0x29, 0x43, 0x9b,
+	0x64, 0xa6, 0x9d, 0x8c, 0xf0, 0x67, 0xc8, 0x9c, 0xf6, 0x00, 0xc9, 0x7f, 0xfa, 0x15, 0xd6, 0x3d,
+	0x9b, 0x8b, 0x1f, 0x22, 0x14, 0x3f, 0x85, 0xba, 0xdf, 0x01, 0x13, 0xe5, 0xee, 0xdb, 0xf6, 0xeb,
+	0xfb, 0x1d, 0xfb, 0x7c, 0x81, 0xdd, 0xf1, 0x90, 0xb6, 0x4d, 0x3a, 0xf9, 0xc4, 0xdf, 0xa2, 0x82,
+	0x12, 0x7d, 0xca, 0x23, 0x77, 0x48, 0x65, 0xac, 0xf6, 0xc4, 0x81, 0xff, 0x55, 0xec, 0xb9, 0x98,
+	0x6f, 0x87, 0x4a, 0x10, 0x3b, 0x7e, 0x1f, 0xe5, 0x25, 0x7d, 0x44, 0x25, 0xe5, 0x1e, 0x75, 0x3d,
+	0xb0, 0xf8, 0x1c, 0xdc, 0x50, 0x6e, 0x1a, 0x7e, 0xa0, 0xa3, 0xeb, 0xdf, 0x1b, 0x08, 0x5f, 0x2c,
+	0x16, 0xdf, 0x45, 0x95, 0xbd, 0xda, 0x66, 0xab, 0x51, 0xeb, 0x6e, 0xb7, 0xdd, 0xe6, 0x5e, 0x73,
+	0xab, 0xeb, 0x76, 0xbf, 0xde, 0x69, 0xba, 0xbb, 0x5b, 0x9d, 0x9d, 0xe6, 0x83, 0xd6, 0xa7, 0xad,
+	0x66, 0xa3, 0x90, 0xc2, 0x25, 0x54, 0xbc, 0x14, 0xd5, 0xd9, 0xac, 0x75, 0x36, 0x0a, 0x06, 0x2e,
+	0xa3, 0x3b, 0xaf, 0x61, 0xa9, 0x6f, 0x6f, 0x35, 0x0a, 0x69, 0xbc, 0x82, 0x96, 0x2f, 0x05, 0x40,
+	0x7a, 0xa6, 0xbe, 0xf7, 0xec, 0xa4, 0x64, 0x3c, 0x3f, 0x29, 0x19, 0x7f, 0x9c, 0x94, 0x8c, 0xa7,
+	0xa7, 0xa5, 0xd4, 0xf3, 0xd3, 0x52, 0xea, 0xd7, 0xd3, 0x52, 0xea, 0x9b, 0x8f, 0x03, 0xa6, 0x7a,
+	0xa3, 0x7d, 0xdb, 0x13, 0xa1, 0xe3, 0xc9, 0xf1, 0x50, 0x89, 0xaa, 0x90, 0x41, 0x15, 0x6e, 0xc4,
+	0x81, 0xdf, 0x2a, 0x34, 0xac, 0x4f, 0x5e, 0x69, 0x59, 0xa1, 0x5f, 0xdd, 0xcf, 0xc0, 0xe5, 0x7f,
+	0xf8, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0xfe, 0xf9, 0xf0, 0x5c, 0xda, 0x0a, 0x00, 0x00,
 }
 
 func (m *Tier) Marshal() (dAtA []byte, err error) {
@@ -730,28 +651,6 @@ func (m *Position) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.DelegatorAddress) > 0 {
-		i -= len(m.DelegatorAddress)
-		copy(dAtA[i:], m.DelegatorAddress)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.DelegatorAddress)))
-		i--
-		dAtA[i] = 0x7a
-	}
-	if m.LastKnownBonded {
-		i--
-		if m.LastKnownBonded {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i--
-		dAtA[i] = 0x70
-	}
-	if m.LastEventSeq != 0 {
-		i = encodeVarintTypes(dAtA, i, uint64(m.LastEventSeq))
-		i--
-		dAtA[i] = 0x68
-	}
 	n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.CreatedAtTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAtTime):])
 	if err2 != nil {
 		return 0, err2
@@ -759,11 +658,11 @@ func (m *Position) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i -= n2
 	i = encodeVarintTypes(dAtA, i, uint64(n2))
 	i--
-	dAtA[i] = 0x62
+	dAtA[i] = 0x72
 	if m.CreatedAtHeight != 0 {
 		i = encodeVarintTypes(dAtA, i, uint64(m.CreatedAtHeight))
 		i--
-		dAtA[i] = 0x58
+		dAtA[i] = 0x68
 	}
 	n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.ExitUnlockAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ExitUnlockAt):])
 	if err3 != nil {
@@ -772,7 +671,7 @@ func (m *Position) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i -= n3
 	i = encodeVarintTypes(dAtA, i, uint64(n3))
 	i--
-	dAtA[i] = 0x52
+	dAtA[i] = 0x62
 	n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.ExitTriggeredAt, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ExitTriggeredAt):])
 	if err4 != nil {
 		return 0, err4
@@ -780,7 +679,22 @@ func (m *Position) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i -= n4
 	i = encodeVarintTypes(dAtA, i, uint64(n4))
 	i--
-	dAtA[i] = 0x4a
+	dAtA[i] = 0x5a
+	if m.LastKnownBonded {
+		i--
+		if m.LastKnownBonded {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x50
+	}
+	if m.LastEventSeq != 0 {
+		i = encodeVarintTypes(dAtA, i, uint64(m.LastEventSeq))
+		i--
+		dAtA[i] = 0x48
+	}
 	n5, err5 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.LastBonusAccrual, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.LastBonusAccrual):])
 	if err5 != nil {
 		return 0, err5
@@ -789,19 +703,12 @@ func (m *Position) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintTypes(dAtA, i, uint64(n5))
 	i--
 	dAtA[i] = 0x42
-	if len(m.BaseRewardsPerShare) > 0 {
-		for iNdEx := len(m.BaseRewardsPerShare) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.BaseRewardsPerShare[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTypes(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
+	if len(m.DelegatorAddress) > 0 {
+		i -= len(m.DelegatorAddress)
+		copy(dAtA[i:], m.DelegatorAddress)
+		i = encodeVarintTypes(dAtA, i, uint64(len(m.DelegatorAddress)))
+		i--
+		dAtA[i] = 0x3a
 	}
 	{
 		size := m.DelegatedShares.Size()
@@ -870,13 +777,6 @@ func (m *PositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.DelegatorAddress) > 0 {
-		i -= len(m.DelegatorAddress)
-		copy(dAtA[i:], m.DelegatorAddress)
-		i = encodeVarintTypes(dAtA, i, uint64(len(m.DelegatorAddress)))
-		i--
-		dAtA[i] = 0x6a
-	}
 	n6, err6 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.CreatedAtTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAtTime):])
 	if err6 != nil {
 		return 0, err6
@@ -914,19 +814,12 @@ func (m *PositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i = encodeVarintTypes(dAtA, i, uint64(n9))
 	i--
 	dAtA[i] = 0x42
-	if len(m.BaseRewardsPerShare) > 0 {
-		for iNdEx := len(m.BaseRewardsPerShare) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.BaseRewardsPerShare[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTypes(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x3a
-		}
+	if len(m.DelegatorAddress) > 0 {
+		i -= len(m.DelegatorAddress)
+		copy(dAtA[i:], m.DelegatorAddress)
+		i = encodeVarintTypes(dAtA, i, uint64(len(m.DelegatorAddress)))
+		i--
+		dAtA[i] = 0x3a
 	}
 	{
 		size := m.DelegatedShares.Size()
@@ -971,43 +864,6 @@ func (m *PositionResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i = encodeVarintTypes(dAtA, i, uint64(m.Id))
 		i--
 		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *ValidatorRewardRatio) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *ValidatorRewardRatio) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *ValidatorRewardRatio) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.CumulativeRewardsPerShare) > 0 {
-		for iNdEx := len(m.CumulativeRewardsPerShare) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.CumulativeRewardsPerShare[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintTypes(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -1124,14 +980,18 @@ func (m *Position) Size() (n int) {
 	}
 	l = m.DelegatedShares.Size()
 	n += 1 + l + sovTypes(uint64(l))
-	if len(m.BaseRewardsPerShare) > 0 {
-		for _, e := range m.BaseRewardsPerShare {
-			l = e.Size()
-			n += 1 + l + sovTypes(uint64(l))
-		}
+	l = len(m.DelegatorAddress)
+	if l > 0 {
+		n += 1 + l + sovTypes(uint64(l))
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.LastBonusAccrual)
 	n += 1 + l + sovTypes(uint64(l))
+	if m.LastEventSeq != 0 {
+		n += 1 + sovTypes(uint64(m.LastEventSeq))
+	}
+	if m.LastKnownBonded {
+		n += 2
+	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ExitTriggeredAt)
 	n += 1 + l + sovTypes(uint64(l))
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ExitUnlockAt)
@@ -1141,16 +1001,6 @@ func (m *Position) Size() (n int) {
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAtTime)
 	n += 1 + l + sovTypes(uint64(l))
-	if m.LastEventSeq != 0 {
-		n += 1 + sovTypes(uint64(m.LastEventSeq))
-	}
-	if m.LastKnownBonded {
-		n += 2
-	}
-	l = len(m.DelegatorAddress)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
 	return n
 }
 
@@ -1178,11 +1028,9 @@ func (m *PositionResponse) Size() (n int) {
 	}
 	l = m.DelegatedShares.Size()
 	n += 1 + l + sovTypes(uint64(l))
-	if len(m.BaseRewardsPerShare) > 0 {
-		for _, e := range m.BaseRewardsPerShare {
-			l = e.Size()
-			n += 1 + l + sovTypes(uint64(l))
-		}
+	l = len(m.DelegatorAddress)
+	if l > 0 {
+		n += 1 + l + sovTypes(uint64(l))
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.LastBonusAccrual)
 	n += 1 + l + sovTypes(uint64(l))
@@ -1195,25 +1043,6 @@ func (m *PositionResponse) Size() (n int) {
 	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.CreatedAtTime)
 	n += 1 + l + sovTypes(uint64(l))
-	l = len(m.DelegatorAddress)
-	if l > 0 {
-		n += 1 + l + sovTypes(uint64(l))
-	}
-	return n
-}
-
-func (m *ValidatorRewardRatio) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.CumulativeRewardsPerShare) > 0 {
-		for _, e := range m.CumulativeRewardsPerShare {
-			l = e.Size()
-			n += 1 + l + sovTypes(uint64(l))
-		}
-	}
 	return n
 }
 
@@ -1636,9 +1465,9 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BaseRewardsPerShare", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTypes
@@ -1648,25 +1477,23 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTypes
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTypes
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BaseRewardsPerShare = append(m.BaseRewardsPerShare, types.DecCoin{})
-			if err := m.BaseRewardsPerShare[len(m.BaseRewardsPerShare)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -1702,6 +1529,45 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 9:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastEventSeq", wireType)
+			}
+			m.LastEventSeq = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastEventSeq |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 10:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastKnownBonded", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowTypes
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.LastKnownBonded = bool(v != 0)
+		case 11:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ExitTriggeredAt", wireType)
 			}
@@ -1734,7 +1600,7 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 10:
+		case 12:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ExitUnlockAt", wireType)
 			}
@@ -1767,7 +1633,7 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 11:
+		case 13:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAtHeight", wireType)
 			}
@@ -1786,7 +1652,7 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-		case 12:
+		case 14:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAtTime", wireType)
 			}
@@ -1818,77 +1684,6 @@ func (m *Position) Unmarshal(dAtA []byte) error {
 			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.CreatedAtTime, dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			iNdEx = postIndex
-		case 13:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastEventSeq", wireType)
-			}
-			m.LastEventSeq = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.LastEventSeq |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 14:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LastKnownBonded", wireType)
-			}
-			var v int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.LastKnownBonded = bool(v != 0)
-		case 15:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2112,9 +1907,9 @@ func (m *PositionResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 7:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BaseRewardsPerShare", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTypes
@@ -2124,25 +1919,23 @@ func (m *PositionResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTypes
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTypes
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.BaseRewardsPerShare = append(m.BaseRewardsPerShare, types.DecCoin{})
-			if err := m.BaseRewardsPerShare[len(m.BaseRewardsPerShare)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 8:
 			if wireType != 2 {
@@ -2292,122 +2085,6 @@ func (m *PositionResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.CreatedAtTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 13:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DelegatorAddress", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.DelegatorAddress = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTypes(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *ValidatorRewardRatio) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTypes
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ValidatorRewardRatio: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ValidatorRewardRatio: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CumulativeRewardsPerShare", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTypes
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTypes
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTypes
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.CumulativeRewardsPerShare = append(m.CumulativeRewardsPerShare, types.DecCoin{})
-			if err := m.CumulativeRewardsPerShare[len(m.CumulativeRewardsPerShare)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

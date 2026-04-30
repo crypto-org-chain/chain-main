@@ -36,13 +36,10 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
 	pos, err := s.keeper.GetPosition(s.ctx, posSetup.Id)
 	s.Require().NoError(err)
 
-	updated, base, bonus, err := s.keeper.ClaimRewards(s.ctx, pos)
+	_, base, bonus, err := s.keeper.ClaimRewards(s.ctx, pos)
 	s.Require().NoError(err)
 	s.Require().True(base.IsZero(), "base should be zero for undelegated position")
 	s.Require().True(bonus.IsZero(), "bonus should be zero for undelegated position")
-	s.Require().True(pos.BaseRewardsPerShare.IsZero(), "base rewards per share should be zero for undelegated position")
-	s.Require().Equal(pos.BaseRewardsPerShare, updated.BaseRewardsPerShare,
-		"base rewards per share should not change for undelegated position")
 }
 
 // TestClaimRewardsForPosition_Delegated verifies that claimRewardsForPosition
@@ -187,6 +184,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	// Position 1: will be undelegated.
 	pos1 := s.setupNewTierPosition(lockAmount, true)
 	addr2 := sdk.MustAccAddressFromBech32(pos1.Owner)
+	pos2OwnerBalanceBefore := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
 
 	pos1Positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr2)
 	s.Require().NoError(err)
@@ -200,10 +198,6 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	})
 	s.Require().NoError(err)
 
-	pos1Before, err := s.keeper.GetPosition(s.ctx, pos1Id)
-	s.Require().NoError(err)
-	s.Require().False(pos1Before.IsDelegated())
-
 	// Allocate rewards and run tier sweep.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
@@ -212,12 +206,9 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	err = s.keeper.ClaimRewardsAndUpdateTierPositions(s.ctx, 1)
 	s.Require().NoError(err)
 
-	// Undelegated position should not have its checkpoint updated.
-	pos1After, err := s.keeper.GetPosition(s.ctx, pos1Id)
+	pos2OwnerBalanceAfter := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
 	s.Require().NoError(err)
-	s.Require().True(pos1After.BaseRewardsPerShare.IsZero(), "base rewards per share should be zero for undelegated position")
-	s.Require().Equal(pos1Before.BaseRewardsPerShare, pos1After.BaseRewardsPerShare,
-		"undelegated position checkpoint should not change during tier sweep")
+	s.Require().True(pos2OwnerBalanceAfter.Equal(pos2OwnerBalanceBefore), "undelegated position should not receive any rewards for the tier sweep")
 }
 
 // After the validator re-bonds, bonus accrual should resume from the new bonded time.

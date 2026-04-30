@@ -32,36 +32,34 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 
 	// Delegated position (tier 1). Amount must be zero.
 	pos1 := types.Position{
-		Id:                  1,
-		Owner:               owner,
-		TierId:              1,
-		Amount:              sdkmath.ZeroInt(),
-		Validator:           valAddr.String(),
-		DelegatedShares:     sdkmath.LegacyNewDec(5000),
-		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(2, 4))),
-		LastBonusAccrual:    now,
-		CreatedAtHeight:     100,
-		CreatedAtTime:       now,
-		LastEventSeq:        0,
-		LastKnownBonded:     true,
-		DelegatorAddress:    types.GetDelegatorAddress(1).String(),
+		Id:               1,
+		Owner:            owner,
+		TierId:           1,
+		Amount:           sdkmath.ZeroInt(),
+		Validator:        valAddr.String(),
+		DelegatedShares:  sdkmath.LegacyNewDec(5000),
+		LastBonusAccrual: now,
+		CreatedAtHeight:  100,
+		CreatedAtTime:    now,
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
+		DelegatorAddress: types.GetDelegatorAddress(1).String(),
 	}
 
 	// Delegated position. Amount must be zero.
 	pos2 := types.Position{
-		Id:                  2,
-		Owner:               owner,
-		TierId:              2,
-		Amount:              sdkmath.ZeroInt(),
-		Validator:           valAddr.String(),
-		DelegatedShares:     sdkmath.LegacyNewDec(3000),
-		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(1, 4))),
-		LastBonusAccrual:    now,
-		CreatedAtHeight:     101,
-		CreatedAtTime:       now,
-		LastEventSeq:        0,
-		LastKnownBonded:     true,
-		DelegatorAddress:    types.GetDelegatorAddress(2).String(),
+		Id:               2,
+		Owner:            owner,
+		TierId:           2,
+		Amount:           sdkmath.ZeroInt(),
+		Validator:        valAddr.String(),
+		DelegatedShares:  sdkmath.LegacyNewDec(3000),
+		LastBonusAccrual: now,
+		CreatedAtHeight:  101,
+		CreatedAtTime:    now,
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
+		DelegatorAddress: types.GetDelegatorAddress(2).String(),
 	}
 
 	// Position with exit triggered.
@@ -152,7 +150,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().True(orig.Amount.Equal(pos.Amount))
 		s.Require().Equal(orig.Validator, pos.Validator)
 		s.Require().True(orig.DelegatedShares.Equal(pos.DelegatedShares))
-		s.Require().True(orig.BaseRewardsPerShare.Equal(pos.BaseRewardsPerShare))
 		s.Require().Equal(orig.LastBonusAccrual, pos.LastBonusAccrual)
 		s.Require().Equal(orig.CreatedAtHeight, pos.CreatedAtHeight)
 		s.Require().Equal(orig.CreatedAtTime.UTC(), pos.CreatedAtTime.UTC())

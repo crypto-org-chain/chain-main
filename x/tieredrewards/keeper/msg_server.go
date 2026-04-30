@@ -66,10 +66,9 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	}
 
 	delegation := types.Delegation{
-		Validator:           msg.ValidatorAddress,
-		Shares:              shares,
-		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-		LastEventSeq:        latestSeq,
+		Validator:    msg.ValidatorAddress,
+		Shares:       shares,
+		LastEventSeq: latestSeq,
 	}
 	pos, err := ms.createPosition(ctx, msg.Owner, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
 	if err != nil {
@@ -136,10 +135,9 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	}
 
 	delegation := types.Delegation{
-		Validator:           msg.ValidatorAddress,
-		Shares:              shares,
-		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-		LastEventSeq:        latestSeq,
+		Validator:    msg.ValidatorAddress,
+		Shares:       shares,
+		LastEventSeq: latestSeq,
 	}
 
 	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
@@ -198,10 +196,9 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 	}
 
 	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
-		Validator:           msg.Validator,
-		Shares:              newShares,
-		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-		LastEventSeq:        latestSeq,
+		Validator:    msg.Validator,
+		Shares:       newShares,
+		LastEventSeq: latestSeq,
 	}); err != nil {
 		return nil, err
 	}
@@ -345,10 +342,9 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
-		Validator:           msg.DstValidator,
-		Shares:              newShares,
-		BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-		LastEventSeq:        latestSeq,
+		Validator:    msg.DstValidator,
+		Shares:       newShares,
+		LastEventSeq: latestSeq,
 	}); err != nil {
 		return nil, err
 	}
@@ -429,10 +425,9 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 		if err := ms.updateDelegation(ctx, &pos, types.Delegation{
-			Validator:           pos.Validator,
-			Shares:              totalShares,
-			BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-			LastEventSeq:        latestSeq,
+			Validator:    pos.Validator,
+			Shares:       totalShares,
+			LastEventSeq: latestSeq,
 		}); err != nil {
 			return nil, err
 		}
@@ -687,10 +682,9 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			return nil, err
 		}
 		err = ms.updateDelegation(ctx, &pos, types.Delegation{
-			Validator:           pos.Validator,
-			Shares:              remainingShares,
-			BaseRewardsPerShare: sdk.DecCoins{}, // will be removed later
-			LastEventSeq:        latestSeq,
+			Validator:    pos.Validator,
+			Shares:       remainingShares,
+			LastEventSeq: latestSeq,
 		})
 		if err != nil {
 			return nil, err

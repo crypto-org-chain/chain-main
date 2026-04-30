@@ -59,8 +59,6 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotModifyPosition() {
 		"position DelegatedShares should not change during slash hook (lazy)")
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"position LastBonusAccrual should not change during slash hook (lazy)")
-	s.Require().Equal(posBefore.BaseRewardsPerShare, posAfter.BaseRewardsPerShare,
-		"position BaseRewardsPerShare should not change during slash hook (lazy)")
 }
 
 // TestBeforeValidatorSlashed_NoPositions is a no-op for validators with no tier positions.
@@ -244,8 +242,6 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by unbonding hook (lazy)")
-	s.Require().Equal(posBefore.BaseRewardsPerShare, posAfter.BaseRewardsPerShare,
-		"BaseRewardsPerShare should NOT be modified by unbonding hook (lazy)")
 }
 
 // --- AfterValidatorRemoved hook tests ---

@@ -13,25 +13,23 @@ import (
 )
 
 type Delegation struct {
-	Validator           string
-	Shares              math.LegacyDec
-	BaseRewardsPerShare sdk.DecCoins
-	LastEventSeq        uint64
+	Validator    string
+	Shares       math.LegacyDec
+	LastEventSeq uint64
 }
 
 func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, createdAtHeight uint64, delegation Delegation, createdAtTime time.Time) Position {
 	return Position{
-		Id:                  id,
-		Owner:               owner,
-		TierId:              tierId,
-		Amount:              amount,
-		CreatedAtHeight:     createdAtHeight,
-		CreatedAtTime:       createdAtTime,
-		Validator:           delegation.Validator,
-		DelegatedShares:     delegation.Shares,
-		BaseRewardsPerShare: delegation.BaseRewardsPerShare,
-		LastBonusAccrual:    createdAtTime,
-		LastEventSeq:        delegation.LastEventSeq,
+		Id:               id,
+		Owner:            owner,
+		TierId:           tierId,
+		Amount:           amount,
+		CreatedAtHeight:  createdAtHeight,
+		CreatedAtTime:    createdAtTime,
+		Validator:        delegation.Validator,
+		DelegatedShares:  delegation.Shares,
+		LastBonusAccrual: createdAtTime,
+		LastEventSeq:     delegation.LastEventSeq,
 		// Delegated positions are only created on bonded validators.
 		LastKnownBonded:  delegation.Validator != "",
 		DelegatorAddress: GetDelegatorAddress(id).String(),
@@ -60,11 +58,6 @@ func (p Position) Validate() error {
 		if _, err := sdk.ValAddressFromBech32(p.Validator); err != nil {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
-		if len(p.BaseRewardsPerShare) > 0 {
-			if err := p.BaseRewardsPerShare.Validate(); err != nil {
-				return fmt.Errorf("invalid base rewards per share: %w", err)
-			}
-		}
 		if !p.DelegatedShares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
 		}
@@ -74,9 +67,6 @@ func (p Position) Validate() error {
 	} else {
 		if !p.DelegatedShares.IsNil() && !p.DelegatedShares.IsZero() {
 			return fmt.Errorf("delegated shares must not be set when not delegated")
-		}
-		if len(p.BaseRewardsPerShare) > 0 {
-			return fmt.Errorf("base rewards per share must not be set when not delegated")
 		}
 		if !p.LastBonusAccrual.IsZero() {
 			return fmt.Errorf("last bonus accrual must not be set when not delegated")
@@ -123,7 +113,6 @@ func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
 func (p *Position) WithDelegation(delegation Delegation, t time.Time) {
 	p.Validator = delegation.Validator
 	p.DelegatedShares = delegation.Shares
-	p.BaseRewardsPerShare = delegation.BaseRewardsPerShare
 	p.LastEventSeq = delegation.LastEventSeq
 	// Position is delegated as a whole
 	p.Amount = math.ZeroInt()
@@ -161,7 +150,6 @@ func (p *Position) UpdateDelegatedShares(shares math.LegacyDec) {
 func (p *Position) ClearDelegation() {
 	p.Validator = ""
 	p.DelegatedShares = math.LegacyZeroDec()
-	p.BaseRewardsPerShare = sdk.DecCoins{}
 	p.LastBonusAccrual = time.Time{}
 	p.LastEventSeq = 0
 	p.LastKnownBonded = false
@@ -193,18 +181,17 @@ func GetDelegatorAddress(id uint64) sdk.AccAddress {
 
 func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {
 	return PositionResponse{
-		Id:                  p.Id,
-		Owner:               p.Owner,
-		TierId:              p.TierId,
-		Amount:              tokenValue,
-		Validator:           p.Validator,
-		DelegatedShares:     p.DelegatedShares,
-		BaseRewardsPerShare: p.BaseRewardsPerShare,
-		LastBonusAccrual:    p.LastBonusAccrual,
-		ExitTriggeredAt:     p.ExitTriggeredAt,
-		ExitUnlockAt:        p.ExitUnlockAt,
-		CreatedAtHeight:     p.CreatedAtHeight,
-		CreatedAtTime:       p.CreatedAtTime,
-		DelegatorAddress:    p.DelegatorAddress,
+		Id:               p.Id,
+		Owner:            p.Owner,
+		TierId:           p.TierId,
+		Amount:           tokenValue,
+		Validator:        p.Validator,
+		DelegatedShares:  p.DelegatedShares,
+		LastBonusAccrual: p.LastBonusAccrual,
+		ExitTriggeredAt:  p.ExitTriggeredAt,
+		ExitUnlockAt:     p.ExitUnlockAt,
+		CreatedAtHeight:  p.CreatedAtHeight,
+		CreatedAtTime:    p.CreatedAtTime,
+		DelegatorAddress: p.DelegatorAddress,
 	}
 }

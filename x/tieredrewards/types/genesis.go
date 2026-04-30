@@ -53,20 +53,6 @@ func ValidateGenesis(data GenesisState) error {
 		return fmt.Errorf("next_position_id (%d) must be greater than the highest position ID (%d)", data.NextPositionId, maxPosID)
 	}
 
-	seenValidators := make(map[string]struct{}, len(data.ValidatorRewardRatios))
-	for i, entry := range data.ValidatorRewardRatios {
-		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
-			return fmt.Errorf("invalid validator address in reward ratio at index %d: %w", i, err)
-		}
-		if err := entry.RewardRatio.CumulativeRewardsPerShare.Validate(); err != nil {
-			return fmt.Errorf("invalid reward ratio payload at index %d: %w", i, err)
-		}
-		if _, dup := seenValidators[entry.Validator]; dup {
-			return fmt.Errorf("duplicate validator %s in reward ratios at index %d", entry.Validator, i)
-		}
-		seenValidators[entry.Validator] = struct{}{}
-	}
-
 	seenUnbondingIDs := make(map[uint64]struct{}, len(data.UnbondingDelegationMappings))
 	for i, mapping := range data.UnbondingDelegationMappings {
 		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {

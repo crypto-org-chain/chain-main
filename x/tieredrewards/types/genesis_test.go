@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func genesisTier(id uint32) types.Tier {
@@ -23,9 +21,9 @@ func genesisTier(id uint32) types.Tier {
 
 func genesisPosition(id uint64, tierId uint32) types.Position {
 	return types.NewPosition(id, testOwner, tierId, sdkmath.ZeroInt(), 100, types.Delegation{
-		Validator:           testValidator,
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{}, LastEventSeq: 0,
+		Validator:    testValidator,
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}, time.Now())
 }
 
@@ -37,12 +35,6 @@ func validFullGenesis() types.GenesisState {
 		Tiers:          []types.Tier{tier},
 		Positions:      []types.Position{pos},
 		NextPositionId: 2,
-		ValidatorRewardRatios: []types.ValidatorRewardRatioEntry{
-			{
-				Validator:   testValidator,
-				RewardRatio: types.ValidatorRewardRatio{},
-			},
-		},
 		UnbondingDelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 10, PositionId: 1},
 		},
@@ -105,31 +97,6 @@ func TestValidateGenesis(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.NextPositionId = 1 // must be > position ID 1
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "next_position_id")
-	})
-
-	t.Run("invalid validator address in reward ratio", func(t *testing.T) {
-		genesis := validFullGenesis()
-		genesis.ValidatorRewardRatios[0].Validator = "invalid"
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid validator address")
-	})
-
-	t.Run("duplicate validator in reward ratios", func(t *testing.T) {
-		genesis := validFullGenesis()
-		genesis.ValidatorRewardRatios = append(genesis.ValidatorRewardRatios, genesis.ValidatorRewardRatios[0])
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator")
-	})
-
-	t.Run("malformed validator reward ratio cumulative rewards per share", func(t *testing.T) {
-		genesis := validFullGenesis()
-		genesis.ValidatorRewardRatios[0].RewardRatio = types.ValidatorRewardRatio{
-			CumulativeRewardsPerShare: sdk.DecCoins{
-				{
-					Denom:  "basecro",
-					Amount: sdkmath.LegacyNewDec(-1),
-				},
-			},
-		}
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "invalid reward ratio payload")
 	})
 
 	t.Run("unbonding mapping references unknown position", func(t *testing.T) {
