@@ -30,12 +30,38 @@ var (
 	PositionCountByValidatorKeyPrefix   = []byte{15}
 )
 
-// AllPrefixes returns every prefix the v8 upgrade handler must wipe.
-// Returned in the order they should be processed.
+// AllPrefixes returns every pre-v8 prefix this module ever owned. Used as a
+// reference / documentation of the full store footprint.
 func AllPrefixes() [][]byte {
 	return [][]byte{
 		ParamsKeyPrefix,
 		TiersKeyPrefix,
+		PositionsKeyPrefix,
+		NextPositionIdKeyPrefix,
+		PositionsByOwnerKeyPrefix,
+		PositionsByTierKeyPrefix,
+		PositionsByValidatorKeyPrefix,
+		PositionCountByTierKeyPrefix,
+		ValidatorRewardRatioKeyPrefix,
+		UnbondingIdToPositionIdKeyPrefix,
+		UnbondingIdsByPositionKeyPrefix,
+		RedelegationIdToPositionIdKeyPrefix,
+		RedelegationIdsByPositionKeyPrefix,
+		ValidatorEventsKeyPrefix,
+		ValidatorEventSeqKeyPrefix,
+		PositionCountByValidatorKeyPrefix,
+	}
+}
+
+// StateToPurge returns the prefixes the v8 upgrade handler should wipe.
+// Excludes Params and Tiers so that operator-configured values survive the
+// upgrade: the Params / Tier proto shapes are unchanged from v7, so their
+// stored bytes decode cleanly under the new code. Everything else (positions,
+// secondary indexes, mappings, validator events, counters, and the retired
+// ValidatorRewardRatio collection) is lifecycle state tied to the pre-v8
+// shared-pool delegator model and cannot be carried over.
+func StateToPurge() [][]byte {
+	return [][]byte{
 		PositionsKeyPrefix,
 		NextPositionIdKeyPrefix,
 		PositionsByOwnerKeyPrefix,

@@ -8,6 +8,7 @@ import (
 
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
+	tieredrewardsv8 "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/migrations/v8"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
@@ -41,56 +42,56 @@ var CircuitSuperAdmins = map[string][]string{
 	},
 }
 
+const testnetBurnAddress = "tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma"
+
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	// Register upgrade plan name for mainnet v7.0.0. If it's for testnet, add postfix "-testnet" to the plan name.
-	planName := "v7.0.0"
+	app.registerV7UpgradeHandler()
+	app.registerV8UpgradeHandler()
+}
 
-	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
+func (app *ChainApp) v7UpgradeHandler(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		sdkCtx.Logger().Info("start to run module migrations...")
+	sdkCtx.Logger().Info("start to run module migrations...")
 
-		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
-		if err != nil {
-			return map[string]uint64{}, err
-		}
-
-		sdkCtx.Logger().Info("module migrations completed!")
-
-		if err := initInflationParams(app, sdkCtx); err != nil {
-			return map[string]uint64{}, err
-		}
-
-		if err := updateMintParams(app, sdkCtx); err != nil {
-			return map[string]uint64{}, err
-		}
-
-		if err := initTieredRewardsParams(app, sdkCtx); err != nil {
-			return map[string]uint64{}, err
-		}
-
-		if err := initDefaultTierDefinitions(ctx, app); err != nil {
-			return map[string]uint64{}, err
-		}
-
-		// Remove stale KeyDenomName("") index entry if it exists.
-		// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
-		// which stored a name index entry for the empty string, blocking
-		// all subsequent IBC NFT class creation.
-		nftStore := sdkCtx.KVStore(app.keys[nfttypes.StoreKey])
-		nftStore.Delete(nfttypes.KeyDenomName(""))
-
-		sdkCtx.Logger().Info("upgrade completed",
-			"plan", plan.Name,
-			"version_map", m)
-
-		return m, nil
-	})
-
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 	if err != nil {
-		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+		return map[string]uint64{}, err
 	}
+
+	sdkCtx.Logger().Info("module migrations completed!")
+
+	if err := initInflationParams(app, sdkCtx); err != nil {
+		return map[string]uint64{}, err
+	}
+
+	if err := updateMintParams(app, sdkCtx); err != nil {
+		return map[string]uint64{}, err
+	}
+
+	if err := initTieredRewardsParams(app, sdkCtx); err != nil {
+		return map[string]uint64{}, err
+	}
+
+	if err := initDefaultTierDefinitions(ctx, app); err != nil {
+		return map[string]uint64{}, err
+	}
+
+	// Remove stale KeyDenomName("") index entry if it exists.
+	// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
+	// which stored a name index entry for the empty string, blocking
+	// all subsequent IBC NFT class creation.
+	nftStore := sdkCtx.KVStore(app.keys[nfttypes.StoreKey])
+	nftStore.Delete(nfttypes.KeyDenomName(""))
+
+	sdkCtx.Logger().Info("upgrade completed",
+		"plan", plan.Name,
+		"version_map", m)
+
+	return m, nil
+}
+
+func (app *ChainApp) v7StoreLoader(planName string, upgradeInfo upgradetypes.Plan) {
 	if upgradeInfo.Name == planName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
@@ -101,6 +102,167 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
 		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
 	}
+}
+
+func (app *ChainApp) registerV7UpgradeHandler() {
+	planName := "v7.0.0"
+
+	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		return app.v7UpgradeHandler(ctx, plan, fromVM)
+	})
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+	app.v7StoreLoader(planName, upgradeInfo)
+}
+
+func (app *ChainApp) v8TestnetUpgradeHandler(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	sdkCtx.Logger().Info("v8-testnet: running module migrations...")
+	m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
+	if err != nil {
+		return map[string]uint64{}, err
+	}
+
+	// Purge lifecycle state; Params + Tiers bytes survive under their
+	// unchanged proto shapes.
+	sdkCtx.Logger().Info("v8-testnet: purging pre-v8 tieredrewards lifecycle state...")
+	counts, err := tieredrewardsv8.PurgeOldTieredRewardsState(sdkCtx, app.keys[tieredrewardstypes.StoreKey], tieredrewardsv8.StateToPurge())
+	if err != nil {
+		return map[string]uint64{}, fmt.Errorf("v8 tieredrewards purge: %w", err)
+	}
+	sdkCtx.Logger().Info("v8-testnet: tieredrewards purge completed", "deletions_per_prefix", counts)
+
+	// Unwind the pre-v8 shared-pool delegator residue: undelegate every
+	// delegation at the pool address, sweep loose bank balance to the
+	// testnet burn address. Matured unbondings post-upgrade land back at
+	// the pool and stay trapped there — acceptable on testnet.
+	if err := sweepOldTierModuleResidualsTestnet(sdkCtx, app); err != nil {
+		return map[string]uint64{}, fmt.Errorf("v8 testnet residual sweep: %w", err)
+	}
+
+	sdkCtx.Logger().Info("v8-testnet: upgrade completed", "plan", plan.Name, "version_map", m)
+	return m, nil
+}
+
+// registerV8UpgradeHandler registers two plan names:
+//
+//   - "v8.0.0-testnet": testnet previously ran v7 and accrued pre-v8
+//     tieredrewards state (positions / mappings / ratio entries / events)
+//     plus staking+bank residue at the shared tier module account. The
+//     testnet handler purges the lifecycle state (keeping Params and Tiers
+//     bytes, whose proto shapes are unchanged) and sweeps the staking+bank
+//     residue to the testnet burn address.
+//
+//   - "v8.0.0" (mainnet): mainnet skipped v7, so v8 is the mainnet
+//     introduction of the tieredrewards module. This handler does the work
+//     v7 would have done — inflation/mint updates, NFT denom-name index
+//     fix, initial tieredrewards params + default tiers — and refuses to
+//     run if it finds any pre-existing tieredrewards positions (sign that
+//     v7 was deployed to mainnet and a proper migration is required
+//     instead of a fresh init).
+//
+// Store-upgrade wiring at the bottom of this function adds the
+// tieredrewards and inflation store keys only when the mainnet plan runs.
+func (app *ChainApp) registerV8UpgradeHandler() {
+	testnetPlan := "v8.0.0-testnet"
+	mainnetPlan := "v8.0.0"
+
+	app.UpgradeKeeper.SetUpgradeHandler(testnetPlan, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		return app.v8TestnetUpgradeHandler(ctx, plan, fromVM)
+	})
+
+	app.UpgradeKeeper.SetUpgradeHandler(mainnetPlan, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		// Guard: mainnet must not have pre-v8 tieredrewards positions. If
+		// any exist, v7 was deployed to mainnet and users staked into the
+		// legacy shared-pool model — aborting instead of wiping protects
+		// their funds and signals that a proper migration is needed.
+		hasLegacyPositions, err := anyTieredRewardsPositions(ctx, app)
+		if err != nil {
+			return map[string]uint64{}, err
+		}
+		if hasLegacyPositions {
+			return map[string]uint64{}, fmt.Errorf("v8 mainnet: pre-v8 tieredrewards positions exist; refusing to fresh-init — migrate before retrying")
+		}
+
+		// Mainnet skipped v7, so v8 runs the exact v7 upgrade path:
+		// module migrations, inflation/mint updates, tieredrewards init,
+		// default tiers, and the NFT denom-name index fix.
+		return app.v7UpgradeHandler(ctx, plan, fromVM)
+	})
+
+	// Store-upgrade wiring: mainnet v8 is the first time the tieredrewards
+	// and inflation stores exist. Testnet already has them from v7, so
+	// nothing to add there. Reuses v7StoreLoader for consistency — same
+	// Added set, same plan-name + !IsSkipHeight guard.
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+	app.v7StoreLoader(mainnetPlan, upgradeInfo)
+}
+
+// sweepOldTierModuleResidualsTestnet unwinds pre-v8 staking and bank state
+// held by the tier module account. Called only from the v8-testnet handler.
+//
+//  1. Undelegate every delegation the pool address still holds. Funds enter
+//     the staking unbonding queue and eventually mature back to the pool
+//     account — at which point they stay trapped (no path out post-v8 without
+//     manual intervention). Accepted on testnet.
+//  2. Sweep any loose bank balance at the pool to the testnet burn address.
+func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
+	poolAddr := app.AccountKeeper.GetModuleAddress(tieredrewardstypes.ModuleName)
+	if poolAddr == nil {
+		return fmt.Errorf("tieredrewards module account missing")
+	}
+
+	burnAddr, err := sdk.AccAddressFromBech32(testnetBurnAddress)
+	if err != nil {
+		return fmt.Errorf("parse testnet burn addr: %w", err)
+	}
+
+	delegations, err := app.StakingKeeper.GetDelegatorDelegations(ctx, poolAddr, 1000)
+	if err != nil {
+		return fmt.Errorf("get pool delegations: %w", err)
+	}
+	for _, d := range delegations {
+		valAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
+		if err != nil {
+			return fmt.Errorf("parse validator %s: %w", d.ValidatorAddress, err)
+		}
+		if _, _, _, err := app.StakingKeeper.Undelegate(ctx, poolAddr, valAddr, d.Shares); err != nil {
+			ctx.Logger().Error("v8-testnet: pool undelegate failed",
+				"validator", d.ValidatorAddress, "shares", d.Shares.String(), "err", err)
+			continue
+		}
+		ctx.Logger().Info("v8-testnet: pool undelegated",
+			"validator", d.ValidatorAddress, "shares", d.Shares.String())
+	}
+
+	bal := app.BankKeeper.GetAllBalances(ctx, poolAddr)
+	if bal.IsZero() {
+		ctx.Logger().Info("v8-testnet: pool bank balance empty, nothing to sweep")
+		return nil
+	}
+	if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, tieredrewardstypes.ModuleName, burnAddr, bal); err != nil {
+		return fmt.Errorf("sweep pool to burn addr: %w", err)
+	}
+	ctx.Logger().Info("v8-testnet: pool bank balance swept to burn addr", "amount", bal.String(), "burn_addr", burnAddr.String())
+	return nil
+}
+
+// anyTieredRewardsPositions returns true if the Positions collection has any
+// entry. Used by the mainnet v8 handler as a safety guard.
+func anyTieredRewardsPositions(ctx context.Context, app *ChainApp) (bool, error) {
+	var found bool
+	err := app.TieredRewardsKeeper.Positions.Walk(ctx, nil, func(_ uint64, _ tieredrewardstypes.Position) (bool, error) {
+		found = true
+		return true, nil // stop the walk
+	})
+	return found, err
 }
 
 func initInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
@@ -123,7 +285,7 @@ func initInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
 		}
 	case strings.Contains(chainID, "testnet"):
 		inflationParams.BurnedAddresses = []string{
-			"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+			testnetBurnAddress,
 		}
 	default:
 		return fmt.Errorf("unknown upgrade chain ID: %s", chainID)
