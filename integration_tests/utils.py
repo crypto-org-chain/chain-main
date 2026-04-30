@@ -526,6 +526,28 @@ def query_command(cli, *k_options, i=0, **kv_options):
     )
 
 
+def query_module_address(cluster, module_name):
+    rsp = query_command(cluster, "auth", "module-account", module_name)
+    return rsp["account"]["value"]["address"]
+
+
+def query_delegations(cluster, delegator_addr):
+    rsp = query_command(cluster, "staking", "delegations", delegator_addr)
+    return rsp.get("delegation_responses") or []
+
+
+def query_balances(cluster, addr):
+    rsp = query_command(cluster, "bank", "balances", addr)
+    return rsp.get("balances") or []
+
+
+def query_staking_delegation(cluster, delegator_addr, validator_addr):
+    rsp = query_command(
+        cluster, "staking", "delegation", delegator_addr, validator_addr
+    )
+    return rsp["delegation_response"]
+
+
 def query_block_info(cli, height, i=0):
     return json.loads(
         cli.cosmos_cli(i).raw(
