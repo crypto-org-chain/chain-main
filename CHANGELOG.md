@@ -22,7 +22,7 @@
 - [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
 - [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
 - [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
-- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
+- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface mismatch.
 - [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
 - [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
