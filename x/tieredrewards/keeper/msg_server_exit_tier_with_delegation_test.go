@@ -368,16 +368,13 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated())
 
-	// The position's DelegatedShares must match what the module actually has
-	// for this position. Query the module's total delegation on the validator.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	posDelAddr := sdk.MustAccAddressFromBech32(posAfter.DelegatorAddress)
+	posStakingDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
-	// Module delegation includes only this position (single position on this validator).
-	s.Require().True(posAfter.DelegatedShares.Equal(moduleDel.Shares),
-		"position DelegatedShares (%s) must equal module's actual delegation shares (%s)",
-		posAfter.DelegatedShares, moduleDel.Shares)
+	s.Require().True(posAfter.DelegatedShares.Equal(posStakingDel.Shares),
+		"position DelegatedShares (%s) must equal actual delegation shares (%s)",
+		posAfter.DelegatedShares, posStakingDel.Shares)
 
 	// A subsequent full exit (TierUndelegate) using the stored shares must succeed.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{

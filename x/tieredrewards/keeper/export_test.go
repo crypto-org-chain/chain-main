@@ -78,12 +78,12 @@ func (k Keeper) DecreasePositionCountForValidator(ctx context.Context, valAddr s
 	return k.decreasePositionCountForValidator(ctx, valAddr)
 }
 
-func (k Keeper) TransferDelegationToTierOld(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
-	return k.transferDelegationToTierOld(ctx, delegatorAddr, validatorAddr, amount)
-}
-
 func (k Keeper) TransferDelegationFromPosition(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	return k.transferDelegationFromPosition(ctx, pos, valAddr, amount)
+}
+
+func (k Keeper) TransferDelegationToPosition(ctx context.Context, owner string, posDelAddr sdk.AccAddress, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
+	return k.transferDelegationToPosition(ctx, owner, posDelAddr, validatorAddr, amount)
 }
 
 func (k Keeper) GetVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
@@ -98,8 +98,8 @@ func (k Keeper) GetAuthority() string {
 	return k.getAuthority()
 }
 
-func (k Keeper) LockFunds(ctx context.Context, owner string, amount math.Int) error {
-	return k.lockFundsOld(ctx, owner, amount)
+func (k Keeper) LockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
+	return k.lockFunds(ctx, ownerAddr, delAddr, amount)
 }
 
 func (k Keeper) CreatePosition(

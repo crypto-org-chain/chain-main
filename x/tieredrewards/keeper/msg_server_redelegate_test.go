@@ -371,7 +371,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -450,7 +450,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)

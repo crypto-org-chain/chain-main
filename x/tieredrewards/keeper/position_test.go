@@ -348,7 +348,7 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 
 	delegation := types.Delegation{
 		Validator:    valAddr.String(),
@@ -380,7 +380,7 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 
 	delegation := types.Delegation{
 		Validator:    valAddr.String(),
@@ -409,7 +409,7 @@ func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(100_000))
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 	delegation := types.Delegation{
 		Validator:    valAddr.String(),
 		Shares:       sdkmath.LegacyNewDec(1000),
@@ -418,7 +418,7 @@ func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 	pos1, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 	pos2, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 

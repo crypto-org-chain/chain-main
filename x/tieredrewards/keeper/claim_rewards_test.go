@@ -184,7 +184,6 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	// Position 1: will be undelegated.
 	pos1 := s.setupNewTierPosition(lockAmount, true)
 	addr2 := sdk.MustAccAddressFromBech32(pos1.Owner)
-	pos2OwnerBalanceBefore := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
 
 	pos1Positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr2)
 	s.Require().NoError(err)
@@ -198,6 +197,11 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	})
 	s.Require().NoError(err)
 
+	// Snapshot balance AFTER undelegate (so any unbonding completion that
+	// happened during TierUndelegate is already reflected). Any further
+	// change must come from the tier sweep itself.
+	balBeforeSweep := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
+
 	// Allocate rewards and run tier sweep.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
@@ -206,9 +210,9 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	err = s.keeper.ClaimRewardsAndUpdateTierPositions(s.ctx, 1)
 	s.Require().NoError(err)
 
-	pos2OwnerBalanceAfter := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
-	s.Require().NoError(err)
-	s.Require().True(pos2OwnerBalanceAfter.Equal(pos2OwnerBalanceBefore), "undelegated position should not receive any rewards for the tier sweep")
+	balAfterSweep := s.app.BankKeeper.GetAllBalances(s.ctx, addr2)
+	s.Require().True(balAfterSweep.Equal(balBeforeSweep),
+		"undelegated position should not receive any rewards from the tier sweep")
 }
 
 // After the validator re-bonds, bonus accrual should resume from the new bonded time.

@@ -66,21 +66,6 @@ func (k Keeper) createPosition(
 	return pos, nil
 }
 
-// lockFundsOld locks the desired amount of funds into a position.
-func (k Keeper) lockFundsOld(ctx context.Context, owner string, amount math.Int) error {
-	ownerAddr, err := sdk.AccAddressFromBech32(owner)
-	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-	}
-
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return err
-	}
-
-	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
-}
-
 // lockFunds locks the desired amount of funds into a position.
 func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)

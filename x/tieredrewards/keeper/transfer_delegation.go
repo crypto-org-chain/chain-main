@@ -14,17 +14,6 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// transferDelegationToTierOld transfers delegation shares from a delegator to the tier
-// module on the same validator. The delegator's tokens are unbonded and
-// re-delegated from the module account.
-//
-// Only bonded validators are allowed. Blocks transfer if the delegator has an
-// active incoming redelegation to the validator.
-func (k Keeper) transferDelegationToTierOld(ctx context.Context, delegatorAddr, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
-	poolAddr := k.accountKeeper.GetModuleAddress(types.ModuleName)
-	return k.transferDelegationToPosition(ctx, delegatorAddr, poolAddr, validatorAddr, amount)
-}
-
 // transferDelegationToPosition transfers delegation shares from
 // the original owner to a position's delegation address on the same validator.
 // Shares are unbonded at the source and re-delegated from the destination
