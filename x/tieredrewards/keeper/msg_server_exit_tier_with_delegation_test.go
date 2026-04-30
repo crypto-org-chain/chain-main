@@ -425,6 +425,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Slash 10% to create a non-1:1 exchange rate.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -463,10 +464,9 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(del.Shares.IsPositive())
 
-	// Module should have no remaining delegation on this validator.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
-	s.Require().Error(err, "module delegation should be fully removed after full exit")
+	// Position's delegator address should have no remaining delegation after full exit.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().Error(err, "position's delegation should be fully removed after full exit")
 }
 
 // TestMsgExitTierWithDelegation_FullExitNearTotalSlash verifies that a full
@@ -481,6 +481,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Slash 99% — position token value goes very low but shares remain.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -517,8 +518,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 	s.Require().NoError(err)
 	s.Require().True(del.Shares.IsPositive())
 
-	// Module should have no remaining delegation.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
-	s.Require().Error(err, "module delegation should be fully removed")
+	// Position's delegator address should have no remaining delegation after full exit.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().Error(err, "position's delegation should be fully removed after full exit")
 }
