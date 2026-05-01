@@ -716,7 +716,11 @@ def test_manual_export(export_cluster):
     for i in range(cluster.nodes_len()):
         migrate_genesis_time(cluster, i)
         cluster.validate_genesis()
-        cluster.cosmos_cli(i).unsaferesetall()
+        # Modern chain-maind moved `unsafe-reset-all` under the `comet`
+        # subcommand; pystarport's unsaferesetall() wrapper still calls
+        # the old top-level form.
+        cli = cluster.cosmos_cli(i)
+        cli.raw("comet", "unsafe-reset-all", home=cli.data_dir)
 
     cluster.supervisor.startAllProcesses()
 
