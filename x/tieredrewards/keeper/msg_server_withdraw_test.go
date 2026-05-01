@@ -660,3 +660,55 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
+
+// TestMsgWithdrawFromTier_SweepsNonBondDenomDust verifies that anything stray
+// left on the position's delegator account — not just the bond denom principal —
+// is swept to the owner on withdrawal. Dust of this kind shouldn't occur in
+// practice (rewards route to the owner; staking only moves bondDenom), but
+// WithdrawFromTier is defensively tolerant so no denom gets orphaned.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_SweepsNonBondDenomDust() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	s.completeStakingUnbonding(valAddr, posDelAddr)
+
+	// Inject dust of an arbitrary denom directly onto the position's delegator
+	// account, simulating stray coins that ended up there.
+	dustDenom := "dust"
+	dustAmount := sdkmath.NewInt(777)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, posDelAddr,
+		sdk.NewCoins(sdk.NewCoin(dustDenom, dustAmount))))
+
+	dustBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount),
+		"response should report the bond-denom principal")
+	s.Require().True(resp.Amount.AmountOf(dustDenom).Equal(dustAmount),
+		"response should report swept dust of any denom")
+
+	dustAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+	s.Require().True(dustAfter.Amount.Equal(dustBefore.Amount.Add(dustAmount)),
+		"owner should have received the dust too")
+
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
+		"position's delegator account should be empty after sweep")
+}

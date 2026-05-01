@@ -9,6 +9,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
@@ -521,4 +522,47 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 	// Position's delegator address should have no remaining delegation after full exit.
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().Error(err, "position's delegation should be fully removed after full exit")
+}
+
+// TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDust verifies that
+// stray coins on the position's delegator account are swept to the owner when
+// a full exit deletes the position. Dust shouldn't exist in practice (delegation
+// transfer moves shares, not coins; rewards route to the owner), but the
+// handler is defensively tolerant.
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDust() {
+	lockAmount := sdkmath.NewInt(10000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+
+	// Inject dust directly onto the position's delegator account.
+	dustDenom := "dust"
+	dustAmount := sdkmath.NewInt(123)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, posDelAddr,
+		sdk.NewCoins(sdk.NewCoin(dustDenom, dustAmount))))
+
+	dustBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+
+	tokenValue, err := s.keeper.PositionTokenValue(s.ctx, pos)
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     tokenValue,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.FullExit, "full exit expected")
+
+	dustAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+	s.Require().True(dustAfter.Amount.Equal(dustBefore.Amount.Add(dustAmount)),
+		"owner should have received the dust on full exit sweep")
+
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
+		"position's delegator account should be empty after sweep")
 }
