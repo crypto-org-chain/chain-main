@@ -298,15 +298,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
 
-    # v2 upgrade
-    target_height = cluster.block_height() + 8
-    upgrade(
-        cluster,
-        "v2.0.0",
-        target_height,
-        gte_cosmos_sdk_v0_46=False,
-        broadcast_mode="block",
-    )
     cli = cluster.cosmos_cli()
 
     [validator1_operator_address, validator2_operator_address] = list(
@@ -350,62 +341,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         wait_tx=False,
         broadcast_mode="block",
     )
-
-    signer1_address = cluster.address("reserve", i=0)
-    staking_validator1 = cluster.validator(validator1_operator_address, i=0)
-    assert validator1_operator_address == staking_validator1["operator_address"]
-    staking_validator2 = cluster.validator(validator2_operator_address, i=1)
-    assert validator2_operator_address == staking_validator2["operator_address"]
-    old_bonded = cluster.staking_pool()
-    rsp = cluster.delegate_amount(
-        validator1_operator_address,
-        "2009999498basecro",
-        signer1_address,
-        0,
-        "0.025basecro",
-        event_query_tx=False,
-        broadcast_mode="block",
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    assert cluster.staking_pool() == old_bonded + 2009999498
-    rsp = cluster.delegate_amount(
-        validator2_operator_address,
-        "1basecro",
-        signer1_address,
-        0,
-        "0.025basecro",
-        event_query_tx=False,
-        broadcast_mode="block",
-    )
-    # vesting bug
-    assert rsp["code"] != 0, rsp["raw_log"]
-    assert cluster.staking_pool() == old_bonded + 2009999498
-
-    # v3 upgrade
-    target_height = cluster.block_height() + 8
-    upgrade(
-        cluster,
-        "v3.0.0",
-        target_height,
-        gte_cosmos_sdk_v0_46=False,
-        broadcast_mode="block",
-    )
-
-    rsp = cluster.delegate_amount(
-        validator2_operator_address,
-        "1basecro",
-        signer1_address,
-        0,
-        "0.025basecro",
-        event_query_tx=False,
-        broadcast_mode="block",
-    )
-    # vesting bug fixed
-    assert rsp["code"] == 0, rsp["raw_log"]
-    assert cluster.staking_pool() == old_bonded + 2009999499
-
-    assert_commission(validator1_operator_address, "0.000000000000000000")
-    assert_commission(validator2_operator_address, default_rate)
 
     # create denom before upgrade
     cli = cluster.cosmos_cli()
