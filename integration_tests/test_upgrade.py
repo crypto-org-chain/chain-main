@@ -280,14 +280,7 @@ def upgrade(
     wait_for_block(cluster, target_height + 2, 600)
 
 
-@pytest.mark.skip(
-    reason="full v1→v7 upgrade path; requires genesis=v1.1.0 in upgrade-test.nix. "
-    "Use test_manual_upgrade_from_v5 for CI."
-)
-def test_manual_upgrade_all(cosmovisor_cluster):
-    # test_manual_upgrade(cosmovisor_cluster)
-    cluster = cosmovisor_cluster
-    # use the normal binary first
+def _cosmovisor_initial_setup(cluster):
     edit_chain_program(
         cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
@@ -299,8 +292,91 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     cluster.reload_supervisor()
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
-    # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
+
+
+def _run_v6_to_v7_upgrades(cluster):
+    cli = cluster.cosmos_cli()
+    # v6 upgrade
+    target_height = cluster.block_height() + 15
+    gov_param_before_v6 = cli.query_params("gov")
+    consensus_block_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "BlockParams")
+    )
+    consensus_evidence_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "EvidenceParams")
+    )
+    consensus_validator_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "ValidatorParams")
+    )
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
+    cli = cluster.cosmos_cli()
+    with pytest.raises(AssertionError):
+        cli.query_params("icaauth")
+    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
+
+    ibc_client_params = json.loads(
+        cli.raw(
+            "query",
+            "ibc",
+            "client",
+            "params",
+            output="json",
+            node=cli.node_rpc,
+        )
+    )
+    assert ibc_client_params == {
+        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
+    }
+
+    consensus_params = cli.query_params("consensus")
+    block_params = consensus_params["block"]
+    evidence_params = consensus_params["evidence"]
+    validator_params = consensus_params["validator"]
+
+    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
+    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
+
+    assert (
+        evidence_params["max_age_num_blocks"]
+        == consensus_evidence_param_before_v6["max_age_num_blocks"]
+    )
+    assert (
+        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
+    )
+
+    max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
+    max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
+    max_age_duration_hours = max_age_duration_seconds // 3600
+    max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
+    max_age_duration_seconds = max_age_duration_seconds % 60
+    expected_duration = (
+        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
+        f"{max_age_duration_seconds}s"
+    )
+    assert evidence_params["max_age_duration"] == expected_duration
+
+    assert (
+        validator_params["pub_key_types"]
+        == consensus_validator_param_before_v6["pub_key_types"]
+    )
+
+    assert_v6_circuit_is_working(cli, cluster)
+
+    # v7 upgrade
+    propose_n_execute_v7_upgrade(cluster)
+    assert_v7_inflation_module_is_working(cluster)
+    assert_v7_tieredrewards_working(cluster)
+
+
+@pytest.mark.skip(
+    reason="full v1→v7 upgrade path; requires genesis=v1.1.0 in upgrade-test.nix. "
+    "Use test_manual_upgrade_from_v5 for CI."
+)
+def test_manual_upgrade_all(cosmovisor_cluster):
+    # test_manual_upgrade(cosmovisor_cluster)
+    cluster = cosmovisor_cluster
+    _cosmovisor_initial_setup(cluster)
 
     # v2 upgrade
     target_height = cluster.block_height() + 15
@@ -507,215 +583,14 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_max"] == "0.010000000000000000"
     assert params["inflation_min"] == "0.008500000000000000"
 
-    # v6 upgrade
-    target_height = cluster.block_height() + 15
-    gov_param_before_v6 = cli.query_params("gov")
-    consensus_block_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "BlockParams")
-    )
-    consensus_evidence_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "EvidenceParams")
-    )
-    consensus_validator_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "ValidatorParams")
-    )
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
-    cli = cluster.cosmos_cli()
-    with pytest.raises(AssertionError):
-        cli.query_params("icaauth")
-    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
-
-    # assert IBC client has localhost client type appended
-    ibc_client_params = json.loads(
-        cli.raw(
-            "query",
-            "ibc",
-            "client",
-            "params",
-            output="json",
-            node=cli.node_rpc,
-        )
-    )
-    assert ibc_client_params == {
-        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
-    }
-
-    # assert consensus params are migrated
-    consensus_params = cli.query_params("consensus")
-    block_params = consensus_params["block"]
-    evidence_params = consensus_params["evidence"]
-    validator_params = consensus_params["validator"]
-
-    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
-    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
-
-    assert (
-        evidence_params["max_age_num_blocks"]
-        == consensus_evidence_param_before_v6["max_age_num_blocks"]
-    )
-    assert (
-        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
-    )
-
-    max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
-    max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
-    max_age_duration_hours = max_age_duration_seconds // 3600
-    max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
-    max_age_duration_seconds = max_age_duration_seconds % 60
-    expected_duration = (
-        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
-        f"{max_age_duration_seconds}s"
-    )
-    assert evidence_params["max_age_duration"] == expected_duration
-
-    assert (
-        validator_params["pub_key_types"]
-        == consensus_validator_param_before_v6["pub_key_types"]
-    )
-
-    assert_v6_circuit_is_working(cli, cluster)
-
-    # v7 upgrade
-    propose_n_execute_v7_upgrade(cluster)
-
-    # test v7 inflation module is working
-    assert_v7_inflation_module_is_working(cluster)
-
-    # test v7 tieredrewards is working
-    assert_v7_tieredrewards_working(cluster)
+    _run_v6_to_v7_upgrades(cluster)
 
 
 def test_manual_upgrade_from_v5(cosmovisor_cluster):
-    """
-    Upgrade path: v5 (genesis) → v6 → v7.
-    Used for CI; faster than the full v1→v7 path in test_manual_upgrade_all.
-    upgrade-test.nix must have genesis=released5_0 (v5.0.0).
-    """
+    """v5 (genesis) → v6 → v7 CI test. upgrade-test.nix: genesis=released5_0."""
     cluster = cosmovisor_cluster
-    # use the normal binary first
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
-            f"--home %(here)s/node{i}"
-        },
-    )
-    cluster.reload_supervisor()
-    time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
-    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
-    # wait for a new block to make sure chain started up
-    wait_for_new_blocks(cluster, 1)
-
-    cli = cluster.cosmos_cli()
-
-    [validator1_operator_address, validator2_operator_address] = list(
-        map(
-            lambda i: i["operator_address"],
-            sorted(
-                cluster.validators(),
-                key=lambda i: i["commission"]["commission_rates"]["rate"],
-            ),
-        ),
-    )
-    default_rate = "0.100000000000000000"
-
-    def assert_commission(adr, expected):
-
-        rsp = json.loads(
-            cli.raw(
-                "query",
-                "staking",
-                "validator",
-                f"{adr}",
-                home=cli.data_dir,
-                node=cli.node_rpc,
-                output="json",
-            )
-        )
-        rate = rsp["commission"]["commission_rates"]["rate"]
-        print(f"{adr} commission", rate)
-        # assert rate == expected, rsp
-
-    assert_commission(validator1_operator_address, "0.000000000000000000")
-    assert_commission(validator2_operator_address, default_rate)
-
-    # v6 upgrade
-    target_height = cluster.block_height() + 15
-    gov_param_before_v6 = cli.query_params("gov")
-    consensus_block_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "BlockParams")
-    )
-    consensus_evidence_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "EvidenceParams")
-    )
-    consensus_validator_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "ValidatorParams")
-    )
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
-    cli = cluster.cosmos_cli()
-    with pytest.raises(AssertionError):
-        cli.query_params("icaauth")
-    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
-
-    # assert IBC client has localhost client type appended
-    ibc_client_params = json.loads(
-        cli.raw(
-            "query",
-            "ibc",
-            "client",
-            "params",
-            output="json",
-            node=cli.node_rpc,
-        )
-    )
-    assert ibc_client_params == {
-        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
-    }
-
-    # assert consensus params are migrated
-    consensus_params = cli.query_params("consensus")
-    block_params = consensus_params["block"]
-    evidence_params = consensus_params["evidence"]
-    validator_params = consensus_params["validator"]
-
-    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
-    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
-
-    assert (
-        evidence_params["max_age_num_blocks"]
-        == consensus_evidence_param_before_v6["max_age_num_blocks"]
-    )
-    assert (
-        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
-    )
-
-    max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
-    max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
-    max_age_duration_hours = max_age_duration_seconds // 3600
-    max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
-    max_age_duration_seconds = max_age_duration_seconds % 60
-    expected_duration = (
-        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
-        f"{max_age_duration_seconds}s"
-    )
-    assert evidence_params["max_age_duration"] == expected_duration
-
-    assert (
-        validator_params["pub_key_types"]
-        == consensus_validator_param_before_v6["pub_key_types"]
-    )
-
-    assert_v6_circuit_is_working(cli, cluster)
-
-    # v7 upgrade
-    propose_n_execute_v7_upgrade(cluster)
-
-    # test v7 inflation module is working
-    assert_v7_inflation_module_is_working(cluster)
-
-    # test v7 tieredrewards is working
-    assert_v7_tieredrewards_working(cluster)
+    _cosmovisor_initial_setup(cluster)
+    _run_v6_to_v7_upgrades(cluster)
 
 
 def assert_v7_inflation_module_is_working(cluster):
