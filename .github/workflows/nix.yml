@@ -59,7 +59,7 @@ jobs:
             default.nix
             nix/**
             integration_tests/test_upgrade.py
-            integration_tests/upgrade-test.nix
+            integration_tests/upgrade-tests.nix
             integration_tests/configs/cosmovisor.jsonnet
             Makefile
             .github/workflows/nix.yml
@@ -94,10 +94,10 @@ jobs:
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
       - name: Build upgrade test binaries (push v5/v6/v7 to cachix)
         if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
-        run: nix-build integration_tests/upgrade-test.nix -o /tmp/upgrade-test
+        run: nix-build integration_tests/upgrade-tests.nix -A fast -o /tmp/upgrade-test
       - name: Build full upgrade test binaries v1-v7 (push to cachix)
         if: github.event_name != 'pull_request'
-        run: nix-build integration_tests/upgrade-test-all.nix -o /tmp/upgrade-test-all
+        run: nix-build integration_tests/upgrade-tests.nix -A all -o /tmp/upgrade-test-all
 
   test:
     runs-on: ubuntu-latest

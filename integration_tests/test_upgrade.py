@@ -40,7 +40,7 @@ def edit_chain_program(chain_id, ini_path, callback):
         ini.write(fp)
 
 
-def init_cosmovisor(data, nix_file="upgrade-test.nix"):
+def init_cosmovisor(data, attr="fast"):
     """
     build and setup cosmovisor directory structure in devnet's data directory
     """
@@ -49,7 +49,9 @@ def init_cosmovisor(data, nix_file="upgrade-test.nix"):
     subprocess.run(
         [
             "nix-build",
-            Path(__file__).parent / nix_file,
+            Path(__file__).parent / "upgrade-tests.nix",
+            "-A",
+            attr,
             "-o",
             cosmovisor / "upgrades",
         ],
@@ -114,12 +116,12 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-# Full v1→v7 upgrade path; uses upgrade-test-all.nix (genesis=v1.1.0).
+# Full v1→v7 upgrade path; uses upgrade-tests.nix -A all (genesis=v1.1.0).
 @pytest.fixture(scope="function")
 def cosmovisor_cluster_full(worker_index, pytestconfig, tmp_path_factory):
     "cosmovisor cluster with genesis=v1.1.0 for the full v1→v7 upgrade test"
     data = tmp_path_factory.mktemp("data")
-    init_cosmovisor(data, nix_file="upgrade-test-all.nix")
+    init_cosmovisor(data, attr="all")
     yield from cluster_fixture(
         Path(__file__).parent / "configs/cosmovisor.jsonnet",
         worker_index,
@@ -598,7 +600,7 @@ def test_manual_upgrade_all(cosmovisor_cluster_full):
 
 
 def test_manual_upgrade_from_v5(cosmovisor_cluster):
-    """v5 (genesis) → v6 → v7 CI test. upgrade-test.nix: genesis=released5_0."""
+    """v5 (genesis) → v6 → v7 CI test. upgrade-tests.nix -A fast: genesis=released5_0."""
     cluster = cosmovisor_cluster
     _cosmovisor_initial_setup(cluster)
     _run_v6_to_v7_upgrades(cluster)
