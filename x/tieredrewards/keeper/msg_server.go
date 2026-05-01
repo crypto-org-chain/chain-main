@@ -604,8 +604,8 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	if err != nil {
 		return nil, err
 	}
-	
-	// sweep all balances from the per-position account to the owner address
+
+	// sweep all balances from position's delegator to the owner
 	balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
 	if !balances.IsZero() {
 		if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, balances); err != nil {
@@ -674,9 +674,28 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 	fullExit := pos.ExitWithFullDelegation(msg.Amount, tokenValue)
 
 	if fullExit {
+		// sweep all balances from position's delegator to the owner
+		ownerAddr, err := sdk.AccAddressFromBech32(msg.Owner)
+		if err != nil {
+			return nil, err
+		}
+
+		delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
+		if !balances.IsZero() {
+			if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, balances); err != nil {
+				return nil, err
+			}
+		}
+
 		if err := ms.deletePosition(ctx, pos); err != nil {
 			return nil, err
 		}
+
 	} else {
 		remainingShares := pos.DelegatedShares.Sub(unbondedShares)
 		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
