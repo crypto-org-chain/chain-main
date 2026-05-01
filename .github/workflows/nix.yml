@@ -74,6 +74,7 @@ jobs:
   prepare:
     name: Prepare nix store (build chain-maind-test, push to cachix)
     runs-on: ubuntu-latest
+    needs: [changes]
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -92,6 +93,7 @@ jobs:
       - name: Build integration test shell (chain-maind-test + deps)
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
       - name: Build upgrade test binaries (push v5/v6/v7 to cachix)
+        if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
         run: nix-build integration_tests/upgrade-test.nix -o /tmp/upgrade-test
 
   test:
@@ -161,53 +163,38 @@ jobs:
   test-upgrade-manual:
     runs-on: ubuntu-latest
     needs: [prepare, changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
     steps:
-      - name: Check if upgrade test should run
-        id: gate
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ needs.changes.outputs.upgrade }}" = "true" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping test-upgrade-manual — no upgrade-relevant paths changed"
-          fi
       - name: Create more disk space
-        if: steps.gate.outputs.run == 'true'
         run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: steps.gate.outputs.run == 'true'
         with:
           submodules: true
       - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
-        if: steps.gate.outputs.run == 'true'
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
-        if: steps.gate.outputs.run == 'true'
         with:
           name: crypto-com
       - name: Run integration tests
-        if: steps.gate.outputs.run == 'true'
         run: make nix-integration-test-upgrade-manual
       - name: Convert coverage data
-        if: steps.gate.outputs.run == 'true'
         run: |
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        if: steps.gate.outputs.run == 'true'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./profile.txt
           flags: integration_tests_upgrade_manual
       - name: Tar debug files
-        if: failure() && steps.gate.outputs.run == 'true'
+        if: failure()
         run: tar cfz debug_files_upgrade_manual.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure() && steps.gate.outputs.run == 'true'
+        if: failure()
         with:
           name: debug_files_upgrade_manual
           path: debug_files_upgrade_manual.tar.gz
@@ -216,53 +203,38 @@ jobs:
   test-upgrade-cancel-export:
     runs-on: ubuntu-latest
     needs: [prepare, changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
     steps:
-      - name: Check if upgrade test should run
-        id: gate
-        run: |
-          if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ needs.changes.outputs.upgrade }}" = "true" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping test-upgrade-cancel-export — no upgrade-relevant paths changed"
-          fi
       - name: Create more disk space
-        if: steps.gate.outputs.run == 'true'
         run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: steps.gate.outputs.run == 'true'
         with:
           submodules: true
       - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
-        if: steps.gate.outputs.run == 'true'
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
-        if: steps.gate.outputs.run == 'true'
         with:
           name: crypto-com
       - name: Run integration tests
-        if: steps.gate.outputs.run == 'true'
         run: make nix-integration-test-upgrade-cancel-export
       - name: Convert coverage data
-        if: steps.gate.outputs.run == 'true'
         run: |
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        if: steps.gate.outputs.run == 'true'
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./profile.txt
           flags: integration_tests_upgrade_cancel_export
       - name: Tar debug files
-        if: failure() && steps.gate.outputs.run == 'true'
+        if: failure()
         run: tar cfz debug_files_upgrade_cancel_export.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure() && steps.gate.outputs.run == 'true'
+        if: failure()
         with:
           name: debug_files_upgrade_cancel_export
           path: debug_files_upgrade_cancel_export.tar.gz

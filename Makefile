@@ -304,10 +304,10 @@ nix-integration-test-slow: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow"
 
 nix-integration-test-slow-a: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow -k 'not clear_position'"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow integration_tests/test_slashing.py integration_tests/test_tieredrewards_msgs.py"
 
 nix-integration-test-slow-b: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow -k clear_position"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow integration_tests/test_tieredrewards.py"
 
 nix-integration-test-ibc: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ibc"
