@@ -24,7 +24,7 @@ pkgs.linkFarm "upgrade-test-v7-testnet-package" [
     path = preRewriteV7;
   }
   {
-    name = "v7.0.0-testnet";
+    name = "v7.1.0-testnet";
     path = current;
   }
 ]

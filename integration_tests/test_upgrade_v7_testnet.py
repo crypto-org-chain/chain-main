@@ -1,10 +1,10 @@
 """
-v7.0.0-testnet upgrade integration test.
-This test can be removed once testnet is upgraded to v7.0.0-testnet
+v7.1.0-testnet upgrade integration test.
+This test can be removed once testnet is upgraded to v7.1.0-testnet
 
 Purpose
 -------
-Verify the `v7.0.0-testnet` upgrade handler correctly:
+Verify the `v7.1.0-testnet` upgrade handler correctly:
 
   1. Purges pre-rewrite tieredrewards lifecycle state (positions,
      secondary indexes, mappings, validator events, counters, retired
@@ -27,7 +27,7 @@ Flow
      (shared-pool tieredrewards model).
   2. Seed pre-rewrite state with the old binary: several LockTier calls
      (pure locked, locked-with-trigger-exit, redelegated).
-  3. Submit + pass a `v7.0.0-testnet` gov upgrade proposal.
+  3. Submit + pass a `v7.1.0-testnet` gov upgrade proposal.
   4. At the halt height, cosmovisor swaps to the post-rewrite binary.
   5. Assert: seeded positions are gone, mappings/events are gone, module
      account has no active delegations, Tiers are intact.
@@ -39,7 +39,7 @@ Nix
 Uses `integration_tests/upgrade-test-v7-testnet.nix`, which pins two
 binaries:
   - `genesis`           = pre-rewrite binary (commit before this PR)
-  - `v7.0.0-testnet`    = current branch
+  - `v7.1.0-testnet`    = current branch
 
 """
 
@@ -87,7 +87,7 @@ from .utils import (  # noqa: E402
 
 pytestmark = pytest.mark.upgrade
 
-V7_TESTNET_PLAN = "v7.0.0-testnet"
+V7_TESTNET_PLAN = "v7.1.0-testnet"
 
 
 # ──────────────────────────────────────────────
@@ -143,7 +143,7 @@ def _seed_pre_rewrite_state(cluster):
 
     These positions go through pre-rewrite LockTier / TierRedelegate, so
     the underlying staking delegation lives at the shared tieredrewards
-    module account (not a per-position address). The v7.0.0-testnet
+    module account (not a per-position address). The v7.1.0-testnet
     handler must purge these plus sweep the module-account residue.
 
     Returns the list of seeded position ids.
@@ -297,7 +297,7 @@ def _propose_and_execute_upgrade(cluster, plan_name):
 
 
 def test_v7_testnet_upgrade_purges_and_resumes(cosmovisor_cluster):
-    """End-to-end: pre-rewrite state seed → v7.0.0-testnet upgrade →
+    """End-to-end: pre-rewrite state seed → v7.1.0-testnet upgrade →
     purge + sweep verified → post-upgrade per-position smoke test."""
     cluster = cosmovisor_cluster
 
@@ -334,7 +334,7 @@ def test_v7_testnet_upgrade_purges_and_resumes(cosmovisor_cluster):
         len(pool_dels_before) > 0
     ), "pre-rewrite binary should have put seeded delegations at module pool"
 
-    # 2. Upgrade to v7.0.0-testnet. Binary swap happens inside this helper.
+    # 2. Upgrade to v7.1.0-testnet. Binary swap happens inside this helper.
     _propose_and_execute_upgrade(cluster, V7_TESTNET_PLAN)
     wait_for_new_blocks(cluster, 2)
 
@@ -406,4 +406,4 @@ def test_v7_testnet_upgrade_purges_and_resumes(cosmovisor_cluster):
         pool_dels_final == []
     ), f"new LockTier must not re-introduce module-pool delegations: {pool_dels_final}"
 
-    print("v7.0.0-testnet upgrade integration test passed")
+    print("v7.1.0-testnet upgrade integration test passed")

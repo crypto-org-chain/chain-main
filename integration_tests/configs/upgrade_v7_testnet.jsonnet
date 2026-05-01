@@ -1,6 +1,6 @@
 local genesis = import 'genesis.jsonnet';
 
-// Chain-id contains "testnet" so the v7.0.0-testnet upgrade handler's
+// Chain-id contains "testnet" so the v7.1.0-testnet upgrade handler's
 // "testnet" branch matches.
 //
 // Both binaries in upgrade-test-v7-testnet.nix are compiled with

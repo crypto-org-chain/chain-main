@@ -1,13 +1,13 @@
 // Package v7testnet is a self-contained quarantine of tieredrewards store
-// key prefixes as they existed at the v7.0.0-testnet upgrade boundary. The
-// v7.0.0-testnet upgrade handler iterates each prefix and purges its keys,
+// key prefixes as they existed at the v7.1.0-testnet upgrade boundary. The
+// v7.1.0-testnet upgrade handler iterates each prefix and purges its keys,
 // wiping pre-rewrite testnet module state before the new per-position-
 // delegator codebase takes over.
 //
 // This package MUST NOT import from x/tieredrewards/types or x/tieredrewards/keeper.
 // Changes to the live types/keys.go after the upgrade ships must not alter the
 // bytes below — they are a frozen record of the on-chain layout at upgrade
-// time. Once testnet has upgraded past v7.0.0-testnet, this package can be
+// time. Once testnet has upgraded past v7.1.0-testnet, this package can be
 // deleted.
 package v7testnet
 
@@ -55,7 +55,7 @@ func AllPrefixes() [][]byte {
 	}
 }
 
-// StateToPurge returns the prefixes the v7.0.0-testnet upgrade handler should
+// StateToPurge returns the prefixes the v7.1.0-testnet upgrade handler should
 // wipe. Excludes Params and Tiers so that operator-configured values survive
 // the upgrade: the Params / Tier proto shapes are unchanged, so their stored
 // bytes decode cleanly under the new code. Everything else (positions,

@@ -28,7 +28,7 @@ import (
 func PurgeOldTieredRewardsState(ctx sdk.Context, storeKey storetypes.StoreKey, prefixes [][]byte) (map[string]int, error) {
 	store := ctx.KVStore(storeKey)
 	counts := make(map[string]int, len(prefixes))
-	logger := ctx.Logger().With("module", "x/tieredrewards", "upgrade", "v7.0.0-testnet")
+	logger := ctx.Logger().With("module", "x/tieredrewards", "upgrade", "v7.1.0-testnet")
 
 	for _, prefix := range prefixes {
 		// Collect keys first, delete after — iterator invalidation otherwise.

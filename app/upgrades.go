@@ -49,12 +49,12 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	app.registerV7TestnetUpgradeHandler()
 }
 
-// registerV7UpgradeHandler registers the "v7.0.0" plan for chains that have
-// not yet run it (mainnet). Testnet has already upgraded past v7.0.0 and will
+// registerV7UpgradeHandler registers the "v7" plan for chains that have
+// not yet run it (mainnet). Testnet has already upgraded past v7 and will
 // not re-run this handler; the testnet migration onto the per-position
 // rewrite is handled by registerV7TestnetUpgradeHandler.
 func (app *ChainApp) registerV7UpgradeHandler() {
-	planName := "v7.0.0"
+	planName := "v7"
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -114,7 +114,7 @@ func (app *ChainApp) registerV7UpgradeHandler() {
 	}
 }
 
-// registerV7TestnetUpgradeHandler registers the "v7.0.0-testnet" plan used to
+// registerV7TestnetUpgradeHandler registers the "v7.1.0-testnet" plan used to
 // migrate testnet from the legacy shared-pool tieredrewards model onto the
 // per-position-delegator rewrite. The handler:
 //
@@ -130,9 +130,9 @@ func (app *ChainApp) registerV7UpgradeHandler() {
 //     on testnet.
 //
 // No store upgrades are wired — the inflation and tieredrewards stores
-// already exist on testnet from the earlier v7.0.0 upgrade.
+// already exist on testnet from the earlier v7 upgrade.
 func (app *ChainApp) registerV7TestnetUpgradeHandler() {
-	planName := "v7.0.0-testnet"
+	planName := "v7.1.0-testnet"
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -160,7 +160,7 @@ func (app *ChainApp) registerV7TestnetUpgradeHandler() {
 }
 
 // sweepOldTierModuleResidualsTestnet unwinds pre-rewrite staking and bank
-// state held by the tier module account. Called only from the v7.0.0-testnet
+// state held by the tier module account. Called only from the v7.1.0-testnet
 // handler.
 //
 //  1. Undelegate every delegation the pool address still holds. Funds enter

@@ -588,7 +588,7 @@ def assert_v7_inflation_module_is_working(cluster):
     expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
     assert rsp["burned_addresses"] == expected_burned_addresses, rsp["burned_addresses"]
 
-    print("v7.0.0 upgrade completed successfully")
+    print("v7 upgrade completed successfully")
 
 
 def assert_v7_tieredrewards_working(cluster):
@@ -633,11 +633,11 @@ def assert_v7_tieredrewards_working(cluster):
 
     wait_for_new_blocks(cluster, 1)
 
-    print("v7.0.0 tieredrewards smoke test passed")
+    print("v7 tieredrewards smoke test passed")
 
 
 def propose_n_execute_v7_upgrade(cluster):
-    plan_name = "v7.0.0"
+    plan_name = "v7"
     target_height = cluster.block_height() + 30
     print("propose v7 upgrade plan at", target_height)
 
@@ -646,8 +646,8 @@ def propose_n_execute_v7_upgrade(cluster):
         "software-upgrade",
         {
             "name": plan_name,
-            "title": "v7.0.0 upgrade",
-            "summary": "Upgrade to v7.0.0 with inflation module",
+            "title": "v7 upgrade",
+            "summary": "Upgrade to v7 with inflation module",
             "upgrade-height": target_height,
             "deposit": "0.1cro",
         },
@@ -671,7 +671,7 @@ def propose_n_execute_v7_upgrade(cluster):
     js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
     js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
     expected = {
-        "name": "v7.0.0",
+        "name": "v7",
         "height": target_height,
     }
     assert js1 == js2
