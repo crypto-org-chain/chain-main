@@ -114,6 +114,19 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
+# Plain cluster using the default (current) chain-maind. Used by
+# test_manual_export to exercise the export → reset → re-import flow
+# without paying the cost of nix-build upgrade-test.nix and the v1.1.0
+# cosmovisor layout, which are irrelevant to what the test validates.
+@pytest.fixture(scope="function")
+def export_cluster(worker_index, tmp_path_factory):
+    yield from cluster_fixture(
+        Path(__file__).parent / "configs/default.jsonnet",
+        worker_index,
+        tmp_path_factory.mktemp("data"),
+    )
+
+
 @pytest.mark.skip(
     reason="CI fail: https://github.com/crypto-org-chain/chain-main/issues/560"
 )
@@ -741,24 +754,14 @@ def test_cancel_upgrade(cluster):
     wait_for_block(cluster, upgrade_height + 2)
 
 
-def test_manual_export(cosmovisor_cluster):
+def test_manual_export(export_cluster):
     """
     - do chain state export, override the genesis time to the genesis file
     - ,and reset the data set
     - see https://github.com/crypto-org-chain/chain-main/issues/289
     """
 
-    cluster = cosmovisor_cluster
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": f"%(here)s/node{i}/cosmovisor/genesis/bin/chain-maind start "
-            f"--home %(here)s/node{i}"
-        },
-    )
-
-    cluster.reload_supervisor()
+    cluster = export_cluster
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     # wait for a new block to make sure chain started up
     wait_for_new_blocks(cluster, 1)
@@ -769,11 +772,6 @@ def test_manual_export(cosmovisor_cluster):
         assert info["statename"] == "STOPPED"
 
     # export the state
-    cluster.cmd = (
-        cluster.data_root
-        / cluster.chain_id
-        / "node0/cosmovisor/genesis/bin/chain-maind"
-    )
     cluster.cosmos_cli(0).export()
 
     # update the genesis time = current time + 5 secs
