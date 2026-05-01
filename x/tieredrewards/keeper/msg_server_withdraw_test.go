@@ -530,8 +530,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.Require().NoError(err)
 
 	// Simulate unbonding slash to zero via hook.
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, pos.Amount)
-	s.Require().NoError(err)
+	s.slashUnbondingEntry(sdk.MustAccAddressFromBech32(pos.DelegatorAddress), valAddr, undelegateResp.UnbondingId, pos.Amount)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -578,8 +577,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 
 	// Simulate 50% unbonding slash via hook.
 	slashAmount := pos.Amount.QuoRaw(2)
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, slashAmount)
-	s.Require().NoError(err)
+	s.slashUnbondingEntry(sdk.MustAccAddressFromBech32(pos.DelegatorAddress), valAddr, undelegateResp.UnbondingId, slashAmount)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
