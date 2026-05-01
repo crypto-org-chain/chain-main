@@ -183,7 +183,7 @@ func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
 		return fmt.Errorf("get staking params: %w", err)
 	}
 	originalMaxEntries := stakingParams.MaxEntries
-	// Temporarily lift the cap by one 
+	// Temporarily lift the cap by one
 	stakingParams.MaxEntries = originalMaxEntries + 1
 	if err := app.StakingKeeper.SetParams(ctx, stakingParams); err != nil {
 		return fmt.Errorf("bump staking MaxEntries: %w", err)
