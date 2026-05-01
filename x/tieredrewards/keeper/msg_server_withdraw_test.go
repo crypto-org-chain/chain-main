@@ -46,7 +46,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 	})
 	s.Require().NoError(err)
 	s.Require().NotNil(resp)
-	s.Require().True(resp.Amount.Amount.Equal(lockAmount),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount),
 		"response should include withdrawn amount")
 
 	// Owner should have received the locked tokens back
@@ -226,7 +226,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.Equal(lockAmount))
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount))
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)),
@@ -360,7 +360,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal amount")
 }
 
@@ -498,7 +498,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_TierCloseOnly_Succeeds() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.IsPositive(),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsPositive(),
 		"withdrawal should return locked tokens")
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -544,7 +544,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.IsZero(),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsZero(),
 		"withdrawn amount should be zero")
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -595,7 +595,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(expectedRemaining.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(expectedRemaining.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal post-slash remainder")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -650,7 +650,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.Equal(addAmount),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(addAmount),
 		"withdrawn amount should equal the 2000 added")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)

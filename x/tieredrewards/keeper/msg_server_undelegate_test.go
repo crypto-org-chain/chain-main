@@ -188,7 +188,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal the SDK return amount")
 }
 

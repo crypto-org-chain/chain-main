@@ -580,11 +580,6 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// sweep all balances from position's delegator to the owner
 	balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
 	if !balances.IsZero() {
@@ -593,8 +588,6 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		}
 	}
 
-	withdraw := sdk.NewCoin(bondDenom, balances.AmountOf(bondDenom))
-
 	if err := ms.deletePosition(ctx, pos); err != nil {
 		return nil, err
 	}
@@ -602,13 +595,13 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
 		Position: pos,
-		Amount:   withdraw,
+		Amount:   balances,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgWithdrawFromTierResponse{
-		Amount: withdraw,
+		Amount: balances,
 	}, nil
 }
 
