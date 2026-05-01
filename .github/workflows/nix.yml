@@ -91,6 +91,8 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
       - name: Build integration test shell (chain-maind-test + deps)
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
+      - name: Build upgrade test binaries (push v5/v6/v7 to cachix)
+        run: nix-build integration_tests/upgrade-test.nix -o /tmp/upgrade-test
 
   test:
     runs-on: ubuntu-latest
