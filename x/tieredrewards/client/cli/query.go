@@ -34,6 +34,11 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryEstimatePositionRewards(),
 		GetCmdQueryVotingPowerByOwner(),
 		GetCmdQueryTotalDelegatedVotingPower(),
+		GetCmdQueryRawTierPosition(),
+		GetCmdQueryRawTierPositionsByOwner(),
+		GetCmdQueryRawAllTierPositions(),
+		GetCmdQueryValidatorData(),
+		GetCmdQueryPositionMappings(),
 	)
 
 	return queryCmd
@@ -246,6 +251,107 @@ func GetCmdQueryTotalDelegatedVotingPower() *cobra.Command {
 		"Query total governance voting power from delegated tier positions",
 		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, _ []string) (proto.Message, error) {
 			return queryClient.TotalDelegatedVotingPower(ctx, &types.QueryTotalDelegatedVotingPowerRequest{})
+		},
+	)
+}
+
+func GetCmdQueryRawTierPosition() *cobra.Command {
+	return newQueryCmd(
+		"raw-position [position-id]",
+		cobra.ExactArgs(1),
+		"Query raw stored position by ID (Amount=0 for delegated positions)",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			positionID, err := parseUint64Arg("position-id", args[0])
+			if err != nil {
+				return nil, err
+			}
+			return queryClient.RawTierPosition(ctx, &types.QueryRawTierPositionRequest{
+				PositionId: positionID,
+			})
+		},
+	)
+}
+
+func GetCmdQueryRawTierPositionsByOwner() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "raw-positions-by-owner [owner]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query raw stored positions for an owner address",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			if _, err := sdk.AccAddressFromBech32(args[0]); err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.RawTierPositionsByOwner(cmd.Context(), &types.QueryRawTierPositionsByOwnerRequest{
+				Owner:      args[0],
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "raw-positions-by-owner")
+	return cmd
+}
+
+func GetCmdQueryRawAllTierPositions() *cobra.Command {
+	cmd := newPaginatedQueryCmd(
+		"raw-positions",
+		"Query all raw stored positions (paginated)",
+		func(ctx context.Context, _ client.Context, cmd *cobra.Command, queryClient types.QueryClient) (proto.Message, error) {
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return nil, err
+			}
+			return queryClient.RawAllTierPositions(ctx, &types.QueryRawAllTierPositionsRequest{
+				Pagination: pageReq,
+			})
+		},
+	)
+	flags.AddPaginationFlagsToCmd(cmd, "raw-positions")
+	return cmd
+}
+
+func GetCmdQueryValidatorData() *cobra.Command {
+	return newQueryCmd(
+		"validator-data [validator]",
+		cobra.ExactArgs(1),
+		"Query validator reward ratio, position count, pending events, and event sequence",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			if _, err := sdk.ValAddressFromBech32(args[0]); err != nil {
+				return nil, err
+			}
+			return queryClient.ValidatorData(ctx, &types.QueryValidatorDataRequest{
+				Validator: args[0],
+			})
+		},
+	)
+}
+
+func GetCmdQueryPositionMappings() *cobra.Command {
+	return newQueryCmd(
+		"position-mappings [position-id]",
+		cobra.ExactArgs(1),
+		"Query unbonding and redelegation ID mappings for a position",
+		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
+			positionID, err := parseUint64Arg("position-id", args[0])
+			if err != nil {
+				return nil, err
+			}
+			return queryClient.PositionMappings(ctx, &types.QueryPositionMappingsRequest{
+				PositionId: positionID,
+			})
 		},
 	)
 }

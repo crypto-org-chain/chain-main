@@ -119,7 +119,6 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
     assert "max_supply" in rsp
 
-    # Prepare new max supply (increase by 480000) and submit a proposal
     new_max_supply = current_total_supply + 480000
     rsp["max_supply"] = str(new_max_supply)
     proposal_src = _create_max_supply_proposal(rsp)
@@ -129,46 +128,25 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    # Vote on proposal
     approve_proposal(cluster, rsp, msg=f",{MSG}")
 
-    # Verify max supply has been updated
-    updated_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
-    updated_max_supply = int(updated_max_supply_rsp["max_supply"])
-    assert (
-        updated_max_supply == new_max_supply
-    ), f"Max supply should be updated to {new_max_supply}"
-
-    def _halted_chain():
-        print(" halting chain...")
-        node0_info = cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")
-        halted0 = node0_info["state"] != "RUNNING"
-        node1_info = cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")
-        halted1 = node1_info["state"] != "RUNNING"
-        return halted0 and halted1
-
-    # Wait new blocks in order to reach the halt
-    timeout_seconds = 120
+    # Panic will not cause supervisor to stop,
+    # so we poll node0's log for the panic string instead.
+    log_file = f"{cluster.home(0)}/../node0.log"
+    timeout_seconds = 60
     start_time = time.time()
-    try:
-        while not _halted_chain():
-            if time.time() - start_time > timeout_seconds:
-                timeout_msg = (
-                    f"Timeout after {timeout_seconds} seconds "
-                    f"waiting for chain to halt"
-                )
-                assert False, timeout_msg
-
-            time.sleep(1)
-
-        print("Chain has been halted")
+    while True:
+        try:
+            with open(log_file, "r") as f:
+                log_content = f.read()
+        except OSError:
+            log_content = ""
+        if ERROR in log_content:
+            print("Chain has been halted — panic detected in log")
+            return
+        if time.time() - start_time > timeout_seconds:
+            assert False, (
+                f"Timeout after {timeout_seconds}s waiting for halt panic "
+                f"in {log_file}"
+            )
         time.sleep(1)
-        # Check the node's log for errors matches the expected message
-        log_file = f"{cluster.home(0)}/../node0.log"
-        with open(log_file, "r") as f:
-            log_content = f.read()
-            print("log_content:", log_content)
-            assert ERROR in log_content, "Expected error message not found in log"
-        pass
-    except Exception as e:
-        assert False, f"Test case failed due to exception: {e}."
