@@ -193,6 +193,7 @@ func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
 		if restoreErr := app.StakingKeeper.SetParams(ctx, stakingParams); restoreErr != nil {
 			ctx.Logger().Error("v7-testnet: failed to restore staking MaxEntries",
 				"original", originalMaxEntries, "err", restoreErr)
+			panic("v7-testnet: failed to restore staking MaxEntries")
 		}
 	}()
 
