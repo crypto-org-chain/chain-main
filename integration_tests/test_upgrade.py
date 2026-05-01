@@ -724,6 +724,7 @@ def test_manual_export(export_cluster):
 
     cluster.supervisor.startAllProcesses()
 
+    wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     wait_for_new_blocks(cluster, 1)
 
     cluster.supervisor.stopAllProcesses()
