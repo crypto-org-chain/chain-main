@@ -6,7 +6,10 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
@@ -249,4 +252,56 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,
 		"first position's LastEventSeq should remain 0")
+}
+
+// TestMsgCommitDelegationToTier_ExactlyFundedOwner tests that it is not required
+// for the owner to hold extra funds when transferring a delegation to a tier position.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	commitAmount := sdkmath.NewInt(1_000_000)
+
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, commitAmount))))
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, commitAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	// Owner has no liquid bond denom left — everything is in the delegation.
+	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, owner, bondDenom).Amount.IsZero(),
+		"owner should have 0 liquid bondDenom after fully delegating")
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: owner.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
+	s.Require().NoError(err, "commit must not require liquid funds on top of the delegation")
+
+	posDelAddr := types.GetDelegatorAddress(0)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(posDel.Shares.IsPositive(), "sub-account must hold the transferred delegation")
+
+	// Owner's original delegation must be fully consumed.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
+	s.Require().Error(err, "owner should no longer hold a delegation at this validator")
+
+	// Position's delegation token value should equal the committed amount
+	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
+	s.Require().True(posDelTokens.Equal(commitAmount),
+		"position's delegation should equal committed amount: got %s want %s", posDelTokens, commitAmount)
+
+	// No liquid coins stranded on the sub-account (the old bug left msg.Amount there).
+	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
+		"sub-account must not hold liquid bondDenom after commit")
 }

@@ -34,6 +34,9 @@ type StakingKeeper interface {
 type AccountKeeper interface {
 	GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI
 	GetModuleAddress(moduleName string) sdk.AccAddress
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	SetAccount(ctx context.Context, acc sdk.AccountI)
 }
 
 type BankKeeper interface {

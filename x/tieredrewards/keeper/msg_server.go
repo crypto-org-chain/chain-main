@@ -109,20 +109,15 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	ownerAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
-
 	id, err := ms.NextPositionId.Peek(ctx)
 	if err != nil {
 		return nil, err
 	}
 	delAddr := types.GetDelegatorAddress(id)
 
-	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
-		return nil, err
-	}
+	// required for future undelegation to complete successfully 
+	// account is not created automatically because no funds are transferred from the owner to the position in this scenario
+	ms.createPositionDelegatiorAccount(ctx, delAddr)
 
 	shares, err := ms.transferDelegationToPosition(ctx, msg.DelegatorAddress, delAddr, msg.ValidatorAddress, msg.Amount)
 	if err != nil {
