@@ -460,6 +460,7 @@ def test_tier_redelegate_twice_fails(cluster):
     rsp = tier_redelegate(cluster, owner, pos_id, v0)
     assert rsp["code"] != 0, "transitive redelegation should fail"
 
+
 def test_multiple_positions_redelegate_concurrent(cluster):
     """Two positions on two validators each redelegate independently."""
     owner1 = cluster.address("signer1")
@@ -481,7 +482,7 @@ def test_multiple_positions_redelegate_concurrent(cluster):
     rsp = tier_redelegate(cluster, owner1, pos1_id, val_b)
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    # pos2 redelegates B → A. 
+    # pos2 redelegates B → A.
     rsp = tier_redelegate(cluster, owner2, pos2_id, val_a)
     assert (
         rsp["code"] == 0

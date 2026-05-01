@@ -564,7 +564,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_MultiplePositionsNoTransitiveBlock()
 	s.Require().NoError(err)
 	pos2Id := resp2.PositionId
 
-	// pos1 redelegates A → B. 
+	// pos1 redelegates A → B.
 	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        owner1.String(),
 		PositionId:   pos1Id,

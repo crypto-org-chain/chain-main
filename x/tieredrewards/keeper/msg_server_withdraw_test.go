@@ -715,7 +715,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_SweepsNonBondDenomDust() {
 
 // TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting verifies deletePosition's
 // removeBaseRewardsRouting step wipes the distribution DelegatorsWithdrawAddress
-// entry set at position creation. 
+// entry set at position creation.
 func (s *KeeperSuite) TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
