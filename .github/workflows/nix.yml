@@ -264,45 +264,56 @@ jobs:
           path: debug_files_upgrade_cancel.tar.gz
           if-no-files-found: ignore
 
-  # Runs on master push / release branches only; skipped on pull_request.
-  # Preserves coverage of the state export + reset flow without adding
-  # ~38 min to every PR. Upgrade-relevant PR changes are still exercised
-  # by test-upgrade-manual and test-upgrade-cancel.
   test-upgrade-export:
     runs-on: ubuntu-latest
-    needs: [prepare]
-    if: github.event_name != 'pull_request'
+    needs: [prepare, changes]
     steps:
+      - name: Check if upgrade test should run
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ needs.changes.outputs.upgrade }}" = "true" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping test-upgrade-export — no upgrade-relevant paths changed"
+          fi
       - name: Create more disk space
+        if: steps.gate.outputs.run == 'true'
         run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
         with:
           submodules: true
       - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+        if: steps.gate.outputs.run == 'true'
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
       - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+        if: steps.gate.outputs.run == 'true'
         with:
           name: crypto-com
       - name: Run integration tests
+        if: steps.gate.outputs.run == 'true'
         run: make nix-integration-test-upgrade-export
       - name: Convert coverage data
+        if: steps.gate.outputs.run == 'true'
         run: |
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
+        if: steps.gate.outputs.run == 'true'
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./profile.txt
           flags: integration_tests_upgrade_export
       - name: Tar debug files
-        if: failure()
+        if: failure() && steps.gate.outputs.run == 'true'
         run: tar cfz debug_files_upgrade_export.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
       - uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && steps.gate.outputs.run == 'true'
         with:
           name: debug_files_upgrade_export
           path: debug_files_upgrade_export.tar.gz
