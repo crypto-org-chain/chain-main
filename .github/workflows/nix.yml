@@ -120,7 +120,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests
       - name: Tar debug files
         if: failure()
@@ -199,7 +199,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_upgrade_manual
       - name: Tar debug files
         if: failure() && steps.gate.outputs.run == 'true'
@@ -254,7 +254,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_upgrade_cancel_export
       - name: Tar debug files
         if: failure() && steps.gate.outputs.run == 'true'
@@ -291,7 +291,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_ledger
       - name: Tar debug files
         if: failure()
@@ -328,7 +328,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_solomachine
       - name: Tar debug files
         if: failure()
@@ -365,7 +365,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_slow_a
       - name: Tar debug files
         if: failure()
@@ -402,7 +402,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_slow_b
       - name: Tar debug files
         if: failure()
@@ -439,7 +439,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_ibc
       - name: Tar debug files
         if: failure()
@@ -476,7 +476,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_byzantine
       - name: Tar debug files
         if: failure()
@@ -513,7 +513,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_gov
       - name: Tar debug files
         if: failure()
@@ -551,7 +551,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_grpc
       - name: Tar debug files
         if: failure()
@@ -588,7 +588,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_tieredrewards
       - name: Tar debug files
         if: failure()

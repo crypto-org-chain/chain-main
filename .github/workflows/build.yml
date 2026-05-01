@@ -134,7 +134,7 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.txt
+          files: ./coverage.txt
           flags: unit_tests
       - name: Create file status_build.txt and write the job status into it
         if: github.event_name == 'issue_comment'
