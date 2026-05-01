@@ -286,7 +286,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     wait_for_new_blocks(cluster, 1)
 
     # v2 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     upgrade(
         cluster,
         "v2.0.0",
@@ -369,7 +369,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert cluster.staking_pool() == old_bonded + 2009999498
 
     # v3 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     upgrade(
         cluster,
         "v3.0.0",
@@ -410,7 +410,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     }, ev
 
     # v4.2 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     upgrade(
         cluster,
         "v4.2.0",
@@ -457,13 +457,13 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, min_commission_rate)
     assert_commission(validator2_operator_address, default_rate)
 
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     # test migrate keystore
     for i in range(2):
         cluster.migrate_keystore(i=i)
 
     # v5 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
 
@@ -491,7 +491,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_min"] == "0.008500000000000000"
 
     # v6 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + 8
     gov_param_before_v6 = cli.query_params("gov")
     consensus_block_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "BlockParams")
