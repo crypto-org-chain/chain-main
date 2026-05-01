@@ -398,9 +398,10 @@ def test_multiple_positions_unbonding_concurrent(cluster):
 
     for i, pos_id in enumerate(position_ids):
         rsp = tier_undelegate(cluster, owner, pos_id)
-        assert (
-            rsp["code"] == 0
-        ), f"position {i + 1}/{num_positions} undelegate should not hit MaxEntries: {rsp['raw_log']}"
+        assert rsp["code"] == 0, (
+            f"position {i + 1}/{num_positions} undelegate should not hit "
+            f"MaxEntries: {rsp['raw_log']}"
+        )
 
     # Every position should now be undelegated.
     for pos_id in position_ids:
