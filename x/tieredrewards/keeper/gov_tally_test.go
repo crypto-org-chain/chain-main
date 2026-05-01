@@ -754,7 +754,6 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 		LastBonusAccrual: s.ctx.BlockTime(),
 		LastEventSeq:     0,
 		LastKnownBonded:  true,
-		DelegatorAddress: types.GetDelegatorAddress(999).String(),
 	}
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 

@@ -181,7 +181,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),

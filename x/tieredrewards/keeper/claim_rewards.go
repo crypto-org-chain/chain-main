@@ -18,11 +18,8 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos types.Position, valAdd
 	if !pos.IsDelegated() {
 		return sdk.NewCoins(), nil
 	}
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
-	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, delAddr, valAddr)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, posDelAddr, valAddr)
 	if err != nil {
 		return nil, err
 	}

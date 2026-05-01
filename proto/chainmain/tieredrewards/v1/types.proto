@@ -71,35 +71,32 @@ message Position {
     (amino.dont_omitempty) = true
   ];
 
-  // delegator_address is the deterministic per-position account that delegates to the validator on behalf of the owner.
-  string delegator_address = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-
   // last_bonus_accrual is the last time bonus rewards was claimed.
-  google.protobuf.Timestamp last_bonus_accrual = 8
+  google.protobuf.Timestamp last_bonus_accrual = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // last_event_seq is the sequence number of the last validator event this
   // position has processed. Events with seq > last_event_seq are pending.
-  uint64 last_event_seq = 9;
+  uint64 last_event_seq = 8;
 
   // last_known_bonded tracks whether the validator was bonded after the last
   // event replay. Used as the starting state for the next processEventsAndClaimBonus
   // call. True when the position is first created (only bonded validators accepted).
-  bool last_known_bonded = 10;
+  bool last_known_bonded = 9;
 
   // exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
-  google.protobuf.Timestamp exit_triggered_at = 11
+  google.protobuf.Timestamp exit_triggered_at = 10
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
-  google.protobuf.Timestamp exit_unlock_at = 12
+  google.protobuf.Timestamp exit_unlock_at = 11
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // created_at_height is the block height when this position was created.
-  uint64 created_at_height = 13;
+  uint64 created_at_height = 12;
 
   // created_at_time is the block time when this position was created.
-  google.protobuf.Timestamp created_at_time = 14
+  google.protobuf.Timestamp created_at_time = 13
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 
@@ -125,15 +122,14 @@ message PositionResponse {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
-  string                    delegator_address  = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  google.protobuf.Timestamp last_bonus_accrual = 8
+  google.protobuf.Timestamp last_bonus_accrual = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_triggered_at = 9
+  google.protobuf.Timestamp exit_triggered_at = 8
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_unlock_at = 10
+  google.protobuf.Timestamp exit_unlock_at = 9
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  uint64                    created_at_height = 11;
-  google.protobuf.Timestamp created_at_time   = 12
+  uint64                    created_at_height = 10;
+  google.protobuf.Timestamp created_at_time   = 11
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 

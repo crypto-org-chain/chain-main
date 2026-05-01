@@ -286,7 +286,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Record validator tokens before transfer.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -322,7 +322,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Partial() {
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Compute token value from shares for the half amount.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)

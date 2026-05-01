@@ -25249,8 +25249,6 @@ paths:
                     type: string
                   delegated_shares:
                     type: string
-                  delegator_address:
-                    type: string
                   last_bonus_accrual:
                     type: string
                     format: date-time
@@ -25398,8 +25396,6 @@ paths:
                     validator:
                       type: string
                     delegated_shares:
-                      type: string
-                    delegator_address:
                       type: string
                     last_bonus_accrual:
                       type: string
@@ -25568,8 +25564,6 @@ paths:
                     validator:
                       type: string
                     delegated_shares:
-                      type: string
-                    delegator_address:
                       type: string
                     last_bonus_accrual:
                       type: string
@@ -25758,12 +25752,6 @@ paths:
                     description: >-
                       delegated_shares are the validator delegation shares for
                       this position.
-                  delegator_address:
-                    type: string
-                    description: >-
-                      delegator_address is the deterministic per-position
-                      account that delegates to the validator on behalf of the
-                      owner.
                   last_bonus_accrual:
                     type: string
                     format: date-time
@@ -25894,12 +25882,6 @@ paths:
                       description: >-
                         delegated_shares are the validator delegation shares for
                         this position.
-                    delegator_address:
-                      type: string
-                      description: >-
-                        delegator_address is the deterministic per-position
-                        account that delegates to the validator on behalf of the
-                        owner.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -26111,12 +26093,6 @@ paths:
                       description: >-
                         delegated_shares are the validator delegation shares for
                         this position.
-                    delegator_address:
-                      type: string
-                      description: >-
-                        delegator_address is the deterministic per-position
-                        account that delegates to the validator on behalf of the
-                        owner.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -46417,11 +46393,6 @@ definitions:
         description: >-
           delegated_shares are the validator delegation shares for this
           position.
-      delegator_address:
-        type: string
-        description: >-
-          delegator_address is the deterministic per-position account that
-          delegates to the validator on behalf of the owner.
       last_bonus_accrual:
         type: string
         format: date-time
@@ -46482,8 +46453,6 @@ definitions:
         type: string
       delegated_shares:
         type: string
-      delegator_address:
-        type: string
       last_bonus_accrual:
         type: string
         format: date-time
@@ -46526,8 +46495,6 @@ definitions:
             validator:
               type: string
             delegated_shares:
-              type: string
-            delegator_address:
               type: string
             last_bonus_accrual:
               type: string
@@ -46685,11 +46652,6 @@ definitions:
               description: >-
                 delegated_shares are the validator delegation shares for this
                 position.
-            delegator_address:
-              type: string
-              description: >-
-                delegator_address is the deterministic per-position account that
-                delegates to the validator on behalf of the owner.
             last_bonus_accrual:
               type: string
               format: date-time
@@ -46804,11 +46766,6 @@ definitions:
             description: >-
               delegated_shares are the validator delegation shares for this
               position.
-          delegator_address:
-            type: string
-            description: >-
-              delegator_address is the deterministic per-position account that
-              delegates to the validator on behalf of the owner.
           last_bonus_accrual:
             type: string
             format: date-time
@@ -46897,11 +46854,6 @@ definitions:
               description: >-
                 delegated_shares are the validator delegation shares for this
                 position.
-            delegator_address:
-              type: string
-              description: >-
-                delegator_address is the deterministic per-position account that
-                delegates to the validator on behalf of the owner.
             last_bonus_accrual:
               type: string
               format: date-time
@@ -47024,8 +46976,6 @@ definitions:
             type: string
           delegated_shares:
             type: string
-          delegator_address:
-            type: string
           last_bonus_accrual:
             type: string
             format: date-time
@@ -47071,8 +47021,6 @@ definitions:
             validator:
               type: string
             delegated_shares:
-              type: string
-            delegator_address:
               type: string
             last_bonus_accrual:
               type: string

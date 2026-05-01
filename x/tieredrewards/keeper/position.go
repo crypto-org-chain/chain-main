@@ -217,10 +217,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	if err := k.removeBaseRewardsRouting(ctx, delAddr, owner); err != nil {
 		return err

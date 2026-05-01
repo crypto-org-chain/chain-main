@@ -175,10 +175,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	newShares, err := ms.delegate(ctx, delAddr, valAddr, pos.Amount)
 	if err != nil {
@@ -240,10 +237,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	completionTime, returnAmount, unbondingId, err := ms.undelegate(ctx, delAddr, valAddr, pos.DelegatedShares)
 	if err != nil {
@@ -311,10 +305,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	completionTime, newShares, unbondingId, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.DelegatedShares)
 	if err != nil {
@@ -388,10 +379,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
 		return nil, err
@@ -590,10 +578,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-	if err != nil {
-		return nil, err
-	}
+	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	bondDenom, err := ms.stakingKeeper.BondDenom(ctx)
 	if err != nil {
@@ -675,10 +660,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			return nil, err
 		}
 
-		delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
-		if err != nil {
-			return nil, err
-		}
+		delAddr := types.GetDelegatorAddress(pos.Id)
 
 		balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
 		if !balances.IsZero() {

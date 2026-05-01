@@ -43,7 +43,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:    now,
 		LastEventSeq:     0,
 		LastKnownBonded:  true,
-		DelegatorAddress: types.GetDelegatorAddress(1).String(),
 	}
 
 	// Delegated position. Amount must be zero.
@@ -59,7 +58,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtTime:    now,
 		LastEventSeq:     0,
 		LastKnownBonded:  true,
-		DelegatorAddress: types.GetDelegatorAddress(2).String(),
 	}
 
 	// Position with exit triggered.
@@ -75,7 +73,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		CreatedAtHeight:  99,
 		CreatedAtTime:    now.Add(-time.Hour * 48),
 		LastKnownBonded:  false,
-		DelegatorAddress: types.GetDelegatorAddress(3).String(),
 	}
 
 	genesisState := &types.GenesisState{
@@ -219,21 +216,18 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
-				DelegatorAddress: types.GetDelegatorAddress(1).String(),
 			},
 			{
 				Id: 2, Owner: owner.String(), TierId: 1, Amount: sdkmath.ZeroInt(),
 				Validator: valAddr.String(), DelegatedShares: sdkmath.LegacyNewDec(2000),
 				LastBonusAccrual: now,
 				CreatedAtHeight:  11, CreatedAtTime: now, LastEventSeq: 0, LastKnownBonded: true,
-				DelegatorAddress: types.GetDelegatorAddress(2).String(),
 			},
 			// simulate a redelegation-slashed to zero position here. No delegation here and amount is zero
 			{
 				Id: 3, Owner: owner.String(), TierId: 2, Amount: sdkmath.ZeroInt(),
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				CreatedAtHeight: 12, CreatedAtTime: now,
-				DelegatorAddress: types.GetDelegatorAddress(3).String(),
 			},
 		},
 		NextPositionId: 4,
@@ -277,7 +271,6 @@ func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 				DelegatedShares: sdkmath.LegacyZeroDec(),
 				ExitTriggeredAt: exitTime, ExitUnlockAt: exitTime.Add(time.Hour * 24),
 				CreatedAtHeight: 10, CreatedAtTime: now,
-				DelegatorAddress: types.GetDelegatorAddress(5).String(),
 			},
 		},
 		NextPositionId: 10,

@@ -368,7 +368,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated())
 
-	posDelAddr := sdk.MustAccAddressFromBech32(posAfter.DelegatorAddress)
+	posDelAddr := types.GetDelegatorAddress(posAfter.Id)
 	posStakingDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
@@ -425,7 +425,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Slash 10% to create a non-1:1 exchange rate.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -481,7 +481,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Slash 99% — position token value goes very low but shares remain.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)

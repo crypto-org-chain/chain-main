@@ -220,22 +220,6 @@ func TestPosition_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "last known bonded must not be true when not delegated",
 		},
-		{
-			name: "delegator_address does not match position id",
-			modify: func(p *types.Position) {
-				p.DelegatorAddress = types.GetDelegatorAddress(p.Id + 1).String()
-			},
-			wantErr:     true,
-			errContains: "delegator_address must equal",
-		},
-		{
-			name: "empty delegator_address",
-			modify: func(p *types.Position) {
-				p.DelegatorAddress = ""
-			},
-			wantErr:     true,
-			errContains: "delegator_address must equal",
-		},
 	}
 
 	for _, tt := range tests {

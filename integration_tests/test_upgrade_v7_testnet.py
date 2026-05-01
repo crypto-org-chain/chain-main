@@ -17,9 +17,8 @@ Verify the `v7.1.0-testnet` upgrade handler correctly:
      which is post-handler, so those get trapped at the pool forever or
      until the next upgrade to move it.
   4. Comes up clean on the per-position-delegator codebase — fresh
-     positions use `pos.DelegatorAddress`, with the underlying staking
-     delegation living at that per-position address (not the module
-     account).
+     positions use the derived delegator address from the position id
+     to delegate.
 
 Flow
 ----
@@ -63,6 +62,7 @@ from .tieredrewards_helpers import (
     get_node_validator_addr,
     lock_tier,
     new_pos_id,
+    position_delegator_address,
     query_position,
     query_positions_by_owner,
     query_tiers,
@@ -379,16 +379,14 @@ def test_v7_testnet_upgrade_purges_and_resumes(cosmovisor_cluster):
     new_id = new_pos_id(cluster, signer, before)
 
     pos = query_position(cluster, new_id)["position"]
-    assert pos[
-        "delegator_address"
-    ], "post-upgrade position must expose delegator_address on the new proto shape"
+    pos_del_addr = position_delegator_address(int(pos["id"]), prefix="tcro")
     assert (
-        pos["delegator_address"] != pool_addr
+        pos_del_addr != pool_addr
     ), "per-position delegator must NOT equal the old shared module pool address"
 
     # The underlying staking delegation must live at the per-position
     # delegator address, not the module pool (which was swept to zero above).
-    pos_del = query_staking_delegation(cluster, pos["delegator_address"], v0)
+    pos_del = query_staking_delegation(cluster, pos_del_addr, v0)
     pos_shares = pos_del["delegation"]["shares"]
     assert (
         float(pos_shares) > 0

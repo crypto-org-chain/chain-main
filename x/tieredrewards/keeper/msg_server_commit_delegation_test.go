@@ -288,7 +288,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
 	posDelAddr := types.GetDelegatorAddress(0)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().True(posDel.Shares.IsPositive(), "sub-account must hold the transferred delegation")
+	s.Require().True(posDel.Shares.IsPositive(), "position's delegator account must hold the transferred delegation")
 
 	// Owner's original delegation must be fully consumed.
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
@@ -301,7 +301,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
 	s.Require().True(posDelTokens.Equal(commitAmount),
 		"position's delegation should equal committed amount: got %s want %s", posDelTokens, commitAmount)
 
-	// No liquid coins stranded on the sub-account (the old bug left msg.Amount there).
+	// No liquid coins stranded on the position's delegator account (the old bug left msg.Amount there).
 	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
-		"sub-account must not hold liquid bondDenom after commit")
+		"position's delegator account must not hold liquid bondDenom after commit")
 }
