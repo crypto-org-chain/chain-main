@@ -75,9 +75,9 @@ func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress
 	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
 }
 
-// createPositionDelegatiorAccount creates a BaseAccount for the position's delegation.
+// createDelegatorAccount creates a BaseAccount for the position's delegation.
 // This is required so that undelegation can complete successfully because it checks for the existence of the account in bank keeper trackUndelegation method.
-func (k Keeper) createPositionDelegatiorAccount(ctx context.Context, delAddr sdk.AccAddress) {
+func (k Keeper) createDelegatorAccount(ctx context.Context, delAddr sdk.AccAddress) {
 	if k.accountKeeper.GetAccount(ctx, delAddr) != nil {
 		return
 	}
