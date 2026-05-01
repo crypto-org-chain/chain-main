@@ -75,7 +75,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	// Defensive
+	// Defensive, but should not happen since transactions are sequential
 	if pos.Id != id {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
@@ -140,7 +140,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	// Defensive
+	// Defensive, but should not happen since transactions are sequential
 	if pos.Id != id {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
