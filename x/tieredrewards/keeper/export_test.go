@@ -180,3 +180,11 @@ func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
 	return k.claimBaseRewards(ctx, pos, valAddr)
 }
+
+func (k Keeper) LoadPosition(ctx context.Context, posId uint64) (types.PositionState, error) {
+	return k.loadPosition(ctx, posId)
+}
+
+func (k Keeper) PositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
+	return k.positionAmount(ctx, pos)
+}

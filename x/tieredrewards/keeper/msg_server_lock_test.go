@@ -204,5 +204,5 @@ func (s *KeeperSuite) TestMsgLockTier_RoutesBaseRewardsToOwner() {
 	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), withdrawAddr.String(),
-		"LockTier must route the position sub-account's base rewards to the owner")
+		"LockTier must route the position's delegation base rewards to the owner")
 }
