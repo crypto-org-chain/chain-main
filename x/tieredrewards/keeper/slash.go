@@ -78,7 +78,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	}
 
 	if _, err := k.processEventsAndClaimBonus(ctx, &pos, valAddr); err != nil {
-		// deliberate forgo of bonus rewards if insufficient prevent chain halt
+		// deliberate forgo of bonus rewards even if pool is insufficient toprevent chain halt
 		if errors.Is(err, types.ErrInsufficientBonusPool) {
 			k.logger(ctx).Error("insufficient bonus pool during redelegation slash",
 				"position_id", pos.Id,

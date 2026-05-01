@@ -13,12 +13,12 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// claimRewardsForPosition
+// claimRewards
 // ---------------------------------------------------------------------------
 
-// TestClaimRewardsForPosition_Undelegated verifies that claimRewardsForPosition
+// TestClaimRewards_Undelegated verifies that claimRewards
 // returns early with zero rewards for an undelegated position.
-func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
+func (s *KeeperSuite) TestClaimRewards_Undelegated() {
 	posSetup := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), true)
 	delAddr := sdk.MustAccAddressFromBech32(posSetup.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -42,9 +42,9 @@ func (s *KeeperSuite) TestClaimRewardsForPosition_Undelegated() {
 	s.Require().True(bonus.IsZero(), "bonus should be zero for undelegated position")
 }
 
-// TestClaimRewardsForPosition_Delegated verifies that claimRewardsForPosition
+// TestClaimRewards_Delegated verifies that claimRewards
 // returns base+bonus rewards for a delegated position.
-func (s *KeeperSuite) TestClaimRewardsForPosition_Delegated() {
+func (s *KeeperSuite) TestClaimRewards_Delegated() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
