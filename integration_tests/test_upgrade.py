@@ -49,7 +49,7 @@ def init_cosmovisor(data, attr="fast"):
     subprocess.run(
         [
             "nix-build",
-            Path(__file__).parent / "upgrade-tests.nix",
+            Path(__file__).parent / "upgrade-test.nix",
             "-A",
             attr,
             "-o",
@@ -116,7 +116,7 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
     )
 
 
-# Full v1→v7 upgrade path; uses upgrade-tests.nix -A all (genesis=v1.1.0).
+# Full v1→v7 upgrade path; uses upgrade-test.nix -A all (genesis=v1.1.0).
 @pytest.fixture(scope="function")
 def cosmovisor_cluster_full(worker_index, pytestconfig, tmp_path_factory):
     "cosmovisor cluster with genesis=v1.1.0 for the full v1→v7 upgrade test"
@@ -600,7 +600,7 @@ def test_manual_upgrade_all(cosmovisor_cluster_full):
 
 
 def test_manual_upgrade_from_v5(cosmovisor_cluster):
-    """v5 (genesis) → v6 → v7 CI test. upgrade-tests.nix -A fast: genesis=released5_0."""
+    """v5 (genesis) → v6 → v7 CI test. upgrade-test.nix -A fast: genesis=released5_0."""
     cluster = cosmovisor_cluster
     _cosmovisor_initial_setup(cluster)
     _run_v6_to_v7_upgrades(cluster)
