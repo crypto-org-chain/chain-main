@@ -2,6 +2,8 @@ package types
 
 import "cosmossdk.io/collections"
 
+// key prefix was shifted up by 1 count from UnbondingIdToPositionIdKey
+// to account for the removal of ValidatorRewardRatioKeyPrefix pre-v7.1.0-testnet
 var (
 	ParamsKey                     = collections.NewPrefix(0)
 	TiersKey                      = collections.NewPrefix(1)
