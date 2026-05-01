@@ -2,7 +2,12 @@
 
 ## UNRELEASED
 
-## Features
+*Apr 25, 2026*
+
+## v7.0.0
+
+### Features
+
 - [#1261](https://github.com/crypto-org-chain/chain-main/pull/1261) Implement tokenomics (inflation decay, base rewards topup and tiered rewards module)
 - [#1265](https://github.com/crypto-org-chain/chain-main/pull/1265) feat(x/tieredrewards): add MsgExitTierWithDelegation - allow position to exit tier by transferring delegation back to owner directly.
 - [#1269](https://github.com/crypto-org-chain/chain-main/pull/1269) feat(x/tieredrewards): MsgClaimTierRewards now accepts multiple position IDs to claim rewards in a single transaction.
@@ -12,11 +17,20 @@
 
 ### Improvements
 
+- [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
+- [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
+- [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
+- [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
+- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
+- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface mismatch.
+- [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
+- [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 - [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling
 
 ### Bugfixes
+
 - [#1273](https://github.com/crypto-org-chain/chain-main/pull/1273) fix(x/tieredrewards): claim pending rewards in redelegation slash.
 - [#1209](https://github.com/crypto-org-chain/chain-main/pull/1209) Patch comet bft (GHSA-hrhf-2vcr-ghch)
 - [#1252](https://github.com/crypto-org-chain/chain-main/pull/1252) fix: reject nft-transfer sends on non-nft port.
@@ -29,26 +43,13 @@
 - [#1282](https://github.com/crypto-org-chain/chain-main/pull/1282) fix: flaky test_begin_blocker_halt_on_excess_supply.
 
 ### Chores
+
 - [#1266](https://github.com/crypto-org-chain/chain-main/pull/1266) chore(deps): bump ibc to 10.5.1
 
 *July 9, 2025*
 
-## v7.0.0
-
-### Improvements
-- [#1169](https://github.com/crypto-org-chain/chain-main/pull/1169) Update linter and tidy up code
-- [#1175](https://github.com/crypto-org-chain/chain-main/pull/1175) Add maxsupply module
-- [#1181](https://github.com/crypto-org-chain/chain-main/pull/1181) Fix Makefile chaindImage remote build env wrong check + add script to run chain locally
-- [#1182](https://github.com/crypto-org-chain/chain-main/pull/1182) Refactor script to run chain locally to use daemon in default go PATH
-- [#1185](https://github.com/crypto-org-chain/chain-main/pull/1185) Error deleting legacy versions bug.
-- [#1189](https://github.com/crypto-org-chain/chain-main/pull/1189) versiondb interface missmatch.
-- [#1196](https://github.com/crypto-org-chain/chain-main/pull/1196) ci: use golangci-lint run --fix.
-- [#1200](https://github.com/crypto-org-chain/chain-main/pull/1200) feat: use cronos store and rocksdb v9.11.2.
-
-
-*July 9, 2025*
-
 ## v6.0.0-2
+
 - [#1174](https://github.com/crypto-org-chain/chain-main/pull/1174) Replace cosmos sdk fork with official version.
 
 *May 26, 2025*
