@@ -51,8 +51,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 
 // registerV7UpgradeHandler registers the "v7" plan for chains that have
 // not yet run it (mainnet). Testnet has already upgraded past v7 and will
-// not re-run this handler; the testnet migration onto the per-position
-// rewrite is handled by registerV7TestnetUpgradeHandler.
+// not re-run this handler.
 func (app *ChainApp) registerV7UpgradeHandler() {
 	planName := "v7"
 
