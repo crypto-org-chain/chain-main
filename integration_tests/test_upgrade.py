@@ -331,6 +331,10 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, "0.000000000000000000")
     assert_commission(validator2_operator_address, default_rate)
 
+    # NOTE: v4.2.0 and v5.0.0 upgrade blocks removed — baseline is now v5.0.0.
+    # If you need to re-test those upgrade paths, change upgrade-test.nix genesis
+    # back to released3 (v3.3.4) and restore the blocks from git history.
+
     # v6 upgrade
     target_height = cluster.block_height() + 15
     gov_param_before_v6 = cli.query_params("gov")
