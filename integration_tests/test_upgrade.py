@@ -331,10 +331,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_commission(validator1_operator_address, "0.000000000000000000")
     assert_commission(validator2_operator_address, default_rate)
 
-    # NOTE: v2.0.0 and v3.0.0 upgrade blocks removed — baseline is now v3.3.4+.
-    # To re-test, change upgrade-test.nix genesis back to released (v1.1.0) and
-    # uncomment the blocks below.
-
     # # v2 upgrade
     # target_height = cluster.block_height() + 15
     # upgrade(
@@ -399,10 +395,6 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     #
     # assert_commission(validator1_operator_address, "0.000000000000000000")
     # assert_commission(validator2_operator_address, default_rate)
-
-    # NOTE: v4.2.0 and v5.0.0 upgrade blocks removed — baseline is now v5.0.0.
-    # If you need to re-test those upgrade paths, change upgrade-test.nix genesis
-    # back to released3 (v3.3.4) and uncomment the blocks below.
 
     # community_addr = cluster.address("community")
     # reserve_addr = cluster.address("reserve")
