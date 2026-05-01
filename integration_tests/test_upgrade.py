@@ -358,7 +358,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     }, ev
 
     # v4.2 upgrade
-    target_height = cluster.block_height() + 8
+    target_height = cluster.block_height() + 15
     upgrade(
         cluster,
         "v4.2.0",
