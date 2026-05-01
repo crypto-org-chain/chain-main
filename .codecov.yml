@@ -7,7 +7,7 @@ codecov:
     # We upload coverage from 13 jobs (1 unit + 12 integration splits). Wait
     # for all of them before computing the final status — otherwise codecov
     # reports off an incomplete subset and shows spurious drops.
-    after_n_builds: 12
+    after_n_builds: 13
 
 coverage:
   precision: 2
