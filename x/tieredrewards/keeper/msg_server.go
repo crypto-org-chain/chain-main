@@ -604,14 +604,16 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	if err != nil {
 		return nil, err
 	}
-
-	withdraw := sdk.NewCoin(bondDenom, pos.Amount)
-
-	if !pos.Amount.IsZero() {
-		if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, sdk.NewCoins(withdraw)); err != nil {
+	
+	// sweep all balances from the per-position account to the owner address
+	balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
+	if !balances.IsZero() {
+		if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, balances); err != nil {
 			return nil, err
 		}
 	}
+
+	withdraw := sdk.NewCoin(bondDenom, balances.AmountOf(bondDenom))
 
 	if err := ms.deletePosition(ctx, pos); err != nil {
 		return nil, err
