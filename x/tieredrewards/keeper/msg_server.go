@@ -115,7 +115,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	}
 	delAddr := types.GetDelegatorAddress(id)
 
-	// required for future undelegation to complete successfully 
+	// required for future undelegation to complete successfully
 	// account is not created automatically because no funds are transferred from the owner to the position in this scenario
 	ms.createPositionDelegatiorAccount(ctx, delAddr)
 
