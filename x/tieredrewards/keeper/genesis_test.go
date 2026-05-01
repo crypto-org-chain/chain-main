@@ -63,16 +63,16 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	// Position with exit triggered.
 	exitTime := now.Add(-time.Hour * 24)
 	pos3 := types.Position{
-		Id:               3,
-		Owner:            owner,
-		TierId:           1,
-		Amount:           sdkmath.NewInt(2000),
-		DelegatedShares:  sdkmath.LegacyZeroDec(),
-		ExitTriggeredAt:  exitTime,
-		ExitUnlockAt:     exitTime.Add(time.Hour * 24 * 365),
-		CreatedAtHeight:  99,
-		CreatedAtTime:    now.Add(-time.Hour * 48),
-		LastKnownBonded:  false,
+		Id:              3,
+		Owner:           owner,
+		TierId:          1,
+		Amount:          sdkmath.NewInt(2000),
+		DelegatedShares: sdkmath.LegacyZeroDec(),
+		ExitTriggeredAt: exitTime,
+		ExitUnlockAt:    exitTime.Add(time.Hour * 24 * 365),
+		CreatedAtHeight: 99,
+		CreatedAtTime:   now.Add(-time.Hour * 48),
+		LastKnownBonded: false,
 	}
 
 	genesisState := &types.GenesisState{

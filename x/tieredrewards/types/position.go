@@ -27,7 +27,7 @@ func NewPosition(id uint64, owner string, tierId uint32, amount math.Int, create
 		CreatedAtHeight:  createdAtHeight,
 		CreatedAtTime:    createdAtTime,
 		Validator:        delegation.Validator,
-		DelegatedShares: delegation.Shares,
+		DelegatedShares:  delegation.Shares,
 		LastBonusAccrual: createdAtTime,
 		LastEventSeq:     delegation.LastEventSeq,
 		// Delegated positions are only created on bonded validators.
