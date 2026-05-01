@@ -70,7 +70,7 @@ jobs:
           fi
 
   prepare:
-    name: Prepare nix store (build chain-maind-test and upgrade-test binaries, push to cachix)
+    name: Prepare nix store (build chain-maind-test, push to cachix)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -89,8 +89,6 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
       - name: Build integration test shell (chain-maind-test + deps)
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
-      - name: Build upgrade-test binaries (historical chain-maind versions)
-        run: nix-build integration_tests/upgrade-test.nix -o upgrade-test-result
 
   test:
     runs-on: ubuntu-latest
