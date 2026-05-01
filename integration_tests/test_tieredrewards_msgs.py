@@ -18,6 +18,7 @@ from .tieredrewards_helpers import (
     claim_rewards,
     clear_position,
     commit_delegation,
+    exit_tier_with_delegation,
     fund_pool,
     get_node_validator_addr,
     get_validator_addr,
@@ -548,6 +549,43 @@ def test_claim_rewards(cluster):
     assert ev is not None, "EventTierRewardsClaimed not found"
 
 
+def test_claim_rewards_batch(cluster):
+    """Batch claim rewards for two positions in a single transaction."""
+    owner = cluster.address("signer1")
+    validator = get_validator_addr(cluster, 0)
+
+    rsp = fund_pool(cluster, "community", f"50000000{DENOM}")
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # Create two positions
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 3, validator=validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id1 = new_pos_id(cluster, owner, before)
+
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(cluster, owner, TIER_1_ID, TIER_1_MIN * 3, validator=validator)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id2 = new_pos_id(cluster, owner, before)
+
+    wait_for_new_blocks(cluster, 10)
+
+    balance_before = cluster.balance(owner, DENOM)
+    rsp = claim_rewards(cluster, owner, pos_id1, pos_id2)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    balance_after = cluster.balance(owner, DENOM)
+    assert (
+        balance_after > balance_before
+    ), "balance should increase after batch claiming rewards"
+
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventTierRewardsClaimed",
+    )
+    assert ev is not None, "EventTierRewardsClaimed not found"
+
+
 # ──────────────────────────────────────────────
 # MsgWithdrawFromTier
 # ──────────────────────────────────────────────
@@ -603,3 +641,117 @@ def test_withdraw(cluster):
     except requests.HTTPError as exc:
         assert exc.response.status_code in (404, 500)
         assert "not found" in exc.response.text.lower()
+
+
+def test_exit_tier_with_delegation(cluster):
+    """Exit tier position by transferring delegation back to owner (full exit)."""
+    owner = cluster.address("signer1")
+    validator = get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 2
+
+    # Lock with trigger exit
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(
+        cluster, owner, TIER_1_ID, amount, validator=validator, trigger_exit=True
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = new_pos_id(cluster, owner, before)
+
+    # Fund rewards pool
+    fund_pool(cluster, "community", f"10000000{DENOM}")
+
+    # Wait for exit duration to elapse
+    pos = query_position(cluster, pos_id)["position"]
+    exit_unlock_at = isoparse(pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    # Exit with delegation (full amount)
+    rsp = exit_tier_with_delegation(cluster, owner, pos_id, amount)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # Position should be deleted
+    try:
+        query_position(cluster, pos_id)
+        assert False, f"position {pos_id} should be deleted"
+    except requests.HTTPError as exc:
+        assert exc.response.status_code in (404, 500)
+
+    # Verify event
+    ev = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventExitTierWithDelegation",
+    )
+    assert ev is not None, "EventExitTierWithDelegation not found"
+
+    # User should have a staking delegation on the validator
+    cli = cluster.cosmos_cli(0)
+    del_resp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "delegation",
+            owner,
+            validator,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    shares = del_resp["delegation_response"]["delegation"]["shares"]
+    assert (
+        int(shares.split(".")[0]) > 0
+    ), "owner should have staking delegation after exit"
+
+
+def test_exit_tier_with_delegation_partial(cluster):
+    """Partial exit: transfer half the position back to owner delegation."""
+    owner = cluster.address("signer2")
+    validator = get_validator_addr(cluster, 0)
+    amount = TIER_1_MIN * 4
+
+    # Lock with trigger exit
+    before = before_ids(cluster, owner)
+    rsp = lock_tier(
+        cluster, owner, TIER_1_ID, amount, validator=validator, trigger_exit=True
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos_id = new_pos_id(cluster, owner, before)
+
+    # Fund rewards pool
+    fund_pool(cluster, "community", f"10000000{DENOM}")
+
+    # Wait for exit duration to elapse
+    pos = query_position(cluster, pos_id)["position"]
+    exit_unlock_at = isoparse(pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    # Partial exit (half)
+    half = amount // 2
+    rsp = exit_tier_with_delegation(cluster, owner, pos_id, half)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # Position should still exist with reduced amount
+    pos_after = query_position(cluster, pos_id)["position"]
+    assert (
+        int(pos_after["amount"]) < amount
+    ), "amount should be reduced after partial exit"
+    assert pos_after["validator"] != "", "position should still be delegated"
+
+    # User should have a staking delegation
+    cli = cluster.cosmos_cli(0)
+    del_resp = json.loads(
+        cli.raw(
+            "query",
+            "staking",
+            "delegation",
+            owner,
+            validator,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
+    shares = del_resp["delegation_response"]["delegation"]["shares"]
+    assert (
+        int(shares.split(".")[0]) > 0
+    ), "owner should have staking delegation after partial exit"

@@ -593,13 +593,11 @@ def assert_v7_inflation_module_is_working(cluster):
 
 def assert_v7_tieredrewards_working(cluster):
     from .tieredrewards_helpers import (
-        MSG_ADD_TIER,
         get_node_validator_addr,
         lock_tier,
         query_positions_by_owner,
         query_tiers,
     )
-    from .utils import approve_proposal, submit_gov_proposal
 
     # Bank send smoke test
     community_addr = cluster.address("community")
@@ -617,34 +615,15 @@ def assert_v7_tieredrewards_working(cluster):
 
     wait_for_new_blocks(cluster, 1)
 
-    # Add tier 1 via governance
-    rsp = submit_gov_proposal(
-        cluster,
-        "community",
-        MSG_ADD_TIER,
-        {
-            "tier": {
-                "id": 1,
-                "exit_duration": "5s",
-                "bonus_apy": "0.040000000000000000",
-                "min_lock_amount": "1000000",
-                "close_only": False,
-            }
-        },
-        title="Add Tier 1",
-        summary="Add tier 1 for smoke test",
-    )
-    approve_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
-
+    # Tiers are already created by the upgrade handler.
     tiers = query_tiers(cluster)
     tier_list = tiers.get("tiers", [])
-    assert len(tier_list) > 0, f"expected at least 1 tier after proposal, got: {tiers}"
 
     # Lock tier smoke test
     validator_addr = get_node_validator_addr(cluster)
     tier_id = tier_list[0]["id"]
-    min_lock_amount = tier_list[0]["min_lock_amount"]
-    rsp = lock_tier(cluster, reserve_addr, tier_id, min_lock_amount, validator_addr)
+    lock_amount = max(int(tier_list[0]["min_lock_amount"]), 1000000)
+    rsp = lock_tier(cluster, reserve_addr, tier_id, lock_amount, validator_addr)
     assert rsp["code"] == 0, f"lock-tier failed: {rsp.get('raw_log', rsp)}"
 
     # Query positions

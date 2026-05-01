@@ -33,8 +33,8 @@ func (t Tier) Validate() error {
 		return fmt.Errorf("min lock amount cannot be nil")
 	}
 
-	if !t.MinLockAmount.IsPositive() {
-		return fmt.Errorf("min lock amount must be positive: %s", t.MinLockAmount)
+	if t.MinLockAmount.IsNegative() {
+		return fmt.Errorf("min lock amount cannot be negative: %s", t.MinLockAmount)
 	}
 
 	return nil

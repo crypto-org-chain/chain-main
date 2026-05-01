@@ -99,12 +99,10 @@ func TestTier_Validate(t *testing.T) {
 			errContains: "min lock amount cannot be nil",
 		},
 		{
-			name: "zero min lock amount",
+			name: "zero min lock amount is valid",
 			modify: func(t *types.Tier) {
 				t.MinLockAmount = sdkmath.ZeroInt()
 			},
-			wantErr:     true,
-			errContains: "min lock amount must be positive",
 		},
 		{
 			name: "negative min lock amount",
@@ -112,7 +110,7 @@ func TestTier_Validate(t *testing.T) {
 				t.MinLockAmount = sdkmath.NewInt(-100)
 			},
 			wantErr:     true,
-			errContains: "min lock amount must be positive",
+			errContains: "min lock amount cannot be negative",
 		},
 	}
 

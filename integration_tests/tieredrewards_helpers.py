@@ -95,6 +95,17 @@ def tier_undelegate(cluster, owner, position_id, i=0):
     return tx(cluster, "tier-undelegate", str(position_id), from_=owner, i=i)
 
 
+def exit_tier_with_delegation(cluster, owner, position_id, amount, i=0):
+    return tx(
+        cluster,
+        "exit-tier-with-delegation",
+        str(position_id),
+        str(amount),
+        from_=owner,
+        i=i,
+    )
+
+
 def tier_delegate(cluster, owner, position_id, validator, i=0):
     return tx(cluster, "tier-delegate", str(position_id), validator, from_=owner, i=i)
 
@@ -109,8 +120,9 @@ def trigger_exit(cluster, owner, position_id, i=0):
     return tx(cluster, "trigger-exit", str(position_id), from_=owner, i=i)
 
 
-def claim_rewards(cluster, owner, position_id, i=0):
-    return tx(cluster, "claim-tier-rewards", str(position_id), from_=owner, i=i)
+def claim_rewards(cluster, owner, *position_ids, i=0):
+    args = ["claim-tier-rewards"] + [str(pid) for pid in position_ids]
+    return tx(cluster, *args, from_=owner, i=i)
 
 
 def add_to_position(cluster, owner, position_id, amount, i=0):

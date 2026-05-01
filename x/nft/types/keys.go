@@ -39,8 +39,8 @@ var (
 // SplitKeyOwner return the address,denom,id from the key of stored owner
 func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string, err error) {
 	key = key[len(PrefixOwners)+len(delimiter):]
-	keys := bytes.Split(key, delimiter)
-	if len(keys) != 3 {
+	keys := bytes.SplitN(key, delimiter, 2)
+	if len(keys) < 2 {
 		return address, denomID, tokenID, errors.New("wrong KeyOwner")
 	}
 
@@ -49,37 +49,32 @@ func SplitKeyOwner(key []byte) (address sdk.AccAddress, denomID, tokenID string,
 		return address, denomID, tokenID, err
 	}
 
-	denomID = string(keys[1])
-	tokenID = string(keys[2])
+	denomID, tokenID, err = SplitKeyDenom(keys[1])
 
 	return address, denomID, tokenID, err
 }
 
 func SplitKeyDenom(key []byte) (denomID, tokenID string, err error) {
-	keys := bytes.Split(key, delimiter)
-
-	switch len(keys) {
-	case 2:
-		{
-			denomID = string(keys[0])
-			tokenID = string(keys[1])
+	if bytes.HasPrefix(key, []byte(IBCPrefix)) {
+		// IBC denom: ibc/hash/tokenID (take remainder after second delimiter as tokenID)
+		rest := key[len(IBCPrefix):]
+		idx := bytes.Index(rest, delimiter)
+		if idx < 0 || idx != IBCDenomLen-len(IBCPrefix) {
+			return denomID, tokenID, errors.New("wrong KeyDenom")
 		}
-	case 3:
-		{
-			if string(keys[0]) == "ibc" {
-				denomID = "ibc/" + string(keys[1])
-				tokenID = string(keys[2])
-			} else {
-				return denomID, tokenID, errors.New("wrong KeyOwner")
-			}
+		denomID = IBCPrefix + string(rest[:idx])
+		tokenID = string(rest[idx+len(delimiter):])
+	} else {
+		// Standard denom: denom/tokenID (take remainder after first delimiter as tokenID)
+		idx := bytes.Index(key, delimiter)
+		if idx < 0 {
+			return denomID, tokenID, errors.New("wrong KeyDenom")
 		}
-	default:
-		{
-			return denomID, tokenID, errors.New("wrong KeyOwner")
-		}
+		denomID = string(key[:idx])
+		tokenID = string(key[idx+len(delimiter):])
 	}
 
-	return denomID, tokenID, err
+	return denomID, tokenID, nil
 }
 
 // KeyOwner gets the key of a collection owned by an account address

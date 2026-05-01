@@ -7,6 +7,7 @@ import (
 	"time"
 
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
+	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
@@ -56,7 +57,7 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 
 		sdkCtx.Logger().Info("module migrations completed!")
 
-		if err := updateInflationParams(app, sdkCtx); err != nil {
+		if err := initInflationParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
 
@@ -64,11 +65,20 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 			return map[string]uint64{}, err
 		}
 
-		if err := updateTieredRewardsParams(app, sdkCtx); err != nil {
+		if err := initTieredRewardsParams(app, sdkCtx); err != nil {
 			return map[string]uint64{}, err
 		}
 
-		// TODO: add new tiers here if needed
+		if err := initDefaultTierDefinitions(ctx, app); err != nil {
+			return map[string]uint64{}, err
+		}
+
+		// Remove stale KeyDenomName("") index entry if it exists.
+		// The IBC NFT transfer bug passed "" as denom name to IssueDenom,
+		// which stored a name index entry for the empty string, blocking
+		// all subsequent IBC NFT class creation.
+		nftStore := sdkCtx.KVStore(app.keys[nfttypes.StoreKey])
+		nftStore.Delete(nfttypes.KeyDenomName(""))
 
 		sdkCtx.Logger().Info("upgrade completed",
 			"plan", plan.Name,
@@ -93,8 +103,8 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	}
 }
 
-func updateInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
-	sdkCtx.Logger().Info("updating inflation params...")
+func initInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("initializing inflation params...")
 
 	inflationParams := inflationtypes.DefaultParams()
 
@@ -129,7 +139,7 @@ func updateInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
 		return err
 	}
 
-	sdkCtx.Logger().Info("inflation module updated with params",
+	sdkCtx.Logger().Info("inflation module initialized with params",
 		"max_supply", inflationParams.MaxSupply.String(),
 		"burned_addresses", inflationParams.BurnedAddresses,
 		"decay_rate", inflationParams.DecayRate.String(),
@@ -166,8 +176,77 @@ func updateMintParams(app *ChainApp, sdkCtx sdk.Context) error {
 	return nil
 }
 
-func updateTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
-	sdkCtx.Logger().Info("updating tiered rewards params...")
+func initDefaultTierDefinitions(ctx context.Context, app *ChainApp) error {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	sdkCtx.Logger().Info("initializing default tier definitions...")
+
+	chainID := sdkCtx.ChainID()
+
+	var tiers []tieredrewardstypes.Tier
+
+	switch {
+	case strings.Contains(chainID, "testnet"):
+		minLock1CRO := math.NewInt(1).MulRaw(100_000_000)
+		minute := time.Minute
+		tiers = []tieredrewardstypes.Tier{
+			{
+				Id:            1,
+				ExitDuration:  minute,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.02"),
+				MinLockAmount: minLock1CRO,
+			},
+			{
+				Id:            2,
+				ExitDuration:  2 * minute,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.04"),
+				MinLockAmount: minLock1CRO,
+			},
+			{
+				Id:            3,
+				ExitDuration:  4 * minute,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.07"),
+				MinLockAmount: minLock1CRO,
+			},
+		}
+	default:
+		minLock100CRO := math.NewInt(100).MulRaw(100_000_000)
+		year := time.Hour * 24 * 365
+		tiers = []tieredrewardstypes.Tier{
+			{
+				Id:            1,
+				ExitDuration:  year,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.02"),
+				MinLockAmount: minLock100CRO,
+			},
+			{
+				Id:            2,
+				ExitDuration:  2 * year,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.04"),
+				MinLockAmount: minLock100CRO,
+			},
+			{
+				Id:            3,
+				ExitDuration:  4 * year,
+				BonusApy:      math.LegacyMustNewDecFromStr("0.07"),
+				MinLockAmount: minLock100CRO,
+			},
+		}
+	}
+
+	for _, tier := range tiers {
+		if err := app.TieredRewardsKeeper.SetTier(ctx, tier); err != nil {
+			return fmt.Errorf("tieredrewards: set tier %d: %w", tier.Id, err)
+		}
+	}
+
+	sdkCtx.Logger().Info("default tier definitions initialized",
+		"chain_id", chainID,
+		"tier_count", len(tiers))
+	return nil
+}
+
+func initTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
+	sdkCtx.Logger().Info("initializing tiered rewards params...")
 	tieredrewardsParams := tieredrewardstypes.DefaultParams()
 	tieredrewardsParams.TargetBaseRewardsRate = math.LegacyMustNewDecFromStr("0.03") // 3%
 
@@ -175,7 +254,7 @@ func updateTieredRewardsParams(app *ChainApp, sdkCtx sdk.Context) error {
 		return err
 	}
 
-	sdkCtx.Logger().Info("tieredrewards module updated params",
+	sdkCtx.Logger().Info("tieredrewards module initialized with params",
 		"target_base_rewards_rate", tieredrewardsParams.TargetBaseRewardsRate.String())
 
 	return nil

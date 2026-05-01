@@ -5,6 +5,7 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -84,8 +85,8 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
+	if !pos.DelegatedShares.IsPositive() {
+		return types.ErrPositionSharesZero
 	}
 
 	if pos.Validator == dstValidator {
@@ -207,6 +208,51 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	}
 	if unbonding {
 		return types.ErrPositionUnbonding
+	}
+	// no need to check for redelegation because unbonding only allowed after exit duration elapsed
+	// and redelegation is not allowed after exit duration elapsed
+	// Therefore, any redelegation would have matured by the time any unbonding matures (same unbonding duration)
+
+	return nil
+}
+
+func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Position, owner string, amount math.Int) error {
+	if !pos.IsOwner(owner) {
+		return types.ErrNotPositionOwner
+	}
+
+	if !pos.IsDelegated() {
+		return types.ErrPositionNotDelegated
+	}
+
+	if !pos.HasTriggeredExit() {
+		return types.ErrExitNotTriggered
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
+		return types.ErrExitLockDurationNotReached
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return err
+	}
+	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		return err
+	}
+
+	if amount.GT(tokenValue) {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
+	}
+
+	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if redelegating {
+		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 
 	return nil

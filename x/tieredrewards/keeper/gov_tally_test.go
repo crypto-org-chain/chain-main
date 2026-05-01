@@ -277,7 +277,6 @@ func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
 	s.insertVote(testProposalID, delAddr, yesVoteOpts())
 	validators := s.buildValidatorsMap()
 
-	// Compute expected power from DelegatedShares (exact, not pos.Amount).
 	expected := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expected.IsPositive(), "tier power should be positive")
 
@@ -744,14 +743,17 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 	freshAddr := sdk.AccAddress([]byte("fake_val_voter______"))
 
 	pos := types.Position{
-		Id:              999,
-		Owner:           freshAddr.String(),
-		TierId:          1,
-		Amount:          sdkmath.NewInt(5000),
-		CreatedAtHeight: 1,
-		CreatedAtTime:   s.ctx.BlockTime(),
-		DelegatedShares: sdkmath.LegacyNewDec(5000),
-		Validator:       fakeValAddr.String(),
+		Id:               999,
+		Owner:            freshAddr.String(),
+		TierId:           1,
+		Amount:           sdkmath.ZeroInt(),
+		CreatedAtHeight:  1,
+		CreatedAtTime:    s.ctx.BlockTime(),
+		DelegatedShares:  sdkmath.LegacyNewDec(5000),
+		Validator:        fakeValAddr.String(),
+		LastBonusAccrual: s.ctx.BlockTime(),
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
 	}
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
 

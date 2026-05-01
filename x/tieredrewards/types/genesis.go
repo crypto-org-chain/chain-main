@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"sort"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -86,6 +87,108 @@ func ValidateGenesis(data GenesisState) error {
 
 		if _, ok := posIDs[mapping.PositionId]; !ok {
 			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, mapping.PositionId)
+		}
+	}
+
+	// Validate validator events.
+	type eventKey struct {
+		validator string
+		seq       uint64
+	}
+	seenEvents := make(map[eventKey]struct{}, len(data.ValidatorEvents))
+	for i, entry := range data.ValidatorEvents {
+		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
+			return fmt.Errorf("invalid validator address in event at index %d: %w", i, err)
+		}
+		key := eventKey{validator: entry.Validator, seq: entry.Sequence}
+		if _, dup := seenEvents[key]; dup {
+			return fmt.Errorf("duplicate validator event (validator=%s, seq=%d) at index %d", entry.Validator, entry.Sequence, i)
+		}
+		seenEvents[key] = struct{}{}
+		if entry.Event.ReferenceCount == 0 {
+			return fmt.Errorf("validator event at index %d has zero reference count", i)
+		}
+	}
+
+	// Validate event current sequences.
+	seenCurrentSeq := make(map[string]struct{}, len(data.ValidatorEventSeqs))
+	for i, entry := range data.ValidatorEventSeqs {
+		if _, err := sdk.ValAddressFromBech32(entry.Validator); err != nil {
+			return fmt.Errorf("invalid validator address in event current seq at index %d: %w", i, err)
+		}
+		if _, dup := seenCurrentSeq[entry.Validator]; dup {
+			return fmt.Errorf("duplicate validator %s in event current seqs at index %d", entry.Validator, i)
+		}
+		seenCurrentSeq[entry.Validator] = struct{}{}
+	}
+
+	// Cross-validate: current_seq must be consistent with event sequences.
+	// Build max sequence per validator from events.
+	maxSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEvents {
+		if entry.Sequence > maxSeqByValidator[entry.Validator] {
+			maxSeqByValidator[entry.Validator] = entry.Sequence
+		}
+	}
+
+	// Cross-validate: current_seq must be >= max event sequence.
+	// current_seq is the last used seq, so it must be at least as large as the
+	// highest event seq (could be larger if events were garbage-collected).
+	currentSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEventSeqs {
+		currentSeqByValidator[entry.Validator] = entry.CurrentSeq
+	}
+	sortedVals := make([]string, 0, len(maxSeqByValidator))
+	for val := range maxSeqByValidator {
+		sortedVals = append(sortedVals, val)
+	}
+	sort.Strings(sortedVals)
+	for _, val := range sortedVals {
+		maxSeq := maxSeqByValidator[val]
+		currentSeq, ok := currentSeqByValidator[val]
+		if !ok {
+			return fmt.Errorf("validator %s has events but no current_seq entry", val)
+		}
+		if currentSeq < maxSeq {
+			return fmt.Errorf("validator %s current_seq (%d) must be greater than or equal to max event sequence (%d)", val, currentSeq, maxSeq)
+		}
+	}
+
+	// Cross-validate: delegated position LastEventSeq must not exceed
+	// the validator's current event sequence. The current seq is the last used
+	// seq number, which may be higher than the max event seq if events were
+	// garbage-collected after processing.
+	for i, pos := range data.Positions {
+		if !pos.IsDelegated() {
+			continue
+		}
+		maxAllowed := currentSeqByValidator[pos.Validator] // 0 if no seq entry
+		if pos.LastEventSeq > maxAllowed {
+			return fmt.Errorf(
+				"position %d has LastEventSeq (%d) greater than validator %s latest seq (%d) at index %d",
+				pos.Id, pos.LastEventSeq, pos.Validator, maxAllowed, i,
+			)
+		}
+	}
+
+	// Cross-validate: each event's ReferenceCount must equal the number of
+	// delegated positions on that validator with LastEventSeq < event.Seq.
+	// A refcount too high means the event is never garbage-collected (storage leak).
+	// A refcount too low means the event is prematurely garbage-collected,
+	// causing positions that haven't processed it to skip the segment (under or over payment).
+	for i, entry := range data.ValidatorEvents {
+		var expected uint64
+		for _, pos := range data.Positions {
+			hasNotProcessed := pos.IsDelegated() && pos.Validator == entry.Validator && pos.LastEventSeq < entry.Sequence
+			if hasNotProcessed {
+				expected++
+			}
+		}
+		if entry.Event.ReferenceCount != expected {
+			return fmt.Errorf(
+				"validator %s event seq %d has ReferenceCount %d but %d positions would process it (index %d)",
+				entry.Validator, entry.Sequence, entry.Event.ReferenceCount, expected, i,
+			)
 		}
 	}
 

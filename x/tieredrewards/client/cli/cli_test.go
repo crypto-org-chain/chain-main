@@ -85,7 +85,7 @@ func (s *IntegrationTestSuite) mustExecQuery(val *network.Validator, exec func()
 	s.Require().NoError(val.ClientCtx.Codec.UnmarshalJSON(bz.Bytes(), resp), bz.String())
 }
 
-func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positionID string) tieredrewardstypes.Position {
+func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positionID string) tieredrewardstypes.PositionResponse {
 	var resp tieredrewardstypes.QueryTierPositionResponse
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
 		return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, positionID)
@@ -93,12 +93,12 @@ func (s *IntegrationTestSuite) mustQueryPosition(val *network.Validator, positio
 	return resp.Position
 }
 
-func (s *IntegrationTestSuite) mustQueryRewardsPoolBalance(val *network.Validator) sdk.Coins {
-	var resp tieredrewardstypes.QueryRewardsPoolBalanceResponse
+func (s *IntegrationTestSuite) mustQueryRewardsPoolBalances(val *network.Validator) sdk.Coins {
+	var resp tieredrewardstypes.QueryRewardsPoolBalancesResponse
 	s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-		return tieredrewardstestutil.QueryRewardsPoolBalanceExec(val.ClientCtx)
+		return tieredrewardstestutil.QueryRewardsPoolBalancesExec(val.ClientCtx)
 	}, &resp)
-	return resp.Balance
+	return resp.Balances
 }
 
 func (s *IntegrationTestSuite) mustQueryAllPositions(val *network.Validator, extraArgs ...string) tieredrewardstypes.QueryAllTierPositionsResponse {
@@ -224,7 +224,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(tieredrewardstestutil.TestExitDuration, tiersResp.Tiers[0].ExitDuration)
 		s.Require().True(tiersResp.Tiers[0].BonusApy.Equal(sdkmath.LegacyOneDec()))
 
-		poolBalance := s.mustQueryRewardsPoolBalance(val)
+		poolBalance := s.mustQueryRewardsPoolBalances(val)
 		s.Require().True(poolBalance.AmountOf(s.cfg.BondDenom).IsPositive(), "rewards pool should be funded at genesis")
 	})
 
@@ -334,7 +334,8 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Equal(uint64(0), position.Id)
 		s.Require().Equal(owner, position.Owner)
 		s.Require().Equal(validator, position.Validator)
-		s.Require().True(position.Amount.Equal(lockAmount))
+		s.Require().True(position.Amount.Equal(lockAmount), "amount should equal lock amount for delegated position")
+		s.Require().True(position.DelegatedShares.IsPositive(), "delegated position should have positive shares")
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.AddToTierPositionExec(
@@ -418,7 +419,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "0")
-		s.Require().True(position.HasTriggeredExit())
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
 
 		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.ClearPositionExec(
@@ -430,7 +431,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position = s.mustQueryPosition(val, "0")
-		s.Require().False(position.HasTriggeredExit())
+		s.Require().False(!position.ExitTriggeredAt.IsZero())
 	})
 
 	s.Run("commit delegation and pagination", func() {
@@ -448,7 +449,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		position := s.mustQueryPosition(val, "1")
 		s.Require().Equal(uint64(1), position.Id)
 		s.Require().Equal(validator, position.Validator)
-		s.Require().True(position.IsDelegated())
+		s.Require().True(position.Validator != "")
 
 		firstPageResp := s.mustQueryAllPositions(val, "--limit=1", "--offset=0", "--count-total=true")
 		s.Require().Len(firstPageResp.Positions, 1)
@@ -484,7 +485,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "1")
-		s.Require().False(position.IsDelegated())
+		s.Require().False(position.Validator != "")
 
 		s.waitBlocks(1)
 
@@ -511,7 +512,7 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		})
 
 		position := s.mustQueryPosition(val, "2")
-		s.Require().True(position.HasTriggeredExit())
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
 
 		s.waitBlocks(1)
 
@@ -538,6 +539,85 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.assertCLIError(func() (sdktestutil.BufferWriter, error) {
 			return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, "2")
 		}, "")
+	})
+
+	s.Run("exit tier with delegation", func() {
+		exitWithDelegationAmount := sdkmath.NewInt(10_000_000)
+
+		// Lock a new position with immediate exit.
+		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.LockTierExec(
+				val.ClientCtx,
+				owner,
+				strconv.FormatUint(uint64(tieredrewardstestutil.TestTierID), 10),
+				exitWithDelegationAmount.String(),
+				validator,
+				append([]string{"--trigger-exit-immediately=true"}, s.defaultTxArgs()...)...,
+			)
+		})
+
+		position := s.mustQueryPosition(val, "3")
+		s.Require().True(!position.ExitTriggeredAt.IsZero())
+		s.Require().True(position.Validator != "")
+
+		// Wait for exit duration to elapse.
+		s.waitBlocks(1)
+
+		// Exit with delegation (full amount).
+		s.mustExecTx(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.ExitTierWithDelegationExec(
+				val.ClientCtx,
+				owner,
+				"3",
+				exitWithDelegationAmount.String(),
+				s.defaultTxArgs()...,
+			)
+		})
+
+		// Position should be deleted.
+		s.assertCLIError(func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryTierPositionExec(val.ClientCtx, "3")
+		}, "")
+	})
+
+	s.Run("raw-position", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionExec(val.ClientCtx, "0")
+		}, &resp)
+		s.Require().Equal(owner, resp.Position.Owner)
+		s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
+		s.Require().True(resp.Position.DelegatedShares.IsPositive())
+	})
+
+	s.Run("raw-positions-by-owner", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionsByOwnerResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionsByOwnerExec(val.ClientCtx, owner)
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("raw-all-positions", func() {
+		var resp tieredrewardstypes.QueryRawAllTierPositionsResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawAllTierPositionsExec(val.ClientCtx)
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("validator-data", func() {
+		var resp tieredrewardstypes.QueryValidatorDataResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryValidatorDataExec(val.ClientCtx, validator)
+		}, &resp)
+	})
+
+	s.Run("position-mappings", func() {
+		var resp tieredrewardstypes.QueryPositionMappingsResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryPositionMappingsExec(val.ClientCtx, "0")
+		}, &resp)
 	})
 }
 

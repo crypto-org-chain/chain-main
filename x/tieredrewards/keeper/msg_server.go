@@ -5,6 +5,9 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
+	"cosmossdk.io/math"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -51,18 +54,18 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	delegation := types.Delegation{
-		Validator:           msg.ValidatorAddress,
-		Shares:              shares,
-		BaseRewardsPerShare: currentRatio,
-	}
-
-	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
+	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	pos, err := ms.createPosition(ctx, msg.Owner, tier, positionAmount, delegation, msg.TriggerExitImmediately)
+	delegation := types.Delegation{
+		Validator:           msg.ValidatorAddress,
+		Shares:              shares,
+		BaseRewardsPerShare: currentRatio,
+		LastEventSeq:        latestSeq,
+	}
+	pos, err := ms.createPosition(ctx, msg.Owner, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +104,12 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	shares, err := ms.transferDelegation(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
+	shares, err := ms.transferDelegationToTier(ctx, msg.DelegatorAddress, msg.ValidatorAddress, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+
+	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +118,10 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		Validator:           msg.ValidatorAddress,
 		Shares:              shares,
 		BaseRewardsPerShare: currentRatio,
+		LastEventSeq:        latestSeq,
 	}
 
-	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, shares)
-	if err != nil {
-		return nil, err
-	}
-
-	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, positionAmount, delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +166,16 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
+	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 		Validator:           msg.Validator,
 		Shares:              newShares,
 		BaseRewardsPerShare: currentRatio,
+		LastEventSeq:        latestSeq,
 	}); err != nil {
 		return nil, err
 	}
@@ -222,10 +232,9 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos.UpdateAmount(returnAmount)
-
 	srcValidator := pos.Validator
 	pos.ClearDelegation()
+	pos.UpdateAmount(returnAmount)
 
 	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
@@ -290,16 +299,26 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
-	if err != nil {
-		return nil, err
+	// unbondingId == 0 when the src validator is already unbonded.
+	// No redelegation entry is created, so no slash tracking mapping is needed.
+	if unbondingId > 0 {
+		err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	srcValidator := pos.Validator
+
+	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, dstValAddr)
+	if err != nil {
+		return nil, err
+	}
 	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 		Validator:           msg.DstValidator,
 		Shares:              newShares,
 		BaseRewardsPerShare: dstCurrentRatio,
+		LastEventSeq:        latestSeq,
 	}); err != nil {
 		return nil, err
 	}
@@ -346,7 +365,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	if err := ms.lockFunds(ctx, msg.Owner, msg.Amount); err != nil {
 		return nil, err
 	}
-
+	newShares := math.LegacyZeroDec()
 	if pos.IsDelegated() {
 		pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
 		if err != nil {
@@ -358,16 +377,22 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		newShares, err := ms.delegate(ctx, valAddr, msg.Amount)
+		newShares, err = ms.delegate(ctx, valAddr, msg.Amount)
 		if err != nil {
 			return nil, err
 		}
 
 		totalShares := pos.DelegatedShares.Add(newShares)
+
+		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
+		if err != nil {
+			return nil, err
+		}
 		if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 			Validator:           pos.Validator,
 			Shares:              totalShares,
 			BaseRewardsPerShare: pos.BaseRewardsPerShare,
+			LastEventSeq:        latestSeq,
 		}); err != nil {
 			return nil, err
 		}
@@ -384,8 +409,8 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		PositionId:  pos.Id,
 		TierId:      pos.TierId,
 		Owner:       pos.Owner,
+		SharesAdded: newShares,
 		AmountAdded: msg.Amount,
-		NewTotal:    pos.Amount,
 	}); err != nil {
 		return nil, err
 	}
@@ -480,39 +505,39 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
+	positions := make([]types.Position, 0, len(msg.PositionIds))
+	for _, posId := range msg.PositionIds {
+		pos, err := ms.getPosition(ctx, posId)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
+			return nil, err
+		}
+
+		positions = append(positions, pos)
+	}
+
+	totalBase, totalBonus, err := ms.claimRewardsForPositions(ctx, msg.Owner, positions)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
-		return nil, err
-	}
-
-	pos, baseRewards, bonusRewards, err := ms.claimRewardsForPosition(ctx, pos)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventTierRewardsClaimed{
-		PositionId:   pos.Id,
-		TierId:       pos.TierId,
-		Owner:        pos.Owner,
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
+		Owner:        msg.Owner,
+		PositionIds:  msg.PositionIds,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgClaimTierRewardsResponse{
-		BaseRewards:  baseRewards,
-		BonusRewards: bonusRewards,
-		PositionId:   pos.Id,
+		BaseRewards:  totalBase,
+		BonusRewards: totalBonus,
+		PositionIds:  msg.PositionIds,
 	}, nil
 }
 
@@ -540,9 +565,9 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	withdrawCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, pos.Amount))
+	withdraw := sdk.NewCoin(bondDenom, pos.Amount)
 
-	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, withdrawCoins); err != nil {
+	if err := ms.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, sdk.NewCoins(withdraw)); err != nil {
 		return nil, err
 	}
 
@@ -553,12 +578,116 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
 		Position: pos,
-		Amount:   withdrawCoins,
+		Amount:   withdraw,
 	}); err != nil {
 		return nil, err
 	}
 
 	return &types.MsgWithdrawFromTierResponse{
-		Amount: withdrawCoins,
+		Amount: withdraw,
+	}, nil
+}
+
+func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgExitTierWithDelegation) (*types.MsgExitTierWithDelegationResponse, error) {
+	if err := msg.Validate(); err != nil {
+		return nil, err
+	}
+
+	pos, err := ms.getPosition(ctx, msg.PositionId)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ms.validateExitTierWithDelegation(ctx, pos, msg.Owner, msg.Amount); err != nil {
+		return nil, err
+	}
+
+	pos, _, _, err = ms.claimRewardsForPosition(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
+
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenValue, err := ms.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	if err != nil {
+		return nil, err
+	}
+
+	// Transfer delegation from tier module back to the owner.
+	transferredShares, unbondedShares, transferredAmount, err := ms.transferDelegationFromTier(ctx, pos, valAddr, msg.Amount)
+	if err != nil {
+		return nil, err
+	}
+
+	// Capture for event before potential deletion.
+	posId := pos.Id
+	tierId := pos.TierId
+	validator := pos.Validator
+
+	fullExit := pos.ExitWithFullDelegation(msg.Amount, tokenValue)
+
+	if fullExit {
+		if err := ms.deletePosition(ctx, pos); err != nil {
+			return nil, err
+		}
+	} else {
+		remainingShares := pos.DelegatedShares.Sub(unbondedShares)
+		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
+		if err != nil {
+			return nil, err
+		}
+		err = ms.updateDelegation(ctx, &pos, types.Delegation{
+			Validator:           pos.Validator,
+			Shares:              remainingShares,
+			BaseRewardsPerShare: pos.BaseRewardsPerShare,
+			LastEventSeq:        latestSeq,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Compute remaining token value for min lock check.
+		remainingTokenValue, err := ms.reconcileAmountFromShares(ctx, valAddr, remainingShares)
+		if err != nil {
+			return nil, err
+		}
+
+		tier, err := ms.getTier(ctx, pos.TierId)
+		if err != nil {
+			return nil, err
+		}
+		// actual remaining amount (post-transfer) must meet min lock.
+		if !tier.MeetsMinLockRequirement(remainingTokenValue) {
+			return nil, errorsmod.Wrapf(types.ErrMinLockAmountNotMet,
+				"remaining amount %s is below tier minimum %s", remainingTokenValue, tier.MinLockAmount)
+		}
+
+		if err := ms.setPosition(ctx, pos); err != nil {
+			return nil, err
+		}
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitTierWithDelegation{
+		PositionId:        posId,
+		TierId:            tierId,
+		Owner:             msg.Owner,
+		Validator:         validator,
+		TransferredAmount: transferredAmount,
+		TransferredShares: transferredShares,
+		FullExit:          fullExit,
+	}); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgExitTierWithDelegationResponse{
+		PositionId:        posId,
+		TransferredAmount: transferredAmount,
+		TransferredShares: transferredShares,
+		FullExit:          fullExit,
 	}, nil
 }

@@ -105,8 +105,11 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 				return err
 			}
+			if err := k.increasePositionCountForValidator(ctx, valAddr); err != nil {
+				return err
+			}
 		}
-		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
 			return err
 		}
 		return nil
@@ -136,10 +139,10 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
 			return err
 		}
-		if err := k.decreasePositionCount(ctx, oldPos.TierId); err != nil {
+		if err := k.decreasePositionCountForTier(ctx, oldPos.TierId); err != nil {
 			return err
 		}
-		if err := k.increasePositionCount(ctx, pos.TierId); err != nil {
+		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
 			return err
 		}
 	}
@@ -155,6 +158,9 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
 			return err
 		}
+		if err := k.decreasePositionCountForValidator(ctx, oldVal); err != nil {
+			return err
+		}
 	}
 	if newDelegated && (!oldDelegated || changedValidator) {
 		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
@@ -164,8 +170,18 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
 			return err
 		}
+		if err := k.increasePositionCountForValidator(ctx, newVal); err != nil {
+			return err
+		}
 	}
 	return nil
+}
+
+// setPositionUnsafe persists a position without reading the old value or diffing
+// secondary indexes. Use only when the caller guarantees that owner, tier, and
+// validator have not changed (e.g., after claiming rewards).
+func (k Keeper) setPositionUnsafe(ctx context.Context, pos types.Position) error {
+	return k.Positions.Set(ctx, pos.Id, pos)
 }
 
 // DeletePosition removes a position and cleans up secondary indexes.
@@ -180,7 +196,8 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return err
 	}
 
-	// guard, but should already be deleted by redelegation completion hook.
+	// guard, but should already be deleted by redelegation completion hook,
+	// unless a redelegation position gets slashed to zero after exit duration is elapsed and exits.
 	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
 		return err
 	}
@@ -202,8 +219,11 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 			return err
 		}
+		if err := k.decreasePositionCountForValidator(ctx, valAddr); err != nil {
+			return err
+		}
 	}
-	return k.decreasePositionCount(ctx, pos.TierId)
+	return k.decreasePositionCountForTier(ctx, pos.TierId)
 }
 
 func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {

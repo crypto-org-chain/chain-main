@@ -20,6 +20,19 @@ message UnbondingMapping {
   uint64 position_id  = 2;
 }
 
+// ValidatorEventEntry wraps a validator address, sequence number and event for genesis export.
+message ValidatorEventEntry {
+  string         validator = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  uint64         sequence  = 2;
+  ValidatorEvent event     = 3 [(gogoproto.nullable) = false];
+}
+
+// ValidatorEventSeqEntry wraps a validator address with its current (last used) event sequence for genesis export.
+message ValidatorEventSeqEntry {
+  string validator   = 1 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
+  uint64 current_seq = 2;
+}
+
 // GenesisState defines the tieredrewards module's genesis state.
 message GenesisState {
   // params defines all the parameters of the module.
@@ -36,4 +49,8 @@ message GenesisState {
   repeated UnbondingMapping unbonding_delegation_mappings = 6 [(gogoproto.nullable) = false];
   // redelegation_mappings maps redelegation IDs to tier position IDs.
   repeated UnbondingMapping redelegation_mappings = 7 [(gogoproto.nullable) = false];
+  // validator_events stores pending validator lifecycle events for lazy processing.
+  repeated ValidatorEventEntry validator_events = 8 [(gogoproto.nullable) = false];
+  // validator_event_seqs stores the current (last used) event sequence per validator.
+  repeated ValidatorEventSeqEntry validator_event_seqs = 9 [(gogoproto.nullable) = false];
 }

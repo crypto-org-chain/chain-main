@@ -180,8 +180,8 @@ func QueryTiersExec(clientCtx client.Context, extraArgs ...string) (testutil.Buf
 	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryTiers)
 }
 
-func QueryRewardsPoolBalanceExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRewardsPoolBalance)
+func QueryRewardsPoolBalancesExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRewardsPoolBalances)
 }
 
 func QueryEstimatePositionRewardsExec(clientCtx client.Context, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
@@ -194,6 +194,26 @@ func QueryVotingPowerByOwnerExec(clientCtx client.Context, voter string, extraAr
 
 func QueryTotalDelegatedVotingPowerExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryTotalDelegatedVotingPower)
+}
+
+func QueryRawTierPositionExec(clientCtx client.Context, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{positionID}, extraArgs...), tieredrewardscli.GetCmdQueryRawTierPosition)
+}
+
+func QueryRawTierPositionsByOwnerExec(clientCtx client.Context, owner string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{owner}, extraArgs...), tieredrewardscli.GetCmdQueryRawTierPositionsByOwner)
+}
+
+func QueryRawAllTierPositionsExec(clientCtx client.Context, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, extraArgs, tieredrewardscli.GetCmdQueryRawAllTierPositions)
+}
+
+func QueryValidatorDataExec(clientCtx client.Context, validator string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{validator}, extraArgs...), tieredrewardscli.GetCmdQueryValidatorData)
+}
+
+func QueryPositionMappingsExec(clientCtx client.Context, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecQueryCmd(clientCtx, append([]string{positionID}, extraArgs...), tieredrewardscli.GetCmdQueryPositionMappings)
 }
 
 func UpdateParamsProposalExec(clientCtx client.Context, from, params string, extraArgs ...string) (testutil.BufferWriter, error) {
@@ -250,4 +270,8 @@ func ClaimTierRewardsExec(clientCtx client.Context, from, positionID string, ext
 
 func WithdrawFromTierExec(clientCtx client.Context, from, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecTxCmd(clientCtx, from, []string{positionID}, tieredrewardscli.GetCmdWithdrawFromTier, extraArgs...)
+}
+
+func ExitTierWithDelegationExec(clientCtx client.Context, from, positionID, amount string, extraArgs ...string) (testutil.BufferWriter, error) {
+	return ExecTxCmd(clientCtx, from, []string{positionID, amount}, tieredrewardscli.GetCmdExitTierWithDelegation, extraArgs...)
 }

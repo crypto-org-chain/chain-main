@@ -50,6 +50,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().True(pos.DelegatedShares.IsPositive())
 	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set")
+	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 }
 
 func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
@@ -273,37 +274,6 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	s.Require().NoError(err)
 	s.Require().Len(posIds, 1)
 	s.Require().Equal(uint64(0), posIds[0])
-}
-
-// TestMsgTierDelegate_ReconcilesAmount: after LockTier at non-1:1
-// exchange rate, pos.Amount matches the actual share-backed token value.
-func (s *KeeperSuite) TestMsgTierDelegate_ReconcilesAmount() {
-	lockAmount := sdkmath.NewInt(10001)
-	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	addr := sdk.MustAccAddressFromBech32(pos.Owner)
-
-	// Slash to create non-1:1 exchange rate.
-	s.slashValidatorDirect(valAddr, sdkmath.LegacyNewDecWithPrec(10, 2)) // 10%
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-	posId := positions[0].Id
-
-	pos, err = s.keeper.GetPosition(s.ctx, posId)
-	s.Require().NoError(err)
-
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	actualTokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
-
-	s.Require().Equal(actualTokenValue.String(), pos.Amount.String(),
-		"pos.Amount must equal actual token value from shares after LockTier")
-
-	// With non-1:1 rate, reconciled amount should differ from original lockAmount.
-	s.Require().NotEqual(lockAmount.String(), pos.Amount.String(),
-		"pos.Amount must differ from original lockAmount due to truncation")
 }
 
 // TestMsgTierDelegate_TierCloseOnly verifies that TierDelegate is rejected

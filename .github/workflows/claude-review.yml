@@ -1,0 +1,118 @@
+name: Claude PR Review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: claude-review-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Permission check
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const username = context.payload.comment.user.login;
+
+            const { data: { permission } } = await github.rest.repos.getCollaboratorPermissionLevel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              username,
+            });
+
+            const allowed = ['admin', 'maintain', 'write'];
+            if (!allowed.includes(permission)) {
+              core.setFailed(`User ${username} does not have write access.`);
+              return;
+            }
+
+      # issue_comment runs with github.ref on the default branch; resolve the PR head explicitly
+      - name: Resolve PR head for checkout
+        id: pr
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const prUrl = context.payload.issue.pull_request?.url;
+            if (!prUrl) {
+              core.setFailed('Expected issue.pull_request.url');
+              return;
+            }
+            const { data: pull } = await github.request('GET ' + prUrl);
+            const repository = pull.head.repo.full_name;
+            const ref = pull.head.ref;
+            const sha = pull.head.sha;
+            const fs = require('fs');
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `repository=${repository}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `ref=${ref}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
+
+      # Base repo + refs/pull/N/head so origin exposes pull refs (fork checkouts do not).
+      - name: Checkout PR head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: ${{ github.repository }}
+          ref: refs/pull/${{ github.event.issue.number }}/head
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME_AI }}
+          aws-region: us-east-1
+
+      - name: Claude Code
+        uses: anthropics/claude-code-action@c3d45e8e941e1b2ad7b278c57482d9c5bf1f35b3 # v1.0.99
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          use_bedrock: true
+          track_progress: true
+          settings: |
+            {
+              "model": "us.anthropic.claude-sonnet-4-6",
+              "attribution": {
+                "commit": "${{ steps.pr.outputs.sha }}",
+                "pr": "${{ github.event.issue.number }}"
+              }
+            }
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.issue.number }}
+
+            Never suggest GitHub Action SHA changes from memory — verify with `gh api repos/{owner}/{repo}/commits/{tag} --jq '.sha'` first.
+
+            Please review this pull request with a focus on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Security implications
+            - Performance considerations
+
+            Identify all state-breaking changes and alert the user when they are detected (No breaking changes should be merged in release branches).
+            This includes:
+            - Consensus Impact: These changes demand that all validators upgrade to the new version to maintain network consensus.
+            - Module Changes: Examples include modifications to core module functionality, such as altering the transaction structure,
+            changing how messages are signed, or changing state serialization (e.g., changing Amino JSON support).
+            - In-Place Migrations: Modern Cosmos SDK upgrades use "in-place store migrations" to update data structures within the state machine to align with the new code.
+            - Required Procedures: Historically, these required exporting the entire chain state, running migration scripts on the JSON,
+            and starting a new chain (Genesis migration), though in-place migration is now preferred.
+
+            Use `gh pr comment` for top-level feedback.
+            Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) to highlight specific code issues.
+            Only post GitHub comments - don't submit review text as messages.
+
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
