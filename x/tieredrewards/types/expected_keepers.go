@@ -54,4 +54,5 @@ type DistributionKeeper interface {
 	AllocateTokensToValidator(ctx context.Context, val stakingtypes.ValidatorI, tokens sdk.DecCoins) error
 	WithdrawDelegationRewards(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress) (sdk.Coins, error)
 	SetWithdrawAddr(ctx context.Context, delAddr, withdrawAddr sdk.AccAddress) error
+	DeleteDelegatorWithdrawAddr(ctx context.Context, delAddr, withdrawAddr sdk.AccAddress) error
 }

@@ -80,6 +80,12 @@ func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr, ownerAd
 	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 
+// removeBaseRewardsRouting removes the routing of base rewards for the position's delegation to the position owner.
+// Part of position clean up during deletion.
+func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.DeleteDelegatorWithdrawAddr(ctx, posDelAddr, ownerAddr)
+}
+
 // SetPosition stores a position, validates it, and maintains secondary indexes.
 func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	if err := pos.Validate(); err != nil {
@@ -199,6 +205,15 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
+
+	if err := k.removeBaseRewardsRouting(ctx, delAddr, owner); err != nil {
+		return err
 	}
 
 	// guard, but should already be deleted by unbonding completion hook.
