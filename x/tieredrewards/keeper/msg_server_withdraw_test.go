@@ -399,8 +399,6 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	})
 	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 
-	// Simulate unbonding completion via hook.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 	hooks := s.keeper.Hooks()
 	// Get the unbonding IDs for position 0.
 	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
@@ -409,7 +407,9 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(unbondingIds)
 
-	err = hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, unbondingIds)
+	// Simulate unbonding completion via hook.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	err = hooks.AfterUnbondingCompleted(s.ctx, posDelAddr, valAddr, unbondingIds)
 	s.Require().NoError(err)
 
 	// Verify mapping is cleaned up.
@@ -711,4 +711,47 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_SweepsNonBondDenomDust() {
 
 	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
 		"position's delegator account should be empty after sweep")
+}
+
+// TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting verifies deletePosition's
+// removeBaseRewardsRouting step wipes the distribution DelegatorsWithdrawAddress
+// entry set at position creation. 
+func (s *KeeperSuite) TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+
+	// Sanity: at creation time the withdraw-addr points at the owner.
+	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(ownerAddr.String(), withdrawAddr.String(),
+		"withdraw addr should route to owner before position is deleted")
+
+	// Drive the position through to withdrawal.
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr, posDelAddr)
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	// After deletion the mapping must be gone. Distribution returns the
+	// delegator address itself as the default when no mapping is stored.
+	withdrawAddrAfter, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(posDelAddr.String(), withdrawAddrAfter.String(),
+		"withdraw-addr mapping should be cleared on position deletion; "+
+			"GetDelegatorWithdrawAddr should fall back to the delegator itself")
 }

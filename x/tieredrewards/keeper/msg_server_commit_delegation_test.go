@@ -305,3 +305,48 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
 	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
 		"position's delegator account must not hold liquid bondDenom after commit")
 }
+
+// TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount verifies that
+// CommitDelegationToTier explicitly creates a BaseAccount for the position's
+// delegator address.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	commitAmount := sdkmath.NewInt(1_000_000)
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, commitAmount))))
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, commitAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	// Predict the next position's delegator address and confirm no auth
+	// account exists yet — if one did, the commit path's idempotent guard
+	// would mask the behavior we want to verify.
+	nextId, err := s.keeper.NextPositionId.Peek(s.ctx)
+	s.Require().NoError(err)
+	predictedDelAddr := types.GetDelegatorAddress(nextId)
+	s.Require().Nil(s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr),
+		"auth account must not exist before commit")
+
+	resp, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: owner.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(nextId, resp.PositionId)
+
+	// After commit the auth account for the position's delegator address must
+	// exist; otherwise any later undelegation + CompleteUnbonding would fail
+	// silently in the staking EndBlocker.
+	acc := s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr)
+	s.Require().NotNil(acc, "auth account must be created by CommitDelegationToTier")
+	s.Require().Equal(predictedDelAddr, acc.GetAddress())
+}

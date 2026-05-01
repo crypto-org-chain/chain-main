@@ -271,8 +271,6 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
 	ownerBalBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleBalBefore := s.app.BankKeeper.GetBalance(s.ctx, moduleAddr, bondDenom)
 	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 	rewardsPoolBalBefore := s.app.BankKeeper.GetBalance(s.ctx, rewardsPoolAddr, bondDenom)
 
@@ -310,10 +308,8 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	s.Require().Equal(posBefore, posAfter, "position state must remain unchanged by estimation")
 
 	ownerBalAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	moduleBalAfter := s.app.BankKeeper.GetBalance(s.ctx, moduleAddr, bondDenom)
 	rewardsPoolBalAfter := s.app.BankKeeper.GetBalance(s.ctx, rewardsPoolAddr, bondDenom)
 	s.Require().Equal(ownerBalBefore, ownerBalAfter, "owner balance must not change")
-	s.Require().Equal(moduleBalBefore, moduleBalAfter, "tier module balance must not change")
 	s.Require().Equal(rewardsPoolBalBefore, rewardsPoolBalAfter, "rewards pool balance must not change")
 }
 

@@ -319,10 +319,9 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	// Fire hook with the tier module address (hooks filter by delegator).
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(positionId)
 	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err = hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{unbondingId})
+	err = hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{unbondingId})
 	s.Require().NoError(err)
 
 	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, unbondingId)
@@ -333,9 +332,9 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
 func (s *KeeperSuite) TestAfterUnbondingCompleted_NoMapping_NoOp() {
 	hooks := s.keeper.Hooks()
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err := hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{999})
+	err := hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{999})
 	s.Require().NoError(err, "should not error when unbonding ID has no mapping")
 }
 
@@ -351,10 +350,10 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err = hooks.AfterRedelegationCompleted(s.ctx, poolAddr, valSrc, valDst, []uint64{unbondingId})
+	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingId})
 	s.Require().NoError(err)
 
 	has, err = s.keeper.RedelegationMappings.Has(s.ctx, unbondingId)
@@ -365,10 +364,10 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	hooks := s.keeper.Hooks()
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err := hooks.AfterRedelegationCompleted(s.ctx, poolAddr, valSrc, valDst, []uint64{888})
+	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{888})
 	s.Require().NoError(err, "should not error when redelegation ID has no mapping")
 }
 
