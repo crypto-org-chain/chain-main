@@ -53,14 +53,8 @@ from dateutil.parser import isoparse
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
-from . import tieredrewards_helpers as _trh
 from .test_upgrade import edit_chain_program, post_init
-
-# Both binaries here are compiled with `-tags testnet`, so the base denom
-# is `basetcro` (not `basecro`).
-_trh.DENOM = "basetcro"
-
-from .tieredrewards_helpers import (  # noqa: E402
+from .tieredrewards_helpers import (
     TIER_1_ID,
     TIER_1_MIN,
     TIER_2_ID,
@@ -74,7 +68,7 @@ from .tieredrewards_helpers import (  # noqa: E402
     query_tiers,
     tier_redelegate,
 )
-from .utils import (  # noqa: E402
+from .utils import (
     cluster_fixture,
     query_balances,
     query_delegations,
