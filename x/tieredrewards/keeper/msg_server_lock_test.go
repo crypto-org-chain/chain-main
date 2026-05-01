@@ -206,3 +206,21 @@ func (s *KeeperSuite) TestMsgLockTier_RoutesBaseRewardsToOwner() {
 	s.Require().Equal(freshAddr.String(), withdrawAddr.String(),
 		"LockTier must route the position sub-account's base rewards to the owner")
 }
+
+func (s *KeeperSuite) TestMsgLockTier_ValidatorNotBonded() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(1000))
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	_, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            freshAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+}

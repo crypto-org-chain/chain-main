@@ -350,3 +350,19 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount(
 	s.Require().NotNil(acc, "auth account must be created by CommitDelegationToTier")
 	s.Require().Equal(predictedDelAddr, acc.GetAddress())
 }
+
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {
+	s.setupTier(1)
+	delAddr, valAddr := s.getDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	_, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+	})
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+}
