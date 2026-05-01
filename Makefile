@@ -303,13 +303,7 @@ nix-integration-test-ledger: check-network
 nix-integration-test-slow: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow"
 
-nix-integration-test-slow-a: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow -k 'not clear_position'"
-
-nix-integration-test-slow-b: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow -k clear_position"
-
-nix-integration-test-ibc: check-network 
+nix-integration-test-ibc: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ibc"
 
 nix-integration-test-byzantine: check-network
