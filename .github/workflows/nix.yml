@@ -634,3 +634,33 @@ jobs:
           name: debug_files_tieredrewards_aux
           path: debug_files_tieredrewards_aux.tar.gz
           if-no-files-found: ignore
+
+  # Aggregator jobs preserve the original required-check names.
+  # Report success when all underlying split jobs succeed or are skipped.
+  test-upgrade:
+    runs-on: ubuntu-latest
+    needs: [test-upgrade-manual, test-upgrade-cancel-export]
+    if: always()
+    steps:
+      - name: Aggregate upgrade test results
+        run: |
+          for r in "${{ needs.test-upgrade-manual.result }}" "${{ needs.test-upgrade-cancel-export.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "failed: $r"; exit 1 ;;
+            esac
+          done
+
+  test-slow:
+    runs-on: ubuntu-latest
+    needs: [test-slow-a, test-slow-b]
+    if: always()
+    steps:
+      - name: Aggregate slow test results
+        run: |
+          for r in "${{ needs.test-slow-a.result }}" "${{ needs.test-slow-b.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "failed: $r"; exit 1 ;;
+            esac
+          done
