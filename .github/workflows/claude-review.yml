@@ -60,11 +60,12 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `ref=${ref}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `sha=${sha}\n`);
 
+      # Base repo + refs/pull/N/head so origin exposes pull refs (fork checkouts do not).
       - name: Checkout PR head
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          repository: ${{ steps.pr.outputs.repository }}
-          ref: ${{ steps.pr.outputs.ref }}
+          repository: ${{ github.repository }}
+          ref: refs/pull/${{ github.event.issue.number }}/head
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
@@ -108,8 +109,6 @@ jobs:
             - In-Place Migrations: Modern Cosmos SDK upgrades use "in-place store migrations" to update data structures within the state machine to align with the new code.
             - Required Procedures: Historically, these required exporting the entire chain state, running migration scripts on the JSON,
             and starting a new chain (Genesis migration), though in-place migration is now preferred.
-
-            The workspace is checked out to the PR head: ${{ steps.pr.outputs.repository }} at ref ${{ steps.pr.outputs.ref }} (not the default branch).
 
             Use `gh pr comment` for top-level feedback.
             Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) to highlight specific code issues.
