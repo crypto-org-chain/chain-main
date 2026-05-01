@@ -333,7 +333,114 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # NOTE: v4.2.0 and v5.0.0 upgrade blocks removed — baseline is now v5.0.0.
     # If you need to re-test those upgrade paths, change upgrade-test.nix genesis
-    # back to released3 (v3.3.4) and restore the blocks from git history.
+    # back to released3 (v3.3.4) and uncomment the blocks below.
+
+    # community_addr = cluster.address("community")
+    # reserve_addr = cluster.address("reserve")
+    # # for the fee payment
+    # cluster.transfer(
+    #     community_addr,
+    #     reserve_addr,
+    #     "10000basecro",
+    #     wait_tx=False,
+    #     broadcast_mode="block",
+    # )
+    #
+    # # create denom before upgrade
+    # cli = cluster.cosmos_cli()
+    # denomid = "testdenomid"
+    # denomname = "testdenomname"
+    # creator = cluster.address("community")
+    # rsp = cluster.create_nft(
+    #     creator, denomid, denomname, event_query_tx=False, broadcast_mode="block"
+    # )
+    # ev = find_log_event_attrs_legacy(rsp["logs"], "issue_denom")
+    # assert ev == {
+    #     "denom_id": denomid,
+    #     "denom_name": denomname,
+    #     "creator": creator,
+    # }, ev
+    #
+    # # v4.2 upgrade
+    # target_height = cluster.block_height() + 15
+    # upgrade(
+    #     cluster,
+    #     "v4.2.0",
+    #     target_height,
+    #     gte_cosmos_sdk_v0_46=False,
+    #     broadcast_mode="block",
+    # )
+    #
+    # cli = cluster.cosmos_cli()
+    #
+    # # check denom after upgrade
+    # rsp = cluster.query_nft(denomid)
+    # assert rsp["name"] == denomname, rsp
+    # assert rsp["uri"] == "", rsp
+    #
+    # # check icaauth params
+    # rsp = json.loads(
+    #     cli.raw(
+    #         "query",
+    #         "icaauth",
+    #         "params",
+    #         home=cli.data_dir,
+    #         node=cli.node_rpc,
+    #         output="json",
+    #     )
+    # )
+    #
+    # assert rsp["params"]["minTimeoutDuration"] == "3600s", rsp
+    # # check min commission
+    # rsp = json.loads(
+    #     cli.raw(
+    #         "query",
+    #         "staking",
+    #         "params",
+    #         home=cli.data_dir,
+    #         node=cli.node_rpc,
+    #         output="json",
+    #     )
+    # )
+    # print("min commission", rsp["min_commission_rate"])
+    # min_commission_rate = "0.050000000000000000"
+    # assert rsp["min_commission_rate"] == min_commission_rate, rsp
+    #
+    # assert_commission(validator1_operator_address, min_commission_rate)
+    # assert_commission(validator2_operator_address, default_rate)
+    #
+    # target_height = cluster.block_height() + 15
+    # # test migrate keystore
+    # for i in range(2):
+    #     cluster.migrate_keystore(i=i)
+    #
+    # # v5 upgrade
+    # target_height = cluster.block_height() + 15
+    # upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
+    # cli = cluster.cosmos_cli()
+    #
+    # acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
+    # assert acct["@type"] == "/cosmos.vesting.v1beta1.PeriodicVestingAccount"
+    # vesting_acct = acct["base_vesting_account"]
+    # assert vesting_acct["original_vesting"] == [
+    #     {"denom": "basecro", "amount": "7000000000000000000"}
+    # ]
+    # assert len(acct["vesting_periods"]) == 60
+    # for period in acct["vesting_periods"][:-1]:
+    #     assert period == {
+    #         "length": "60",
+    #         "amount": [{"denom": "basecro", "amount": "116666666666666666"}],
+    #     }
+    # assert acct["vesting_periods"][-1] == {
+    #     "length": "60",
+    #     "amount": [{"denom": "basecro", "amount": "116666666666666706"}],
+    # }
+    #
+    # params = json.loads(
+    #     cli.raw("query", "mint", "params", output="json", node=cli.node_rpc)
+    # )
+    # assert params["inflation_max"] == "0.010000000000000000"
+    # assert params["inflation_min"] == "0.008500000000000000"
 
     # v6 upgrade
     target_height = cluster.block_height() + 15
