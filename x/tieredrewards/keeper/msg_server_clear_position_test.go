@@ -249,6 +249,8 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, redelegateResp.UnbondingId, posBeforeSlash.Amount, shareBurnt)
 	s.Require().NoError(err)
 
+	s.slashRedelegationCompletely(posBeforeSlash)
+
 	posAfterSlash, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(posAfterSlash.IsDelegated(), "delegation should be cleared when all shares are burnt")
@@ -347,14 +349,10 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedZeroExitInProgress() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Trigger exit on the undelegated-zero position.
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+	_, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
@@ -390,15 +388,11 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add funds to the undelegated position.
 	addAmount := sdkmath.NewInt(2000)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
 	s.Require().NoError(err)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),

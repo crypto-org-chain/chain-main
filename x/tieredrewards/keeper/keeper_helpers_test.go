@@ -285,3 +285,21 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 
 	return valAddr, accAddr
 }
+
+// slashRedelegationCompletely simulates a redelegation slash that burns all of a position's shares.
+// Returns the updated Position 
+func (s *KeeperSuite) slashRedelegationCompletely(pos types.Position) types.Position {
+	s.T().Helper()
+
+	pos.ClearDelegation()
+	pos.UpdateAmount(sdkmath.ZeroInt())
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+
+	delAddr := types.GetDelegatorAddress(pos.Id)
+	dels, err := s.app.StakingKeeper.GetDelegatorDelegations(s.ctx, delAddr, 1)
+	s.Require().NoError(err)
+	for _, d := range dels {
+		s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, d))
+	}
+	return pos
+}

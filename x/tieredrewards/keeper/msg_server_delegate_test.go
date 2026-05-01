@@ -18,15 +18,11 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate redelegation slash zeroing the position
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add funds back
 	_, bondDenom := s.getStakingData()
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
@@ -78,13 +74,9 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash clearing delegation and zeros amount
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
-	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
+	_, err := msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 		Validator:  valAddr.String(),
@@ -101,13 +93,9 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero_ExitInProgress() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash clearing delegation and zeros amount
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
+	_, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 
 	_, err = msgServer.TierDelegate(s.ctx, &types.MsgTierDelegate{
@@ -127,15 +115,11 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate redelegation slash zeroing out the position
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add funds back
 	_, bondDenom := s.getStakingData()
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
@@ -211,14 +195,10 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate redeleg slash to get undelegated position without exit.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	_, bondDenom := s.getStakingData()
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
@@ -245,14 +225,10 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate redeleg slash to get undelegated position.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	_, bondDenom := s.getStakingData()
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
@@ -285,15 +261,11 @@ func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add funds back so position has non-zero amount for delegation.
 	_, bondDenom := s.getStakingData()
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{

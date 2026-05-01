@@ -132,11 +132,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")

@@ -437,14 +437,10 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_RedelegSlashedToZero() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Trigger exit and advance past exit duration.
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+	_, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
@@ -617,15 +613,11 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add 2000 to position (undelegated — funds go to module account, not staked).
 	addAmount := sdkmath.NewInt(2000)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
 	s.Require().NoError(err)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),

@@ -19,15 +19,11 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
 	// Simulate redelegation slash clearing delegation and zeroing amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	_, bondDenom := s.getStakingData()
 	addPosAmt := sdkmath.NewInt(500)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addPosAmt)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addPosAmt)))
 	s.Require().NoError(err)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
