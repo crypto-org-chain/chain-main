@@ -203,8 +203,7 @@ func (s *KeeperSuite) TestMsgLockTier_RoutesBaseRewardsToOwner() {
 	posDelAddr := types.GetDelegatorAddress(resp.PositionId)
 	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(freshAddr.String(), withdrawAddr.String(),
-		"LockTier must route the position sub-account's base rewards to the owner")
+	s.Require().Equal(freshAddr.String(), withdrawAddr.String())
 }
 
 func (s *KeeperSuite) TestMsgLockTier_ValidatorNotBonded() {
