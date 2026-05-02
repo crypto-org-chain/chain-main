@@ -9,7 +9,7 @@ import (
 
 // MaxClaimPositionIds is the maximum number of position IDs that can be
 // claimed in a single MsgClaimTierRewards transaction.
-const MaxClaimPositionIds = 500
+const MaxClaimPositionIds = 300
 
 var (
 	_ sdk.Msg = &MsgLockTier{}
