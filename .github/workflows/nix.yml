@@ -92,12 +92,40 @@ jobs:
           signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
       - name: Build integration test shell (chain-maind-test + deps)
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
-      - name: Build upgrade test binaries (push v5/v6/v7 to cachix)
-        if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
-        run: nix-build integration_tests/upgrade-test.nix -A fast -o /tmp/upgrade-test
-      - name: Build full upgrade test binaries v1-v7 (push to cachix)
-        if: github.event_name != 'pull_request'
-        run: nix-build integration_tests/upgrade-test.nix -A all -o /tmp/upgrade-test-all
+
+  prepare-upgrade:
+    name: Prepare upgrade binaries (push to cachix)
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
+    timeout-minutes: 60
+    steps:
+      - name: Create more disk space
+        run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
+        with:
+          name: crypto-com
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: Build upgrade binaries in parallel
+        run: |
+          pids=()
+          nix-build integration_tests/upgrade-test.nix -A fast -o /tmp/upgrade-test &
+          pids+=($!)
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            nix-build integration_tests/upgrade-test.nix -A all -o /tmp/upgrade-test-all &
+            pids+=($!)
+          fi
+          failed=0
+          for pid in "${pids[@]}"; do wait "$pid" || failed=1; done
+          exit $failed
 
   test:
     runs-on: ubuntu-latest
@@ -165,7 +193,7 @@ jobs:
 
   test-upgrade-manual:
     runs-on: ubuntu-latest
-    needs: [prepare, changes]
+    needs: [prepare, prepare-upgrade, changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
     steps:
       - name: Create more disk space
@@ -205,7 +233,7 @@ jobs:
 
   test-upgrade-cancel-export:
     runs-on: ubuntu-latest
-    needs: [prepare, changes]
+    needs: [prepare, prepare-upgrade, changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
     steps:
       - name: Create more disk space
@@ -245,7 +273,7 @@ jobs:
 
   test-upgrade-all:
     runs-on: ubuntu-latest
-    needs: [prepare]
+    needs: [prepare, prepare-upgrade]
     if: github.event_name != 'pull_request'
     steps:
       - name: Create more disk space
