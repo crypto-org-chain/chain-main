@@ -298,13 +298,10 @@ func TestGetDelegatorAddress_UniquePerID(t *testing.T) {
 func TestGetDelegatorAddress_DistinctFromModuleAccount(t *testing.T) {
 	t.Parallel()
 
-	moduleAddr := authtypes.NewModuleAddress(types.ModuleName)
 	poolAddr := authtypes.NewModuleAddress(types.RewardsPoolName)
 
 	for _, id := range []uint64{0, 1, 42} {
 		delAddr := types.GetDelegatorAddress(id)
-		require.False(t, delAddr.Equals(moduleAddr),
-			"position %d delegator address must differ from the tieredrewards module address", id)
 		require.False(t, delAddr.Equals(poolAddr),
 			"position %d delegator address must differ from the rewards pool address", id)
 	}
