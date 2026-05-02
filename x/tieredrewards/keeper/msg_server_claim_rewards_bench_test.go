@@ -165,7 +165,7 @@ func (s *KeeperSuite) runClaimRewardsGasBenchmark(n, numSlashes int) uint64 {
 	// Explicitly re-set the chain id on the ctx so sig verification resolves
 	// the same id used when signing above.
 	anteCtx := s.ctx.WithChainID(testutil.ChainID)
-	anteHandler := s.app.BaseApp.AnteHandler()
+	anteHandler := s.app.AnteHandler()
 	s.Require().NotNil(anteHandler, "app must have an AnteHandler configured")
 
 	postAnteCtx, err := anteHandler(anteCtx, tx, false)
