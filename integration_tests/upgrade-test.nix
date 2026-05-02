@@ -5,20 +5,22 @@ let
   # historical versions, keeping cachix storage small.
   fetchBinary =
     version: hash:
-    pkgs.runCommand "chain-maind-${version}" {
-      src = pkgs.fetchurl {
-        url = "https://github.com/crypto-org-chain/chain-main/releases/download/v${version}/chain-main_${version}_Linux_x86_64.tar.gz";
-        inherit hash;
-      };
-      nativeBuildInputs = [
-        pkgs.gnutar
-        pkgs.gzip
-      ];
-    } ''
-      mkdir -p $out/bin
-      tar -xzf $src -C $out
-      chmod +x $out/bin/chain-maind
-    '';
+    pkgs.runCommand "chain-maind-${version}"
+      {
+        src = pkgs.fetchurl {
+          url = "https://github.com/crypto-org-chain/chain-main/releases/download/v${version}/chain-main_${version}_Linux_x86_64.tar.gz";
+          inherit hash;
+        };
+        nativeBuildInputs = [
+          pkgs.gnutar
+          pkgs.gzip
+        ];
+      }
+      ''
+        mkdir -p $out/bin
+        tar -xzf $src -C $out
+        chmod +x $out/bin/chain-maind
+      '';
   v1 = fetchBinary "1.1.0" "sha256-+KknygtcWrilun443B8nJTO01meOyAsqzRHadUIhFJY=";
   v2 = fetchBinary "2.0.1" "sha256-Xp6fcDy4XHJXMIbjhOGH51JGOy7QzNYSCUofKaE/AVg=";
   v3 = fetchBinary "3.3.4" "sha256-EPkVhe6Gfttrygl9vqlMVyuSP7BHa/j0pTWepLaqIog=";
