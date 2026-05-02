@@ -194,7 +194,7 @@ jobs:
   test-upgrade-manual:
     runs-on: ubuntu-latest
     needs: [prepare, prepare-upgrade, changes]
-    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
+    if: github.event_name == 'merge_group' || (github.event_name == 'pull_request' && needs.changes.outputs.upgrade == 'true')
     steps:
       - name: Create more disk space
         run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
