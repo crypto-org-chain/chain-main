@@ -113,6 +113,7 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
         cmd=str(data / "cosmovisor/genesis/bin/chain-maind"),
     )
 
+
 # Plain cluster using the default (current) chain-maind. Used by
 # test_manual_export to exercise the export → reset → re-import flow
 # without paying the cost of nix-build upgrade-test.nix and the v1.1.0
@@ -571,6 +572,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     propose_n_execute_v7_upgrade(cluster)
     assert_v7_inflation_module_is_working(cluster)
     assert_v7_tieredrewards_working(cluster)
+
 
 def assert_v7_inflation_module_is_working(cluster):
     cli = cluster.cosmos_cli()
