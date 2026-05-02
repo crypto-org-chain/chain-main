@@ -291,12 +291,6 @@ nix-integration-test-solomachine: check-network
 nix-integration-test-upgrade: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade"
 
-nix-integration-test-upgrade-manual: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade -k test_manual_upgrade_all"
-
-nix-integration-test-upgrade-cancel-export: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade -k 'test_cancel_upgrade or test_manual_export'"
-
 nix-integration-test-ledger: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ledger"
 

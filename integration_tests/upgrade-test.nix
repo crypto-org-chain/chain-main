@@ -29,58 +29,35 @@ let
   v6 = fetchBinary "6.0.0" "sha256-d8Z9i0wlkAVKysSkfzvjr4B4GXviNIQ0G0Hotk2bpWA=";
   current = pkgs.callPackage ../. { };
 in
-{
-  # Fast CI path: v5 (genesis) → v6 → v7. Used for PR upgrade tests.
-  fast = pkgs.linkFarm "upgrade-test-package" [
-    {
-      name = "genesis";
-      path = v5;
-    }
-    {
-      name = "v5.0.0";
-      path = v5;
-    }
-    {
-      name = "v6.0.0";
-      path = v6;
-    }
-    {
-      name = "v7.0.0";
-      path = current;
-    }
-  ];
-
-  # Full upgrade path: v1.1.0 (genesis) → ... → v7. Used for release runs.
-  # To add a new protocol version: add a fetchBinary entry above, append it
-  # here, and advance `fast`'s genesis if the CI baseline should move up.
-  all = pkgs.linkFarm "upgrade-test-all-package" [
-    {
-      name = "genesis";
-      path = v1;
-    }
-    {
-      name = "v2.0.0";
-      path = v2;
-    }
-    {
-      name = "v3.0.0";
-      path = v3;
-    }
-    {
-      name = "v4.2.0";
-      path = v4;
-    }
-    {
-      name = "v5.0.0";
-      path = v5;
-    }
-    {
-      name = "v6.0.0";
-      path = v6;
-    }
-    {
-      name = "v7.0.0";
-      path = current;
-    }
-  ];
-}
+# Full upgrade path: v1.1.0 (genesis) → ... → v7.
+# To add a new protocol version: add a fetchBinary entry above and append it here.
+pkgs.linkFarm "upgrade-test-all-package" [
+  {
+    name = "genesis";
+    path = v1;
+  }
+  {
+    name = "v2.0.0";
+    path = v2;
+  }
+  {
+    name = "v3.0.0";
+    path = v3;
+  }
+  {
+    name = "v4.2.0";
+    path = v4;
+  }
+  {
+    name = "v5.0.0";
+    path = v5;
+  }
+  {
+    name = "v6.0.0";
+    path = v6;
+  }
+  {
+    name = "v7.0.0";
+    path = current;
+  }
+]

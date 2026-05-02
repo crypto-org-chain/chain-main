@@ -40,7 +40,7 @@ def edit_chain_program(chain_id, ini_path, callback):
         ini.write(fp)
 
 
-def init_cosmovisor(data, attr="all"):
+def init_cosmovisor(data):
     """
     build and setup cosmovisor directory structure in devnet's data directory
     """
@@ -50,8 +50,6 @@ def init_cosmovisor(data, attr="all"):
         [
             "nix-build",
             Path(__file__).parent / "upgrade-test.nix",
-            "-A",
-            attr,
             "-o",
             cosmovisor / "upgrades",
         ],
@@ -281,7 +279,9 @@ def upgrade(
     wait_for_block(cluster, target_height + 2, 600)
 
 
-def _cosmovisor_initial_setup(cluster):
+def test_manual_upgrade_all(cosmovisor_cluster):
+    # test_manual_upgrade(cosmovisor_cluster)
+    cluster = cosmovisor_cluster
     edit_chain_program(
         cluster.chain_id,
         cluster.data_dir / SUPERVISOR_CONFIG_FILE,
@@ -294,86 +294,6 @@ def _cosmovisor_initial_setup(cluster):
     time.sleep(5)  # FIXME the port seems still exists for a while after process stopped
     wait_for_port(rpc_port(cluster.config["validators"][0]["base_port"]))
     wait_for_new_blocks(cluster, 1)
-
-
-def _run_v6_to_v7_upgrades(cluster):
-    cli = cluster.cosmos_cli()
-    # v6 upgrade
-    target_height = cluster.block_height() + 15
-    gov_param_before_v6 = cli.query_params("gov")
-    consensus_block_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "BlockParams")
-    )
-    consensus_evidence_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "EvidenceParams")
-    )
-    consensus_validator_param_before_v6 = json.loads(
-        cli.query_params_subspace("baseapp", "ValidatorParams")
-    )
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
-    cli = cluster.cosmos_cli()
-    with pytest.raises(AssertionError):
-        cli.query_params("icaauth")
-    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
-
-    ibc_client_params = json.loads(
-        cli.raw(
-            "query",
-            "ibc",
-            "client",
-            "params",
-            output="json",
-            node=cli.node_rpc,
-        )
-    )
-    assert ibc_client_params == {
-        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
-    }
-
-    consensus_params = cli.query_params("consensus")
-    block_params = consensus_params["block"]
-    evidence_params = consensus_params["evidence"]
-    validator_params = consensus_params["validator"]
-
-    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
-    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
-
-    assert (
-        evidence_params["max_age_num_blocks"]
-        == consensus_evidence_param_before_v6["max_age_num_blocks"]
-    )
-    assert (
-        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
-    )
-
-    max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
-    max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
-    max_age_duration_hours = max_age_duration_seconds // 3600
-    max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
-    max_age_duration_seconds = max_age_duration_seconds % 60
-    expected_duration = (
-        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
-        f"{max_age_duration_seconds}s"
-    )
-    assert evidence_params["max_age_duration"] == expected_duration
-
-    assert (
-        validator_params["pub_key_types"]
-        == consensus_validator_param_before_v6["pub_key_types"]
-    )
-
-    assert_v6_circuit_is_working(cli, cluster)
-
-    # v7 upgrade
-    propose_n_execute_v7_upgrade(cluster)
-    assert_v7_inflation_module_is_working(cluster)
-    assert_v7_tieredrewards_working(cluster)
-
-
-def test_manual_upgrade_all(cosmovisor_cluster):
-    # test_manual_upgrade(cosmovisor_cluster)
-    cluster = cosmovisor_cluster
-    _cosmovisor_initial_setup(cluster)
 
     # v2 upgrade
     target_height = cluster.block_height() + 15
@@ -580,7 +500,77 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert params["inflation_max"] == "0.010000000000000000"
     assert params["inflation_min"] == "0.008500000000000000"
 
-    _run_v6_to_v7_upgrades(cluster)
+    cli = cluster.cosmos_cli()
+    # v6 upgrade
+    target_height = cluster.block_height() + 15
+    gov_param_before_v6 = cli.query_params("gov")
+    consensus_block_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "BlockParams")
+    )
+    consensus_evidence_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "EvidenceParams")
+    )
+    consensus_validator_param_before_v6 = json.loads(
+        cli.query_params_subspace("baseapp", "ValidatorParams")
+    )
+    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
+    cli = cluster.cosmos_cli()
+    with pytest.raises(AssertionError):
+        cli.query_params("icaauth")
+    assert_expedited_gov_params(cli, gov_param_before_v6, is_legacy=True)
+
+    ibc_client_params = json.loads(
+        cli.raw(
+            "query",
+            "ibc",
+            "client",
+            "params",
+            output="json",
+            node=cli.node_rpc,
+        )
+    )
+    assert ibc_client_params == {
+        "allowed_clients": ["06-solomachine", "07-tendermint", "09-localhost"]
+    }
+
+    consensus_params = cli.query_params("consensus")
+    block_params = consensus_params["block"]
+    evidence_params = consensus_params["evidence"]
+    validator_params = consensus_params["validator"]
+
+    assert block_params["max_bytes"] == consensus_block_param_before_v6["max_bytes"]
+    assert block_params["max_gas"] == consensus_block_param_before_v6["max_gas"]
+
+    assert (
+        evidence_params["max_age_num_blocks"]
+        == consensus_evidence_param_before_v6["max_age_num_blocks"]
+    )
+    assert (
+        evidence_params["max_bytes"] == consensus_evidence_param_before_v6["max_bytes"]
+    )
+
+    max_age_duration_ns = int(consensus_evidence_param_before_v6["max_age_duration"])
+    max_age_duration_seconds = max_age_duration_ns // 1_000_000_000
+    max_age_duration_hours = max_age_duration_seconds // 3600
+    max_age_duration_minutes = (max_age_duration_seconds % 3600) // 60
+    max_age_duration_seconds = max_age_duration_seconds % 60
+    expected_duration = (
+        f"{max_age_duration_hours}h{max_age_duration_minutes}m"
+        f"{max_age_duration_seconds}s"
+    )
+    assert evidence_params["max_age_duration"] == expected_duration
+
+    assert (
+        validator_params["pub_key_types"]
+        == consensus_validator_param_before_v6["pub_key_types"]
+    )
+
+    assert_v6_circuit_is_working(cli, cluster)
+
+    # v7 upgrade
+    propose_n_execute_v7_upgrade(cluster)
+    assert_v7_inflation_module_is_working(cluster)
+    assert_v7_tieredrewards_working(cluster)
 
 def assert_v7_inflation_module_is_working(cluster):
     cli = cluster.cosmos_cli()
