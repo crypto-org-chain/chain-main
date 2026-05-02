@@ -65,7 +65,7 @@ func (ms msgServer) UpdateTier(ctx context.Context, msg *types.MsgUpdateTier) (*
 	}
 
 	if !oldTier.BonusApy.Equal(msg.Tier.BonusApy) {
-		if err := ms.claimRewardsAndUpdatePositionsForTier(ctx, msg.Tier.Id); err != nil {
+		if err := ms.claimRewardsAndUpdateTierPositions(ctx, msg.Tier.Id); err != nil {
 			return nil, err
 		}
 	}

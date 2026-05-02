@@ -246,17 +246,14 @@ message QueryValidatorDataRequest {
 
 // QueryValidatorDataResponse is the response type for the Query/ValidatorData RPC method.
 message QueryValidatorDataResponse {
-  // reward_ratio is the cumulative rewards per share for this validator.
-  ValidatorRewardRatio reward_ratio = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
-
   // position_count is the number of positions delegated to this validator.
-  uint64 position_count = 2;
+  uint64 position_count = 1;
 
   // events are the pending validator lifecycle events.
-  repeated ValidatorEvent events = 3 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  repeated ValidatorEvent events = 2 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
 
   // event_current_seq is the current event sequence number for this validator.
-  uint64 event_current_seq = 4;
+  uint64 event_current_seq = 3;
 }
 
 // QueryPositionMappingsRequest is the request type for the Query/PositionMappings RPC method.

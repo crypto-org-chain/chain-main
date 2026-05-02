@@ -25249,24 +25249,6 @@ paths:
                     type: string
                   delegated_shares:
                     type: string
-                  base_rewards_per_share:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        DecCoin defines a token with a denomination and a
-                        decimal amount.
-
-
-                        NOTE: The amount field is an Dec which implements the
-                        custom method
-
-                        signatures required by gogoproto.
                   last_bonus_accrual:
                     type: string
                     format: date-time
@@ -25415,24 +25397,6 @@ paths:
                       type: string
                     delegated_shares:
                       type: string
-                    base_rewards_per_share:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          DecCoin defines a token with a denomination and a
-                          decimal amount.
-
-
-                          NOTE: The amount field is an Dec which implements the
-                          custom method
-
-                          signatures required by gogoproto.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -25601,24 +25565,6 @@ paths:
                       type: string
                     delegated_shares:
                       type: string
-                    base_rewards_per_share:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          DecCoin defines a token with a denomination and a
-                          decimal amount.
-
-
-                          NOTE: The amount field is an Dec which implements the
-                          custom method
-
-                          signatures required by gogoproto.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -25806,41 +25752,32 @@ paths:
                     description: >-
                       delegated_shares are the validator delegation shares for
                       this position.
-                  base_rewards_per_share:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        DecCoin defines a token with a denomination and a
-                        decimal amount.
-
-
-                        NOTE: The amount field is an Dec which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    description: >-
-                      base_rewards_per_share is the cumulative base rewards per
-                      share snapshot
-
-                      at the time this position was created or last claimed.
-
-                      Used to calculate the position's share of base rewards:
-                      reward = shares × (current_ratio − starting_ratio).
-
-                      It is possible to have no base rewards per share if the
-                      position is the first one delegated to the validator.
                   last_bonus_accrual:
                     type: string
                     format: date-time
                     description: >-
                       last_bonus_accrual is the last time bonus rewards was
                       claimed.
+                  last_event_seq:
+                    type: string
+                    format: uint64
+                    description: >-
+                      last_event_seq is the sequence number of the last
+                      validator event this
+
+                      position has processed. Events with seq > last_event_seq
+                      are pending.
+                  last_known_bonded:
+                    type: boolean
+                    description: >-
+                      last_known_bonded tracks whether the validator was bonded
+                      after the last
+
+                      event replay. Used as the starting state for the next
+                      processEventsAndClaimBonus
+
+                      call. True when the position is first created (only bonded
+                      validators accepted).
                   exit_triggered_at:
                     type: string
                     format: date-time
@@ -25865,26 +25802,6 @@ paths:
                     description: >-
                       created_at_time is the block time when this position was
                       created.
-                  last_event_seq:
-                    type: string
-                    format: uint64
-                    description: >-
-                      last_event_seq is the sequence number of the last
-                      validator event this
-
-                      position has processed. Events with seq > last_event_seq
-                      are pending.
-                  last_known_bonded:
-                    type: boolean
-                    description: >-
-                      last_known_bonded tracks whether the validator was bonded
-                      after the last
-
-                      event replay. Used as the starting state for the next
-                      processEventsAndClaimBonus
-
-                      call. True when the position is first created (only bonded
-                      validators accepted).
                 description: Position represents a single lock position in the tier.
             description: >-
               QueryRawTierPositionResponse is the response type for the
@@ -25965,41 +25882,32 @@ paths:
                       description: >-
                         delegated_shares are the validator delegation shares for
                         this position.
-                    base_rewards_per_share:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          DecCoin defines a token with a denomination and a
-                          decimal amount.
-
-
-                          NOTE: The amount field is an Dec which implements the
-                          custom method
-
-                          signatures required by gogoproto.
-                      description: >-
-                        base_rewards_per_share is the cumulative base rewards
-                        per share snapshot
-
-                        at the time this position was created or last claimed.
-
-                        Used to calculate the position's share of base rewards:
-                        reward = shares × (current_ratio − starting_ratio).
-
-                        It is possible to have no base rewards per share if the
-                        position is the first one delegated to the validator.
                     last_bonus_accrual:
                       type: string
                       format: date-time
                       description: >-
                         last_bonus_accrual is the last time bonus rewards was
                         claimed.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
                     exit_triggered_at:
                       type: string
                       format: date-time
@@ -26024,26 +25932,6 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
-                    last_event_seq:
-                      type: string
-                      format: uint64
-                      description: >-
-                        last_event_seq is the sequence number of the last
-                        validator event this
-
-                        position has processed. Events with seq > last_event_seq
-                        are pending.
-                    last_known_bonded:
-                      type: boolean
-                      description: >-
-                        last_known_bonded tracks whether the validator was
-                        bonded after the last
-
-                        event replay. Used as the starting state for the next
-                        processEventsAndClaimBonus
-
-                        call. True when the position is first created (only
-                        bonded validators accepted).
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -26205,41 +26093,32 @@ paths:
                       description: >-
                         delegated_shares are the validator delegation shares for
                         this position.
-                    base_rewards_per_share:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          denom:
-                            type: string
-                          amount:
-                            type: string
-                        description: >-
-                          DecCoin defines a token with a denomination and a
-                          decimal amount.
-
-
-                          NOTE: The amount field is an Dec which implements the
-                          custom method
-
-                          signatures required by gogoproto.
-                      description: >-
-                        base_rewards_per_share is the cumulative base rewards
-                        per share snapshot
-
-                        at the time this position was created or last claimed.
-
-                        Used to calculate the position's share of base rewards:
-                        reward = shares × (current_ratio − starting_ratio).
-
-                        It is possible to have no base rewards per share if the
-                        position is the first one delegated to the validator.
                     last_bonus_accrual:
                       type: string
                       format: date-time
                       description: >-
                         last_bonus_accrual is the last time bonus rewards was
                         claimed.
+                    last_event_seq:
+                      type: string
+                      format: uint64
+                      description: >-
+                        last_event_seq is the sequence number of the last
+                        validator event this
+
+                        position has processed. Events with seq > last_event_seq
+                        are pending.
+                    last_known_bonded:
+                      type: boolean
+                      description: >-
+                        last_known_bonded tracks whether the validator was
+                        bonded after the last
+
+                        event replay. Used as the starting state for the next
+                        processEventsAndClaimBonus
+
+                        call. True when the position is first created (only
+                        bonded validators accepted).
                     exit_triggered_at:
                       type: string
                       format: date-time
@@ -26264,26 +26143,6 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
-                    last_event_seq:
-                      type: string
-                      format: uint64
-                      description: >-
-                        last_event_seq is the sequence number of the last
-                        validator event this
-
-                        position has processed. Events with seq > last_event_seq
-                        are pending.
-                    last_known_bonded:
-                      type: boolean
-                      description: >-
-                        last_known_bonded tracks whether the validator was
-                        bonded after the last
-
-                        event replay. Used as the starting state for the next
-                        processEventsAndClaimBonus
-
-                        call. True when the position is first created (only
-                        bonded validators accepted).
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -26586,45 +26445,6 @@ paths:
           schema:
             type: object
             properties:
-              reward_ratio:
-                description: >-
-                  reward_ratio is the cumulative rewards per share for this
-                  validator.
-                type: object
-                properties:
-                  cumulative_rewards_per_share:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        denom:
-                          type: string
-                        amount:
-                          type: string
-                      description: >-
-                        DecCoin defines a token with a denomination and a
-                        decimal amount.
-
-
-                        NOTE: The amount field is an Dec which implements the
-                        custom method
-
-                        signatures required by gogoproto.
-                    description: >-
-                      cumulative_rewards_per_share is the running total of
-                      rewards per delegation share.
-                title: >-
-                  ValidatorRewardRatio stores the cumulative base rewards per
-                  share for a validator.
-
-                  Updated every time base rewards are withdrawn from
-                  x/distribution for this validator.
-
-                  It is possible to have no base rewards per share when the
-                  position is created,
-
-                  if the position is the first one delegated to a validator (no
-                  base rewards accrued yet)
               position_count:
                 type: string
                 format: uint64
@@ -46573,35 +46393,27 @@ definitions:
         description: >-
           delegated_shares are the validator delegation shares for this
           position.
-      base_rewards_per_share:
-        type: array
-        items:
-          type: object
-          properties:
-            denom:
-              type: string
-            amount:
-              type: string
-          description: |-
-            DecCoin defines a token with a denomination and a decimal amount.
-
-            NOTE: The amount field is an Dec which implements the custom method
-            signatures required by gogoproto.
-        description: >-
-          base_rewards_per_share is the cumulative base rewards per share
-          snapshot
-
-          at the time this position was created or last claimed.
-
-          Used to calculate the position's share of base rewards: reward =
-          shares × (current_ratio − starting_ratio).
-
-          It is possible to have no base rewards per share if the position is
-          the first one delegated to the validator.
       last_bonus_accrual:
         type: string
         format: date-time
         description: last_bonus_accrual is the last time bonus rewards was claimed.
+      last_event_seq:
+        type: string
+        format: uint64
+        description: |-
+          last_event_seq is the sequence number of the last validator event this
+          position has processed. Events with seq > last_event_seq are pending.
+      last_known_bonded:
+        type: boolean
+        description: >-
+          last_known_bonded tracks whether the validator was bonded after the
+          last
+
+          event replay. Used as the starting state for the next
+          processEventsAndClaimBonus
+
+          call. True when the position is first created (only bonded validators
+          accepted).
       exit_triggered_at:
         type: string
         format: date-time
@@ -46622,23 +46434,6 @@ definitions:
         type: string
         format: date-time
         description: created_at_time is the block time when this position was created.
-      last_event_seq:
-        type: string
-        format: uint64
-        description: |-
-          last_event_seq is the sequence number of the last validator event this
-          position has processed. Events with seq > last_event_seq are pending.
-      last_known_bonded:
-        type: boolean
-        description: >-
-          last_known_bonded tracks whether the validator was bonded after the
-          last
-
-          event replay. Used as the starting state for the next
-          processEventsAndClaimBonus
-
-          call. True when the position is first created (only bonded validators
-          accepted).
     description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.PositionResponse:
     type: object
@@ -46658,20 +46453,6 @@ definitions:
         type: string
       delegated_shares:
         type: string
-      base_rewards_per_share:
-        type: array
-        items:
-          type: object
-          properties:
-            denom:
-              type: string
-            amount:
-              type: string
-          description: |-
-            DecCoin defines a token with a denomination and a decimal amount.
-
-            NOTE: The amount field is an Dec which implements the custom method
-            signatures required by gogoproto.
       last_bonus_accrual:
         type: string
         format: date-time
@@ -46715,24 +46496,6 @@ definitions:
               type: string
             delegated_shares:
               type: string
-            base_rewards_per_share:
-              type: array
-              items:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  DecCoin defines a token with a denomination and a decimal
-                  amount.
-
-
-                  NOTE: The amount field is an Dec which implements the custom
-                  method
-
-                  signatures required by gogoproto.
             last_bonus_accrual:
               type: string
               format: date-time
@@ -46889,39 +46652,30 @@ definitions:
               description: >-
                 delegated_shares are the validator delegation shares for this
                 position.
-            base_rewards_per_share:
-              type: array
-              items:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  DecCoin defines a token with a denomination and a decimal
-                  amount.
-
-
-                  NOTE: The amount field is an Dec which implements the custom
-                  method
-
-                  signatures required by gogoproto.
-              description: >-
-                base_rewards_per_share is the cumulative base rewards per share
-                snapshot
-
-                at the time this position was created or last claimed.
-
-                Used to calculate the position's share of base rewards: reward =
-                shares × (current_ratio − starting_ratio).
-
-                It is possible to have no base rewards per share if the position
-                is the first one delegated to the validator.
             last_bonus_accrual:
               type: string
               format: date-time
               description: last_bonus_accrual is the last time bonus rewards was claimed.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
             exit_triggered_at:
               type: string
               format: date-time
@@ -46946,26 +46700,6 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
-            last_event_seq:
-              type: string
-              format: uint64
-              description: >-
-                last_event_seq is the sequence number of the last validator
-                event this
-
-                position has processed. Events with seq > last_event_seq are
-                pending.
-            last_known_bonded:
-              type: boolean
-              description: >-
-                last_known_bonded tracks whether the validator was bonded after
-                the last
-
-                event replay. Used as the starting state for the next
-                processEventsAndClaimBonus
-
-                call. True when the position is first created (only bonded
-                validators accepted).
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47032,39 +46766,30 @@ definitions:
             description: >-
               delegated_shares are the validator delegation shares for this
               position.
-          base_rewards_per_share:
-            type: array
-            items:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                DecCoin defines a token with a denomination and a decimal
-                amount.
-
-
-                NOTE: The amount field is an Dec which implements the custom
-                method
-
-                signatures required by gogoproto.
-            description: >-
-              base_rewards_per_share is the cumulative base rewards per share
-              snapshot
-
-              at the time this position was created or last claimed.
-
-              Used to calculate the position's share of base rewards: reward =
-              shares × (current_ratio − starting_ratio).
-
-              It is possible to have no base rewards per share if the position
-              is the first one delegated to the validator.
           last_bonus_accrual:
             type: string
             format: date-time
             description: last_bonus_accrual is the last time bonus rewards was claimed.
+          last_event_seq:
+            type: string
+            format: uint64
+            description: >-
+              last_event_seq is the sequence number of the last validator event
+              this
+
+              position has processed. Events with seq > last_event_seq are
+              pending.
+          last_known_bonded:
+            type: boolean
+            description: >-
+              last_known_bonded tracks whether the validator was bonded after
+              the last
+
+              event replay. Used as the starting state for the next
+              processEventsAndClaimBonus
+
+              call. True when the position is first created (only bonded
+              validators accepted).
           exit_triggered_at:
             type: string
             format: date-time
@@ -47087,26 +46812,6 @@ definitions:
             type: string
             format: date-time
             description: created_at_time is the block time when this position was created.
-          last_event_seq:
-            type: string
-            format: uint64
-            description: >-
-              last_event_seq is the sequence number of the last validator event
-              this
-
-              position has processed. Events with seq > last_event_seq are
-              pending.
-          last_known_bonded:
-            type: boolean
-            description: >-
-              last_known_bonded tracks whether the validator was bonded after
-              the last
-
-              event replay. Used as the starting state for the next
-              processEventsAndClaimBonus
-
-              call. True when the position is first created (only bonded
-              validators accepted).
         description: Position represents a single lock position in the tier.
     description: >-
       QueryRawTierPositionResponse is the response type for the
@@ -47149,39 +46854,30 @@ definitions:
               description: >-
                 delegated_shares are the validator delegation shares for this
                 position.
-            base_rewards_per_share:
-              type: array
-              items:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  DecCoin defines a token with a denomination and a decimal
-                  amount.
-
-
-                  NOTE: The amount field is an Dec which implements the custom
-                  method
-
-                  signatures required by gogoproto.
-              description: >-
-                base_rewards_per_share is the cumulative base rewards per share
-                snapshot
-
-                at the time this position was created or last claimed.
-
-                Used to calculate the position's share of base rewards: reward =
-                shares × (current_ratio − starting_ratio).
-
-                It is possible to have no base rewards per share if the position
-                is the first one delegated to the validator.
             last_bonus_accrual:
               type: string
               format: date-time
               description: last_bonus_accrual is the last time bonus rewards was claimed.
+            last_event_seq:
+              type: string
+              format: uint64
+              description: >-
+                last_event_seq is the sequence number of the last validator
+                event this
+
+                position has processed. Events with seq > last_event_seq are
+                pending.
+            last_known_bonded:
+              type: boolean
+              description: >-
+                last_known_bonded tracks whether the validator was bonded after
+                the last
+
+                event replay. Used as the starting state for the next
+                processEventsAndClaimBonus
+
+                call. True when the position is first created (only bonded
+                validators accepted).
             exit_triggered_at:
               type: string
               format: date-time
@@ -47206,26 +46902,6 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
-            last_event_seq:
-              type: string
-              format: uint64
-              description: >-
-                last_event_seq is the sequence number of the last validator
-                event this
-
-                position has processed. Events with seq > last_event_seq are
-                pending.
-            last_known_bonded:
-              type: boolean
-              description: >-
-                last_known_bonded tracks whether the validator was bonded after
-                the last
-
-                event replay. Used as the starting state for the next
-                processEventsAndClaimBonus
-
-                call. True when the position is first created (only bonded
-                validators accepted).
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47300,24 +46976,6 @@ definitions:
             type: string
           delegated_shares:
             type: string
-          base_rewards_per_share:
-            type: array
-            items:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                DecCoin defines a token with a denomination and a decimal
-                amount.
-
-
-                NOTE: The amount field is an Dec which implements the custom
-                method
-
-                signatures required by gogoproto.
           last_bonus_accrual:
             type: string
             format: date-time
@@ -47364,24 +47022,6 @@ definitions:
               type: string
             delegated_shares:
               type: string
-            base_rewards_per_share:
-              type: array
-              items:
-                type: object
-                properties:
-                  denom:
-                    type: string
-                  amount:
-                    type: string
-                description: >-
-                  DecCoin defines a token with a denomination and a decimal
-                  amount.
-
-
-                  NOTE: The amount field is an Dec which implements the custom
-                  method
-
-                  signatures required by gogoproto.
             last_bonus_accrual:
               type: string
               format: date-time
@@ -47482,43 +47122,6 @@ definitions:
   chainmain.tieredrewards.v1.QueryValidatorDataResponse:
     type: object
     properties:
-      reward_ratio:
-        description: reward_ratio is the cumulative rewards per share for this validator.
-        type: object
-        properties:
-          cumulative_rewards_per_share:
-            type: array
-            items:
-              type: object
-              properties:
-                denom:
-                  type: string
-                amount:
-                  type: string
-              description: >-
-                DecCoin defines a token with a denomination and a decimal
-                amount.
-
-
-                NOTE: The amount field is an Dec which implements the custom
-                method
-
-                signatures required by gogoproto.
-            description: >-
-              cumulative_rewards_per_share is the running total of rewards per
-              delegation share.
-        title: >-
-          ValidatorRewardRatio stores the cumulative base rewards per share for
-          a validator.
-
-          Updated every time base rewards are withdrawn from x/distribution for
-          this validator.
-
-          It is possible to have no base rewards per share when the position is
-          created,
-
-          if the position is the first one delegated to a validator (no base
-          rewards accrued yet)
       position_count:
         type: string
         format: uint64
@@ -47666,35 +47269,3 @@ definitions:
     description: |-
       ValidatorEventType enumerates the types of validator lifecycle events
       recorded for lazy processing.
-  chainmain.tieredrewards.v1.ValidatorRewardRatio:
-    type: object
-    properties:
-      cumulative_rewards_per_share:
-        type: array
-        items:
-          type: object
-          properties:
-            denom:
-              type: string
-            amount:
-              type: string
-          description: |-
-            DecCoin defines a token with a denomination and a decimal amount.
-
-            NOTE: The amount field is an Dec which implements the custom method
-            signatures required by gogoproto.
-        description: >-
-          cumulative_rewards_per_share is the running total of rewards per
-          delegation share.
-    title: >-
-      ValidatorRewardRatio stores the cumulative base rewards per share for a
-      validator.
-
-      Updated every time base rewards are withdrawn from x/distribution for this
-      validator.
-
-      It is possible to have no base rewards per share when the position is
-      created,
-
-      if the position is the first one delegated to a validator (no base rewards
-      accrued yet)

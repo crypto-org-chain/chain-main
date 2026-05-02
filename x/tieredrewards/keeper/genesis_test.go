@@ -32,34 +32,32 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 
 	// Delegated position (tier 1). Amount must be zero.
 	pos1 := types.Position{
-		Id:                  1,
-		Owner:               owner,
-		TierId:              1,
-		Amount:              sdkmath.ZeroInt(),
-		Validator:           valAddr.String(),
-		DelegatedShares:     sdkmath.LegacyNewDec(5000),
-		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(2, 4))),
-		LastBonusAccrual:    now,
-		CreatedAtHeight:     100,
-		CreatedAtTime:       now,
-		LastEventSeq:        0,
-		LastKnownBonded:     true,
+		Id:               1,
+		Owner:            owner,
+		TierId:           1,
+		Amount:           sdkmath.ZeroInt(),
+		Validator:        valAddr.String(),
+		DelegatedShares:  sdkmath.LegacyNewDec(5000),
+		LastBonusAccrual: now,
+		CreatedAtHeight:  100,
+		CreatedAtTime:    now,
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
 	}
 
 	// Delegated position. Amount must be zero.
 	pos2 := types.Position{
-		Id:                  2,
-		Owner:               owner,
-		TierId:              2,
-		Amount:              sdkmath.ZeroInt(),
-		Validator:           valAddr.String(),
-		DelegatedShares:     sdkmath.LegacyNewDec(3000),
-		BaseRewardsPerShare: sdk.NewDecCoins(sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(1, 4))),
-		LastBonusAccrual:    now,
-		CreatedAtHeight:     101,
-		CreatedAtTime:       now,
-		LastEventSeq:        0,
-		LastKnownBonded:     true,
+		Id:               2,
+		Owner:            owner,
+		TierId:           2,
+		Amount:           sdkmath.ZeroInt(),
+		Validator:        valAddr.String(),
+		DelegatedShares:  sdkmath.LegacyNewDec(3000),
+		LastBonusAccrual: now,
+		CreatedAtHeight:  101,
+		CreatedAtTime:    now,
+		LastEventSeq:     0,
+		LastKnownBonded:  true,
 	}
 
 	// Position with exit triggered.
@@ -82,16 +80,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		Tiers:          []types.Tier{tier1, tier2},
 		Positions:      []types.Position{pos1, pos2, pos3},
 		NextPositionId: 4,
-		ValidatorRewardRatios: []types.ValidatorRewardRatioEntry{
-			{
-				Validator: valAddr.String(),
-				RewardRatio: types.ValidatorRewardRatio{
-					CumulativeRewardsPerShare: sdk.NewDecCoins(
-						sdk.NewDecCoinFromDec("stake", sdkmath.LegacyNewDecWithPrec(5, 4)),
-					),
-				},
-			},
-		},
 		UnbondingDelegationMappings: []types.UnbondingMapping{
 			{UnbondingId: 42, PositionId: 2},
 			{UnbondingId: 43, PositionId: 3},
@@ -159,7 +147,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().True(orig.Amount.Equal(pos.Amount))
 		s.Require().Equal(orig.Validator, pos.Validator)
 		s.Require().True(orig.DelegatedShares.Equal(pos.DelegatedShares))
-		s.Require().True(orig.BaseRewardsPerShare.Equal(pos.BaseRewardsPerShare))
 		s.Require().Equal(orig.LastBonusAccrual, pos.LastBonusAccrual)
 		s.Require().Equal(orig.CreatedAtHeight, pos.CreatedAtHeight)
 		s.Require().Equal(orig.CreatedAtTime.UTC(), pos.CreatedAtTime.UTC())
@@ -171,12 +158,6 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 
 	// Sequence.
 	s.Require().Equal(genesisState.NextPositionId, exported.NextPositionId)
-
-	// Validator reward ratios.
-	s.Require().Len(exported.ValidatorRewardRatios, 1)
-	s.Require().Equal(genesisState.ValidatorRewardRatios[0].Validator, exported.ValidatorRewardRatios[0].Validator)
-	s.Require().True(genesisState.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare.Equal(
-		exported.ValidatorRewardRatios[0].RewardRatio.CumulativeRewardsPerShare))
 
 	// Unbonding delegation mappings.
 	s.Require().Len(exported.UnbondingDelegationMappings, 2)
@@ -313,18 +294,16 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.Tiers)
 	s.Require().Empty(exported.Positions)
 	s.Require().Equal(uint64(0), exported.NextPositionId)
-	s.Require().Empty(exported.ValidatorRewardRatios)
 	s.Require().Empty(exported.UnbondingDelegationMappings)
 	s.Require().Empty(exported.RedelegationMappings)
 }
 
 func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {
-	tierModuleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	s.keeper.InitGenesis(s.ctx, types.DefaultGenesisState())
 
-	for _, addr := range []sdk.AccAddress{tierModuleAddr, rewardsPoolAddr} {
+	for _, addr := range []sdk.AccAddress{rewardsPoolAddr} {
 		acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
 		s.Require().NotNil(acc, "module account should exist after InitGenesis")
 		_, ok := acc.(sdk.ModuleAccountI)

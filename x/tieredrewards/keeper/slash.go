@@ -54,13 +54,11 @@ func (k Keeper) slashPositionByUnbondingId(ctx context.Context, unbondingId uint
 	return k.setPosition(ctx, pos)
 }
 
-// slashRedelegationPosition reduces DelegatedShares
-// for a position mapped to the given redelegation unbonding ID.
+// slashRedelegationPosition reduces DelegatedShares for a position mapped to
+// the given redelegation unbonding ID.
 //
-// Because the position is still delegated to the destination validator, we
-// claim pending rewards BEFORE reducing shares. Otherwise, base rewards
-// accrued at the pre-slash share count would be computed on fewer shares at
-// claim time, losing the difference.
+// Base rewards will already have been auto-withdrawn to the owner BeforeDelegationSharesModified hook in
+// distribution module's Unbond path during slash by the time this hook fires.
 func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, shareBurnt math.LegacyDec) error {
 	pos, found, err := k.getMappedSlashPosition(ctx, k.RedelegationMappings, unbondingId, k.deleteRedelegationPositionMapping)
 	if err != nil {
@@ -70,36 +68,28 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		return nil
 	}
 
-	// Claim pending rewards before modifying shares so that base and bonus
-	// rewards accumulated at the pre-slash share count are not lost.
-	if pos.IsDelegated() {
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-		if err != nil {
-			return err
-		}
+	if !pos.IsDelegated() {
+		return nil
+	}
 
-		currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-		if err != nil {
-			return err
-		}
+	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err != nil {
+		return err
+	}
 
-		if _, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio); err != nil {
+	if _, err := k.processEventsAndClaimBonus(ctx, &pos, valAddr); err != nil {
+		// deliberate forgo of bonus rewards even if pool is insufficient toprevent chain halt
+		if errors.Is(err, types.ErrInsufficientBonusPool) {
+			k.logger(ctx).Error("insufficient bonus pool during redelegation slash",
+				"position_id", pos.Id,
+				"error", err.Error(),
+			)
+		} else {
 			return err
-		}
-
-		if _, err := k.processEventsAndClaimBonus(ctx, &pos, valAddr); err != nil {
-			if errors.Is(err, types.ErrInsufficientBonusPool) {
-				k.logger(ctx).Error("insufficient bonus pool during redelegation slash",
-					"position_id", pos.Id,
-					"error", err.Error(),
-				)
-			} else {
-				return err
-			}
 		}
 	}
 
-	if pos.IsDelegated() && shareBurnt.IsPositive() {
+	if shareBurnt.IsPositive() {
 		newShares := pos.DelegatedShares.Sub(shareBurnt)
 		if newShares.IsPositive() {
 			pos.UpdateDelegatedShares(newShares)

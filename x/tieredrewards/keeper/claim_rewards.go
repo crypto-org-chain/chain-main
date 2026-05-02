@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
@@ -12,10 +11,35 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// claimRewardsAndUpdatePositionsForTier claims base and bonus rewards for all delegated
-// positions in the given tier. Positions are grouped by validator and owner for
-// batched bank sends.
-func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierId uint32) error {
+// claimBaseRewards claims the outstanding base rewards held
+// by the given position's delegation for a single validator.
+// This assumes that the delegation withdrawAddress has been set to the position's owner address.
+func (k Keeper) claimBaseRewards(ctx context.Context, pos types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
+	if !pos.IsDelegated() {
+		return sdk.NewCoins(), nil
+	}
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, posDelAddr, valAddr)
+	if err != nil {
+		return nil, err
+	}
+	if rewards.IsZero() {
+		return rewards, nil
+	}
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventBaseRewardsClaimed{
+		PositionId: pos.Id,
+		Owner:      pos.Owner,
+		Rewards:    rewards,
+	}); err != nil {
+		return nil, err
+	}
+	return rewards, nil
+}
+
+// claimRewardsAndUpdateTierPositions claims base and bonus rewards for all
+// delegated positions in the given tier.
+func (k Keeper) claimRewardsAndUpdateTierPositions(ctx context.Context, tierId uint32) error {
 	positions, err := k.getPositionsByTier(ctx, tierId)
 	if err != nil {
 		return err
@@ -24,86 +48,38 @@ func (k Keeper) claimRewardsAndUpdatePositionsForTier(ctx context.Context, tierI
 		return nil
 	}
 
-	// Cache validator-level data once per unique validator.
-	type valData struct {
-		valAddr sdk.ValAddress
-		ratio   sdk.DecCoins
-	}
-	valCache := make(map[string]*valData)
-
-	// Group delegated positions by (validator, owner) for batched base reward sends.
-	type valOwnerKey struct {
-		validator string
-		owner     string
-	}
-	type valOwnerGroup struct {
-		positions []*types.Position
-		val       *valData
-	}
-
-	var groupOrder []valOwnerKey
-	groups := make(map[valOwnerKey]*valOwnerGroup)
-
 	for i := range positions {
 		pos := &positions[i]
 		if !pos.IsDelegated() {
 			continue
 		}
 
-		vd, ok := valCache[pos.Validator]
-		if !ok {
-			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-			if err != nil {
-				return err
-			}
-
-			ratio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-			if err != nil {
-				return err
-			}
-
-			vd = &valData{valAddr: valAddr, ratio: ratio}
-			valCache[pos.Validator] = vd
-		}
-
-		key := valOwnerKey{validator: pos.Validator, owner: pos.Owner}
-		g, ok := groups[key]
-		if !ok {
-			g = &valOwnerGroup{val: vd}
-			groups[key] = g
-			groupOrder = append(groupOrder, key)
-		}
-
-		g.positions = append(g.positions, pos)
-	}
-
-	for _, key := range groupOrder {
-		g := groups[key]
-
-		if _, err := k.claimBaseRewards(ctx, g.positions, key.owner, g.val.valAddr, g.val.ratio); err != nil {
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
 			return err
 		}
-		// Process events and claim bonus for each position individually.
-		for _, pos := range g.positions {
-			if _, err := k.processEventsAndClaimBonus(ctx, pos, g.val.valAddr); err != nil {
-				return err
-			}
-			// setPositionUnsafe to reduce gas consumption
-			if err := k.setPositionUnsafe(ctx, *pos); err != nil {
-				return err
-			}
+
+		if _, err := k.claimBaseRewards(ctx, *pos, valAddr); err != nil {
+			return err
+		}
+		if _, err := k.processEventsAndClaimBonus(ctx, pos, valAddr); err != nil {
+			return err
+		}
+		// setPositionUnsafe to reduce gas consumption
+		if err := k.setPositionUnsafe(ctx, *pos); err != nil {
+			return err
 		}
 	}
 
 	return nil
 }
 
-// claimRewardsForPosition claims base and bonus rewards for a single position.
+// claimRewards claims base and bonus rewards for a single position.
 // Returns:
 //   - position: the updated position with reward checkpoints advanced;
 //   - base: base rewards paid to the owner for this position in this call;
 //   - bonus: bonus rewards paid to the owner for this position in this call;
-func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+func (k Keeper) claimRewards(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
 	if !pos.IsDelegated() {
 		return pos, sdk.NewCoins(), sdk.NewCoins(), nil
 	}
@@ -113,12 +89,7 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 		return types.Position{}, nil, nil, err
 	}
 
-	currentRatio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-	if err != nil {
-		return types.Position{}, nil, nil, err
-	}
-
-	base, err := k.claimBaseRewards(ctx, []*types.Position{&pos}, pos.Owner, valAddr, currentRatio)
+	base, err := k.claimBaseRewards(ctx, pos, valAddr)
 	if err != nil {
 		return types.Position{}, nil, nil, err
 	}
@@ -131,18 +102,10 @@ func (k Keeper) claimRewardsForPosition(ctx context.Context, pos types.Position)
 	return pos, base, bonus, nil
 }
 
-// claimRewardsForPositions claims base and bonus rewards for multiple positions for an owner,
-// caching validator and tier lookups and batching bank sends to reduce gas.
-// Fails atomically if any position cannot be claimed.
-func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
-	type positionsByVal struct {
-		positions []*types.Position
-		valAddr   sdk.ValAddress
-		ratio     sdk.DecCoins
-	}
-
-	var vals []string
-	valGroups := make(map[string]*positionsByVal)
+// claimRewardsAndUpdatesPositions claims base and bonus rewards for multiple positions.
+func (k Keeper) claimRewardsAndUpdatesPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
+	totalBase := sdk.NewCoins()
+	totalBonus := sdk.NewCoins()
 
 	for i := range positions {
 		pos := &positions[i]
@@ -155,54 +118,23 @@ func (k Keeper) claimRewardsForPositions(ctx context.Context, owner string, posi
 			continue
 		}
 
-		valAddrStr := pos.Validator
-		g, ok := valGroups[valAddrStr]
-		if !ok {
-			valAddr, err := sdk.ValAddressFromBech32(valAddrStr)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			ratio, err := k.updateBaseRewardsPerShare(ctx, valAddr)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			g = &positionsByVal{valAddr: valAddr, ratio: ratio}
-			valGroups[valAddrStr] = g
-			vals = append(vals, valAddrStr)
+		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+		if err != nil {
+			return nil, nil, err
 		}
 
-		g.positions = append(g.positions, pos)
-	}
-
-	totalBase := sdk.NewCoins()
-	totalBonus := sdk.NewCoins()
-
-	for _, valAddrStr := range vals {
-		g := valGroups[valAddrStr]
-
-		base, err := k.claimBaseRewards(ctx, g.positions, owner, g.valAddr, g.ratio)
+		base, err := k.claimBaseRewards(ctx, *pos, valAddr)
 		if err != nil {
 			return nil, nil, err
 		}
 		totalBase = totalBase.Add(base...)
 
-		// Process events and claim bonus per position.
-		for _, pos := range g.positions {
-			bonus, err := k.processEventsAndClaimBonus(ctx, pos, g.valAddr)
-			if err != nil {
-				return nil, nil, err
-			}
-			totalBonus = totalBonus.Add(bonus...)
+		bonus, err := k.processEventsAndClaimBonus(ctx, pos, valAddr)
+		if err != nil {
+			return nil, nil, err
 		}
-	}
+		totalBonus = totalBonus.Add(bonus...)
 
-	for i := range positions {
-		pos := &positions[i]
-		if !pos.IsDelegated() {
-			continue
-		}
 		// setPositionUnsafe to reduce gas consumption
 		if err := k.setPositionUnsafe(ctx, *pos); err != nil {
 			return nil, nil, err
@@ -327,74 +259,4 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 	}
 
 	return bonusCoins, nil
-}
-
-// claimBaseRewards computes base rewards for the given positions, updates their
-// BaseRewardsPerShare checkpoints, emits per-position EventBaseRewardsClaimed,
-// and performs a single batched bank send for the total.
-func (k Keeper) claimBaseRewards(ctx context.Context, positions []*types.Position, owner string, valAddr sdk.ValAddress, currentRatio sdk.DecCoins) (sdk.Coins, error) {
-	total := sdk.NewCoins()
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	events := make([]proto.Message, 0, len(positions))
-
-	for _, pos := range positions {
-		// Defensive
-		if !pos.IsOwner(owner) {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionOwner, "position owner does not match owner, position: %s, owner: %s", pos.String(), owner)
-		}
-
-		if !pos.IsDelegated() {
-			continue
-		}
-
-		// Defensive
-		if pos.Validator != valAddr.String() {
-			return nil, errorsmod.Wrapf(types.ErrNotPositionValidator, "position validator does not match validator, position: %s, validator: %s", pos.String(), valAddr.String())
-		}
-
-		delta, hasNegative := currentRatio.SafeSub(pos.BaseRewardsPerShare)
-		if hasNegative {
-			k.logger(ctx).Error(
-				"negative base rewards per share delta",
-				"position", pos.String(),
-				"current_ratio", currentRatio.String(),
-				"delta", delta.String(),
-			)
-			panic("negative base rewards per share delta")
-		}
-		pos.UpdateBaseRewardsPerShare(currentRatio)
-
-		if delta.IsZero() {
-			continue
-		}
-
-		rewards, _ := delta.MulDecTruncate(pos.DelegatedShares).TruncateDecimal()
-		if rewards.IsZero() {
-			continue
-		}
-
-		events = append(events, &types.EventBaseRewardsClaimed{
-			PositionId: pos.Id,
-			Owner:      pos.Owner,
-			Rewards:    rewards,
-		})
-
-		total = total.Add(rewards...)
-	}
-
-	if !total.IsZero() {
-		ownerAddr, err := sdk.AccAddressFromBech32(owner)
-		if err != nil {
-			return nil, err
-		}
-		if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, ownerAddr, total); err != nil {
-			return nil, err
-		}
-		if err := sdkCtx.EventManager().EmitTypedEvents(events...); err != nil {
-			return nil, err
-		}
-	}
-
-	return total, nil
 }

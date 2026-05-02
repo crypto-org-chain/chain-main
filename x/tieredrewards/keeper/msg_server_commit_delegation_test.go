@@ -6,7 +6,10 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
@@ -42,11 +45,16 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().True(pos.DelegatedShares.Equal(halfShares))
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
-	// Module should have delegation on the same validator
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	// The position's delegator address holds the delegation.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().True(moduleDel.Shares.Equal(halfShares))
+	s.Require().True(posDel.Shares.Equal(halfShares))
+
+	// Verify that the distribution rewards for this delegation are routed to the owner.
+	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(delAddr.String(), withdrawAddr.String(), "withdraw addr should route to owner")
 }
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
@@ -79,17 +87,17 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().Error(err, "user delegation should be removed after full commit")
 
-	// Module should have the full delegation
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
+	// The position's delegator address holds the delegation.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
 	// Re-fetch validator after commit for current exchange rate
 	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	moduleDelTokens := valAfter.TokensFromShares(moduleDel.Shares).TruncateInt()
-	s.Require().True(moduleDelTokens.Equal(delTokensBefore), "module should have the full delegation")
+	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
+	s.Require().True(posDelTokens.Equal(delTokensBefore), "position's delegator address should have the full delegation")
 
 	// Validator tokens should be unchanged
 	s.Require().True(val.Tokens.Equal(valAfter.Tokens), "validator tokens should be unchanged")
@@ -194,103 +202,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_NoDelegation() {
 	s.Require().Error(err)
 }
 
-func (s *KeeperSuite) TestMsgCommitDelegationToTier_UpdateBaseRewardsPerShare_FirstPosition() {
-	s.setupTier(1)
-	delAddr, valAddr := s.getDelegator()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
-	s.Require().NoError(err)
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
-
-	// Create the first position with delegation — this should call
-	// UpdateBaseRewardsPerShare internally. Since there's no prior
-	// delegation to the validator, the ratio should be zero/empty.
-	msg := &types.MsgCommitDelegationToTier{
-		DelegatorAddress: delAddr.String(),
-		ValidatorAddress: valAddr.String(),
-		Id:               1,
-		Amount:           commitAmount,
-	}
-
-	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
-	s.Require().NoError(err)
-
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-
-	// First position should have empty BaseRewardsPerShare (no prior rewards).
-	s.Require().True(pos.BaseRewardsPerShare.IsZero(),
-		"first position should start with zero base rewards per share")
-}
-
-func (s *KeeperSuite) TestMsgCommitDelegationToTier_UpdateBaseRewardsPerShare_SecondPositionGetsUpdatedRatio() {
-	// Create first position with same amount as initial delegation
-	// Expects half the rewards to go to the tier module account
-	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
-	pos := s.setupNewTierPositionWithDelegator(lockAmount, false)
-	_, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-
-	// The genesis validator has 100% commission — delegators get nothing.
-	// Set it to 0% so all allocated rewards go to delegators.
-	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-
-	// Advance the block so the delegation's starting period in x/distribution
-	// is finalized before rewards are allocated. Without this, the delegation
-	// and allocation happen in the same period and WithdrawDelegationRewards
-	// returns zero (startingRatio == endingRatio).
-	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
-
-	// Simulate rewards accruing by allocating through x/distribution.
-	// This is the proper way — fund the distribution module and call
-	// AllocateTokensToValidator so WithdrawDelegationRewards returns them.
-	rewardAmount := sdkmath.NewInt(100)
-	s.allocateRewardsToValidator(valAddr, rewardAmount, bondDenom)
-
-	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
-	s.Require().NoError(err)
-	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	commitAmount := val.TokensFromShares(del.Shares).TruncateInt().Quo(sdkmath.NewInt(2))
-
-	msg := &types.MsgCommitDelegationToTier{
-		DelegatorAddress: delAddr.String(),
-		ValidatorAddress: valAddr.String(),
-		Id:               1,
-		Amount:           commitAmount,
-	}
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
-	s.Require().NoError(err)
-
-	pos1, err := s.keeper.GetPosition(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
-	s.Require().NoError(err)
-
-	// First position started with zero ratio.
-	s.Require().True(pos1.BaseRewardsPerShare.IsZero(),
-		"first position should have zero base rewards per share")
-
-	// Second position should have a positive ratio reflecting the reward
-	// distributed across the first position's delegation shares.
-	s.Require().False(pos2.BaseRewardsPerShare.IsZero(),
-		"second position should have non-zero base rewards per share")
-
-	rewardToTierModule := rewardAmount.Quo(sdkmath.NewInt(2))
-	expectedRatio := sdkmath.LegacyNewDecFromInt(rewardToTierModule).Quo(pos1.DelegatedShares)
-
-	actualRatio := pos2.BaseRewardsPerShare[0].Amount
-
-	s.Require().True(actualRatio.Equal(expectedRatio),
-		"second position ratio should equal rewardAmount / firstPositionShares, got %s want %s",
-		actualRatio, expectedRatio)
-}
-
 // TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents verifies that a
 // position created via CommitDelegationToTier gets LastEventSeq set to the
 // latest event, skipping any prior events on the validator.
@@ -331,4 +242,117 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,
 		"first position's LastEventSeq should remain 0")
+}
+
+// TestMsgCommitDelegationToTier_ExactlyFundedOwner tests that it is not required
+// for the owner to hold extra funds when transferring a delegation to a tier position.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	commitAmount := sdkmath.NewInt(1_000_000)
+
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, commitAmount))))
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, commitAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	// Owner has no liquid bond denom left — everything is in the delegation.
+	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, owner, bondDenom).Amount.IsZero(),
+		"owner should have 0 liquid bondDenom after fully delegating")
+
+	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: owner.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
+	s.Require().NoError(err, "commit must not require liquid funds on top of the delegation")
+
+	posDelAddr := types.GetDelegatorAddress(0)
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(posDel.Shares.IsPositive(), "position's delegator account must hold the transferred delegation")
+
+	// Owner's original delegation must be fully consumed.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
+	s.Require().Error(err, "owner should no longer hold a delegation at this validator")
+
+	// Position's delegation token value should equal the committed amount
+	valAfter, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
+	s.Require().True(posDelTokens.Equal(commitAmount),
+		"position's delegation should equal committed amount: got %s want %s", posDelTokens, commitAmount)
+
+	// No liquid coins stranded on the position's delegator account (the old bug left msg.Amount there).
+	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
+		"position's delegator account must not hold liquid bondDenom after commit")
+}
+
+// TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount verifies that
+// CommitDelegationToTier explicitly creates a BaseAccount for the position's
+// delegator address.
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	commitAmount := sdkmath.NewInt(1_000_000)
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, commitAmount))))
+
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, commitAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	// Predict the next position's delegator address and confirm no auth
+	// account exists yet — if one did, the commit path's idempotent guard
+	// would mask the behavior we want to verify.
+	nextId, err := s.keeper.NextPositionId.Peek(s.ctx)
+	s.Require().NoError(err)
+	predictedDelAddr := types.GetDelegatorAddress(nextId)
+	s.Require().Nil(s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr),
+		"auth account must not exist before commit")
+
+	resp, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: owner.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           commitAmount,
+	})
+	s.Require().NoError(err)
+	s.Require().Equal(nextId, resp.PositionId)
+
+	// After commit the auth account for the position's delegator address must
+	// exist; otherwise any later undelegation + CompleteUnbonding would fail
+	// silently in the staking EndBlocker.
+	acc := s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr)
+	s.Require().NotNil(acc, "auth account must be created by CommitDelegationToTier")
+	s.Require().Equal(predictedDelAddr, acc.GetAddress())
+}
+
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {
+	s.setupTier(1)
+	delAddr, valAddr := s.getDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	_, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+	})
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }

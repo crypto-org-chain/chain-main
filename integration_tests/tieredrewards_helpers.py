@@ -1,6 +1,8 @@
+import hashlib
 import json
 import time
 
+import bech32
 import requests
 from pystarport.ports import api_port
 
@@ -157,6 +159,11 @@ def commit_delegation(
 
 def query_position(cluster, position_id, i=0):
     return rest_get(cluster, f"/chainmain/tieredrewards/v1/position/{position_id}", i)
+
+
+def position_delegator_address(pos_id, prefix="cro"):
+    data = hashlib.sha256(f"tieredrewards/position/{pos_id}".encode()).digest()[:20]
+    return bech32.bech32_encode(prefix, bech32.convertbits(data, 8, 5))
 
 
 def query_positions_by_owner(cluster, owner, i=0):

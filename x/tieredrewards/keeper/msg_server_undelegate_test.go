@@ -8,7 +8,9 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
@@ -181,14 +183,14 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal the SDK return amount")
 }
 
@@ -278,4 +280,55 @@ func (s *KeeperSuite) TestMsgTierUndelegate_TierCloseOnly_Succeeds() {
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
+}
+
+// TestMsgTierUndelegate_ManyPositionsSameValidator verifies that many tier
+// positions on the same validator can all undelegate concurrently.
+func (s *KeeperSuite) TestMsgTierUndelegate_ManyPositionsSameValidator() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	// Deliberately exceed cosmos-sdk's default MaxEntries (7) per (delegator,
+	// validator) pair — any N > 7 demonstrates the benefit.
+	const numPositions = 10
+	lockAmount := sdkmath.NewInt(1_000)
+
+	owners := make([]sdk.AccAddress, numPositions)
+	positionIds := make([]uint64, numPositions)
+	for i := 0; i < numPositions; i++ {
+		owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+		s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner,
+			sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
+		resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+			Owner:                  owner.String(),
+			Id:                     1,
+			Amount:                 lockAmount,
+			ValidatorAddress:       valAddr.String(),
+			TriggerExitImmediately: true,
+		})
+		s.Require().NoError(err)
+		owners[i] = owner
+		positionIds[i] = resp.PositionId
+	}
+
+	s.advancePastExitDuration()
+
+	for i := 0; i < numPositions; i++ {
+		_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+			Owner:      owners[i].String(),
+			PositionId: positionIds[i],
+		})
+		s.Require().NoError(err,
+			"position %d (of %d) must not be blocked by a shared MaxEntries cap — each position has its own staking delegator",
+			i+1, numPositions)
+	}
+
+	for i := 0; i < numPositions; i++ {
+		pos, err := s.keeper.GetPosition(s.ctx, positionIds[i])
+		s.Require().NoError(err)
+		s.Require().False(pos.IsDelegated(), "position %d should be undelegated", i)
+	}
 }

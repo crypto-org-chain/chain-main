@@ -169,7 +169,7 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsAfterUnbondingCompleted() {
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),

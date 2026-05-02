@@ -11,20 +11,18 @@ var (
 	PositionsByTierKey            = collections.NewPrefix(5)
 	PositionsByValidatorKey       = collections.NewPrefix(6)
 	PositionCountByTierKey        = collections.NewPrefix(7)
-	ValidatorRewardRatioKey       = collections.NewPrefix(8)
-	UnbondingIdToPositionIdKey    = collections.NewPrefix(9)
-	UnbondingIdsByPositionKey     = collections.NewPrefix(10)
-	RedelegationIdToPositionIdKey = collections.NewPrefix(11)
-	RedelegationIdsByPositionKey  = collections.NewPrefix(12)
-	ValidatorEventsKey            = collections.NewPrefix(13)
-	ValidatorEventSeqKey          = collections.NewPrefix(14)
-	PositionCountByValidatorKey   = collections.NewPrefix(15)
+	UnbondingIdToPositionIdKey    = collections.NewPrefix(8)
+	UnbondingIdsByPositionKey     = collections.NewPrefix(9)
+	RedelegationIdToPositionIdKey = collections.NewPrefix(10)
+	RedelegationIdsByPositionKey  = collections.NewPrefix(11)
+	ValidatorEventsKey            = collections.NewPrefix(12)
+	ValidatorEventSeqKey          = collections.NewPrefix(13)
+	PositionCountByValidatorKey   = collections.NewPrefix(14)
 )
 
 const (
 	ModuleName      = "tieredrewards"
 	StoreKey        = ModuleName
-	TStoreKey       = "transient_" + ModuleName
 	RewardsPoolName = "rewards_pool"
 
 	// SecondsPerYear is 365.25 days, used to convert durations to years for bonus calculation.

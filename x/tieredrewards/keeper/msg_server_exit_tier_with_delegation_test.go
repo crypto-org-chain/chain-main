@@ -9,6 +9,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
@@ -368,16 +369,13 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated())
 
-	// The position's DelegatedShares must match what the module actually has
-	// for this position. Query the module's total delegation on the validator.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	moduleDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
+	posDelAddr := types.GetDelegatorAddress(posAfter.Id)
+	posStakingDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
-	// Module delegation includes only this position (single position on this validator).
-	s.Require().True(posAfter.DelegatedShares.Equal(moduleDel.Shares),
-		"position DelegatedShares (%s) must equal module's actual delegation shares (%s)",
-		posAfter.DelegatedShares, moduleDel.Shares)
+	s.Require().True(posAfter.DelegatedShares.Equal(posStakingDel.Shares),
+		"position DelegatedShares (%s) must equal actual delegation shares (%s)",
+		posAfter.DelegatedShares, posStakingDel.Shares)
 
 	// A subsequent full exit (TierUndelegate) using the stored shares must succeed.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
@@ -428,6 +426,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Slash 10% to create a non-1:1 exchange rate.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -466,10 +465,9 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(del.Shares.IsPositive())
 
-	// Module should have no remaining delegation on this validator.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
-	s.Require().Error(err, "module delegation should be fully removed after full exit")
+	// Position's delegator address should have no remaining delegation after full exit.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().Error(err, "position's delegation should be fully removed after full exit")
 }
 
 // TestMsgExitTierWithDelegation_FullExitNearTotalSlash verifies that a full
@@ -484,6 +482,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Slash 99% — position token value goes very low but shares remain.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -520,8 +519,50 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 	s.Require().NoError(err)
 	s.Require().True(del.Shares.IsPositive())
 
-	// Module should have no remaining delegation.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, poolAddr, valAddr)
-	s.Require().Error(err, "module delegation should be fully removed")
+	// Position's delegator address should have no remaining delegation after full exit.
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().Error(err, "position's delegation should be fully removed after full exit")
+}
+
+// TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDust verifies that
+// stray coins on the position's delegator account are swept to the owner when
+// a full exit deletes the position. Dust shouldn't exist in practice (delegation
+// transfer moves shares, not coins; rewards route to the owner), but the
+// handler is defensively tolerant.
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDust() {
+	lockAmount := sdkmath.NewInt(10000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+
+	// Inject dust directly onto the position's delegator account.
+	dustDenom := "dust"
+	dustAmount := sdkmath.NewInt(123)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, posDelAddr,
+		sdk.NewCoins(sdk.NewCoin(dustDenom, dustAmount))))
+
+	dustBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+
+	tokenValue, err := s.keeper.PositionTokenValue(s.ctx, pos)
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     tokenValue,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.FullExit, "full exit expected")
+
+	dustAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+	s.Require().True(dustAfter.Amount.Equal(dustBefore.Amount.Add(dustAmount)),
+		"owner should have received the dust on full exit sweep")
+
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
+		"position's delegator account should be empty after sweep")
 }

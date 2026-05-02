@@ -174,16 +174,35 @@ func (s *KeeperSuite) setValidatorCommission(valAddr sdk.ValAddress, rate sdkmat
 }
 
 // completeStakingUnbonding advances block time past the staking unbonding
-// period and calls CompleteUnbonding so that the staking module returns tokens
-// from the NotBondedPool to the tier module account
-func (s *KeeperSuite) completeStakingUnbonding(valAddr sdk.ValAddress) {
+// period and calls CompleteUnbonding so that the staking module returns
+// matured tokens to the position's delegator address.
+func (s *KeeperSuite) completeStakingUnbonding(valAddr sdk.ValAddress, delAddr sdk.AccAddress) {
 	s.T().Helper()
 	unbondingTime, err := s.app.StakingKeeper.UnbondingTime(s.ctx)
 	s.Require().NoError(err)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(unbondingTime + time.Second))
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.CompleteUnbonding(s.ctx, poolAddr, valAddr)
+	_, err = s.app.StakingKeeper.CompleteUnbonding(s.ctx, delAddr, valAddr)
 	s.Require().NoError(err)
+}
+
+// slashUnbondingEntry mirrors what cosmos-sdk's slashing path does to a
+// position's unbonding delegation: reduce the UD entry's Balance and fire the
+// tier hook so internal accounting stays aligned with staking state.
+func (s *KeeperSuite) slashUnbondingEntry(delAddr sdk.AccAddress, valAddr sdk.ValAddress, unbondingID uint64, slashAmount sdkmath.Int) {
+	s.T().Helper()
+	ubd, err := s.app.StakingKeeper.GetUnbondingDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	found := false
+	for i, entry := range ubd.Entries {
+		if entry.UnbondingId == unbondingID {
+			ubd.Entries[i].Balance = entry.Balance.Sub(slashAmount)
+			found = true
+			break
+		}
+	}
+	s.Require().True(found, "unbonding entry %d not found", unbondingID)
+	s.Require().NoError(s.app.StakingKeeper.SetUnbondingDelegation(s.ctx, ubd))
+	s.Require().NoError(s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingID, slashAmount))
 }
 
 // advancePastExitDuration advances block time past the default test tier's exit duration.

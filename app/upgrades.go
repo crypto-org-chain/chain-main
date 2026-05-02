@@ -8,6 +8,7 @@ import (
 
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
+	tieredrewardsv7testnet "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/migrations/v7testnet"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/math"
@@ -41,9 +42,18 @@ var CircuitSuperAdmins = map[string][]string{
 	},
 }
 
+const testnetBurnAddress = "tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma"
+
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	// Register upgrade plan name for mainnet v7.0.0. If it's for testnet, add postfix "-testnet" to the plan name.
-	planName := "v7.0.0"
+	app.registerV7UpgradeHandler()
+	app.registerV7TestnetUpgradeHandler()
+}
+
+// registerV7UpgradeHandler registers the "v7" plan for chains that have
+// not yet run it (mainnet). Testnet has already upgraded past v7 and will
+// not re-run this handler.
+func (app *ChainApp) registerV7UpgradeHandler() {
+	planName := "v7"
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -103,6 +113,119 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	}
 }
 
+// registerV7TestnetUpgradeHandler registers the "v7.1.0-testnet" plan used to
+// migrate testnet from the legacy shared-pool tieredrewards model onto the
+// per-position-delegator rewrite. The handler:
+//
+//  1. Runs module migrations.
+//  2. Purges pre-rewrite tieredrewards lifecycle state (positions, secondary
+//     indexes, mappings, validator events, counters, and the retired
+//     ValidatorRewardRatio collection). Params and Tiers bytes survive because
+//     their proto shapes are unchanged.
+//  3. Unwinds the staking + bank residue still held at the tier module
+//     account: every remaining delegation is undelegated, and loose bank
+//     balance is swept to the testnet burn address. Matured unbondings
+//     post-upgrade land back at the pool and stay trapped there — acceptable
+//     on testnet.
+//
+// No store upgrades are wired — the inflation and tieredrewards stores
+// already exist on testnet from the earlier v7 upgrade.
+func (app *ChainApp) registerV7TestnetUpgradeHandler() {
+	planName := "v7.1.0-testnet"
+
+	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+		sdkCtx.Logger().Info("v7-testnet: running module migrations...")
+		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
+		if err != nil {
+			return map[string]uint64{}, err
+		}
+
+		sdkCtx.Logger().Info("v7-testnet: purging pre-rewrite tieredrewards lifecycle state...")
+		counts, err := tieredrewardsv7testnet.PurgeOldTieredRewardsState(sdkCtx, app.keys[tieredrewardstypes.StoreKey], tieredrewardsv7testnet.StateToPurge())
+		if err != nil {
+			return map[string]uint64{}, fmt.Errorf("v7-testnet tieredrewards purge: %w", err)
+		}
+		sdkCtx.Logger().Info("v7-testnet: tieredrewards purge completed", "deletions_per_prefix", counts)
+
+		if err := sweepOldTierModuleResidualsTestnet(sdkCtx, app); err != nil {
+			return map[string]uint64{}, fmt.Errorf("v7-testnet residual sweep: %w", err)
+		}
+
+		sdkCtx.Logger().Info("v7-testnet: upgrade completed", "plan", plan.Name, "version_map", m)
+		return m, nil
+	})
+}
+
+// sweepOldTierModuleResidualsTestnet unwinds pre-rewrite staking and bank
+// state held by the tier module account. Called only from the v7.1.0-testnet
+// handler.
+//
+//  1. Undelegate every delegation the pool address still holds. Funds enter
+//     the staking unbonding queue and eventually mature back to the pool
+//     account — at which point they stay trapped (no path out post-upgrade
+//     without manual intervention). Accepted on testnet.
+//  2. Sweep any loose bank balance at the pool to the testnet burn address.
+func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
+	poolAddr := app.AccountKeeper.GetModuleAddress(tieredrewardstypes.ModuleName)
+	if poolAddr == nil {
+		return fmt.Errorf("tieredrewards module account missing")
+	}
+
+	burnAddr, err := sdk.AccAddressFromBech32(testnetBurnAddress)
+	if err != nil {
+		return fmt.Errorf("parse testnet burn addr: %w", err)
+	}
+
+	stakingParams, err := app.StakingKeeper.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("get staking params: %w", err)
+	}
+	originalMaxEntries := stakingParams.MaxEntries
+	// Temporarily lift the cap by one
+	stakingParams.MaxEntries = originalMaxEntries + 1
+	if err := app.StakingKeeper.SetParams(ctx, stakingParams); err != nil {
+		return fmt.Errorf("bump staking MaxEntries: %w", err)
+	}
+	defer func() {
+		stakingParams.MaxEntries = originalMaxEntries
+		if restoreErr := app.StakingKeeper.SetParams(ctx, stakingParams); restoreErr != nil {
+			ctx.Logger().Error("v7-testnet: failed to restore staking MaxEntries",
+				"original", originalMaxEntries, "err", restoreErr)
+			panic("v7-testnet: failed to restore staking MaxEntries")
+		}
+	}()
+
+	delegations, err := app.StakingKeeper.GetDelegatorDelegations(ctx, poolAddr, 1000)
+	if err != nil {
+		return fmt.Errorf("get pool delegations: %w", err)
+	}
+	for _, d := range delegations {
+		valAddr, err := sdk.ValAddressFromBech32(d.ValidatorAddress)
+		if err != nil {
+			return fmt.Errorf("parse validator %s: %w", d.ValidatorAddress, err)
+		}
+		if _, _, _, err := app.StakingKeeper.Undelegate(ctx, poolAddr, valAddr, d.Shares); err != nil {
+			return fmt.Errorf("v7-testnet: pool undelegate failed at validator %s (shares %s): %w",
+				d.ValidatorAddress, d.Shares, err)
+		}
+		ctx.Logger().Info("v7-testnet: pool undelegated",
+			"validator", d.ValidatorAddress, "shares", d.Shares.String())
+	}
+
+	bal := app.BankKeeper.GetAllBalances(ctx, poolAddr)
+	if bal.IsZero() {
+		ctx.Logger().Info("v7-testnet: pool bank balance empty, nothing to sweep")
+		return nil
+	}
+	if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, tieredrewardstypes.ModuleName, burnAddr, bal); err != nil {
+		return fmt.Errorf("sweep pool to burn addr: %w", err)
+	}
+	ctx.Logger().Info("v7-testnet: pool bank balance swept to burn addr", "amount", bal.String(), "burn_addr", burnAddr.String())
+	return nil
+}
+
 func initInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
 	sdkCtx.Logger().Info("initializing inflation params...")
 
@@ -123,7 +246,7 @@ func initInflationParams(app *ChainApp, sdkCtx sdk.Context) error {
 		}
 	case strings.Contains(chainID, "testnet"):
 		inflationParams.BurnedAddresses = []string{
-			"tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma",
+			testnetBurnAddress,
 		}
 	default:
 		return fmt.Errorf("unknown upgrade chain ID: %s", chainID)

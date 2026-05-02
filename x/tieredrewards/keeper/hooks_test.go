@@ -59,8 +59,6 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotModifyPosition() {
 		"position DelegatedShares should not change during slash hook (lazy)")
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"position LastBonusAccrual should not change during slash hook (lazy)")
-	s.Require().Equal(posBefore.BaseRewardsPerShare, posAfter.BaseRewardsPerShare,
-		"position BaseRewardsPerShare should not change during slash hook (lazy)")
 }
 
 // TestBeforeValidatorSlashed_NoPositions is a no-op for validators with no tier positions.
@@ -244,14 +242,12 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by unbonding hook (lazy)")
-	s.Require().Equal(posBefore.BaseRewardsPerShare, posAfter.BaseRewardsPerShare,
-		"BaseRewardsPerShare should NOT be modified by unbonding hook (lazy)")
 }
 
 // --- AfterValidatorRemoved hook tests ---
 
 // TestAfterValidatorRemoved_NoEvents_CleansSeq verifies that when no events
-// remain, the hook clears the reward ratio and event seq counter.
+// remain, the hook clears the event seq counter.
 func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	s.setupTier(1)
 	vals, _ := s.getStakingData()
@@ -259,24 +255,12 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_NoEvents_CleansSeq() {
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
-		CumulativeRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
-		},
-	})
-	s.Require().NoError(err)
-
 	// Set seq counter but NO events (simulating all events garbage-collected).
-	err = s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(5))
+	err := s.keeper.ValidatorEventSeq.Set(s.ctx, valAddr, uint64(5))
 	s.Require().NoError(err)
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
-
-	// Ratio should be cleaned.
-	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().False(hasRatio, "reward ratio should be cleaned")
 
 	// Seq should be cleaned (no leftover events).
 	hasSeq, err := s.keeper.ValidatorEventSeq.Has(s.ctx, valAddr)
@@ -293,16 +277,9 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 	consAddr := sdk.ConsAddress(valAddr)
 	hooks := s.keeper.Hooks()
 
-	err := s.keeper.ValidatorRewardRatio.Set(s.ctx, valAddr, types.ValidatorRewardRatio{
-		CumulativeRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.1")),
-		},
-	})
-	s.Require().NoError(err)
-
 	// Seed a leftover event and seq.
 	sdkCtx := sdk.UnwrapSDKContext(s.ctx)
-	err = s.keeper.ValidatorEvents.Set(s.ctx, collections.Join(valAddr, uint64(1)), types.ValidatorEvent{
+	err := s.keeper.ValidatorEvents.Set(s.ctx, collections.Join(valAddr, uint64(1)), types.ValidatorEvent{
 		Height:         sdkCtx.BlockHeight(),
 		Timestamp:      sdkCtx.BlockTime(),
 		EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
@@ -315,11 +292,6 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 
 	err = hooks.AfterValidatorRemoved(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
-
-	// Ratio should also be PRESERVED.
-	hasRatio, err := s.keeper.ValidatorRewardRatio.Has(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().True(hasRatio, "reward ratio should be preserved when leftover events exist")
 
 	// Events should be PRESERVED (not deleted).
 	hasEvent, err := s.keeper.ValidatorEvents.Has(s.ctx, collections.Join(valAddr, uint64(1)))
@@ -347,10 +319,9 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	// Fire hook with the tier module address (hooks filter by delegator).
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(positionId)
 	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err = hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{unbondingId})
+	err = hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{unbondingId})
 	s.Require().NoError(err)
 
 	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, unbondingId)
@@ -361,9 +332,9 @@ func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
 func (s *KeeperSuite) TestAfterUnbondingCompleted_NoMapping_NoOp() {
 	hooks := s.keeper.Hooks()
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err := hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, []uint64{999})
+	err := hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{999})
 	s.Require().NoError(err, "should not error when unbonding ID has no mapping")
 }
 
@@ -379,10 +350,10 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err = hooks.AfterRedelegationCompleted(s.ctx, poolAddr, valSrc, valDst, []uint64{unbondingId})
+	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingId})
 	s.Require().NoError(err)
 
 	has, err = s.keeper.RedelegationMappings.Has(s.ctx, unbondingId)
@@ -393,10 +364,10 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	hooks := s.keeper.Hooks()
 
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
+	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err := hooks.AfterRedelegationCompleted(s.ctx, poolAddr, valSrc, valDst, []uint64{888})
+	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{888})
 	s.Require().NoError(err, "should not error when redelegation ID has no mapping")
 }
 

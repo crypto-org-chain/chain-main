@@ -712,3 +712,45 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_AllUndelegated() {
 	s.Require().Equal(balBefore.Amount.String(), balAfter.Amount.String(),
 		"balance should not change for all-undelegated batch")
 }
+
+// TestMsgClaimTierRewards_OwnerReceivesRewards confirms
+// that base rewards and bonus rewards both land at the owner's account.
+func (s *KeeperSuite) TestMsgClaimTierRewards_OwnerReceivesRewards() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	pos := s.setupNewTierPosition(lockAmount, false)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
+
+	// Pre-claim: posDelAddr should already be empty (delegation consumes the funds).
+	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
+		"position's delegation address must hold no bondDenom pre-claim")
+
+	// Let time pass so bonus accrues, then accrue base rewards on the validator.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(24 * time.Hour))
+	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
+	s.fundRewardsPool(sdkmath.NewInt(10_000), bondDenom)
+
+	ownerBalBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom)
+
+	resp, err := msgServer.ClaimTierRewards(s.ctx, &types.MsgClaimTierRewards{
+		Owner:       pos.Owner,
+		PositionIds: []uint64{pos.Id},
+	})
+	s.Require().NoError(err)
+
+	// Sanity: both reward streams produced something — otherwise the test
+	// isn't actually exercising both routing paths.
+	s.Require().True(resp.BaseRewards.AmountOf(bondDenom).IsPositive(), "base rewards should be positive")
+	s.Require().True(resp.BonusRewards.AmountOf(bondDenom).IsPositive(), "bonus rewards should be positive")
+
+	expectedTotal := resp.BaseRewards.AmountOf(bondDenom).Add(resp.BonusRewards.AmountOf(bondDenom))
+
+	ownerBalAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, bondDenom)
+	s.Require().Equal(ownerBalBefore.Amount.Add(expectedTotal).String(), ownerBalAfter.Amount.String(),
+		"owner balance must increase by base + bonus")
+}
