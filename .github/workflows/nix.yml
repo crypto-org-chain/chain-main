@@ -678,7 +678,7 @@ jobs:
         run: make nix-integration-test-tieredrewards
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_25
+           nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
