@@ -19,6 +19,12 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "gov: marks gov tests")
     config.addinivalue_line("markers", "solomachine: marks solomachine tests")
     config.addinivalue_line("markers", "tieredrewards: marks tieredrewards tests")
+    config.addinivalue_line(
+        "markers", "slow_b1: first parallel shard of slow tieredrewards slash tests"
+    )
+    config.addinivalue_line(
+        "markers", "slow_b2: second parallel shard of slow tieredrewards slash tests"
+    )
 
 
 @pytest.fixture(scope="session")

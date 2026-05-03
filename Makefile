@@ -303,24 +303,10 @@ nix-integration-test-slow-a: check-network
 nix-integration-test-slow-b: nix-integration-test-slow-b1 nix-integration-test-slow-b2
 
 nix-integration-test-slow-b1: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v \
-		integration_tests/test_tieredrewards.py::test_slash_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_redeleg_slash_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_unbonding_slash_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_clear_position_after_slash \
-		integration_tests/test_tieredrewards.py::test_clear_position_after_redeleg_slash \
-		integration_tests/test_tieredrewards.py::test_slash_all_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_redeleg_slash_all_then_add_pos_then_withdraw"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow_b1"
 
 nix-integration-test-slow-b2: check-network
-	nix-shell ./integration_tests/shell.nix --run "pytest -v \
-		integration_tests/test_tieredrewards.py::test_redeleg_slash_all_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_redeleg_slash_all_then_exit_and_delegate \
-		integration_tests/test_tieredrewards.py::test_slash_all_during_unbonding_then_withdraw \
-		integration_tests/test_tieredrewards.py::test_clear_position_on_redeleg_slashed_all_exiting \
-		integration_tests/test_tieredrewards.py::test_clear_position_slashed_all_exiting \
-		integration_tests/test_tieredrewards.py::test_clear_position_redeleg_slash_all_undelegated_exiting \
-		integration_tests/test_tieredrewards.py::test_clear_position_slashed_all_exit_elapsed"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow_b2"
 
 nix-integration-test-ibc: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ibc"
