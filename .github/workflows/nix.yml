@@ -181,7 +181,7 @@ jobs:
       - name: 'instantiate integration test env'
         run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
 
-  test-upgrade-manual:
+  test-upgrade:
     runs-on: ubuntu-latest
     needs: [prepare, prepare-upgrade, changes]
     if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
@@ -605,19 +605,3 @@ jobs:
           name: debug_files_tieredrewards
           path: debug_files_tieredrewards.tar.gz
           if-no-files-found: ignore
-
-  # Aggregator jobs preserve the original required-check names.
-  # Report success when all underlying split jobs succeed or are skipped.
-  test-upgrade:
-    runs-on: ubuntu-latest
-    needs: [test-upgrade-manual]
-    if: always()
-    steps:
-      - name: Aggregate upgrade test results
-        run: |
-          for r in "${{ needs.test-upgrade-manual.result }}"; do
-            case "$r" in
-              success|skipped) ;;
-              *) echo "failed: $r"; exit 1 ;;
-            esac
-          done
