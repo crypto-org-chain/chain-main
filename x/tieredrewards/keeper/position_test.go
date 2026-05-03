@@ -18,10 +18,9 @@ var (
 
 func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
 	del := types.Delegation{
-		Validator:           testPosValidator,
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
-		LastEventSeq:        0,
+		Validator:    testPosValidator,
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}
 	return types.NewPosition(id, owner, tierId, sdkmath.ZeroInt(), 100, del, time.Now())
 }
@@ -40,7 +39,6 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	s.Require().True(pos.DelegatedShares.Equal(got.DelegatedShares))
 	s.Require().Equal(pos.CreatedAtHeight, got.CreatedAtHeight)
 	s.Require().Equal(pos.Validator, got.Validator)
-	s.Require().True(pos.BaseRewardsPerShare.Equal(got.BaseRewardsPerShare))
 	s.Require().Equal(pos.ExitTriggeredAt, got.ExitTriggeredAt)
 	s.Require().Equal(pos.ExitUnlockAt, got.ExitUnlockAt)
 }
@@ -264,11 +262,8 @@ func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
 
 	// Redelegate to validator 2
 	pos.WithDelegation(types.Delegation{
-		Validator: testPosValidator2,
-		Shares:    sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{
-			sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-		},
+		Validator:    testPosValidator2,
+		Shares:       sdkmath.LegacyNewDec(1000),
 		LastEventSeq: 0,
 	}, time.Now())
 	err = s.keeper.SetPosition(s.ctx, pos)
@@ -353,13 +348,12 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 
 	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
-		LastEventSeq:        0,
+		Validator:    valAddr.String(),
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}
 	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
@@ -369,42 +363,11 @@ func (s *KeeperSuite) TestCreatePosition_Basic() {
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().Equal(delegation.Shares, pos.DelegatedShares)
-	s.Require().Equal(delegation.BaseRewardsPerShare, pos.BaseRewardsPerShare)
 	s.Require().True(pos.DelegatedShares.IsPositive())
-	s.Require().True(pos.BaseRewardsPerShare.IsZero())
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)
 	s.Require().Equal(lockAmount, balBefore.Amount.Sub(balAfter.Amount))
-}
-
-func (s *KeeperSuite) TestCreatePosition_WithValidatorAndBaseRewardsPerShare() {
-	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	tier, err := s.keeper.GetTier(s.ctx, 1)
-	s.Require().NoError(err)
-
-	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(100_000))
-
-	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
-
-	rps := sdk.DecCoins{sdk.NewDecCoinFromDec(bondDenom, sdkmath.LegacyMustNewDecFromStr("0.5"))}
-
-	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: rps,
-		LastEventSeq:        0,
-	}
-
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
-	s.Require().NoError(err)
-	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().True(pos.DelegatedShares.IsPositive())
-	s.Require().True(pos.BaseRewardsPerShare.Equal(rps))
 }
 
 func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
@@ -417,13 +380,12 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 
 	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
-		LastEventSeq:        0,
+		Validator:    valAddr.String(),
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}
 
 	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, true)
@@ -431,7 +393,6 @@ func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
 	s.Require().Equal(delegation.Shares, pos.DelegatedShares)
-	s.Require().Equal(delegation.BaseRewardsPerShare, pos.BaseRewardsPerShare)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().False(pos.ExitTriggeredAt.IsZero())
 	s.Require().False(pos.ExitUnlockAt.IsZero())
@@ -448,17 +409,16 @@ func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(100_000))
 
 	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 	delegation := types.Delegation{
-		Validator:           valAddr.String(),
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{},
-		LastEventSeq:        0,
+		Validator:    valAddr.String(),
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}
 	pos1, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), lockAmount))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
 	pos2, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
 	s.Require().NoError(err)
 

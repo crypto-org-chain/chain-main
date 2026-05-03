@@ -41,6 +41,7 @@
 - [#1267](https://github.com/crypto-org-chain/chain-main/pull/1267) fix: refactor and add back error codes for tieredrewards module
 - [#1276](https://github.com/crypto-org-chain/chain-main/pull/1276) fix: add missing cli queries.
 - [#1282](https://github.com/crypto-org-chain/chain-main/pull/1282) fix: flaky test_begin_blocker_halt_on_excess_supply.
+- [#1285](https://github.com/crypto-org-chain/chain-main/pull/1285) fix(x/tieredrewards): indidivual delegation for each position.
 
 ### Chores
 

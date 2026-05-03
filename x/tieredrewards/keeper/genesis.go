@@ -12,11 +12,6 @@ import (
 // SetPosition rebuilds all secondary indexes, so derived data does not need
 // to be stored in genesis.
 func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
-	// Materialize module accounts during chain init so direct sends cannot create
-	// a plain base account at either module address before the first message.
-	if k.accountKeeper.GetModuleAccount(ctx, types.ModuleName) == nil {
-		panic("tieredrewards module account was not created")
-	}
 	if k.accountKeeper.GetModuleAccount(ctx, types.RewardsPoolName) == nil {
 		panic("tieredrewards rewards pool module account was not created")
 	}
@@ -40,16 +35,6 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	// Set sequence after positions to avoid interference with SetPosition's increasePositionCount.
 	if data.NextPositionId > 0 {
 		if err := k.NextPositionId.Set(ctx, data.NextPositionId); err != nil {
-			panic(err)
-		}
-	}
-
-	for _, entry := range data.ValidatorRewardRatios {
-		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
-		if err != nil {
-			panic(err)
-		}
-		if err := k.ValidatorRewardRatio.Set(ctx, valAddr, entry.RewardRatio); err != nil {
 			panic(err)
 		}
 	}
@@ -116,18 +101,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var validatorRewardRatios []types.ValidatorRewardRatioEntry
-	err = k.ValidatorRewardRatio.Walk(ctx, nil, func(valAddr sdk.ValAddress, ratio types.ValidatorRewardRatio) (bool, error) {
-		validatorRewardRatios = append(validatorRewardRatios, types.ValidatorRewardRatioEntry{
-			Validator:   valAddr.String(),
-			RewardRatio: ratio,
-		})
-		return false, nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	var unbondingDelegationMappings []types.UnbondingMapping
 	err = k.UnbondingDelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
 		unbondingDelegationMappings = append(unbondingDelegationMappings, types.UnbondingMapping{
@@ -182,7 +155,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		Tiers:                       tiers,
 		Positions:                   positions,
 		NextPositionId:              nextPositionId,
-		ValidatorRewardRatios:       validatorRewardRatios,
 		UnbondingDelegationMappings: unbondingDelegationMappings,
 		RedelegationMappings:        redelegationMappings,
 		ValidatorEvents:             validatorEvents,

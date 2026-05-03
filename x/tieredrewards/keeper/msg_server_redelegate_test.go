@@ -8,7 +8,9 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -371,7 +373,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -450,7 +452,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr.String(), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -520,4 +522,68 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(srcValAddr.String(), posAfter.Validator)
+}
+
+// TestMsgTierRedelegate_MultiplePositionsNoTransitiveBlock exercises the core
+// benefit of the per-position-delegator rewrite: one position's pending
+// redelegation (A → B) must not block a different position from redelegating
+// out of B.
+func (s *KeeperSuite) TestMsgTierRedelegate_MultiplePositionsNoTransitiveBlock() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valA := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+	valB, _ := s.createSecondValidator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
+
+	lockAmount := sdkmath.NewInt(1_000)
+
+	// pos1 locks on validator A.
+	owner1 := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner1,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
+	resp1, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            owner1.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valA.String(),
+	})
+	s.Require().NoError(err)
+	pos1Id := resp1.PositionId
+
+	// pos2 locks on validator B.
+	owner2 := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner2,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
+	resp2, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            owner2.String(),
+		Id:               1,
+		Amount:           lockAmount,
+		ValidatorAddress: valB.String(),
+	})
+	s.Require().NoError(err)
+	pos2Id := resp2.PositionId
+
+	// pos1 redelegates A → B.
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        owner1.String(),
+		PositionId:   pos1Id,
+		DstValidator: valB.String(),
+	})
+	s.Require().NoError(err)
+
+	// pos2 redelegates B → A.
+	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        owner2.String(),
+		PositionId:   pos2Id,
+		DstValidator: valA.String(),
+	})
+	s.Require().NoError(err, "pos2 B→A must not be blocked by pos1's pending A→B redelegation")
+
+	pos1, err := s.keeper.GetPosition(s.ctx, pos1Id)
+	s.Require().NoError(err)
+	s.Require().Equal(valB.String(), pos1.Validator)
+	pos2, err := s.keeper.GetPosition(s.ctx, pos2Id)
+	s.Require().NoError(err)
+	s.Require().Equal(valA.String(), pos2.Validator)
 }

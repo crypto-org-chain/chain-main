@@ -119,10 +119,8 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_WrongOwner() {
 	s.Require().ErrorIs(err, types.ErrNotPositionOwner)
 }
 
-// TestMsgAddToTierPosition_NeverDoubleClaimsRewards verifies that AddToTierPosition
-// re-fetches the position after ClaimRewardsForPositions, so the updated
-// BaseRewardsPerShare snapshot is not overwritten. Calling ClaimTierRewards a second
-// time should yield zero base rewards if no new rewards have been allocated.
+// TestMsgAddToTierPosition_NeverDoubleClaimsRewards verifies that calling ClaimTierRewards after adding to a tier position
+// should yield zero base rewards on the same block.
 func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)

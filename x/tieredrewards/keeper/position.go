@@ -44,6 +44,17 @@ func (k Keeper) createPosition(
 
 	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
 
+	delAddr := types.GetDelegatorAddress(id)
+
+	ownerAddr, err := sdk.AccAddressFromBech32(owner)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	if err := k.routeBaseRewardsToOwner(ctx, delAddr, ownerAddr); err != nil {
+		return types.Position{}, err
+	}
+
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)
 	}
@@ -55,19 +66,34 @@ func (k Keeper) createPosition(
 	return pos, nil
 }
 
-// LockFunds locks the desired amount of funds into a position.
-func (k Keeper) lockFunds(ctx context.Context, owner string, amount math.Int) error {
-	ownerAddr, err := sdk.AccAddressFromBech32(owner)
-	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-	}
-
+// lockFunds locks the desired amount of funds into a position.
+func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
 	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
 	if err != nil {
 		return err
 	}
+	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+}
 
-	return k.bankKeeper.SendCoinsFromAccountToModule(ctx, ownerAddr, types.ModuleName, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+// createDelegatorAccount creates a BaseAccount for the position's delegation.
+// This is required so that undelegation can complete successfully because it checks for the existence of the account in bank keeper trackUndelegation method.
+func (k Keeper) createDelegatorAccount(ctx context.Context, delAddr sdk.AccAddress) {
+	if k.accountKeeper.GetAccount(ctx, delAddr) != nil {
+		return
+	}
+	acc := k.accountKeeper.NewAccountWithAddress(ctx, delAddr)
+	k.accountKeeper.SetAccount(ctx, acc)
+}
+
+// routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
+func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
+}
+
+// removeBaseRewardsRouting removes the routing of base rewards for the position's delegation to the position owner.
+// Part of position clean up during deletion.
+func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.DeleteDelegatorWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 
 // SetPosition stores a position, validates it, and maintains secondary indexes.
@@ -189,6 +215,12 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	delAddr := types.GetDelegatorAddress(pos.Id)
+
+	if err := k.removeBaseRewardsRouting(ctx, delAddr, owner); err != nil {
+		return err
 	}
 
 	// guard, but should already be deleted by unbonding completion hook.

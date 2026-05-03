@@ -362,8 +362,12 @@ message MsgWithdrawFromTier {
 
 // MsgWithdrawFromTierResponse defines the response for MsgWithdrawFromTier.
 message MsgWithdrawFromTierResponse {
-  // amount is the coins sent back to the owner.
-  cosmos.base.v1beta1.Coin amount = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  // amount is the full set of coins sent back to the owner.
+  repeated cosmos.base.v1beta1.Coin amount = 1 [
+    (gogoproto.nullable)     = false,
+    (amino.dont_omitempty)   = true,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
 }
 
 // MsgExitTierWithDelegation exits a tier position by transferring the module's

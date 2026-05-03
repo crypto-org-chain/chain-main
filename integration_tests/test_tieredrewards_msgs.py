@@ -368,6 +368,49 @@ def test_tier_undelegate(cluster):
     assert ev is not None, "EventPositionUndelegated with completion_time not found"
 
 
+def test_multiple_positions_unbonding_concurrent(cluster):
+    """Multiple positions on the same validator all undelegate concurrently."""
+    owner = cluster.address("ecosystem")
+    validator = get_validator_addr(cluster, 0)
+
+    # Exceed cosmos-sdk default MaxEntries (7).
+    num_positions = 10
+
+    position_ids = []
+    for _ in range(num_positions):
+        before = before_ids(cluster, owner)
+        rsp = lock_tier(
+            cluster,
+            owner,
+            TIER_1_ID,
+            TIER_1_MIN * 2,
+            validator=validator,
+            trigger_exit=True,
+        )
+        assert rsp["code"] == 0, rsp["raw_log"]
+        position_ids.append(new_pos_id(cluster, owner, before))
+
+    # All positions trigger-exited at creation time; wait past exit duration.
+    last_pos = query_position(cluster, position_ids[-1])["position"]
+    exit_unlock_at = isoparse(last_pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    for i, pos_id in enumerate(position_ids):
+        rsp = tier_undelegate(cluster, owner, pos_id)
+        assert rsp["code"] == 0, (
+            f"position {i + 1}/{num_positions} undelegate should not hit "
+            f"MaxEntries: {rsp['raw_log']}"
+        )
+
+    # Every position should now be undelegated.
+    for pos_id in position_ids:
+        pos = query_position(cluster, pos_id)["position"]
+        assert (
+            pos["delegated_shares"] == "0.000000000000000000"
+        ), f"position {pos_id} should have zero shares after undelegate"
+
+
 # ──────────────────────────────────────────────
 # MsgTierRedelegate
 # ──────────────────────────────────────────────
@@ -417,6 +460,39 @@ def test_tier_redelegate_twice_fails(cluster):
     # Immediately redelegate back — should fail (transitive redelegation)
     rsp = tier_redelegate(cluster, owner, pos_id, v0)
     assert rsp["code"] != 0, "transitive redelegation should fail"
+
+
+def test_multiple_positions_redelegate_concurrent(cluster):
+    """Two positions on two validators each redelegate independently."""
+    owner1 = cluster.address("signer1")
+    owner2 = cluster.address("signer2")
+    val_a = get_validator_addr(cluster, 0)
+    val_b = get_validator_addr(cluster, 1)
+
+    before = before_ids(cluster, owner1)
+    rsp = lock_tier(cluster, owner1, TIER_1_ID, TIER_1_MIN * 2, validator=val_a)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos1_id = new_pos_id(cluster, owner1, before)
+
+    before = before_ids(cluster, owner2)
+    rsp = lock_tier(cluster, owner2, TIER_1_ID, TIER_1_MIN * 2, validator=val_b)
+    assert rsp["code"] == 0, rsp["raw_log"]
+    pos2_id = new_pos_id(cluster, owner2, before)
+
+    # pos1 redelegates A → B.
+    rsp = tier_redelegate(cluster, owner1, pos1_id, val_b)
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    # pos2 redelegates B → A.
+    rsp = tier_redelegate(cluster, owner2, pos2_id, val_a)
+    assert (
+        rsp["code"] == 0
+    ), f"pos2 B→A must not be blocked by pos1 A→B: {rsp['raw_log']}"
+
+    pos1 = query_position(cluster, pos1_id)["position"]
+    pos2 = query_position(cluster, pos2_id)["position"]
+    assert pos1["validator"] == val_b
+    assert pos2["validator"] == val_a
 
 
 # ──────────────────────────────────────────────

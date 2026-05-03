@@ -10,6 +10,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 var (
@@ -19,9 +20,9 @@ var (
 
 func validPosition() types.Position {
 	return types.NewPosition(1, testOwner, 1, sdkmath.ZeroInt(), 100, types.Delegation{
-		Validator:           testValidator,
-		Shares:              sdkmath.LegacyNewDec(1000),
-		BaseRewardsPerShare: sdk.DecCoins{}, LastEventSeq: 0,
+		Validator:    testValidator,
+		Shares:       sdkmath.LegacyNewDec(1000),
+		LastEventSeq: 0,
 	}, time.Now())
 }
 
@@ -38,11 +39,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "valid delegated position",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyNewDec(1000),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyNewDec(1000),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -111,11 +109,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "negative delegated shares when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyNewDec(-1),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyNewDec(-1),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -126,11 +121,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "invalid validator address when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: "not_valid",
-					Shares:    sdkmath.LegacyNewDec(100),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    "not_valid",
+					Shares:       sdkmath.LegacyNewDec(100),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -141,11 +133,8 @@ func TestPosition_Validate(t *testing.T) {
 			name: "zero delegated shares when delegated",
 			modify: func(p *types.Position) {
 				p.WithDelegation(types.Delegation{
-					Validator: testValidator,
-					Shares:    sdkmath.LegacyZeroDec(),
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
+					Validator:    testValidator,
+					Shares:       sdkmath.LegacyZeroDec(),
 					LastEventSeq: 0,
 				}, time.Now())
 			},
@@ -162,19 +151,6 @@ func TestPosition_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "delegated shares must not be set when not delegated",
-		},
-		{
-			name: "populated base rewards per share when not delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					BaseRewardsPerShare: sdk.DecCoins{
-						sdk.NewDecCoinFromDec("basecro", sdkmath.LegacyMustNewDecFromStr("0.5")),
-					},
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "base rewards per share must not be set when not delegated",
 		},
 		{
 			name: "populated last bonus accrual when not delegated",
@@ -282,4 +258,51 @@ func TestPosition_ClearExit(t *testing.T) {
 	pos.ClearExit(now)
 	require.False(t, pos.HasTriggeredExit())
 	require.NoError(t, pos.Validate())
+}
+
+// TestGetDelegatorAddress_Deterministic verifies that GetDelegatorAddress
+// is a pure function of the position id — repeated calls produce the same
+// address.
+func TestGetDelegatorAddress_Deterministic(t *testing.T) {
+	t.Parallel()
+
+	for _, id := range []uint64{0, 1, 42, 1_000_000, 1 << 63} {
+		first := types.GetDelegatorAddress(id)
+		second := types.GetDelegatorAddress(id)
+		require.Equal(t, first, second, "GetDelegatorAddress must be deterministic for position id %d", id)
+		require.Len(t, first, 20, "derived address must be 20 bytes")
+	}
+}
+
+// TestGetDelegatorAddress_UniquePerID verifies that distinct position ids
+// produce distinct delegator addresses.
+func TestGetDelegatorAddress_UniquePerID(t *testing.T) {
+	t.Parallel()
+
+	const n = 1000
+	seen := make(map[string]uint64, n)
+	for i := uint64(0); i < n; i++ {
+		addr := types.GetDelegatorAddress(i)
+		key := string(addr)
+		if prev, dup := seen[key]; dup {
+			t.Fatalf("collision: position %d and %d derived to the same delegator address %s", prev, i, addr.String())
+		}
+		seen[key] = i
+	}
+	require.Len(t, seen, n, "expected %d unique delegator addresses", n)
+}
+
+// TestGetDelegatorAddress_DistinctFromModuleAccount verifies that a position's
+// delegator address never collides with the tieredrewards module account or
+// the rewards-pool account.
+func TestGetDelegatorAddress_DistinctFromModuleAccount(t *testing.T) {
+	t.Parallel()
+
+	poolAddr := authtypes.NewModuleAddress(types.RewardsPoolName)
+
+	for _, id := range []uint64{0, 1, 42} {
+		delAddr := types.GetDelegatorAddress(id)
+		require.False(t, delAddr.Equals(poolAddr),
+			"position %d delegator address must differ from the rewards pool address", id)
+	}
 }

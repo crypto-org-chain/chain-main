@@ -140,7 +140,7 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, err
 	}
 
-	_, baseRewards, bonusRewards, err := q.k.claimRewardsForPosition(ctx, pos)
+	_, baseRewards, bonusRewards, err := q.k.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -250,12 +250,6 @@ func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidato
 	}
 
 	resp := &types.QueryValidatorDataResponse{}
-
-	ratio, err := q.k.ValidatorRewardRatio.Get(ctx, valAddr)
-	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {
-		return nil, err
-	}
-	resp.RewardRatio = ratio
 
 	count, err := q.k.PositionCountByValidator.Get(ctx, valAddr)
 	if err != nil && !stderrors.Is(err, collections.ErrNotFound) {

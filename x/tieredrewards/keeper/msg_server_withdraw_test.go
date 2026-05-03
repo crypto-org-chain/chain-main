@@ -36,7 +36,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 
 	// Advance time past staking unbonding period and complete unbonding so
 	// the staking module returns tokens to the tier module account.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -46,7 +46,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 	})
 	s.Require().NoError(err)
 	s.Require().NotNil(resp)
-	s.Require().True(resp.Amount.Amount.Equal(lockAmount),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount),
 		"response should include withdrawn amount")
 
 	// Owner should have received the locked tokens back
@@ -88,7 +88,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
 
 	// Advance time past staking unbonding period and complete unbonding so
 	// the staking module returns tokens to the tier module account.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
@@ -220,13 +220,13 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
 	// Now withdraw — requires exit commitment elapsed and unbonding completed
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.Equal(lockAmount))
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount))
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(lockAmount)),
@@ -285,7 +285,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	})
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Withdraw only the first position
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -352,7 +352,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	// Advance time past exit unlock.
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(366 * 24 * time.Hour))
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Withdrawal should succeed — the module has exactly enough tokens.
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -360,7 +360,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal amount")
 }
 
@@ -399,8 +399,6 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	})
 	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 
-	// Simulate unbonding completion via hook.
-	poolAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 	hooks := s.keeper.Hooks()
 	// Get the unbonding IDs for position 0.
 	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
@@ -409,7 +407,9 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 	s.Require().NotEmpty(unbondingIds)
 
-	err = hooks.AfterUnbondingCompleted(s.ctx, poolAddr, valAddr, unbondingIds)
+	// Simulate unbonding completion via hook.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	err = hooks.AfterUnbondingCompleted(s.ctx, posDelAddr, valAddr, unbondingIds)
 	s.Require().NoError(err)
 
 	// Verify mapping is cleaned up.
@@ -417,7 +417,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 	s.Require().False(hasUnbonding, "unbonding mapping should be cleaned up after hook")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Withdrawal should now pass since unbonding entries are cleaned up.
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -484,7 +484,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_TierCloseOnly_Succeeds() {
 	s.Require().NoError(err)
 
 	// Complete unbonding.
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Set tier to CloseOnly.
 	tier, err := s.keeper.GetTier(s.ctx, 1)
@@ -498,7 +498,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_TierCloseOnly_Succeeds() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.IsPositive(),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsPositive(),
 		"withdrawal should return locked tokens")
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -530,14 +530,13 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.Require().NoError(err)
 
 	// Simulate unbonding slash to zero via hook.
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, pos.Amount)
-	s.Require().NoError(err)
+	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, pos.Amount)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after unbonding slash")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Withdraw — zero-amount position should be cleanly deleted.
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -545,7 +544,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.IsZero(),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).IsZero(),
 		"withdrawn amount should be zero")
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
@@ -578,8 +577,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 
 	// Simulate 50% unbonding slash via hook.
 	slashAmount := pos.Amount.QuoRaw(2)
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, undelegateResp.UnbondingId, slashAmount)
-	s.Require().NoError(err)
+	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, slashAmount)
 
 	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -587,7 +585,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.Require().Equal(expectedRemaining.String(), pos.Amount.String(),
 		"position amount should reflect partial slash")
 
-	s.completeStakingUnbonding(valAddr)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -597,7 +595,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(expectedRemaining.String(), resp.Amount.Amount.String(),
+	s.Require().Equal(expectedRemaining.String(), resp.Amount.AmountOf(bondDenom).String(),
 		"withdrawn amount should equal post-slash remainder")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -652,7 +650,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().True(resp.Amount.Amount.Equal(addAmount),
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(addAmount),
 		"withdrawn amount should equal the 2000 added")
 
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
@@ -661,4 +659,99 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
+}
+
+// TestMsgWithdrawFromTier_SweepsNonBondDenomDust verifies that anything stray
+// left on the position's delegator account — not just the bond denom principal —
+// is swept to the owner on withdrawal. Dust of this kind shouldn't occur in
+// practice (rewards route to the owner; staking only moves bondDenom), but
+// WithdrawFromTier is defensively tolerant so no denom gets orphaned.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_SweepsNonBondDenomDust() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	s.completeStakingUnbonding(valAddr, posDelAddr)
+
+	// Inject dust of an arbitrary denom directly onto the position's delegator
+	// account, simulating stray coins that ended up there.
+	dustDenom := "dust"
+	dustAmount := sdkmath.NewInt(777)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, posDelAddr,
+		sdk.NewCoins(sdk.NewCoin(dustDenom, dustAmount))))
+
+	dustBefore := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+
+	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(lockAmount),
+		"response should report the bond-denom principal")
+	s.Require().True(resp.Amount.AmountOf(dustDenom).Equal(dustAmount),
+		"response should report swept dust of any denom")
+
+	dustAfter := s.app.BankKeeper.GetBalance(s.ctx, ownerAddr, dustDenom)
+	s.Require().True(dustAfter.Amount.Equal(dustBefore.Amount.Add(dustAmount)),
+		"owner should have received the dust too")
+
+	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
+		"position's delegator account should be empty after sweep")
+}
+
+// TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting verifies deletePosition's
+// removeBaseRewardsRouting step wipes the distribution DelegatorsWithdrawAddress
+// entry set at position creation.
+func (s *KeeperSuite) TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+
+	// Sanity: at creation time the withdraw-addr points at the owner.
+	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(ownerAddr.String(), withdrawAddr.String(),
+		"withdraw addr should route to owner before position is deleted")
+
+	// Drive the position through to withdrawal.
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr, posDelAddr)
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+
+	// After deletion the mapping must be gone. Distribution returns the
+	// delegator address itself as the default when no mapping is stored.
+	withdrawAddrAfter, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(posDelAddr.String(), withdrawAddrAfter.String(),
+		"withdraw-addr mapping should be cleared on position deletion; "+
+			"GetDelegatorWithdrawAddr should fall back to the delegator itself")
 }

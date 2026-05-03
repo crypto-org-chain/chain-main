@@ -3,7 +3,6 @@ package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
-import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -72,43 +71,33 @@ message Position {
     (amino.dont_omitempty) = true
   ];
 
-  // base_rewards_per_share is the cumulative base rewards per share snapshot
-  // at the time this position was created or last claimed.
-  // Used to calculate the position's share of base rewards: reward = shares × (current_ratio − starting_ratio).
-  // It is possible to have no base rewards per share if the position is the first one delegated to the validator.
-  repeated cosmos.base.v1beta1.DecCoin base_rewards_per_share = 7 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
-    (gogoproto.nullable)     = false,
-    (amino.dont_omitempty)   = true
-  ];
-
   // last_bonus_accrual is the last time bonus rewards was claimed.
-  google.protobuf.Timestamp last_bonus_accrual = 8
-      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-
-  // exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
-  google.protobuf.Timestamp exit_triggered_at = 9
-      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-
-  // exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
-  google.protobuf.Timestamp exit_unlock_at = 10
-      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-
-  // created_at_height is the block height when this position was created.
-  uint64 created_at_height = 11;
-
-  // created_at_time is the block time when this position was created.
-  google.protobuf.Timestamp created_at_time = 12
+  google.protobuf.Timestamp last_bonus_accrual = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // last_event_seq is the sequence number of the last validator event this
   // position has processed. Events with seq > last_event_seq are pending.
-  uint64 last_event_seq = 13;
+  uint64 last_event_seq = 8;
 
   // last_known_bonded tracks whether the validator was bonded after the last
   // event replay. Used as the starting state for the next processEventsAndClaimBonus
   // call. True when the position is first created (only bonded validators accepted).
-  bool last_known_bonded = 14;
+  bool last_known_bonded = 9;
+
+  // exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
+  google.protobuf.Timestamp exit_triggered_at = 10
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+
+  // exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
+  google.protobuf.Timestamp exit_unlock_at = 11
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
+
+  // created_at_height is the block height when this position was created.
+  uint64 created_at_height = 12;
+
+  // created_at_time is the block time when this position was created.
+  google.protobuf.Timestamp created_at_time = 13
+      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 
 // PositionResponse is the query-facing representation of a position.
@@ -133,33 +122,15 @@ message PositionResponse {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
-  repeated cosmos.base.v1beta1.DecCoin base_rewards_per_share = 7 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
-    (gogoproto.nullable)     = false,
-    (amino.dont_omitempty)   = true
-  ];
-  google.protobuf.Timestamp last_bonus_accrual = 8
+  google.protobuf.Timestamp last_bonus_accrual = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_triggered_at = 9
+  google.protobuf.Timestamp exit_triggered_at = 8
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_unlock_at = 10
+  google.protobuf.Timestamp exit_unlock_at = 9
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  uint64                    created_at_height = 11;
-  google.protobuf.Timestamp created_at_time   = 12
+  uint64                    created_at_height = 10;
+  google.protobuf.Timestamp created_at_time   = 11
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-}
-
-// ValidatorRewardRatio stores the cumulative base rewards per share for a validator.
-// Updated every time base rewards are withdrawn from x/distribution for this validator.
-// It is possible to have no base rewards per share when the position is created,
-// if the position is the first one delegated to a validator (no base rewards accrued yet)
-message ValidatorRewardRatio {
-  // cumulative_rewards_per_share is the running total of rewards per delegation share.
-  repeated cosmos.base.v1beta1.DecCoin cumulative_rewards_per_share = 1 [
-    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.DecCoins",
-    (gogoproto.nullable)     = false,
-    (amino.dont_omitempty)   = true
-  ];
 }
 
 // ValidatorEventType enumerates the types of validator lifecycle events
