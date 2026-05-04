@@ -7,6 +7,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+	collections "cosmossdk.io/collections"
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -16,6 +17,7 @@ import (
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	// Create delegated + exit-triggered position
@@ -35,7 +37,10 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().NoError(err)
 
 	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
-	s.Require().True(pos.DelegatedShares.IsZero(), "delegated shares should be cleared")
+	s.Require().Nil(pos.Delegation, "delegation should be cleared")
+
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().Equal(collections.ErrNotFound, err)
 
 	// Verify redelegation unbonding ID was written to UnbondingDelegationMappings, not RedelegationMappings.
 	var unbondingFound bool
@@ -132,7 +137,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -161,7 +166,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
@@ -191,14 +196,14 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
-		"withdrawn amount should equal the SDK return amount")
+	s.Require().Equal(lockAmount.String(), resp.Amount.AmountOf(bondDenom).String(),
+		"withdrawn amount should equal the locked amount")
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 	lockAmount := sdkmath.NewInt(10_000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -231,7 +236,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 // layer returns zero tokens and the position is cleanly undelegated.
 func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -250,7 +255,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
 

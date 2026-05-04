@@ -1,6 +1,8 @@
 package keeper
 
 import (
+	"fmt"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/collections"
@@ -26,8 +28,39 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
+	currentSeqByValidator := make(map[string]uint64)
+	for _, entry := range data.ValidatorEventSeqs {
+		currentSeqByValidator[entry.Validator] = entry.CurrentSeq
+	}
+
+	// delegatedPosSeqsByVal tracks, per validator, the LastEventSeq of each
+	// delegated position so we can cross-validate event ReferenceCounts below.
+	delegatedPosSeqsByVal := make(map[string][]uint64)
+
 	for _, pos := range data.Positions {
-		if err := k.setPosition(ctx, pos); err != nil {
+		del, err := k.getDelegation(ctx, pos.Id)
+		if err != nil {
+			panic(fmt.Errorf("failed to get delegation for position %d: %w", pos.Id, err))
+		}
+
+		posState := types.PositionState{Position: pos, Delegation: del}
+
+		if del != nil {
+			validator := del.ValidatorAddress
+			if pos.LastEventSeq > currentSeqByValidator[validator] {
+				panic(fmt.Errorf(
+					"position %d has LastEventSeq (%d) greater than validator %s current_seq (%d)",
+					pos.Id, pos.LastEventSeq, validator, currentSeqByValidator[validator],
+				))
+			}
+			delegatedPosSeqsByVal[validator] = append(delegatedPosSeqsByVal[validator], pos.LastEventSeq)
+		}
+
+		if err := posState.Validate(); err != nil {
+			panic(fmt.Errorf("position state validation failed for position %d: %w", pos.Id, err))
+		}
+
+		if err := k.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
 			panic(err)
 		}
 	}
@@ -52,6 +85,23 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	for _, entry := range data.ValidatorEvents {
+		// Cross-validate: ReferenceCount must equal the number of delegated
+		// positions on this validator with LastEventSeq < event.Sequence. Too
+		// high and the event is never garbage-collected (storage leak); too low
+		// and it is prematurely collected, causing unprocessed positions to
+		// skip the segment (under/over payment).
+		var expected uint64
+		for _, lastSeq := range delegatedPosSeqsByVal[entry.Validator] {
+			if lastSeq < entry.Sequence {
+				expected++
+			}
+		}
+		if entry.Event.ReferenceCount != expected {
+			panic(fmt.Errorf(
+				"validator %s event seq %d has ReferenceCount %d but %d positions would process it",
+				entry.Validator, entry.Sequence, entry.Event.ReferenceCount, expected,
+			))
+		}
 		valAddr, err := sdk.ValAddressFromBech32(entry.Validator)
 		if err != nil {
 			panic(err)

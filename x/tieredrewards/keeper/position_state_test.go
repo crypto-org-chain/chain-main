@@ -23,8 +23,8 @@ func (s *KeeperSuite) TestLoadPosition_Delegated() {
 
 	s.Require().True(state.IsDelegated())
 	s.Require().NotNil(state.Delegation)
-	s.Require().Equal(pos.Validator, state.Delegation.ValidatorAddress)
-	s.Require().True(pos.DelegatedShares.Equal(state.Delegation.Shares))
+	s.Require().Equal(pos.Delegation.ValidatorAddress, state.Delegation.ValidatorAddress)
+	s.Require().True(pos.Delegation.Shares.Equal(state.Delegation.Shares))
 
 	amount, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
@@ -56,14 +56,14 @@ func (s *KeeperSuite) TestLoadPosition_Unbonding() {
 
 	amount, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), amount.String())
+	s.Require().Equal(s.positionAmount(pos).String(), amount.String())
 	s.Require().Equal(lockAmount.String(), amount.String())
 }
 
 func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -87,7 +87,7 @@ func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 
 	amount, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), amount.String())
+	s.Require().Equal(s.positionAmount(pos).String(), amount.String())
 	s.Require().Equal(lockAmount.String(), amount.String())
 }
 
@@ -99,7 +99,7 @@ func (s *KeeperSuite) TestLoadPosition_NotFound() {
 func (s *KeeperSuite) TestPositionAmount_DelegationSlashed() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -124,7 +124,7 @@ func (s *KeeperSuite) TestPositionAmount_DelegationSlashed() {
 func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	lockAmount := sdkmath.NewInt(4000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -139,7 +139,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	slashAmount := pos.Amount.QuoRaw(2)
+	slashAmount := s.positionAmount(pos).QuoRaw(2)
 	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelResp.UnbondingId, slashAmount)
 
 	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
@@ -154,7 +154,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 func (s *KeeperSuite) TestPositionAmount_IncludesOnlyBondDenom() {
 	lockAmount := sdkmath.NewInt(1500)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)

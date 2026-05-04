@@ -37,10 +37,6 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		return err
 	}
 
-	if !pos.IsDelegated() {
-		return nil
-	}
-
 	if _, err := k.processEventsAndClaimBonus(ctx, &pos); err != nil {
 		// Deliberately forgo bonus rewards if pool is insufficient to prevent chain halt.
 		if errors.Is(err, types.ErrInsufficientBonusPool) {
@@ -53,5 +49,13 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		}
 	}
 
-	return k.setPosition(ctx, pos.Position)
+	if !pos.IsDelegated() {
+		pos.ResetBonusCheckpoints()
+	}
+
+	// Partial slash keeps the same validator → no attribution change, pass
+	// nil. Full slash (pos.Delegation == nil) removes the delegation, but we
+	// don't have the pre-slash validator here, so the counter stays stale
+	// until `AfterRedelegationSlashed` carries the dst validator.
+	return k.setPosition(ctx, pos.Position, nil)
 }

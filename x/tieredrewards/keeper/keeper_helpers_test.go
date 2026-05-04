@@ -282,20 +282,27 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	return valAddr, accAddr
 }
 
+// positionAmount returns the live derived amount for pos via the keeper.
+// Convenience for tests that used to read s.positionAmount(pos) directly on a Position.
+func (s *KeeperSuite) positionAmount(pos types.PositionState) sdkmath.Int {
+	s.T().Helper()
+	amount, err := s.keeper.PositionAmount(s.ctx, pos)
+	s.Require().NoError(err)
+	return amount
+}
+
 // slashRedelegationCompletely simulates a redelegation slash that burns all of a position's shares.
 func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types.PositionState {
 	s.T().Helper()
 
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
-
-	delAddr := types.GetDelegatorAddress(pos.Id)
-	dels, err := s.app.StakingKeeper.GetDelegatorDelegations(s.ctx, delAddr, 1)
+	del, err := s.keeper.GetDelegation(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	for _, d := range dels {
-		s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, d))
-	}
+	s.Require().NotNil(del)
+	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))
+
+	originalVal := pos.Delegation.ValidatorAddress
+	pos.ResetBonusCheckpoints()
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, &keeper.ValidatorUpdate{Previous: originalVal}))
 
 	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)

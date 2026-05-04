@@ -31,19 +31,23 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
-	s.Require().True(pos.Amount.IsZero(), "delegated positions have Amount=0")
+	s.Require().True(s.positionAmount(pos).Equal(msg.Amount), "derived amount should equal locked amount")
 	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().Equal(valAddr.String(), pos.Delegation.ValidatorAddress)
+	s.Require().True(pos.Delegation.Shares.IsPositive())
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
 	// Create a first position to establish validator count.
 	lockAmt := sdkmath.NewInt(1000)
 	pos1 := s.setupNewTierPosition(lockAmt, false)
-	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos1.Delegation.ValidatorAddress)
 
 	// Record a slash event via the staking hook.
 	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
@@ -183,7 +187,7 @@ func (s *KeeperSuite) TestMsgLockTier_TransfersTokens() {
 	s.Require().Equal(sdkmath.NewInt(1000), balBefore.Amount.Sub(balAfter.Amount))
 }
 
-// TestMsgLockTier_RoutesBaseRewardsToOwner verifies that createPosition's
+// TestMsgLockTier_RoutesBaseRewardsToOwner verifies that a newly created position
 // routes the positions delegation rewards to the owner.
 func (s *KeeperSuite) TestMsgLockTier_RoutesBaseRewardsToOwner() {
 	s.setupTier(1)

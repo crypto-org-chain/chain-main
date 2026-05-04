@@ -15,7 +15,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Simulate redelegation slash zeroing the position
 	pos = s.slashRedelegationCompletely(pos)
@@ -43,8 +43,8 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().True(pos.DelegatedShares.IsPositive())
+	s.Require().Equal(valAddr.String(), pos.Delegation.ValidatorAddress)
+	s.Require().True(pos.Delegation.Shares.IsPositive())
 	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set")
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 }
@@ -52,7 +52,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	// Create position with delegation
 
@@ -70,7 +70,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AlreadyDelegated() {
 func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash clearing delegation and zeros amount
@@ -89,7 +89,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_AmountZero() {
 func (s *KeeperSuite) TestMsgTierDelegate_AmountZero_ExitInProgress() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash clearing delegation and zeros amount
@@ -112,7 +112,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Simulate redelegation slash zeroing out the position
 	pos = s.slashRedelegationCompletely(pos)
@@ -162,7 +162,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 func (s *KeeperSuite) TestMsgTierDelegate_ExitElapsed() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -192,7 +192,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_WrongOwner() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Simulate redeleg slash to get undelegated position without exit.
 	pos = s.slashRedelegationCompletely(pos)
@@ -222,7 +222,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Simulate redeleg slash to get undelegated position.
 	pos = s.slashRedelegationCompletely(pos)
@@ -257,7 +257,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_TierCloseOnly() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
 	pos = s.slashRedelegationCompletely(pos)

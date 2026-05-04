@@ -47,7 +47,7 @@ func (s *KeeperSuite) TestClaimRewards_Undelegated() {
 func (s *KeeperSuite) TestClaimRewards_Delegated() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -76,7 +76,7 @@ func (s *KeeperSuite) TestClaimRewardsForPositions_MixedDelegatedUndelegated() {
 
 	// Position 0: delegated.
 	pos0 := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos0.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos0.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -136,7 +136,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_ClaimsAll() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos1 := s.setupNewTierPosition(lockAmount, false)
 	addr1 := sdk.MustAccAddressFromBech32(pos1.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos1.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -174,7 +174,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	// Position 0: delegated.
 	pos0 := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos0.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos0.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -217,7 +217,7 @@ func (s *KeeperSuite) TestClaimRewardsAndUpdatePositionsForTier_SkipsUndelegated
 // After the validator re-bonds, bonus accrual should resume from the new bonded time.
 func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.Require().NoError(err)
@@ -279,7 +279,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -316,7 +316,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal seg1+seg2 exactly")
@@ -324,7 +324,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange
 	// Second claim at same time yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 
@@ -333,7 +333,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleSlash_BonusContinuesWithRateChange
 func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -363,7 +363,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal pre-unbond segment only")
@@ -371,7 +371,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 	// Second claim yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 
@@ -380,7 +380,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleUnbond_GapPaysZero() {
 func (s *KeeperSuite) TestProcessEvents_SingleBond_ResumesBonus() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -426,7 +426,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleBond_ResumesBonus() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal pre-unbond + post-rebond segments exactly")
@@ -441,7 +441,7 @@ func (s *KeeperSuite) TestProcessEvents_SingleBond_ResumesBonus() {
 func (s *KeeperSuite) TestProcessEvents_SlashThenUnbond_TwoSegments() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -478,7 +478,7 @@ func (s *KeeperSuite) TestProcessEvents_SlashThenUnbond_TwoSegments() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal two bonded segments exactly (gap pays zero)")
@@ -489,7 +489,7 @@ func (s *KeeperSuite) TestProcessEvents_SlashThenUnbond_TwoSegments() {
 func (s *KeeperSuite) TestProcessEvents_UnbondBondUnbond_ThreeTransitions() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -539,7 +539,7 @@ func (s *KeeperSuite) TestProcessEvents_UnbondBondUnbond_ThreeTransitions() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal two bonded segments exactly (both gaps pay zero)")
@@ -550,7 +550,7 @@ func (s *KeeperSuite) TestProcessEvents_UnbondBondUnbond_ThreeTransitions() {
 func (s *KeeperSuite) TestProcessEvents_MultipleSlashes_RateDecreases() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -595,7 +595,7 @@ func (s *KeeperSuite) TestProcessEvents_MultipleSlashes_RateDecreases() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must equal three segments exactly with decreasing rates")
@@ -609,7 +609,7 @@ func (s *KeeperSuite) TestProcessEvents_MultipleSlashes_RateDecreases() {
 func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	bondDenom, _ := s.app.StakingKeeper.BondDenom(s.ctx)
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
@@ -677,7 +677,7 @@ func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
 	s.Require().NoError(err)
 	s.Require().Equal(expectedTotal.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus should equal seg1 + seg2 + seg3 (20d unbonded gap pays zero)")
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	// Verify decreasing rates: pre-slash > post-slash >= post-rebond.
 	s.Require().True(rate1.GT(rate2), "rate should decrease after slash: rate1=%s, rate2=%s", rate1, rate2)
@@ -700,7 +700,7 @@ func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
 func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -728,7 +728,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 
 	bonus1, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedClaim1.String(), bonus1.AmountOf(bondDenom).String(),
 		"claim1 must equal seg1 exactly")
@@ -752,7 +752,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedClaim2.String(), bonus2.AmountOf(bondDenom).String(),
 		"claim2 must equal seg2 only (no double-counting seg1)")
@@ -760,7 +760,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 	// Third claim at same time yields zero.
 	bonus3, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 	s.Require().True(bonus3.IsZero(), "third claim at same time should yield zero")
 }
 
@@ -770,7 +770,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimBetweenEvents_NoDoubleClaim() {
 func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebond() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -792,7 +792,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebon
 
 	bonus1, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(segPreUnbond.String(), bonus1.AmountOf(bondDenom).String(),
 		"claim1 must equal pre-unbond segment")
@@ -824,7 +824,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebon
 
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(segPostBond.String(), bonus2.AmountOf(bondDenom).String(),
 		"claim2 must equal post-rebond segment only (no gap overpay)")
@@ -837,7 +837,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimDuringUnbondGap_ThenClaimAfterRebon
 func (s *KeeperSuite) TestProcessEvents_ClaimAfterExitUnlockAt_CappedBonus() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, true) // triggers exit immediately
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
@@ -860,7 +860,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimAfterExitUnlockAt_CappedBonus() {
 
 	bonus, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 
 	s.Require().Equal(expectedBonus.String(), bonus.AmountOf(bondDenom).String(),
 		"bonus must be capped at ExitUnlockAt")
@@ -868,7 +868,7 @@ func (s *KeeperSuite) TestProcessEvents_ClaimAfterExitUnlockAt_CappedBonus() {
 	// Second claim yields zero.
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, nil))
 	s.Require().True(bonus2.IsZero(), "second claim should yield zero")
 }
 

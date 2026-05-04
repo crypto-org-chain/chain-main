@@ -586,8 +586,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryRawTierPositionExec(val.ClientCtx, "0")
 		}, &resp)
 		s.Require().Equal(owner, resp.Position.Owner)
-		s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
-		s.Require().True(resp.Position.DelegatedShares.IsPositive())
 	})
 
 	s.Run("raw-positions-by-owner", func() {

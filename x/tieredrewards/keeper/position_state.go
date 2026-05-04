@@ -16,17 +16,11 @@ func (k Keeper) loadPositionState(ctx context.Context, posId uint64) (types.Posi
 	if err != nil {
 		return types.PositionState{}, err
 	}
-	// A position has at most one delegation.
-	dels, err := k.stakingKeeper.GetDelegatorDelegations(ctx, types.GetDelegatorAddress(posId), 1)
+	del, err := k.getDelegation(ctx, posId)
 	if err != nil {
 		return types.PositionState{}, err
 	}
-	state := types.PositionState{Position: pos}
-	if len(dels) > 0 {
-		d := dels[0]
-		state.Delegation = &d
-	}
-	return state, nil
+	return types.PositionState{Position: pos, Delegation: del}, nil
 }
 
 func (k Keeper) positionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {

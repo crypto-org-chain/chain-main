@@ -226,7 +226,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -339,7 +339,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_NoPositions() {
 func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -420,7 +420,7 @@ func (s *KeeperSuite) TestDeleteTier_FailsWithActivePositions() {
 
 	// Create a position in tier 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	msg := &types.MsgDeleteTier{
@@ -444,11 +444,11 @@ func (s *KeeperSuite) TestDeleteTier_SucceedsAfterPositionsRemoved() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
 
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	// Remove the position
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
 
 	msg := &types.MsgDeleteTier{
 		Authority: authority,

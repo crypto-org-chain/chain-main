@@ -14,6 +14,7 @@ import (
 func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
@@ -27,6 +28,10 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit())
 	s.Require().Equal(resp.ExitUnlockAt, pos.ExitUnlockAt)
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestMsgTriggerExitFromTier_AlreadyExiting() {
@@ -135,7 +140,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	pos = s.slashRedelegationCompletely(pos)
 
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero")
 
 	// TriggerExit — should succeed on undelegated position.
 	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
@@ -149,7 +154,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "exit should be triggered")
 	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should still be zero")
 }
 
 // TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds verifies that TriggerExit

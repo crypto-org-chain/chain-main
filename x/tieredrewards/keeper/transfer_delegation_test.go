@@ -285,7 +285,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 	s.advancePastExitDuration()
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Record validator tokens before transfer.
@@ -293,7 +293,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 	s.Require().NoError(err)
 
 	// Compute token value from shares for the full amount.
-	tokenValue := valBefore.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	tokenValue := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().NoError(err)
@@ -307,7 +307,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 	// Owner should have a staking delegation.
 	ownerDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(pos.DelegatedShares, ownerDel.Shares)
+	s.Require().Equal(pos.Delegation.Shares, ownerDel.Shares)
 
 	// Position's delegation should be removed (all shares transferred).
 	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
@@ -321,13 +321,13 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Partial() {
 	s.advancePastExitDuration()
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
 	// Compute token value from shares for the half amount.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := valBefore.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	tokenValue := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 	halfAmount := tokenValue.Quo(sdkmath.NewInt(2))
 
 	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, halfAmount)
@@ -351,13 +351,13 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_ValidatorNotBonded() {
 
 	s.advancePastExitDuration()
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	s.jailAndUnbondValidator(valAddr)
 
 	// Compute token value from shares.
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
@@ -369,10 +369,10 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_InvalidOwnerAddress() {
 
 	s.advancePastExitDuration()
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	pos.Owner = "invalid_address"
 	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
@@ -386,7 +386,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_NotDelegated() {
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	s.advancePastExitDuration()
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Undelegate so position is no longer delegated.
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -400,7 +400,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_NotDelegated() {
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, pos.Amount)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, s.positionAmount(pos))
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
@@ -427,8 +427,8 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_ActiveRedelegation() {
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	newValAddr := sdk.MustValAddressFromBech32(pos.Validator)
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, newValAddr, pos.Amount)
+	newValAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, newValAddr, s.positionAmount(pos))
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
 
@@ -437,7 +437,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	pos := s.setupNewTierPosition(lockAmount, false)
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	// Give the owner a personal delegation on the same validator.
@@ -458,7 +458,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	// Compute token value from shares for the full amount.
 	val, err = s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.DelegatedShares).TruncateInt()
+	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	// Transfer tier delegation back to owner.
 	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
@@ -468,5 +468,5 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	// Owner's delegation shares should have increased (added to existing).
 	delAfter, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(delBefore.Shares.Add(pos.DelegatedShares), delAfter.Shares, "owner delegation shares should increase by the amount transferred")
+	s.Require().Equal(delBefore.Shares.Add(pos.Delegation.Shares), delAfter.Shares, "owner delegation shares should increase by the amount transferred")
 }

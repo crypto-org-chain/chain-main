@@ -37,11 +37,10 @@ func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAd
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// updateDelegation updates a position's delegation fields.
-// For delegated positions, Amount is always zero.
-func (k Keeper) updateDelegation(ctx context.Context, pos *types.Position, delegation types.Delegation) error {
+// updateBonusAccuralCheckpoints updates a position's bonus-state fields for a delegation.
+func (k Keeper) updateBonusAccuralCheckpoints(ctx context.Context, pos *types.Position, lastEventSeq uint64) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pos.WithDelegation(delegation, sdkCtx.BlockTime())
+	pos.UpdateBonusCheckpoints(lastEventSeq, sdkCtx.BlockTime())
 	return nil
 }
 
@@ -73,4 +72,17 @@ func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAd
 	}
 
 	return k.stakingKeeper.BeginRedelegation(ctx, delAddr, srcValAddr, dstValAddr, shares)
+}
+
+func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingtypes.Delegation, error) {
+	// A position has at most one delegation.
+	dels, err := k.stakingKeeper.GetDelegatorDelegations(ctx, types.GetDelegatorAddress(positionId), 1)
+	if err != nil {
+		return nil, err
+	}
+	if len(dels) == 0 {
+		return nil, nil
+	}
+	d := dels[0]
+	return &d, nil
 }

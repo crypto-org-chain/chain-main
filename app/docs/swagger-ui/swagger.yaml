@@ -25700,25 +25700,6 @@ paths:
                     type: integer
                     format: int64
                     description: tier_id references the Tier this position belongs to.
-                  amount:
-                    type: string
-                    description: >-
-                      amount is the token amount for undelegated positions. For
-                      delegated positions
-
-                      this is always zero — the live token value is derived from
-
-                      validator.TokensFromShares(delegated_shares).
-                  validator:
-                    type: string
-                    description: >-
-                      validator is the validator operator address if delegated;
-                      empty if not delegated.
-                  delegated_shares:
-                    type: string
-                    description: >-
-                      delegated_shares are the validator delegation shares for
-                      this position.
                   last_bonus_accrual:
                     type: string
                     format: date-time
@@ -25829,26 +25810,6 @@ paths:
                       type: integer
                       format: int64
                       description: tier_id references the Tier this position belongs to.
-                    amount:
-                      type: string
-                      description: >-
-                        amount is the token amount for undelegated positions.
-                        For delegated positions
-
-                        this is always zero — the live token value is derived
-                        from
-
-                        validator.TokensFromShares(delegated_shares).
-                    validator:
-                      type: string
-                      description: >-
-                        validator is the validator operator address if
-                        delegated; empty if not delegated.
-                    delegated_shares:
-                      type: string
-                      description: >-
-                        delegated_shares are the validator delegation shares for
-                        this position.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -26040,26 +26001,6 @@ paths:
                       type: integer
                       format: int64
                       description: tier_id references the Tier this position belongs to.
-                    amount:
-                      type: string
-                      description: >-
-                        amount is the token amount for undelegated positions.
-                        For delegated positions
-
-                        this is always zero — the live token value is derived
-                        from
-
-                        validator.TokensFromShares(delegated_shares).
-                    validator:
-                      type: string
-                      description: >-
-                        validator is the validator operator address if
-                        delegated; empty if not delegated.
-                    delegated_shares:
-                      type: string
-                      description: >-
-                        delegated_shares are the validator delegation shares for
-                        this position.
                     last_bonus_accrual:
                       type: string
                       format: date-time
@@ -46341,25 +46282,6 @@ definitions:
         type: integer
         format: int64
         description: tier_id references the Tier this position belongs to.
-      amount:
-        type: string
-        description: >-
-          amount is the token amount for undelegated positions. For delegated
-          positions
-
-          this is always zero — the live token value is derived from
-
-          validator.TokensFromShares(delegated_shares).
-      validator:
-        type: string
-        description: >-
-          validator is the validator operator address if delegated; empty if not
-          delegated.
-      delegated_shares:
-        type: string
-        description: >-
-          delegated_shares are the validator delegation shares for this
-          position.
       last_bonus_accrual:
         type: string
         format: date-time
@@ -46586,25 +46508,6 @@ definitions:
               type: integer
               format: int64
               description: tier_id references the Tier this position belongs to.
-            amount:
-              type: string
-              description: >-
-                amount is the token amount for undelegated positions. For
-                delegated positions
-
-                this is always zero — the live token value is derived from
-
-                validator.TokensFromShares(delegated_shares).
-            validator:
-              type: string
-              description: >-
-                validator is the validator operator address if delegated; empty
-                if not delegated.
-            delegated_shares:
-              type: string
-              description: >-
-                delegated_shares are the validator delegation shares for this
-                position.
             last_bonus_accrual:
               type: string
               format: date-time
@@ -46700,25 +46603,6 @@ definitions:
             type: integer
             format: int64
             description: tier_id references the Tier this position belongs to.
-          amount:
-            type: string
-            description: >-
-              amount is the token amount for undelegated positions. For
-              delegated positions
-
-              this is always zero — the live token value is derived from
-
-              validator.TokensFromShares(delegated_shares).
-          validator:
-            type: string
-            description: >-
-              validator is the validator operator address if delegated; empty if
-              not delegated.
-          delegated_shares:
-            type: string
-            description: >-
-              delegated_shares are the validator delegation shares for this
-              position.
           last_bonus_accrual:
             type: string
             format: date-time
@@ -46788,25 +46672,6 @@ definitions:
               type: integer
               format: int64
               description: tier_id references the Tier this position belongs to.
-            amount:
-              type: string
-              description: >-
-                amount is the token amount for undelegated positions. For
-                delegated positions
-
-                this is always zero — the live token value is derived from
-
-                validator.TokensFromShares(delegated_shares).
-            validator:
-              type: string
-              description: >-
-                validator is the validator operator address if delegated; empty
-                if not delegated.
-            delegated_shares:
-              type: string
-              description: >-
-                delegated_shares are the validator delegation shares for this
-                position.
             last_bonus_accrual:
               type: string
               format: date-time

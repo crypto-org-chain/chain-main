@@ -9,21 +9,26 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Test-only wrappers for black-box tests (package keeper_test) that need access
 // to unexported keeper APIs. These are compiled only when running tests.
 
-func (k Keeper) SetPosition(ctx context.Context, pos types.Position) error {
-	return k.setPosition(ctx, pos)
+func (k Keeper) GetDelegation(ctx context.Context, positionId uint64) (*stakingtypes.Delegation, error) {
+	return k.getDelegation(ctx, positionId)
+}
+
+func (k Keeper) SetPosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+	return k.setPosition(ctx, pos, update)
 }
 
 func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, error) {
 	return k.getPosition(ctx, id)
 }
 
-func (k Keeper) DeletePosition(ctx context.Context, pos types.Position) error {
-	return k.deletePosition(ctx, pos)
+func (k Keeper) DeletePosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+	return k.deletePosition(ctx, pos, update)
 }
 
 func (k Keeper) GetTier(ctx context.Context, id uint32) (types.Tier, error) {
@@ -94,15 +99,14 @@ func (k Keeper) LockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress
 	return k.lockFunds(ctx, ownerAddr, delAddr, amount)
 }
 
-func (k Keeper) CreatePosition(
+func (k Keeper) CreateDelegatedPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	amount math.Int,
-	delegation types.Delegation,
+	lastEventSeq uint64,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
-	return k.createPosition(ctx, owner, tier, amount, delegation, triggerExitImmediately)
+	return k.createDelegatedPosition(ctx, owner, tier, lastEventSeq, triggerExitImmediately)
 }
 
 func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, error) {

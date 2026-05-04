@@ -249,7 +249,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 	_, bondDenom := s.getStakingData()
 
@@ -403,7 +403,7 @@ func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_UnbondingValidatorNotCount
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.jailAndUnbondValidator(valAddr)
 
@@ -460,7 +460,6 @@ func (s *KeeperSuite) TestGRPCQueryRawTierPosition() {
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, resp.Position.Id)
 	s.Require().Equal(pos.Owner, resp.Position.Owner)
-	s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
 }
 
 func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByOwner() {
@@ -470,7 +469,6 @@ func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByOwner() {
 	s.Require().NoError(err)
 	s.Require().Len(resp.Positions, 1)
 	s.Require().Equal(pos.Id, resp.Positions[0].Id)
-	s.Require().True(resp.Positions[0].Amount.IsZero(), "raw delegated position amount should be zero")
 }
 
 func (s *KeeperSuite) TestGRPCQueryRawAllTierPositions() {
@@ -489,7 +487,7 @@ func (s *KeeperSuite) TestGRPCQueryRawAllTierPositions() {
 
 func (s *KeeperSuite) TestGRPCQueryValidatorData() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())

@@ -51,7 +51,7 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return pos.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(tokenValue), nil
 		},
 	)
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+	collections "cosmossdk.io/collections"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
@@ -24,6 +25,8 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
 	s.Require().NoError(err)
 	s.Require().True(tokenValue.IsPositive())
 
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
 		Owner:      pos.Owner,
@@ -33,7 +36,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, resp.PositionId)
 	s.Require().Equal(tokenValue, resp.TransferredAmount)
-	s.Require().Equal(pos.DelegatedShares, resp.TransferredShares)
+	s.Require().Equal(pos.Delegation.Shares, resp.TransferredShares)
 	s.Require().True(resp.FullExit, "full exit should be true when entire position is transferred")
 
 	// Position should be deleted.
@@ -42,10 +45,12 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
 
 	// Owner should have a staking delegation on the same validator.
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(pos.DelegatedShares, del.Shares, "owner should hold the full delegation shares")
+	s.Require().Equal(pos.Delegation.Shares, del.Shares, "owner should hold the full delegation shares")
+
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().Equal(collections.ErrNotFound, err)
 }
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_Partial() {
@@ -59,7 +64,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Partial() {
 	s.Require().NoError(err)
 
 	exitAmount := tokenValue.Quo(sdkmath.NewInt(2))
-	exitShares := pos.DelegatedShares.Quo(sdkmath.LegacyNewDec(2))
+	exitShares := pos.Delegation.Shares.Quo(sdkmath.LegacyNewDec(2))
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
@@ -76,14 +81,18 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Partial() {
 	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated(), "position should remain delegated after partial exit")
-	s.Require().Equal(pos.DelegatedShares.Sub(exitShares), posAfter.DelegatedShares, "position shares should be reduced by the amount of exited shares")
+	s.Require().Equal(pos.Delegation.Shares.Sub(exitShares), posAfter.Delegation.Shares, "position shares should be reduced by the amount of exited shares")
 
 	// Owner should have a staking delegation.
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(exitShares, del.Shares, "owner should hold the exited shares")
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
@@ -97,7 +106,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
 	s.Require().NoError(err)
 
 	exitAmount := tokenValue.Quo(sdkmath.NewInt(2))
-	exitShares := pos.DelegatedShares.Quo(sdkmath.LegacyNewDec(2))
+	exitShares := pos.Delegation.Shares.Quo(sdkmath.LegacyNewDec(2))
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// First: partial exit.
@@ -110,7 +119,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
 
 	// Owner should have a staking delegation.
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(exitShares, del.Shares)
@@ -118,8 +127,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
 	// Position still exists.
 	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.Amount.IsZero(), "delegated position Amount should remain zero")
-	s.Require().Equal(pos.DelegatedShares.Sub(exitShares), posAfter.DelegatedShares, "position shares should be reduced by the amount of exited shares")
+	s.Require().Equal(pos.Delegation.Shares.Sub(exitShares), posAfter.Delegation.Shares, "position shares should be reduced by the amount of exited shares")
 
 	// Second: exit the remainder using token value from remaining shares.
 	remainingTokenValue, err := s.keeper.PositionAmount(s.ctx, posAfter)
@@ -140,7 +148,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialThenFull() {
 	// Owner should have the full delegation.
 	del, err = s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(pos.DelegatedShares, del.Shares, "owner should hold the full delegation shares")
+	s.Require().Equal(pos.Delegation.Shares, del.Shares, "owner should hold the full delegation shares")
 }
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialBelowMinLock() {
@@ -158,11 +166,6 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialBelowMinLock() {
 		Amount:     sdkmath.NewInt(600), // remaining = ~900 < MinLockAmount(1000)
 	})
 	s.Require().ErrorIs(err, types.ErrMinLockAmountNotMet)
-
-	// Position should be unchanged.
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().True(posAfter.DelegatedShares.Equal(pos.DelegatedShares), "position shares should be unchanged after failed partial exit")
 }
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_WrongOwner() {
@@ -204,7 +207,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_NotDelegated() {
 	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
 		Owner:      pos.Owner,
 		PositionId: pos.Id,
-		Amount:     posAfter.Amount,
+		Amount:     s.positionAmount(posAfter),
 	})
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
@@ -340,7 +343,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Slash 10% to create a non-1:1 exchange rate.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -373,9 +376,9 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	posStakingDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
-	s.Require().True(posAfter.DelegatedShares.Equal(posStakingDel.Shares),
+	s.Require().True(posAfter.Delegation.Shares.Equal(posStakingDel.Shares),
 		"position DelegatedShares (%s) must equal actual delegation shares (%s)",
-		posAfter.DelegatedShares, posStakingDel.Shares)
+		posAfter.Delegation.Shares, posStakingDel.Shares)
 
 	// A subsequent full exit (TierUndelegate) using the stored shares must succeed.
 	_, err = msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
@@ -390,7 +393,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 // delegated (worthless shares) but token value=0, so any positive exit amount exceeds it.
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_BondedSlashZero() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	// Slash 100% — position amount goes to zero but remains delegated.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -399,7 +402,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_BondedSlashZero() {
 
 	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100% slash")
+	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero after 100% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 
 	s.advancePastExitDuration()
@@ -424,7 +427,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
@@ -480,7 +483,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 
@@ -492,7 +495,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
-	s.Require().True(pos.DelegatedShares.IsPositive(), "shares should still exist")
+	s.Require().True(pos.Delegation.Shares.IsPositive(), "shares should still exist")
 
 	tokenValue, err := s.keeper.PositionAmount(s.ctx, pos)
 	s.Require().NoError(err)

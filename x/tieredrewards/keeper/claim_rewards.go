@@ -66,8 +66,7 @@ func (k Keeper) claimRewardsAndUpdateTierPositions(ctx context.Context, tierId u
 		if _, err := k.processEventsAndClaimBonus(ctx, &pos); err != nil {
 			return err
 		}
-		// setPositionUnsafe to reduce gas consumption
-		if err := k.setPositionUnsafe(ctx, pos.Position); err != nil {
+		if err := k.setPosition(ctx, pos.Position, nil); err != nil {
 			return err
 		}
 	}
@@ -122,8 +121,7 @@ func (k Keeper) claimRewardsAndUpdatesPositions(ctx context.Context, positions [
 		}
 		totalBonus = totalBonus.Add(bonus...)
 
-		// setPositionUnsafe to reduce gas consumption
-		if err := k.setPositionUnsafe(ctx, pos.Position); err != nil {
+		if err := k.setPosition(ctx, pos.Position, nil); err != nil {
 			return nil, nil, err
 		}
 	}

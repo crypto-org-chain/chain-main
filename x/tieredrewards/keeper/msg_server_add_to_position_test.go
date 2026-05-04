@@ -35,7 +35,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(addPosAmt.Equal(pos.Amount), "amount should be 500 (added to zero)")
+	s.Require().True(addPosAmt.Equal(s.positionAmount(pos)), "amount should be 500 (added to zero)")
 	s.Require().False(pos.IsDelegated(), "position should remain undelegated")
 }
 
@@ -43,6 +43,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	posBefore, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -61,12 +62,15 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 
 	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posAfter.Amount.IsZero(), "delegated position Amount should be zero")
 	tokenValue, err := s.keeper.PositionAmount(s.ctx, posAfter)
 	s.Require().NoError(err)
 	s.Require().True(tokenValue.GTE(sdkmath.NewInt(1500)), "token value should be at least 1500")
-	s.Require().True(posAfter.DelegatedShares.GT(posBefore.DelegatedShares), "shares should increase")
+	s.Require().True(posAfter.Delegation.Shares.GT(posBefore.Delegation.Shares), "shares should increase")
 	s.Require().Equal(uint64(0), posAfter.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_Exiting() {
@@ -121,7 +125,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_NeverDoubleClaimsRewards() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -167,7 +171,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
 	pos := s.setupNewTierPosition(lockAmt, false)
 	_, bondDenom := s.getStakingData()
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -214,7 +218,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_EmitsRewardsClaimedEvents() {
 func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -255,7 +259,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
 // because delegate() rejects non-bonded validators.
 func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToJailedValidator() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 

@@ -55,8 +55,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	shares, err := ms.delegate(ctx, delAddr, valAddr, msg.Amount)
-	if err != nil {
+	if _, err := ms.delegate(ctx, delAddr, valAddr, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -65,12 +64,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	delegation := types.Delegation{
-		Validator:    msg.ValidatorAddress,
-		Shares:       shares,
-		LastEventSeq: latestSeq,
-	}
-	pos, err := ms.createPosition(ctx, msg.Owner, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.Owner, tier, latestSeq, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +72,10 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	// Defensive, but should not happen since transactions are sequential
 	if pos.Id != id {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
+	}
+
+	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
+		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -119,8 +117,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	// account is not created automatically because no funds are transferred from the owner to the position in this scenario
 	ms.createDelegatorAccount(ctx, delAddr)
 
-	shares, err := ms.transferDelegationToPosition(ctx, msg.DelegatorAddress, delAddr, msg.ValidatorAddress, msg.Amount)
-	if err != nil {
+	if _, err := ms.transferDelegationToPosition(ctx, msg.DelegatorAddress, delAddr, msg.ValidatorAddress, msg.Amount); err != nil {
 		return nil, err
 	}
 
@@ -129,13 +126,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	delegation := types.Delegation{
-		Validator:    msg.ValidatorAddress,
-		Shares:       shares,
-		LastEventSeq: latestSeq,
-	}
-
-	pos, err := ms.createPosition(ctx, msg.DelegatorAddress, tier, math.ZeroInt(), delegation, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.DelegatorAddress, tier, latestSeq, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -143,6 +134,9 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	// Defensive, but should not happen since transactions are sequential
 	if pos.Id != id {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
+	}
+	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
+		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -161,7 +155,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +171,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	amount, err := ms.undelegatedAmount(ctx, pos)
+	amount, err := ms.undelegatedAmount(ctx, pos.Position)
 	if err != nil {
 		return nil, err
 	}
@@ -192,15 +186,11 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
-		Validator:    msg.Validator,
-		Shares:       newShares,
-		LastEventSeq: latestSeq,
-	}); err != nil {
+	if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 		return nil, err
 	}
 
-	if err := ms.setPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: ""}); err != nil {
 		return nil, err
 	}
 
@@ -228,7 +218,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	if err := ms.validateUndelegatePosition(ctx, pos.Position, msg.Owner); err != nil {
+	if err := ms.validateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -245,7 +235,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	completionTime, returnAmount, unbondingId, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
+	completionTime, _, unbondingId, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
 	if err != nil {
 		return nil, err
 	}
@@ -255,10 +245,9 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos.ClearDelegation()
-	pos.UpdateAmount(returnAmount)
+	pos.ResetBonusCheckpoints()
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -331,15 +320,11 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	if err != nil {
 		return nil, err
 	}
-	if err := ms.updateDelegation(ctx, &pos.Position, types.Delegation{
-		Validator:    msg.DstValidator,
-		Shares:       newShares,
-		LastEventSeq: latestSeq,
-	}); err != nil {
+	if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 		return nil, err
 	}
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -405,28 +390,16 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 			return nil, err
 		}
 
-		totalShares := pos.Delegation.Shares.Add(newShares)
-
 		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
 		if err != nil {
 			return nil, err
 		}
-		if err := ms.updateDelegation(ctx, &pos.Position, types.Delegation{
-			Validator:    pos.Delegation.ValidatorAddress,
-			Shares:       totalShares,
-			LastEventSeq: latestSeq,
-		}); err != nil {
+		if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 			return nil, err
 		}
-	} else {
-		amount, err := ms.positionAmount(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
-		pos.UpdateAmount(amount)
 	}
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
 		return nil, err
 	}
 
@@ -449,12 +422,12 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.validateTriggerExit(pos, msg.Owner); err != nil {
+	if err := ms.validateTriggerExit(pos.Position, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -466,7 +439,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
 
-	if err := ms.setPosition(ctx, pos); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
 		return nil, err
 	}
 
@@ -495,7 +468,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	if err := ms.validateClearPosition(ctx, pos.Position, msg.Owner); err != nil {
+	if err := ms.validateClearPosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -511,7 +484,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.ClearExit(sdkCtx.BlockTime())
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
 		return nil, err
 	}
 
@@ -572,7 +545,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	pos, err := ms.getPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -596,13 +569,13 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		}
 	}
 
-	if err := ms.deletePosition(ctx, pos); err != nil {
+	if err := ms.deletePosition(ctx, pos.Position, nil); err != nil {
 		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
-		Position: pos,
+		Position: pos.Position,
 		Amount:   balances,
 	}); err != nil {
 		return nil, err
@@ -670,7 +643,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			}
 		}
 
-		if err := ms.deletePosition(ctx, pos.Position); err != nil {
+		if err := ms.deletePosition(ctx, pos.Position, &ValidatorUpdate{Previous: validator}); err != nil {
 			return nil, err
 		}
 
@@ -680,11 +653,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		if err != nil {
 			return nil, err
 		}
-		err = ms.updateDelegation(ctx, &pos.Position, types.Delegation{
-			Validator:    validator,
-			Shares:       remainingShares,
-			LastEventSeq: latestSeq,
-		})
+		err = ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq)
 		if err != nil {
 			return nil, err
 		}
@@ -705,7 +674,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 				"remaining amount %s is below tier minimum %s", remainingTokenValue, tier.MinLockAmount)
 		}
 
-		if err := ms.setPosition(ctx, pos.Position); err != nil {
+		if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
 			return nil, err
 		}
 	}

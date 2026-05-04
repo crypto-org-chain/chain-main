@@ -19,7 +19,7 @@ import (
 // computes a positive bonus when the position is bonded for 30 days.
 func (s *KeeperSuite) TestComputeSegmentBonus_BondedValidator() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	blockTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
 
@@ -70,11 +70,11 @@ func (s *KeeperSuite) TestComputeSegmentBonus_ZeroAmount() {
 func (s *KeeperSuite) TestComputeSegmentBonus_SharesWorthless() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	s.Require().True(pos.DelegatedShares.IsPositive(), "should have shares")
+	s.Require().True(pos.Delegation.Shares.IsPositive(), "should have shares")
 
 	// Slash validator to zero -- shares remain but are now worthless.
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
@@ -90,7 +90,7 @@ func (s *KeeperSuite) TestComputeSegmentBonus_SharesWorthless() {
 	blockTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
 
 	// TokensFromShares returns zero because validator has no tokens.
-	tokens := val.TokensFromShares(pos.DelegatedShares)
+	tokens := val.TokensFromShares(pos.Delegation.Shares)
 	s.Require().True(tokens.IsZero(),
 		"tokens from shares should be zero for slashed validator")
 
