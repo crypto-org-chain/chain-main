@@ -249,10 +249,10 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count2)
 
-	// Verify PositionsByValidator index.
-	valIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// Verify validator position count.
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().ElementsMatch([]uint64{2}, valIds)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {

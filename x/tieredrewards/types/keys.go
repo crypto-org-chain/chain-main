@@ -2,8 +2,6 @@ package types
 
 import "cosmossdk.io/collections"
 
-// key prefix was shifted up by 1 count from UnbondingIdToPositionIdKey
-// to account for the removal of ValidatorRewardRatioKeyPrefix pre-v7.1.0-testnet
 var (
 	ParamsKey                     = collections.NewPrefix(0)
 	TiersKey                      = collections.NewPrefix(1)
@@ -11,15 +9,14 @@ var (
 	NextPositionIdKey             = collections.NewPrefix(3)
 	PositionsByOwnerKey           = collections.NewPrefix(4)
 	PositionsByTierKey            = collections.NewPrefix(5)
-	PositionsByValidatorKey       = collections.NewPrefix(6)
-	PositionCountByTierKey        = collections.NewPrefix(7)
-	UnbondingIdToPositionIdKey    = collections.NewPrefix(8)
-	UnbondingIdsByPositionKey     = collections.NewPrefix(9)
-	RedelegationIdToPositionIdKey = collections.NewPrefix(10)
-	RedelegationIdsByPositionKey  = collections.NewPrefix(11)
-	ValidatorEventsKey            = collections.NewPrefix(12)
-	ValidatorEventSeqKey          = collections.NewPrefix(13)
-	PositionCountByValidatorKey   = collections.NewPrefix(14)
+	PositionCountByTierKey        = collections.NewPrefix(6)
+	UnbondingIdToPositionIdKey    = collections.NewPrefix(7)
+	UnbondingIdsByPositionKey     = collections.NewPrefix(8)
+	RedelegationIdToPositionIdKey = collections.NewPrefix(9)
+	RedelegationIdsByPositionKey  = collections.NewPrefix(10)
+	ValidatorEventsKey            = collections.NewPrefix(11)
+	ValidatorEventSeqKey          = collections.NewPrefix(12)
+	PositionCountByValidatorKey   = collections.NewPrefix(13)
 )
 
 const (

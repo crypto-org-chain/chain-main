@@ -38,16 +38,8 @@ func (k Keeper) DeleteTier(ctx context.Context, tierId uint32) error {
 	return k.deleteTier(ctx, tierId)
 }
 
-func (k Keeper) GetPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
-	return k.getPositionsByValidator(ctx, valAddr)
-}
-
 func (k Keeper) GetPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
 	return k.getPositionsIdsByOwner(ctx, owner)
-}
-
-func (k Keeper) GetPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
-	return k.getPositionsIdsByValidator(ctx, valAddr)
 }
 
 func (k Keeper) GetPositionCountForTier(ctx context.Context, tierId uint32) (uint64, error) {
@@ -78,7 +70,7 @@ func (k Keeper) DecreasePositionCountForValidator(ctx context.Context, valAddr s
 	return k.decreasePositionCountForValidator(ctx, valAddr)
 }
 
-func (k Keeper) TransferDelegationFromPosition(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
+func (k Keeper) TransferDelegationFromPosition(ctx context.Context, pos types.PositionState, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	return k.transferDelegationFromPosition(ctx, pos, valAddr, amount)
 }
 
@@ -113,10 +105,6 @@ func (k Keeper) CreatePosition(
 	return k.createPosition(ctx, owner, tier, amount, delegation, triggerExitImmediately)
 }
 
-func (k Keeper) GetPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
-	return k.getPositionsByIds(ctx, ids)
-}
-
 func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
 	return k.stillUnbonding(ctx, positionId)
 }
@@ -125,7 +113,7 @@ func (k Keeper) StillRedelegating(ctx context.Context, positionId uint64) (bool,
 	return k.stillRedelegating(ctx, positionId)
 }
 
-func (k Keeper) ComputeSegmentBonus(pos *types.Position, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
+func (k Keeper) ComputeSegmentBonus(pos types.PositionState, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
 	return k.computeSegmentBonus(pos, tier, segmentStart, segmentEnd, tokensPerShare)
 }
 
@@ -137,16 +125,12 @@ func (k Keeper) ClaimRewardsAndUpdateTierPositions(ctx context.Context, tierId u
 	return k.claimRewardsAndUpdateTierPositions(ctx, tierId)
 }
 
-func (k Keeper) ClaimRewards(ctx context.Context, pos types.Position) (types.Position, sdk.Coins, sdk.Coins, error) {
+func (k Keeper) ClaimRewards(ctx context.Context, pos types.PositionState) (types.PositionState, sdk.Coins, sdk.Coins, error) {
 	return k.claimRewards(ctx, pos)
 }
 
-func (k Keeper) ClaimRewardsAndUpdatesPositions(ctx context.Context, owner string, positions []types.Position) (sdk.Coins, sdk.Coins, error) {
-	return k.claimRewardsAndUpdatesPositions(ctx, owner, positions)
-}
-
-func (k Keeper) PositionTokenValue(ctx context.Context, pos types.Position) (math.Int, error) {
-	return k.positionTokenValue(ctx, pos)
+func (k Keeper) ClaimRewardsAndUpdatesPositions(ctx context.Context, positions []types.PositionState) (sdk.Coins, sdk.Coins, error) {
+	return k.claimRewardsAndUpdatesPositions(ctx, positions)
 }
 
 func (k Keeper) AppendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress, event types.ValidatorEvent) (uint64, error) {
@@ -173,16 +157,16 @@ func (k Keeper) HasValidatorEvents(ctx context.Context, valAddr sdk.ValAddress) 
 	return k.hasValidatorEvents(ctx, valAddr)
 }
 
-func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
-	return k.processEventsAndClaimBonus(ctx, pos, valAddr)
+func (k Keeper) ProcessEventsAndClaimBonus(ctx context.Context, pos *types.PositionState) (sdk.Coins, error) {
+	return k.processEventsAndClaimBonus(ctx, pos)
 }
 
-func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.Position, valAddr sdk.ValAddress) (sdk.Coins, error) {
-	return k.claimBaseRewards(ctx, pos, valAddr)
+func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.PositionState) (sdk.Coins, error) {
+	return k.claimBaseRewards(ctx, pos)
 }
 
-func (k Keeper) LoadPosition(ctx context.Context, posId uint64) (types.PositionState, error) {
-	return k.loadPosition(ctx, posId)
+func (k Keeper) LoadPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
+	return k.loadPositionState(ctx, posId)
 }
 
 func (k Keeper) PositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {

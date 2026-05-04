@@ -253,7 +253,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 	_, bondDenom := s.getStakingData()
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	posBefore, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// Advance one block so the delegation's starting period in x/distribution
@@ -299,11 +299,11 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	expectedBonus := s.keeper.ComputeSegmentBonus(&posBefore, tier, posBefore.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus := s.keeper.ComputeSegmentBonus(posBefore, tier, posBefore.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
 	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
 		"bonus rewards should match what is calculated")
-	posAfter, err := s.keeper.GetPosition(s.ctx, 0)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, 0)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore, posAfter, "position state must remain unchanged by estimation")
 
@@ -411,7 +411,7 @@ func (s *KeeperSuite) TestGRPCQueryVotingPowerByOwner_UnbondingValidatorNotCount
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 

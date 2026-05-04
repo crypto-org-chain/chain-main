@@ -161,7 +161,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	amount, err := ms.positionAmount(ctx, pos)
+	amount, err := ms.undelegatedAmount(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.updateDelegation(ctx, &pos.Position, types.Delegation{
+	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
 		Validator:    msg.Validator,
 		Shares:       newShares,
 		LastEventSeq: latestSeq,
@@ -200,7 +200,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -223,16 +223,16 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.validateUndelegatePosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateUndelegatePosition(ctx, pos.Position, msg.Owner); err != nil {
 		return nil, err
 	}
 
-	pos.Position, _, _, err = ms.claimRewards(ctx, pos.Position)
+	pos, _, _, err = ms.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +286,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +300,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos.Position, _, _, err = ms.claimRewards(ctx, pos.Position)
+	pos, _, _, err = ms.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -369,12 +369,12 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.validateAddToPosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateAddToPosition(ctx, pos.Position, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -390,7 +390,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 	}
 	newShares := math.LegacyZeroDec()
 	if pos.IsDelegated() {
-		pos.Position, _, _, err = ms.claimRewards(ctx, pos.Position)
+		pos, _, _, err = ms.claimRewards(ctx, pos)
 		if err != nil {
 			return nil, err
 		}
@@ -449,7 +449,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -466,7 +466,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.TriggerExit(sdkCtx.BlockTime(), tier.ExitDuration)
 
-	if err := ms.setPosition(ctx, pos.Position); err != nil {
+	if err := ms.setPosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
@@ -490,12 +490,12 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := ms.validateClearPosition(ctx, pos, msg.Owner); err != nil {
+	if err := ms.validateClearPosition(ctx, pos.Position, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -503,7 +503,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return &types.MsgClearPositionResponse{PositionId: pos.Id}, nil
 	}
 
-	pos.Position, _, _, err = ms.claimRewards(ctx, pos.Position)
+	pos, _, _, err = ms.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -531,21 +531,21 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 		return nil, err
 	}
 
-	positions := make([]types.Position, 0, len(msg.PositionIds))
+	positions := make([]types.PositionState, 0, len(msg.PositionIds))
 	for _, posId := range msg.PositionIds {
-		pos, err := ms.loadPosition(ctx, posId)
+		pos, err := ms.loadPositionState(ctx, posId)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := ms.validateClaimRewards(pos, msg.Owner); err != nil {
+		if err := ms.validateClaimRewards(pos.Position, msg.Owner); err != nil {
 			return nil, err
 		}
 
-		positions = append(positions, pos.Position)
+		positions = append(positions, pos)
 	}
 
-	totalBase, totalBonus, err := ms.claimRewardsAndUpdatesPositions(ctx, msg.Owner, positions)
+	totalBase, totalBonus, err := ms.claimRewardsAndUpdatesPositions(ctx, positions)
 	if err != nil {
 		return nil, err
 	}
@@ -572,7 +572,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.getPosition(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -596,13 +596,13 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		}
 	}
 
-	if err := ms.deletePosition(ctx, pos.Position); err != nil {
+	if err := ms.deletePosition(ctx, pos); err != nil {
 		return nil, err
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionWithdrawn{
-		Position: pos.Position,
+		Position: pos,
 		Amount:   balances,
 	}); err != nil {
 		return nil, err
@@ -618,7 +618,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	pos, err := ms.loadPosition(ctx, msg.PositionId)
+	pos, err := ms.loadPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -627,7 +627,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	pos.Position, _, _, err = ms.claimRewards(ctx, pos.Position)
+	pos, _, _, err = ms.claimRewards(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -643,7 +643,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	transferredShares, unbondedShares, transferredAmount, err := ms.transferDelegationFromPosition(ctx, pos.Position, valAddr, msg.Amount)
+	transferredShares, unbondedShares, transferredAmount, err := ms.transferDelegationFromPosition(ctx, pos, valAddr, msg.Amount)
 	if err != nil {
 		return nil, err
 	}

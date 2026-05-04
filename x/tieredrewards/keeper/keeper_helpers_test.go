@@ -47,7 +47,7 @@ func (s *KeeperSuite) getStakingData() ([]stakingtypes.Validator, string) {
 }
 
 // setupNewTierPosition creates a new tier position with the given lock amount and funds the rewards pool.
-func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
+func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitImmediately bool) types.PositionState {
 	s.T().Helper()
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
@@ -61,7 +61,7 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  freshAddr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,
@@ -70,15 +70,13 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	})
 	s.Require().NoError(err)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, freshAddr)
+	state, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-
-	return positions[0]
+	return state
 }
 
 // setupNewTierPositionWithDelegator creates a new tier position with an address who has already delegated to a validator.
-func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, triggerExitImmediately bool) types.Position {
+func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, triggerExitImmediately bool) types.PositionState {
 	s.T().Helper()
 	s.setupTier(1)
 	_, bondDenom := s.getStakingData()
@@ -90,7 +88,7 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
 	s.Require().NoError(err)
 
-	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+	resp, err := msgServer.LockTier(s.ctx, &types.MsgLockTier{
 		Owner:                  delAddr.String(),
 		Id:                     1,
 		Amount:                 lockAmount,
@@ -99,11 +97,9 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 	})
 	s.Require().NoError(err)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	state, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-
-	return positions[0]
+	return state
 }
 
 // jailAndUnbondValidator jails a validator and runs ApplyAndReturnValidatorSetUpdates
@@ -287,13 +283,12 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 }
 
 // slashRedelegationCompletely simulates a redelegation slash that burns all of a position's shares.
-// Returns the updated Position 
-func (s *KeeperSuite) slashRedelegationCompletely(pos types.Position) types.Position {
+func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types.PositionState {
 	s.T().Helper()
 
 	pos.ClearDelegation()
 	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position))
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 	dels, err := s.app.StakingKeeper.GetDelegatorDelegations(s.ctx, delAddr, 1)
@@ -301,5 +296,8 @@ func (s *KeeperSuite) slashRedelegationCompletely(pos types.Position) types.Posi
 	for _, d := range dels {
 		s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, d))
 	}
-	return pos
+
+	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	return updated
 }

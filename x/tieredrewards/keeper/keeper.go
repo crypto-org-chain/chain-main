@@ -28,9 +28,8 @@ type Keeper struct {
 	Positions      collections.Map[uint64, types.Position]
 	NextPositionId collections.Sequence
 
-	PositionsByOwner     collections.KeySet[collections.Pair[sdk.AccAddress, uint64]]
-	PositionsByTier      collections.KeySet[collections.Pair[uint32, uint64]]
-	PositionsByValidator collections.KeySet[collections.Pair[sdk.ValAddress, uint64]]
+	PositionsByOwner collections.KeySet[collections.Pair[sdk.AccAddress, uint64]]
+	PositionsByTier  collections.KeySet[collections.Pair[uint32, uint64]]
 
 	PositionCountByTier      collections.Map[uint32, uint64]
 	PositionCountByValidator collections.Map[sdk.ValAddress, uint64]
@@ -101,7 +100,6 @@ func NewKeeper(
 		NextPositionId:           collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
 		PositionsByOwner:         collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
 		PositionsByTier:          collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
-		PositionsByValidator:     collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:      collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
 		ValidatorEvents:          collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),

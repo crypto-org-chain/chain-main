@@ -40,7 +40,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_Basic() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Validator)
@@ -136,7 +136,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 	s.Require().True(pos.HasTriggeredExit())
@@ -150,7 +150,7 @@ func (s *KeeperSuite) TestMsgTierDelegate_ExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().True(pos.HasTriggeredExit())
@@ -245,11 +245,10 @@ func (s *KeeperSuite) TestMsgTierDelegate_ValidatorIndexUpdated() {
 	})
 	s.Require().NoError(err)
 
-	// After delegation, position should appear in validator index
-	posIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// After delegation, validator position count should be incremented
+	posCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Len(posIds, 1)
-	s.Require().Equal(uint64(0), posIds[0])
+	s.Require().Equal(uint64(1), posCount)
 }
 
 // TestMsgTierDelegate_TierCloseOnly verifies that TierDelegate is rejected

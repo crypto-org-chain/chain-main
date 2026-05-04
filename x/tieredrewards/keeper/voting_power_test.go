@@ -179,7 +179,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 
@@ -296,7 +296,7 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
 	s.Require().True(posAfter.Amount.IsZero(), "delegated position should still have zero amount after slash")

@@ -25064,7 +25064,7 @@ paths:
                       tokens
                   decay_rate:
                     type: string
-                    title: decay rate
+                    title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
             description: >-
               QueryParamsResponse is the response type for the Query/Params RPC
               method.
@@ -25249,9 +25249,6 @@ paths:
                     type: string
                   delegated_shares:
                     type: string
-                  last_bonus_accrual:
-                    type: string
-                    format: date-time
                   exit_triggered_at:
                     type: string
                     format: date-time
@@ -25267,14 +25264,6 @@ paths:
                 description: >-
                   PositionResponse is the query-facing representation of a
                   position.
-
-                  Unlike the stored Position, the `amount` field always contains
-                  the
-
-                  meaningful token value: TokensFromShares for delegated
-                  positions,
-
-                  or the stored amount for undelegated positions.
             description: >-
               QueryTierPositionResponse is the response type for the
               Query/TierPosition RPC method.
@@ -25397,9 +25386,6 @@ paths:
                       type: string
                     delegated_shares:
                       type: string
-                    last_bonus_accrual:
-                      type: string
-                      format: date-time
                     exit_triggered_at:
                       type: string
                       format: date-time
@@ -25415,14 +25401,6 @@ paths:
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
-
-                    Unlike the stored Position, the `amount` field always
-                    contains the
-
-                    meaningful token value: TokensFromShares for delegated
-                    positions,
-
-                    or the stored amount for undelegated positions.
               pagination:
                 type: object
                 properties:
@@ -25565,9 +25543,6 @@ paths:
                       type: string
                     delegated_shares:
                       type: string
-                    last_bonus_accrual:
-                      type: string
-                      format: date-time
                     exit_triggered_at:
                       type: string
                       format: date-time
@@ -25583,14 +25558,6 @@ paths:
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
-
-                    Unlike the stored Position, the `amount` field always
-                    contains the
-
-                    meaningful token value: TokensFromShares for delegated
-                    positions,
-
-                    or the stored amount for undelegated positions.
               pagination:
                 type: object
                 properties:
@@ -46330,7 +46297,7 @@ definitions:
         title: burned_addresses is a list of addresses that hold burned tokens
       decay_rate:
         type: string
-        title: decay rate
+        title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
     description: Params holds parameters for the inflation module.
   chainmain.inflation.v1.QueryParamsResponse:
     type: object
@@ -46349,7 +46316,7 @@ definitions:
             title: burned_addresses is a list of addresses that hold burned tokens
           decay_rate:
             type: string
-            title: decay rate
+            title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
   chainmain.tieredrewards.v1.Params:
     type: object
@@ -46453,9 +46420,6 @@ definitions:
         type: string
       delegated_shares:
         type: string
-      last_bonus_accrual:
-        type: string
-        format: date-time
       exit_triggered_at:
         type: string
         format: date-time
@@ -46468,11 +46432,7 @@ definitions:
       created_at_time:
         type: string
         format: date-time
-    description: |-
-      PositionResponse is the query-facing representation of a position.
-      Unlike the stored Position, the `amount` field always contains the
-      meaningful token value: TokensFromShares for delegated positions,
-      or the stored amount for undelegated positions.
+    description: PositionResponse is the query-facing representation of a position.
   chainmain.tieredrewards.v1.QueryAllTierPositionsResponse:
     type: object
     properties:
@@ -46496,9 +46456,6 @@ definitions:
               type: string
             delegated_shares:
               type: string
-            last_bonus_accrual:
-              type: string
-              format: date-time
             exit_triggered_at:
               type: string
               format: date-time
@@ -46511,11 +46468,7 @@ definitions:
             created_at_time:
               type: string
               format: date-time
-          description: |-
-            PositionResponse is the query-facing representation of a position.
-            Unlike the stored Position, the `amount` field always contains the
-            meaningful token value: TokensFromShares for delegated positions,
-            or the stored amount for undelegated positions.
+          description: PositionResponse is the query-facing representation of a position.
       pagination:
         type: object
         properties:
@@ -46976,9 +46929,6 @@ definitions:
             type: string
           delegated_shares:
             type: string
-          last_bonus_accrual:
-            type: string
-            format: date-time
           exit_triggered_at:
             type: string
             format: date-time
@@ -46991,11 +46941,7 @@ definitions:
           created_at_time:
             type: string
             format: date-time
-        description: |-
-          PositionResponse is the query-facing representation of a position.
-          Unlike the stored Position, the `amount` field always contains the
-          meaningful token value: TokensFromShares for delegated positions,
-          or the stored amount for undelegated positions.
+        description: PositionResponse is the query-facing representation of a position.
     description: >-
       QueryTierPositionResponse is the response type for the Query/TierPosition
       RPC method.
@@ -47022,9 +46968,6 @@ definitions:
               type: string
             delegated_shares:
               type: string
-            last_bonus_accrual:
-              type: string
-              format: date-time
             exit_triggered_at:
               type: string
               format: date-time
@@ -47037,11 +46980,7 @@ definitions:
             created_at_time:
               type: string
               format: date-time
-          description: |-
-            PositionResponse is the query-facing representation of a position.
-            Unlike the stored Position, the `amount` field always contains the
-            meaningful token value: TokensFromShares for delegated positions,
-            or the stored amount for undelegated positions.
+          description: PositionResponse is the query-facing representation of a position.
       pagination:
         type: object
         properties:

@@ -175,16 +175,15 @@ func GetDelegatorAddress(id uint64) sdk.AccAddress {
 
 func (p *Position) ToPositionResponse(tokenValue math.Int) PositionResponse {
 	return PositionResponse{
-		Id:               p.Id,
-		Owner:            p.Owner,
-		TierId:           p.TierId,
-		Amount:           tokenValue,
-		Validator:        p.Validator,
-		DelegatedShares:  p.DelegatedShares,
-		LastBonusAccrual: p.LastBonusAccrual,
-		ExitTriggeredAt:  p.ExitTriggeredAt,
-		ExitUnlockAt:     p.ExitUnlockAt,
-		CreatedAtHeight:  p.CreatedAtHeight,
-		CreatedAtTime:    p.CreatedAtTime,
+		Id:              p.Id,
+		Owner:           p.Owner,
+		TierId:          p.TierId,
+		Amount:          tokenValue,
+		Validator:       p.Validator,
+		DelegatedShares: p.DelegatedShares,
+		ExitTriggeredAt: p.ExitTriggeredAt,
+		ExitUnlockAt:    p.ExitUnlockAt,
+		CreatedAtHeight: p.CreatedAtHeight,
+		CreatedAtTime:   p.CreatedAtTime,
 	}
 }

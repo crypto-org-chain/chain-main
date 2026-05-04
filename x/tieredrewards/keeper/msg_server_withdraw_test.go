@@ -55,7 +55,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 		"owner should have received locked tokens back")
 
 	// Position should be deleted
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -210,7 +210,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().True(mappingExistsBeforeWithdraw, "unbonding mapping should exist before withdrawal")
 
 	// Position should not be delegated but still exists
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
@@ -233,7 +233,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 		"owner should have received locked tokens back after undelegate + withdraw")
 
 	// Position should be deleted
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 
 	var mappingExistsAfterWithdraw bool
@@ -295,11 +295,11 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
 	s.Require().NoError(err)
 
 	// First position should be deleted
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "first position should be deleted")
 
 	// Second position should still exist
-	pos2, err := s.keeper.GetPosition(s.ctx, uint64(1))
+	pos2, err := s.keeper.LoadPositionState(s.ctx, uint64(1))
 	s.Require().NoError(err)
 	s.Require().True(sdkmath.NewInt(2000).Equal(pos2.Amount))
 
@@ -331,10 +331,11 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	pos := s.setupNewTierPosition(lockAmount, true)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos = positions[0]
+	pos, err = s.keeper.LoadPositionState(s.ctx, positions[0].Id)
+	s.Require().NoError(err)
 
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
 
@@ -346,7 +347,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate_NoInsolvency() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Advance time past exit unlock.
@@ -456,7 +457,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_RedelegSlashedToZero() {
 	s.Require().True(resp.Amount.IsZero(),
 		"withdrawn amount should be zero")
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -497,7 +498,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_TierCloseOnly_Succeeds() {
 	s.Require().True(resp.Amount.AmountOf(bondDenom).IsPositive(),
 		"withdrawal should return locked tokens")
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -522,15 +523,17 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Simulate unbonding slash to zero via hook.
 	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, pos.Amount)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	posState, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after unbonding slash")
+	amount, err := s.keeper.PositionAmount(s.ctx, posState)
+	s.Require().NoError(err)
+	s.Require().True(amount.IsZero(), "position amount should be zero after unbonding slash")
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
@@ -543,7 +546,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.Require().True(resp.Amount.AmountOf(bondDenom).IsZero(),
 		"withdrawn amount should be zero")
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -568,17 +571,19 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Simulate 50% unbonding slash via hook.
 	slashAmount := pos.Amount.QuoRaw(2)
 	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, slashAmount)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	posState, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	amount, err := s.keeper.PositionAmount(s.ctx, posState)
 	s.Require().NoError(err)
 	expectedRemaining := lockAmount.Sub(slashAmount)
-	s.Require().Equal(expectedRemaining.String(), pos.Amount.String(),
+	s.Require().Equal(expectedRemaining.String(), amount.String(),
 		"position amount should reflect partial slash")
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
@@ -598,7 +603,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.Require().Equal(expectedRemaining.String(), balAfter.Amount.Sub(balBefore.Amount).String(),
 		"owner balance increase should match withdrawn amount")
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
@@ -649,7 +654,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
 	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(addAmount)),
 		"owner should receive 2000 back")
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 

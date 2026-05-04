@@ -128,9 +128,6 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 			if err != nil {
 				return err
 			}
-			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
-				return err
-			}
 			if err := k.increasePositionCountForValidator(ctx, valAddr); err != nil {
 				return err
 			}
@@ -181,9 +178,6 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err != nil {
 			return err
 		}
-		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
-			return err
-		}
 		if err := k.decreasePositionCountForValidator(ctx, oldVal); err != nil {
 			return err
 		}
@@ -191,9 +185,6 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 	if newDelegated && (!oldDelegated || changedValidator) {
 		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
 		if err != nil {
-			return err
-		}
-		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
 			return err
 		}
 		if err := k.increasePositionCountForValidator(ctx, newVal); err != nil {
@@ -248,9 +239,6 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		if err != nil {
 			return err
 		}
-		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
-			return err
-		}
 		if err := k.decreasePositionCountForValidator(ctx, valAddr); err != nil {
 			return err
 		}
@@ -263,51 +251,7 @@ func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress
 	return collectPairKeySetK2(ctx, k.PositionsByOwner, rng)
 }
 
-func (k Keeper) getPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
-	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
-	return collectPairKeySetK2(ctx, k.PositionsByValidator, rng)
-}
-
-func (k Keeper) getPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
-	positions := make([]types.Position, 0, len(ids))
-	for _, id := range ids {
-		pos, err := k.getPosition(ctx, id)
-		if errors.Is(err, types.ErrPositionNotFound) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		positions = append(positions, pos)
-	}
-	return positions, nil
-}
-
-func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByOwner(ctx, owner)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
-}
-
-func (k Keeper) getPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByValidator(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
-}
-
 func (k Keeper) getPositionsIdsByTier(ctx context.Context, tierId uint32) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[uint32, uint64](tierId)
 	return collectPairKeySetK2(ctx, k.PositionsByTier, rng)
-}
-
-func (k Keeper) getPositionsByTier(ctx context.Context, tierId uint32) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByTier(ctx, tierId)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
 }

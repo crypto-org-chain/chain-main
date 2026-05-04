@@ -396,7 +396,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_NotDelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
@@ -424,7 +424,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_ActiveRedelegation() {
 	s.advancePastExitDuration()
 
 	// Re-fetch position after redelegate (validator changed).
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	newValAddr := sdk.MustValAddressFromBech32(pos.Validator)

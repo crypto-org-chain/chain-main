@@ -23,7 +23,7 @@ func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	return nil
 }
 
-func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.PositionState, owner string) error {
+func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -46,7 +46,7 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 		return types.ErrTierIsCloseOnly
 	}
 
-	amount, err := k.positionAmount(ctx, pos)
+	amount, err := k.undelegatedAmount(ctx, pos)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position
 	return nil
 }
 
-func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.PositionState, owner string) error {
+func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -114,7 +114,7 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) validateAddToPosition(ctx context.Context, pos types.PositionState, owner string) error {
+func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -135,7 +135,7 @@ func (k Keeper) validateAddToPosition(ctx context.Context, pos types.PositionSta
 	return nil
 }
 
-func (k Keeper) validateTriggerExit(pos types.PositionState, owner string) error {
+func (k Keeper) validateTriggerExit(pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -147,7 +147,7 @@ func (k Keeper) validateTriggerExit(pos types.PositionState, owner string) error
 	return nil
 }
 
-func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionState, owner string) error {
+func (k Keeper) validateClearPosition(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -180,7 +180,7 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionSta
 	return nil
 }
 
-func (k Keeper) validateClaimRewards(pos types.PositionState, owner string) error {
+func (k Keeper) validateClaimRewards(pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -188,7 +188,7 @@ func (k Keeper) validateClaimRewards(pos types.PositionState, owner string) erro
 	return nil
 }
 
-func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.PositionState, owner string) error {
+func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}

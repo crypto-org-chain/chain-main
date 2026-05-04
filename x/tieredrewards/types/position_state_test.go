@@ -4,10 +4,9 @@ import (
 	"testing"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"github.com/stretchr/testify/require"
 
 	sdkmath "cosmossdk.io/math"
-
-	"github.com/stretchr/testify/require"
 
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )

@@ -42,14 +42,14 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	hooks := s.keeper.Hooks()
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Position should not be modified by the hook.
@@ -78,7 +78,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	s.setupNewTierPosition(lockAmount, false)
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
@@ -117,7 +117,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 		s.Require().NoError(err)
 	}
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 3)
 
@@ -134,7 +134,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 
 	// Positions should NOT be modified.
 	for _, p := range positions {
-		posAfter, err := s.keeper.GetPosition(s.ctx, p.Id)
+		posAfter, err := s.keeper.LoadPositionState(s.ctx, p.Id)
 		s.Require().NoError(err)
 		s.Require().Equal(p.Amount, posAfter.Amount,
 			"position %d Amount should not change during slash hook", p.Id)
@@ -170,7 +170,7 @@ func (s *KeeperSuite) TestAfterValidatorBonded_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
@@ -181,7 +181,7 @@ func (s *KeeperSuite) TestAfterValidatorBonded_DoesNotModifyPosition() {
 	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by AfterValidatorBonded hook (lazy)")
@@ -227,7 +227,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -238,7 +238,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	err = hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by unbonding hook (lazy)")

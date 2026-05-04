@@ -1,14 +1,18 @@
 package keeper_test
 
 import (
+	"time"
+
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // setupRedelegatingPosition creates a position with redelegation
-func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
+func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.PositionState, uint64) {
 	s.T().Helper()
 	pos := s.setupNewTierPosition(lockAmount, false)
 
@@ -21,28 +25,7 @@ func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.P
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().NoError(err)
-	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	return updatedPos, res.UnbondingId
-}
-
-// setupUnbondingPosition creates a position and maps it to the given
-// unbonding ID via UnbondingDelegationMappings, simulating a position
-// whose unbonding delegation can be slashed.
-func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Position, uint64) {
-	s.T().Helper()
-	pos := s.setupNewTierPosition(lockAmount, true)
-	s.advancePastExitDuration()
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	res, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      pos.Owner,
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	updatedPos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	updatedPos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	return updatedPos, res.UnbondingId
@@ -51,56 +34,6 @@ func (s *KeeperSuite) setupUnbondingPosition(lockAmount sdkmath.Int) (types.Posi
 // ---------------------------------------------------------------------------
 // slashRedelegationPosition tests (AfterRedelegationSlashed)
 // ---------------------------------------------------------------------------
-
-// Redelegation slash reduces DelegatedShares.
-func (s *KeeperSuite) TestSlashRedelegationPosition_ReducesDelegatedShares() {
-	lockAmount := sdkmath.NewInt(10000)
-
-	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
-	origShares := pos.DelegatedShares
-	s.Require().True(origShares.IsPositive())
-	s.Require().True(pos.Amount.IsZero(), "delegated position should have Amount = 0")
-
-	// Use 10% of actual shares so the position stays delegated after slash.
-	slashTokens := sdkmath.NewInt(1000)
-	shareBurnt := origShares.Quo(sdkmath.LegacyNewDec(10))
-
-	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
-	s.Require().NoError(err)
-
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	s.Require().True(updated.Amount.IsZero(),
-		"Amount should remain zero for delegated position after redelegation slash")
-	s.Require().True(updated.DelegatedShares.Equal(origShares.Sub(shareBurnt)),
-		"DelegatedShares should be reduced; got %s, want %s", updated.DelegatedShares, origShares.Sub(shareBurnt))
-	s.Require().True(updated.IsDelegated(), "position should still be delegated")
-}
-
-// When all shares are burnt, the position should clear its delegation and set amount to zero.
-func (s *KeeperSuite) TestSlashRedelegationPosition_AllSharesBurnt() {
-	lockAmount := sdkmath.NewInt(5000)
-
-	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
-	shares := pos.DelegatedShares
-
-	// all tokens should be slashed if all shares are burnt
-	slashTokens := lockAmount
-	shareBurnt := shares.Add(sdkmath.LegacyOneDec())
-
-	err := s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, unbondingId, slashTokens, shareBurnt)
-	s.Require().NoError(err)
-
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	s.Require().False(updated.IsDelegated(),
-		"position should have cleared delegation when shareBurnt exceeds shares")
-	s.Require().True(updated.DelegatedShares.IsZero())
-	s.Require().True(updated.Amount.IsZero(),
-		"Amount should be zero when all shares are destroyed")
-}
 
 // Unknown unbondingId is a no-op (non-tier delegation).
 func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
@@ -111,55 +44,41 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_UnknownId() {
 	s.Require().NoError(err) // no-op, no error
 }
 
-// ---------------------------------------------------------------------------
-// slashUnbondingDelegationPosition tests (AfterUnbondingDelegationSlashed)
-// ---------------------------------------------------------------------------
+// TestSlashRedelegationPosition_ClaimsBonusRewardsUpToSlash verifies that when
+// a redelegation slash fires, any bonus accrued on the destination delegation
+// since the last accrual checkpoint is paid out to the position owner, and the
+// position's bonus-state checkpoints (LastBonusAccrual, LastKnownBonded) are
+// advanced.
+func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsBonusRewardsUpToSlash() {
+	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
+	_, bondDenom := s.getStakingData()
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000_000), bondDenom)
 
-// Unbonding delegation slash reduces Amount.
-func (s *KeeperSuite) TestSlashUnbondingDelegationPosition_ReducesAmount() {
-	lockAmount := sdkmath.NewInt(6000)
+	pos, unbondingId := s.setupRedelegatingPosition(lockAmount)
+	owner := sdk.MustAccAddressFromBech32(pos.Owner)
+	preAccrual := pos.LastBonusAccrual
 
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	// Advance block time so bonus accrues on the destination validator.
+	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
+	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(30 * 24 * time.Hour))
 
-	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
-	slashTokens := sdkmath.NewInt(900)
+	balBefore := s.app.BankKeeper.GetBalance(s.ctx, owner, bondDenom)
 
-	err = s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, unbondingId, slashTokens)
-	s.Require().NoError(err)
-
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-
-	s.Require().True(updated.Amount.Equal(lockAmount.Sub(slashTokens)))
-}
-
-// Unbonding redelegation slash floors Amount at zero when slash exceeds Amount.
-func (s *KeeperSuite) TestSlashUnbondingRedelegationPosition_FloorsAtZero() {
-	lockAmount := sdkmath.NewInt(4000)
-
-	bondDenom, err := s.app.StakingKeeper.BondDenom(s.ctx)
-	s.Require().NoError(err)
-	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
-
-	pos, unbondingId := s.setupUnbondingPosition(lockAmount)
-
-	err = s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, unbondingId, sdkmath.NewInt(999999))
+	err := s.keeper.Hooks().AfterRedelegationSlashed(
+		s.ctx, unbondingId, sdkmath.NewInt(100), sdkmath.LegacyNewDec(50))
 	s.Require().NoError(err)
 
-	updated, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().True(updated.Amount.IsZero(), "Amount should floor at zero when slash exceeds position amount")
-}
+	balAfter := s.app.BankKeeper.GetBalance(s.ctx, owner, bondDenom)
+	s.Require().True(balAfter.Amount.GT(balBefore.Amount),
+		"owner should have received bonus rewards accrued up to slash: before=%s after=%s",
+		balBefore.Amount, balAfter.Amount)
 
-// Unknown unbonding IDs should be no-op for both unbonding slash callbacks.
-func (s *KeeperSuite) TestSlashUnbondingPosition_UnknownIdNoOp() {
-	s.setupTier(1)
-
-	err := s.keeper.Hooks().AfterUnbondingDelegationSlashed(s.ctx, 999, sdkmath.NewInt(100))
+	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-
-	err = s.keeper.Hooks().AfterUnbondingRedelegationSlashed(s.ctx, 1000, sdkmath.NewInt(200))
-	s.Require().NoError(err)
+	s.Require().True(updated.LastBonusAccrual.After(preAccrual),
+		"LastBonusAccrual should have advanced past the pre-slash checkpoint")
+	s.Require().Equal(s.ctx.BlockTime(), updated.LastBonusAccrual,
+		"LastBonusAccrual should advance to the slash block time")
+	s.Require().True(updated.LastKnownBonded,
+		"LastKnownBonded should remain true — destination validator is still bonded")
 }

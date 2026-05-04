@@ -101,9 +101,6 @@ message Position {
 }
 
 // PositionResponse is the query-facing representation of a position.
-// Unlike the stored Position, the `amount` field always contains the
-// meaningful token value: TokensFromShares for delegated positions,
-// or the stored amount for undelegated positions.
 message PositionResponse {
   uint64 id      = 1;
   string owner   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -122,14 +119,12 @@ message PositionResponse {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
-  google.protobuf.Timestamp last_bonus_accrual = 7
+  google.protobuf.Timestamp exit_triggered_at = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_triggered_at = 8
+  google.protobuf.Timestamp exit_unlock_at = 8
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_unlock_at = 9
-      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  uint64                    created_at_height = 10;
-  google.protobuf.Timestamp created_at_time   = 11
+  uint64                    created_at_height = 9;
+  google.protobuf.Timestamp created_at_time   = 10
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 

@@ -122,12 +122,12 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return err
 }
 
-func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+func (h Hooks) AfterUnbondingDelegationSlashed(_ context.Context, _ uint64, _ sdkmath.Int) error {
+	return nil
 }
 
-func (h Hooks) AfterUnbondingRedelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+func (h Hooks) AfterUnbondingRedelegationSlashed(_ context.Context, _ uint64, _ sdkmath.Int) error {
+	return nil
 }
 
 // AfterRedelegationSlashed updates DelegatedShares when an active destination

@@ -30,7 +30,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(dstValAddr.String(), pos.Validator)
@@ -111,7 +111,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitInProgress() {
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Exit is triggered but NOT elapsed.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit())
 	s.Require().False(pos.CompletedExitLockDuration(s.ctx.BlockTime()))
@@ -125,7 +125,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), pos.Validator)
 	s.Require().True(pos.HasTriggeredExit())
@@ -145,7 +145,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitElapsed() {
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 
 	// Exit has elapsed, position still delegated.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.CompletedExitLockDuration(s.ctx.BlockTime()))
 
@@ -179,10 +179,10 @@ func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	dstValAddr, _ := s.createSecondValidator()
 
-	// Position should be in source validator index
-	srcIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// Position count should be attributed to source validator
+	srcCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Len(srcIds, 1)
+	s.Require().Equal(uint64(1), srcCount)
 
 	_, err = msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        delAddr.String(),
@@ -191,16 +191,15 @@ func (s *KeeperSuite) TestMsgTierRedelegate_UpdatesValidatorIndex() {
 	})
 	s.Require().NoError(err)
 
-	// Source validator index should be empty
-	srcIds, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
+	// Source validator count should be cleared (entry removed).
+	srcCount, err = s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Empty(srcIds)
+	s.Require().Equal(uint64(0), srcCount)
 
-	// Destination validator index should have the position
-	dstIds, err := s.keeper.GetPositionsIdsByValidator(s.ctx, dstValAddr)
+	// Destination validator should own the position now.
+	dstCount, err := s.keeper.GetPositionCountForValidator(s.ctx, dstValAddr)
 	s.Require().NoError(err)
-	s.Require().Len(dstIds, 1)
-	s.Require().Equal(uint64(0), dstIds[0])
+	s.Require().Equal(uint64(1), dstCount)
 }
 
 // TestMsgTierRedelegate_ClaimsRewardsBeforeRedelegating verifies that TierRedelegate
@@ -287,7 +286,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_TransitiveRedelegation() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), pos.Validator, "position should be on validator B")
 
@@ -358,7 +357,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_DstValidatorNotBonded() {
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 
 	// Position should remain on the original validator.
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valAddr.String(), posAfter.Validator, "position should stay on original validator")
 }
@@ -385,7 +384,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// Jail src validator → transitions to Unbonding (not yet Unbonded).
@@ -411,7 +410,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().Greater(redResp.UnbondingId, uint64(0), "unbondingId should be non-zero for unbonding src")
 
 	// Position should now be on the destination validator.
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), posAfter.Validator)
 	s.Require().True(posAfter.DelegatedShares.IsPositive())
@@ -464,7 +463,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// Jail src validator → Unbonding status.
@@ -519,7 +518,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err, "second redelegate should succeed — no transitive block")
 
 	// Position should now be on src validator.
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(srcValAddr.String(), posAfter.Validator)
 }
@@ -580,10 +579,10 @@ func (s *KeeperSuite) TestMsgTierRedelegate_MultiplePositionsNoTransitiveBlock()
 	})
 	s.Require().NoError(err, "pos2 B→A must not be blocked by pos1's pending A→B redelegation")
 
-	pos1, err := s.keeper.GetPosition(s.ctx, pos1Id)
+	pos1, err := s.keeper.LoadPositionState(s.ctx, pos1Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valB.String(), pos1.Validator)
-	pos2, err := s.keeper.GetPosition(s.ctx, pos2Id)
+	pos2, err := s.keeper.LoadPositionState(s.ctx, pos2Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valA.String(), pos2.Validator)
 }

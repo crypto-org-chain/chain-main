@@ -19,7 +19,7 @@ import (
 // TierVotingPowerProvider is the interface the custom gov tally needs from
 // the tiered rewards module.
 type TierVotingPowerProvider interface {
-	GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error)
+	GetPositionStatesByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.PositionState, error)
 }
 
 // GovTallyStakingKeeper is the subset of staking keeper needed by the custom tally function.
@@ -104,7 +104,7 @@ func NewCustomTallyTierVotesFn(
 			// - compute from position delegation/share state via keeper-level helper
 			// - still deduct DelegatedShares from bonded validator second-pass tally
 			//   when the validator is present in the gov validator map
-			positions, err := tierKeeper.GetPositionsByOwner(ctx, voter)
+			positions, err := tierKeeper.GetPositionStatesByOwner(ctx, voter)
 			if err != nil {
 				return false, fmt.Errorf("error getting tier positions for %s: %w", vote.Voter, err)
 			}
@@ -114,9 +114,10 @@ func NewCustomTallyTierVotesFn(
 					continue
 				}
 
-				if val, ok := validators[pos.Validator]; ok {
-					val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.DelegatedShares)
-					validators[pos.Validator] = val
+				valAddr := pos.Delegation.ValidatorAddress
+				if val, ok := validators[valAddr]; ok {
+					val.DelegatorDeductions = val.DelegatorDeductions.Add(pos.Delegation.Shares)
+					validators[valAddr] = val
 				}
 
 				if err := distributeVotingPower(vote.Options, posPower, results); err != nil {

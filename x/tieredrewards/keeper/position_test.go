@@ -13,7 +13,6 @@ import (
 var (
 	testPositionOwner = sdk.AccAddress([]byte("test_pos_owner______")).String()
 	testPosValidator  = sdk.ValAddress([]byte("test_pos_validator__")).String()
-	testPosValidator2 = sdk.ValAddress([]byte("test_pos_validator2_")).String()
 )
 
 func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
@@ -30,7 +29,7 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	err := s.keeper.SetPosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	got, err := s.keeper.GetPosition(s.ctx, 1)
+	got, err := s.keeper.LoadPositionState(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
@@ -44,7 +43,7 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {
-	_, err := s.keeper.GetPosition(s.ctx, 999)
+	_, err := s.keeper.LoadPositionState(s.ctx, 999)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
@@ -92,7 +91,7 @@ func (s *KeeperSuite) TestDeletePosition() {
 
 	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
 
-	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
@@ -144,7 +143,7 @@ func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	err := s.keeper.DeletePosition(s.ctx, pos)
 	s.Require().NoError(err)
 
-	_, err = s.keeper.GetPosition(s.ctx, 1)
+	_, err = s.keeper.LoadPositionState(s.ctx, 1)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
@@ -220,118 +219,6 @@ func (s *KeeperSuite) TestGetPositionsIdsByOwner() {
 	s.Require().NoError(err)
 	s.Require().Len(ids, 1)
 	s.Require().Equal(uint64(2), ids[0])
-}
-
-func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
-	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
-
-	// Undelegated position — should NOT be in validator index
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos1.TriggerExit(pos1.CreatedAtTime, newTestTier(1).ExitDuration)
-	pos1.ClearDelegation()
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-
-	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Empty(ids)
-
-	// Delegated position — should be in validator index
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-	s.Require().Equal(uint64(2), ids[0])
-}
-
-func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
-	valAddr1 := sdk.MustValAddressFromBech32(testPosValidator)
-	valAddr2 := sdk.MustValAddressFromBech32(testPosValidator2)
-
-	// Create position delegated to validator 1
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-
-	// Redelegate to validator 2
-	pos.WithDelegation(types.Delegation{
-		Validator:    testPosValidator2,
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}, time.Now())
-	err = s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	// Validator 1 should have no positions
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
-	s.Require().NoError(err)
-	s.Require().Empty(ids)
-
-	// Validator 2 should have the position
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr2)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-	s.Require().Equal(uint64(1), ids[0])
-}
-
-func (s *KeeperSuite) TestGetPositionsByOwner() {
-	owner := sdk.AccAddress([]byte("test_pos_owner______"))
-
-	pos1 := newTestPosition(1, owner.String(), 1)
-	pos2 := newTestPosition(2, owner.String(), 1)
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, owner)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-}
-
-func (s *KeeperSuite) TestGetPositionsByValidator() {
-	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
-
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-}
-
-func (s *KeeperSuite) TestGetPositionsByIds() {
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 2})
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-
-	// Non existent ID should not throw error
-	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 999})
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-
-	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{})
-	s.Require().NoError(err)
-	s.Require().Empty(positions)
 }
 
 // --- CreatePosition tests ---
@@ -457,7 +344,7 @@ func (s *KeeperSuite) TestPositionCountByValidator_DecrementOnDelete() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 
-	err = s.keeper.DeletePosition(s.ctx, pos)
+	err = s.keeper.DeletePosition(s.ctx, pos.Position)
 	s.Require().NoError(err)
 
 	// Count should be removed (0 → entry deleted from store).
@@ -478,7 +365,7 @@ func (s *KeeperSuite) TestPositionCountByValidator_UndelegatedPosition() {
 	// Now undelegate it — clearing delegation makes it undelegated.
 	pos.ClearDelegation()
 	pos.UpdateAmount(sdkmath.NewInt(1000))
-	err = s.keeper.SetPosition(s.ctx, pos)
+	err = s.keeper.SetPosition(s.ctx, pos.Position)
 	s.Require().NoError(err)
 
 	// Count should have decreased.
@@ -486,7 +373,7 @@ func (s *KeeperSuite) TestPositionCountByValidator_UndelegatedPosition() {
 	s.Require().Error(err, "count should be removed after undelegating the only position")
 
 	// Delete the undelegated position — should not affect any validator count.
-	err = s.keeper.DeletePosition(s.ctx, pos)
+	err = s.keeper.DeletePosition(s.ctx, pos.Position)
 	s.Require().NoError(err)
 
 	_ = countBefore // used above

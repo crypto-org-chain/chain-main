@@ -24,19 +24,6 @@ func (k Keeper) getTokensPerShare(ctx context.Context, valAddr sdk.ValAddress) (
 	return val.TokensFromShares(math.LegacyOneDec()), nil
 }
 
-// positionTokenValue returns the live token value of a position:
-// TokensFromShares for delegated, Amount for undelegated.
-func (k Keeper) positionTokenValue(ctx context.Context, pos types.Position) (math.Int, error) {
-	if !pos.IsDelegated() {
-		return pos.Amount, nil
-	}
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return math.Int{}, err
-	}
-	return k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
-}
-
 // reconcileAmountFromShares converts delegation shares to the actual withdrawable
 // token amount under the validator's current exchange rate.
 func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAddress, shares math.LegacyDec) (math.Int, error) {

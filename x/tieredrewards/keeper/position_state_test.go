@@ -4,6 +4,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	"cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -14,7 +15,7 @@ func (s *KeeperSuite) TestLoadPosition_Delegated() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().Equal(pos.Id, state.Id)
@@ -44,10 +45,10 @@ func (s *KeeperSuite) TestLoadPosition_Unbonding() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(state.IsDelegated())
 	s.Require().Equal(pos.IsDelegated(), state.IsDelegated())
@@ -76,10 +77,10 @@ func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(state.IsDelegated())
 	s.Require().Nil(state.Delegation)
@@ -91,7 +92,7 @@ func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 }
 
 func (s *KeeperSuite) TestLoadPosition_NotFound() {
-	_, err := s.keeper.LoadPosition(s.ctx, 99999)
+	_, err := s.keeper.LoadPositionState(s.ctx, 99999)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
@@ -100,7 +101,7 @@ func (s *KeeperSuite) TestPositionAmount_DelegationSlashed() {
 	pos := s.setupNewTierPosition(lockAmount, false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	preSlash, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
@@ -108,7 +109,7 @@ func (s *KeeperSuite) TestPositionAmount_DelegationSlashed() {
 	slashFraction := sdkmath.LegacyNewDecWithPrec(10, 2)
 	s.slashValidatorDirect(valAddr, slashFraction)
 
-	state, err = s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	postSlash, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
@@ -135,13 +136,13 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	slashAmount := pos.Amount.QuoRaw(2)
 	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelResp.UnbondingId, slashAmount)
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	amount, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
@@ -150,7 +151,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 		"derived amount during partial-slash unbonding must match the reduced UD balance")
 }
 
-func (s *KeeperSuite) TestPositionAmount_WithdrawableIncludesOnlyBondDenom() {
+func (s *KeeperSuite) TestPositionAmount_IncludesOnlyBondDenom() {
 	lockAmount := sdkmath.NewInt(1500)
 	pos := s.setupNewTierPosition(lockAmount, true)
 	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
@@ -172,11 +173,35 @@ func (s *KeeperSuite) TestPositionAmount_WithdrawableIncludesOnlyBondDenom() {
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin("dust", sdkmath.NewInt(999)))))
 
-	state, err := s.keeper.LoadPosition(s.ctx, pos.Id)
+	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	amount, err := s.keeper.PositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 
 	s.Require().Equal(lockAmount.String(), amount.String(),
 		"positionAmount must ignore non-bondDenom dust")
+}
+
+// TestGetPositionStatesByOwner_SkipsStaleIndexEntries verifies that a
+// PositionsByOwner entry pointing to a missing Position (a soft consistency
+// bug) is silently skipped rather than failing the whole lookup. The tally
+// path relies on this to avoid halting the end-blocker.
+func (s *KeeperSuite) TestGetPositionStatesByOwner_SkipsStaleIndexEntries() {
+	live := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
+	stale := s.setupNewTierPosition(sdkmath.NewInt(2000), false)
+
+	owner := sdk.MustAccAddressFromBech32(live.Owner)
+	// Both setups use fresh random owners, so force them onto the same owner
+	// index entry for this test.
+	s.Require().NoError(s.keeper.PositionsByOwner.Set(s.ctx,
+		collections.Join(owner, stale.Id)))
+
+	// Delete only the stored Position for the stale entry — the owner index
+	// still references its ID.
+	s.Require().NoError(s.keeper.Positions.Remove(s.ctx, stale.Id))
+
+	states, err := s.keeper.GetPositionStatesByOwner(s.ctx, owner)
+	s.Require().NoError(err, "stale index entry should be skipped, not error")
+	s.Require().Len(states, 1, "only the live position should be returned")
+	s.Require().Equal(live.Id, states[0].Id)
 }

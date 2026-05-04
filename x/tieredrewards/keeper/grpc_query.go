@@ -43,7 +43,11 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 		q.k.Positions,
 		req.Pagination,
 		func(_ uint64, pos types.Position) (types.PositionResponse, error) {
-			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			state, err := q.k.loadPositionState(ctx, pos.Id)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			tokenValue, err := q.k.positionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
@@ -74,15 +78,15 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 		q.k.PositionsByOwner,
 		req.Pagination,
 		func(key collections.Pair[sdk.AccAddress, uint64], _ collections.NoValue) (types.PositionResponse, error) {
-			pos, err := q.k.getPosition(ctx, key.K2())
+			state, err := q.k.loadPositionState(ctx, key.K2())
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			tokenValue, err := q.k.positionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return pos.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(tokenValue), nil
 		},
 		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
 	)
@@ -98,12 +102,12 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.getPosition(ctx, req.PositionId)
+	pos, err := q.k.loadPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenValue, err := q.k.positionTokenValue(ctx, pos)
+	tokenValue, err := q.k.positionAmount(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +139,7 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.getPosition(ctx, req.PositionId)
+	pos, err := q.k.loadPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}

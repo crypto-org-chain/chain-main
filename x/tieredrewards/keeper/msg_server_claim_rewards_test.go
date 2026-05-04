@@ -86,7 +86,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_Basic() {
 	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
 
-	expectedBonusRewards := s.keeper.ComputeSegmentBonus(&pos, tier, pos.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonusRewards := s.keeper.ComputeSegmentBonus(pos, tier, pos.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 
 	// amount stake is half of whats staked in total, so base rewards are half of the distributed
 	expectedBaseRewards := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
@@ -143,7 +143,7 @@ func (s *KeeperSuite) TestClaimTierRewards_ExitingPosition_EarnRewards() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 	s.Require().True(pos.IsDelegated(), "position should be delegated")
@@ -221,7 +221,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_BondedZeroAmount() {
 	// Slash validator 100% to zero out position amount via hook.
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
 
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
@@ -264,9 +264,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	s.Require().NoError(err)
 
 	// Read positions to get their DelegatedShares for expected bonus calculation.
-	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -282,8 +282,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	// Expected bonus: sum of each position's bonus.
 	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
-	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: the module has 2 * lockAmount delegated out of
@@ -393,9 +393,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -416,8 +416,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	// Expected bonus: sum from each validator.
 	tokensPerShare0 := val0.TokensFromShares(sdkmath.LegacyOneDec())
 	tokensPerShare1 := val1.TokensFromShares(sdkmath.LegacyOneDec())
-	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
-	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(pos1, tier, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(pos2, tier, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: on val0, module has lockAmount out of (genesis + lockAmount) = 1/2.
@@ -468,9 +468,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -488,8 +488,8 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	// Expected bonus: each position uses its own tier's BonusApy.
 	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
-	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2)
 
 	// Expected base: module has 2 * lockAmount out of (genesis + 2 * lockAmount) = 2/3.
@@ -550,11 +550,11 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.GetPosition(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.GetPosition(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
-	pos3, err := s.keeper.GetPosition(s.ctx, resp3.PositionId)
+	pos3, err := s.keeper.LoadPositionState(s.ctx, resp3.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -577,9 +577,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 	// Expected bonus: each position uses its own validator + tier.
 	tokensPerShare0 := val0.TokensFromShares(sdkmath.LegacyOneDec())
 	tokensPerShare1 := val1.TokensFromShares(sdkmath.LegacyOneDec())
-	expectedBonus1 := s.keeper.ComputeSegmentBonus(&pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
-	expectedBonus2 := s.keeper.ComputeSegmentBonus(&pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
-	expectedBonus3 := s.keeper.ComputeSegmentBonus(&pos3, tier1, pos3.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
+	expectedBonus1 := s.keeper.ComputeSegmentBonus(pos1, tier1, pos1.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus2 := s.keeper.ComputeSegmentBonus(pos2, tier2, pos2.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare0)
+	expectedBonus3 := s.keeper.ComputeSegmentBonus(pos3, tier1, pos3.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare1)
 	expectedTotalBonus := expectedBonus1.Add(expectedBonus2).Add(expectedBonus3)
 
 	// Expected base: val0 has 2 positions (2/3 of total), val1 has 1 position (1/2 of total).
