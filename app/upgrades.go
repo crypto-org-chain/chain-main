@@ -178,6 +178,25 @@ func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
 		return fmt.Errorf("parse testnet burn addr: %w", err)
 	}
 
+	stakingParams, err := app.StakingKeeper.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("get staking params: %w", err)
+	}
+	originalMaxEntries := stakingParams.MaxEntries
+	// Temporarily lift the cap by one
+	stakingParams.MaxEntries = originalMaxEntries + 1
+	if err := app.StakingKeeper.SetParams(ctx, stakingParams); err != nil {
+		return fmt.Errorf("bump staking MaxEntries: %w", err)
+	}
+	defer func() {
+		stakingParams.MaxEntries = originalMaxEntries
+		if restoreErr := app.StakingKeeper.SetParams(ctx, stakingParams); restoreErr != nil {
+			ctx.Logger().Error("v7-testnet: failed to restore staking MaxEntries",
+				"original", originalMaxEntries, "err", restoreErr)
+			panic("v7-testnet: failed to restore staking MaxEntries")
+		}
+	}()
+
 	delegations, err := app.StakingKeeper.GetDelegatorDelegations(ctx, poolAddr, 1000)
 	if err != nil {
 		return fmt.Errorf("get pool delegations: %w", err)
@@ -188,9 +207,8 @@ func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
 			return fmt.Errorf("parse validator %s: %w", d.ValidatorAddress, err)
 		}
 		if _, _, _, err := app.StakingKeeper.Undelegate(ctx, poolAddr, valAddr, d.Shares); err != nil {
-			ctx.Logger().Error("v7-testnet: pool undelegate failed",
-				"validator", d.ValidatorAddress, "shares", d.Shares.String(), "err", err)
-			continue
+			return fmt.Errorf("v7-testnet: pool undelegate failed at validator %s (shares %s): %w",
+				d.ValidatorAddress, d.Shares, err)
 		}
 		ctx.Logger().Info("v7-testnet: pool undelegated",
 			"validator", d.ValidatorAddress, "shares", d.Shares.String())

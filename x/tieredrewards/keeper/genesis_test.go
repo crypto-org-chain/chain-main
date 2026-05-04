@@ -299,12 +299,11 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 }
 
 func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {
-	tierModuleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	s.keeper.InitGenesis(s.ctx, types.DefaultGenesisState())
 
-	for _, addr := range []sdk.AccAddress{tierModuleAddr, rewardsPoolAddr} {
+	for _, addr := range []sdk.AccAddress{rewardsPoolAddr} {
 		acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
 		s.Require().NotNil(acc, "module account should exist after InitGenesis")
 		_, ok := acc.(sdk.ModuleAccountI)

@@ -51,11 +51,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().NoError(err)
 	s.Require().True(posDel.Shares.Equal(halfShares))
 
-	// Verify that the module account does not hold a delegation.
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
-	s.Require().Error(err, "module account should not hold delegation")
-
 	// Verify that the distribution rewards for this delegation are routed to the owner.
 	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
 	s.Require().NoError(err)
@@ -103,11 +98,6 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 
 	posDelTokens := valAfter.TokensFromShares(posDel.Shares).TruncateInt()
 	s.Require().True(posDelTokens.Equal(delTokensBefore), "position's delegator address should have the full delegation")
-
-	// Verify that the module account does not hold a delegation.
-	moduleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
-	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, moduleAddr, valAddr)
-	s.Require().Error(err, "module account should not hold delegation")
 
 	// Validator tokens should be unchanged
 	s.Require().True(val.Tokens.Equal(valAfter.Tokens), "validator tokens should be unchanged")
@@ -349,4 +339,20 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount(
 	acc := s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr)
 	s.Require().NotNil(acc, "auth account must be created by CommitDelegationToTier")
 	s.Require().Equal(predictedDelAddr, acc.GetAddress())
+}
+
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {
+	s.setupTier(1)
+	delAddr, valAddr := s.getDelegator()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.jailAndUnbondValidator(valAddr)
+
+	_, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: delAddr.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           sdkmath.NewInt(1000),
+	})
+	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
