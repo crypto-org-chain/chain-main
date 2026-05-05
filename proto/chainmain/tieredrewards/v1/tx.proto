@@ -221,8 +221,7 @@ message MsgTierUndelegateResponse {
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
   // position_id echoes the undelegated position ID.
-  uint64 position_id  = 2;
-  uint64 unbonding_id = 3;
+  uint64 position_id = 2;
 }
 
 // MsgTierRedelegate moves a position's delegation from one validator to another.
@@ -246,8 +245,7 @@ message MsgTierRedelegateResponse {
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
   // position_id echoes the redelegated position ID.
-  uint64 position_id  = 2;
-  uint64 unbonding_id = 3;
+  uint64 position_id = 2;
 }
 
 // MsgAddToTierPosition adds tokens to an existing position.

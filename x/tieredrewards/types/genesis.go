@@ -53,26 +53,23 @@ func ValidateGenesis(data GenesisState) error {
 		return fmt.Errorf("next_position_id (%d) must be greater than the highest position ID (%d)", data.NextPositionId, maxPosID)
 	}
 
-	seenUnbondingIDs := make(map[uint64]struct{}, len(data.UnbondingDelegationMappings))
-	for i, mapping := range data.UnbondingDelegationMappings {
-		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
-			return fmt.Errorf("duplicate unbonding ID %d at index %d", mapping.UnbondingId, i)
+	seenDelAddrs := make(map[string]struct{}, len(data.RedelegatingPositions))
+	for i, entry := range data.RedelegatingPositions {
+		if _, dup := seenDelAddrs[entry.DelegatorAddress]; dup {
+			return fmt.Errorf("duplicate redelegating delegator address %q at index %d", entry.DelegatorAddress, i)
 		}
-		seenUnbondingIDs[mapping.UnbondingId] = struct{}{}
+		seenDelAddrs[entry.DelegatorAddress] = struct{}{}
 
-		if _, ok := posIDs[mapping.PositionId]; !ok {
-			return fmt.Errorf("unbonding mapping at index %d references unknown position ID %d", i, mapping.PositionId)
+		if _, ok := posIDs[entry.PositionId]; !ok {
+			return fmt.Errorf("redelegating position at index %d references unknown position ID %d", i, entry.PositionId)
 		}
-	}
-	// redelegation unbonding ids share the same global counter as unbonding delegation ids, so there should be no duplicates.
-	for i, mapping := range data.RedelegationMappings {
-		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
-			return fmt.Errorf("duplicate redelegation ID %d at index %d", mapping.UnbondingId, i)
-		}
-		seenUnbondingIDs[mapping.UnbondingId] = struct{}{}
 
-		if _, ok := posIDs[mapping.PositionId]; !ok {
-			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, mapping.PositionId)
+		expectedDelAddr := GetDelegatorAddress(entry.PositionId).String()
+		if entry.DelegatorAddress != expectedDelAddr {
+			return fmt.Errorf(
+				"redelegating position at index %d has delegator address %q, expected %q for position ID %d",
+				i, entry.DelegatorAddress, expectedDelAddr, entry.PositionId,
+			)
 		}
 	}
 

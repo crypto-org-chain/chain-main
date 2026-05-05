@@ -38,7 +38,6 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryRawTierPositionsByOwner(),
 		GetCmdQueryRawAllTierPositions(),
 		GetCmdQueryValidatorData(),
-		GetCmdQueryPositionMappings(),
 	)
 
 	return queryCmd
@@ -334,23 +333,6 @@ func GetCmdQueryValidatorData() *cobra.Command {
 			}
 			return queryClient.ValidatorData(ctx, &types.QueryValidatorDataRequest{
 				Validator: args[0],
-			})
-		},
-	)
-}
-
-func GetCmdQueryPositionMappings() *cobra.Command {
-	return newQueryCmd(
-		"position-mappings [position-id]",
-		cobra.ExactArgs(1),
-		"Query unbonding and redelegation ID mappings for a position",
-		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
-			positionID, err := parseUint64Arg("position-id", args[0])
-			if err != nil {
-				return nil, err
-			}
-			return queryClient.PositionMappings(ctx, &types.QueryPositionMappingsRequest{
-				PositionId: positionID,
 			})
 		},
 	)

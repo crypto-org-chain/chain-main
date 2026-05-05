@@ -522,27 +522,10 @@ func (s *KeeperSuite) TestGRPCQueryValidatorData_Empty() {
 // Position mappings
 // ---------------------------------------------------------------------------
 
-func (s *KeeperSuite) TestGRPCQueryPositionMappings_AfterUndelegate() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), true)
-
-	_, bondDenom := s.getStakingData()
-	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
-	s.advancePastExitDuration()
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      pos.Owner,
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
-	s.Require().NoError(err)
-	s.Require().Len(resp.UnbondingIds, 1, "should have 1 unbonding mapping")
-	s.Require().Empty(resp.RedelegationIds)
-}
-
-func (s *KeeperSuite) TestGRPCQueryPositionMappings_AfterRedelegate() {
+// TestRedelegatingPositionByAddr_AfterRedelegate verifies the keeper records an
+// active redelegation in the reverse mapping so AfterRedelegationSlashed can
+// route slash events back to the position.
+func (s *KeeperSuite) TestRedelegatingPositionByAddr_AfterRedelegate() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	dstValAddr, _ := s.createSecondValidator()
 
@@ -554,17 +537,41 @@ func (s *KeeperSuite) TestGRPCQueryPositionMappings_AfterRedelegate() {
 	})
 	s.Require().NoError(err)
 
-	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
 	s.Require().NoError(err)
-	s.Require().Empty(resp.UnbondingIds)
-	s.Require().Len(resp.RedelegationIds, 1, "should have 1 redelegation mapping")
+	s.Require().True(has, "redelegation mapping should be populated after TierRedelegate")
 }
 
-func (s *KeeperSuite) TestGRPCQueryPositionMappings_Empty() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-
-	resp, err := s.queryClient.PositionMappings(s.ctx.Context(), &types.QueryPositionMappingsRequest{PositionId: pos.Id})
+// TestGRPCQueryRedelegatingPositions_Empty verifies the query returns an empty
+// list when no redelegations are active.
+func (s *KeeperSuite) TestGRPCQueryRedelegatingPositions_Empty() {
+	resp, err := s.queryClient.RedelegatingPositions(
+		s.ctx.Context(), &types.QueryRedelegatingPositionsRequest{},
+	)
 	s.Require().NoError(err)
-	s.Require().Empty(resp.UnbondingIds)
-	s.Require().Empty(resp.RedelegationIds)
+	s.Require().Empty(resp.RedelegatingPositions)
+}
+
+// TestGRPCQueryRedelegatingPositions_ReturnsActiveEntries drives a real
+// redelegation through TierRedelegate, then asserts the query returns the
+// expected {delegator_address, position_id} entry.
+func (s *KeeperSuite) TestGRPCQueryRedelegatingPositions_ReturnsActiveEntries() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
+	dstValAddr, _ := s.createSecondValidator()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+		Owner:        pos.Owner,
+		PositionId:   pos.Id,
+		DstValidator: dstValAddr.String(),
+	})
+	s.Require().NoError(err)
+
+	resp, err := s.queryClient.RedelegatingPositions(
+		s.ctx.Context(), &types.QueryRedelegatingPositionsRequest{},
+	)
+	s.Require().NoError(err)
+	s.Require().Len(resp.RedelegatingPositions, 1)
+	s.Require().Equal(types.GetDelegatorAddress(pos.Id).String(), resp.RedelegatingPositions[0].DelegatorAddress)
+	s.Require().Equal(pos.Id, resp.RedelegatingPositions[0].PositionId)
 }

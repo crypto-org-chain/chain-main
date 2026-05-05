@@ -195,14 +195,9 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 		return err
 	}
 
-	// guard, but should already be deleted by unbonding completion hook.
-	if err := k.deleteUnbondingMappingsForPosition(ctx, pos.Id); err != nil {
-		return err
-	}
-
-	// guard, but should already be deleted by redelegation completion hook,
-	// unless a redelegation position gets slashed to zero after exit duration is elapsed and exits.
-	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
+	// Defensive: remove any stale redelegating-position entry. Should already
+	// be gone via AfterRedelegationCompleted by the time we reach delete.
+	if err := k.deleteRedelegatingPosition(ctx, delAddr); err != nil {
 		return err
 	}
 

@@ -6,8 +6,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	sdkmath "cosmossdk.io/math"
 	collections "cosmossdk.io/collections"
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
@@ -60,7 +60,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_Basic_Undelegated() {
 	s.Require().Error(err, "position should be deleted after withdrawal")
 
 	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().Equal(collections.ErrNotFound, err)
+	s.Require().ErrorIs(err, collections.ErrNotFound)
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_PositionDeletedFromIndexes() {
@@ -202,16 +202,10 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	s.Require().NoError(err)
 	s.Require().False(undelegateResp.CompletionTime.IsZero())
 
-	var mappingExistsBeforeWithdraw bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
-		if positionId == 0 {
-			mappingExistsBeforeWithdraw = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// Position should have a pending unbonding delegation entry in staking.
+	ubdsBefore, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, types.GetDelegatorAddress(pos.Id), 1)
 	s.Require().NoError(err)
-	s.Require().True(mappingExistsBeforeWithdraw, "unbonding mapping should exist before withdrawal")
+	s.Require().NotEmpty(ubdsBefore, "position should have a pending unbonding delegation entry before withdrawal")
 
 	// Position should not be delegated but still exists
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
@@ -240,16 +234,10 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_AfterUndelegate() {
 	_, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().Error(err, "position should be deleted after withdrawal")
 
-	var mappingExistsAfterWithdraw bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, positionId uint64) (bool, error) {
-		if positionId == 0 {
-			mappingExistsAfterWithdraw = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// No residual unbonding entries after completion + withdrawal.
+	ubdsAfter, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, types.GetDelegatorAddress(pos.Id), 1)
 	s.Require().NoError(err)
-	s.Require().False(mappingExistsAfterWithdraw, "unbonding mapping should be cleaned after position deletion")
+	s.Require().Empty(ubdsAfter, "no pending unbonding entries should remain after withdrawal")
 }
 
 func (s *KeeperSuite) TestMsgWithdrawFromTier_MultiplePositions_WithdrawOne() {
@@ -394,7 +382,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	// Verify unbonding mapping exists.
 	hasUnbonding, err := s.keeper.StillUnbonding(s.ctx, 0)
 	s.Require().NoError(err)
-	s.Require().True(hasUnbonding, "unbonding mapping should exist after TierUndelegate")
+	s.Require().True(hasUnbonding, "unbonding delegation should exist after TierUndelegate")
 
 	// Advance time past exit lock duration.
 	s.advancePastExitDuration()
@@ -406,25 +394,13 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	})
 	s.Require().ErrorIs(err, types.ErrPositionUnbonding)
 
-	hooks := s.keeper.Hooks()
-	// Get the unbonding IDs for position 0.
-	iter, err := s.keeper.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
-	s.Require().NoError(err)
-	unbondingIds, err := iter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(unbondingIds)
+	// Advance the staking unbonding period so entries mature.
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
-	// Simulate unbonding completion via hook.
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
-	err = hooks.AfterUnbondingCompleted(s.ctx, posDelAddr, valAddr, unbondingIds)
-	s.Require().NoError(err)
-
-	// Verify mapping is cleaned up.
+	// Verify stillUnbonding reads false once the UD is cleared.
 	hasUnbonding, err = s.keeper.StillUnbonding(s.ctx, 0)
 	s.Require().NoError(err)
-	s.Require().False(hasUnbonding, "unbonding mapping should be cleaned up after hook")
-
-	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
+	s.Require().False(hasUnbonding, "no pending unbonding delegation should remain after completion")
 
 	// Withdrawal should now pass since unbonding entries are cleaned up.
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
@@ -523,7 +499,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	// Undelegate — creates unbonding delegation.
-	undelegateResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
@@ -532,8 +508,8 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedToZero() {
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	// Simulate unbonding slash to zero via hook.
-	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, s.positionAmount(pos))
+	// Simulate unbonding slash to zero.
+	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, s.positionAmount(pos))
 
 	posState, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -571,7 +547,7 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 
 	// Undelegate — creates unbonding delegation.
-	undelegateResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
@@ -580,9 +556,9 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	// Simulate 50% unbonding slash via hook.
+	// Simulate 50% unbonding slash.
 	slashAmount := s.positionAmount(pos).QuoRaw(2)
-	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelegateResp.UnbondingId, slashAmount)
+	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, slashAmount)
 
 	posState, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)

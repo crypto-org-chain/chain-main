@@ -57,18 +57,18 @@ func (k Keeper) delegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sd
 	return k.stakingKeeper.Delegate(ctx, delAddr, amount, stakingtypes.Unbonded, val, true)
 }
 
-func (k Keeper) undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.Int, uint64, error) {
+func (k Keeper) undelegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.Int, error) {
 	return k.stakingKeeper.Undelegate(ctx, delAddr, valAddr, shares)
 }
 
-func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, math.LegacyDec, uint64, error) {
+func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAddr, dstValAddr sdk.ValAddress, shares math.LegacyDec) (time.Time, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, dstValAddr)
 	if err != nil {
-		return time.Time{}, math.LegacyDec{}, 0, err
+		return time.Time{}, err
 	}
 
 	if !val.IsBonded() {
-		return time.Time{}, math.LegacyDec{}, 0, types.ErrValidatorNotBonded
+		return time.Time{}, types.ErrValidatorNotBonded
 	}
 
 	return k.stakingKeeper.BeginRedelegation(ctx, delAddr, srcValAddr, dstValAddr, shares)
@@ -85,4 +85,28 @@ func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingt
 	}
 	d := dels[0]
 	return &d, nil
+}
+
+func (k Keeper) setRedelegatingPosition(ctx context.Context, delAddr sdk.AccAddress, positionId uint64) error {
+	return k.RedelegatingPositionByAddr.Set(ctx, delAddr, positionId)
+}
+
+func (k Keeper) getRedelegatingPositionByAddr(ctx context.Context, delAddr sdk.AccAddress) (uint64, error) {
+	return k.RedelegatingPositionByAddr.Get(ctx, delAddr)
+}
+
+func (k Keeper) deleteRedelegatingPosition(ctx context.Context, delAddr sdk.AccAddress) error {
+	return k.RedelegatingPositionByAddr.Remove(ctx, delAddr)
+}
+
+func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+	return k.RedelegatingPositionByAddr.Has(ctx, types.GetDelegatorAddress(positionId))
+}
+
+func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
+	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, types.GetDelegatorAddress(positionId), 1)
+	if err != nil {
+		return false, err
+	}
+	return len(ubds) > 0, nil
 }

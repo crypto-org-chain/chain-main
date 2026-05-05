@@ -235,12 +235,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	completionTime, _, unbondingId, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
-	if err != nil {
-		return nil, err
-	}
-
-	err = ms.setUnbondingPositionMapping(ctx, unbondingId, pos.Id)
+	completionTime, _, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +252,6 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		TierId:         pos.TierId,
 		Owner:          pos.Owner,
 		Validator:      srcValidator,
-		UnbondingId:    unbondingId,
 		CompletionTime: completionTime,
 	}); err != nil {
 		return nil, err
@@ -266,7 +260,6 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 	return &types.MsgTierUndelegateResponse{
 		CompletionTime: completionTime,
 		PositionId:     pos.Id,
-		UnbondingId:    unbondingId,
 	}, nil
 }
 
@@ -302,16 +295,14 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	completionTime, newShares, unbondingId, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
+	completionTime, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
 	if err != nil {
 		return nil, err
 	}
 
-	// unbondingId == 0 when the src validator is already unbonded.
-	// No redelegation entry is created, so no slash tracking mapping is needed.
-	if unbondingId > 0 {
-		err = ms.setRedelegationPositionMapping(ctx, unbondingId, pos.Id)
-		if err != nil {
+	// completionTime is zero when the src validator is already unbonded, no need to persist any mapping.
+	if !completionTime.IsZero() {
+		if err := ms.setRedelegatingPosition(ctx, delAddr, pos.Id); err != nil {
 			return nil, err
 		}
 	}
@@ -335,8 +326,6 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		Owner:          pos.Owner,
 		SrcValidator:   srcValidator,
 		DstValidator:   msg.DstValidator,
-		NewShares:      newShares,
-		UnbondingId:    unbondingId,
 		CompletionTime: completionTime,
 	}); err != nil {
 		return nil, err
@@ -345,7 +334,6 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	return &types.MsgTierRedelegateResponse{
 		CompletionTime: completionTime,
 		PositionId:     pos.Id,
-		UnbondingId:    unbondingId,
 	}, nil
 }
 

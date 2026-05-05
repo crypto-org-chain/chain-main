@@ -7,16 +7,18 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/collections"
-	"cosmossdk.io/math"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // slashRedelegationPosition processes bonus rewards owed up to the slash point
-// for a redelegating positions.
+// for a redelegating position, and reconciles the validator-position counter if
+// the slash fully burned the destination delegation.
 //
 // Base rewards will already have been auto-withdrawn to the owner via
 // distribution's BeforeDelegationSharesModified hook by the time this fires.
-func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint64, _ math.LegacyDec) error {
-	positionId, err := k.RedelegationMappings.Get(ctx, unbondingId)
+func (k Keeper) slashRedelegationPosition(ctx context.Context, delAddr sdk.AccAddress, dstValAddr sdk.ValAddress) error {
+	positionId, err := k.getRedelegatingPositionByAddr(ctx, delAddr)
 	if errors.Is(err, collections.ErrNotFound) {
 		return nil
 	}
@@ -30,9 +32,9 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 			"position_id", positionId,
 			"error", err.Error(),
 		)
-		return k.deleteRedelegationPositionMapping(ctx, unbondingId)
+		// Defensive: clean the stale mapping entry.
+		return k.deleteRedelegatingPosition(ctx, delAddr)
 	}
-
 	if err != nil {
 		return err
 	}
@@ -51,11 +53,9 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 
 	if !pos.IsDelegated() {
 		pos.ResetBonusCheckpoints()
+		return k.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: dstValAddr.String()})
 	}
 
-	// Partial slash keeps the same validator → no attribution change, pass
-	// nil. Full slash (pos.Delegation == nil) removes the delegation, but we
-	// don't have the pre-slash validator here, so the counter stays stale
-	// until `AfterRedelegationSlashed` carries the dst validator.
+	// No validator change in position is still delegated
 	return k.setPosition(ctx, pos.Position, nil)
 }

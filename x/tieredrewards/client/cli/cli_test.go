@@ -610,13 +610,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryValidatorDataExec(val.ClientCtx, validator)
 		}, &resp)
 	})
-
-	s.Run("position-mappings", func() {
-		var resp tieredrewardstypes.QueryPositionMappingsResponse
-		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-			return tieredrewardstestutil.QueryPositionMappingsExec(val.ClientCtx, "0")
-		}, &resp)
-	})
 }
 
 func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {

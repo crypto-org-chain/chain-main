@@ -130,7 +130,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	s.advancePastExitDuration()
 
-	undelResp, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
 		Owner:      pos.Owner,
 		PositionId: pos.Id,
 	})
@@ -140,7 +140,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	s.Require().NoError(err)
 
 	slashAmount := s.positionAmount(pos).QuoRaw(2)
-	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, undelResp.UnbondingId, slashAmount)
+	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, slashAmount)
 
 	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)

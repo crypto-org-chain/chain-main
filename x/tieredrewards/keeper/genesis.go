@@ -72,14 +72,22 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, mapping := range data.UnbondingDelegationMappings {
-		if err := k.setUnbondingPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
-			panic(err)
+	for _, entry := range data.RedelegatingPositions {
+		delAddr, err := sdk.AccAddressFromBech32(entry.DelegatorAddress)
+		if err != nil {
+			panic(fmt.Errorf("invalid redelegating delegator address %q: %w", entry.DelegatorAddress, err))
 		}
-	}
-
-	for _, mapping := range data.RedelegationMappings {
-		if err := k.setRedelegationPositionMapping(ctx, mapping.UnbondingId, mapping.PositionId); err != nil {
+		reds, err := k.stakingKeeper.GetRedelegations(ctx, delAddr, 1)
+		if err != nil {
+			panic(fmt.Errorf("failed to query staking redelegations for position %d: %w", entry.PositionId, err))
+		}
+		if len(reds) == 0 {
+			panic(fmt.Errorf(
+				"redelegating position %d (delegator %s) has no active staking redelegation",
+				entry.PositionId, entry.DelegatorAddress,
+			))
+		}
+		if err := k.setRedelegatingPosition(ctx, delAddr, entry.PositionId); err != nil {
 			panic(err)
 		}
 	}
@@ -151,23 +159,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var unbondingDelegationMappings []types.UnbondingMapping
-	err = k.UnbondingDelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
-		unbondingDelegationMappings = append(unbondingDelegationMappings, types.UnbondingMapping{
-			UnbondingId: unbondingId,
-			PositionId:  positionId,
-		})
-		return false, nil
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	var redelegationMappings []types.UnbondingMapping
-	err = k.RedelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
-		redelegationMappings = append(redelegationMappings, types.UnbondingMapping{
-			UnbondingId: unbondingId,
-			PositionId:  positionId,
+	var redelegatingPositions []types.RedelegatingPosition
+	err = k.RedelegatingPositionByAddr.Walk(ctx, nil, func(delAddr sdk.AccAddress, positionId uint64) (bool, error) {
+		redelegatingPositions = append(redelegatingPositions, types.RedelegatingPosition{
+			DelegatorAddress: delAddr.String(),
+			PositionId:       positionId,
 		})
 		return false, nil
 	})
@@ -201,13 +197,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	return &types.GenesisState{
-		Params:                      params,
-		Tiers:                       tiers,
-		Positions:                   positions,
-		NextPositionId:              nextPositionId,
-		UnbondingDelegationMappings: unbondingDelegationMappings,
-		RedelegationMappings:        redelegationMappings,
-		ValidatorEvents:             validatorEvents,
-		ValidatorEventSeqs:          validatorEventSeqs,
+		Params:                params,
+		Tiers:                 tiers,
+		Positions:             positions,
+		NextPositionId:        nextPositionId,
+		RedelegatingPositions: redelegatingPositions,
+		ValidatorEvents:       validatorEvents,
+		ValidatorEventSeqs:    validatorEventSeqs,
 	}
 }

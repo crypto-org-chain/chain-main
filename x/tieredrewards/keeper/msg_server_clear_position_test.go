@@ -200,11 +200,10 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	})
 	s.Require().NoError(err)
 
-	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
 	s.Require().NoError(err)
-	redelegationIDs, err := redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should exist after TierRedelegate")
+	s.Require().True(has, "redelegation mapping should exist after TierRedelegate")
 
 	s.advancePastExitDuration()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -221,11 +220,9 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	redelegationIter, err = s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	has, err = s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
 	s.Require().NoError(err)
-	redelegationIDs, err = redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "clearing exit should not delete pending redelegation tracking")
+	s.Require().True(has, "clearing exit should not delete pending redelegation tracking")
 }
 
 // TestClearPositionAfterRedelegationSlashAllSharesBurnt verifies
@@ -237,7 +234,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	dstValAddr, _ := s.createSecondValidator()
 
-	redelegateResp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        delAddr.String(),
 		PositionId:   pos.Id,
 		DstValidator: dstValAddr.String(),
@@ -250,8 +247,9 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	s.Require().True(posBeforeSlash.IsDelegated(), "test setup failed: position should be delegated before slash")
 
 	// Burn all shares through redelegation slash callback.
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
 	shareBurnt := posBeforeSlash.Delegation.Shares.Add(sdkmath.LegacyOneDec())
-	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, redelegateResp.UnbondingId, s.positionAmount(posBeforeSlash), shareBurnt)
+	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, posDelAddr, dstValAddr, s.positionAmount(posBeforeSlash), shareBurnt)
 	s.Require().NoError(err)
 
 	s.slashRedelegationCompletely(posBeforeSlash)
@@ -265,11 +263,9 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
 	// the slash has already cleared delegation from the position.
-	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, pos.Id)
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
 	s.Require().NoError(err)
-	redelegationIDs, err := redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should remain active for this corner case")
+	s.Require().True(has, "redelegation mapping should remain active for this corner case")
 
 	s.advancePastExitDuration()
 

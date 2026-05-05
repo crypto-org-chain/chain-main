@@ -37,28 +37,10 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().True(pos.Delegation.Shares.IsPositive())
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh destination validator")
 
-	// Verify redelegation unbonding ID was written to RedelegationMappings, not UnbondingDelegationMappings.
-	var redelegationFound bool
-	err = s.keeper.RedelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			redelegationFound = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// Verify the redelegating-position reverse mapping was populated.
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
 	s.Require().NoError(err)
-	s.Require().True(redelegationFound, "redelegation unbonding ID should be stored in RedelegationMappings")
-
-	var unbondingFound bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			unbondingFound = true
-			return true, nil
-		}
-		return false, nil
-	})
-	s.Require().NoError(err)
-	s.Require().False(unbondingFound, "redelegation unbonding ID should NOT be in UnbondingDelegationMappings")
+	s.Require().True(has, "redelegating position mapping should be populated after TierRedelegate")
 }
 
 func (s *KeeperSuite) TestMsgTierRedelegate_NotDelegated() {
@@ -406,8 +388,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().NoError(err)
-	s.Require().False(redResp.CompletionTime.IsZero(), "completion time should be set")
-	s.Require().Greater(redResp.UnbondingId, uint64(0), "unbondingId should be non-zero for unbonding src")
+	s.Require().False(redResp.CompletionTime.IsZero(), "completion time should be set for unbonding src")
 
 	// Position should now be on the destination validator.
 	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
@@ -415,8 +396,8 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().Equal(dstValAddr.String(), posAfter.Delegation.ValidatorAddress)
 	s.Require().True(posAfter.Delegation.Shares.IsPositive())
 
-	// RedelegationMappings should contain the entry (unlike the fully-Unbonded case).
-	has, err := s.keeper.RedelegationMappings.Has(s.ctx, redResp.UnbondingId)
+	// Reverse mapping should contain the entry (unlike the fully-Unbonded case).
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should exist for unbonding src redelegate")
 
@@ -492,10 +473,10 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	})
 	s.Require().NoError(err)
 
-	// No mapping for unbondingId=0.
-	has, err := s.keeper.RedelegationMappings.Has(s.ctx, 0)
+	// No mapping for the unbonded-src path: staking elided the redelegation entry.
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
 	s.Require().NoError(err)
-	s.Require().False(has, "no mapping should exist at unbondingId=0")
+	s.Require().False(has, "no reverse mapping should be written when src is fully unbonded")
 
 	// stillRedelegating is false — no redelegation entry was created.
 	redel, err := s.keeper.StillRedelegating(s.ctx, pos.Id)

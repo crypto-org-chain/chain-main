@@ -10,13 +10,10 @@ var (
 	PositionsByOwnerKey           = collections.NewPrefix(4)
 	PositionsByTierKey            = collections.NewPrefix(5)
 	PositionCountByTierKey        = collections.NewPrefix(6)
-	UnbondingIdToPositionIdKey    = collections.NewPrefix(7)
-	UnbondingIdsByPositionKey     = collections.NewPrefix(8)
-	RedelegationIdToPositionIdKey = collections.NewPrefix(9)
-	RedelegationIdsByPositionKey  = collections.NewPrefix(10)
-	ValidatorEventsKey            = collections.NewPrefix(11)
-	ValidatorEventSeqKey          = collections.NewPrefix(12)
-	PositionCountByValidatorKey   = collections.NewPrefix(13)
+	RedelegatingPositionByAddrKey = collections.NewPrefix(7)
+	ValidatorEventsKey            = collections.NewPrefix(8)
+	ValidatorEventSeqKey          = collections.NewPrefix(9)
+	PositionCountByValidatorKey   = collections.NewPrefix(10)
 )
 
 const (

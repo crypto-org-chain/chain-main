@@ -6,8 +6,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	sdkmath "cosmossdk.io/math"
 	collections "cosmossdk.io/collections"
+	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
@@ -50,7 +50,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_Basic() {
 	s.Require().Equal(pos.Delegation.Shares, del.Shares, "owner should hold the full delegation shares")
 
 	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().Equal(collections.ErrNotFound, err)
+	s.Require().ErrorIs(err, collections.ErrNotFound)
 }
 
 func (s *KeeperSuite) TestMsgExitTierWithDelegation_Partial() {

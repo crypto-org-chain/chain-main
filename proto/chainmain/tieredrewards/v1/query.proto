@@ -2,6 +2,7 @@ syntax = "proto3";
 package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
+import "chainmain/tieredrewards/v1/genesis.proto";
 import "chainmain/tieredrewards/v1/params.proto";
 import "chainmain/tieredrewards/v1/types.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
@@ -83,9 +84,10 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/validator_data/{validator}";
   }
 
-  // PositionMappings returns unbonding and redelegation mappings for a given position.
-  rpc PositionMappings(QueryPositionMappingsRequest) returns (QueryPositionMappingsResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/position_mappings/{position_id}";
+  // RedelegatingPositions returns all tier positions currently undergoing a
+  // staking redelegation, keyed by the position's delegator address.
+  rpc RedelegatingPositions(QueryRedelegatingPositionsRequest) returns (QueryRedelegatingPositionsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/redelegating_positions";
   }
 }
 
@@ -256,16 +258,16 @@ message QueryValidatorDataResponse {
   uint64 event_current_seq = 3;
 }
 
-// QueryPositionMappingsRequest is the request type for the Query/PositionMappings RPC method.
-message QueryPositionMappingsRequest {
-  uint64 position_id = 1;
+// QueryRedelegatingPositionsRequest is the request type for the
+// Query/RedelegatingPositions RPC method.
+message QueryRedelegatingPositionsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-// QueryPositionMappingsResponse is the response type for the Query/PositionMappings RPC method.
-message QueryPositionMappingsResponse {
-  // unbonding_ids are all unbonding IDs mapped to this position.
-  repeated uint64 unbonding_ids = 1;
-
-  // redelegation_ids are all redelegation IDs mapped to this position.
-  repeated uint64 redelegation_ids = 2;
+// QueryRedelegatingPositionsResponse is the response type for the
+// Query/RedelegatingPositions RPC method.
+message QueryRedelegatingPositionsResponse {
+  repeated RedelegatingPosition redelegating_positions = 1
+      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

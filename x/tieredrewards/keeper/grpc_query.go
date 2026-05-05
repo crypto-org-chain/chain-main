@@ -279,38 +279,28 @@ func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidato
 	return resp, nil
 }
 
-func (q queryServer) PositionMappings(ctx context.Context, req *types.QueryPositionMappingsRequest) (*types.QueryPositionMappingsResponse, error) {
+func (q queryServer) RedelegatingPositions(ctx context.Context, req *types.QueryRedelegatingPositionsRequest) (*types.QueryRedelegatingPositionsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	resp := &types.QueryPositionMappingsResponse{}
-
-	unbondIter, err := q.k.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
+	entries, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.RedelegatingPositionByAddr,
+		req.Pagination,
+		func(delAddr sdk.AccAddress, positionId uint64) (types.RedelegatingPosition, error) {
+			return types.RedelegatingPosition{
+				DelegatorAddress: delAddr.String(),
+				PositionId:       positionId,
+			}, nil
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer unbondIter.Close()
-	for ; unbondIter.Valid(); unbondIter.Next() {
-		pk, err := unbondIter.PrimaryKey()
-		if err != nil {
-			return nil, err
-		}
-		resp.UnbondingIds = append(resp.UnbondingIds, pk)
-	}
 
-	redelIter, err := q.k.RedelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
-	if err != nil {
-		return nil, err
-	}
-	defer redelIter.Close()
-	for ; redelIter.Valid(); redelIter.Next() {
-		pk, err := redelIter.PrimaryKey()
-		if err != nil {
-			return nil, err
-		}
-		resp.RedelegationIds = append(resp.RedelegationIds, pk)
-	}
-
-	return resp, nil
+	return &types.QueryRedelegatingPositionsResponse{
+		RedelegatingPositions: entries,
+		Pagination:            pageResp,
+	}, nil
 }

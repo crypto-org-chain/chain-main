@@ -6,8 +6,8 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
-	sdkmath "cosmossdk.io/math"
 	collections "cosmossdk.io/collections"
+	sdkmath "cosmossdk.io/math"
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -40,30 +40,17 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().Nil(pos.Delegation, "delegation should be cleared")
 
 	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().Equal(collections.ErrNotFound, err)
+	s.Require().ErrorIs(err, collections.ErrNotFound)
 
-	// Verify redelegation unbonding ID was written to UnbondingDelegationMappings, not RedelegationMappings.
-	var unbondingFound bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			unbondingFound = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// The position should have a pending unbonding delegation entry in staking.
+	ubds, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, types.GetDelegatorAddress(pos.Id), 1)
 	s.Require().NoError(err)
-	s.Require().True(unbondingFound, "undelegation unbonding ID should be in UnbondingDelegationMappings")
+	s.Require().NotEmpty(ubds, "position should have a pending unbonding delegation entry")
 
-	var redelegationFound bool
-	err = s.keeper.RedelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			redelegationFound = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// No redelegating-position mapping should exist for a plain undelegate.
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
 	s.Require().NoError(err)
-	s.Require().False(redelegationFound, "undelegation unbonding ID should not be stored in RedelegationMappings")
+	s.Require().False(has, "undelegate must not populate the redelegating-position mapping")
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {

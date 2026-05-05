@@ -35,7 +35,6 @@ func (s *KeeperSuite) seedStakingDelegationForPosition(posId uint64, valAddr sdk
 	s.Require().NoError(err)
 }
 
-
 func (s *KeeperSuite) TestSetAndGetPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	err := s.keeper.SetPosition(s.ctx, pos, nil)
@@ -93,45 +92,26 @@ func (s *KeeperSuite) TestDeletePosition() {
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
-func (s *KeeperSuite) TestDeletePosition_CleansUnbondingMappings() {
+func (s *KeeperSuite) TestDeletePosition_CleansRedelegatingMapping() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 10, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 11, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 12, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 13, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 14, 999)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 15, 999)
-	s.Require().NoError(err)
+	delAddr := types.GetDelegatorAddress(pos.Id)
+	otherAddr := types.GetDelegatorAddress(999)
 
-	err = s.keeper.DeletePosition(s.ctx, pos, nil)
-	s.Require().NoError(err)
+	// Simulate pending redelegation entries for the position and an unrelated one.
+	s.Require().NoError(s.keeper.RedelegatingPositionByAddr.Set(s.ctx, delAddr, pos.Id))
+	s.Require().NoError(s.keeper.RedelegatingPositionByAddr.Set(s.ctx, otherAddr, 999))
 
-	has, err := s.keeper.UnbondingDelegationMappings.Has(s.ctx, 10)
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
+
+	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, delAddr)
 	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, 11)
-	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 12)
-	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 13)
-	s.Require().NoError(err)
-	s.Require().False(has)
+	s.Require().False(has, "redelegating mapping for deleted position should be removed")
 
 	// Unrelated mapping must remain.
-	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, 14)
-	s.Require().NoError(err)
-	s.Require().True(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 15)
+	has, err = s.keeper.RedelegatingPositionByAddr.Has(s.ctx, otherAddr)
 	s.Require().NoError(err)
 	s.Require().True(has)
 }
