@@ -14,6 +14,7 @@
 - [#1271](https://github.com/crypto-org-chain/chain-main/pull/1271) feat(x/tieredrewards): add initial tier definitions in upgrade handler and allow zero MinLockAmount.
 - [#1272](https://github.com/crypto-org-chain/chain-main/pull/1272) feat(x/tieredrewards): claim bonus rewards lazily upon validator event (unbonding/slashing), amount should be zero when delegated and populated when position is undelegated
 - [#1275](https://github.com/crypto-org-chain/chain-main/pull/1275) feat: update testnet upgrade params and tiers.
+- [#1292](https://github.com/crypto-org-chain/chain-main/pull/1292) feat: fetch position delegation state from staking module.
 
 ### Improvements
 
@@ -28,7 +29,6 @@
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 - [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling
-- [#1292](https://github.com/crypto-org-chain/chain-main/pull/1292) refactor: fetch position delegation state from staking module
 
 ### Bugfixes
 
