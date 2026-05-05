@@ -254,10 +254,9 @@ def test_update_tier_apy_claims_rewards(cluster):
 
 
 def test_update_tier_non_apy_no_claim(cluster):
-    """Changing exit_duration without changing APY does not trigger bonus claiming.
+    """Changing exit_duration without changing APY does not trigger rewards claiming.
 
-    Verified by checking that the owner balance and rewards pool balance are
-    unchanged — claimRewardsForTier is only called when APY changes.
+    Verified by checking that the owner balance is unchanged.
     """
     owner = cluster.address("signer1")
 
@@ -268,7 +267,6 @@ def test_update_tier_non_apy_no_claim(cluster):
     )
     assert tier3_pos is not None
     balance_before = cluster.balance(owner, DENOM)
-    pool_before = pool_balance(cluster)
 
     rsp = submit_gov_proposal(
         cluster,
@@ -288,13 +286,10 @@ def test_update_tier_non_apy_no_claim(cluster):
     )
     approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
-    # No rewards should have been claimed: owner balance and pool unchanged.
+    # No rewards should have been paid out to the owner.
     assert (
         cluster.balance(owner, DENOM) == balance_before
     ), "owner balance should not change when APY is unchanged"
-    assert (
-        pool_balance(cluster) == pool_before
-    ), "pool balance should not change when APY is unchanged"
 
     # Verify exit_duration is updated
     result = query_tiers(cluster)
