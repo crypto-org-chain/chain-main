@@ -298,12 +298,13 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.RedelegationMappings)
 }
 
-func (s *KeeperSuite) TestInitGenesis_MaterializesTierModuleAccounts() {
+func (s *KeeperSuite) TestInitGenesis_MaterializesModuleAccounts() {
+	tierModuleAddr := s.app.AccountKeeper.GetModuleAddress(types.ModuleName)
 	rewardsPoolAddr := s.app.AccountKeeper.GetModuleAddress(types.RewardsPoolName)
 
 	s.keeper.InitGenesis(s.ctx, types.DefaultGenesisState())
 
-	for _, addr := range []sdk.AccAddress{rewardsPoolAddr} {
+	for _, addr := range []sdk.AccAddress{tierModuleAddr, rewardsPoolAddr} {
 		acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
 		s.Require().NotNil(acc, "module account should exist after InitGenesis")
 		_, ok := acc.(sdk.ModuleAccountI)
