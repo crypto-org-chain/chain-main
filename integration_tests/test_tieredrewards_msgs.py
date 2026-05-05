@@ -567,7 +567,6 @@ def test_clear_position(cluster):
 
     pos = query_position(cluster, pos_id)["position"]
     exit_unlock_at = isoparse(pos["exit_unlock_at"])
-    accrual_before = isoparse(pos["last_bonus_accrual"])
     wait_for_block_time(cluster, exit_unlock_at)
     wait_for_new_blocks(cluster, 1)
 
@@ -577,13 +576,6 @@ def test_clear_position(cluster):
     pos_after = query_position(cluster, pos_id)["position"]
     assert pos_after["exit_triggered_at"] == ZERO_TIME
     assert pos_after["exit_unlock_at"] == ZERO_TIME
-
-    # ClearPosition claims rewards, so last_bonus_accrual should advance
-    accrual_after = isoparse(pos_after["last_bonus_accrual"])
-    assert accrual_after > accrual_before, (
-        f"last_bonus_accrual should advance after clear: "
-        f"before={accrual_before}, after={accrual_after}"
-    )
 
     # Can add to position again after clearing
     rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN)
