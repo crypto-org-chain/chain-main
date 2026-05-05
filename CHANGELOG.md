@@ -28,6 +28,7 @@
 - [#1203](https://github.com/crypto-org-chain/chain-main/pull/1203) feat: use cosmos-sdk v0.53.4.
 - [#1205](https://github.com/crypto-org-chain/chain-main/pull/1205) Bump module version to v8 to follow semver convention
 - [#1170](https://github.com/crypto-org-chain/chain-main/pull/1170) Use maps.Copy for cleaner map handling
+- [#1292](https://github.com/crypto-org-chain/chain-main/pull/1292) refactor: fetch position delegation state from staking module
 
 ### Bugfixes
 
