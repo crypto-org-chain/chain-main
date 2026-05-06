@@ -473,7 +473,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	})
 	s.Require().NoError(err)
 
-	// No mapping for the unbonded-src path: staking elided the redelegation entry.
+	// No mapping for the unbonded-src validator
 	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(has, "no reverse mapping should be written when src is fully unbonded")

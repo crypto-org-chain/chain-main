@@ -44,7 +44,6 @@ func (k Keeper) undelegatedAmount(ctx context.Context, pos types.Position) (math
 	if err != nil {
 		return math.Int{}, err
 	}
-	// A position has at most one UD with one entry.
 	if len(ubds) > 0 && len(ubds[0].Entries) > 0 {
 		return ubds[0].Entries[0].Balance, nil
 	}

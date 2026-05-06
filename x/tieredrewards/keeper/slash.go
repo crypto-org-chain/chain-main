@@ -43,6 +43,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		k.logger(ctx).Error("delegation missing during BeforeRedelegationSlashed",
 			"position_id", positionId,
 			"unbonding_id", unbondingId,
+			"shares_to_unbond", sharesToUnbond.String(),
 		)
 		return nil
 	}
@@ -69,6 +70,9 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		pos.ResetBonusCheckpoints()
 		return k.setPositionWithState(ctx, pos, &ValidatorUpdate{Previous: dstValStr})
 	}
+	// In-memory only: the persisted Position carries no share count, and the
+	// live delegation will reflect the post-Unbond shares on the next read.
+	// Update the local copy so any follow-up logic in this call sees consistent state.
 	pos.Delegation.Shares = pos.Delegation.Shares.Sub(sharesToUnbond)
 	return k.setPositionWithState(ctx, pos, nil)
 }
