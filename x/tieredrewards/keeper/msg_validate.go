@@ -111,6 +111,14 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrTierIsCloseOnly
 	}
 
+	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if redelegating {
+		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
+	}
+
 	return nil
 }
 

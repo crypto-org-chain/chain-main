@@ -11,7 +11,6 @@ import (
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
@@ -247,9 +246,8 @@ func (s *KeeperSuite) TestMsgTierRedelegate_TierCloseOnly() {
 	s.Require().ErrorIs(err, types.ErrTierIsCloseOnly)
 }
 
-// TestMsgTierRedelegate_TransitiveRedelegation verifies that the SDK blocks
-// transitive redelegation: after A→B, attempting B→A while A→B is still
-// pending should fail with ErrTransitiveRedelegation.
+// TestMsgTierRedelegate_TransitiveRedelegation verifies that the tier-level
+// guard blocks a second redelegation while the first is still pending
 func (s *KeeperSuite) TestMsgTierRedelegate_TransitiveRedelegation() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
@@ -279,7 +277,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_TransitiveRedelegation() {
 		DstValidator: srcValAddr.String(),
 	})
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, stakingtypes.ErrTransitiveRedelegation)
+	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
 
 // TestPositionCountByValidator_Redelegate verifies that when a position is
@@ -418,8 +416,8 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 		DstValidator: srcValAddr.String(),
 	})
 	s.Require().Error(err)
-	s.Require().ErrorIs(err, stakingtypes.ErrTransitiveRedelegation,
-		"second redelegate should fail with transitive redelegation error")
+	s.Require().ErrorIs(err, types.ErrActiveRedelegation,
+		"second redelegate should be blocked by the tier-level stillRedelegating guard")
 }
 
 // TestMsgTierRedelegate_FromUnbondedSrc_NoMapping verifies that when the source
