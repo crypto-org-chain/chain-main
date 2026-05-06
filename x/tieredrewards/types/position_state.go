@@ -35,7 +35,7 @@ func (p PositionState) Validate() error {
 			)
 		}
 		if !p.Delegation.Shares.IsPositive() {
-			return fmt.Errorf("delegated shares must be positive when validator is set")
+			return fmt.Errorf("delegated shares must be positive when position is delegated")
 		}
 		if p.LastBonusAccrual.IsZero() {
 			return fmt.Errorf("last_bonus_accrual must be non-zero when position is delegated")
