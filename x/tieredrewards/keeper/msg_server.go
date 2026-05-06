@@ -186,7 +186,7 @@ func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate
 		return nil, err
 	}
 
-	if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
+	if err := ms.updateBonusAccrualCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 		return nil, err
 	}
 
@@ -311,7 +311,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	if err != nil {
 		return nil, err
 	}
-	if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
+	if err := ms.updateBonusAccrualCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 		return nil, err
 	}
 
@@ -382,7 +382,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		if err != nil {
 			return nil, err
 		}
-		if err := ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
+		if err := ms.updateBonusAccrualCheckpoints(ctx, &pos.Position, latestSeq); err != nil {
 			return nil, err
 		}
 	}
@@ -641,7 +641,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		if err != nil {
 			return nil, err
 		}
-		err = ms.updateBonusAccuralCheckpoints(ctx, &pos.Position, latestSeq)
+		err = ms.updateBonusAccrualCheckpoints(ctx, &pos.Position, latestSeq)
 		if err != nil {
 			return nil, err
 		}

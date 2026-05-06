@@ -37,8 +37,8 @@ func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAd
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// updateBonusAccuralCheckpoints updates a position's bonus-state fields for a delegation.
-func (k Keeper) updateBonusAccuralCheckpoints(ctx context.Context, pos *types.Position, lastEventSeq uint64) error {
+// updateBonusAccrualCheckpoints updates a position's bonus-state fields for a delegation.
+func (k Keeper) updateBonusAccrualCheckpoints(ctx context.Context, pos *types.Position, lastEventSeq uint64) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	pos.UpdateBonusCheckpoints(lastEventSeq, sdkCtx.BlockTime())
 	return nil
