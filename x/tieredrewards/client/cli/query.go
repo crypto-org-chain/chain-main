@@ -38,6 +38,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryRawTierPositionsByOwner(),
 		GetCmdQueryRawAllTierPositions(),
 		GetCmdQueryValidatorData(),
+		GetCmdQueryRedelegationMappings(),
 	)
 
 	return queryCmd
@@ -336,4 +337,22 @@ func GetCmdQueryValidatorData() *cobra.Command {
 			})
 		},
 	)
+}
+
+func GetCmdQueryRedelegationMappings() *cobra.Command {
+	cmd := newPaginatedQueryCmd(
+		"redelegation-mappings",
+		"Query all tier position redelegation mappings keyed by staking unbonding id (paginated)",
+		func(ctx context.Context, _ client.Context, cmd *cobra.Command, queryClient types.QueryClient) (proto.Message, error) {
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return nil, err
+			}
+			return queryClient.RedelegationMappings(ctx, &types.QueryRedelegationMappingsRequest{
+				Pagination: pageReq,
+			})
+		},
+	)
+	flags.AddPaginationFlagsToCmd(cmd, "redelegation-mappings")
+	return cmd
 }

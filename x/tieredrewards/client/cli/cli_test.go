@@ -610,6 +610,14 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryValidatorDataExec(val.ClientCtx, validator)
 		}, &resp)
 	})
+
+	s.Run("redelegation-mappings", func() {
+		var resp tieredrewardstypes.QueryRedelegationMappingsResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRedelegationMappingsExec(val.ClientCtx)
+		}, &resp)
+		s.Require().Empty(resp.RedelegationMappings, "redelegation mapping should be cleaned up after AfterRedelegationCompleted fires")
+	})
 }
 
 func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
