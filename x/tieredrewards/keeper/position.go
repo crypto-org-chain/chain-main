@@ -29,6 +29,72 @@ func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, err
 	return pos, nil
 }
 
+func (k Keeper) createDelegatedPosition(
+	ctx context.Context,
+	owner string,
+	tier types.Tier,
+	lastEventSeq uint64,
+	triggerExitImmediately bool,
+) (types.Position, error) {
+	id, err := k.NextPositionId.Next(ctx)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	blockTime := sdkCtx.BlockTime()
+	blockHeight := uint64(sdkCtx.BlockHeight())
+
+	pos := types.NewPosition(id, owner, tier.Id, blockHeight, lastEventSeq, blockTime, true, blockTime)
+
+	delAddr := types.GetDelegatorAddress(id)
+
+	ownerAddr, err := sdk.AccAddressFromBech32(owner)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	if err := k.routeBaseRewardsToOwner(ctx, delAddr, ownerAddr); err != nil {
+		return types.Position{}, err
+	}
+
+	if triggerExitImmediately {
+		pos.TriggerExit(blockTime, tier.ExitDuration)
+	}
+
+	return pos, nil
+}
+
+// lockFunds locks the desired amount of funds into a position.
+func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
+	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
+	if err != nil {
+		return err
+	}
+	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
+}
+
+// createDelegatorAccount creates a BaseAccount for the position's delegation.
+// This is required so that undelegation can complete successfully because it checks for the existence of the account in bank keeper trackUndelegation method.
+func (k Keeper) createDelegatorAccount(ctx context.Context, delAddr sdk.AccAddress) {
+	if k.accountKeeper.GetAccount(ctx, delAddr) != nil {
+		return
+	}
+	acc := k.accountKeeper.NewAccountWithAddress(ctx, delAddr)
+	k.accountKeeper.SetAccount(ctx, acc)
+}
+
+// routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
+func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
+}
+
+// removeBaseRewardsRouting removes the routing of base rewards for the position's delegation to the position owner.
+// Part of position clean up during deletion.
+func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
+	return k.distributionKeeper.DeleteDelegatorWithdrawAddr(ctx, posDelAddr, ownerAddr)
+}
+
 // setPosition validates and persists pos and reconciles the relevant indexes.
 func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
 	del, err := k.getDelegation(ctx, pos.Id)
@@ -112,72 +178,6 @@ func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionSt
 		currVal = state.Delegation.ValidatorAddress
 	}
 	return k.applyValidatorDiff(ctx, update.Previous, currVal)
-}
-
-func (k Keeper) createDelegatedPosition(
-	ctx context.Context,
-	owner string,
-	tier types.Tier,
-	lastEventSeq uint64,
-	triggerExitImmediately bool,
-) (types.Position, error) {
-	id, err := k.NextPositionId.Next(ctx)
-	if err != nil {
-		return types.Position{}, err
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	blockTime := sdkCtx.BlockTime()
-	blockHeight := uint64(sdkCtx.BlockHeight())
-
-	pos := types.NewPosition(id, owner, tier.Id, blockHeight, lastEventSeq, blockTime, true, blockTime)
-
-	delAddr := types.GetDelegatorAddress(id)
-
-	ownerAddr, err := sdk.AccAddressFromBech32(owner)
-	if err != nil {
-		return types.Position{}, err
-	}
-
-	if err := k.routeBaseRewardsToOwner(ctx, delAddr, ownerAddr); err != nil {
-		return types.Position{}, err
-	}
-
-	if triggerExitImmediately {
-		pos.TriggerExit(blockTime, tier.ExitDuration)
-	}
-
-	return pos, nil
-}
-
-// lockFunds locks the desired amount of funds into a position.
-func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress, amount math.Int) error {
-	bondDenom, err := k.stakingKeeper.BondDenom(ctx)
-	if err != nil {
-		return err
-	}
-	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
-}
-
-// createDelegatorAccount creates a BaseAccount for the position's delegation.
-// This is required so that undelegation can complete successfully because it checks for the existence of the account in bank keeper trackUndelegation method.
-func (k Keeper) createDelegatorAccount(ctx context.Context, delAddr sdk.AccAddress) {
-	if k.accountKeeper.GetAccount(ctx, delAddr) != nil {
-		return
-	}
-	acc := k.accountKeeper.NewAccountWithAddress(ctx, delAddr)
-	k.accountKeeper.SetAccount(ctx, acc)
-}
-
-// routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
-func (k Keeper) routeBaseRewardsToOwner(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
-	return k.distributionKeeper.SetWithdrawAddr(ctx, posDelAddr, ownerAddr)
-}
-
-// removeBaseRewardsRouting removes the routing of base rewards for the position's delegation to the position owner.
-// Part of position clean up during deletion.
-func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerAddr sdk.AccAddress) error {
-	return k.distributionKeeper.DeleteDelegatorWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 
 // deletePosition validates and removes a position and cleans up secondary indexes.
