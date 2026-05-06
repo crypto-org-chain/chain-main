@@ -943,13 +943,13 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
     # Let rewards accrue
     wait_for_new_blocks(cluster, 10)
 
-    # 1. AddToTierPosition should succeed
+    # 1. AddToTierPosition should succeed.
     bal = cluster.balance(owner, DENOM)
     rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN)
     assert rsp["code"] == 0, rsp["raw_log"]
     bal_after = cluster.balance(owner, DENOM)
-    assert bal_after > bal, (
-        f"add to position should settle rewards: " f"before={bal}, after={bal_after}"
+    assert bal_after > bal - TIER_1_MIN, (
+        f"add to position should claim rewards: " f"before={bal}, after={bal_after}"
     )
 
     wait_for_new_blocks(cluster, 10)
