@@ -201,6 +201,11 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 		return err
 	}
 
+	// Defensive
+	if err := k.deletePositionRedelegationMappings(ctx, pos.Id); err != nil {
+		return err
+	}
+
 	if err := k.Positions.Remove(ctx, pos.Id); err != nil {
 		return err
 	}

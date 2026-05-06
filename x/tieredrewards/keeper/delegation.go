@@ -87,18 +87,6 @@ func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingt
 	return &d, nil
 }
 
-func (k Keeper) setRedelegationMapping(ctx context.Context, unbondingId, positionId uint64) error {
-	return k.RedelegationMappings.Set(ctx, unbondingId, positionId)
-}
-
-func (k Keeper) getRedelegationMapping(ctx context.Context, unbondingId uint64) (uint64, error) {
-	return k.RedelegationMappings.Get(ctx, unbondingId)
-}
-
-func (k Keeper) deleteRedelegationMapping(ctx context.Context, unbondingId uint64) error {
-	return k.RedelegationMappings.Remove(ctx, unbondingId)
-}
-
 func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
 	reds, err := k.stakingKeeper.GetRedelegations(ctx, types.GetDelegatorAddress(positionId), 1)
 	if err != nil {

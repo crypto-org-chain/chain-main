@@ -176,3 +176,7 @@ func (k Keeper) LoadPositionState(ctx context.Context, posId uint64) (types.Posi
 func (k Keeper) PositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
 	return k.positionAmount(ctx, pos)
 }
+
+func (k Keeper) DeletePositionRedelegationMappings(ctx context.Context, positionId uint64) error {
+	return k.deletePositionRedelegationMappings(ctx, positionId)
+}

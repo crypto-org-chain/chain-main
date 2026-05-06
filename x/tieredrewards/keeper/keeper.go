@@ -39,7 +39,7 @@ type Keeper struct {
 	ValidatorEventSeq collections.Map[sdk.ValAddress, uint64]
 
 	// RedelegationMappings maps a redelegation unbonding id to the tier position id that issued the redelegation.
-	RedelegationMappings collections.Map[uint64, uint64]
+	RedelegationMappings *collections.IndexedMap[uint64, uint64, RedelegationMappingsIndexes]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -102,7 +102,7 @@ func NewKeeper(
 		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
 		ValidatorEvents:          collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
 		ValidatorEventSeq:        collections.NewMap(sb, types.ValidatorEventSeqKey, "validator_event_current_seq", sdk.ValAddressKey, collections.Uint64Value),
-		RedelegationMappings:     collections.NewMap(sb, types.RedelegationMappingsKey, "redelegation_mappings", collections.Uint64Key, collections.Uint64Value),
+		RedelegationMappings:     collections.NewIndexedMap(sb, types.RedelegationMappingsKey, "redelegation_mappings", collections.Uint64Key, collections.Uint64Value, newRedelegationMappingsIndexes(sb)),
 	}
 
 	schema, err := sb.Build()
