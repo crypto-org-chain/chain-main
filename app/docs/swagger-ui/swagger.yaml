@@ -26109,33 +26109,37 @@ paths:
           type: boolean
       tags:
         - Query
-  /chainmain/tieredrewards/v1/redelegating_positions:
+  /chainmain/tieredrewards/v1/redelegation_mappings:
     get:
-      summary: |-
-        RedelegatingPositions returns all tier positions currently undergoing a
-        staking redelegation, keyed by the position's delegator address.
-      operationId: RedelegatingPositions
+      summary: >-
+        RedelegationMappings returns all tier position redelegation-entry
+        mappings,
+
+        keyed by the staking unbonding id of each entry.
+      operationId: RedelegationMappings
       responses:
         '200':
           description: A successful response.
           schema:
             type: object
             properties:
-              redelegating_positions:
+              redelegation_mappings:
                 type: array
                 items:
                   type: object
                   properties:
-                    delegator_address:
+                    unbonding_id:
                       type: string
+                      format: uint64
                     position_id:
                       type: string
                       format: uint64
                   description: >-
-                    RedelegatingPosition maps the delegator address of a tier
-                    position to its
+                    RedelegationMapping binds a staking redelegation entry (by
+                    unbonding id) to
 
-                    position ID.
+                    a tier position id, so tier can route per-entry
+                    slash/completion hooks.
               pagination:
                 type: object
                 properties:
@@ -26165,8 +26169,8 @@ paths:
                            PageResponse page = 2;
                    }
             description: |-
-              QueryRedelegatingPositionsResponse is the response type for the
-              Query/RedelegatingPositions RPC method.
+              QueryRedelegationMappingsResponse is the response type for the
+              Query/RedelegationMappings RPC method.
         default:
           description: An unexpected error response.
           schema:
@@ -46812,24 +46816,26 @@ definitions:
     description: >-
       QueryRawTierPositionsByOwnerResponse is the response type for the
       Query/RawTierPositionsByOwner RPC method.
-  chainmain.tieredrewards.v1.QueryRedelegatingPositionsResponse:
+  chainmain.tieredrewards.v1.QueryRedelegationMappingsResponse:
     type: object
     properties:
-      redelegating_positions:
+      redelegation_mappings:
         type: array
         items:
           type: object
           properties:
-            delegator_address:
+            unbonding_id:
               type: string
+              format: uint64
             position_id:
               type: string
               format: uint64
           description: >-
-            RedelegatingPosition maps the delegator address of a tier position
-            to its
+            RedelegationMapping binds a staking redelegation entry (by unbonding
+            id) to
 
-            position ID.
+            a tier position id, so tier can route per-entry slash/completion
+            hooks.
       pagination:
         type: object
         properties:
@@ -46857,8 +46863,8 @@ definitions:
                    PageResponse page = 2;
            }
     description: |-
-      QueryRedelegatingPositionsResponse is the response type for the
-      Query/RedelegatingPositions RPC method.
+      QueryRedelegationMappingsResponse is the response type for the
+      Query/RedelegationMappings RPC method.
   chainmain.tieredrewards.v1.QueryRewardsPoolBalancesResponse:
     type: object
     properties:
@@ -47102,17 +47108,20 @@ definitions:
     description: >-
       QueryVotingPowerByOwnerResponse is the response type for the
       Query/VotingPowerByOwner RPC method.
-  chainmain.tieredrewards.v1.RedelegatingPosition:
+  chainmain.tieredrewards.v1.RedelegationMapping:
     type: object
     properties:
-      delegator_address:
+      unbonding_id:
         type: string
+        format: uint64
       position_id:
         type: string
         format: uint64
-    description: |-
-      RedelegatingPosition maps the delegator address of a tier position to its
-      position ID.
+    description: >-
+      RedelegationMapping binds a staking redelegation entry (by unbonding id)
+      to
+
+      a tier position id, so tier can route per-entry slash/completion hooks.
   chainmain.tieredrewards.v1.Tier:
     type: object
     properties:

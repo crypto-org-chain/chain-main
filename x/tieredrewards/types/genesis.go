@@ -53,23 +53,18 @@ func ValidateGenesis(data GenesisState) error {
 		return fmt.Errorf("next_position_id (%d) must be greater than the highest position ID (%d)", data.NextPositionId, maxPosID)
 	}
 
-	seenDelAddrs := make(map[string]struct{}, len(data.RedelegatingPositions))
-	for i, entry := range data.RedelegatingPositions {
-		if _, dup := seenDelAddrs[entry.DelegatorAddress]; dup {
-			return fmt.Errorf("duplicate redelegating delegator address %q at index %d", entry.DelegatorAddress, i)
+	seenUnbondingIds := make(map[uint64]struct{}, len(data.RedelegationMappings))
+	for i, entry := range data.RedelegationMappings {
+		if entry.UnbondingId == 0 {
+			return fmt.Errorf("redelegation mapping at index %d has zero unbonding_id", i)
 		}
-		seenDelAddrs[entry.DelegatorAddress] = struct{}{}
+		if _, dup := seenUnbondingIds[entry.UnbondingId]; dup {
+			return fmt.Errorf("duplicate redelegation mapping unbonding_id %d at index %d", entry.UnbondingId, i)
+		}
+		seenUnbondingIds[entry.UnbondingId] = struct{}{}
 
 		if _, ok := posIDs[entry.PositionId]; !ok {
-			return fmt.Errorf("redelegating position at index %d references unknown position ID %d", i, entry.PositionId)
-		}
-
-		expectedDelAddr := GetDelegatorAddress(entry.PositionId).String()
-		if entry.DelegatorAddress != expectedDelAddr {
-			return fmt.Errorf(
-				"redelegating position at index %d has delegator address %q, expected %q for position ID %d",
-				i, entry.DelegatorAddress, expectedDelAddr, entry.PositionId,
-			)
+			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, entry.PositionId)
 		}
 	}
 

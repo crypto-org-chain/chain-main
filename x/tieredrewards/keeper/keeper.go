@@ -38,9 +38,8 @@ type Keeper struct {
 	ValidatorEvents   collections.Map[collections.Pair[sdk.ValAddress, uint64], types.ValidatorEvent]
 	ValidatorEventSeq collections.Map[sdk.ValAddress, uint64]
 
-	// RedelegatingPositionByAddr maps a tier position's delegator address to its
-	// position ID while the position has an active staking redelegation.
-	RedelegatingPositionByAddr collections.Map[sdk.AccAddress, uint64]
+	// RedelegationMappings maps a redelegation unbonding id to the tier position id that issued the redelegation.
+	RedelegationMappings collections.Map[uint64, uint64]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -85,25 +84,25 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:                        cdc,
-		storeService:               storeService,
-		authority:                  authority,
-		mintKeeper:                 mintKeeper,
-		stakingKeeper:              stakingKeeper,
-		accountKeeper:              accountKeeper,
-		bankKeeper:                 bankKeeper,
-		distributionKeeper:         distributionKeeper,
-		Params:                     collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		Tiers:                      collections.NewMap(sb, types.TiersKey, "tiers", collections.Uint32Key, codec.CollValue[types.Tier](cdc)),
-		Positions:                  collections.NewMap(sb, types.PositionsKey, "positions", collections.Uint64Key, codec.CollValue[types.Position](cdc)),
-		NextPositionId:             collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
-		PositionsByOwner:           collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
-		PositionsByTier:            collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
-		PositionCountByTier:        collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
-		PositionCountByValidator:   collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
-		ValidatorEvents:            collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
-		ValidatorEventSeq:          collections.NewMap(sb, types.ValidatorEventSeqKey, "validator_event_current_seq", sdk.ValAddressKey, collections.Uint64Value),
-		RedelegatingPositionByAddr: collections.NewMap(sb, types.RedelegatingPositionByAddrKey, "redelegating_position_by_addr", sdk.AccAddressKey, collections.Uint64Value),
+		cdc:                      cdc,
+		storeService:             storeService,
+		authority:                authority,
+		mintKeeper:               mintKeeper,
+		stakingKeeper:            stakingKeeper,
+		accountKeeper:            accountKeeper,
+		bankKeeper:               bankKeeper,
+		distributionKeeper:       distributionKeeper,
+		Params:                   collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		Tiers:                    collections.NewMap(sb, types.TiersKey, "tiers", collections.Uint32Key, codec.CollValue[types.Tier](cdc)),
+		Positions:                collections.NewMap(sb, types.PositionsKey, "positions", collections.Uint64Key, codec.CollValue[types.Position](cdc)),
+		NextPositionId:           collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
+		PositionsByOwner:         collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
+		PositionsByTier:          collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
+		PositionCountByTier:      collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
+		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
+		ValidatorEvents:          collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
+		ValidatorEventSeq:        collections.NewMap(sb, types.ValidatorEventSeqKey, "validator_event_current_seq", sdk.ValAddressKey, collections.Uint64Value),
+		RedelegationMappings:     collections.NewMap(sb, types.RedelegationMappingsKey, "redelegation_mappings", collections.Uint64Key, collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()

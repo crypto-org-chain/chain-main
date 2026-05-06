@@ -122,24 +122,29 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return err
 }
 
-// AfterRedelegationSlashed forwards the (delAddr, dstValAddr) to the tier's
-// slash handler. delAddr is the position's staking delegator address, dstValAddr
-// is the redelegation destination validator (whose delegation was just burned).
-func (h Hooks) AfterRedelegationSlashed(ctx context.Context, delAddr sdk.AccAddress, dstValAddr sdk.ValAddress, _ sdkmath.Int, _ sdkmath.LegacyDec) error {
-	return h.k.slashRedelegationPosition(ctx, delAddr, dstValAddr)
+// BeforeRedelegationSlashed fires before SDK's Unbond in SlashRedelegation.
+// Routes to slashRedelegationPosition via the unbondingId → positionId mapping
+// so bonus settlement can run against pre-slash shares.
+func (h Hooks) BeforeRedelegationSlashed(ctx context.Context, unbondingID uint64, sharesToUnbond sdkmath.LegacyDec) error {
+	return h.k.slashRedelegationPosition(ctx, unbondingID, sharesToUnbond)
 }
 
-// AfterRedelegationCompleted removes the redelegating-position mapping entry
-// for delAddr when the redelegation matures.
-func (h Hooks) AfterRedelegationCompleted(ctx context.Context, delAddr sdk.AccAddress, _, _ sdk.ValAddress, _ []uint64) error {
-	has, err := h.k.RedelegatingPositionByAddr.Has(ctx, delAddr)
-	if err != nil {
-		return err
+// AfterRedelegationCompleted removes the redelegation-mapping entries for each
+// unbondingId that just matured.
+func (h Hooks) AfterRedelegationCompleted(ctx context.Context, _ sdk.AccAddress, _, _ sdk.ValAddress, completedIds []uint64) error {
+	for _, id := range completedIds {
+		has, err := h.k.RedelegationMappings.Has(ctx, id)
+		if err != nil {
+			return err
+		}
+		if !has {
+			continue
+		}
+		if err := h.k.deleteRedelegationMapping(ctx, id); err != nil {
+			return err
+		}
 	}
-	if !has {
-		return nil
-	}
-	return h.k.deleteRedelegatingPosition(ctx, delAddr)
+	return nil
 }
 
 // No-op hooks.

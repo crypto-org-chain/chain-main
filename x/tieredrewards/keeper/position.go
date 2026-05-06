@@ -35,10 +35,16 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *Val
 	if err != nil {
 		return err
 	}
-	state := types.PositionState{Position: pos, Delegation: del}
+	return k.setPositionWithState(ctx, types.PositionState{Position: pos, Delegation: del}, update)
+}
+
+// setPositionWithState validates and persists the position with a supplied PositionState.
+func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionState, update *ValidatorUpdate) error {
 	if err := state.Validate(); err != nil {
 		return err
 	}
+
+	pos := state.Position
 
 	oldPos, err := k.getPosition(ctx, pos.Id)
 	isNew := errors.Is(err, types.ErrPositionNotFound)
@@ -192,12 +198,6 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	if err := k.removeBaseRewardsRouting(ctx, delAddr, owner); err != nil {
-		return err
-	}
-
-	// Defensive: remove any stale redelegating-position entry. Should already
-	// be gone via AfterRedelegationCompleted by the time we reach delete.
-	if err := k.deleteRedelegatingPosition(ctx, delAddr); err != nil {
 		return err
 	}
 

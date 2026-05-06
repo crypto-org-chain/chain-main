@@ -92,30 +92,6 @@ func (s *KeeperSuite) TestDeletePosition() {
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
-func (s *KeeperSuite) TestDeletePosition_CleansRedelegatingMapping() {
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos, nil)
-	s.Require().NoError(err)
-
-	delAddr := types.GetDelegatorAddress(pos.Id)
-	otherAddr := types.GetDelegatorAddress(999)
-
-	// Simulate pending redelegation entries for the position and an unrelated one.
-	s.Require().NoError(s.keeper.RedelegatingPositionByAddr.Set(s.ctx, delAddr, pos.Id))
-	s.Require().NoError(s.keeper.RedelegatingPositionByAddr.Set(s.ctx, otherAddr, 999))
-
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
-
-	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, delAddr)
-	s.Require().NoError(err)
-	s.Require().False(has, "redelegating mapping for deleted position should be removed")
-
-	// Unrelated mapping must remain.
-	has, err = s.keeper.RedelegatingPositionByAddr.Has(s.ctx, otherAddr)
-	s.Require().NoError(err)
-	s.Require().True(has)
-}
-
 func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
 	err := s.keeper.DeletePosition(s.ctx, pos, nil)

@@ -37,15 +37,15 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		s.Require().NoError(err)
 	}
 
-	// Seed an active staking redelegation for position 1 so its RedelegatingPositions
-	// entry passes InitGenesis validation.
+	// Seed an active staking redelegation for position 1.
 	dstValAddr, _ := s.createSecondValidator()
 	del1, err := s.app.StakingKeeper.GetDelegation(s.ctx, types.GetDelegatorAddress(1), valAddr)
 	s.Require().NoError(err)
-	_, err = s.app.StakingKeeper.BeginRedelegation(
+	_, unbondingID1, err := s.app.StakingKeeper.BeginRedelegation(
 		s.ctx, types.GetDelegatorAddress(1), valAddr, dstValAddr, del1.Shares,
 	)
 	s.Require().NoError(err)
+	s.Require().NotZero(unbondingID1)
 
 	tier1 := types.Tier{
 		Id:            1,
@@ -74,8 +74,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 		Tiers:          []types.Tier{tier1, tier2},
 		Positions:      []types.Position{pos1, pos2, pos3},
 		NextPositionId: 4,
-		RedelegatingPositions: []types.RedelegatingPosition{
-			{DelegatorAddress: types.GetDelegatorAddress(1).String(), PositionId: 1},
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: unbondingID1, PositionId: 1},
 		},
 		ValidatorEvents: []types.ValidatorEventEntry{
 			{
@@ -104,7 +104,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	s.Require().Len(exported.Tiers, 2)
 	s.Require().Len(exported.Positions, 3)
 	s.Require().Equal(uint64(4), exported.NextPositionId)
-	s.Require().Len(exported.RedelegatingPositions, 1)
+	s.Require().Len(exported.RedelegationMappings, 1)
 	s.Require().Len(exported.ValidatorEvents, 1)
 	s.Require().Len(exported.ValidatorEventSeqs, 1)
 
@@ -254,7 +254,7 @@ func (s *KeeperSuite) TestInitExportGenesis_DefaultRoundTrip() {
 	s.Require().Empty(exported.Tiers)
 	s.Require().Empty(exported.Positions)
 	s.Require().Equal(uint64(0), exported.NextPositionId)
-	s.Require().Empty(exported.RedelegatingPositions)
+	s.Require().Empty(exported.RedelegationMappings)
 }
 
 func (s *KeeperSuite) TestInitGenesis_MaterializesModuleAccounts() {
@@ -271,49 +271,43 @@ func (s *KeeperSuite) TestInitGenesis_MaterializesModuleAccounts() {
 	}
 }
 
-// TestInitGenesis_PanicsOnPhantomRedelegatingPosition verifies that InitGenesis
-// rejects any RedelegatingPositions entry whose delegator address has no
-// matching active redelegation in the staking module.
-func (s *KeeperSuite) TestInitGenesis_PanicsOnPhantomRedelegatingPosition() {
-	vals, bondDenom := s.getStakingData()
-	val := vals[0]
-
-	owner := sdk.AccAddress([]byte("genesis_phantom_own_")).String()
+// TestInitGenesis_PanicsOnPhantomRedelegationMapping verifies that InitGenesis
+// rejects any RedelegationMappings entry whose unbonding id has no matching
+// active redelegation entry in the staking module.
+func (s *KeeperSuite) TestInitGenesis_PanicsOnPhantomRedelegationMapping() {
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
-	lockAmount := sdkmath.NewInt(1000)
-	delAddr := types.GetDelegatorAddress(1)
-	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
-		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
-	_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
-	s.Require().NoError(err)
-
+	owner := sdk.AccAddress([]byte("genesis_phantom_own_")).String()
 	tier := types.Tier{
 		Id:            1,
 		ExitDuration:  time.Hour * 24,
 		BonusApy:      sdkmath.LegacyNewDecWithPrec(4, 2),
 		MinLockAmount: sdkmath.NewInt(100),
 	}
-	pos := types.NewPosition(1, owner, 1, 100, 0, now, true, now)
+	// Undelegated position
+	pos := types.NewPosition(1, owner, 1, 100, 0, time.Time{}, false, now)
 
 	genesisState := &types.GenesisState{
 		Params:         types.DefaultParams(),
 		Tiers:          []types.Tier{tier},
 		Positions:      []types.Position{pos},
 		NextPositionId: 2,
-		RedelegatingPositions: []types.RedelegatingPosition{
-			{DelegatorAddress: delAddr.String(), PositionId: 1},
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: 99999, PositionId: 1},
 		},
 	}
 
 	s.Require().PanicsWithError(
-		"redelegating position 1 (delegator "+delAddr.String()+") has no active staking redelegation",
+		"redelegation mapping (unbonding_id=99999, position_id=1) has no matching staking redelegation: no redelegation found",
 		func() { s.keeper.InitGenesis(s.ctx, genesisState) },
 	)
 }
 
-func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegatingPosition() {
+// TestInitGenesis_AcceptsValidRedelegationMapping verifies that InitGenesis
+// accepts a RedelegationMappings entry whose unbondingId is backed by a real
+// active staking redelegation entry, and that the mapping is loaded.
+func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegationMapping() {
 	vals, bondDenom := s.getStakingData()
 	val := vals[0]
 	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
@@ -333,8 +327,9 @@ func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegatingPosition() {
 	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
 	s.Require().NoError(err)
 	redelegateShares := del.Shares.Quo(sdkmath.LegacyNewDec(2))
-	_, err = s.app.StakingKeeper.BeginRedelegation(s.ctx, delAddr, valAddr, dstValAddr, redelegateShares)
+	_, unbondingID, err := s.app.StakingKeeper.BeginRedelegation(s.ctx, delAddr, valAddr, dstValAddr, redelegateShares)
 	s.Require().NoError(err)
+	s.Require().NotZero(unbondingID)
 
 	tier := types.Tier{
 		Id:            1,
@@ -349,14 +344,14 @@ func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegatingPosition() {
 		Tiers:          []types.Tier{tier},
 		Positions:      []types.Position{pos},
 		NextPositionId: 2,
-		RedelegatingPositions: []types.RedelegatingPosition{
-			{DelegatorAddress: delAddr.String(), PositionId: 1},
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: unbondingID, PositionId: 1},
 		},
 	}
 
 	s.Require().NotPanics(func() { s.keeper.InitGenesis(s.ctx, genesisState) })
 
-	gotPosID, err := s.keeper.RedelegatingPositionByAddr.Get(s.ctx, delAddr)
+	gotPosID, err := s.keeper.RedelegationMappings.Get(s.ctx, unbondingID)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), gotPosID)
 }

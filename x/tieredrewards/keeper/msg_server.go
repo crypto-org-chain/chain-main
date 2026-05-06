@@ -295,14 +295,14 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
 
-	completionTime, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
+	completionTime, unbondingID, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
 	if err != nil {
 		return nil, err
 	}
-
-	// completionTime is zero when the src validator is already unbonded, no need to persist any mapping.
-	if !completionTime.IsZero() {
-		if err := ms.setRedelegatingPosition(ctx, delAddr, pos.Id); err != nil {
+	// unbondingID 0 means the source validator is unbonded; redelegation is instant.
+	// We skip mapping because no asynchronous completion hook will trigger.
+	if unbondingID != 0 {
+		if err := ms.setRedelegationMapping(ctx, unbondingID, pos.Id); err != nil {
 			return nil, err
 		}
 	}

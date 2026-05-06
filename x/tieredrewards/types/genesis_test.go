@@ -32,8 +32,8 @@ func validFullGenesis() types.GenesisState {
 		Tiers:          []types.Tier{tier},
 		Positions:      []types.Position{pos},
 		NextPositionId: 2,
-		RedelegatingPositions: []types.RedelegatingPosition{
-			{DelegatorAddress: types.GetDelegatorAddress(1).String(), PositionId: 1},
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: 1, PositionId: 1},
 		},
 	}
 }
@@ -93,25 +93,25 @@ func TestValidateGenesis(t *testing.T) {
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "next_position_id")
 	})
 
-	t.Run("redelegating position references unknown position", func(t *testing.T) {
+	t.Run("redelegation mapping references unknown position", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.RedelegatingPositions[0].PositionId = 999
+		genesis.RedelegationMappings[0].PositionId = 999
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "unknown position ID")
 	})
 
-	t.Run("duplicate redelegating delegator address", func(t *testing.T) {
+	t.Run("duplicate redelegation mapping unbonding id", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.RedelegatingPositions = append(genesis.RedelegatingPositions, types.RedelegatingPosition{
-			DelegatorAddress: types.GetDelegatorAddress(1).String(),
-			PositionId:       1,
+		genesis.RedelegationMappings = append(genesis.RedelegationMappings, types.RedelegationMapping{
+			UnbondingId: 1,
+			PositionId:  1,
 		})
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegating delegator address")
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegation mapping unbonding_id")
 	})
 
-	t.Run("redelegating delegator address mismatches position ID", func(t *testing.T) {
+	t.Run("redelegation mapping zero unbonding id", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.RedelegatingPositions[0].DelegatorAddress = types.GetDelegatorAddress(2).String()
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "expected")
+		genesis.RedelegationMappings[0].UnbondingId = 0
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "zero unbonding_id")
 	})
 
 	t.Run("valid genesis with events", func(t *testing.T) {

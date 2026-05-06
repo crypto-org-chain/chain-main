@@ -308,21 +308,22 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	hooks := s.keeper.Hooks()
 
 	positionId := uint64(2)
-	delAddr := types.GetDelegatorAddress(positionId)
-	s.Require().NoError(s.keeper.RedelegatingPositionByAddr.Set(s.ctx, delAddr, positionId))
+	unbondingID := uint64(42)
+	s.Require().NoError(s.keeper.RedelegationMappings.Set(s.ctx, unbondingID, positionId))
 
-	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, delAddr)
+	has, err := s.keeper.RedelegationMappings.Has(s.ctx, unbondingID)
 	s.Require().NoError(err)
 	s.Require().True(has)
 
+	delAddr := types.GetDelegatorAddress(positionId)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, nil)
+	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingID})
 	s.Require().NoError(err)
 
-	has, err = s.keeper.RedelegatingPositionByAddr.Has(s.ctx, delAddr)
+	has, err = s.keeper.RedelegationMappings.Has(s.ctx, unbondingID)
 	s.Require().NoError(err)
-	s.Require().False(has, "redelegating mapping should be removed after completion")
+	s.Require().False(has, "redelegation mapping should be removed after completion")
 }
 
 func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
@@ -331,8 +332,8 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, nil)
-	s.Require().NoError(err, "should not error when delegator has no mapping")
+	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{99})
+	s.Require().NoError(err, "should not error when unbonding id has no mapping")
 }
 
 // --- NoOp callbacks ---

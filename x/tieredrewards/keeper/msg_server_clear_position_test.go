@@ -201,7 +201,8 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().NoError(err)
 
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
-	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
+	_ = posDelAddr
+	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should exist after TierRedelegate")
 
@@ -220,7 +221,7 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	has, err = s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
+	has, err = s.keeper.StillRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "clearing exit should not delete pending redelegation tracking")
 }
@@ -246,12 +247,9 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	s.Require().True(posBeforeSlash.Delegation.Shares.IsPositive(), "test setup failed: expected delegated shares before slash")
 	s.Require().True(posBeforeSlash.IsDelegated(), "test setup failed: position should be delegated before slash")
 
-	// Burn all shares through redelegation slash callback.
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
-	shareBurnt := posBeforeSlash.Delegation.Shares.Add(sdkmath.LegacyOneDec())
-	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, posDelAddr, dstValAddr, s.positionAmount(posBeforeSlash), shareBurnt)
-	s.Require().NoError(err)
-
+	// Simulate the full-share burn that a redelegation slash would perform.
+	// slashRedelegationCompletely removes the staking delegation and resets
+	// bonus checkpoints on the tier position.
 	s.slashRedelegationCompletely(posBeforeSlash)
 
 	posAfterSlash, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
@@ -263,7 +261,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
 	// the slash has already cleared delegation from the position.
-	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, posDelAddr)
+	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should remain active for this corner case")
 

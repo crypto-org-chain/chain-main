@@ -279,19 +279,19 @@ func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidato
 	return resp, nil
 }
 
-func (q queryServer) RedelegatingPositions(ctx context.Context, req *types.QueryRedelegatingPositionsRequest) (*types.QueryRedelegatingPositionsResponse, error) {
+func (q queryServer) RedelegationMappings(ctx context.Context, req *types.QueryRedelegationMappingsRequest) (*types.QueryRedelegationMappingsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	entries, pageResp, err := query.CollectionPaginate(
 		ctx,
-		q.k.RedelegatingPositionByAddr,
+		q.k.RedelegationMappings,
 		req.Pagination,
-		func(delAddr sdk.AccAddress, positionId uint64) (types.RedelegatingPosition, error) {
-			return types.RedelegatingPosition{
-				DelegatorAddress: delAddr.String(),
-				PositionId:       positionId,
+		func(unbondingId, positionId uint64) (types.RedelegationMapping, error) {
+			return types.RedelegationMapping{
+				UnbondingId: unbondingId,
+				PositionId:  positionId,
 			}, nil
 		},
 	)
@@ -299,8 +299,8 @@ func (q queryServer) RedelegatingPositions(ctx context.Context, req *types.Query
 		return nil, err
 	}
 
-	return &types.QueryRedelegatingPositionsResponse{
-		RedelegatingPositions: entries,
-		Pagination:            pageResp,
+	return &types.QueryRedelegationMappingsResponse{
+		RedelegationMappings: entries,
+		Pagination:           pageResp,
 	}, nil
 }

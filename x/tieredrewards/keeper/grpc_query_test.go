@@ -522,10 +522,10 @@ func (s *KeeperSuite) TestGRPCQueryValidatorData_Empty() {
 // Position mappings
 // ---------------------------------------------------------------------------
 
-// TestRedelegatingPositionByAddr_AfterRedelegate verifies the keeper records an
-// active redelegation in the reverse mapping so AfterRedelegationSlashed can
-// route slash events back to the position.
-func (s *KeeperSuite) TestRedelegatingPositionByAddr_AfterRedelegate() {
+// TestRedelegationMappings_AfterRedelegate verifies the keeper records an
+// active redelegation entry in the unbondingId→posId mapping so
+// BeforeRedelegationSlashed can route slash events back to the position.
+func (s *KeeperSuite) TestRedelegationMappings_AfterRedelegate() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	dstValAddr, _ := s.createSecondValidator()
 
@@ -537,25 +537,25 @@ func (s *KeeperSuite) TestRedelegatingPositionByAddr_AfterRedelegate() {
 	})
 	s.Require().NoError(err)
 
-	has, err := s.keeper.RedelegatingPositionByAddr.Has(s.ctx, types.GetDelegatorAddress(pos.Id))
+	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should be populated after TierRedelegate")
 }
 
-// TestGRPCQueryRedelegatingPositions_Empty verifies the query returns an empty
+// TestGRPCQueryRedelegationMappings_Empty verifies the query returns an empty
 // list when no redelegations are active.
-func (s *KeeperSuite) TestGRPCQueryRedelegatingPositions_Empty() {
-	resp, err := s.queryClient.RedelegatingPositions(
-		s.ctx.Context(), &types.QueryRedelegatingPositionsRequest{},
+func (s *KeeperSuite) TestGRPCQueryRedelegationMappings_Empty() {
+	resp, err := s.queryClient.RedelegationMappings(
+		s.ctx.Context(), &types.QueryRedelegationMappingsRequest{},
 	)
 	s.Require().NoError(err)
-	s.Require().Empty(resp.RedelegatingPositions)
+	s.Require().Empty(resp.RedelegationMappings)
 }
 
-// TestGRPCQueryRedelegatingPositions_ReturnsActiveEntries drives a real
+// TestGRPCQueryRedelegationMappings_ReturnsActiveEntries drives a real
 // redelegation through TierRedelegate, then asserts the query returns the
-// expected {delegator_address, position_id} entry.
-func (s *KeeperSuite) TestGRPCQueryRedelegatingPositions_ReturnsActiveEntries() {
+// expected {unbonding_id, position_id} entry.
+func (s *KeeperSuite) TestGRPCQueryRedelegationMappings_ReturnsActiveEntries() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
 	dstValAddr, _ := s.createSecondValidator()
 
@@ -567,11 +567,11 @@ func (s *KeeperSuite) TestGRPCQueryRedelegatingPositions_ReturnsActiveEntries() 
 	})
 	s.Require().NoError(err)
 
-	resp, err := s.queryClient.RedelegatingPositions(
-		s.ctx.Context(), &types.QueryRedelegatingPositionsRequest{},
+	resp, err := s.queryClient.RedelegationMappings(
+		s.ctx.Context(), &types.QueryRedelegationMappingsRequest{},
 	)
 	s.Require().NoError(err)
-	s.Require().Len(resp.RedelegatingPositions, 1)
-	s.Require().Equal(types.GetDelegatorAddress(pos.Id).String(), resp.RedelegatingPositions[0].DelegatorAddress)
-	s.Require().Equal(pos.Id, resp.RedelegatingPositions[0].PositionId)
+	s.Require().Len(resp.RedelegationMappings, 1)
+	s.Require().NotZero(resp.RedelegationMappings[0].UnbondingId)
+	s.Require().Equal(pos.Id, resp.RedelegationMappings[0].PositionId)
 }

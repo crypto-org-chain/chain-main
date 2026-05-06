@@ -246,7 +246,7 @@ require (
 
 replace github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881
 
-replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20260505133311-344d998e3e7e
+replace github.com/cosmos/cosmos-sdk => /Users/randy.ang/Documents/code/randy-cosmos-sdk
 
 replace (
 	// use cosmos fork of keyring

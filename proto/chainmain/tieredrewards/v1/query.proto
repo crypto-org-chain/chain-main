@@ -84,10 +84,10 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/validator_data/{validator}";
   }
 
-  // RedelegatingPositions returns all tier positions currently undergoing a
-  // staking redelegation, keyed by the position's delegator address.
-  rpc RedelegatingPositions(QueryRedelegatingPositionsRequest) returns (QueryRedelegatingPositionsResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/redelegating_positions";
+  // RedelegationMappings returns all tier position redelegation-entry mappings,
+  // keyed by the staking unbonding id of each entry.
+  rpc RedelegationMappings(QueryRedelegationMappingsRequest) returns (QueryRedelegationMappingsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/redelegation_mappings";
   }
 }
 
@@ -258,16 +258,15 @@ message QueryValidatorDataResponse {
   uint64 event_current_seq = 3;
 }
 
-// QueryRedelegatingPositionsRequest is the request type for the
-// Query/RedelegatingPositions RPC method.
-message QueryRedelegatingPositionsRequest {
+// QueryRedelegationMappingsRequest is the request type for the
+// Query/RedelegationMappings RPC method.
+message QueryRedelegationMappingsRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-// QueryRedelegatingPositionsResponse is the response type for the
-// Query/RedelegatingPositions RPC method.
-message QueryRedelegatingPositionsResponse {
-  repeated RedelegatingPosition redelegating_positions = 1
-      [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
-  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+// QueryRedelegationMappingsResponse is the response type for the
+// Query/RedelegationMappings RPC method.
+message QueryRedelegationMappingsResponse {
+  repeated RedelegationMapping redelegation_mappings = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination  = 2;
 }

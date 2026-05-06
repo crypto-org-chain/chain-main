@@ -75,22 +75,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 		}
 	}
 
-	for _, entry := range data.RedelegatingPositions {
-		delAddr, err := sdk.AccAddressFromBech32(entry.DelegatorAddress)
-		if err != nil {
-			panic(fmt.Errorf("invalid redelegating delegator address %q: %w", entry.DelegatorAddress, err))
-		}
-		reds, err := k.stakingKeeper.GetRedelegations(ctx, delAddr, 1)
-		if err != nil {
-			panic(fmt.Errorf("failed to query staking redelegations for position %d: %w", entry.PositionId, err))
-		}
-		if len(reds) == 0 {
+	for _, entry := range data.RedelegationMappings {
+		if _, err := k.stakingKeeper.GetRedelegationByUnbondingID(ctx, entry.UnbondingId); err != nil {
 			panic(fmt.Errorf(
-				"redelegating position %d (delegator %s) has no active staking redelegation",
-				entry.PositionId, entry.DelegatorAddress,
+				"redelegation mapping (unbonding_id=%d, position_id=%d) has no matching staking redelegation: %w",
+				entry.UnbondingId, entry.PositionId, err,
 			))
 		}
-		if err := k.setRedelegatingPosition(ctx, delAddr, entry.PositionId); err != nil {
+		if err := k.setRedelegationMapping(ctx, entry.UnbondingId, entry.PositionId); err != nil {
 			panic(err)
 		}
 	}
@@ -162,11 +154,11 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	var redelegatingPositions []types.RedelegatingPosition
-	err = k.RedelegatingPositionByAddr.Walk(ctx, nil, func(delAddr sdk.AccAddress, positionId uint64) (bool, error) {
-		redelegatingPositions = append(redelegatingPositions, types.RedelegatingPosition{
-			DelegatorAddress: delAddr.String(),
-			PositionId:       positionId,
+	var redelegationMappings []types.RedelegationMapping
+	err = k.RedelegationMappings.Walk(ctx, nil, func(unbondingId, positionId uint64) (bool, error) {
+		redelegationMappings = append(redelegationMappings, types.RedelegationMapping{
+			UnbondingId: unbondingId,
+			PositionId:  positionId,
 		})
 		return false, nil
 	})
@@ -200,12 +192,12 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	return &types.GenesisState{
-		Params:                params,
-		Tiers:                 tiers,
-		Positions:             positions,
-		NextPositionId:        nextPositionId,
-		RedelegatingPositions: redelegatingPositions,
-		ValidatorEvents:       validatorEvents,
-		ValidatorEventSeqs:    validatorEventSeqs,
+		Params:               params,
+		Tiers:                tiers,
+		Positions:            positions,
+		NextPositionId:       nextPositionId,
+		RedelegationMappings: redelegationMappings,
+		ValidatorEvents:      validatorEvents,
+		ValidatorEventSeqs:   validatorEventSeqs,
 	}
 }
