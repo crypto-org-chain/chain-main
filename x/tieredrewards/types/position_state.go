@@ -27,6 +27,13 @@ func (p PositionState) Validate() error {
 		if _, err := sdk.ValAddressFromBech32(p.Delegation.ValidatorAddress); err != nil {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
+		expectedDelAddr := GetDelegatorAddress(p.Id).String()
+		if p.Delegation.DelegatorAddress != expectedDelAddr {
+			return fmt.Errorf(
+				"delegation delegator address %q does not match expected %q for position %d",
+				p.Delegation.DelegatorAddress, expectedDelAddr, p.Id,
+			)
+		}
 		if !p.Delegation.Shares.IsPositive() {
 			return fmt.Errorf("delegated shares must be positive when validator is set")
 		}

@@ -96,6 +96,16 @@ func TestPositionState_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "last_known_bonded must be false when position is undelegated",
 		},
+		{
+			name: "delegation.DelegatorAddress does not match GetDelegatorAddress(pos.Id)",
+			build: func() types.PositionState {
+				del := validDelegation()
+				del.DelegatorAddress = types.GetDelegatorAddress(999).String()
+				return types.PositionState{Position: validDelegatedPosition(), Delegation: del}
+			},
+			wantErr:     true,
+			errContains: "does not match expected",
+		},
 	}
 
 	for _, tt := range tests {
