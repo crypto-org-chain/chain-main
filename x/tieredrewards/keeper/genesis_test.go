@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
@@ -354,4 +355,58 @@ func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegationMapping() {
 	gotPosID, err := s.keeper.RedelegationMappings.Get(s.ctx, unbondingID)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), gotPosID)
+}
+
+func (s *KeeperSuite) TestInitGenesis_PanicsOnRedelegationMappingDelegatorMismatch() {
+	vals, bondDenom := s.getStakingData()
+	val := vals[0]
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
+
+	owner := sdk.AccAddress([]byte("genesis_mismatch_own")).String()
+	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
+	s.ctx = s.ctx.WithBlockTime(now)
+
+	// Real staking redelegation issued by GetDelegatorAddress(1) — i.e. owned
+	// by position 1.
+	lockAmount := sdkmath.NewInt(1000)
+	delAddr := types.GetDelegatorAddress(1)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
+	_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	dstValAddr, _ := s.createSecondValidator()
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr, valAddr)
+	s.Require().NoError(err)
+	_, unbondingID, err := s.app.StakingKeeper.BeginRedelegation(s.ctx, delAddr, valAddr, dstValAddr, del.Shares.Quo(sdkmath.LegacyNewDec(2)))
+	s.Require().NoError(err)
+	s.Require().NotZero(unbondingID)
+
+	tier := types.Tier{
+		Id:            1,
+		ExitDuration:  time.Hour * 24,
+		BonusApy:      sdkmath.LegacyNewDecWithPrec(4, 2),
+		MinLockAmount: sdkmath.NewInt(100),
+	}
+	pos1 := types.NewPosition(1, owner, 1, 100, 0, now, true, now)
+	pos2 := types.NewPosition(2, owner, 1, 100, 0, time.Time{}, false, now)
+
+	// Mapping pairs the real unbondingId (owned by position 1) with position 2.
+	genesisState := &types.GenesisState{
+		Params:         types.DefaultParams(),
+		Tiers:          []types.Tier{tier},
+		Positions:      []types.Position{pos1, pos2},
+		NextPositionId: 3,
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: unbondingID, PositionId: 2},
+		},
+	}
+
+	s.Require().PanicsWithError(
+		fmt.Sprintf(
+			"redelegation mapping (unbonding_id=%d, position_id=2) delegator mismatch: staking has %q, expected %q",
+			unbondingID, delAddr.String(), types.GetDelegatorAddress(2).String(),
+		),
+		func() { s.keeper.InitGenesis(s.ctx, genesisState) },
+	)
 }

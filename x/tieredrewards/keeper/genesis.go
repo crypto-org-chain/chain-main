@@ -76,10 +76,18 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	}
 
 	for _, entry := range data.RedelegationMappings {
-		if _, err := k.stakingKeeper.GetRedelegationByUnbondingID(ctx, entry.UnbondingId); err != nil {
+		red, err := k.stakingKeeper.GetRedelegationByUnbondingID(ctx, entry.UnbondingId)
+		if err != nil {
 			panic(fmt.Errorf(
 				"redelegation mapping (unbonding_id=%d, position_id=%d) has no matching staking redelegation: %w",
 				entry.UnbondingId, entry.PositionId, err,
+			))
+		}
+		expectedDelAddr := types.GetDelegatorAddress(entry.PositionId).String()
+		if red.DelegatorAddress != expectedDelAddr {
+			panic(fmt.Errorf(
+				"redelegation mapping (unbonding_id=%d, position_id=%d) delegator mismatch: staking has %q, expected %q",
+				entry.UnbondingId, entry.PositionId, red.DelegatorAddress, expectedDelAddr,
 			))
 		}
 		if err := k.setRedelegationMapping(ctx, entry.UnbondingId, entry.PositionId); err != nil {

@@ -26,7 +26,7 @@ func newRedelegationMappingsIndexes(sb *collections.SchemaBuilder) RedelegationM
 			"redelegation_mappings_by_position",
 			collections.Uint64Key,
 			collections.Uint64Key,
-			func(_ uint64, positionId uint64) (uint64, error) {
+			func(_, positionId uint64) (uint64, error) {
 				return positionId, nil
 			},
 		),
