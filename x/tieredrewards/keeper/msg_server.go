@@ -317,7 +317,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		if err != nil {
 			return nil, err
 		}
-		
+
 		pos.UpdateBonusCheckpoints(latestSeq, sdkCtx.BlockTime())
 	}
 
