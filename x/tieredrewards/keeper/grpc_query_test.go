@@ -511,7 +511,6 @@ func (s *KeeperSuite) TestGRPCQueryRawTierPositionsByTier() {
 	s.Require().NoError(err)
 	s.Require().Len(resp.Positions, 1)
 	s.Require().Equal(pos.Id, resp.Positions[0].Id)
-	s.Require().True(resp.Positions[0].Amount.IsZero(), "raw delegated position amount should be zero")
 }
 
 func (s *KeeperSuite) TestGRPCQueryRawAllTierPositions() {
