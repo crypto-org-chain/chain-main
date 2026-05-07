@@ -133,4 +133,3 @@ func (k Keeper) deleteRedelegationMappingsForPosition(ctx context.Context, posit
 func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
 	return k.hasPositionMapping(ctx, k.RedelegationMappings, positionId)
 }
-
