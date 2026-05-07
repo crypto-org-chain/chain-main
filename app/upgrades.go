@@ -44,6 +44,7 @@ var CircuitSuperAdmins = map[string][]string{
 
 const testnetBurnAddress = "tcro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9dpzma"
 
+// comment
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	app.registerV7UpgradeHandler()
 	app.registerV7TestnetUpgradeHandler()
