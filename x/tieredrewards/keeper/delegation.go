@@ -87,7 +87,7 @@ func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingt
 	return &d, nil
 }
 
-func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+func (k Keeper) isRedelegating(ctx context.Context, positionId uint64) (bool, error) {
 	reds, err := k.stakingKeeper.GetRedelegations(ctx, types.GetDelegatorAddress(positionId), 1)
 	if err != nil {
 		return false, err
@@ -95,7 +95,7 @@ func (k Keeper) stillRedelegating(ctx context.Context, positionId uint64) (bool,
 	return len(reds) > 0, nil
 }
 
-func (k Keeper) stillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
+func (k Keeper) isUnbonding(ctx context.Context, positionId uint64) (bool, error) {
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, types.GetDelegatorAddress(positionId), 1)
 	if err != nil {
 		return false, err

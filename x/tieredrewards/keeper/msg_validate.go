@@ -77,7 +77,7 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrTierIsCloseOnly
 	}
 
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	redelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
@@ -128,7 +128,7 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionSta
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		unbonding, err := k.stillUnbonding(ctx, pos.Id)
+		unbonding, err := k.isUnbonding(ctx, pos.Id)
 		if err != nil {
 			return err
 		}
@@ -180,7 +180,7 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionDelegated
 	}
 
-	unbonding, err := k.stillUnbonding(ctx, pos.Id)
+	unbonding, err := k.isUnbonding(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
 	}
 
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	redelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return err
 	}

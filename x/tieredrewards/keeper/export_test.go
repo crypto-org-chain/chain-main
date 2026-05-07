@@ -109,12 +109,12 @@ func (k Keeper) CreateDelegatedPosition(
 	return k.createDelegatedPosition(ctx, owner, tier, lastEventSeq, triggerExitImmediately)
 }
 
-func (k Keeper) StillUnbonding(ctx context.Context, positionId uint64) (bool, error) {
-	return k.stillUnbonding(ctx, positionId)
+func (k Keeper) IsUnbonding(ctx context.Context, positionId uint64) (bool, error) {
+	return k.isUnbonding(ctx, positionId)
 }
 
-func (k Keeper) StillRedelegating(ctx context.Context, positionId uint64) (bool, error) {
-	return k.stillRedelegating(ctx, positionId)
+func (k Keeper) IsRedelegating(ctx context.Context, positionId uint64) (bool, error) {
+	return k.isRedelegating(ctx, positionId)
 }
 
 func (k Keeper) ComputeSegmentBonus(pos types.PositionState, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {

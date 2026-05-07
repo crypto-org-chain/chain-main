@@ -202,7 +202,7 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 	_ = posDelAddr
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should exist after TierRedelegate")
 
@@ -221,7 +221,7 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	has, err = s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err = s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "clearing exit should not delete pending redelegation tracking")
 }
@@ -261,7 +261,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
 	// the slash has already cleared delegation from the position.
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should remain active for this corner case")
 

@@ -537,7 +537,7 @@ func (s *KeeperSuite) TestRedelegationMappings_AfterRedelegate() {
 	})
 	s.Require().NoError(err)
 
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should be populated after TierRedelegate")
 }

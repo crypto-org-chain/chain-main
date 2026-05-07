@@ -111,7 +111,7 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 	}
 
 	// Defensive
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	redelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}

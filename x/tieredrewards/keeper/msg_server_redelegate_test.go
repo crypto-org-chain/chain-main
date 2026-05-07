@@ -37,7 +37,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh destination validator")
 
 	// Verify the redelegating-position reverse mapping was populated.
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegating position mapping should be populated after TierRedelegate")
 }
@@ -395,12 +395,12 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().True(posAfter.Delegation.Shares.IsPositive())
 
 	// Reverse mapping should contain the entry (unlike the fully-Unbonded case).
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(has, "redelegation mapping should exist for unbonding src redelegate")
 
-	// StillRedelegating should return true since the redelegation entry is active.
-	redelegating, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	// IsRedelegating should return true since the redelegation entry is active.
+	redelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(redelegating, "position should still be redelegating")
 
@@ -417,7 +417,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	})
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation,
-		"second redelegate should be blocked by the tier-level stillRedelegating guard")
+		"second redelegate should be blocked by the tier-level isRedelegating guard")
 }
 
 // TestMsgTierRedelegate_FromUnbondedSrc_NoMapping verifies that when the source
@@ -472,12 +472,12 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err)
 
 	// No mapping for the unbonded-src validator
-	has, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(has, "no reverse mapping should be written when src is fully unbonded")
 
-	// stillRedelegating is false — no redelegation entry was created.
-	redel, err := s.keeper.StillRedelegating(s.ctx, pos.Id)
+	// IsRedelegating is false — no redelegation entry was created.
+	redel, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(redel, "no redelegation entry for completeNow path")
 
