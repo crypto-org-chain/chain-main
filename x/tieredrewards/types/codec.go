@@ -16,7 +16,6 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgDeleteTier{}, "chainmain/MsgDeleteTier")
 	legacy.RegisterAminoMsg(cdc, &MsgLockTier{}, "chainmain/MsgLockTier")
 	legacy.RegisterAminoMsg(cdc, &MsgCommitDelegationToTier{}, "chainmain/MsgCommitDelegationToTier")
-	legacy.RegisterAminoMsg(cdc, &MsgTierDelegate{}, "chainmain/MsgTierDelegate")
 	legacy.RegisterAminoMsg(cdc, &MsgTierUndelegate{}, "chainmain/MsgTierUndelegate")
 	legacy.RegisterAminoMsg(cdc, &MsgTierRedelegate{}, "chainmain/MsgTierRedelegate")
 	legacy.RegisterAminoMsg(cdc, &MsgAddToTierPosition{}, "chainmain/MsgAddToTierPosition")
@@ -36,7 +35,6 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgDeleteTier{},
 		&MsgLockTier{},
 		&MsgCommitDelegationToTier{},
-		&MsgTierDelegate{},
 		&MsgTierUndelegate{},
 		&MsgTierRedelegate{},
 		&MsgAddToTierPosition{},
