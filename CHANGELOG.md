@@ -5,6 +5,7 @@
 ### Improvements
 
 - [#1284](https://github.com/crypto-org-chain/chain-main/pull/1284) feat(x/tieredrewards): add gRPC queries and CLI commands to list positions by tier id.
+- [#1293](https://github.com/crypto-org-chain/chain-main/pull/1293) feat(x/tieredrewards)!: remove `MsgTierDelegate` - this message was only reachable as a recovery path for fully-slashed positions.
 
 *Apr 25, 2026*
 
@@ -17,7 +18,7 @@
 - [#1269](https://github.com/crypto-org-chain/chain-main/pull/1269) feat(x/tieredrewards): MsgClaimTierRewards now accepts multiple position IDs to claim rewards in a single transaction.
 - [#1271](https://github.com/crypto-org-chain/chain-main/pull/1271) feat(x/tieredrewards): add initial tier definitions in upgrade handler and allow zero MinLockAmount.
 - [#1272](https://github.com/crypto-org-chain/chain-main/pull/1272) feat(x/tieredrewards): claim bonus rewards lazily upon validator event (unbonding/slashing), amount should be zero when delegated and populated when position is undelegated
-- [#1275](https://github.com/crypto-org-chain/chain-main/pull/1275) feat: update testnet upgrade params and tiers.
+- [#1275](https://github.com/crypto-org-chain/chain-main/pull/1275) feat(x/tieredrewards): update testnet upgrade params and tiers.
 
 ### Improvements
 

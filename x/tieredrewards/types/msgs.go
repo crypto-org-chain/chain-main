@@ -14,7 +14,6 @@ const MaxClaimPositionIds = 300
 var (
 	_ sdk.Msg = &MsgLockTier{}
 	_ sdk.Msg = &MsgCommitDelegationToTier{}
-	_ sdk.Msg = &MsgTierDelegate{}
 	_ sdk.Msg = &MsgTierUndelegate{}
 	_ sdk.Msg = &MsgTierRedelegate{}
 	_ sdk.Msg = &MsgAddToTierPosition{}
@@ -59,18 +58,6 @@ func (msg MsgCommitDelegationToTier) Validate() error {
 	}
 
 	if _, err := sdk.ValAddressFromBech32(msg.ValidatorAddress); err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
-	}
-
-	return nil
-}
-
-func (msg MsgTierDelegate) Validate() error {
-	if _, err := sdk.AccAddressFromBech32(msg.Owner); err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-	}
-
-	if _, err := sdk.ValAddressFromBech32(msg.Validator); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid validator address")
 	}
 
