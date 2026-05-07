@@ -296,10 +296,10 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
-	s.Require().True(s.positionAmount(posAfter).IsZero(), "delegated position should still have zero amount after slash")
+	s.Require().True(s.getPositionAmount(posAfter).IsZero(), "delegated position should still have zero amount after slash")
 	s.Require().True(posAfter.Delegation.Shares.IsPositive(), "expected delegated shares to remain positive")
 
 	voter := sdk.MustAccAddressFromBech32(pos.Owner)

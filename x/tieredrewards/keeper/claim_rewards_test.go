@@ -33,7 +33,7 @@ func (s *KeeperSuite) TestClaimRewards_Undelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, posSetup.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, posSetup.Id)
 	s.Require().NoError(err)
 
 	_, base, bonus, err := s.keeper.ClaimRewards(s.ctx, pos)
@@ -94,7 +94,7 @@ func (s *KeeperSuite) TestClaimRewardsForPositions_MixedDelegatedUndelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos1After, err := s.keeper.LoadPositionState(s.ctx, pos1.Id)
+	pos1After, err := s.keeper.GetPositionState(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos1After.IsDelegated(), "pos1 should be undelegated")
 
@@ -117,11 +117,11 @@ func (s *KeeperSuite) TestClaimRewardsForPositions_MixedDelegatedUndelegated() {
 	s.Require().True(bonus1.IsZero(), "undelegated position should earn zero bonus rewards")
 
 	// Verify both positions are persisted in store.
-	persistedPos0, err := s.keeper.LoadPositionState(s.ctx, pos0.Id)
+	persistedPos0, err := s.keeper.GetPositionState(s.ctx, pos0.Id)
 	s.Require().NoError(err)
 	s.Require().True(persistedPos0.IsDelegated(), "pos0 should still be delegated")
 
-	persistedPos1, err := s.keeper.LoadPositionState(s.ctx, pos1.Id)
+	persistedPos1, err := s.keeper.GetPositionState(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().False(persistedPos1.IsDelegated(), "pos1 should still be undelegated")
 }
@@ -233,7 +233,7 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.Require().NoError(err)
 
 	// Verify LastBonusAccrual was advanced to current block time.
-	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(s.ctx.BlockTime(), updated.LastBonusAccrual)
 
@@ -257,14 +257,14 @@ func (s *KeeperSuite) TestBonusAccrual_ResumesAfterRebond() {
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 
 	// Re-read position from store to get updated checkpoints from first claim.
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Claim to process the BOND event and advance LastBonusAccrual.
 	_, _, err = s.keeper.ClaimRewardsAndUpdatesPositions(s.ctx, []types.PositionState{pos})
 	s.Require().NoError(err)
 
-	updated, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(s.ctx.BlockTime(), updated.LastBonusAccrual)
 }
@@ -661,7 +661,7 @@ func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
 	s.Require().NoError(err)
 
 	// --- Claim and verify ---
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	seg1 := s.keeper.ComputeSegmentBonus(pos, tier, T0, T_slash, rate1)
@@ -683,7 +683,7 @@ func (s *KeeperSuite) TestProcessEvents_AllThreeEventTypes_SlashUnbondBond() {
 	s.Require().True(rate1.GT(rate2), "rate should decrease after slash: rate1=%s, rate2=%s", rate1, rate2)
 
 	// Second claim — zero.
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	bonus2, err := s.keeper.ProcessEventsAndClaimBonus(s.ctx, &pos)
 	s.Require().NoError(err)
@@ -893,7 +893,7 @@ func (s *KeeperSuite) TestProcessEvents_UndelegatedPosition_Zero() {
 	})
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(posAfter.IsDelegated(), "position should be undelegated")
 

@@ -29,7 +29,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
@@ -92,7 +92,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitInProgress() {
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Exit is triggered but NOT elapsed.
-	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit())
 	s.Require().False(pos.CompletedExitLockDuration(s.ctx.BlockTime()))
@@ -106,7 +106,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 	s.Require().True(pos.HasTriggeredExit())
@@ -126,7 +126,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_ExitElapsed() {
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 
 	// Exit has elapsed, position still delegated.
-	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.CompletedExitLockDuration(s.ctx.BlockTime()))
 
@@ -266,7 +266,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_TransitiveRedelegation() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress, "position should be on validator B")
 
@@ -337,7 +337,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_DstValidatorNotBonded() {
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 
 	// Position should remain on the original validator.
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valAddr.String(), posAfter.Delegation.ValidatorAddress, "position should stay on original validator")
 }
@@ -364,7 +364,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// Jail src validator → transitions to Unbonding (not yet Unbonded).
@@ -389,7 +389,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().False(redResp.CompletionTime.IsZero(), "completion time should be set for unbonding src")
 
 	// Position should now be on the destination validator.
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(dstValAddr.String(), posAfter.Delegation.ValidatorAddress)
 	s.Require().True(posAfter.Delegation.Shares.IsPositive())
@@ -442,7 +442,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	})
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// Jail src validator → Unbonding status.
@@ -497,7 +497,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err, "second redelegate should succeed — no transitive block")
 
 	// Position should now be on src validator.
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(srcValAddr.String(), posAfter.Delegation.ValidatorAddress)
 }
@@ -558,10 +558,10 @@ func (s *KeeperSuite) TestMsgTierRedelegate_MultiplePositionsNoTransitiveBlock()
 	})
 	s.Require().NoError(err, "pos2 B→A must not be blocked by pos1's pending A→B redelegation")
 
-	pos1, err := s.keeper.LoadPositionState(s.ctx, pos1Id)
+	pos1, err := s.keeper.GetPositionState(s.ctx, pos1Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valB.String(), pos1.Delegation.ValidatorAddress)
-	pos2, err := s.keeper.LoadPositionState(s.ctx, pos2Id)
+	pos2, err := s.keeper.GetPositionState(s.ctx, pos2Id)
 	s.Require().NoError(err)
 	s.Require().Equal(valA.String(), pos2.Delegation.ValidatorAddress)
 }

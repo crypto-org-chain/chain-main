@@ -80,7 +80,7 @@ func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 	}
 
 	err = k.Positions.Walk(ctx, nil, func(posId uint64, _ types.Position) (bool, error) {
-		state, err := k.loadPositionState(ctx, posId)
+		state, err := k.getPositionState(ctx, posId)
 		if err != nil {
 			return true, err
 		}

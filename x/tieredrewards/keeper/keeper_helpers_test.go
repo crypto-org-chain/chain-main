@@ -70,7 +70,7 @@ func (s *KeeperSuite) setupNewTierPosition(lockAmount sdkmath.Int, triggerExitIm
 	})
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	state, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	return state
 }
@@ -97,7 +97,7 @@ func (s *KeeperSuite) setupNewTierPositionWithDelegator(lockAmount sdkmath.Int, 
 	})
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	state, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	return state
 }
@@ -277,11 +277,10 @@ func (s *KeeperSuite) createSecondValidator() (sdk.ValAddress, sdk.AccAddress) {
 	return valAddr, accAddr
 }
 
-// positionAmount returns the live derived amount for pos via the keeper.
-// Convenience for tests that used to read s.positionAmount(pos) directly on a Position.
-func (s *KeeperSuite) positionAmount(pos types.PositionState) sdkmath.Int {
+// getPositionAmount returns the live derived amount for pos via the keeper.
+func (s *KeeperSuite) getPositionAmount(pos types.PositionState) sdkmath.Int {
 	s.T().Helper()
-	amount, err := s.keeper.PositionAmount(s.ctx, pos)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, pos)
 	s.Require().NoError(err)
 	return amount
 }
@@ -297,9 +296,9 @@ func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types
 
 	originalVal := pos.Delegation.ValidatorAddress
 	pos.ResetBonusCheckpoints()
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, &keeper.ValidatorUpdate{Previous: originalVal}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, &keeper.ValidatorUpdate{From: originalVal}))
 
-	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	return updated
 }

@@ -69,7 +69,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
 
-	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
+	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{From: ""}); err != nil {
 		return nil, err
 	}
 
@@ -125,7 +125,8 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	if pos.Id != id {
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
-	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
+
+	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{From: ""}); err != nil {
 		return nil, err
 	}
 
@@ -145,7 +146,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +175,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	pos.ResetBonusCheckpoints()
 
-	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: srcValidator}); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{From: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +201,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +248,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{Previous: srcValidator}); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{From: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -274,7 +275,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +343,7 @@ func (ms msgServer) TriggerExitFromTier(ctx context.Context, msg *types.MsgTrigg
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -383,7 +384,7 @@ func (ms msgServer) ClearPosition(ctx context.Context, msg *types.MsgClearPositi
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -426,7 +427,7 @@ func (ms msgServer) ClaimTierRewards(ctx context.Context, msg *types.MsgClaimTie
 
 	positions := make([]types.PositionState, 0, len(msg.PositionIds))
 	for _, posId := range msg.PositionIds {
-		pos, err := ms.loadPositionState(ctx, posId)
+		pos, err := ms.getPositionState(ctx, posId)
 		if err != nil {
 			return nil, err
 		}
@@ -465,7 +466,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +512,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	pos, err := ms.loadPositionState(ctx, msg.PositionId)
+	pos, err := ms.getPositionState(ctx, msg.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -563,7 +564,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			}
 		}
 
-		if err := ms.deletePosition(ctx, pos.Position, &ValidatorUpdate{Previous: validator}); err != nil {
+		if err := ms.deletePosition(ctx, pos.Position, &ValidatorUpdate{From: validator}); err != nil {
 			return nil, err
 		}
 

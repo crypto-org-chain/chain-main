@@ -28,10 +28,10 @@ func (s *KeeperSuite) TestMsgLockTier_Basic() {
 	s.Require().NotNil(resp)
 
 	// Position should be persisted
-	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
-	s.Require().True(s.positionAmount(pos).Equal(msg.Amount), "derived amount should equal locked amount")
+	s.Require().True(s.getPositionAmount(pos).Equal(msg.Amount), "derived amount should equal locked amount")
 	s.Require().True(pos.IsDelegated())
 	s.Require().Equal(valAddr.String(), pos.Delegation.ValidatorAddress)
 	s.Require().True(pos.Delegation.Shares.IsPositive())
@@ -66,7 +66,7 @@ func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
 	})
 	s.Require().NoError(err)
 
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// The second position's LastEventSeq should equal 1 (the slash event seq).
@@ -74,7 +74,7 @@ func (s *KeeperSuite) TestMsgLockTier_LastEventSeqSkipsPriorEvents() {
 		"new position should skip prior events; LastEventSeq should be 1 (the slash event)")
 
 	// The first position's LastEventSeq should still be 0 (set at creation, before the slash).
-	pos1, err = s.keeper.LoadPositionState(s.ctx, pos1.Id)
+	pos1, err = s.keeper.GetPositionState(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,
 		"first position's LastEventSeq should remain 0")
@@ -98,7 +98,7 @@ func (s *KeeperSuite) TestMsgLockTier_WithImmediateTriggerExit() {
 	resp, err := msgServer.LockTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 }

@@ -52,7 +52,7 @@ func (k Keeper) claimRewardsAndUpdateTierPositions(ctx context.Context, tierId u
 	}
 
 	for _, id := range ids {
-		pos, err := k.loadPositionState(ctx, id)
+		pos, err := k.getPositionState(ctx, id)
 		if err != nil {
 			return err
 		}

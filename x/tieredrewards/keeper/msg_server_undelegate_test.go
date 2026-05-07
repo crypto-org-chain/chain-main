@@ -33,7 +33,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
@@ -161,7 +161,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos, err = s.keeper.LoadPositionState(s.ctx, positions[0].Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, positions[0].Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 
@@ -173,7 +173,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
@@ -198,7 +198,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos, err = s.keeper.LoadPositionState(s.ctx, positions[0].Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, positions[0].Id)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -240,9 +240,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
 
@@ -271,7 +271,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_TierCloseOnly_Succeeds() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero(), "undelegation should succeed on CloseOnly tier")
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
@@ -321,7 +321,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ManyPositionsSameValidator() {
 	}
 
 	for i := 0; i < numPositions; i++ {
-		pos, err := s.keeper.LoadPositionState(s.ctx, positionIds[i])
+		pos, err := s.keeper.GetPositionState(s.ctx, positionIds[i])
 		s.Require().NoError(err)
 		s.Require().False(pos.IsDelegated(), "position %d should be undelegated", i)
 	}

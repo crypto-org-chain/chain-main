@@ -63,7 +63,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 			panic(fmt.Errorf("position state validation failed for position %d: %w", pos.Id, err))
 		}
 
-		if err := k.setPosition(ctx, pos, &ValidatorUpdate{Previous: ""}); err != nil {
+		if err := k.setPosition(ctx, pos, &ValidatorUpdate{From: ""}); err != nil {
 			panic(err)
 		}
 	}

@@ -28,7 +28,7 @@ func (s *KeeperSuite) setupRedelegatingPosition(lockAmount sdkmath.Int) (types.P
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().NoError(err)
-	updatedPos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updatedPos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Walk RedelegationMappings to find the unbonding id for this position.
@@ -89,7 +89,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_ClaimsBonusRewardsUpToSlash(
 		"owner should have received bonus rewards accrued up to slash: before=%s after=%s",
 		balBefore.Amount, balAfter.Amount)
 
-	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(updated.LastBonusAccrual.After(preAccrual),
 		"LastBonusAccrual should have advanced past the pre-slash checkpoint")
@@ -141,7 +141,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_PartialSlashPaysBonusOnPreSl
 		expectedBonus, actualBonus)
 
 	// Checkpoints advanced by processEventsAndClaimBonus.
-	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(updated.LastBonusAccrual.Equal(s.ctx.BlockTime()),
 		"LastBonusAccrual should advance to the slash block time")
@@ -187,7 +187,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_FullSlashStillPaysBonus() {
 		"bonus must match ComputeSegmentBonus on pre-slash PositionState even on full slash: expected=%s, got=%s",
 		expectedBonus, actualBonus)
 
-	updated, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(updated.LastBonusAccrual.IsZero(), "ResetBonusCheckpoints should have zeroed LastBonusAccrual")
 	s.Require().False(updated.LastKnownBonded, "ResetBonusCheckpoints should have cleared LastKnownBonded")

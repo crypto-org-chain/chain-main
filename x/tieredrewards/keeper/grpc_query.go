@@ -43,11 +43,11 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 		q.k.Positions,
 		req.Pagination,
 		func(_ uint64, pos types.Position) (types.PositionResponse, error) {
-			state, err := q.k.loadPositionState(ctx, pos.Id)
+			state, err := q.k.getPositionState(ctx, pos.Id)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.positionAmount(ctx, state)
+			tokenValue, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
@@ -78,11 +78,11 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 		q.k.PositionsByOwner,
 		req.Pagination,
 		func(key collections.Pair[sdk.AccAddress, uint64], _ collections.NoValue) (types.PositionResponse, error) {
-			state, err := q.k.loadPositionState(ctx, key.K2())
+			state, err := q.k.getPositionState(ctx, key.K2())
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.positionAmount(ctx, state)
+			tokenValue, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
@@ -102,12 +102,12 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.loadPositionState(ctx, req.PositionId)
+	pos, err := q.k.getPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenValue, err := q.k.positionAmount(ctx, pos)
+	tokenValue, err := q.k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.loadPositionState(ctx, req.PositionId)
+	pos, err := q.k.getPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}

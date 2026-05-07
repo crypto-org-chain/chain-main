@@ -25,7 +25,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 		return err
 	}
 
-	pos, err := k.loadPositionState(ctx, positionId)
+	pos, err := k.getPositionState(ctx, positionId)
 	if errors.Is(err, types.ErrPositionNotFound) {
 		k.logger(ctx).Error("position not found during redelegation slash",
 			"position_id", positionId,
@@ -68,7 +68,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 	if fullSlash {
 		pos.Delegation = nil
 		pos.ResetBonusCheckpoints()
-		return k.setPositionWithState(ctx, pos, &ValidatorUpdate{Previous: dstValStr})
+		return k.setPositionWithState(ctx, pos, &ValidatorUpdate{From: dstValStr})
 	}
 	// In-memory only: the persisted Position carries no share count, and the
 	// live delegation will reflect the post-Unbond shares on the next read.

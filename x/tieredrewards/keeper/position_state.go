@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (k Keeper) loadPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
+func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
 	pos, err := k.getPosition(ctx, posId)
 	if err != nil {
 		return types.PositionState{}, err
@@ -23,14 +23,14 @@ func (k Keeper) loadPositionState(ctx context.Context, posId uint64) (types.Posi
 	return types.PositionState{Position: pos, Delegation: del}, nil
 }
 
-func (k Keeper) positionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
+func (k Keeper) getPositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
 	if pos.IsDelegated() {
-		return k.delegatedAmount(ctx, pos)
+		return k.getDelegatedAmount(ctx, pos)
 	}
-	return k.undelegatedAmount(ctx, pos.Position)
+	return k.getUndelegatedAmount(ctx, pos.Position)
 }
 
-func (k Keeper) delegatedAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
+func (k Keeper) getDelegatedAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
 	valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	if err != nil {
 		return math.Int{}, err
@@ -38,7 +38,7 @@ func (k Keeper) delegatedAmount(ctx context.Context, pos types.PositionState) (m
 	return k.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
 }
 
-func (k Keeper) undelegatedAmount(ctx context.Context, pos types.Position) (math.Int, error) {
+func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (math.Int, error) {
 	delAddr := types.GetDelegatorAddress(pos.Id)
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {
@@ -64,7 +64,7 @@ func (k Keeper) GetPositionStatesByOwner(ctx context.Context, owner sdk.AccAddre
 	}
 	states := make([]types.PositionState, 0, len(ids))
 	for _, id := range ids {
-		state, err := k.loadPositionState(ctx, id)
+		state, err := k.getPositionState(ctx, id)
 		if errors.Is(err, types.ErrPositionNotFound) {
 			continue
 		}

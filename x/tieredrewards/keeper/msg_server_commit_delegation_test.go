@@ -37,7 +37,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().NoError(err)
 
 	// Position should exist and be delegated
-	pos, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(pos.IsDelegated())
@@ -83,7 +83,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	s.Require().NoError(err)
 
 	// Position should be delegated
-	pos, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 
@@ -129,7 +129,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_WithImmediateTriggerExit() {
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
@@ -234,7 +234,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	})
 	s.Require().NoError(err)
 
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// The new position's LastEventSeq should equal 1 (the slash event).
@@ -242,7 +242,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 		"new position should skip prior events; LastEventSeq should be 1")
 
 	// The first position's LastEventSeq should still be 0.
-	pos1, err = s.keeper.LoadPositionState(s.ctx, pos1.Id)
+	pos1, err = s.keeper.GetPositionState(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,
 		"first position's LastEventSeq should remain 0")

@@ -169,12 +169,12 @@ func (k Keeper) ClaimBaseRewards(ctx context.Context, pos types.PositionState) (
 	return k.claimBaseRewards(ctx, pos)
 }
 
-func (k Keeper) LoadPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
-	return k.loadPositionState(ctx, posId)
+func (k Keeper) GetPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
+	return k.getPositionState(ctx, posId)
 }
 
-func (k Keeper) PositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
-	return k.positionAmount(ctx, pos)
+func (k Keeper) GetPositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
+	return k.getPositionAmount(ctx, pos)
 }
 
 func (k Keeper) DeletePositionRedelegationMappings(ctx context.Context, positionId uint64) error {

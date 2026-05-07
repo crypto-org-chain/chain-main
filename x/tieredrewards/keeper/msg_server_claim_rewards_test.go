@@ -143,7 +143,7 @@ func (s *KeeperSuite) TestClaimTierRewards_ExitingPosition_EarnRewards() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 	s.Require().True(pos.IsDelegated(), "position should be delegated")
@@ -221,9 +221,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_BondedZeroAmount() {
 	// Slash validator 100% to zero out position amount via hook.
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero after 100%% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 
 	// Advance time so bonus would accrue (if amount were non-zero).
@@ -264,9 +264,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultiplePositions() {
 	s.Require().NoError(err)
 
 	// Read positions to get their DelegatedShares for expected bonus calculation.
-	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.GetPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -393,9 +393,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidators() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.GetPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -468,9 +468,9 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleTiers() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.GetPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -550,11 +550,11 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_MultipleValidatorsAndTiers() {
 	})
 	s.Require().NoError(err)
 
-	pos1, err := s.keeper.LoadPositionState(s.ctx, resp1.PositionId)
+	pos1, err := s.keeper.GetPositionState(s.ctx, resp1.PositionId)
 	s.Require().NoError(err)
-	pos2, err := s.keeper.LoadPositionState(s.ctx, resp2.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp2.PositionId)
 	s.Require().NoError(err)
-	pos3, err := s.keeper.LoadPositionState(s.ctx, resp3.PositionId)
+	pos3, err := s.keeper.GetPositionState(s.ctx, resp3.PositionId)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)

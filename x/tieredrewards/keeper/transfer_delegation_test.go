@@ -396,11 +396,11 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_NotDelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated())
 
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, s.positionAmount(pos))
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, s.getPositionAmount(pos))
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
@@ -424,11 +424,11 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_ActiveRedelegation() {
 	s.advancePastExitDuration()
 
 	// Re-fetch position after redelegate (validator changed).
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	newValAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, newValAddr, s.positionAmount(pos))
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, newValAddr, s.getPositionAmount(pos))
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
 

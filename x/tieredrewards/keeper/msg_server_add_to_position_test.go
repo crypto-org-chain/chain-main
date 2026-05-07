@@ -33,9 +33,9 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(addPosAmt.Equal(s.positionAmount(pos)), "amount should be 500 (added to zero)")
+	s.Require().True(addPosAmt.Equal(s.getPositionAmount(pos)), "amount should be 500 (added to zero)")
 	s.Require().False(pos.IsDelegated(), "position should remain undelegated")
 }
 
@@ -45,7 +45,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
-	posBefore, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	addPosAmt := sdkmath.NewInt(500)
@@ -60,9 +60,9 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 	})
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	tokenValue, err := s.keeper.PositionAmount(s.ctx, posAfter)
+	tokenValue, err := s.keeper.GetPositionAmount(s.ctx, posAfter)
 	s.Require().NoError(err)
 	s.Require().True(tokenValue.GTE(sdkmath.NewInt(1500)), "token value should be at least 1500")
 	s.Require().True(posAfter.Delegation.Shares.GT(posBefore.Delegation.Shares), "shares should increase")
@@ -233,7 +233,7 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_DelegatedToSlashedValidator() {
 	// lock amount is a perfect multiple of PowerReduction.
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
 
-	pos, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 

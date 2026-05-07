@@ -24,7 +24,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.ExitUnlockAt.IsZero())
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit())
 	s.Require().Equal(resp.ExitUnlockAt, pos.ExitUnlockAt)
@@ -90,7 +90,7 @@ func (s *KeeperSuite) TestExitTriggerClearCycles_BonusAccrualCorrectness() {
 	})
 	s.Require().NoError(err)
 
-	posAfterCycle1, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfterCycle1, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(posAfterCycle1.HasTriggeredExit(), "clear should reset exit state")
 	s.Require().True(posAfterCycle1.IsDelegated(), "clear cycle should keep delegated position active")
@@ -115,7 +115,7 @@ func (s *KeeperSuite) TestExitTriggerClearCycles_BonusAccrualCorrectness() {
 	})
 	s.Require().NoError(err)
 
-	posAfterCycle2, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	posAfterCycle2, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(posAfterCycle2.HasTriggeredExit(), "clear should reset exit state in repeated cycle")
 	s.Require().True(posAfterCycle2.IsDelegated(), "repeated clear should keep delegated position active")
@@ -140,7 +140,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	pos = s.slashRedelegationCompletely(pos)
 
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero")
 
 	// TriggerExit — should succeed on undelegated position.
 	resp, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
@@ -150,11 +150,11 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_Undelegated() {
 	s.Require().NoError(err)
 	s.Require().False(resp.ExitUnlockAt.IsZero())
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "exit should be triggered")
 	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(s.positionAmount(pos).IsZero(), "position amount should still be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should still be zero")
 }
 
 // TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds verifies that TriggerExit
@@ -178,7 +178,7 @@ func (s *KeeperSuite) TestMsgTriggerExitFromTier_TierCloseOnly_Succeeds() {
 	s.Require().NoError(err)
 	s.Require().False(resp.ExitUnlockAt.IsZero(), "exit should be triggered")
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 }

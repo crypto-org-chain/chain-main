@@ -253,7 +253,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 	_, bondDenom := s.getStakingData()
 
-	posBefore, err := s.keeper.LoadPositionState(s.ctx, uint64(0))
+	posBefore, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 
 	// Advance one block so the delegation's starting period in x/distribution
@@ -303,7 +303,7 @@ func (s *KeeperSuite) TestGRPCQueryEstimatePositionRewards_DelegatedWithBaseAndB
 	actualBonus := resp.BonusRewards.AmountOf(bondDenom)
 	s.Require().Equal(expectedBonus.String(), actualBonus.String(),
 		"bonus rewards should match what is calculated")
-	posAfter, err := s.keeper.LoadPositionState(s.ctx, 0)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, 0)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore, posAfter, "position state must remain unchanged by estimation")
 

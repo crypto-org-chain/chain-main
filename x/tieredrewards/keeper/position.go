@@ -14,8 +14,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// ValidatorUpdate signals a change in the position's associated validator
+// so that PositionCountByValidator can be reindexed.
 type ValidatorUpdate struct {
-	Previous string
+	From string
 }
 
 func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
@@ -182,7 +184,7 @@ func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionSt
 	if state.IsDelegated() {
 		currVal = state.Delegation.ValidatorAddress
 	}
-	return k.applyValidatorDiff(ctx, update.Previous, currVal)
+	return k.reindexPositionCountByValidator(ctx, update.From, currVal)
 }
 
 // deletePosition validates and removes a position and cleans up secondary indexes.
@@ -191,7 +193,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
-	
+
 	del, err := k.getDelegation(ctx, pos.Id)
 	if err != nil {
 		return err
@@ -227,16 +229,15 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 	if update == nil {
 		return nil
 	}
-	return k.applyValidatorDiff(ctx, update.Previous, "")
+	return k.reindexPositionCountByValidator(ctx, update.From, "")
 }
 
-// applyValidatorDiff adjusts PositionCountByValidator by diffing prev → curr.
-func (k Keeper) applyValidatorDiff(ctx context.Context, prev, curr string) error {
-	if prev == curr {
+func (k Keeper) reindexPositionCountByValidator(ctx context.Context, from, to string) error {
+	if from == to {
 		return nil
 	}
-	if prev != "" {
-		valAddr, err := sdk.ValAddressFromBech32(prev)
+	if from != "" {
+		valAddr, err := sdk.ValAddressFromBech32(from)
 		if err != nil {
 			return err
 		}
@@ -244,8 +245,8 @@ func (k Keeper) applyValidatorDiff(ctx context.Context, prev, curr string) error
 			return err
 		}
 	}
-	if curr != "" {
-		valAddr, err := sdk.ValAddressFromBech32(curr)
+	if to != "" {
+		valAddr, err := sdk.ValAddressFromBech32(to)
 		if err != nil {
 			return err
 		}

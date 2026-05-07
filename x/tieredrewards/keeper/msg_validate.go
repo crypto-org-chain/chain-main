@@ -209,7 +209,7 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
-	tokenValue, err := k.positionAmount(ctx, pos)
+	tokenValue, err := k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return err
 	}

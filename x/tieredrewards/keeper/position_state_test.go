@@ -15,7 +15,7 @@ func (s *KeeperSuite) TestLoadPosition_Delegated() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().Equal(pos.Id, state.Id)
@@ -26,7 +26,7 @@ func (s *KeeperSuite) TestLoadPosition_Delegated() {
 	s.Require().Equal(pos.Delegation.ValidatorAddress, state.Delegation.ValidatorAddress)
 	s.Require().True(pos.Delegation.Shares.Equal(state.Delegation.Shares))
 
-	amount, err := s.keeper.PositionAmount(s.ctx, state)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 	s.Require().Equal(lockAmount.String(), amount.String())
 }
@@ -45,18 +45,18 @@ func (s *KeeperSuite) TestLoadPosition_Unbonding() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(state.IsDelegated())
 	s.Require().Equal(pos.IsDelegated(), state.IsDelegated())
 	s.Require().Nil(state.Delegation)
 
-	amount, err := s.keeper.PositionAmount(s.ctx, state)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
-	s.Require().Equal(s.positionAmount(pos).String(), amount.String())
+	s.Require().Equal(s.getPositionAmount(pos).String(), amount.String())
 	s.Require().Equal(lockAmount.String(), amount.String())
 }
 
@@ -77,22 +77,22 @@ func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(state.IsDelegated())
 	s.Require().Nil(state.Delegation)
 
-	amount, err := s.keeper.PositionAmount(s.ctx, state)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
-	s.Require().Equal(s.positionAmount(pos).String(), amount.String())
+	s.Require().Equal(s.getPositionAmount(pos).String(), amount.String())
 	s.Require().Equal(lockAmount.String(), amount.String())
 }
 
 func (s *KeeperSuite) TestLoadPosition_NotFound() {
-	_, err := s.keeper.LoadPositionState(s.ctx, 99999)
+	_, err := s.keeper.GetPositionState(s.ctx, 99999)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
@@ -101,17 +101,17 @@ func (s *KeeperSuite) TestPositionAmount_DelegationSlashed() {
 	pos := s.setupNewTierPosition(lockAmount, false)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	preSlash, err := s.keeper.PositionAmount(s.ctx, state)
+	preSlash, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 
 	slashFraction := sdkmath.LegacyNewDecWithPrec(10, 2)
 	s.slashValidatorDirect(valAddr, slashFraction)
 
-	state, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	postSlash, err := s.keeper.PositionAmount(s.ctx, state)
+	postSlash, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 
 	expected := sdkmath.LegacyNewDecFromInt(preSlash).
@@ -136,15 +136,15 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.LoadPositionState(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	slashAmount := s.positionAmount(pos).QuoRaw(2)
+	slashAmount := s.getPositionAmount(pos).QuoRaw(2)
 	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, slashAmount)
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	amount, err := s.keeper.PositionAmount(s.ctx, state)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 
 	s.Require().Equal(lockAmount.Sub(slashAmount).String(), amount.String(),
@@ -173,13 +173,12 @@ func (s *KeeperSuite) TestPositionAmount_IncludesOnlyBondDenom() {
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin("dust", sdkmath.NewInt(999)))))
 
-	state, err := s.keeper.LoadPositionState(s.ctx, pos.Id)
+	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	amount, err := s.keeper.PositionAmount(s.ctx, state)
+	amount, err := s.keeper.GetPositionAmount(s.ctx, state)
 	s.Require().NoError(err)
 
-	s.Require().Equal(lockAmount.String(), amount.String(),
-		"positionAmount must ignore non-bondDenom dust")
+	s.Require().Equal(lockAmount.String(), amount.String())
 }
 
 // TestGetPositionStatesByOwner_SkipsStaleIndexEntries verifies that a
