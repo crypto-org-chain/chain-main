@@ -31,6 +31,5 @@ var (
 	ErrExitLockDurationElapsed          = errors.Register(ModuleName, 26, "exit lock duration has elapsed, clear position first")
 	ErrInvalidTierID                    = errors.Register(ModuleName, 27, "tier id must be non-zero")
 	ErrValidatorPositionCountStore      = errors.Register(ModuleName, 28, "validator position count store operation failed")
-	ErrPositionSharesZero               = errors.Register(ModuleName, 29, "position shares are zero")
-	ErrInvalidPositionID                = errors.Register(ModuleName, 30, "invalid position id")
+	ErrInvalidPositionID                = errors.Register(ModuleName, 29, "invalid position id")
 )

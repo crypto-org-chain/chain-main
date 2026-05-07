@@ -55,10 +55,6 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	if !pos.Delegation.Shares.IsPositive() {
-		return types.ErrPositionSharesZero
-	}
-
 	if pos.Delegation.ValidatorAddress == dstValidator {
 		return types.ErrRedelegationToSameValidator
 	}
