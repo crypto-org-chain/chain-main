@@ -199,7 +199,7 @@ func (s *KeeperSuite) TestSlashRedelegationPosition_FullSlashStillPaysBonus() {
 
 // TestRedelegationMapping_SurvivesZombieCompletion ensures that
 // with per-unbondingId granularity, maturity of a zombie (zero-balance)
-// redelegation entry  only removes its own mapping row and leaves any fresh
+// redelegation entry only removes its own mapping row and leaves any fresh
 // concurrent redelegation's mapping intact.
 // Zombie redeelgation entry is possible when a redelegation has not matured but its delegation has been slashed to zero.
 // This means that the user can delegate its position once again (after locking more funds), and redelegate again, resulting in 2 redelegation entries in total linking to the same position id.
