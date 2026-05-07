@@ -206,7 +206,7 @@ func sweepOldTierModuleResidualsTestnet(ctx sdk.Context, app *ChainApp) error {
 		if err != nil {
 			return fmt.Errorf("parse validator %s: %w", d.ValidatorAddress, err)
 		}
-		if _, _, _, err := app.StakingKeeper.Undelegate(ctx, poolAddr, valAddr, d.Shares); err != nil {
+		if _, _, err := app.StakingKeeper.Undelegate(ctx, poolAddr, valAddr, d.Shares); err != nil {
 			return fmt.Errorf("v7-testnet: pool undelegate failed at validator %s (shares %s): %w",
 				d.ValidatorAddress, d.Shares, err)
 		}

@@ -53,26 +53,18 @@ func ValidateGenesis(data GenesisState) error {
 		return fmt.Errorf("next_position_id (%d) must be greater than the highest position ID (%d)", data.NextPositionId, maxPosID)
 	}
 
-	seenUnbondingIDs := make(map[uint64]struct{}, len(data.UnbondingDelegationMappings))
-	for i, mapping := range data.UnbondingDelegationMappings {
-		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
-			return fmt.Errorf("duplicate unbonding ID %d at index %d", mapping.UnbondingId, i)
+	seenUnbondingIds := make(map[uint64]struct{}, len(data.RedelegationMappings))
+	for i, entry := range data.RedelegationMappings {
+		if entry.UnbondingId == 0 {
+			return fmt.Errorf("redelegation mapping at index %d has zero unbonding_id", i)
 		}
-		seenUnbondingIDs[mapping.UnbondingId] = struct{}{}
+		if _, dup := seenUnbondingIds[entry.UnbondingId]; dup {
+			return fmt.Errorf("duplicate redelegation mapping unbonding_id %d at index %d", entry.UnbondingId, i)
+		}
+		seenUnbondingIds[entry.UnbondingId] = struct{}{}
 
-		if _, ok := posIDs[mapping.PositionId]; !ok {
-			return fmt.Errorf("unbonding mapping at index %d references unknown position ID %d", i, mapping.PositionId)
-		}
-	}
-	// redelegation unbonding ids share the same global counter as unbonding delegation ids, so there should be no duplicates.
-	for i, mapping := range data.RedelegationMappings {
-		if _, dup := seenUnbondingIDs[mapping.UnbondingId]; dup {
-			return fmt.Errorf("duplicate redelegation ID %d at index %d", mapping.UnbondingId, i)
-		}
-		seenUnbondingIDs[mapping.UnbondingId] = struct{}{}
-
-		if _, ok := posIDs[mapping.PositionId]; !ok {
-			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, mapping.PositionId)
+		if _, ok := posIDs[entry.PositionId]; !ok {
+			return fmt.Errorf("redelegation mapping at index %d references unknown position ID %d", i, entry.PositionId)
 		}
 	}
 
@@ -137,44 +129,6 @@ func ValidateGenesis(data GenesisState) error {
 		}
 		if currentSeq < maxSeq {
 			return fmt.Errorf("validator %s current_seq (%d) must be greater than or equal to max event sequence (%d)", val, currentSeq, maxSeq)
-		}
-	}
-
-	// Cross-validate: delegated position LastEventSeq must not exceed
-	// the validator's current event sequence. The current seq is the last used
-	// seq number, which may be higher than the max event seq if events were
-	// garbage-collected after processing.
-	for i, pos := range data.Positions {
-		if !pos.IsDelegated() {
-			continue
-		}
-		maxAllowed := currentSeqByValidator[pos.Validator] // 0 if no seq entry
-		if pos.LastEventSeq > maxAllowed {
-			return fmt.Errorf(
-				"position %d has LastEventSeq (%d) greater than validator %s latest seq (%d) at index %d",
-				pos.Id, pos.LastEventSeq, pos.Validator, maxAllowed, i,
-			)
-		}
-	}
-
-	// Cross-validate: each event's ReferenceCount must equal the number of
-	// delegated positions on that validator with LastEventSeq < event.Seq.
-	// A refcount too high means the event is never garbage-collected (storage leak).
-	// A refcount too low means the event is prematurely garbage-collected,
-	// causing positions that haven't processed it to skip the segment (under or over payment).
-	for i, entry := range data.ValidatorEvents {
-		var expected uint64
-		for _, pos := range data.Positions {
-			hasNotProcessed := pos.IsDelegated() && pos.Validator == entry.Validator && pos.LastEventSeq < entry.Sequence
-			if hasNotProcessed {
-				expected++
-			}
-		}
-		if entry.Event.ReferenceCount != expected {
-			return fmt.Errorf(
-				"validator %s event seq %d has ReferenceCount %d but %d positions would process it (index %d)",
-				entry.Validator, entry.Sequence, entry.Event.ReferenceCount, expected, i,
-			)
 		}
 	}
 

@@ -19,7 +19,7 @@ import (
 // a SLASH event with the correct fraction instead of eagerly slashing positions.
 func (s *KeeperSuite) TestBeforeValidatorSlashed_RecordsSlashEvent() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	slashFraction := sdkmath.LegacyNewDecWithPrec(1, 2) // 1% slash
 	hooks := s.keeper.Hooks()
@@ -40,22 +40,20 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_RecordsSlashEvent() {
 // does NOT modify position state (lazy approach).
 func (s *KeeperSuite) TestBeforeValidatorSlashed_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	hooks := s.keeper.Hooks()
 	err = hooks.BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	// Position should not be modified by the hook.
-	s.Require().Equal(posBefore.Amount, posAfter.Amount,
-		"position Amount should not change during slash hook (lazy)")
-	s.Require().Equal(posBefore.DelegatedShares, posAfter.DelegatedShares,
+	// Position delegation shares should not be modified by the hook.
+	s.Require().Equal(posBefore.Delegation.Shares, posAfter.Delegation.Shares,
 		"position DelegatedShares should not change during slash hook (lazy)")
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"position LastBonusAccrual should not change during slash hook (lazy)")
@@ -78,9 +76,9 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_NoPositions() {
 func (s *KeeperSuite) TestBeforeValidatorSlashed_FullSlash_DoesNotHaltChain() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	s.setupNewTierPosition(lockAmount, false)
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	hooks := s.keeper.Hooks()
 	// 100% slash must not error.
@@ -99,7 +97,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -117,7 +115,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 		s.Require().NoError(err)
 	}
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 3)
 
@@ -132,12 +130,12 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 	s.Require().Equal(uint64(3), evt.ReferenceCount,
 		"reference count should equal number of positions")
 
-	// Positions should NOT be modified.
+	// Positions should NOT have their delegation shares modified.
 	for _, p := range positions {
-		posAfter, err := s.keeper.GetPosition(s.ctx, p.Id)
+		posAfter, err := s.keeper.GetPositionState(s.ctx, p.Id)
 		s.Require().NoError(err)
-		s.Require().Equal(p.Amount, posAfter.Amount,
-			"position %d Amount should not change during slash hook", p.Id)
+		s.Require().Equal(p.Delegation.Shares, posAfter.Delegation.Shares,
+			"position %d DelegatedShares should not change during slash hook", p.Id)
 	}
 }
 
@@ -147,7 +145,7 @@ func (s *KeeperSuite) TestBeforeValidatorSlashed_MultiplePositions() {
 // transitions to bonded, a BOND event is recorded instead of iterating positions.
 func (s *KeeperSuite) TestAfterValidatorBonded_RecordsBondEvent() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
 	s.ctx = s.ctx.WithBlockTime(newTime)
@@ -168,9 +166,9 @@ func (s *KeeperSuite) TestAfterValidatorBonded_RecordsBondEvent() {
 // modify position LastBonusAccrual (lazy approach).
 func (s *KeeperSuite) TestAfterValidatorBonded_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	newTime := s.ctx.BlockTime().Add(time.Hour * 48)
@@ -181,7 +179,7 @@ func (s *KeeperSuite) TestAfterValidatorBonded_DoesNotModifyPosition() {
 	err = hooks.AfterValidatorBonded(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by AfterValidatorBonded hook (lazy)")
@@ -205,7 +203,7 @@ func (s *KeeperSuite) TestAfterValidatorBonded_NoPositions() {
 // begins unbonding, an UNBOND event is recorded instead of claiming rewards.
 func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_RecordsUnbondEvent() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour * 24))
@@ -225,9 +223,9 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_RecordsUnbondEvent() {
 // does NOT modify position state (lazy approach).
 func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -238,7 +236,7 @@ func (s *KeeperSuite) TestAfterValidatorBeginUnbonding_DoesNotModifyPosition() {
 	err = hooks.AfterValidatorBeginUnbonding(s.ctx, consAddr, valAddr)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual,
 		"LastBonusAccrual should NOT be modified by unbonding hook (lazy)")
@@ -304,61 +302,28 @@ func (s *KeeperSuite) TestAfterValidatorRemoved_LeftoverEvents_PreservesSeqAndEv
 	s.Require().True(hasSeq, "event seq should be preserved when leftover events exist")
 }
 
-// --- AfterUnbondingCompleted / AfterRedelegationCompleted hook tests ---
-
-func (s *KeeperSuite) TestAfterUnbondingCompleted_DeletesMapping() {
-	hooks := s.keeper.Hooks()
-
-	unbondingId := uint64(42)
-	positionId := uint64(1)
-	err := s.keeper.UnbondingDelegationMappings.Set(s.ctx, unbondingId, positionId)
-	s.Require().NoError(err)
-
-	// Verify mapping exists.
-	has, err := s.keeper.UnbondingDelegationMappings.Has(s.ctx, unbondingId)
-	s.Require().NoError(err)
-	s.Require().True(has)
-
-	delAddr := types.GetDelegatorAddress(positionId)
-	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err = hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{unbondingId})
-	s.Require().NoError(err)
-
-	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, unbondingId)
-	s.Require().NoError(err)
-	s.Require().False(has, "unbonding mapping should be deleted after completion")
-}
-
-func (s *KeeperSuite) TestAfterUnbondingCompleted_NoMapping_NoOp() {
-	hooks := s.keeper.Hooks()
-
-	delAddr := types.GetDelegatorAddress(1)
-	valAddr := sdk.ValAddress([]byte("validator___________"))
-	err := hooks.AfterUnbondingCompleted(s.ctx, delAddr, valAddr, []uint64{999})
-	s.Require().NoError(err, "should not error when unbonding ID has no mapping")
-}
+// --- AfterRedelegationCompleted hook tests ---
 
 func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	hooks := s.keeper.Hooks()
 
-	unbondingId := uint64(77)
 	positionId := uint64(2)
-	err := s.keeper.RedelegationMappings.Set(s.ctx, unbondingId, positionId)
-	s.Require().NoError(err)
+	unbondingID := uint64(42)
+	s.Require().NoError(s.keeper.RedelegationMappings.Set(s.ctx, unbondingID, positionId))
 
-	has, err := s.keeper.RedelegationMappings.Has(s.ctx, unbondingId)
+	has, err := s.keeper.RedelegationMappings.Has(s.ctx, unbondingID)
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	delAddr := types.GetDelegatorAddress(1)
+	delAddr := types.GetDelegatorAddress(positionId)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingId})
+	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingID})
 	s.Require().NoError(err)
 
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, unbondingId)
+	has, err = s.keeper.RedelegationMappings.Has(s.ctx, unbondingID)
 	s.Require().NoError(err)
-	s.Require().False(has, "redelegation mapping should be deleted after completion")
+	s.Require().False(has, "redelegation mapping should be removed after completion")
 }
 
 func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
@@ -367,8 +332,8 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	delAddr := types.GetDelegatorAddress(1)
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
-	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{888})
-	s.Require().NoError(err, "should not error when redelegation ID has no mapping")
+	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{99})
+	s.Require().NoError(err, "should not error when unbonding id has no mapping")
 }
 
 // --- NoOp callbacks ---

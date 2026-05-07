@@ -50,60 +50,36 @@ message Position {
   // tier_id references the Tier this position belongs to.
   uint32 tier_id = 3;
 
-  // amount is the token amount for undelegated positions. For delegated positions
-  // this is always zero — the live token value is derived from
-  // validator.TokensFromShares(delegated_shares).
-  string amount = 4 [
-    (cosmos_proto.scalar)  = "cosmos.Int",
-    (gogoproto.customtype) = "cosmossdk.io/math.Int",
-    (gogoproto.nullable)   = false,
-    (amino.dont_omitempty) = true
-  ];
-
-  // validator is the validator operator address if delegated; empty if not delegated.
-  string validator = 5 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
-
-  // delegated_shares are the validator delegation shares for this position.
-  string delegated_shares = 6 [
-    (cosmos_proto.scalar)  = "cosmos.Dec",
-    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable)   = false,
-    (amino.dont_omitempty) = true
-  ];
-
   // last_bonus_accrual is the last time bonus rewards was claimed.
-  google.protobuf.Timestamp last_bonus_accrual = 7
+  google.protobuf.Timestamp last_bonus_accrual = 4
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // last_event_seq is the sequence number of the last validator event this
   // position has processed. Events with seq > last_event_seq are pending.
-  uint64 last_event_seq = 8;
+  uint64 last_event_seq = 5;
 
   // last_known_bonded tracks whether the validator was bonded after the last
   // event replay. Used as the starting state for the next processEventsAndClaimBonus
   // call. True when the position is first created (only bonded validators accepted).
-  bool last_known_bonded = 9;
+  bool last_known_bonded = 6;
 
   // exit_triggered_at is the time when exit was triggered. Zero value means not exiting.
-  google.protobuf.Timestamp exit_triggered_at = 10
+  google.protobuf.Timestamp exit_triggered_at = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // exit_unlock_at is when the user can claim tokens (exit_triggered_at + tier.exit_duration).
-  google.protobuf.Timestamp exit_unlock_at = 11
+  google.protobuf.Timestamp exit_unlock_at = 8
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 
   // created_at_height is the block height when this position was created.
-  uint64 created_at_height = 12;
+  uint64 created_at_height = 9;
 
   // created_at_time is the block time when this position was created.
-  google.protobuf.Timestamp created_at_time = 13
+  google.protobuf.Timestamp created_at_time = 10
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 
 // PositionResponse is the query-facing representation of a position.
-// Unlike the stored Position, the `amount` field always contains the
-// meaningful token value: TokensFromShares for delegated positions,
-// or the stored amount for undelegated positions.
 message PositionResponse {
   uint64 id      = 1;
   string owner   = 2 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -122,14 +98,12 @@ message PositionResponse {
     (gogoproto.nullable)   = false,
     (amino.dont_omitempty) = true
   ];
-  google.protobuf.Timestamp last_bonus_accrual = 7
+  google.protobuf.Timestamp exit_triggered_at = 7
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_triggered_at = 8
+  google.protobuf.Timestamp exit_unlock_at = 8
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  google.protobuf.Timestamp exit_unlock_at = 9
-      [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
-  uint64                    created_at_height = 10;
-  google.protobuf.Timestamp created_at_time   = 11
+  uint64                    created_at_height = 9;
+  google.protobuf.Timestamp created_at_time   = 10
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
 }
 

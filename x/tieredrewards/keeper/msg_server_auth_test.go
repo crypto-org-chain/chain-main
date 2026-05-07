@@ -226,7 +226,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -240,13 +240,13 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 	s.allocateRewardsToValidator(valAddr, baseRewardsDistributed, bondDenom)
 
 	// Compute expected bonus using ComputeSegmentBonus with the old tier.
-	posNow, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posNow, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 	tokensPerShare, err := s.keeper.GetTokensPerShare(s.ctx, valAddr)
 	s.Require().NoError(err)
-	expBonus := s.keeper.ComputeSegmentBonus(&posNow, tier, posNow.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
+	expBonus := s.keeper.ComputeSegmentBonus(posNow, tier, posNow.LastBonusAccrual, s.ctx.BlockTime(), tokensPerShare)
 	// Lock amount equals genesis delegation, so tier module holds half the total stake.
 	expBase := baseRewardsDistributed.Quo(sdkmath.NewInt(2))
 
@@ -271,7 +271,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_ClaimsPositions() {
 		expectedTotal, expBase, expBonus, actualRewards)
 
 	// Position LastBonusAccrual should be advanced to current block time.
-	posNow, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	posNow, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(s.ctx.BlockTime(), posNow.LastBonusAccrual)
 
@@ -289,7 +289,7 @@ func (s *KeeperSuite) TestUpdateTier_NonApyChange_NoClaim() {
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	// Advance time so bonus would accrue.
@@ -313,7 +313,7 @@ func (s *KeeperSuite) TestUpdateTier_NonApyChange_NoClaim() {
 	s.Require().Equal(balBefore.Amount, balAfter.Amount)
 
 	// LastBonusAccrual should be unchanged.
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(posBefore.LastBonusAccrual, posAfter.LastBonusAccrual)
 }
@@ -339,7 +339,7 @@ func (s *KeeperSuite) TestUpdateTier_BonusApyChange_NoPositions() {
 func (s *KeeperSuite) TestUpdateTier_BonusApyChange_InsufficientPool() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
@@ -420,7 +420,7 @@ func (s *KeeperSuite) TestDeleteTier_FailsWithActivePositions() {
 
 	// Create a position in tier 1
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	msg := &types.MsgDeleteTier{
@@ -444,11 +444,11 @@ func (s *KeeperSuite) TestDeleteTier_SucceedsAfterPositionsRemoved() {
 	s.Require().NoError(s.keeper.SetTier(s.ctx, newTestTier(1)))
 
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	// Remove the position
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
 
 	msg := &types.MsgDeleteTier{
 		Authority: authority,

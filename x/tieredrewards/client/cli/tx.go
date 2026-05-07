@@ -33,7 +33,6 @@ func GetTxCmd() *cobra.Command {
 		GetCmdDeleteTierProposal(),
 		GetCmdLockTier(),
 		GetCmdCommitDelegationToTier(),
-		GetCmdTierDelegate(),
 		GetCmdTierUndelegate(),
 		GetCmdTierRedelegate(),
 		GetCmdAddToTierPosition(),
@@ -287,20 +286,6 @@ func GetCmdCommitDelegationToTier() *cobra.Command {
 
 	cmd.Flags().Bool(flagTriggerExitImmediately, false, "Start the exit commitment immediately after commit")
 	return cmd
-}
-
-func GetCmdTierDelegate() *cobra.Command {
-	return newPositionStringTxCmd(
-		"tier-delegate [position-id] [validator]",
-		"Delegate a position's tokens to a validator",
-		func(owner string, positionID uint64, validator string) validatingMsg {
-			return &types.MsgTierDelegate{
-				Owner:      owner,
-				PositionId: positionID,
-				Validator:  validator,
-			}
-		},
-	)
 }
 
 func GetCmdTierUndelegate() *cobra.Command {

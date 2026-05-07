@@ -122,55 +122,25 @@ func (h Hooks) BeforeValidatorSlashed(ctx context.Context, valAddr sdk.ValAddres
 	return err
 }
 
-func (h Hooks) AfterUnbondingDelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
+// BeforeRedelegationSlashed fires before SDK's Unbond in SlashRedelegation.
+// Routes to slashRedelegationPosition via the unbondingId → positionId mapping
+// so bonus settlement can run against pre-slash shares.
+func (h Hooks) BeforeRedelegationSlashed(ctx context.Context, unbondingID uint64, sharesToUnbond sdkmath.LegacyDec) error {
+	return h.k.slashRedelegationPosition(ctx, unbondingID, sharesToUnbond)
 }
 
-func (h Hooks) AfterUnbondingRedelegationSlashed(ctx context.Context, unbondingId uint64, slashAmount sdkmath.Int) error {
-	return h.k.slashPositionByUnbondingId(ctx, unbondingId, slashAmount)
-}
-
-// AfterRedelegationSlashed updates DelegatedShares when an active destination
-// delegation is slashed via redelegation.
-func (h Hooks) AfterRedelegationSlashed(ctx context.Context, unbondingId uint64, _ sdkmath.Int, shareBurnt sdkmath.LegacyDec) error {
-	return h.k.slashRedelegationPosition(ctx, unbondingId, shareBurnt)
-}
-
-func (h Hooks) AfterUnbondingCompleted(ctx context.Context, _ sdk.AccAddress, _ sdk.ValAddress, unbondingIds []uint64) error {
-	return h.deleteCompletedPositionMappings(
-		ctx,
-		unbondingIds,
-		h.k.UnbondingDelegationMappings.Has,
-		h.k.deleteUnbondingPositionMapping,
-	)
-}
-
-func (h Hooks) AfterRedelegationCompleted(ctx context.Context, _ sdk.AccAddress, _, _ sdk.ValAddress, unbondingIds []uint64) error {
-	return h.deleteCompletedPositionMappings(
-		ctx,
-		unbondingIds,
-		h.k.RedelegationMappings.Has,
-		h.k.deleteRedelegationPositionMapping,
-	)
-}
-
-// deleteCompletedPositionMappings clears any of our unbonding/redelegation
-// mappings whose ids completed in this hook.
-func (h Hooks) deleteCompletedPositionMappings(
-	ctx context.Context,
-	unbondingIds []uint64,
-	hasMapping func(context.Context, uint64) (bool, error),
-	deleteMapping func(context.Context, uint64) error,
-) error {
-	for _, id := range unbondingIds {
-		has, err := hasMapping(ctx, id)
+// AfterRedelegationCompleted removes the redelegation-mapping entries for each
+// unbondingId that just matured.
+func (h Hooks) AfterRedelegationCompleted(ctx context.Context, _ sdk.AccAddress, _, _ sdk.ValAddress, completedIds []uint64) error {
+	for _, id := range completedIds {
+		has, err := h.k.RedelegationMappings.Has(ctx, id)
 		if err != nil {
 			return err
 		}
 		if !has {
 			continue
 		}
-		if err := deleteMapping(ctx, id); err != nil {
+		if err := h.k.deleteRedelegationMapping(ctx, id); err != nil {
 			return err
 		}
 	}

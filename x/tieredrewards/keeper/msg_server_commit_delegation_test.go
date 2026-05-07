@@ -37,12 +37,12 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().NoError(err)
 
 	// Position should exist and be delegated
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), pos.Owner)
 	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().True(pos.DelegatedShares.Equal(halfShares))
+	s.Require().Equal(valAddr.String(), pos.Delegation.ValidatorAddress)
+	s.Require().True(pos.Delegation.Shares.Equal(halfShares))
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
 	// The position's delegator address holds the delegation.
@@ -55,6 +55,10 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(delAddr.String(), withdrawAddr.String(), "withdraw addr should route to owner")
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 }
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
@@ -79,7 +83,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	s.Require().NoError(err)
 
 	// Position should be delegated
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 
@@ -125,7 +129,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_WithImmediateTriggerExit() {
 	_, err = msgServer.CommitDelegationToTier(s.ctx, msg)
 	s.Require().NoError(err)
 
-	pos, err := s.keeper.GetPosition(s.ctx, uint64(0))
+	pos, err := s.keeper.GetPositionState(s.ctx, uint64(0))
 	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
@@ -209,7 +213,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	delAddr, _ := s.getDelegator()
 	// Create a first position to establish validator count.
 	pos1 := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos1.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos1.Delegation.ValidatorAddress)
 
 	// Record a slash event via the staking hook.
 	err := s.keeper.Hooks().BeforeValidatorSlashed(s.ctx, valAddr, sdkmath.LegacyNewDecWithPrec(1, 2))
@@ -230,7 +234,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 	})
 	s.Require().NoError(err)
 
-	pos2, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	pos2, err := s.keeper.GetPositionState(s.ctx, resp.PositionId)
 	s.Require().NoError(err)
 
 	// The new position's LastEventSeq should equal 1 (the slash event).
@@ -238,7 +242,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_LastEventSeqSkipsPriorEvents
 		"new position should skip prior events; LastEventSeq should be 1")
 
 	// The first position's LastEventSeq should still be 0.
-	pos1, err = s.keeper.GetPosition(s.ctx, pos1.Id)
+	pos1, err = s.keeper.GetPositionState(s.ctx, pos1.Id)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), pos1.LastEventSeq,
 		"first position's LastEventSeq should remain 0")

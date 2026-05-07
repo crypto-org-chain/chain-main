@@ -8,8 +8,9 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/crypto-org-chain/chain-main/x/tieredrewards/types";
 
-// UnbondingMapping maps a staking unbonding ID to a tier position ID for genesis export.
-message UnbondingMapping {
+// RedelegationMapping binds a staking redelegation entry (by unbonding id) to
+// a tier position id, so tier can route per-entry slash/completion hooks.
+message RedelegationMapping {
   uint64 unbonding_id = 1;
   uint64 position_id  = 2;
 }
@@ -37,12 +38,11 @@ message GenesisState {
   repeated Position positions = 3 [(gogoproto.nullable) = false];
   // next_position_id is the next auto-increment ID for positions.
   uint64 next_position_id = 4;
-  // unbonding_delegation_mappings maps unbonding delegation IDs to tier position IDs.
-  repeated UnbondingMapping unbonding_delegation_mappings = 5 [(gogoproto.nullable) = false];
-  // redelegation_mappings maps redelegation IDs to tier position IDs.
-  repeated UnbondingMapping redelegation_mappings = 6 [(gogoproto.nullable) = false];
+  // redelegation_mappings tracks positions currently undergoing a staking
+  // redelegation, keyed by the entry's staking unbonding id.
+  repeated RedelegationMapping redelegation_mappings = 5 [(gogoproto.nullable) = false];
   // validator_events stores pending validator lifecycle events for lazy processing.
-  repeated ValidatorEventEntry validator_events = 7 [(gogoproto.nullable) = false];
+  repeated ValidatorEventEntry validator_events = 6 [(gogoproto.nullable) = false];
   // validator_event_seqs stores the current (last used) event sequence per validator.
-  repeated ValidatorEventSeqEntry validator_event_seqs = 8 [(gogoproto.nullable) = false];
+  repeated ValidatorEventSeqEntry validator_event_seqs = 7 [(gogoproto.nullable) = false];
 }

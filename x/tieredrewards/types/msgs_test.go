@@ -247,64 +247,6 @@ func TestMsgCommitDelegationToTier_Validate(t *testing.T) {
 	}
 }
 
-func TestMsgTierDelegate_Validate(t *testing.T) {
-	t.Parallel()
-
-	validOwner := sdk.AccAddress([]byte("test_owner__________")).String()
-	validValidator := sdk.ValAddress([]byte("test_validator______")).String()
-
-	tests := []struct {
-		name        string
-		msg         types.MsgTierDelegate
-		wantErr     bool
-		errContains string
-	}{
-		{
-			name: "valid",
-			msg: types.MsgTierDelegate{
-				Owner:      validOwner,
-				PositionId: 1,
-				Validator:  validValidator,
-			},
-		},
-		{
-			name: "invalid owner",
-			msg: types.MsgTierDelegate{
-				Owner:      "invalid",
-				PositionId: 1,
-				Validator:  validValidator,
-			},
-			wantErr:     true,
-			errContains: "invalid owner address",
-		},
-		{
-			name: "invalid validator",
-			msg: types.MsgTierDelegate{
-				Owner:      validOwner,
-				PositionId: 1,
-				Validator:  "invalid",
-			},
-			wantErr:     true,
-			errContains: "invalid validator address",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			err := tt.msg.Validate()
-			if tt.wantErr {
-				require.Error(t, err)
-				if tt.errContains != "" {
-					require.ErrorContains(t, err, tt.errContains)
-				}
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
 func TestMsgTierUndelegate_Validate(t *testing.T) {
 	t.Parallel()
 

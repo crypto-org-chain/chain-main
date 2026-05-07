@@ -16,6 +16,7 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	addPosAmt := sdkmath.NewInt(500)
 	_, bondDenom := s.getStakingData()
@@ -37,9 +38,13 @@ func (s *KeeperSuite) TestMsgClearPosition_ClearsExitAndAllowsAddToTier() {
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(0), clearResp.PositionId)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit())
+
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount)
 
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),
@@ -69,7 +74,7 @@ func (s *KeeperSuite) TestMsgClearPosition_UpdatesLastBonusAccrualAfterExitElaps
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit())
 	s.Require().Equal(s.ctx.BlockTime(), pos.LastBonusAccrual,
@@ -93,7 +98,7 @@ func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -104,7 +109,7 @@ func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
 	s.allocateRewardsToValidator(valAddr, sdkmath.NewInt(100), bondDenom)
 	s.fundRewardsPool(sdkmath.NewInt(10_000), bondDenom)
 
-	posBefore, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBefore, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -116,7 +121,7 @@ func (s *KeeperSuite) TestMsgClearPosition_NoOpWhenNotExiting() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
 
@@ -160,7 +165,7 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsWhileUnbonding() {
 func (s *KeeperSuite) TestMsgClearPosition_RejectsAfterUnbondingCompleted() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -195,11 +200,11 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	})
 	s.Require().NoError(err)
 
-	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	_ = posDelAddr
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	redelegationIDs, err := redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should exist after TierRedelegate")
+	s.Require().True(isRedelegating, "redelegation mapping should exist after TierRedelegate")
 
 	s.advancePastExitDuration()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -210,17 +215,15 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit(), "clear should reset exit state")
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
-	s.Require().Equal(dstValAddr.String(), pos.Validator)
+	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	redelegationIter, err = s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, uint64(0))
+	isRedelegating, err = s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	redelegationIDs, err = redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "clearing exit should not delete pending redelegation tracking")
+	s.Require().True(isRedelegating, "clearing exit should not delete pending redelegation tracking")
 }
 
 // TestClearPositionAfterRedelegationSlashAllSharesBurnt verifies
@@ -232,37 +235,35 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	dstValAddr, _ := s.createSecondValidator()
 
-	redelegateResp, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
+	_, err := msgServer.TierRedelegate(s.ctx, &types.MsgTierRedelegate{
 		Owner:        delAddr.String(),
 		PositionId:   pos.Id,
 		DstValidator: dstValAddr.String(),
 	})
 	s.Require().NoError(err)
 
-	posBeforeSlash, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posBeforeSlash, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(posBeforeSlash.DelegatedShares.IsPositive(), "test setup failed: expected delegated shares before slash")
+	s.Require().True(posBeforeSlash.Delegation.Shares.IsPositive(), "test setup failed: expected delegated shares before slash")
 	s.Require().True(posBeforeSlash.IsDelegated(), "test setup failed: position should be delegated before slash")
 
-	// Burn all shares through redelegation slash callback.
-	shareBurnt := posBeforeSlash.DelegatedShares.Add(sdkmath.LegacyOneDec())
-	err = s.keeper.Hooks().AfterRedelegationSlashed(s.ctx, redelegateResp.UnbondingId, posBeforeSlash.Amount, shareBurnt)
-	s.Require().NoError(err)
+	// Simulate the full-share burn that a redelegation slash would perform.
+	// slashRedelegationCompletely removes the staking delegation and resets
+	// bonus checkpoints on the tier position.
+	s.slashRedelegationCompletely(posBeforeSlash)
 
-	posAfterSlash, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfterSlash, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(posAfterSlash.IsDelegated(), "delegation should be cleared when all shares are burnt")
-	s.Require().True(posAfterSlash.DelegatedShares.IsZero(), "delegated shares should be zero after full share burn")
-	s.Require().True(posAfterSlash.Amount.IsZero(), "amount should be zero after full share burn")
+	s.Require().Nil(posAfterSlash.Delegation, "delegation pointer should be nil after full share burn")
+	s.Require().True(s.getPositionAmount(posAfterSlash).IsZero(), "amount should be zero after full share burn")
 	s.Require().True(posAfterSlash.HasTriggeredExit(), "slash should not clear exit trigger")
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
-	// the slash has already cleared delegation from the position.
-	redelegationIter, err := s.keeper.RedelegationMappings.Indexes.ByPosition.MatchExact(s.ctx, pos.Id)
+	// the slash isRedelegating already cleared delegation from the position.
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	redelegationIDs, err := redelegationIter.PrimaryKeys()
-	s.Require().NoError(err)
-	s.Require().NotEmpty(redelegationIDs, "redelegation mapping should remain active for this corner case")
+	s.Require().True(isRedelegating, "redelegation mapping should remain active for this corner case")
 
 	s.advancePastExitDuration()
 
@@ -272,7 +273,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	})
 	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 
-	posAfterClearAttempt, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfterClearAttempt, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfterClearAttempt.HasTriggeredExit(), "failed clear attempt should not reset exit state")
 	s.Require().False(posAfterClearAttempt.IsDelegated(), "failed clear attempt should keep cleared delegation state")
@@ -304,7 +305,7 @@ func (s *KeeperSuite) TestMsgClearPosition_TierCloseOnly() {
 func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitInProgress() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Slash validator 100% to zero out position amount via hook.
@@ -312,9 +313,9 @@ func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitInProgress() {
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
 
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero after 100%% slash")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
 
 	// Trigger exit.
@@ -331,11 +332,11 @@ func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should still be zero")
 }
 
 // TestMsgClearPosition_UndelegatedZeroExitInProgress verifies that ClearPosition
@@ -347,24 +348,20 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedZeroExitInProgress() {
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Trigger exit on the undelegated-zero position.
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
+	_, err := msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero")
 
 	// ClearPosition — should succeed even on undelegated-zero exiting position.
 	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
@@ -373,11 +370,11 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedZeroExitInProgress() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
 	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should still be zero")
 }
 
 // TestMsgClearPosition_UndelegatedWithFundsExitInProgress verifies that
@@ -390,15 +387,11 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Simulate redelegation slash: clear delegation and zero amount.
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.ZeroInt())
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos))
+	pos = s.slashRedelegationCompletely(pos)
 
 	// Add funds to the undelegated position.
 	addAmount := sdkmath.NewInt(2000)
-	err = banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
+	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
 	s.Require().NoError(err)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),
@@ -414,11 +407,11 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() 
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(pos.Amount.Equal(addAmount), "position amount should be 2000")
+	s.Require().True(s.getPositionAmount(pos).Equal(addAmount), "position amount should be 2000")
 
 	// ClearPosition — should succeed.
 	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
@@ -427,11 +420,11 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() 
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
 	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(pos.Amount.Equal(addAmount), "position amount should still be 2000")
+	s.Require().True(s.getPositionAmount(pos).Equal(addAmount), "position amount should still be 2000")
 }
 
 // TestMsgClearPosition_BondedZeroExitElapsed verifies that ClearPosition
@@ -440,7 +433,7 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() 
 func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitElapsed() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
 	// Slash validator 100% to zero out position amount via hook.
@@ -448,9 +441,9 @@ func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitElapsed() {
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
 
-	pos, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero after 100%% slash")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero after 100%% slash")
 
 	// Advance past exit duration.
 	s.advancePastExitDuration()
@@ -462,9 +455,9 @@ func (s *KeeperSuite) TestMsgClearPosition_BondedZeroExitElapsed() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
 	s.Require().True(pos.IsDelegated(), "position should still be delegated")
-	s.Require().True(pos.Amount.IsZero(), "position amount should still be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should still be zero")
 }

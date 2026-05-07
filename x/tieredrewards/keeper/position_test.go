@@ -3,31 +3,41 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var (
-	testPositionOwner = sdk.AccAddress([]byte("test_pos_owner______")).String()
-	testPosValidator  = sdk.ValAddress([]byte("test_pos_validator__")).String()
-	testPosValidator2 = sdk.ValAddress([]byte("test_pos_validator2_")).String()
-)
+var testPositionOwner = sdk.AccAddress([]byte("test_pos_owner______")).String()
 
 func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
-	del := types.Delegation{
-		Validator:    testPosValidator,
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}
-	return types.NewPosition(id, owner, tierId, sdkmath.ZeroInt(), 100, del, time.Now())
+	return types.NewPosition(id, owner, tierId, 100, 0, time.Time{}, false, time.Now())
+}
+
+func newDelegatedTestPosition(id uint64, owner string, tierId uint32, now time.Time) types.Position {
+	return types.NewPosition(id, owner, tierId, 100, 0, now, true, now)
+}
+
+func (s *KeeperSuite) seedStakingDelegationForPosition(posId uint64, valAddr sdk.ValAddress, amount sdkmath.Int) {
+	s.T().Helper()
+	delAddr := types.GetDelegatorAddress(posId)
+	_, bondDenom := s.getStakingData()
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
+		sdk.NewCoins(sdk.NewCoin(bondDenom, amount))))
+	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, delAddr, amount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
 }
 
 func (s *KeeperSuite) TestSetAndGetPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	got, err := s.keeper.GetPosition(s.ctx, 1)
@@ -35,12 +45,11 @@ func (s *KeeperSuite) TestSetAndGetPosition() {
 	s.Require().Equal(pos.Id, got.Id)
 	s.Require().Equal(pos.Owner, got.Owner)
 	s.Require().Equal(pos.TierId, got.TierId)
-	s.Require().True(pos.Amount.Equal(got.Amount))
-	s.Require().True(pos.DelegatedShares.Equal(got.DelegatedShares))
 	s.Require().Equal(pos.CreatedAtHeight, got.CreatedAtHeight)
-	s.Require().Equal(pos.Validator, got.Validator)
 	s.Require().Equal(pos.ExitTriggeredAt, got.ExitTriggeredAt)
 	s.Require().Equal(pos.ExitUnlockAt, got.ExitUnlockAt)
+	s.Require().Equal(pos.LastEventSeq, got.LastEventSeq)
+	s.Require().Equal(pos.LastKnownBonded, got.LastKnownBonded)
 }
 
 func (s *KeeperSuite) TestGetPosition_NotFound() {
@@ -49,14 +58,13 @@ func (s *KeeperSuite) TestGetPosition_NotFound() {
 }
 
 func (s *KeeperSuite) TestSetPosition_InvalidFails() {
-	pos := types.Position{}
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, types.Position{}, nil)
 	s.Require().Error(err)
 }
 
-func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
+func (s *KeeperSuite) TestSetPosition_DoesNotIncrementCounterOnUpdate() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
@@ -64,10 +72,8 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().Equal(uint64(1), count)
 
 	// Update same position — counter should not change.
-	// For delegated positions, Amount must remain zero, so we
-	// update DelegatedShares instead.
-	pos.UpdateDelegatedShares(sdkmath.LegacyNewDec(2000))
-	err = s.keeper.SetPosition(s.ctx, pos)
+	pos.CreatedAtHeight = 101
+	err = s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
@@ -75,73 +81,20 @@ func (s *KeeperSuite) TestSetPosition_UpdateDoesNotIncrementCounter() {
 	s.Require().Equal(uint64(1), count)
 }
 
-func (s *KeeperSuite) TestSetPosition_DelegatedNewPositionIncrementsCounter() {
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	count, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
-	s.Require().NoError(err)
-	s.Require().Equal(uint64(1), count)
-}
-
 func (s *KeeperSuite) TestDeletePosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
 
 	_, err = s.keeper.GetPosition(s.ctx, pos.Id)
 	s.Require().ErrorIs(err, types.ErrPositionNotFound)
 }
 
-func (s *KeeperSuite) TestDeletePosition_CleansUnbondingMappings() {
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 10, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 11, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 12, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 13, pos.Id)
-	s.Require().NoError(err)
-	err = s.keeper.UnbondingDelegationMappings.Set(s.ctx, 14, 999)
-	s.Require().NoError(err)
-	err = s.keeper.RedelegationMappings.Set(s.ctx, 15, 999)
-	s.Require().NoError(err)
-
-	err = s.keeper.DeletePosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	has, err := s.keeper.UnbondingDelegationMappings.Has(s.ctx, 10)
-	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, 11)
-	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 12)
-	s.Require().NoError(err)
-	s.Require().False(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 13)
-	s.Require().NoError(err)
-	s.Require().False(has)
-
-	// Unrelated mapping must remain.
-	has, err = s.keeper.UnbondingDelegationMappings.Has(s.ctx, 14)
-	s.Require().NoError(err)
-	s.Require().True(has)
-	has, err = s.keeper.RedelegationMappings.Has(s.ctx, 15)
-	s.Require().NoError(err)
-	s.Require().True(has)
-}
-
 func (s *KeeperSuite) TestDeleteUnsavedPosition() {
 	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.DeletePosition(s.ctx, pos)
+	err := s.keeper.DeletePosition(s.ctx, pos, nil)
 	s.Require().NoError(err)
 
 	_, err = s.keeper.GetPosition(s.ctx, 1)
@@ -159,11 +112,11 @@ func (s *KeeperSuite) TestPositionCountByTier() {
 	s.Require().Equal(uint64(0), count)
 
 	// Create positions
-	err = s.keeper.SetPosition(s.ctx, pos1)
+	err = s.keeper.SetPosition(s.ctx, pos1, nil)
 	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
+	err = s.keeper.SetPosition(s.ctx, pos2, nil)
 	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos3)
+	err = s.keeper.SetPosition(s.ctx, pos3, nil)
 	s.Require().NoError(err)
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
@@ -175,14 +128,14 @@ func (s *KeeperSuite) TestPositionCountByTier() {
 	s.Require().Equal(uint64(1), count)
 
 	// Delete one from tier 1
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos1))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos1, nil))
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count)
 
 	// Delete last from tier 1
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos2))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos2, nil))
 
 	count, err = s.keeper.GetPositionCountForTier(s.ctx, 1)
 	s.Require().NoError(err)
@@ -203,9 +156,9 @@ func (s *KeeperSuite) TestGetPositionsIdsByOwner() {
 
 	pos1 := newTestPosition(1, owner.String(), 1)
 	pos2 := newTestPosition(2, owner.String(), 1)
-	err := s.keeper.SetPosition(s.ctx, pos1)
+	err := s.keeper.SetPosition(s.ctx, pos1, nil)
 	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
+	err = s.keeper.SetPosition(s.ctx, pos2, nil)
 	s.Require().NoError(err)
 
 	ids, err := s.keeper.GetPositionsIdsByOwner(s.ctx, owner)
@@ -215,279 +168,218 @@ func (s *KeeperSuite) TestGetPositionsIdsByOwner() {
 	s.Require().Contains(ids, uint64(2))
 
 	// Delete one and verify index is updated
-	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos1))
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos1, nil))
 	ids, err = s.keeper.GetPositionsIdsByOwner(s.ctx, owner)
 	s.Require().NoError(err)
 	s.Require().Len(ids, 1)
 	s.Require().Equal(uint64(2), ids[0])
 }
 
-func (s *KeeperSuite) TestGetPositionsIdsByValidator() {
-	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
+// --- CreateDelegatedPosition tests ---
 
-	// Undelegated position — should NOT be in validator index
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos1.TriggerExit(pos1.CreatedAtTime, newTestTier(1).ExitDuration)
-	pos1.ClearDelegation()
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-
-	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Empty(ids)
-
-	// Delegated position — should be in validator index
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-	s.Require().Equal(uint64(2), ids[0])
-}
-
-func (s *KeeperSuite) TestGetPositionsIdsByValidator_Redelegate() {
-	valAddr1 := sdk.MustValAddressFromBech32(testPosValidator)
-	valAddr2 := sdk.MustValAddressFromBech32(testPosValidator2)
-
-	// Create position delegated to validator 1
-	pos := newTestPosition(1, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	ids, err := s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-
-	// Redelegate to validator 2
-	pos.WithDelegation(types.Delegation{
-		Validator:    testPosValidator2,
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}, time.Now())
-	err = s.keeper.SetPosition(s.ctx, pos)
-	s.Require().NoError(err)
-
-	// Validator 1 should have no positions
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr1)
-	s.Require().NoError(err)
-	s.Require().Empty(ids)
-
-	// Validator 2 should have the position
-	ids, err = s.keeper.GetPositionsIdsByValidator(s.ctx, valAddr2)
-	s.Require().NoError(err)
-	s.Require().Len(ids, 1)
-	s.Require().Equal(uint64(1), ids[0])
-}
-
-func (s *KeeperSuite) TestGetPositionsByOwner() {
-	owner := sdk.AccAddress([]byte("test_pos_owner______"))
-
-	pos1 := newTestPosition(1, owner.String(), 1)
-	pos2 := newTestPosition(2, owner.String(), 1)
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, owner)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-}
-
-func (s *KeeperSuite) TestGetPositionsByValidator() {
-	valAddr := sdk.MustValAddressFromBech32(testPosValidator)
-
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByValidator(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-}
-
-func (s *KeeperSuite) TestGetPositionsByIds() {
-	pos1 := newTestPosition(1, testPositionOwner, 1)
-	pos2 := newTestPosition(2, testPositionOwner, 1)
-	err := s.keeper.SetPosition(s.ctx, pos1)
-	s.Require().NoError(err)
-	err = s.keeper.SetPosition(s.ctx, pos2)
-	s.Require().NoError(err)
-
-	positions, err := s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 2})
-	s.Require().NoError(err)
-	s.Require().Len(positions, 2)
-
-	// Non existent ID should not throw error
-	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{1, 999})
-	s.Require().NoError(err)
-	s.Require().Len(positions, 1)
-
-	positions, err = s.keeper.GetPositionsByIds(s.ctx, []uint64{})
-	s.Require().NoError(err)
-	s.Require().Empty(positions)
-}
-
-// --- CreatePosition tests ---
-
-func (s *KeeperSuite) TestCreatePosition_Basic() {
+func (s *KeeperSuite) TestCreateDelegatedPosition_Basic() {
 	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
-	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(100_000))
-
-	balBefore := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)
-
-	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
-
-	delegation := types.Delegation{
-		Validator:    valAddr.String(),
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
-	s.Require().NoError(err)
-	s.Require().Equal(uint32(1), pos.TierId)
-	s.Require().True(pos.Amount.IsZero())
-	s.Require().Equal(freshAddr.String(), pos.Owner)
-	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().Equal(delegation.Shares, pos.DelegatedShares)
-	s.Require().True(pos.DelegatedShares.IsPositive())
-	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
-
-	balAfter := s.app.BankKeeper.GetBalance(s.ctx, freshAddr, bondDenom)
-	s.Require().Equal(lockAmount, balBefore.Amount.Sub(balAfter.Amount))
-}
-
-func (s *KeeperSuite) TestCreatePosition_WithTriggerExitImmediately() {
-	s.setupTier(1)
 	vals, _ := s.getStakingData()
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
-	tier, err := s.keeper.GetTier(s.ctx, 1)
-	s.Require().NoError(err)
 
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
-
-	delegation := types.Delegation{
-		Validator:    valAddr.String(),
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}
-
-	pos, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, true)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
-	s.Require().True(pos.IsDelegated())
-	s.Require().Equal(valAddr.String(), pos.Validator)
-	s.Require().Equal(delegation.Shares, pos.DelegatedShares)
+	s.Require().Equal(uint32(1), pos.TierId)
+	s.Require().Equal(freshAddr.String(), pos.Owner)
+	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
+	s.Require().True(pos.LastKnownBonded, "LastKnownBonded should be true for newly delegated position")
+	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set at creation")
+}
+
+func (s *KeeperSuite) TestCreateDelegatedPosition_WithTriggerExitImmediately() {
+	s.setupTier(1)
+	tier, err := s.keeper.GetTier(s.ctx, 1)
+	s.Require().NoError(err)
+
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
+
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, true)
+	s.Require().NoError(err)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().False(pos.ExitTriggeredAt.IsZero())
 	s.Require().False(pos.ExitUnlockAt.IsZero())
 	s.Require().True(pos.ExitUnlockAt.After(pos.ExitTriggeredAt))
+	s.Require().True(pos.LastKnownBonded)
 }
 
-func (s *KeeperSuite) TestCreatePosition_IncrementingIds() {
+func (s *KeeperSuite) TestCreateDelegatedPosition_IncrementingIds() {
 	s.setupTier(1)
-	vals, bondDenom := s.getStakingData()
-	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
-	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(100_000))
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
-	lockAmount := sdkmath.NewInt(1000)
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
-	delegation := types.Delegation{
-		Validator:    valAddr.String(),
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}
-	pos1, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
+	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
+
+	pos1, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
 
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), lockAmount))
-	pos2, err := s.keeper.CreatePosition(s.ctx, freshAddr.String(), tier, sdkmath.ZeroInt(), delegation, false)
+	pos2, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
 
 	s.Require().True(pos2.Id > pos1.Id)
 }
 
-// ---------------------------------------------------------------------------
-// PositionCountByValidator — increment / decrement via position lifecycle
-// ---------------------------------------------------------------------------
+func (s *KeeperSuite) TestSetPosition_RejectsInvalidDelegatedPositionState() {
+	s.setupTier(1)
+	now := s.ctx.BlockTime()
+	// No staking delegation seeded → undelegated from keeper's view.
+	pos := newDelegatedTestPosition(1, testPositionOwner, 1, now)
 
-// TestPositionCountByValidator_IncrementOnCreate verifies that creating a
-// delegated position increments the validator's position count.
-func (s *KeeperSuite) TestPositionCountByValidator_IncrementOnCreate() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
-
-	count, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Equal(uint64(1), count)
-
-	// Create a second position on the same validator.
-	s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-
-	count, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().NoError(err)
-	s.Require().Equal(uint64(2), count)
+	err := s.keeper.SetPosition(s.ctx, pos, nil)
+	s.Require().Error(err)
+	s.Require().Contains(err.Error(), "last_bonus_accrual",
+		"error should call out the violated PositionState invariant")
 }
 
-// TestPositionCountByValidator_DecrementOnDelete verifies that deleting a
-// delegated position decrements the validator's position count.
-func (s *KeeperSuite) TestPositionCountByValidator_DecrementOnDelete() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+func (s *KeeperSuite) TestSetPosition_IncrementsValidatorCounter_NewDelegated() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
-	count, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	// Sanity: validator counter starts at 0.
+	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	s.Require().Equal(uint64(1), count)
+	s.Require().Equal(uint64(0), count)
 
-	err = s.keeper.DeletePosition(s.ctx, pos)
+	const posId uint64 = 1
+	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+
+	now := s.ctx.BlockTime()
+	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
+
+	err = s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""})
 	s.Require().NoError(err)
 
-	// Count should be removed (0 → entry deleted from store).
-	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().Error(err, "count entry should be removed when it reaches 0")
+	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), valCount, "validator counter should increment 0→1")
+
+	tierCount, err := s.keeper.GetPositionCountForTier(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), tierCount, "tier counter should increment 0→1")
 }
 
-// TestPositionCountByValidator_UndelegatedPosition verifies that undelegated
-// positions do not affect the validator position count.
-func (s *KeeperSuite) TestPositionCountByValidator_UndelegatedPosition() {
-	// Create a delegated position first so we know the validator's count.
-	pos := s.setupNewTierPosition(sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddrA := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
-	countBefore, err := s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	const posId uint64 = 1
+	s.seedStakingDelegationForPosition(posId, valAddrA, sdkmath.NewInt(1000))
+
+	now := s.ctx.BlockTime()
+	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
+
+	// Initial write under valA.
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
+	countA, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddrA)
 	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), countA)
 
-	// Now undelegate it — clearing delegation makes it undelegated.
-	pos.ClearDelegation()
-	pos.UpdateAmount(sdkmath.NewInt(1000))
-	err = s.keeper.SetPosition(s.ctx, pos)
+	// Flip the live staking delegation to valB.
+	delA, err := s.keeper.GetDelegation(s.ctx, posId)
 	s.Require().NoError(err)
+	s.Require().NotNil(delA)
+	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *delA))
 
-	// Count should have decreased.
-	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
-	s.Require().Error(err, "count should be removed after undelegating the only position")
+	valAddrB, _ := s.createSecondValidator()
+	s.seedStakingDelegationForPosition(posId, valAddrB, sdkmath.NewInt(1000))
 
-	// Delete the undelegated position — should not affect any validator count.
-	err = s.keeper.DeletePosition(s.ctx, pos)
+	// setPosition with Previous: valA and live current=valB → decrement A, increment B.
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: valAddrA.String()}))
+
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddrA)
+	s.Require().Error(err, "valA entry should be removed after swap")
+
+	countB, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddrB)
 	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), countB, "valB should hold the position now")
+}
 
-	_ = countBefore // used above
+func (s *KeeperSuite) TestSetPosition_NilUpdateSkipsValidatorDiff() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	const posId uint64 = 1
+	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+
+	now := s.ctx.BlockTime()
+	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
+
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
+	before, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), before)
+
+	// Re-persist with an unrelated change and a nil update — counter must not budge.
+	pos.CreatedAtHeight = 101
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, nil))
+
+	after, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), after, "nil update must not alter validator counter")
+}
+
+func (s *KeeperSuite) TestDeletePosition_RejectsWhileDelegated() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	const posId uint64 = 1
+	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+
+	now := s.ctx.BlockTime()
+	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
+
+	err := s.keeper.DeletePosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: valAddr.String()})
+	s.Require().ErrorIs(err, types.ErrPositionDelegated)
+
+	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count, "counter must be unchanged on rejected delete")
+
+	_, err = s.keeper.GetPosition(s.ctx, posId)
+	s.Require().NoError(err, "position must still be present in store")
+}
+
+func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
+	s.setupTier(1)
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	const posId uint64 = 1
+	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+
+	now := s.ctx.BlockTime()
+	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
+
+	// Drop the staking delegation so deletePosition's no-delegation precondition holds.
+	del, err := s.keeper.GetDelegation(s.ctx, posId)
+	s.Require().NoError(err)
+	s.Require().NotNil(del)
+	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))
+
+	s.Require().NoError(s.keeper.DeletePosition(s.ctx, pos, nil))
+
+	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
+	s.Require().NoError(err)
+	s.Require().Equal(uint64(1), count, "nil update must not alter validator counter on delete")
 }

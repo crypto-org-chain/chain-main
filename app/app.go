@@ -709,7 +709,7 @@ func New(
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
-		tieredrewardstypes.ModuleName,
+		tieredrewardstypes.ModuleName, // ensure it is after staking to for initGenesis validation to work
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,

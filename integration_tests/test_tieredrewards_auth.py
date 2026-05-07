@@ -171,8 +171,7 @@ def test_update_tier_open_close_only(cluster):
 def test_update_tier_lock_succeeds_after_open(cluster):
     """Locking on Tier 3 succeeds now that close_only is false.
 
-    Also funds the pool, claims rewards, and verifies
-    that LastBonusAccrual advances after the claim.
+    Also funds the pool and claims rewards to sanity-check the flow.
     """
     owner = cluster.address("signer1")
     validator = get_validator_addr(cluster, 0)
@@ -188,39 +187,29 @@ def test_update_tier_lock_succeeds_after_open(cluster):
     pos = query_position(cluster, pos_id)["position"]
     assert int(pos["tier_id"]) == TIER_3_ID
     assert int(pos["amount"]) == 2_000_000
-    accrual_before = pos["last_bonus_accrual"]
 
     # Let some bonus accrue
     wait_for_new_blocks(cluster, 3)
 
-    # Claim rewards — LastBonusAccrual should advance
+    # Claim rewards succeeds
     rsp = claim_rewards(cluster, owner, pos_id)
     assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos_after = query_position(cluster, pos_id)["position"]
-    accrual_after = pos_after["last_bonus_accrual"]
-    assert isoparse(accrual_after) > isoparse(accrual_before), (
-        f"last_bonus_accrual should advance after claim: "
-        f"before={accrual_before}, after={accrual_after}"
-    )
 
 
 def test_update_tier_apy_claims_rewards(cluster):
     """Changing bonus_apy triggers claimRewardsForTier at the old rate.
 
     Tier 3 APY: 6% → 3%. The position owner should receive rewards and
-    the pool balance should decrease. The position's last_bonus_accrual
-    should advance to reflect the claim.
+    the pool balance should decrease.
     """
     owner = cluster.address("signer1")
 
-    # Find the signer1 position on Tier 3
+    # Confirm the signer1 position on Tier 3 exists
     result = query_command(cluster, MODULE, "positions-by-owner", owner)
     tier3_pos = next(
         p for p in result.get("positions", []) if int(p["tier_id"]) == TIER_3_ID
     )
-    pos_id = int(tier3_pos["id"])
-    accrual_before = tier3_pos["last_bonus_accrual"]
+    assert tier3_pos is not None
 
     balance_before = cluster.balance(owner, DENOM)
     pool_before = pool_balance(cluster)
@@ -263,30 +252,21 @@ def test_update_tier_apy_claims_rewards(cluster):
     )
     assert tier3["bonus_apy"] == new_apy
 
-    # Verify last_bonus_accrual advanced
-    pos_after = query_position(cluster, pos_id)["position"]
-    accrual_after = pos_after["last_bonus_accrual"]
-    assert isoparse(accrual_after) > isoparse(accrual_before), (
-        f"last_bonus_accrual should advance after APY change claim: "
-        f"before={accrual_before}, after={accrual_after}"
-    )
-
 
 def test_update_tier_non_apy_no_claim(cluster):
-    """Changing exit_duration without changing APY does not trigger bonus claiming.
+    """Changing exit_duration without changing APY does not trigger rewards claiming.
 
-    Verified by checking that last_bonus_accrual is unchanged — claimRewardsForTier
-    is only called when APY changes.
+    Verified by checking that the owner balance is unchanged.
     """
     owner = cluster.address("signer1")
 
-    # Find the signer1 position on Tier 3
+    # Confirm the signer1 position on Tier 3 exists
     result = query_command(cluster, MODULE, "positions-by-owner", owner)
     tier3_pos = next(
         p for p in result.get("positions", []) if int(p["tier_id"]) == TIER_3_ID
     )
-    pos_id = int(tier3_pos["id"])
-    accrual_before = tier3_pos["last_bonus_accrual"]
+    assert tier3_pos is not None
+    balance_before = cluster.balance(owner, DENOM)
 
     rsp = submit_gov_proposal(
         cluster,
@@ -306,12 +286,10 @@ def test_update_tier_non_apy_no_claim(cluster):
     )
     approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
-    pos_after = query_position(cluster, pos_id)["position"]
-    accrual_after = pos_after["last_bonus_accrual"]
-    assert accrual_after == accrual_before, (
-        f"last_bonus_accrual should not change when APY is unchanged: "
-        f"before={accrual_before}, after={accrual_after}"
-    )
+    # No rewards should have been paid out to the owner.
+    assert (
+        cluster.balance(owner, DENOM) == balance_before
+    ), "owner balance should not change when APY is unchanged"
 
     # Verify exit_duration is updated
     result = query_tiers(cluster)

@@ -43,11 +43,15 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 		q.k.Positions,
 		req.Pagination,
 		func(_ uint64, pos types.Position) (types.PositionResponse, error) {
-			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			state, err := q.k.getPositionState(ctx, pos.Id)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return pos.ToPositionResponse(tokenValue), nil
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			return state.ToPositionResponse(positionAmount), nil
 		},
 	)
 	if err != nil {
@@ -74,15 +78,15 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 		q.k.PositionsByOwner,
 		req.Pagination,
 		func(key collections.Pair[sdk.AccAddress, uint64], _ collections.NoValue) (types.PositionResponse, error) {
-			pos, err := q.k.getPosition(ctx, key.K2())
+			state, err := q.k.getPositionState(ctx, key.K2())
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return pos.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(positionAmount), nil
 		},
 		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
 	)
@@ -93,22 +97,51 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 	return &types.QueryTierPositionsByOwnerResponse{Positions: positions, Pagination: pageResp}, nil
 }
 
+func (q queryServer) TierPositionsByTier(ctx context.Context, req *types.QueryTierPositionsByTierRequest) (*types.QueryTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.PositionResponse, error) {
+			state, err := q.k.getPositionState(ctx, key.K2())
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			return state.ToPositionResponse(positionAmount), nil
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionsByTierResponse{Positions: positions, Pagination: pageResp}, nil
+}
+
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.getPosition(ctx, req.PositionId)
+	pos, err := q.k.getPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenValue, err := q.k.positionTokenValue(ctx, pos)
+	positionAmount, err := q.k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryTierPositionResponse{Position: pos.ToPositionResponse(tokenValue)}, nil
+	return &types.QueryTierPositionResponse{Position: pos.ToPositionResponse(positionAmount)}, nil
 }
 
 func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {
@@ -135,7 +168,7 @@ func (q queryServer) EstimatePositionRewards(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	pos, err := q.k.getPosition(ctx, req.PositionId)
+	pos, err := q.k.getPositionState(ctx, req.PositionId)
 	if err != nil {
 		return nil, err
 	}
@@ -219,6 +252,29 @@ func (q queryServer) RawTierPositionsByOwner(ctx context.Context, req *types.Que
 	}, nil
 }
 
+func (q queryServer) RawTierPositionsByTier(ctx context.Context, req *types.QueryRawTierPositionsByTierRequest) (*types.QueryRawTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionsByTierResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
 func (q queryServer) RawAllTierPositions(ctx context.Context, req *types.QueryRawAllTierPositionsRequest) (*types.QueryRawAllTierPositionsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -275,38 +331,28 @@ func (q queryServer) ValidatorData(ctx context.Context, req *types.QueryValidato
 	return resp, nil
 }
 
-func (q queryServer) PositionMappings(ctx context.Context, req *types.QueryPositionMappingsRequest) (*types.QueryPositionMappingsResponse, error) {
+func (q queryServer) RedelegationMappings(ctx context.Context, req *types.QueryRedelegationMappingsRequest) (*types.QueryRedelegationMappingsResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	resp := &types.QueryPositionMappingsResponse{}
-
-	unbondIter, err := q.k.UnbondingDelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
+	entries, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.RedelegationMappings,
+		req.Pagination,
+		func(unbondingId, positionId uint64) (types.RedelegationMapping, error) {
+			return types.RedelegationMapping{
+				UnbondingId: unbondingId,
+				PositionId:  positionId,
+			}, nil
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
-	defer unbondIter.Close()
-	for ; unbondIter.Valid(); unbondIter.Next() {
-		pk, err := unbondIter.PrimaryKey()
-		if err != nil {
-			return nil, err
-		}
-		resp.UnbondingIds = append(resp.UnbondingIds, pk)
-	}
 
-	redelIter, err := q.k.RedelegationMappings.Indexes.ByPosition.MatchExact(ctx, req.PositionId)
-	if err != nil {
-		return nil, err
-	}
-	defer redelIter.Close()
-	for ; redelIter.Valid(); redelIter.Next() {
-		pk, err := redelIter.PrimaryKey()
-		if err != nil {
-			return nil, err
-		}
-		resp.RedelegationIds = append(resp.RedelegationIds, pk)
-	}
-
-	return resp, nil
+	return &types.QueryRedelegationMappingsResponse{
+		RedelegationMappings: entries,
+		Pagination:           pageResp,
+	}, nil
 }

@@ -42,7 +42,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_MultiplePositions() {
 	lockAmt1 := sdkmath.NewInt(3000)
 	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	tier2 := newTestTier(2)
@@ -171,7 +171,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	lockAmount := sdkmath.NewInt(5000)
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.jailAndUnbondValidator(valAddr)
 
@@ -179,7 +179,7 @@ func (s *KeeperSuite) TestGetVotingPowerByOwner_UnbondingValidatorNotCounted() {
 	s.Require().NoError(err)
 	s.Require().False(val.IsBonded(), "validator should no longer be bonded")
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, delAddr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
 
@@ -199,7 +199,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower() {
 	lockAmt1 := sdkmath.NewInt(3000)
 	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -237,7 +237,7 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	perAddrPower, err := s.keeper.GetVotingPowerByOwner(s.ctx, delAddr)
 	s.Require().NoError(err)
@@ -279,11 +279,11 @@ func (s *KeeperSuite) TestVotingPower_AfterSlash() {
 func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, false)
-	s.Require().True(pos.DelegatedShares.IsPositive(), "test setup failed: expected positive delegated shares")
+	s.Require().True(pos.Delegation.Shares.IsPositive(), "test setup failed: expected positive delegated shares")
 
 	// Slash the validator through staking with 100% fraction so tokens are
 	// actually burned and the exchange rate drops to zero.
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	consAddr, err := val.GetConsAddr()
@@ -296,11 +296,11 @@ func (s *KeeperSuite) TestZeroAmountPositiveSharesState() {
 	_, err = s.app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(s.ctx)
 	s.Require().NoError(err)
 
-	posAfter, err := s.keeper.GetPosition(s.ctx, pos.Id)
+	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated(), "expected position to remain delegated")
-	s.Require().True(posAfter.Amount.IsZero(), "delegated position should still have zero amount after slash")
-	s.Require().True(posAfter.DelegatedShares.IsPositive(), "expected delegated shares to remain positive")
+	s.Require().True(s.getPositionAmount(posAfter).IsZero(), "delegated position should still have zero amount after slash")
+	s.Require().True(posAfter.Delegation.Shares.IsPositive(), "expected delegated shares to remain positive")
 
 	voter := sdk.MustAccAddressFromBech32(pos.Owner)
 	votingPower, err := s.keeper.GetVotingPowerByOwner(s.ctx, voter)
@@ -325,7 +325,7 @@ func (s *KeeperSuite) TestTotalDelegatedVotingPower_IncludesExiting() {
 	lockAmt1 := sdkmath.NewInt(3000)
 	pos := s.setupNewTierPosition(lockAmt1, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)

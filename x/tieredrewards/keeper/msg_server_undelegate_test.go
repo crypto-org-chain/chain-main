@@ -6,6 +6,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	collections "cosmossdk.io/collections"
 	sdkmath "cosmossdk.io/math"
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -16,6 +17,7 @@ import (
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	// Create delegated + exit-triggered position
@@ -31,34 +33,24 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero())
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.Require().False(pos.IsDelegated(), "position should not be delegated after undelegate")
-	s.Require().True(pos.DelegatedShares.IsZero(), "delegated shares should be cleared")
+	s.Require().Nil(pos.Delegation, "delegation should be cleared")
 
-	// Verify redelegation unbonding ID was written to UnbondingDelegationMappings, not RedelegationMappings.
-	var unbondingFound bool
-	err = s.keeper.UnbondingDelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			unbondingFound = true
-			return true, nil
-		}
-		return false, nil
-	})
-	s.Require().NoError(err)
-	s.Require().True(unbondingFound, "undelegation unbonding ID should be in UnbondingDelegationMappings")
+	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddr)
+	s.Require().ErrorIs(err, collections.ErrNotFound)
 
-	var redelegationFound bool
-	err = s.keeper.RedelegationMappings.Walk(s.ctx, nil, func(_, posId uint64) (bool, error) {
-		if posId == pos.Id {
-			redelegationFound = true
-			return true, nil
-		}
-		return false, nil
-	})
+	// The position should have a pending unbonding delegation entry in staking.
+	ubds, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, types.GetDelegatorAddress(pos.Id), 1)
 	s.Require().NoError(err)
-	s.Require().False(redelegationFound, "undelegation unbonding ID should not be stored in RedelegationMappings")
+	s.Require().NotEmpty(ubds, "position should have a pending unbonding delegation entry")
+
+	// No redelegating-position mapping should exist for a plain undelegate.
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	s.Require().NoError(err)
+	s.Require().False(isRedelegating, "undelegate must not populate the redelegating-position mapping")
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_NotDelegated() {
@@ -132,7 +124,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, true)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
@@ -161,15 +153,16 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ClaimsRewardsBeforeUndelegating() {
 func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	lockAmount := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos = positions[0]
+	pos, err = s.keeper.GetPositionState(s.ctx, positions[0].Id)
+	s.Require().NoError(err)
 	s.Require().True(pos.IsDelegated())
 
 	s.fundRewardsPool(sdkmath.NewInt(100_000), bondDenom)
@@ -180,7 +173,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
@@ -190,22 +183,23 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 		PositionId: pos.Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(pos.Amount.String(), resp.Amount.AmountOf(bondDenom).String(),
-		"withdrawn amount should equal the SDK return amount")
+	s.Require().Equal(lockAmount.String(), resp.Amount.AmountOf(bondDenom).String(),
+		"withdrawn amount should equal the locked amount")
 }
 
 func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 	lockAmount := sdkmath.NewInt(10_000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	addr := sdk.MustAccAddressFromBech32(pos.Owner)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
-	positions, err := s.keeper.GetPositionsByOwner(s.ctx, addr)
+	positions, err := s.keeper.GetPositionStatesByOwner(s.ctx, addr)
 	s.Require().NoError(err)
 	s.Require().Len(positions, 1)
-	pos = positions[0]
+	pos, err = s.keeper.GetPositionState(s.ctx, positions[0].Id)
+	s.Require().NoError(err)
 
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
 	s.ctx = s.ctx.WithBlockTime(s.ctx.BlockTime().Add(time.Hour))
@@ -229,7 +223,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_AfterBondedSlash_Succeeds() {
 // layer returns zero tokens and the position is cleanly undelegated.
 func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 
@@ -246,9 +240,9 @@ func (s *KeeperSuite) TestMsgTierUndelegate_BondedZeroAmount() {
 	})
 	s.Require().NoError(err)
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(pos.Amount.IsZero(), "position amount should be zero")
+	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should be zero")
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
 
@@ -277,7 +271,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_TierCloseOnly_Succeeds() {
 	s.Require().NoError(err)
 	s.Require().False(resp.CompletionTime.IsZero(), "undelegation should succeed on CloseOnly tier")
 
-	pos, err = s.keeper.GetPosition(s.ctx, pos.Id)
+	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	s.Require().False(pos.IsDelegated(), "position should be undelegated")
 }
@@ -327,7 +321,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ManyPositionsSameValidator() {
 	}
 
 	for i := 0; i < numPositions; i++ {
-		pos, err := s.keeper.GetPosition(s.ctx, positionIds[i])
+		pos, err := s.keeper.GetPositionState(s.ctx, positionIds[i])
 		s.Require().NoError(err)
 		s.Require().False(pos.IsDelegated(), "position %d should be undelegated", i)
 	}
