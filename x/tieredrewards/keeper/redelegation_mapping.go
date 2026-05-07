@@ -11,7 +11,7 @@ import (
 )
 
 // RedelegationMappingsIndexes defines secondary indexes on RedelegationMappings.
-// ByPosition is a position_id -> unbonding_id multi-index. 
+// ByPosition is a position_id -> unbonding_id multi-index.
 // Used for deleting position redelegation mappings based on position_id.
 type RedelegationMappingsIndexes struct {
 	ByPosition *indexes.Multi[uint64, uint64, uint64]
