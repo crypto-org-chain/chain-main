@@ -12,6 +12,9 @@ import (
 // SetPosition rebuilds all secondary indexes, so derived data does not need
 // to be stored in genesis.
 func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
+	if k.accountKeeper.GetModuleAccount(ctx, types.ModuleName) == nil {
+		panic("tieredrewards module account was not created")
+	}
 	if k.accountKeeper.GetModuleAccount(ctx, types.RewardsPoolName) == nil {
 		panic("tieredrewards rewards pool module account was not created")
 	}
