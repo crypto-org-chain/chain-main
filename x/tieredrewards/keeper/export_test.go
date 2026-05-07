@@ -103,10 +103,10 @@ func (k Keeper) CreateDelegatedPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	lastEventSeq uint64,
+	valAddr sdk.ValAddress,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
-	return k.createDelegatedPosition(ctx, owner, tier, lastEventSeq, triggerExitImmediately)
+	return k.createDelegatedPosition(ctx, owner, tier, valAddr, triggerExitImmediately)
 }
 
 func (k Keeper) IsUnbonding(ctx context.Context, positionId uint64) (bool, error) {

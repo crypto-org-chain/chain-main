@@ -59,12 +59,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	pos, err := ms.createDelegatedPosition(ctx, msg.Owner, tier, latestSeq, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.Owner, tier, valAddr, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -121,12 +116,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	pos, err := ms.createDelegatedPosition(ctx, msg.DelegatorAddress, tier, latestSeq, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.DelegatorAddress, tier, valAddr, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}

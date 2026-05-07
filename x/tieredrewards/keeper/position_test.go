@@ -182,9 +182,12 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_Basic() {
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, 0, false)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), pos.TierId)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
@@ -198,9 +201,12 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_WithTriggerExitImmediately() {
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, 0, true)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, true)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().False(pos.ExitTriggeredAt.IsZero())
@@ -214,12 +220,15 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_IncrementingIds() {
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
 
+	vals, _ := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos1, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, 0, false)
+	pos1, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
 
-	pos2, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, 0, false)
+	pos2, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
 	s.Require().NoError(err)
 
 	s.Require().True(pos2.Id > pos1.Id)

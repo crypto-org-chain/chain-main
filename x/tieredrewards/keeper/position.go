@@ -33,10 +33,15 @@ func (k Keeper) createDelegatedPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	lastEventSeq uint64,
+	valAddr sdk.ValAddress,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
 	id, err := k.NextPositionId.Next(ctx)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	lastEventSeq, err := k.getValidatorEventLatestSeq(ctx, valAddr)
 	if err != nil {
 		return types.Position{}, err
 	}
