@@ -359,6 +359,13 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Len(positionsByOwnerResp.Positions, 1)
 		s.Require().Equal(uint64(0), positionsByOwnerResp.Positions[0].Id)
 
+		var positionsByTierResp tieredrewardstypes.QueryTierPositionsByTierResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryTierPositionsByTierExec(val.ClientCtx, "1")
+		}, &positionsByTierResp)
+		s.Require().Len(positionsByTierResp.Positions, 1)
+		s.Require().Equal(uint32(1), positionsByTierResp.Positions[0].TierId)
+
 		allPositionsResp := s.mustQueryAllPositions(val)
 		s.Require().Len(allPositionsResp.Positions, 1)
 		s.Require().Equal(uint64(0), allPositionsResp.Positions[0].Id)
@@ -594,6 +601,15 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryRawTierPositionsByOwnerExec(val.ClientCtx, owner)
 		}, &resp)
 		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("raw-positions-by-tier", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionsByTierResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionsByTierExec(val.ClientCtx, "1")
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+		s.Require().Equal(uint32(1), resp.Positions[0].TierId)
 	})
 
 	s.Run("raw-all-positions", func() {

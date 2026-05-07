@@ -97,6 +97,35 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 	return &types.QueryTierPositionsByOwnerResponse{Positions: positions, Pagination: pageResp}, nil
 }
 
+func (q queryServer) TierPositionsByTier(ctx context.Context, req *types.QueryTierPositionsByTierRequest) (*types.QueryTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.PositionResponse, error) {
+			pos, err := q.k.getPosition(ctx, key.K2())
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			if err != nil {
+				return types.PositionResponse{}, err
+			}
+			return pos.ToPositionResponse(tokenValue), nil
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.QueryTierPositionsByTierResponse{Positions: positions, Pagination: pageResp}, nil
+}
+
 func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPositionRequest) (*types.QueryTierPositionResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -218,6 +247,29 @@ func (q queryServer) RawTierPositionsByOwner(ctx context.Context, req *types.Que
 		return nil, err
 	}
 	return &types.QueryRawTierPositionsByOwnerResponse{
+		Positions:  positions,
+		Pagination: pageResp,
+	}, nil
+}
+
+func (q queryServer) RawTierPositionsByTier(ctx context.Context, req *types.QueryRawTierPositionsByTierRequest) (*types.QueryRawTierPositionsByTierResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	positions, pageResp, err := query.CollectionPaginate(
+		ctx,
+		q.k.PositionsByTier,
+		req.Pagination,
+		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.Position, error) {
+			return q.k.getPosition(ctx, key.K2())
+		},
+		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &types.QueryRawTierPositionsByTierResponse{
 		Positions:  positions,
 		Pagination: pageResp,
 	}, nil
