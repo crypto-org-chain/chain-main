@@ -19,6 +19,10 @@ let
       ''
         mkdir -p $out/bin
         tar -xzf $src -C $out
+        mkdir -p $out/bin
+        tar -xzf $src -C $out
+        # If binary extracted to root (not bin/), move it into place.
+        [ -f "$out/chain-maind" ] && mv "$out/chain-maind" "$out/bin/chain-maind"
         chmod +x $out/bin/chain-maind
       '';
   v1 = fetchBinary "1.1.0" "sha256-+KknygtcWrilun443B8nJTO01meOyAsqzRHadUIhFJY=";
