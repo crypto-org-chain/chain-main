@@ -25064,7 +25064,7 @@ paths:
                       tokens
                   decay_rate:
                     type: string
-                    title: decay rate
+                    title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
             description: >-
               QueryParamsResponse is the response type for the Query/Params RPC
               method.
@@ -46330,7 +46330,7 @@ definitions:
         title: burned_addresses is a list of addresses that hold burned tokens
       decay_rate:
         type: string
-        title: decay rate
+        title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
     description: Params holds parameters for the inflation module.
   chainmain.inflation.v1.QueryParamsResponse:
     type: object
@@ -46349,7 +46349,7 @@ definitions:
             title: burned_addresses is a list of addresses that hold burned tokens
           decay_rate:
             type: string
-            title: decay rate
+            title: monthly decay rate [0, 1]; 0 = no decay; 1 = no minting
     description: QueryParamsResponse is the response type for the Query/Params RPC method.
   chainmain.tieredrewards.v1.Params:
     type: object

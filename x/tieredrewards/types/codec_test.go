@@ -28,7 +28,6 @@ func TestRegisterInterfaces_AllMsgTypes(t *testing.T) {
 		&types.MsgDeleteTier{},
 		&types.MsgLockTier{},
 		&types.MsgCommitDelegationToTier{},
-		&types.MsgTierDelegate{},
 		&types.MsgTierUndelegate{},
 		&types.MsgTierRedelegate{},
 		&types.MsgAddToTierPosition{},

@@ -156,63 +156,6 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 	return &types.MsgCommitDelegationToTierResponse{PositionId: pos.Id}, nil
 }
 
-func (ms msgServer) TierDelegate(ctx context.Context, msg *types.MsgTierDelegate) (*types.MsgTierDelegateResponse, error) {
-	if err := msg.Validate(); err != nil {
-		return nil, err
-	}
-
-	pos, err := ms.getPosition(ctx, msg.PositionId)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.validateDelegatePosition(ctx, pos, msg.Owner); err != nil {
-		return nil, err
-	}
-
-	valAddr, err := sdk.ValAddressFromBech32(msg.Validator)
-	if err != nil {
-		return nil, err
-	}
-
-	delAddr := types.GetDelegatorAddress(pos.Id)
-
-	newShares, err := ms.delegate(ctx, delAddr, valAddr, pos.Amount)
-	if err != nil {
-		return nil, err
-	}
-
-	latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := ms.updateDelegation(ctx, &pos, types.Delegation{
-		Validator:    msg.Validator,
-		Shares:       newShares,
-		LastEventSeq: latestSeq,
-	}); err != nil {
-		return nil, err
-	}
-
-	if err := ms.setPosition(ctx, pos); err != nil {
-		return nil, err
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionDelegated{
-		PositionId: pos.Id,
-		TierId:     pos.TierId,
-		Owner:      pos.Owner,
-		Validator:  msg.Validator,
-		Shares:     newShares,
-	}); err != nil {
-		return nil, err
-	}
-
-	return &types.MsgTierDelegateResponse{PositionId: pos.Id}, nil
-}
-
 func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndelegate) (*types.MsgTierUndelegateResponse, error) {
 	if err := msg.Validate(); err != nil {
 		return nil, err

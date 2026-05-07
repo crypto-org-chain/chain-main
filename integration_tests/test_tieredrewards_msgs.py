@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import requests
 from dateutil.parser import isoparse
-from pystarport.ports import rpc_port
 
 from .tieredrewards_helpers import (
     DENOM,
@@ -20,26 +19,20 @@ from .tieredrewards_helpers import (
     commit_delegation,
     exit_tier_with_delegation,
     fund_pool,
-    get_node_validator_addr,
     get_validator_addr,
     lock_tier,
     new_pos_id,
     query_position,
-    tier_delegate,
     tier_redelegate,
     tier_undelegate,
     trigger_exit,
     withdraw,
 )
 from .utils import (
-    approve_proposal,
     cluster_fixture,
     find_log_event_attrs,
-    query_command,
-    submit_gov_proposal,
     wait_for_block_time,
     wait_for_new_blocks,
-    wait_for_port,
 )
 
 pytestmark = [pytest.mark.tieredrewards]
@@ -234,98 +227,6 @@ def test_commit_delegation_with_trigger_exit(cluster):
     pos = query_position(cluster, pos_id)["position"]
     assert pos["exit_triggered_at"] != ZERO_TIME
     assert pos["exit_unlock_at"] != ZERO_TIME
-
-
-# ──────────────────────────────────────────────
-# MsgTierDelegate (requires slashing_cluster)
-# ──────────────────────────────────────────────
-
-
-@pytest.mark.slow
-@pytest.mark.flaky(max_runs=5)
-def test_tier_delegate(slashing_cluster):
-    """Delegate an undelegated position via redelegation slash + add.
-
-    1. Gov proposal sets slash_fraction_downtime to 100%
-    2. Lock on validator 2, stop node 2, redelegate to validator 0
-    3. Slash fires — redelegation entry slashes position to zero
-    4. AddToTierPosition to bring amount > 0
-    5. TierDelegate to validator 0
-    """
-    cluster = slashing_cluster
-    owner = cluster.address("signer1")
-    validator2 = get_node_validator_addr(cluster, 2)
-    validator0 = get_node_validator_addr(cluster, 0)
-
-    wait_for_new_blocks(cluster, 2)
-
-    # Step 1: Gov proposal — 100% downtime slash, window=20
-    # With min_signed=0.5, slash fires after ~11 missed blocks.
-    # infractionHeight = slashBlock - 2.
-    slashing_params = query_command(cluster, "slashing", "params")["params"]
-    slashing_params["slash_fraction_downtime"] = "1.000000000000000000"
-    slashing_params["signed_blocks_window"] = "20"
-    rsp = submit_gov_proposal(
-        cluster,
-        "community",
-        MSG_SLASHING_UPDATE_PARAMS,
-        {"params": slashing_params},
-        title="Set downtime slash to 100%",
-        summary="slash validator to zero via redelegation",
-    )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
-
-    # Step 2: Lock on validator 2
-    before = before_ids(cluster, owner)
-    rsp = lock_tier(
-        cluster,
-        owner,
-        TIER_1_ID,
-        TIER_1_MIN * 2,
-        validator=validator2,
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-    pos_id = new_pos_id(cluster, owner, before)
-
-    # Step 3: Stop node 2 FIRST, THEN redelegate.
-    # With signed_blocks_window=20 and min_signed=0.5, slash fires after
-    # ~11 missed blocks. infractionHeight = slashBlock - 2.
-    # Wait 9 blocks so the redelegate lands within 2 blocks of the slash.
-    cluster.supervisor.stopProcess(f"{cluster.chain_id}-node2")
-    wait_for_new_blocks(cluster, 9)
-
-    rsp = tier_redelegate(cluster, owner, pos_id, validator0)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos_before = query_position(cluster, pos_id)["position"]
-    assert pos_before["validator"] == validator0
-
-    # Wait for slash to trigger
-    wait_for_new_blocks(cluster, 15)
-    cluster.supervisor.startProcess(f"{cluster.chain_id}-node2")
-    wait_for_port(rpc_port(cluster.base_port(2)))
-    wait_for_new_blocks(cluster, 2)
-
-    pos_after_slash = query_position(cluster, pos_id)["position"]
-    assert int(pos_after_slash["amount"]) == 0, (
-        "redelegation slash should zero the amount, " f"got {pos_after_slash['amount']}"
-    )
-
-    # Step 4: AddToTierPosition to bring amount > 0
-    add_amount = TIER_1_MIN * 2
-    rsp = add_to_position(cluster, owner, pos_id, add_amount)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos_after_add = query_position(cluster, pos_id)["position"]
-    assert int(pos_after_add["amount"]) == add_amount
-
-    # Step 5: TierDelegate to validator 0
-    rsp = tier_delegate(cluster, owner, pos_id, validator0)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos_final = query_position(cluster, pos_id)["position"]
-    assert pos_final["validator"] == validator0
-    assert pos_final["delegated_shares"] != "0.000000000000000000"
 
 
 # ──────────────────────────────────────────────

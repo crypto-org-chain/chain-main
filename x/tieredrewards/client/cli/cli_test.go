@@ -721,19 +721,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
 			wantContains: `invalid amount "not-an-amount"`,
 		},
 		{
-			name: "tier delegate invalid position id",
-			exec: func() (sdktestutil.BufferWriter, error) {
-				return tieredrewardstestutil.TierDelegateExec(
-					val.ClientCtx,
-					owner,
-					"not-a-number",
-					validator,
-					s.defaultTxArgs()...,
-				)
-			},
-			wantContains: `invalid position-id "not-a-number"`,
-		},
-		{
 			name: "tier undelegate invalid position id",
 			exec: func() (sdktestutil.BufferWriter, error) {
 				return tieredrewardstestutil.TierUndelegateExec(

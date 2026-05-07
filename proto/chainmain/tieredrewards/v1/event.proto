@@ -67,19 +67,6 @@ message EventBonusRewardsClaimed {
   ];
 }
 
-// EventPositionDelegated is emitted when a position is delegated to a validator via MsgTierDelegate.
-message EventPositionDelegated {
-  uint64 position_id = 1;
-  uint32 tier_id     = 2;
-  string owner       = 3 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-  string validator   = 4 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
-  string shares      = 5 [
-    (cosmos_proto.scalar)  = "cosmos.Dec",
-    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
-    (gogoproto.nullable)   = false
-  ];
-}
-
 // EventPositionUndelegated is emitted when a position begins undelegating via MsgTierUndelegate.
 message EventPositionUndelegated {
   uint64                    position_id     = 1;

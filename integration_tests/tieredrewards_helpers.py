@@ -108,10 +108,6 @@ def exit_tier_with_delegation(cluster, owner, position_id, amount, i=0):
     )
 
 
-def tier_delegate(cluster, owner, position_id, validator, i=0):
-    return tx(cluster, "tier-delegate", str(position_id), validator, from_=owner, i=i)
-
-
 def tier_redelegate(cluster, owner, position_id, dst_validator, i=0):
     return tx(
         cluster, "tier-redelegate", str(position_id), dst_validator, from_=owner, i=i

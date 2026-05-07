@@ -240,10 +240,6 @@ func CommitDelegationToTierExec(clientCtx client.Context, from, validatorAddress
 	return ExecTxCmd(clientCtx, from, []string{validatorAddress, amount, tierID}, tieredrewardscli.GetCmdCommitDelegationToTier, extraArgs...)
 }
 
-func TierDelegateExec(clientCtx client.Context, from, positionID, validator string, extraArgs ...string) (testutil.BufferWriter, error) {
-	return ExecTxCmd(clientCtx, from, []string{positionID, validator}, tieredrewardscli.GetCmdTierDelegate, extraArgs...)
-}
-
 func TierUndelegateExec(clientCtx client.Context, from, positionID string, extraArgs ...string) (testutil.BufferWriter, error) {
 	return ExecTxCmd(clientCtx, from, []string{positionID}, tieredrewardscli.GetCmdTierUndelegate, extraArgs...)
 }

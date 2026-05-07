@@ -23,36 +23,6 @@ func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	return nil
 }
 
-func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
-	if !pos.IsOwner(owner) {
-		return types.ErrNotPositionOwner
-	}
-
-	if pos.IsDelegated() {
-		return types.ErrPositionAlreadyDelegated
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if pos.HasTriggeredExit() && pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		return types.ErrExitLockDurationElapsed
-	}
-
-	tier, err := k.getTier(ctx, pos.TierId)
-	if err != nil {
-		return err
-	}
-
-	if tier.IsCloseOnly() {
-		return types.ErrTierIsCloseOnly
-	}
-
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
-	}
-
-	return nil
-}
-
 func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
