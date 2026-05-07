@@ -37,13 +37,6 @@ func (k Keeper) reconcileAmountFromShares(ctx context.Context, valAddr sdk.ValAd
 	return val.TokensFromShares(shares).TruncateInt(), nil
 }
 
-// updateBonusAccrualCheckpoints updates a position's bonus-state fields for a delegation.
-func (k Keeper) updateBonusAccrualCheckpoints(ctx context.Context, pos *types.Position, lastEventSeq uint64) error {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pos.UpdateBonusCheckpoints(lastEventSeq, sdkCtx.BlockTime())
-	return nil
-}
-
 func (k Keeper) delegate(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, error) {
 	val, err := k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
