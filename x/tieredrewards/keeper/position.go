@@ -182,17 +182,17 @@ func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionSt
 
 // deletePosition validates and removes a position and cleans up secondary indexes.
 func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+	owner, err := sdk.AccAddressFromBech32(pos.Owner)
+	if err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+	
 	del, err := k.getDelegation(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
 	if del != nil {
 		return errorsmod.Wrapf(types.ErrPositionDelegated, "cannot delete position %d: still has active delegation to %s", pos.Id, del.ValidatorAddress)
-	}
-
-	owner, err := sdk.AccAddressFromBech32(pos.Owner)
-	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
