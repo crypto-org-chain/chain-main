@@ -380,9 +380,9 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 
 	// Verify unbonding mapping exists.
-	hasUnbonding, err := s.keeper.IsUnbonding(s.ctx, 0)
+	isUnbonding, err := s.keeper.IsUnbonding(s.ctx, 0)
 	s.Require().NoError(err)
-	s.Require().True(hasUnbonding, "unbonding delegation should exist after TierUndelegate")
+	s.Require().True(isUnbonding, "unbonding delegation should exist after TierUndelegate")
 
 	// Advance time past exit lock duration.
 	s.advancePastExitDuration()
@@ -398,9 +398,9 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
 
 	// Verify IsUnbonding reads false once the UD is cleared.
-	hasUnbonding, err = s.keeper.IsUnbonding(s.ctx, 0)
+	isUnbonding, err = s.keeper.IsUnbonding(s.ctx, 0)
 	s.Require().NoError(err)
-	s.Require().False(hasUnbonding, "no pending unbonding delegation should remain after completion")
+	s.Require().False(isUnbonding, "no pending unbonding delegation should remain after completion")
 
 	// Withdrawal should now pass since unbonding entries are cleaned up.
 	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{

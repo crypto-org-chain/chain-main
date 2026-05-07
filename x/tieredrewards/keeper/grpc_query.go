@@ -47,11 +47,11 @@ func (q queryServer) AllTierPositions(ctx context.Context, req *types.QueryAllTi
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.getPositionAmount(ctx, state)
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return state.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(positionAmount), nil
 		},
 	)
 	if err != nil {
@@ -82,11 +82,11 @@ func (q queryServer) TierPositionsByOwner(ctx context.Context, req *types.QueryT
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.getPositionAmount(ctx, state)
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return state.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(positionAmount), nil
 		},
 		query.WithCollectionPaginationPairPrefix[sdk.AccAddress, uint64](owner),
 	)
@@ -111,11 +111,11 @@ func (q queryServer) TierPositionsByTier(ctx context.Context, req *types.QueryTi
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.getPositionAmount(ctx, state)
+			positionAmount, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return state.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(positionAmount), nil
 		},
 		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
 	)
@@ -136,12 +136,12 @@ func (q queryServer) TierPosition(ctx context.Context, req *types.QueryTierPosit
 		return nil, err
 	}
 
-	tokenValue, err := q.k.getPositionAmount(ctx, pos)
+	positionAmount, err := q.k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.QueryTierPositionResponse{Position: pos.ToPositionResponse(tokenValue)}, nil
+	return &types.QueryTierPositionResponse{Position: pos.ToPositionResponse(positionAmount)}, nil
 }
 
 func (q queryServer) Tiers(ctx context.Context, _ *types.QueryTiersRequest) (*types.QueryTiersResponse, error) {

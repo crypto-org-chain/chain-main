@@ -73,11 +73,11 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrTierIsCloseOnly
 	}
 
-	redelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if redelegating {
+	if isRedelegating {
 		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 
@@ -124,11 +124,11 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionSta
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		unbonding, err := k.isUnbonding(ctx, pos.Id)
+		isUnbonding, err := k.isUnbonding(ctx, pos.Id)
 		if err != nil {
 			return err
 		}
-		if unbonding {
+		if isUnbonding {
 			return types.ErrPositionUnbonding
 		}
 
@@ -176,11 +176,11 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionDelegated
 	}
 
-	unbonding, err := k.isUnbonding(ctx, pos.Id)
+	isUnbonding, err := k.isUnbonding(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if unbonding {
+	if isUnbonding {
 		return types.ErrPositionUnbonding
 	}
 
@@ -205,20 +205,20 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
-	tokenValue, err := k.getPositionAmount(ctx, pos)
+	positionAmount, err := k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return err
 	}
 
-	if amount.GT(tokenValue) {
-		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
+	if amount.GT(positionAmount) {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, positionAmount)
 	}
 
-	redelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if redelegating {
+	if isRedelegating {
 		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 

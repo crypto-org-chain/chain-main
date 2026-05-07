@@ -296,7 +296,7 @@ func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types
 
 	originalVal := pos.Delegation.ValidatorAddress
 	pos.ResetBonusCheckpoints()
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, &keeper.ValidatorUpdate{From: originalVal}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos.Position, &keeper.ValidatorTransition{PreviousAddress: originalVal}))
 
 	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)

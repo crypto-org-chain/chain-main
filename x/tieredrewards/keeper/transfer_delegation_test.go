@@ -293,9 +293,9 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 	s.Require().NoError(err)
 
 	// Compute token value from shares for the full amount.
-	tokenValue := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
+	positionAmount := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
-	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
+	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, positionAmount)
 	s.Require().NoError(err)
 	s.Require().True(returnShares.IsPositive())
 
@@ -327,8 +327,8 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Partial() {
 	// Compute token value from shares for the half amount.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
-	halfAmount := tokenValue.Quo(sdkmath.NewInt(2))
+	positionAmount := valBefore.TokensFromShares(pos.Delegation.Shares).TruncateInt()
+	halfAmount := positionAmount.Quo(sdkmath.NewInt(2))
 
 	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, halfAmount)
 	s.Require().NoError(err)
@@ -357,9 +357,9 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_ValidatorNotBonded() {
 	// Compute token value from shares.
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
+	positionAmount := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, positionAmount)
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
 
@@ -372,10 +372,10 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_InvalidOwnerAddress() {
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	val, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
+	positionAmount := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	pos.Owner = "invalid_address"
-	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, positionAmount)
 	s.Require().Error(err)
 }
 
@@ -458,10 +458,10 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	// Compute token value from shares for the full amount.
 	val, err = s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
-	tokenValue := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
+	positionAmount := val.TokensFromShares(pos.Delegation.Shares).TruncateInt()
 
 	// Transfer tier delegation back to owner.
-	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, tokenValue)
+	returnShares, _, _, err := s.keeper.TransferDelegationFromPosition(s.ctx, pos, valAddr, positionAmount)
 	s.Require().NoError(err)
 	s.Require().True(returnShares.IsPositive())
 

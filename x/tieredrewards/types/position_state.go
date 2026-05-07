@@ -63,12 +63,12 @@ func (p *PositionState) ClearExit(blockTime time.Time) {
 	}
 }
 
-func (p PositionState) ToPositionResponse(tokenValue math.Int) PositionResponse {
+func (p PositionState) ToPositionResponse(positionAmount math.Int) PositionResponse {
 	resp := PositionResponse{
 		Id:              p.Id,
 		Owner:           p.Owner,
 		TierId:          p.TierId,
-		Amount:          tokenValue,
+		Amount:          positionAmount,
 		DelegatedShares: math.LegacyZeroDec(),
 		ExitTriggeredAt: p.ExitTriggeredAt,
 		ExitUnlockAt:    p.ExitUnlockAt,

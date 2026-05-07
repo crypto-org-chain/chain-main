@@ -19,7 +19,7 @@ func (k Keeper) GetDelegation(ctx context.Context, positionId uint64) (*stakingt
 	return k.getDelegation(ctx, positionId)
 }
 
-func (k Keeper) SetPosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+func (k Keeper) SetPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
 	return k.setPosition(ctx, pos, update)
 }
 
@@ -27,7 +27,7 @@ func (k Keeper) GetPosition(ctx context.Context, id uint64) (types.Position, err
 	return k.getPosition(ctx, id)
 }
 
-func (k Keeper) DeletePosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+func (k Keeper) DeletePosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
 	return k.deletePosition(ctx, pos, update)
 }
 

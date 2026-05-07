@@ -202,9 +202,9 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 
 	posDelAddr := types.GetDelegatorAddress(pos.Id)
 	_ = posDelAddr
-	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(has, "redelegation mapping should exist after TierRedelegate")
+	s.Require().True(isRedelegating, "redelegation mapping should exist after TierRedelegate")
 
 	s.advancePastExitDuration()
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
@@ -221,9 +221,9 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	has, err = s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err = s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(has, "clearing exit should not delete pending redelegation tracking")
+	s.Require().True(isRedelegating, "clearing exit should not delete pending redelegation tracking")
 }
 
 // TestClearPositionAfterRedelegationSlashAllSharesBurnt verifies
@@ -260,10 +260,10 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 	s.Require().True(posAfterSlash.HasTriggeredExit(), "slash should not clear exit trigger")
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
-	// the slash has already cleared delegation from the position.
-	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	// the slash isRedelegating already cleared delegation from the position.
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(has, "redelegation mapping should remain active for this corner case")
+	s.Require().True(isRedelegating, "redelegation mapping should remain active for this corner case")
 
 	s.advancePastExitDuration()
 

@@ -62,9 +62,9 @@ func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {
 
 	posAfter, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	tokenValue, err := s.keeper.GetPositionAmount(s.ctx, posAfter)
+	positionAmount, err := s.keeper.GetPositionAmount(s.ctx, posAfter)
 	s.Require().NoError(err)
-	s.Require().True(tokenValue.GTE(sdkmath.NewInt(1500)), "token value should be at least 1500")
+	s.Require().True(positionAmount.GTE(sdkmath.NewInt(1500)), "token value should be at least 1500")
 	s.Require().True(posAfter.Delegation.Shares.GT(posBefore.Delegation.Shares), "shares should increase")
 	s.Require().Equal(uint64(0), posAfter.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 

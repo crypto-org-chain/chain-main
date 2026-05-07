@@ -579,9 +579,9 @@ func (s *KeeperSuite) TestRedelegationMappings_AfterRedelegate() {
 	})
 	s.Require().NoError(err)
 
-	has, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
 	s.Require().NoError(err)
-	s.Require().True(has, "redelegation mapping should be populated after TierRedelegate")
+	s.Require().True(isRedelegating, "redelegation mapping should be populated after TierRedelegate")
 }
 
 // TestGRPCQueryRedelegationMappings_Empty verifies the query returns an empty

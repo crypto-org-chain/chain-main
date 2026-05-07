@@ -534,7 +534,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1, "posAddr should have one active tier position")
 	tierPos := tierPositions[0]
-	tierTokenValue := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+	positionAmount := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
 	// Second pass: validator tallies remaining shares. After the fix, deductions
 	// include: delAddr.Shares + valSelfShares + tierPos.Delegation.Shares.
@@ -544,7 +544,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expectedYes := delStakingPower.Add(tierTokenValue)
+	expectedYes := delStakingPower.Add(positionAmount)
 	expectedNo := valSelfPower.Add(valRemainingPower)
 	expectedTotal := expectedYes.Add(expectedNo)
 
@@ -593,7 +593,7 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 	tierPos := tierPositions[0]
-	tierTokenValue := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+	positionAmount := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
 	// Validator self-delegation (if any).
 	valSelfShares := sdkmath.LegacyZeroDec()
@@ -611,7 +611,7 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expectedYes := tierTokenValue
+	expectedYes := positionAmount
 	expectedNo := valSelfPower.Add(valRemainingPower)
 	expectedTotal := expectedYes.Add(expectedNo)
 
@@ -624,8 +624,8 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 
 	// Sanity: in a 1:1 token-to-share ratio test environment, tier token value
 	// should equal the locked amount.
-	s.Require().True(tierTokenValue.Equal(sdkmath.LegacyNewDecFromInt(tierAmount)),
-		"in 1:1 ratio test env, tier power should equal tier amount; got %s", tierTokenValue)
+	s.Require().True(positionAmount.Equal(sdkmath.LegacyNewDecFromInt(tierAmount)),
+		"in 1:1 ratio test env, tier power should equal position amount; got %s", positionAmount)
 }
 
 // TestCustomTally_ExitingTierPositionIncluded verifies that a tier position
@@ -780,7 +780,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1, "exiting position should be active for governance")
 	tierPos := tierPositions[0]
-	tierTokenValue := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
+	positionAmount := tierPos.Delegation.Shares.MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
 	// Validator self-delegation.
 	valSelfShares := sdkmath.LegacyZeroDec()
@@ -797,7 +797,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
 
 	totalPower, results := s.callCustomTally(testProposalID, validators)
 
-	expectedYes := tierTokenValue
+	expectedYes := positionAmount
 	expectedNo := valSelfPower.Add(valRemainingPower)
 	expectedTotal := expectedYes.Add(expectedNo)
 

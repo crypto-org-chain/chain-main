@@ -262,7 +262,7 @@ func (s *KeeperSuite) TestSetPosition_IncrementsValidatorCounter_NewDelegated() 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
 
-	err = s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: ""})
+	err = s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""})
 	s.Require().NoError(err)
 
 	valCount, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
@@ -286,7 +286,7 @@ func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
 
 	// Initial write under valA.
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: ""}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 	countA, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddrA)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), countA)
@@ -301,7 +301,7 @@ func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
 	s.seedStakingDelegationForPosition(posId, valAddrB, sdkmath.NewInt(1000))
 
 	// setPosition with Previous: valA and live current=valB → decrement A, increment B.
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: valAddrA.String()}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: valAddrA.String()}))
 
 	_, err = s.keeper.PositionCountByValidator.Get(s.ctx, valAddrA)
 	s.Require().Error(err, "valA entry should be removed after swap")
@@ -322,7 +322,7 @@ func (s *KeeperSuite) TestSetPosition_NilUpdateSkipsValidatorDiff() {
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
 
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: ""}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 	before, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), before)
@@ -346,9 +346,9 @@ func (s *KeeperSuite) TestDeletePosition_RejectsWhileDelegated() {
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: ""}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 
-	err := s.keeper.DeletePosition(s.ctx, pos, &keeper.ValidatorUpdate{From: valAddr.String()})
+	err := s.keeper.DeletePosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: valAddr.String()})
 	s.Require().ErrorIs(err, types.ErrPositionDelegated)
 
 	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
@@ -369,7 +369,7 @@ func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
-	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorUpdate{From: ""}))
+	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 
 	// Drop the staking delegation so deletePosition's no-delegation precondition holds.
 	del, err := s.keeper.GetDelegation(s.ctx, posId)

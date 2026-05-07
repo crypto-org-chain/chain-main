@@ -111,11 +111,11 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 	}
 
 	// Defensive
-	redelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
-	if redelegating {
+	if isRedelegating {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 
@@ -130,13 +130,13 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrValidatorNotBonded
 	}
 
-	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
+	positionAmount, err := k.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
 	unbondedShares := pos.Delegation.Shares
-	if !pos.ExitWithFullDelegation(amount, tokenValue) {
+	if !pos.ExitWithFullDelegation(amount, positionAmount) {
 		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, posDelAddr, valAddr, amount)
 		if err != nil {
 			return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err

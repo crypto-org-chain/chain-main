@@ -14,10 +14,10 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
-// ValidatorUpdate signals a change in the position's associated validator
+// ValidatorTransition signals a change in the position's associated validator
 // so that PositionCountByValidator can be reindexed.
-type ValidatorUpdate struct {
-	From string
+type ValidatorTransition struct {
+	PreviousAddress string
 }
 
 func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
@@ -103,7 +103,7 @@ func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerA
 }
 
 // setPosition validates and persists pos and reconciles the relevant indexes.
-func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
 	del, err := k.getDelegation(ctx, pos.Id)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *Val
 }
 
 // setPositionWithState validates and persists the position with a supplied PositionState.
-func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionState, update *ValidatorUpdate) error {
+func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionState, update *ValidatorTransition) error {
 	if err := state.Validate(); err != nil {
 		return err
 	}
@@ -184,11 +184,11 @@ func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionSt
 	if state.IsDelegated() {
 		currVal = state.Delegation.ValidatorAddress
 	}
-	return k.reindexPositionCountByValidator(ctx, update.From, currVal)
+	return k.reindexPositionCountByValidator(ctx, update.PreviousAddress, currVal)
 }
 
 // deletePosition validates and removes a position and cleans up secondary indexes.
-func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *ValidatorUpdate) error {
+func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -229,7 +229,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 	if update == nil {
 		return nil
 	}
-	return k.reindexPositionCountByValidator(ctx, update.From, "")
+	return k.reindexPositionCountByValidator(ctx, update.PreviousAddress, "")
 }
 
 func (k Keeper) reindexPositionCountByValidator(ctx context.Context, from, to string) error {

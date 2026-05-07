@@ -69,7 +69,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
 
-	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{From: ""}); err != nil {
+	if err := ms.setPosition(ctx, pos, &ValidatorTransition{PreviousAddress: ""}); err != nil {
 		return nil, err
 	}
 
@@ -126,7 +126,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, errorsmod.Wrapf(types.ErrInvalidPositionID, "position id mismatch: peeked %d, created %d", id, pos.Id)
 	}
 
-	if err := ms.setPosition(ctx, pos, &ValidatorUpdate{From: ""}); err != nil {
+	if err := ms.setPosition(ctx, pos, &ValidatorTransition{PreviousAddress: ""}); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +175,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	pos.ResetBonusCheckpoints()
 
-	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{From: srcValidator}); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorTransition{PreviousAddress: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -248,7 +248,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	if err := ms.setPosition(ctx, pos.Position, &ValidatorUpdate{From: srcValidator}); err != nil {
+	if err := ms.setPosition(ctx, pos.Position, &ValidatorTransition{PreviousAddress: srcValidator}); err != nil {
 		return nil, err
 	}
 
@@ -532,7 +532,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	tokenValue, err := ms.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
+	positionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +546,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 	posId := pos.Id
 	tierId := pos.TierId
 
-	fullExit := pos.ExitWithFullDelegation(msg.Amount, tokenValue)
+	fullExit := pos.ExitWithFullDelegation(msg.Amount, positionAmount)
 
 	if fullExit {
 		// sweep all balances from position's delegator to the owner
@@ -564,7 +564,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			}
 		}
 
-		if err := ms.deletePosition(ctx, pos.Position, &ValidatorUpdate{From: validator}); err != nil {
+		if err := ms.deletePosition(ctx, pos.Position, &ValidatorTransition{PreviousAddress: validator}); err != nil {
 			return nil, err
 		}
 
@@ -580,7 +580,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		}
 
 		// Compute remaining token value for min lock check.
-		remainingTokenValue, err := ms.reconcileAmountFromShares(ctx, valAddr, remainingShares)
+		remainingPositionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, remainingShares)
 		if err != nil {
 			return nil, err
 		}
@@ -590,9 +590,9 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 			return nil, err
 		}
 		// actual remaining amount (post-transfer) must meet min lock.
-		if !tier.MeetsMinLockRequirement(remainingTokenValue) {
+		if !tier.MeetsMinLockRequirement(remainingPositionAmount) {
 			return nil, errorsmod.Wrapf(types.ErrMinLockAmountNotMet,
-				"remaining amount %s is below tier minimum %s", remainingTokenValue, tier.MinLockAmount)
+				"remaining amount %s is below tier minimum %s", remainingPositionAmount, tier.MinLockAmount)
 		}
 
 		if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
