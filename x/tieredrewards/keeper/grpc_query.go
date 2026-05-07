@@ -107,15 +107,15 @@ func (q queryServer) TierPositionsByTier(ctx context.Context, req *types.QueryTi
 		q.k.PositionsByTier,
 		req.Pagination,
 		func(key collections.Pair[uint32, uint64], _ collections.NoValue) (types.PositionResponse, error) {
-			pos, err := q.k.getPosition(ctx, key.K2())
+			state, err := q.k.getPositionState(ctx, key.K2())
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			tokenValue, err := q.k.positionTokenValue(ctx, pos)
+			tokenValue, err := q.k.getPositionAmount(ctx, state)
 			if err != nil {
 				return types.PositionResponse{}, err
 			}
-			return pos.ToPositionResponse(tokenValue), nil
+			return state.ToPositionResponse(tokenValue), nil
 		},
 		query.WithCollectionPaginationPairPrefix[uint32, uint64](req.TierId),
 	)
