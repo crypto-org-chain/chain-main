@@ -10,7 +10,7 @@
 
 ### Bugfixes
 
-- [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): bug: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. 
+- [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): fix: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. 
 
 
 *Apr 25, 2026*
