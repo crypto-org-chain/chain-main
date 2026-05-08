@@ -30,6 +30,7 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [001](./adr-001.md) | Add CosmWasm Module                                         | Accepted |
 | [002](./adr-002.md) | Subscriptions in CosmWasm                                   | Accepted |
 | [003](./adr-003.md) | Canis Major (1st Network Upgrade Scope of Breaking Changes) | Accepted |
-| [004](./adr-004.md) | Transition to Cosmos SDK's NFT module                       | Proposed |
-| [005](./adr-005.md) | Deprecate Cronos.org Chain's custom `x/supply` module       | Proposed |
-| [006](./adr-006.md) | Tiered Lock Rewards                                         | Proposed |
+| [004](./adr-004.md) | Transition to Cosmos SDK's NFT module                       | Accepted |
+| [005](./adr-005.md) | Deprecate Cronos.org Chain's custom `x/supply` module       | Accepted |
+| [006](./adr-006.md) | Tiered Lock Rewards                                         | Accepted |
+| [007](./adr-007.md) | Inflation Control Module                                    | Accepted |
