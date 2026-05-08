@@ -29,7 +29,6 @@ type StakingKeeper interface {
 	ValidateUnbondAmount(ctx context.Context, delAddr sdk.AccAddress, valAddr sdk.ValAddress, amt math.Int) (math.LegacyDec, error)
 	HasReceivingRedelegation(ctx context.Context, delAddr sdk.AccAddress, valDstAddr sdk.ValAddress) (bool, error)
 	ValidatorAddressCodec() addresscodec.Codec
-	// iterate through bonded validators by operator address, execute func for each validator
 	IterateBondedValidatorsByPower(
 		context.Context, func(index int64, validator stakingtypes.ValidatorI) (stop bool),
 	) error

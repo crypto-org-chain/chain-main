@@ -13,30 +13,26 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Undelegated() {
+func (s *KeeperSuite) TestMsgAddToTierPosition_Undelegated_Rejected() {
 	lockAmt := sdkmath.NewInt(1000)
 	pos := s.setupNewTierPosition(lockAmt, false)
 	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 
-	// Simulate redelegation slash clearing delegation and zeroing amount.
+	// Simulate a 100% slash during redelegation clearing the delegation.
 	pos = s.slashRedelegationCompletely(pos)
 
 	_, bondDenom := s.getStakingData()
 	addPosAmt := sdkmath.NewInt(500)
 	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addPosAmt)))
 	s.Require().NoError(err)
+
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
 		Owner:      delAddr.String(),
 		PositionId: pos.Id,
 		Amount:     addPosAmt,
 	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().True(addPosAmt.Equal(s.getPositionAmount(pos)), "amount should be 500 (added to zero)")
-	s.Require().False(pos.IsDelegated(), "position should remain undelegated")
+	s.Require().ErrorIs(err, types.ErrPositionNotDelegated)
 }
 
 func (s *KeeperSuite) TestMsgAddToTierPosition_Basic_Delegated() {

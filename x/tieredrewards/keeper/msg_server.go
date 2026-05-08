@@ -6,7 +6,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -279,7 +278,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	if err := ms.validateAddToPosition(ctx, pos.Position, msg.Owner); err != nil {
+	if err := ms.validateAddToPosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -294,22 +293,19 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	newShares := math.LegacyZeroDec()
-	if pos.IsDelegated() {
-		pos, _, _, err = ms.claimRewards(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
+	pos, _, _, err = ms.claimRewards(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
 
-		valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
-		if err != nil {
-			return nil, err
-		}
+	valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
 
-		newShares, err = ms.delegate(ctx, delAddr, valAddr, msg.Amount)
-		if err != nil {
-			return nil, err
-		}
+	newShares, err := ms.delegate(ctx, delAddr, valAddr, msg.Amount)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := ms.setPosition(ctx, pos.Position, nil); err != nil {

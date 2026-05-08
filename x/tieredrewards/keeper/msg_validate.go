@@ -84,9 +84,13 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateAddToPosition(ctx context.Context, pos types.PositionState, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
+	}
+
+	if !pos.IsDelegated() {
+		return types.ErrPositionNotDelegated
 	}
 
 	if pos.HasTriggeredExit() {
