@@ -37,10 +37,8 @@ func (k Keeper) appendValidatorEvent(ctx context.Context, valAddr sdk.ValAddress
 // increments it, persists the new value, and returns the new seq.
 // First call returns 1.
 func (k Keeper) incrementValidatorEventSeq(ctx context.Context, valAddr sdk.ValAddress) (uint64, error) {
-	current, err := k.ValidatorEventSeq.Get(ctx, valAddr)
-	if errors.Is(err, collections.ErrNotFound) {
-		current = 0
-	} else if err != nil {
+	current, err := k.getValidatorEventLatestSeq(ctx, valAddr)
+	if err != nil {
 		return 0, err
 	}
 

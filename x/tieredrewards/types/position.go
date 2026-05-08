@@ -57,10 +57,10 @@ func (p Position) CompletedExitLockDuration(blockTime time.Time) bool {
 	return !p.ExitUnlockAt.IsZero() && !blockTime.Before(p.ExitUnlockAt)
 }
 
-func (p *Position) UpdateBonusCheckpoints(lastEventSeq uint64, t time.Time) {
+func (p *Position) UpdateBonusCheckpoints(lastEventSeq uint64, t time.Time, lastKnownBonded bool) {
 	p.LastEventSeq = lastEventSeq
 	p.LastBonusAccrual = t
-	p.LastKnownBonded = true
+	p.LastKnownBonded = lastKnownBonded
 }
 
 func (p *Position) TriggerExit(blockTime time.Time, duration time.Duration) {
@@ -72,7 +72,7 @@ func (p *Position) UpdateLastBonusAccrual(t time.Time) {
 	p.LastBonusAccrual = t
 }
 
-func (p *Position) ResetBonusCheckpoints() {
+func (p *Position) ClearBonusCheckpoints() {
 	p.LastBonusAccrual = time.Time{}
 	p.LastEventSeq = 0
 	p.LastKnownBonded = false
