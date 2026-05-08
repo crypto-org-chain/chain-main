@@ -562,9 +562,6 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 
 	} else {
 		remainingShares := pos.Delegation.Shares.Sub(unbondedShares)
-		if err != nil {
-			return nil, err
-		}
 		// Compute remaining token value for min lock check.
 		remainingPositionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, remainingShares)
 		if err != nil {
