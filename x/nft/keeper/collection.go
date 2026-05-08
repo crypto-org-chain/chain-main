@@ -89,9 +89,10 @@ func (k Keeper) GetPaginateCollection(ctx sdk.Context, request *types.QueryColle
 
 // GetCollections returns all the collections
 func (k Keeper) GetCollections(ctx sdk.Context) (cs []types.Collection) {
-	for _, denom := range k.GetDenoms(ctx) {
-		nfts := k.GetNFTs(ctx, denom.Id)
-		cs = append(cs, types.NewCollection(denom, nfts))
+	denoms := k.GetDenoms(ctx)
+	cs = make([]types.Collection, 0, len(denoms))
+	for _, denom := range denoms {
+		cs = append(cs, types.NewCollection(denom, k.GetNFTs(ctx, denom.Id)))
 	}
 	return cs
 }
