@@ -4,6 +4,7 @@
 
 ### Improvements
 
+- [#1295](https://github.com/crypto-org-chain/chain-main/pull/1295) chore(x/nft): pre-allocate slice in GetCollections to avoid repeated reallocs.
 - [#1284](https://github.com/crypto-org-chain/chain-main/pull/1284) feat(x/tieredrewards): add gRPC queries and CLI commands to list positions by tier id.
 - [#1293](https://github.com/crypto-org-chain/chain-main/pull/1293) feat(x/tieredrewards)!: remove `MsgTierDelegate` - this message was only reachable as a recovery path for fully-slashed positions.
 
