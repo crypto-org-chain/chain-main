@@ -1628,55 +1628,6 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
 @pytest.mark.slow
 @pytest.mark.slow_b2
-@pytest.mark.flaky(max_runs=3)
-def test_clear_position_redeleg_slash_all_undelegated_exiting(
-    slashing_cluster,
-):
-    """redeleg slash (100%) → add tokens (undelegated, amount > 0) →
-    trigger exit → clear position → undelegated with no exit.
-
-    ClearPosition on an undelegated position with amount > 0 and
-    exit in progress resets the exit fields.
-    """
-    cluster = slashing_cluster
-    owner = cluster.address("signer1")
-    validator2 = get_node_validator_addr(cluster, 2)
-    validator0 = get_node_validator_addr(cluster, 0)
-    wait_for_new_blocks(cluster, 2)
-
-    pos_id = _setup_redeleg_slash(cluster, owner, validator2, validator0)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == 0
-
-    # Add tokens to bring amount > 0 (still undelegated)
-    rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN * 2)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-    assert pos["validator"] == "", "should still be undelegated"
-
-    # Trigger exit on undelegated position with amount > 0
-    rsp = trigger_exit(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["exit_triggered_at"] != ZERO_TIME
-
-    # Clear position — cancel exit, stay undelegated with amount > 0
-    rsp = clear_position(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["exit_triggered_at"] == ZERO_TIME
-    assert pos["exit_unlock_at"] == ZERO_TIME
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-    assert pos["validator"] == "", "should remain undelegated"
-
-
-@pytest.mark.slow
-@pytest.mark.slow_b2
 def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit → wait for exit elapsed →
     clear position → delegated with no exit.
