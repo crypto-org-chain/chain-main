@@ -8,6 +8,11 @@
 - [#1284](https://github.com/crypto-org-chain/chain-main/pull/1284) feat(x/tieredrewards): add gRPC queries and CLI commands to list positions by tier id.
 - [#1293](https://github.com/crypto-org-chain/chain-main/pull/1293) feat(x/tieredrewards)!: remove `MsgTierDelegate` - this message was only reachable as a recovery path for fully-slashed positions.
 
+### Bugfixes
+
+- [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): fix: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. Disallow AddToTierPosition if position is undelegated.
+
+
 *Apr 25, 2026*
 
 ## v7.0.0

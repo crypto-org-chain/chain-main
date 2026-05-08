@@ -589,57 +589,6 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_UnbondingSlashedPartial() {
 	s.Require().Error(err, "position should be deleted after withdrawal")
 }
 
-// TestMsgWithdrawFromTier_UndelegatedWithFunds verifies the lifecycle of a
-// position that was zeroed by a redelegation slash, then replenished via
-// AddToTier (without re-delegation), then exited. The full added amount
-// should be returned on withdrawal.
-func (s *KeeperSuite) TestMsgWithdrawFromTier_UndelegatedWithFunds() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
-	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	_, bondDenom := s.getStakingData()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Simulate redelegation slash: clear delegation and zero amount.
-	pos = s.slashRedelegationCompletely(pos)
-
-	// Add 2000 to position (undelegated — funds go to module account, not staked).
-	addAmount := sdkmath.NewInt(2000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
-	s.Require().NoError(err)
-	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-		Amount:     addAmount,
-	})
-	s.Require().NoError(err)
-
-	// Trigger exit and advance past exit duration.
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-	s.advancePastExitDuration()
-
-	balBefore := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-
-	// Withdraw — should return the 2000 added funds.
-	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-	s.Require().True(resp.Amount.AmountOf(bondDenom).Equal(addAmount),
-		"withdrawn amount should equal the 2000 added")
-
-	balAfter := s.app.BankKeeper.GetBalance(s.ctx, delAddr, bondDenom)
-	s.Require().True(balAfter.Amount.Equal(balBefore.Amount.Add(addAmount)),
-		"owner should receive 2000 back")
-
-	_, err = s.keeper.GetPositionState(s.ctx, pos.Id)
-	s.Require().Error(err, "position should be deleted after withdrawal")
-}
-
 // TestMsgWithdrawFromTier_SweepsNonBondDenomDust verifies that anything stray
 // left on the position's delegator account — not just the bond denom principal —
 // is swept to the owner on withdrawal. Dust of this kind shouldn't occur in

@@ -79,7 +79,7 @@ func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, 
 		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
 	}
 
-	// Re-fetch validator after unbond since tokens and exchange rate changed.
+	// Re-fetch updated validator
 	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
@@ -152,7 +152,7 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrTinyTransferDelegationAmount
 	}
 
-	// Re-fetch validator after unbond since tokens and exchange rate changed.
+	// Re-fetch updated validator
 	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err

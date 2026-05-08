@@ -67,7 +67,7 @@ func (k Keeper) slashRedelegationPosition(ctx context.Context, unbondingId uint6
 
 	if fullSlash {
 		pos.Delegation = nil
-		pos.ResetBonusCheckpoints()
+		pos.ClearBonusCheckpoints()
 		return k.setPositionWithState(ctx, pos, &ValidatorTransition{PreviousAddress: dstValStr})
 	}
 	// In-memory only: the persisted Position carries no share count, and the

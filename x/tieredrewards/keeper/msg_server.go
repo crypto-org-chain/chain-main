@@ -6,7 +6,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	errorsmod "cosmossdk.io/errors"
-	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -173,7 +172,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	pos.ResetBonusCheckpoints()
+	pos.ClearBonusCheckpoints()
 
 	if err := ms.setPosition(ctx, pos.Position, &ValidatorTransition{PreviousAddress: srcValidator}); err != nil {
 		return nil, err
@@ -246,7 +245,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	pos.UpdateBonusCheckpoints(latestSeq, sdkCtx.BlockTime())
+	pos.UpdateBonusCheckpoints(latestSeq, sdkCtx.BlockTime(), true)
 
 	if err := ms.setPosition(ctx, pos.Position, &ValidatorTransition{PreviousAddress: srcValidator}); err != nil {
 		return nil, err
@@ -279,7 +278,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	if err := ms.validateAddToPosition(ctx, pos.Position, msg.Owner); err != nil {
+	if err := ms.validateAddToPosition(ctx, pos, msg.Owner); err != nil {
 		return nil, err
 	}
 
@@ -294,37 +293,26 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	pos, _, _, err = ms.claimRewards(ctx, pos)
+	if err != nil {
+		return nil, err
+	}
 
-	newShares := math.LegacyZeroDec()
-	if pos.IsDelegated() {
-		pos, _, _, err = ms.claimRewards(ctx, pos)
-		if err != nil {
-			return nil, err
-		}
+	valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
+	if err != nil {
+		return nil, err
+	}
 
-		valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
-		if err != nil {
-			return nil, err
-		}
-
-		newShares, err = ms.delegate(ctx, delAddr, valAddr, msg.Amount)
-		if err != nil {
-			return nil, err
-		}
-
-		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
-		if err != nil {
-			return nil, err
-		}
-
-		pos.UpdateBonusCheckpoints(latestSeq, sdkCtx.BlockTime())
+	newShares, err := ms.delegate(ctx, delAddr, valAddr, msg.Amount)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := ms.setPosition(ctx, pos.Position, nil); err != nil {
 		return nil, err
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventPositionAmountAdded{
 		PositionId:  pos.Id,
 		TierId:      pos.TierId,
@@ -542,8 +530,6 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		return nil, err
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
 	// Capture for event before potential deletion.
 	posId := pos.Id
 	tierId := pos.TierId
@@ -572,13 +558,6 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 
 	} else {
 		remainingShares := pos.Delegation.Shares.Sub(unbondedShares)
-		latestSeq, err := ms.getValidatorEventLatestSeq(ctx, valAddr)
-		if err != nil {
-			return nil, err
-		}
-
-		pos.UpdateBonusCheckpoints(latestSeq, sdkCtx.BlockTime())
-
 		// Compute remaining token value for min lock check.
 		remainingPositionAmount, err := ms.reconcileAmountFromShares(ctx, valAddr, remainingShares)
 		if err != nil {
@@ -600,6 +579,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 		}
 	}
 
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := sdkCtx.EventManager().EmitTypedEvent(&types.EventExitTierWithDelegation{
 		PositionId:        posId,
 		TierId:            tierId,
