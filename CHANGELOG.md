@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+*May 8, 2026*
+
+## v7.1.0
+
 ### Improvements
 
 - [#1295](https://github.com/crypto-org-chain/chain-main/pull/1295) chore(x/nft): pre-allocate slice in GetCollections to avoid repeated reallocs.
