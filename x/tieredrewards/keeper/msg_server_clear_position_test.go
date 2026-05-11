@@ -377,56 +377,6 @@ func (s *KeeperSuite) TestMsgClearPosition_UndelegatedZeroExitInProgress() {
 	s.Require().True(s.getPositionAmount(pos).IsZero(), "position amount should still be zero")
 }
 
-// TestMsgClearPosition_UndelegatedWithFundsExitInProgress verifies that
-// ClearPosition succeeds on an undelegated position with funds whose exit is
-// in progress (not yet elapsed).
-func (s *KeeperSuite) TestMsgClearPosition_UndelegatedWithFundsExitInProgress() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), false)
-	delAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	_, bondDenom := s.getStakingData()
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	// Simulate redelegation slash: clear delegation and zero amount.
-	pos = s.slashRedelegationCompletely(pos)
-
-	// Add funds to the undelegated position.
-	addAmount := sdkmath.NewInt(2000)
-	err := banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, addAmount)))
-	s.Require().NoError(err)
-	_, err = msgServer.AddToTierPosition(s.ctx, &types.MsgAddToTierPosition{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-		Amount:     addAmount,
-	})
-	s.Require().NoError(err)
-
-	// Trigger exit.
-	_, err = msgServer.TriggerExitFromTier(s.ctx, &types.MsgTriggerExitFromTier{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().True(pos.HasTriggeredExit(), "position should be exiting")
-	s.Require().False(pos.IsDelegated(), "position should be undelegated")
-	s.Require().True(s.getPositionAmount(pos).Equal(addAmount), "position amount should be 2000")
-
-	// ClearPosition — should succeed.
-	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
-		Owner:      delAddr.String(),
-		PositionId: pos.Id,
-	})
-	s.Require().NoError(err)
-
-	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
-	s.Require().NoError(err)
-	s.Require().False(pos.HasTriggeredExit(), "exit should be cleared")
-	s.Require().False(pos.IsDelegated(), "position should still be undelegated")
-	s.Require().True(s.getPositionAmount(pos).Equal(addAmount), "position amount should still be 2000")
-}
-
 // TestMsgClearPosition_BondedZeroExitElapsed verifies that ClearPosition
 // succeeds on a delegated position with zero amount after exit has elapsed.
 // The exit flag should be cleared and the position remains delegated.

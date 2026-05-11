@@ -41,7 +41,7 @@ func TestPositionState_Validate(t *testing.T) {
 			name: "valid undelegated",
 			build: func() types.PositionState {
 				pos := validDelegatedPosition()
-				pos.ResetBonusCheckpoints()
+				pos.ClearBonusCheckpoints()
 				return types.PositionState{Position: pos}
 			},
 		},
@@ -67,7 +67,7 @@ func TestPositionState_Validate(t *testing.T) {
 			name: "undelegated but LastBonusAccrual non-zero",
 			build: func() types.PositionState {
 				pos := validDelegatedPosition()
-				pos.ResetBonusCheckpoints()
+				pos.ClearBonusCheckpoints()
 				pos.LastBonusAccrual = time.Now()
 				return types.PositionState{Position: pos}
 			},
@@ -78,7 +78,7 @@ func TestPositionState_Validate(t *testing.T) {
 			name: "undelegated but LastEventSeq non-zero",
 			build: func() types.PositionState {
 				pos := validDelegatedPosition()
-				pos.ResetBonusCheckpoints()
+				pos.ClearBonusCheckpoints()
 				pos.LastEventSeq = 5
 				return types.PositionState{Position: pos}
 			},
@@ -89,7 +89,7 @@ func TestPositionState_Validate(t *testing.T) {
 			name: "undelegated but LastKnownBonded true",
 			build: func() types.PositionState {
 				pos := validDelegatedPosition()
-				pos.ResetBonusCheckpoints()
+				pos.ClearBonusCheckpoints()
 				pos.LastKnownBonded = true
 				return types.PositionState{Position: pos}
 			},
@@ -172,7 +172,7 @@ func TestPosition_ClearExit_Undelegated(t *testing.T) {
 	t.Parallel()
 
 	pos := validDelegatedPosition()
-	pos.ResetBonusCheckpoints()
+	pos.ClearBonusCheckpoints()
 	now := time.Now()
 	pos.TriggerExit(now, time.Hour*24)
 	require.True(t, pos.HasTriggeredExit())
