@@ -7,7 +7,9 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
+	nfttransfertypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
@@ -17,6 +19,15 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
+
+func TestUpgradeV8PlanName(t *testing.T) {
+	require.Equal(t, "v8", app.UpgradeV8PlanName)
+}
+
+func TestV8StoreUpgradeDeletesNftTransferStoreKey(t *testing.T) {
+	// StoreUpgrades.Deleted must use the multistore name committed for x/nft-transfer.
+	require.Equal(t, "nonfungibletokentransfer", nfttransfertypes.StoreKey)
+}
 
 type AppTestSuite struct {
 	suite.Suite
