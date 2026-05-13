@@ -7,7 +7,8 @@ import pytest
 from .ibc_utils import start_and_wait_relayer
 from .utils import cluster_fixture, find_log_event_attrs
 
-pytestmark = pytest.mark.ibc
+# ICS-721 (nft-transfer) is not wired into ChainApp; skip until re-enabled.
+pytestmark = [pytest.mark.ibc, pytest.mark.skip(reason="ICS-721 nft-transfer disabled in app")]
 
 
 @pytest.fixture(scope="module")
