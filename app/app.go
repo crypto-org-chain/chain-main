@@ -41,9 +41,6 @@ import (
 	inflationkeeper "github.com/crypto-org-chain/chain-main/v8/x/inflation/keeper"
 	inflationtypes "github.com/crypto-org-chain/chain-main/v8/x/inflation/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft"
-	nfttransfer "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer"
-	nfttransferkeeper "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
-	nfttransfertypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	nftkeeper "github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 	supply "github.com/crypto-org-chain/chain-main/v8/x/supply"
@@ -225,7 +222,6 @@ type ChainApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 	GroupKeeper           groupkeeper.Keeper
 	TransferKeeper        ibctransferkeeper.Keeper
-	NFTTransferKeeper     nfttransferkeeper.Keeper
 	chainmainKeeper       chainmainkeeper.Keeper
 	SupplyKeeper          supplykeeper.Keeper
 	NFTKeeper             nftkeeper.Keeper
@@ -472,17 +468,6 @@ func New(
 
 	var transferStack porttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
 
-	app.NFTTransferKeeper = nfttransferkeeper.NewKeeper(
-		appCodec,
-		keys[nfttransfertypes.StoreKey],
-		app.IBCKeeper.ChannelKeeper,
-		app.IBCKeeper.ChannelKeeper,
-		app.NFTKeeper,
-		app.AccountKeeper,
-	)
-
-	var nftTransferStack porttypes.IBCModule = nfttransfer.NewIBCModule(app.NFTTransferKeeper)
-
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
 		appCodec, runtime.NewKVStoreService(keys[icacontrollertypes.StoreKey]), nil,
 		app.IBCKeeper.ChannelKeeper,
@@ -509,7 +494,6 @@ func New(
 	ibcRouter.AddRoute(icacontrollertypes.SubModuleName, icaControllerStack)
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
-	ibcRouter.AddRoute(nfttransfertypes.PortID, nftTransferStack)
 	app.IBCKeeper.SetRouter(ibcRouter)
 	clientKeeper := app.IBCKeeper.ClientKeeper
 	storeProvider := clientKeeper.GetStoreProvider()
@@ -573,7 +557,6 @@ func New(
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		transferModule,
-		nfttransfer.NewAppModule(app.NFTTransferKeeper),
 		icaModule,
 		chainmain.NewAppModule(app.chainmainKeeper),
 		supply.NewAppModule(app.SupplyKeeper),
@@ -618,7 +601,6 @@ func New(
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
-		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
 		tieredrewardstypes.ModuleName,
@@ -651,7 +633,6 @@ func New(
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
-		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName, // has to be after mint module to check supply cap
 		consensusparamtypes.ModuleName,
@@ -677,7 +658,6 @@ func New(
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
 		nfttypes.ModuleName,
-		nfttransfertypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
 		tieredrewardstypes.ModuleName,
@@ -711,7 +691,6 @@ func New(
 		inflationtypes.ModuleName,
 		tieredrewardstypes.ModuleName, // ensure it is after staking to for initGenesis validation to work
 		nfttypes.ModuleName,
-		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -1043,7 +1022,6 @@ func StoreKeys() (
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		authzkeeper.StoreKey,
-		nfttransfertypes.StoreKey,
 		group.StoreKey,
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
