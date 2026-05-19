@@ -6,10 +6,7 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-
-	nfttransfertypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -66,18 +63,6 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
-
-	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
-	if err != nil {
-		panic(fmt.Errorf("failed to read upgrade info from disk: %w", err))
-	}
-
-	if upgradeInfo.Name == UpgradeV8PlanName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
-		storeUpgrades := storetypes.StoreUpgrades{
-			Deleted: []string{nfttransfertypes.StoreKey},
-		}
-		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
-	}
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {
