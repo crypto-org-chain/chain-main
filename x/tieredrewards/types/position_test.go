@@ -7,8 +7,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
-	sdkmath "cosmossdk.io/math"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
@@ -18,12 +16,9 @@ var (
 	testValidator = sdk.ValAddress([]byte("test_validator______")).String()
 )
 
-func validPosition() types.Position {
-	return types.NewPosition(1, testOwner, 1, sdkmath.ZeroInt(), 100, types.Delegation{
-		Validator:    testValidator,
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}, time.Now())
+func validDelegatedPosition() types.Position {
+	now := time.Now()
+	return types.NewPosition(1, testOwner, 1, 100, 0, now, true, now)
 }
 
 func TestPosition_Validate(t *testing.T) {
@@ -36,41 +31,13 @@ func TestPosition_Validate(t *testing.T) {
 		errContains string
 	}{
 		{
-			name: "valid delegated position",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					Validator:    testValidator,
-					Shares:       sdkmath.LegacyNewDec(1000),
-					LastEventSeq: 0,
-				}, time.Now())
-			},
+			name:   "valid position",
+			modify: func(*types.Position) {},
 		},
 		{
-			name: "valid undelegated position with exit triggered",
+			name: "valid position with exit triggered",
 			modify: func(p *types.Position) {
 				p.TriggerExit(time.Now(), time.Hour*24*365)
-				p.ClearDelegation()
-			},
-		},
-		{
-			name: "valid undelegated position with zero amount (slashed redelegation)",
-			modify: func(p *types.Position) {
-				p.ClearDelegation()
-				p.UpdateAmount(sdkmath.ZeroInt())
-			},
-		},
-		{
-			name: "valid undelegated position - non-zero amount without exit (e.g. after redeleg slash + AddToTier)",
-			modify: func(p *types.Position) {
-				p.ClearDelegation()
-				p.UpdateAmount(sdkmath.NewInt(1000))
-			},
-		},
-		{
-			name: "valid exiting position",
-			modify: func(p *types.Position) {
-				now := time.Now()
-				p.TriggerExit(now, time.Hour*24*365)
 			},
 		},
 		{
@@ -88,77 +55,6 @@ func TestPosition_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "invalid owner address",
-		},
-		{
-			name: "nil amount",
-			modify: func(p *types.Position) {
-				p.UpdateAmount(sdkmath.Int{})
-			},
-			wantErr:     true,
-			errContains: "amount cannot be nil",
-		},
-		{
-			name: "negative amount",
-			modify: func(p *types.Position) {
-				p.UpdateAmount(sdkmath.NewInt(-500))
-			},
-			wantErr:     true,
-			errContains: "must not be negative",
-		},
-		{
-			name: "negative delegated shares when delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					Validator:    testValidator,
-					Shares:       sdkmath.LegacyNewDec(-1),
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "delegated shares must be positive when validator is set",
-		},
-		{
-			name: "invalid validator address when delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					Validator:    "not_valid",
-					Shares:       sdkmath.LegacyNewDec(100),
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "invalid validator address",
-		},
-		{
-			name: "zero delegated shares when delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					Validator:    testValidator,
-					Shares:       sdkmath.LegacyZeroDec(),
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "delegated shares must be positive when validator is set",
-		},
-		{
-			name: "non-zero delegated shares when not delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{
-					Shares:       sdkmath.LegacyNewDec(100),
-					LastEventSeq: 0,
-				}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "delegated shares must not be set when not delegated",
-		},
-		{
-			name: "populated last bonus accrual when not delegated",
-			modify: func(p *types.Position) {
-				p.WithDelegation(types.Delegation{LastEventSeq: 0}, time.Now())
-			},
-			wantErr:     true,
-			errContains: "last bonus accrual must not be set when not delegated",
 		},
 		{
 			name: "exit_unlock_at set without exit_triggered_at",
@@ -202,30 +98,12 @@ func TestPosition_Validate(t *testing.T) {
 			wantErr:     true,
 			errContains: "created_at_time must be non-zero",
 		},
-		{
-			name: "non zero last event seq when not delegated",
-			modify: func(p *types.Position) {
-				p.ClearDelegation()
-				p.LastEventSeq = 1
-			},
-			wantErr:     true,
-			errContains: "last event seq must not be set when not delegated",
-		},
-		{
-			name: "last known bonded true when not delegated",
-			modify: func(p *types.Position) {
-				p.ClearDelegation()
-				p.LastKnownBonded = true
-			},
-			wantErr:     true,
-			errContains: "last known bonded must not be true when not delegated",
-		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			pos := validPosition()
+			pos := validDelegatedPosition()
 			tt.modify(&pos)
 			err := pos.Validate()
 			if tt.wantErr {
@@ -238,26 +116,6 @@ func TestPosition_Validate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestPosition_IsDelegated(t *testing.T) {
-	t.Parallel()
-
-	p := validPosition()
-	require.True(t, p.IsDelegated())
-}
-
-func TestPosition_ClearExit(t *testing.T) {
-	t.Parallel()
-
-	pos := validPosition()
-	now := time.Now()
-	pos.TriggerExit(now, time.Hour*24)
-	require.True(t, pos.HasTriggeredExit())
-
-	pos.ClearExit(now)
-	require.False(t, pos.HasTriggeredExit())
-	require.NoError(t, pos.Validate())
 }
 
 // TestGetDelegatorAddress_Deterministic verifies that GetDelegatorAddress

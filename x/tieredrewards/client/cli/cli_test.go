@@ -359,6 +359,13 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		s.Require().Len(positionsByOwnerResp.Positions, 1)
 		s.Require().Equal(uint64(0), positionsByOwnerResp.Positions[0].Id)
 
+		var positionsByTierResp tieredrewardstypes.QueryTierPositionsByTierResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryTierPositionsByTierExec(val.ClientCtx, "1")
+		}, &positionsByTierResp)
+		s.Require().Len(positionsByTierResp.Positions, 1)
+		s.Require().Equal(uint32(1), positionsByTierResp.Positions[0].TierId)
+
 		allPositionsResp := s.mustQueryAllPositions(val)
 		s.Require().Len(allPositionsResp.Positions, 1)
 		s.Require().Equal(uint64(0), allPositionsResp.Positions[0].Id)
@@ -586,8 +593,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryRawTierPositionExec(val.ClientCtx, "0")
 		}, &resp)
 		s.Require().Equal(owner, resp.Position.Owner)
-		s.Require().True(resp.Position.Amount.IsZero(), "raw delegated position amount should be zero")
-		s.Require().True(resp.Position.DelegatedShares.IsPositive())
 	})
 
 	s.Run("raw-positions-by-owner", func() {
@@ -596,6 +601,15 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 			return tieredrewardstestutil.QueryRawTierPositionsByOwnerExec(val.ClientCtx, owner)
 		}, &resp)
 		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+	})
+
+	s.Run("raw-positions-by-tier", func() {
+		var resp tieredrewardstypes.QueryRawTierPositionsByTierResponse
+		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
+			return tieredrewardstestutil.QueryRawTierPositionsByTierExec(val.ClientCtx, "1")
+		}, &resp)
+		s.Require().GreaterOrEqual(len(resp.Positions), 1)
+		s.Require().Equal(uint32(1), resp.Positions[0].TierId)
 	})
 
 	s.Run("raw-all-positions", func() {
@@ -613,11 +627,12 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLI() {
 		}, &resp)
 	})
 
-	s.Run("position-mappings", func() {
-		var resp tieredrewardstypes.QueryPositionMappingsResponse
+	s.Run("redelegation-mappings", func() {
+		var resp tieredrewardstypes.QueryRedelegationMappingsResponse
 		s.mustExecQuery(val, func() (sdktestutil.BufferWriter, error) {
-			return tieredrewardstestutil.QueryPositionMappingsExec(val.ClientCtx, "0")
+			return tieredrewardstestutil.QueryRedelegationMappingsExec(val.ClientCtx)
 		}, &resp)
+		s.Require().Empty(resp.RedelegationMappings, "redelegation mapping should be cleaned up after AfterRedelegationCompleted fires")
 	})
 }
 
@@ -719,19 +734,6 @@ func (s *IntegrationTestSuite) TestTieredRewardsCLIErrors() {
 				)
 			},
 			wantContains: `invalid amount "not-an-amount"`,
-		},
-		{
-			name: "tier delegate invalid position id",
-			exec: func() (sdktestutil.BufferWriter, error) {
-				return tieredrewardstestutil.TierDelegateExec(
-					val.ClientCtx,
-					owner,
-					"not-a-number",
-					validator,
-					s.defaultTxArgs()...,
-				)
-			},
-			wantContains: `invalid position-id "not-a-number"`,
 		},
 		{
 			name: "tier undelegate invalid position id",

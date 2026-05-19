@@ -35,9 +35,6 @@ service Msg {
   // CommitDelegationToTier allows a commitment of a delegation to a tier.
   rpc CommitDelegationToTier(MsgCommitDelegationToTier) returns (MsgCommitDelegationToTierResponse);
 
-  // TierDelegate delegates a position's locked tokens to a validator.
-  rpc TierDelegate(MsgTierDelegate) returns (MsgTierDelegateResponse);
-
   // TierUndelegate begins undelegating a position's tokens from its validator.
   rpc TierUndelegate(MsgTierUndelegate) returns (MsgTierUndelegateResponse);
 
@@ -182,27 +179,6 @@ message MsgCommitDelegationToTierResponse {
   uint64 position_id = 1;
 }
 
-// MsgTierDelegate delegates a position's locked tokens to a validator.
-message MsgTierDelegate {
-  option (cosmos.msg.v1.signer) = "owner";
-  option (amino.name)           = "chainmain/MsgTierDelegate";
-
-  // owner is the position owner's address.
-  string owner = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-
-  // position_id is the ID of the position to delegate.
-  uint64 position_id = 2;
-
-  // validator is the validator address to delegate to.
-  string validator = 3 [(cosmos_proto.scalar) = "cosmos.ValidatorAddressString"];
-}
-
-// MsgTierDelegateResponse defines the response for MsgTierDelegate.
-message MsgTierDelegateResponse {
-  // position_id echoes the delegated position ID.
-  uint64 position_id = 1;
-}
-
 // MsgTierUndelegate begins undelegating a position's tokens from its validator.
 message MsgTierUndelegate {
   option (cosmos.msg.v1.signer) = "owner";
@@ -221,8 +197,7 @@ message MsgTierUndelegateResponse {
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
   // position_id echoes the undelegated position ID.
-  uint64 position_id  = 2;
-  uint64 unbonding_id = 3;
+  uint64 position_id = 2;
 }
 
 // MsgTierRedelegate moves a position's delegation from one validator to another.
@@ -246,8 +221,7 @@ message MsgTierRedelegateResponse {
   google.protobuf.Timestamp completion_time = 1
       [(gogoproto.nullable) = false, (gogoproto.stdtime) = true, (amino.dont_omitempty) = true];
   // position_id echoes the redelegated position ID.
-  uint64 position_id  = 2;
-  uint64 unbonding_id = 3;
+  uint64 position_id = 2;
 }
 
 // MsgAddToTierPosition adds tokens to an existing position.

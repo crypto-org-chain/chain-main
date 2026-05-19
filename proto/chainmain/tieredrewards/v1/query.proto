@@ -2,6 +2,7 @@ syntax = "proto3";
 package chainmain.tieredrewards.v1;
 
 import "amino/amino.proto";
+import "chainmain/tieredrewards/v1/genesis.proto";
 import "chainmain/tieredrewards/v1/params.proto";
 import "chainmain/tieredrewards/v1/types.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
@@ -28,6 +29,11 @@ service Query {
   // TierPositionsByOwner returns all positions for a given owner address.
   rpc TierPositionsByOwner(QueryTierPositionsByOwnerRequest) returns (QueryTierPositionsByOwnerResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/positions/{owner}";
+  }
+
+  // TierPositionsByTier returns all positions for a given tier id.
+  rpc TierPositionsByTier(QueryTierPositionsByTierRequest) returns (QueryTierPositionsByTierResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/positions_by_tier/{tier_id}";
   }
 
   // AllTierPositions returns all positions with pagination.
@@ -73,6 +79,11 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions/{owner}";
   }
 
+  // RawTierPositionsByTier returns all raw stored Positions for a given tier id.
+  rpc RawTierPositionsByTier(QueryRawTierPositionsByTierRequest) returns (QueryRawTierPositionsByTierResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions_by_tier/{tier_id}";
+  }
+
   // RawAllTierPositions returns all raw stored Positions with pagination.
   rpc RawAllTierPositions(QueryRawAllTierPositionsRequest) returns (QueryRawAllTierPositionsResponse) {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/raw/positions";
@@ -83,9 +94,10 @@ service Query {
     option (google.api.http).get = "/chainmain/tieredrewards/v1/validator_data/{validator}";
   }
 
-  // PositionMappings returns unbonding and redelegation mappings for a given position.
-  rpc PositionMappings(QueryPositionMappingsRequest) returns (QueryPositionMappingsResponse) {
-    option (google.api.http).get = "/chainmain/tieredrewards/v1/position_mappings/{position_id}";
+  // RedelegationMappings returns all tier position redelegation-entry mappings,
+  // keyed by the staking unbonding id of each entry.
+  rpc RedelegationMappings(QueryRedelegationMappingsRequest) returns (QueryRedelegationMappingsResponse) {
+    option (google.api.http).get = "/chainmain/tieredrewards/v1/redelegation_mappings";
   }
 }
 
@@ -116,6 +128,18 @@ message QueryTierPositionsByOwnerRequest {
 
 // QueryTierPositionsByOwnerResponse is the response type for the Query/TierPositionsByOwner RPC method.
 message QueryTierPositionsByOwnerResponse {
+  repeated PositionResponse              positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QueryTierPositionsByTierRequest is the request type for the Query/TierPositionsByTier RPC method.
+message QueryTierPositionsByTierRequest {
+  uint32                                tier_id    = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryTierPositionsByTierResponse is the response type for the Query/TierPositionsByTier RPC method.
+message QueryTierPositionsByTierResponse {
   repeated PositionResponse              positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
@@ -228,6 +252,18 @@ message QueryRawTierPositionsByOwnerResponse {
   cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
+// QueryRawTierPositionsByTierRequest is the request type for the Query/RawTierPositionsByTier RPC method.
+message QueryRawTierPositionsByTierRequest {
+  uint32                                tier_id    = 1;
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryRawTierPositionsByTierResponse is the response type for the Query/RawTierPositionsByTier RPC method.
+message QueryRawTierPositionsByTierResponse {
+  repeated Position                      positions  = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
 // QueryRawAllTierPositionsRequest is the request type for the Query/RawAllTierPositions RPC method.
 message QueryRawAllTierPositionsRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1;
@@ -256,16 +292,15 @@ message QueryValidatorDataResponse {
   uint64 event_current_seq = 3;
 }
 
-// QueryPositionMappingsRequest is the request type for the Query/PositionMappings RPC method.
-message QueryPositionMappingsRequest {
-  uint64 position_id = 1;
+// QueryRedelegationMappingsRequest is the request type for the
+// Query/RedelegationMappings RPC method.
+message QueryRedelegationMappingsRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
-// QueryPositionMappingsResponse is the response type for the Query/PositionMappings RPC method.
-message QueryPositionMappingsResponse {
-  // unbonding_ids are all unbonding IDs mapped to this position.
-  repeated uint64 unbonding_ids = 1;
-
-  // redelegation_ids are all redelegation IDs mapped to this position.
-  repeated uint64 redelegation_ids = 2;
+// QueryRedelegationMappingsResponse is the response type for the
+// Query/RedelegationMappings RPC method.
+message QueryRedelegationMappingsResponse {
+  repeated RedelegationMapping redelegation_mappings = 1 [(gogoproto.nullable) = false, (amino.dont_omitempty) = true];
+  cosmos.base.query.v1beta1.PageResponse pagination  = 2;
 }

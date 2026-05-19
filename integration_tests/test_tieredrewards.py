@@ -30,7 +30,6 @@ from .tieredrewards_helpers import (
     query_position,
     query_positions_by_owner,
     query_tiers,
-    tier_delegate,
     tier_redelegate,
     tier_undelegate,
     trigger_exit,
@@ -943,17 +942,13 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
     # Let rewards accrue
     wait_for_new_blocks(cluster, 10)
 
-    # 1. AddToTierPosition settles rewards (verified via last_bonus_accrual
-    # since the deposit sent exceeds the reward received)
-    pos_before = query_position(cluster, pos_id)["position"]
-    accrual_before = isoparse(pos_before["last_bonus_accrual"])
+    # 1. AddToTierPosition should succeed.
+    bal = cluster.balance(owner, DENOM)
     rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN)
     assert rsp["code"] == 0, rsp["raw_log"]
-    pos_after = query_position(cluster, pos_id)["position"]
-    accrual_after = isoparse(pos_after["last_bonus_accrual"])
-    assert accrual_after > accrual_before, (
-        f"add to position should settle rewards: "
-        f"accrual_before={accrual_before}, accrual_after={accrual_after}"
+    bal_after = cluster.balance(owner, DENOM)
+    assert bal_after > bal - TIER_1_MIN, (
+        f"add to position should claim rewards: " f"before={bal}, after={bal_after}"
     )
 
     wait_for_new_blocks(cluster, 10)
@@ -1010,6 +1005,7 @@ def test_rewards_settled_at_each_lifecycle_stage(cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 def test_slash_then_withdraw(slashing_cluster):
     """lock → slash (1%) → trigger exit →
     wait for exit → undelegate →
@@ -1079,6 +1075,7 @@ def test_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 @pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_then_withdraw(slashing_cluster):
     """lock → redeleg slash (50%) → position still delegated with reduced amount →
@@ -1116,6 +1113,7 @@ def test_redeleg_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 @pytest.mark.flaky(max_runs=3)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
@@ -1213,6 +1211,7 @@ def test_unbonding_slash_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 def test_clear_position_after_slash(slashing_cluster):
     """lock → trigger exit → slash (1%) during exit →
     clear position → back to bonded with reduced amount.
@@ -1264,6 +1263,7 @@ def test_clear_position_after_slash(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 @pytest.mark.flaky(max_runs=3)
 def test_clear_position_after_redeleg_slash(slashing_cluster):
     """lock → trigger exit → redeleg slash (50%) during exit →
@@ -1309,6 +1309,7 @@ def test_clear_position_after_redeleg_slash(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b1
 @pytest.mark.flaky(max_runs=3)
 def test_slash_all_then_withdraw(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit →
@@ -1387,45 +1388,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=3)
-def test_redeleg_slash_all_then_add_pos_then_withdraw(slashing_cluster):
-    """redeleg-slashed to zero → add tokens → delegate →
-    trigger exit → wait for exit →
-    undelegate → wait for unbonding → withdraw.
-
-    After 100% redeleg slash zeros the position and clears delegation,
-    the only recovery path is add tokens then delegate.
-    """
-    cluster = slashing_cluster
-    owner = cluster.address("signer1")
-    validator2 = get_node_validator_addr(cluster, 2)
-    validator0 = get_node_validator_addr(cluster, 0)
-    wait_for_new_blocks(cluster, 2)
-
-    pos_id = _setup_redeleg_slash(cluster, owner, validator2, validator0)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == 0, "redeleg slash should zero amount"
-    assert pos["validator"] == "", "100% redeleg slash clears delegation"
-
-    # Add tokens to recover the position
-    rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN * 2)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    # Delegate the recovered position
-    rsp = tier_delegate(cluster, owner, pos_id, validator0)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["validator"] == validator0
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-
-    # Full exit
-    returned = _exit_undelegate_withdraw(cluster, owner, pos_id)
-    assert returned > 0, "should receive tokens back"
-
-
-@pytest.mark.slow
+@pytest.mark.slow_b1
 @pytest.mark.flaky(max_runs=3)
 def test_redeleg_slash_all_then_withdraw(slashing_cluster):
     """redeleg-slashed to zero → trigger exit →
@@ -1469,51 +1432,7 @@ def test_redeleg_slash_all_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=3)
-def test_redeleg_slash_all_then_exit_and_delegate(slashing_cluster):
-    """redeleg-slashed to zero → add tokens →
-    trigger exit → delegate →
-    bonded with exit in progress.
-
-    After redeleg slash, add tokens, trigger exit, then delegate.
-    The position goes from undelegated+exiting to delegated+exiting.
-    """
-    cluster = slashing_cluster
-    owner = cluster.address("signer1")
-    validator2 = get_node_validator_addr(cluster, 2)
-    validator0 = get_node_validator_addr(cluster, 0)
-    wait_for_new_blocks(cluster, 2)
-
-    pos_id = _setup_redeleg_slash(cluster, owner, validator2, validator0)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == 0, "redeleg slash should zero amount"
-
-    # redeleg-slashed to zero → add tokens (undelegated, amount>0)
-    rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN * 2)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-
-    # added tokens → trigger exit
-    rsp = trigger_exit(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["exit_triggered_at"] != ZERO_TIME
-
-    # exit triggered on undelegated position → delegate → bonded with exit in progress
-    rsp = tier_delegate(cluster, owner, pos_id, validator0)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["validator"] == validator0
-    assert pos["delegated_shares"] != "0.000000000000000000"
-    assert pos["exit_triggered_at"] != ZERO_TIME
-
-
-@pytest.mark.slow
+@pytest.mark.slow_b2
 @pytest.mark.flaky(max_runs=3)
 # This is marked flaky as it is not guaranteed that the unbonding
 # will land within the 2-block window
@@ -1605,6 +1524,7 @@ def test_slash_all_during_unbonding_then_withdraw(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b2
 @pytest.mark.flaky(max_runs=3)
 def test_clear_position_on_redeleg_slashed_all_exiting(slashing_cluster):
     """lock → trigger exit → redeleg slash (100%) during exit →
@@ -1643,6 +1563,7 @@ def test_clear_position_on_redeleg_slashed_all_exiting(slashing_cluster):
 
 
 @pytest.mark.slow
+@pytest.mark.slow_b2
 def test_clear_position_slashed_all_exiting(slashing_cluster):
     """lock → trigger exit → slash 100% (direct) during exit →
     clear position → delegated with no exit.
@@ -1706,54 +1627,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
 
 
 @pytest.mark.slow
-@pytest.mark.flaky(max_runs=3)
-def test_clear_position_redeleg_slash_all_undelegated_exiting(
-    slashing_cluster,
-):
-    """redeleg slash (100%) → add tokens (undelegated, amount > 0) →
-    trigger exit → clear position → undelegated with no exit.
-
-    ClearPosition on an undelegated position with amount > 0 and
-    exit in progress resets the exit fields.
-    """
-    cluster = slashing_cluster
-    owner = cluster.address("signer1")
-    validator2 = get_node_validator_addr(cluster, 2)
-    validator0 = get_node_validator_addr(cluster, 0)
-    wait_for_new_blocks(cluster, 2)
-
-    pos_id = _setup_redeleg_slash(cluster, owner, validator2, validator0)
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == 0
-
-    # Add tokens to bring amount > 0 (still undelegated)
-    rsp = add_to_position(cluster, owner, pos_id, TIER_1_MIN * 2)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-    assert pos["validator"] == "", "should still be undelegated"
-
-    # Trigger exit on undelegated position with amount > 0
-    rsp = trigger_exit(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["exit_triggered_at"] != ZERO_TIME
-
-    # Clear position — cancel exit, stay undelegated with amount > 0
-    rsp = clear_position(cluster, owner, pos_id)
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    pos = query_position(cluster, pos_id)["position"]
-    assert pos["exit_triggered_at"] == ZERO_TIME
-    assert pos["exit_unlock_at"] == ZERO_TIME
-    assert int(pos["amount"]) == TIER_1_MIN * 2
-    assert pos["validator"] == "", "should remain undelegated"
-
-
-@pytest.mark.slow
+@pytest.mark.slow_b2
 def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
     """lock → slash 100% (direct) → trigger exit → wait for exit elapsed →
     clear position → delegated with no exit.

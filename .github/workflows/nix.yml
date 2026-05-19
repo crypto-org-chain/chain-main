@@ -11,6 +11,8 @@ on:
 
 env:
   NIXPKGS_ALLOW_INSECURE: 1
+  # Opt into Node 24 for JavaScript actions; default flips on 2026-06-02.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,33 +22,114 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
           skipPush: true
       - name: lint
         run: make lint-ci
 
-  test:
+  changes:
+    name: Detect changed paths (for conditional upgrade tests)
     runs-on: ubuntu-latest
+    outputs:
+      upgrade: ${{ steps.decide.outputs.run }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: filter
+        if: github.event_name == 'pull_request'
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            app/**
+            cmd/**
+            x/**
+            proto/**
+            go.mod
+            go.sum
+            gomod2nix.toml
+            default.nix
+            nix/**
+            integration_tests/test_upgrade.py
+            integration_tests/upgrade-test.nix
+            integration_tests/configs/cosmovisor.jsonnet
+            Makefile
+            .github/workflows/nix.yml
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=${{ steps.filter.outputs.any_changed }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  prepare:
+    name: Prepare nix store (build chain-maind-test, push to cachix)
+    runs-on: ubuntu-latest
+    needs: [changes]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
+        with:
+          name: crypto-com
+          # fork PR secret is empty — cachix-action tolerates and skips push
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: Build integration test shell (chain-maind-test + deps)
+        run: nix-store -r $(nix-instantiate integration_tests/shell.nix)
+
+  prepare-upgrade:
+    name: Prepare upgrade binaries (push to cachix)
+    runs-on: ubuntu-latest
+    needs: [changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
+    timeout-minutes: 60
+    steps:
+      - name: Create more disk space
+        run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
+        with:
+          name: crypto-com
+          signingKey: "${{ secrets.CACHIX_SIGNING_KEY }}"
+      - name: Build upgrade test binaries (push to cachix)
+        run: nix-build integration_tests/upgrade-test.nix -o /tmp/upgrade-test
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
           # github don't pass secrets for pull request from fork repos,
@@ -59,15 +142,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files
@@ -82,14 +165,14 @@ jobs:
         os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
           # github don't pass secrets for pull request from fork repos,
@@ -100,18 +183,20 @@ jobs:
 
   test-upgrade:
     runs-on: ubuntu-latest
+    needs: [prepare, prepare-upgrade, changes]
+    if: github.event_name != 'pull_request' || needs.changes.outputs.upgrade == 'true'
     steps:
       - name: Create more disk space
         run: sudo rm -rf /usr/share/dotnet && sudo rm -rf /opt/ghc && sudo rm -rf "/usr/local/share/boost" && sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -121,15 +206,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_upgrade
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_upgrade.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_upgrade
@@ -138,16 +223,17 @@ jobs:
 
   test-ledger:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -157,15 +243,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_ledger
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ledger.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_ledger
@@ -174,16 +260,17 @@ jobs:
 
   test-solomachine:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -193,69 +280,159 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_solomachine
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_solomachine.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_solomachine
           path: debug_files_solomachine.tar.gz
           if-no-files-found: ignore
 
-  test-slow:
+  test-slow-a:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
-        run: make nix-integration-test-slow
+        run: make nix-integration-test-slow-a
       - name: Convert coverage data
         run: |
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
-          flags: integration_tests_slow
+          files: ./profile.txt
+          flags: integration_tests_slow_a
       - name: Tar debug files
         if: failure()
-        run: tar cfz debug_files_slow.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+        run: tar cfz debug_files_slow_a.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
-          name: debug_files_slow
-          path: debug_files_slow.tar.gz
+          name: debug_files_slow_a
+          path: debug_files_slow_a.tar.gz
           if-no-files-found: ignore
 
-  test-ibc:
+  test-slow-b1:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-slow-b1
+      - name: Convert coverage data
+        run: |
+           nix profile add nixpkgs#go_1_25
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./profile.txt
+          flags: integration_tests_slow_b1
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_slow_b1.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: debug_files_slow_b1
+          path: debug_files_slow_b1.tar.gz
+          if-no-files-found: ignore
+
+  test-slow-b2:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
+        with:
+          name: crypto-com
+      - name: Run integration tests
+        run: make nix-integration-test-slow-b2
+      - name: Convert coverage data
+        run: |
+           nix profile add nixpkgs#go_1_25
+           go tool covdata textfmt -i=coverage -o profile.txt
+      - name: Upload coverage report
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./profile.txt
+          flags: integration_tests_slow_b2
+      - name: Tar debug files
+        if: failure()
+        run: tar cfz debug_files_slow_b2.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: debug_files_slow_b2
+          path: debug_files_slow_b2.tar.gz
+          if-no-files-found: ignore
+
+  test-slow:
+    runs-on: ubuntu-latest
+    needs: [test-slow-a, test-slow-b1, test-slow-b2]
+    if: always()
+    steps:
+      - name: Aggregate slow test results
+        run: |
+          for r in "${{ needs.test-slow-a.result }}" "${{ needs.test-slow-b1.result }}" "${{ needs.test-slow-b2.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "failed: $r"; exit 1 ;;
+            esac
+          done
+
+  test-ibc:
+    runs-on: ubuntu-latest
+    needs: [prepare]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
+        with:
+          nix_path: nixpkgs=channel:nixos-25.05
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -265,15 +442,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_ibc
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_ibc.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_ibc
@@ -282,16 +459,17 @@ jobs:
 
   test-byzantine:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -301,15 +479,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_byzantine
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_byzantine.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_byzantine
@@ -318,16 +496,17 @@ jobs:
 
   test-gov:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -337,15 +516,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_gov
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_gov.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_gov
@@ -355,16 +534,17 @@ jobs:
 
   test-grpc:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
@@ -374,15 +554,15 @@ jobs:
            nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_grpc
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_grpc.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_grpc
@@ -391,34 +571,35 @@ jobs:
 
   test-tieredrewards:
     runs-on: ubuntu-latest
+    needs: [prepare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - uses: cachix/install-nix-action@fc6e360bedc9ee72d75e701397f0bb30dce77568 # v31.2
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31.10.5
         with:
           nix_path: nixpkgs=channel:nixos-25.05
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
+      - uses: cachix/cachix-action@1eb2ef646ac0255473d23a5907ad7b04ce94065c # v17
         with:
           name: crypto-com
       - name: Run integration tests
         run: make nix-integration-test-tieredrewards
       - name: Convert coverage data
         run: |
-           nix profile install nixpkgs#go_1_25
+           nix profile add nixpkgs#go_1_25
            go tool covdata textfmt -i=coverage -o profile.txt
       - name: Upload coverage report
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./profile.txt
+          files: ./profile.txt
           flags: integration_tests_tieredrewards
       - name: Tar debug files
         if: failure()
         run: tar cfz debug_files_tieredrewards.tar.gz -C "${TMPDIR-/run/user/1001}/pytest-of-runner" .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
           name: debug_files_tieredrewards

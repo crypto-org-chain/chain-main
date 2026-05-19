@@ -14,6 +14,12 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
+// ValidatorTransition signals a change in the position's associated validator
+// so that PositionCountByValidator can be reindexed.
+type ValidatorTransition struct {
+	PreviousAddress string
+}
+
 func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, error) {
 	pos, err := k.Positions.Get(ctx, id)
 	if err != nil {
@@ -25,15 +31,19 @@ func (k Keeper) getPosition(ctx context.Context, id uint64) (types.Position, err
 	return pos, nil
 }
 
-func (k Keeper) createPosition(
+func (k Keeper) createDelegatedPosition(
 	ctx context.Context,
 	owner string,
 	tier types.Tier,
-	amount math.Int,
-	delegation types.Delegation,
+	valAddr sdk.ValAddress,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
 	id, err := k.NextPositionId.Next(ctx)
+	if err != nil {
+		return types.Position{}, err
+	}
+
+	lastEventSeq, err := k.getValidatorEventLatestSeq(ctx, valAddr)
 	if err != nil {
 		return types.Position{}, err
 	}
@@ -42,7 +52,7 @@ func (k Keeper) createPosition(
 	blockTime := sdkCtx.BlockTime()
 	blockHeight := uint64(sdkCtx.BlockHeight())
 
-	pos := types.NewPosition(id, owner, tier.Id, amount, blockHeight, delegation, blockTime)
+	pos := types.NewPosition(id, owner, tier.Id, blockHeight, lastEventSeq, blockTime, true, blockTime)
 
 	delAddr := types.GetDelegatorAddress(id)
 
@@ -57,10 +67,6 @@ func (k Keeper) createPosition(
 
 	if triggerExitImmediately {
 		pos.TriggerExit(blockTime, tier.ExitDuration)
-	}
-
-	if err := k.setPosition(ctx, pos); err != nil {
-		return types.Position{}, err
 	}
 
 	return pos, nil
@@ -96,14 +102,25 @@ func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerA
 	return k.distributionKeeper.DeleteDelegatorWithdrawAddr(ctx, posDelAddr, ownerAddr)
 }
 
-// SetPosition stores a position, validates it, and maintains secondary indexes.
-func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
-	if err := pos.Validate(); err != nil {
+// setPosition validates and persists pos and reconciles the relevant indexes.
+func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
+	del, err := k.getDelegation(ctx, pos.Id)
+	if err != nil {
 		return err
 	}
+	return k.setPositionWithState(ctx, types.PositionState{Position: pos, Delegation: del}, update)
+}
+
+// setPositionWithState validates and persists the position with a supplied PositionState.
+func (k Keeper) setPositionWithState(ctx context.Context, state types.PositionState, update *ValidatorTransition) error {
+	if err := state.Validate(); err != nil {
+		return err
+	}
+
+	pos := state.Position
+
 	oldPos, err := k.getPosition(ctx, pos.Id)
 	isNew := errors.Is(err, types.ErrPositionNotFound)
-
 	if !isNew && err != nil {
 		return err
 	}
@@ -123,98 +140,66 @@ func (k Keeper) setPosition(ctx context.Context, pos types.Position) error {
 		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
 			return err
 		}
-		if pos.IsDelegated() {
-			valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-			if err != nil {
-				return err
-			}
-			if err := k.PositionsByValidator.Set(ctx, collections.Join(valAddr, pos.Id)); err != nil {
-				return err
-			}
-			if err := k.increasePositionCountForValidator(ctx, valAddr); err != nil {
-				return err
-			}
-		}
 		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
 			return err
 		}
+	} else {
+		if oldPos.Owner != pos.Owner {
+			oldOwner, err := sdk.AccAddressFromBech32(oldPos.Owner)
+			if err != nil {
+				return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+			}
+			if err := k.PositionsByOwner.Remove(ctx, collections.Join(oldOwner, pos.Id)); err != nil {
+				return err
+			}
+			newOwner, err := sdk.AccAddressFromBech32(pos.Owner)
+			if err != nil {
+				return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+			}
+			if err := k.PositionsByOwner.Set(ctx, collections.Join(newOwner, pos.Id)); err != nil {
+				return err
+			}
+		}
+
+		if oldPos.TierId != pos.TierId {
+			if err := k.PositionsByTier.Remove(ctx, collections.Join(oldPos.TierId, pos.Id)); err != nil {
+				return err
+			}
+			if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
+				return err
+			}
+			if err := k.decreasePositionCountForTier(ctx, oldPos.TierId); err != nil {
+				return err
+			}
+			if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
+				return err
+			}
+		}
+	}
+
+	if update == nil {
 		return nil
 	}
-
-	if oldPos.Owner != pos.Owner {
-		oldOwner, err := sdk.AccAddressFromBech32(oldPos.Owner)
-		if err != nil {
-			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-		}
-		if err := k.PositionsByOwner.Remove(ctx, collections.Join(oldOwner, pos.Id)); err != nil {
-			return err
-		}
-		newOwner, err := sdk.AccAddressFromBech32(pos.Owner)
-		if err != nil {
-			return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
-		}
-		if err := k.PositionsByOwner.Set(ctx, collections.Join(newOwner, pos.Id)); err != nil {
-			return err
-		}
+	currVal := ""
+	if state.IsDelegated() {
+		currVal = state.Delegation.ValidatorAddress
 	}
-
-	if oldPos.TierId != pos.TierId {
-		if err := k.PositionsByTier.Remove(ctx, collections.Join(oldPos.TierId, pos.Id)); err != nil {
-			return err
-		}
-		if err := k.PositionsByTier.Set(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
-			return err
-		}
-		if err := k.decreasePositionCountForTier(ctx, oldPos.TierId); err != nil {
-			return err
-		}
-		if err := k.increasePositionCountForTier(ctx, pos.TierId); err != nil {
-			return err
-		}
-	}
-
-	oldDelegated := oldPos.IsDelegated()
-	newDelegated := pos.IsDelegated()
-	changedValidator := oldPos.Validator != pos.Validator
-	if oldDelegated && (!newDelegated || changedValidator) {
-		oldVal, err := sdk.ValAddressFromBech32(oldPos.Validator)
-		if err != nil {
-			return err
-		}
-		if err := k.PositionsByValidator.Remove(ctx, collections.Join(oldVal, pos.Id)); err != nil {
-			return err
-		}
-		if err := k.decreasePositionCountForValidator(ctx, oldVal); err != nil {
-			return err
-		}
-	}
-	if newDelegated && (!oldDelegated || changedValidator) {
-		newVal, err := sdk.ValAddressFromBech32(pos.Validator)
-		if err != nil {
-			return err
-		}
-		if err := k.PositionsByValidator.Set(ctx, collections.Join(newVal, pos.Id)); err != nil {
-			return err
-		}
-		if err := k.increasePositionCountForValidator(ctx, newVal); err != nil {
-			return err
-		}
-	}
-	return nil
+	return k.reindexPositionCountByValidator(ctx, update.PreviousAddress, currVal)
 }
 
-// setPositionUnsafe persists a position without reading the old value or diffing
-// secondary indexes. Use only when the caller guarantees that owner, tier, and
-// validator have not changed (e.g., after claiming rewards).
-func (k Keeper) setPositionUnsafe(ctx context.Context, pos types.Position) error {
-	return k.Positions.Set(ctx, pos.Id, pos)
-}
-
-// DeletePosition removes a position and cleans up secondary indexes.
-func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
+// deletePosition validates and removes a position and cleans up secondary indexes.
+func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	del, err := k.getDelegation(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if del != nil {
+		return errorsmod.Wrapf(types.ErrPositionDelegated, "cannot delete position %d: still has active delegation to %s", pos.Id, del.ValidatorAddress)
 	}
 
 	delAddr := types.GetDelegatorAddress(pos.Id)
@@ -223,14 +208,8 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 		return err
 	}
 
-	// guard, but should already be deleted by unbonding completion hook.
-	if err := k.deleteUnbondingMappingsForPosition(ctx, pos.Id); err != nil {
-		return err
-	}
-
-	// guard, but should already be deleted by redelegation completion hook,
-	// unless a redelegation position gets slashed to zero after exit duration is elapsed and exits.
-	if err := k.deleteRedelegationMappingsForPosition(ctx, pos.Id); err != nil {
+	// Defensive
+	if err := k.deletePositionRedelegationMappings(ctx, pos.Id); err != nil {
 		return err
 	}
 
@@ -243,19 +222,39 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position) error {
 	if err := k.PositionsByTier.Remove(ctx, collections.Join(pos.TierId, pos.Id)); err != nil {
 		return err
 	}
-	if pos.IsDelegated() {
-		valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
+	if err := k.decreasePositionCountForTier(ctx, pos.TierId); err != nil {
+		return err
+	}
+
+	if update == nil {
+		return nil
+	}
+	return k.reindexPositionCountByValidator(ctx, update.PreviousAddress, "")
+}
+
+func (k Keeper) reindexPositionCountByValidator(ctx context.Context, from, to string) error {
+	if from == to {
+		return nil
+	}
+	if from != "" {
+		valAddr, err := sdk.ValAddressFromBech32(from)
 		if err != nil {
-			return err
-		}
-		if err := k.PositionsByValidator.Remove(ctx, collections.Join(valAddr, pos.Id)); err != nil {
 			return err
 		}
 		if err := k.decreasePositionCountForValidator(ctx, valAddr); err != nil {
 			return err
 		}
 	}
-	return k.decreasePositionCountForTier(ctx, pos.TierId)
+	if to != "" {
+		valAddr, err := sdk.ValAddressFromBech32(to)
+		if err != nil {
+			return err
+		}
+		if err := k.increasePositionCountForValidator(ctx, valAddr); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress) ([]uint64, error) {
@@ -263,51 +262,7 @@ func (k Keeper) getPositionsIdsByOwner(ctx context.Context, owner sdk.AccAddress
 	return collectPairKeySetK2(ctx, k.PositionsByOwner, rng)
 }
 
-func (k Keeper) getPositionsIdsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]uint64, error) {
-	rng := collections.NewPrefixedPairRange[sdk.ValAddress, uint64](valAddr)
-	return collectPairKeySetK2(ctx, k.PositionsByValidator, rng)
-}
-
-func (k Keeper) getPositionsByIds(ctx context.Context, ids []uint64) ([]types.Position, error) {
-	positions := make([]types.Position, 0, len(ids))
-	for _, id := range ids {
-		pos, err := k.getPosition(ctx, id)
-		if errors.Is(err, types.ErrPositionNotFound) {
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		positions = append(positions, pos)
-	}
-	return positions, nil
-}
-
-func (k Keeper) GetPositionsByOwner(ctx context.Context, owner sdk.AccAddress) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByOwner(ctx, owner)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
-}
-
-func (k Keeper) getPositionsByValidator(ctx context.Context, valAddr sdk.ValAddress) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByValidator(ctx, valAddr)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
-}
-
 func (k Keeper) getPositionsIdsByTier(ctx context.Context, tierId uint32) ([]uint64, error) {
 	rng := collections.NewPrefixedPairRange[uint32, uint64](tierId)
 	return collectPairKeySetK2(ctx, k.PositionsByTier, rng)
-}
-
-func (k Keeper) getPositionsByTier(ctx context.Context, tierId uint32) ([]types.Position, error) {
-	ids, err := k.getPositionsIdsByTier(ctx, tierId)
-	if err != nil {
-		return nil, err
-	}
-	return k.getPositionsByIds(ctx, ids)
 }

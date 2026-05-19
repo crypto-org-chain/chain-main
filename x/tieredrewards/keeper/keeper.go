@@ -28,9 +28,8 @@ type Keeper struct {
 	Positions      collections.Map[uint64, types.Position]
 	NextPositionId collections.Sequence
 
-	PositionsByOwner     collections.KeySet[collections.Pair[sdk.AccAddress, uint64]]
-	PositionsByTier      collections.KeySet[collections.Pair[uint32, uint64]]
-	PositionsByValidator collections.KeySet[collections.Pair[sdk.ValAddress, uint64]]
+	PositionsByOwner collections.KeySet[collections.Pair[sdk.AccAddress, uint64]]
+	PositionsByTier  collections.KeySet[collections.Pair[uint32, uint64]]
 
 	PositionCountByTier      collections.Map[uint32, uint64]
 	PositionCountByValidator collections.Map[sdk.ValAddress, uint64]
@@ -39,10 +38,8 @@ type Keeper struct {
 	ValidatorEvents   collections.Map[collections.Pair[sdk.ValAddress, uint64], types.ValidatorEvent]
 	ValidatorEventSeq collections.Map[sdk.ValAddress, uint64]
 
-	// Primary map: unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
-	UnbondingDelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
-	// Primary map: redelegation unbondingID -> positionID, with a secondary index by positionID for slash handling and mapping cleanup.
-	RedelegationMappings *collections.IndexedMap[uint64, uint64, UnbondingMappingsIndexes]
+	// RedelegationMappings maps a redelegation unbonding id to the tier position id that issued the redelegation.
+	RedelegationMappings *collections.IndexedMap[uint64, uint64, RedelegationMappingsIndexes]
 
 	mintKeeper         types.MintKeeper
 	stakingKeeper      types.StakingKeeper
@@ -101,27 +98,11 @@ func NewKeeper(
 		NextPositionId:           collections.NewSequence(sb, types.NextPositionIdKey, "next_position_id"),
 		PositionsByOwner:         collections.NewKeySet(sb, types.PositionsByOwnerKey, "positions_by_owner", collections.PairKeyCodec(sdk.AccAddressKey, collections.Uint64Key)),
 		PositionsByTier:          collections.NewKeySet(sb, types.PositionsByTierKey, "positions_by_tier", collections.PairKeyCodec(collections.Uint32Key, collections.Uint64Key)),
-		PositionsByValidator:     collections.NewKeySet(sb, types.PositionsByValidatorKey, "positions_by_validator", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key)),
 		PositionCountByTier:      collections.NewMap(sb, types.PositionCountByTierKey, "position_count_by_tier", collections.Uint32Key, collections.Uint64Value),
 		PositionCountByValidator: collections.NewMap(sb, types.PositionCountByValidatorKey, "position_count_by_validator", sdk.ValAddressKey, collections.Uint64Value),
 		ValidatorEvents:          collections.NewMap(sb, types.ValidatorEventsKey, "validator_events", collections.PairKeyCodec(sdk.ValAddressKey, collections.Uint64Key), codec.CollValue[types.ValidatorEvent](cdc)),
 		ValidatorEventSeq:        collections.NewMap(sb, types.ValidatorEventSeqKey, "validator_event_current_seq", sdk.ValAddressKey, collections.Uint64Value),
-		UnbondingDelegationMappings: collections.NewIndexedMap(
-			sb,
-			types.UnbondingIdToPositionIdKey,
-			"unbonding_id_to_position_id",
-			collections.Uint64Key,
-			collections.Uint64Value,
-			newUnbondingMappingsIndexes(sb),
-		),
-		RedelegationMappings: collections.NewIndexedMap(
-			sb,
-			types.RedelegationIdToPositionIdKey,
-			"redelegation_id_to_position_id",
-			collections.Uint64Key,
-			collections.Uint64Value,
-			newRedelegationMappingsIndexes(sb),
-		),
+		RedelegationMappings:     collections.NewIndexedMap(sb, types.RedelegationMappingsKey, "redelegation_mappings", collections.Uint64Key, collections.Uint64Value, newRedelegationMappingsIndexes(sb)),
 	}
 
 	schema, err := sb.Build()

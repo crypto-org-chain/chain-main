@@ -23,37 +23,7 @@ func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	return nil
 }
 
-func (k Keeper) validateDelegatePosition(ctx context.Context, pos types.Position, owner string) error {
-	if !pos.IsOwner(owner) {
-		return types.ErrNotPositionOwner
-	}
-
-	if pos.IsDelegated() {
-		return types.ErrPositionAlreadyDelegated
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if pos.HasTriggeredExit() && pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		return types.ErrExitLockDurationElapsed
-	}
-
-	tier, err := k.getTier(ctx, pos.TierId)
-	if err != nil {
-		return err
-	}
-
-	if tier.IsCloseOnly() {
-		return types.ErrTierIsCloseOnly
-	}
-
-	if pos.Amount.IsZero() {
-		return types.ErrPositionAmountZero
-	}
-
-	return nil
-}
-
-func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.PositionState, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -76,7 +46,7 @@ func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Positi
 	return nil
 }
 
-func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Position, owner, dstValidator string) error {
+func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.PositionState, owner, dstValidator string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -85,11 +55,7 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrPositionNotDelegated
 	}
 
-	if !pos.DelegatedShares.IsPositive() {
-		return types.ErrPositionSharesZero
-	}
-
-	if pos.Validator == dstValidator {
+	if pos.Delegation.ValidatorAddress == dstValidator {
 		return types.ErrRedelegationToSameValidator
 	}
 
@@ -107,12 +73,24 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrTierIsCloseOnly
 	}
 
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
+	if err != nil {
+		return err
+	}
+	if isRedelegating {
+		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
+	}
+
 	return nil
 }
 
-func (k Keeper) validateAddToPosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateAddToPosition(ctx context.Context, pos types.PositionState, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
+	}
+
+	if !pos.IsDelegated() {
+		return types.ErrPositionNotDelegated
 	}
 
 	if pos.HasTriggeredExit() {
@@ -143,18 +121,18 @@ func (k Keeper) validateTriggerExit(pos types.Position, owner string) error {
 	return nil
 }
 
-func (k Keeper) validateClearPosition(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionState, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		unbonding, err := k.stillUnbonding(ctx, pos.Id)
+		isUnbonding, err := k.isUnbonding(ctx, pos.Id)
 		if err != nil {
 			return err
 		}
-		if unbonding {
+		if isUnbonding {
 			return types.ErrPositionUnbonding
 		}
 
@@ -184,7 +162,7 @@ func (k Keeper) validateClaimRewards(pos types.Position, owner string) error {
 	return nil
 }
 
-func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position, owner string) error {
+func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.PositionState, owner string) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -202,21 +180,18 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionDelegated
 	}
 
-	unbonding, err := k.stillUnbonding(ctx, pos.Id)
+	isUnbonding, err := k.isUnbonding(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if unbonding {
+	if isUnbonding {
 		return types.ErrPositionUnbonding
 	}
-	// no need to check for redelegation because unbonding only allowed after exit duration elapsed
-	// and redelegation is not allowed after exit duration elapsed
-	// Therefore, any redelegation would have matured by the time any unbonding matures (same unbonding duration)
 
 	return nil
 }
 
-func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Position, owner string, amount math.Int) error {
+func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.PositionState, owner string, amount math.Int) error {
 	if !pos.IsOwner(owner) {
 		return types.ErrNotPositionOwner
 	}
@@ -234,24 +209,20 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
-	valAddr, err := sdk.ValAddressFromBech32(pos.Validator)
-	if err != nil {
-		return err
-	}
-	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	positionAmount, err := k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return err
 	}
 
-	if amount.GT(tokenValue) {
-		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, tokenValue)
+	if amount.GT(positionAmount) {
+		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, positionAmount)
 	}
 
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return err
 	}
-	if redelegating {
+	if isRedelegating {
 		return errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 

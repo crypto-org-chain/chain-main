@@ -294,10 +294,21 @@ nix-integration-test-upgrade: check-network
 nix-integration-test-ledger: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ledger"
 
-nix-integration-test-slow: check-network 
+nix-integration-test-slow: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow"
 
-nix-integration-test-ibc: check-network 
+nix-integration-test-slow-a: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow integration_tests/test_slashing.py integration_tests/test_tieredrewards_msgs.py"
+
+nix-integration-test-slow-b: nix-integration-test-slow-b1 nix-integration-test-slow-b2
+
+nix-integration-test-slow-b1: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow_b1"
+
+nix-integration-test-slow-b2: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m slow_b2"
+
+nix-integration-test-ibc: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ibc"
 
 nix-integration-test-byzantine: check-network

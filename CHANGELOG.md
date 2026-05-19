@@ -2,6 +2,21 @@
 
 ## UNRELEASED
 
+*May 8, 2026*
+
+## v7.1.0
+
+### Improvements
+
+- [#1295](https://github.com/crypto-org-chain/chain-main/pull/1295) chore(x/nft): pre-allocate slice in GetCollections to avoid repeated reallocs.
+- [#1284](https://github.com/crypto-org-chain/chain-main/pull/1284) feat(x/tieredrewards): add gRPC queries and CLI commands to list positions by tier id.
+- [#1293](https://github.com/crypto-org-chain/chain-main/pull/1293) feat(x/tieredrewards)!: remove `MsgTierDelegate` - this message was only reachable as a recovery path for fully-slashed positions.
+
+### Bugfixes
+
+- [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): fix: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. Disallow AddToTierPosition if position is undelegated.
+
+
 *Apr 25, 2026*
 
 ## v7.0.0
@@ -13,7 +28,8 @@
 - [#1269](https://github.com/crypto-org-chain/chain-main/pull/1269) feat(x/tieredrewards): MsgClaimTierRewards now accepts multiple position IDs to claim rewards in a single transaction.
 - [#1271](https://github.com/crypto-org-chain/chain-main/pull/1271) feat(x/tieredrewards): add initial tier definitions in upgrade handler and allow zero MinLockAmount.
 - [#1272](https://github.com/crypto-org-chain/chain-main/pull/1272) feat(x/tieredrewards): claim bonus rewards lazily upon validator event (unbonding/slashing), amount should be zero when delegated and populated when position is undelegated
-- [#1275](https://github.com/crypto-org-chain/chain-main/pull/1275) feat: update testnet upgrade params and tiers.
+- [#1275](https://github.com/crypto-org-chain/chain-main/pull/1275) feat(x/tieredrewards): update testnet upgrade params and tiers.
+- [#1292](https://github.com/crypto-org-chain/chain-main/pull/1292) feat: fetch position delegation state from staking module.
 
 ### Improvements
 
@@ -42,6 +58,7 @@
 - [#1276](https://github.com/crypto-org-chain/chain-main/pull/1276) fix: add missing cli queries.
 - [#1282](https://github.com/crypto-org-chain/chain-main/pull/1282) fix: flaky test_begin_blocker_halt_on_excess_supply.
 - [#1285](https://github.com/crypto-org-chain/chain-main/pull/1285) fix(x/tieredrewards): indidivual delegation for each position.
+- [#1290](https://github.com/crypto-org-chain/chain-main/pull/1290) fix: revert removal of tieredrewards module account for consistency.
 
 ### Chores
 

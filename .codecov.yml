@@ -1,30 +1,52 @@
+codecov:
+  # Only post codecov status once the CI run that produced the coverage has
+  # succeeded, so a mid-run partial upload can never flip the status red
+  # while other jobs are still running / will soon replace its data.
+  require_ci_to_pass: yes
+  notify:
+    # 11 unconditional integration uploads; upgrade and unit-test uploads 
+    # are conditional. For all of them before computing the final status — 
+    # otherwise codecov reports off an incomplete subset and shows spurious 
+    #drops.
+    after_n_builds: 11
+
 coverage:
   precision: 2
   round: down
   range: 70...100
-  notify:
-    after_n_builds: 4
 
   status:
-    # Learn more at https://docs.codecov.io/docs/commit-status
     project:
       default:
-        threshold: 1% # allow this much decrease on project
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        # New/changed lines should reach a sensible coverage bar; flagged
+        # informational so a single miss does not block a PR merge.
+        target: 70%
+        threshold: 5%
+        informational: true
     changes: false
-  
+
 comment:
-  layout: "reach, diff, files"
-  behavior: default # update if exists else create new
+  layout: "reach, diff, flags, files"
+  behavior: default
   require_changes: true
 
 ignore:
   - "docs"
-  - "*.md"
-  - "*.rst"
+  - "**/*.md"
+  - "**/*.rst"
+  # Generated protobuf / grpc-gateway / pulsar sources.
   - "**/*.pb.go"
-  - "types/*.pb.go"
-  - "tests/*"
-  - "tests/**/*"
-  - "x/**/*.pb.go"
+  - "**/*.pb.gw.go"
+  - "**/*.pulsar.go"
+  # Generated python protobuf for pystarport.
+  - "pystarport/proto_python"
+  # Cosmos SDK expected-keeper interface files are pass-through aliases.
+  - "**/expected_keepers.go"
+  # Test harness / simulation helpers.
   - "app/sim_test.go"
   - "app/test_helpers.go"
+  - "tests"

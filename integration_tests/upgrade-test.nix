@@ -1,61 +1,64 @@
 let
   pkgs = import ../nix { };
-  released =
-    (import
-      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v1.1.0.tar.gz")
-      { }
-    ).chain-maind;
-  released2 =
-    (import
-      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v2.0.1.tar.gz")
-      { }
-    ).chain-maind;
-  released3 =
-    (import
-      (builtins.fetchTarball "https://github.com/crypto-org-chain/chain-main/archive/v3.3.4.tar.gz")
-      { }
-    ).chain-maind;
-  fetchFlake =
-    repo: rev:
-    (pkgs.flake-compat {
-      src = {
-        outPath = builtins.fetchTarball "https://github.com/${repo}/archive/${rev}.tar.gz";
-        inherit rev;
-        shortRev = builtins.substring 0 7 rev;
-      };
-    }).defaultNix;
-  released4_2 =
-    (fetchFlake "crypto-org-chain/chain-main" "b3226f06fd2a236f9957304c4d83b0ea06ed2604").default;
-  released5_0 =
-    (fetchFlake "crypto-org-chain/chain-main" "246ba80c2f0c7e11a0a7b483a349d177ffeb0a9d").default;
-  released6_0 =
-    (fetchFlake "crypto-org-chain/chain-main" "bcd5bcb30a4bac7a5939a712ac079dd631abf41b").default;
+  # Fetch a pre-built Linux x86_64 release binary from GitHub.
+  # Using pre-built binaries avoids pulling in old nixpkgs closures for
+  # historical versions, keeping cachix storage small.
+  fetchBinary =
+    version: hash:
+    pkgs.runCommand "chain-maind-${version}"
+      {
+        src = pkgs.fetchurl {
+          url = "https://github.com/crypto-org-chain/chain-main/releases/download/v${version}/chain-main_${version}_Linux_x86_64.tar.gz";
+          inherit hash;
+        };
+        nativeBuildInputs = [
+          pkgs.gnutar
+          pkgs.gzip
+        ];
+      }
+      ''
+        mkdir -p $out/bin
+        tar -xzf $src -C $out
+        mkdir -p $out/bin
+        tar -xzf $src -C $out
+        # If binary extracted to root (not bin/), move it into place.
+        [ -f "$out/chain-maind" ] && mv "$out/chain-maind" "$out/bin/chain-maind"
+        chmod +x $out/bin/chain-maind
+      '';
+  v1 = fetchBinary "1.1.0" "sha256-+KknygtcWrilun443B8nJTO01meOyAsqzRHadUIhFJY=";
+  v2 = fetchBinary "2.0.1" "sha256-Xp6fcDy4XHJXMIbjhOGH51JGOy7QzNYSCUofKaE/AVg=";
+  v3 = fetchBinary "3.3.4" "sha256-EPkVhe6Gfttrygl9vqlMVyuSP7BHa/j0pTWepLaqIog=";
+  v4 = fetchBinary "4.2.0" "sha256-gNreRND2dJDx46TSdoTYMDMJWNgP8qxRpMLbMY61rMg=";
+  v5 = fetchBinary "5.0.0" "sha256-hJFRQNhBPDrqREyTL8oOPOmh0F6fNEacYh5TrbijgY4=";
+  v6 = fetchBinary "6.0.0" "sha256-d8Z9i0wlkAVKysSkfzvjr4B4GXviNIQ0G0Hotk2bpWA=";
   current = pkgs.callPackage ../. { };
 in
-pkgs.linkFarm "upgrade-test-package" [
+# Full upgrade path: v1.1.0 (genesis) → ... → v7.
+# To add a new protocol version: add a fetchBinary entry above and append it here.
+pkgs.linkFarm "upgrade-test-all-package" [
   {
     name = "genesis";
-    path = released;
+    path = v1;
   }
   {
     name = "v2.0.0";
-    path = released2;
+    path = v2;
   }
   {
     name = "v3.0.0";
-    path = released3;
+    path = v3;
   }
   {
     name = "v4.2.0";
-    path = released4_2;
+    path = v4;
   }
   {
     name = "v5.0.0";
-    path = released5_0;
+    path = v5;
   }
   {
     name = "v6.0.0";
-    path = released6_0;
+    path = v6;
   }
   {
     name = "v7";

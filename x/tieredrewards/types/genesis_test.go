@@ -20,11 +20,8 @@ func genesisTier(id uint32) types.Tier {
 }
 
 func genesisPosition(id uint64, tierId uint32) types.Position {
-	return types.NewPosition(id, testOwner, tierId, sdkmath.ZeroInt(), 100, types.Delegation{
-		Validator:    testValidator,
-		Shares:       sdkmath.LegacyNewDec(1000),
-		LastEventSeq: 0,
-	}, time.Now())
+	now := time.Now()
+	return types.NewPosition(id, testOwner, tierId, 100, 0, now, true, now)
 }
 
 func validFullGenesis() types.GenesisState {
@@ -35,11 +32,8 @@ func validFullGenesis() types.GenesisState {
 		Tiers:          []types.Tier{tier},
 		Positions:      []types.Position{pos},
 		NextPositionId: 2,
-		UnbondingDelegationMappings: []types.UnbondingMapping{
-			{UnbondingId: 10, PositionId: 1},
-		},
-		RedelegationMappings: []types.UnbondingMapping{
-			{UnbondingId: 11, PositionId: 1},
+		RedelegationMappings: []types.RedelegationMapping{
+			{UnbondingId: 1, PositionId: 1},
 		},
 	}
 }
@@ -99,28 +93,25 @@ func TestValidateGenesis(t *testing.T) {
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "next_position_id")
 	})
 
-	t.Run("unbonding mapping references unknown position", func(t *testing.T) {
-		genesis := validFullGenesis()
-		genesis.UnbondingDelegationMappings[0].PositionId = 999
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "unknown position ID")
-	})
-
-	t.Run("duplicate unbonding IDs", func(t *testing.T) {
-		genesis := validFullGenesis()
-		genesis.UnbondingDelegationMappings = append(genesis.UnbondingDelegationMappings, types.UnbondingMapping{UnbondingId: 10, PositionId: 1})
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate unbonding ID")
-	})
-
 	t.Run("redelegation mapping references unknown position", func(t *testing.T) {
 		genesis := validFullGenesis()
 		genesis.RedelegationMappings[0].PositionId = 999
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "unknown position ID")
 	})
 
-	t.Run("duplicate redelegation IDs", func(t *testing.T) {
+	t.Run("duplicate redelegation mapping unbonding id", func(t *testing.T) {
 		genesis := validFullGenesis()
-		genesis.RedelegationMappings = append(genesis.RedelegationMappings, types.UnbondingMapping{UnbondingId: 11, PositionId: 1})
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegation ID")
+		genesis.RedelegationMappings = append(genesis.RedelegationMappings, types.RedelegationMapping{
+			UnbondingId: 1,
+			PositionId:  1,
+		})
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate redelegation mapping unbonding_id")
+	})
+
+	t.Run("redelegation mapping zero unbonding id", func(t *testing.T) {
+		genesis := validFullGenesis()
+		genesis.RedelegationMappings[0].UnbondingId = 0
+		require.ErrorContains(t, types.ValidateGenesis(genesis), "zero unbonding_id")
 	})
 
 	t.Run("valid genesis with events", func(t *testing.T) {
@@ -249,62 +240,6 @@ func TestValidateGenesis(t *testing.T) {
 		require.ErrorContains(t, types.ValidateGenesis(genesis), "duplicate validator event")
 	})
 
-	t.Run("delegated position LastEventSeq exceeds validator latest event seq", func(t *testing.T) {
-		genesis := validFullGenesis()
-		// Position is delegated to testValidator. Set LastEventSeq = 5.
-		genesis.Positions[0].LastEventSeq = 5
-		// Validator has one event at seq 1.
-		genesis.ValidatorEvents = []types.ValidatorEventEntry{
-			{
-				Validator: testValidator,
-				Sequence:  1,
-				Event: types.ValidatorEvent{
-					Height:         100,
-					Timestamp:      time.Now(),
-					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
-					TokensPerShare: sdkmath.LegacyOneDec(),
-					ReferenceCount: 1,
-				},
-			},
-		}
-		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
-			{Validator: testValidator, CurrentSeq: 2},
-		}
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "LastEventSeq (5) greater than validator")
-	})
-
-	t.Run("delegated position LastEventSeq exceeds when no events exist", func(t *testing.T) {
-		genesis := validFullGenesis()
-		// Position is delegated to testValidator. Set LastEventSeq = 1.
-		// But no events exist for the validator.
-		genesis.Positions[0].LastEventSeq = 1
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "LastEventSeq (1) greater than validator")
-	})
-
-	t.Run("delegated position LastEventSeq at latest event seq is valid", func(t *testing.T) {
-		genesis := validFullGenesis()
-		// Position LastEventSeq = 0, validator has event at seq 1 with refcount=1.
-		// The position hasn't processed it yet, so refcount matches.
-		genesis.Positions[0].LastEventSeq = 0
-		genesis.ValidatorEvents = []types.ValidatorEventEntry{
-			{
-				Validator: testValidator,
-				Sequence:  1,
-				Event: types.ValidatorEvent{
-					Height:         100,
-					Timestamp:      time.Now(),
-					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
-					TokensPerShare: sdkmath.LegacyOneDec(),
-					ReferenceCount: 1,
-				},
-			},
-		}
-		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
-			{Validator: testValidator, CurrentSeq: 1},
-		}
-		require.NoError(t, types.ValidateGenesis(genesis))
-	})
-
 	t.Run("delegated position processed all events — no events remain", func(t *testing.T) {
 		genesis := validFullGenesis()
 		// Position LastEventSeq = 1 (processed event 1), no events remain (GC'd).
@@ -313,29 +248,5 @@ func TestValidateGenesis(t *testing.T) {
 			{Validator: testValidator, CurrentSeq: 1},
 		}
 		require.NoError(t, types.ValidateGenesis(genesis))
-	})
-
-	t.Run("event refcount mismatch — too high", func(t *testing.T) {
-		genesis := validFullGenesis()
-		// Position has LastEventSeq = 1 (already processed event 1),
-		// but event 1 still has ReferenceCount = 1 — mismatch.
-		genesis.Positions[0].LastEventSeq = 1
-		genesis.ValidatorEvents = []types.ValidatorEventEntry{
-			{
-				Validator: testValidator,
-				Sequence:  1,
-				Event: types.ValidatorEvent{
-					Height:         100,
-					Timestamp:      time.Now(),
-					EventType:      types.ValidatorEventType_VALIDATOR_EVENT_TYPE_SLASH,
-					TokensPerShare: sdkmath.LegacyOneDec(),
-					ReferenceCount: 1,
-				},
-			},
-		}
-		genesis.ValidatorEventSeqs = []types.ValidatorEventSeqEntry{
-			{Validator: testValidator, CurrentSeq: 1},
-		}
-		require.ErrorContains(t, types.ValidateGenesis(genesis), "ReferenceCount 1 but 0 positions would process it")
 	})
 }

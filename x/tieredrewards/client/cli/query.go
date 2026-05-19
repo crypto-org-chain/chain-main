@@ -28,6 +28,7 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryParams(),
 		GetCmdQueryTierPosition(),
 		GetCmdQueryTierPositionsByOwner(),
+		GetCmdQueryTierPositionsByTier(),
 		GetCmdQueryAllTierPositions(),
 		GetCmdQueryTiers(),
 		GetCmdQueryRewardsPoolBalances(),
@@ -36,9 +37,10 @@ func GetQueryCmd() *cobra.Command {
 		GetCmdQueryTotalDelegatedVotingPower(),
 		GetCmdQueryRawTierPosition(),
 		GetCmdQueryRawTierPositionsByOwner(),
+		GetCmdQueryRawTierPositionsByTier(),
 		GetCmdQueryRawAllTierPositions(),
 		GetCmdQueryValidatorData(),
-		GetCmdQueryPositionMappings(),
+		GetCmdQueryRedelegationMappings(),
 	)
 
 	return queryCmd
@@ -165,6 +167,45 @@ func GetCmdQueryTierPositionsByOwner() *cobra.Command {
 
 	flags.AddQueryFlagsToCmd(cmd)
 	flags.AddPaginationFlagsToCmd(cmd, "positions-by-owner")
+	return cmd
+}
+
+func GetCmdQueryTierPositionsByTier() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "positions-by-tier [tier-id]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query all tier positions for a tier id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+
+			tierID, err := parseUint32Arg("tier-id", args[0])
+			if err != nil {
+				return err
+			}
+
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.TierPositionsByTier(cmd.Context(), &types.QueryTierPositionsByTierRequest{
+				TierId:     tierID,
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+
+			return clientCtx.PrintProto(res)
+		},
+	}
+
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "positions-by-tier")
 	return cmd
 }
 
@@ -305,6 +346,40 @@ func GetCmdQueryRawTierPositionsByOwner() *cobra.Command {
 	return cmd
 }
 
+func GetCmdQueryRawTierPositionsByTier() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "raw-positions-by-tier [tier-id]",
+		Args:  cobra.ExactArgs(1),
+		Short: "Query raw stored positions for a tier id",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			clientCtx, err := client.GetClientQueryContext(cmd)
+			if err != nil {
+				return err
+			}
+			tierID, err := parseUint32Arg("tier-id", args[0])
+			if err != nil {
+				return err
+			}
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
+			if err != nil {
+				return err
+			}
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.RawTierPositionsByTier(cmd.Context(), &types.QueryRawTierPositionsByTierRequest{
+				TierId:     tierID,
+				Pagination: pageReq,
+			})
+			if err != nil {
+				return err
+			}
+			return clientCtx.PrintProto(res)
+		},
+	}
+	flags.AddQueryFlagsToCmd(cmd)
+	flags.AddPaginationFlagsToCmd(cmd, "raw-positions-by-tier")
+	return cmd
+}
+
 func GetCmdQueryRawAllTierPositions() *cobra.Command {
 	cmd := newPaginatedQueryCmd(
 		"raw-positions",
@@ -339,19 +414,20 @@ func GetCmdQueryValidatorData() *cobra.Command {
 	)
 }
 
-func GetCmdQueryPositionMappings() *cobra.Command {
-	return newQueryCmd(
-		"position-mappings [position-id]",
-		cobra.ExactArgs(1),
-		"Query unbonding and redelegation ID mappings for a position",
-		func(ctx context.Context, _ client.Context, queryClient types.QueryClient, args []string) (proto.Message, error) {
-			positionID, err := parseUint64Arg("position-id", args[0])
+func GetCmdQueryRedelegationMappings() *cobra.Command {
+	cmd := newPaginatedQueryCmd(
+		"redelegation-mappings",
+		"Query all tier position redelegation mappings keyed by staking unbonding id (paginated)",
+		func(ctx context.Context, _ client.Context, cmd *cobra.Command, queryClient types.QueryClient) (proto.Message, error) {
+			pageReq, err := client.ReadPageRequest(cmd.Flags())
 			if err != nil {
 				return nil, err
 			}
-			return queryClient.PositionMappings(ctx, &types.QueryPositionMappingsRequest{
-				PositionId: positionID,
+			return queryClient.RedelegationMappings(ctx, &types.QueryRedelegationMappingsRequest{
+				Pagination: pageReq,
 			})
 		},
 	)
+	flags.AddPaginationFlagsToCmd(cmd, "redelegation-mappings")
+	return cmd
 }

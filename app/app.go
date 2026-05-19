@@ -163,14 +163,16 @@ var (
 		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
 		icatypes.ModuleName:                nil,
 		tieredrewardstypes.RewardsPoolName: nil,
-		tieredrewardstypes.ModuleName:      {authtypes.Staking},
+		// Legacy, not used anymore. Created by the previous implementation which uses this module to staking on behalf of users.
+		tieredrewardstypes.ModuleName: {authtypes.Staking},
 	}
 	// moduleAccsAllowedToReceiveExternalFunds defines module accounts that can
 	// receive tokens from external accounts via MsgSend, bypassing the default
 	// block on sends to module accounts.
 	moduleAccsAllowedToReceiveExternalFunds = map[string]bool{
 		tieredrewardstypes.RewardsPoolName: true,
-		tieredrewardstypes.ModuleName:      true,
+		// Legacy, not used anymore. Created by the previous implementation which uses this module to staking on behalf of users.
+		tieredrewardstypes.ModuleName: true,
 	}
 )
 
@@ -707,7 +709,7 @@ func New(
 		chainmaintypes.ModuleName,
 		supplytypes.ModuleName,
 		inflationtypes.ModuleName,
-		tieredrewardstypes.ModuleName,
+		tieredrewardstypes.ModuleName, // ensure it is after staking to for initGenesis validation to work
 		nfttypes.ModuleName,
 		nfttransfertypes.ModuleName,
 		upgradetypes.ModuleName,

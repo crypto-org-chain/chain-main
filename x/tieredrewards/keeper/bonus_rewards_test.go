@@ -8,6 +8,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,7 @@ import (
 // computes a positive bonus when the position is bonded for 30 days.
 func (s *KeeperSuite) TestComputeSegmentBonus_BondedValidator() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(10000), false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	blockTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
 
@@ -29,7 +30,7 @@ func (s *KeeperSuite) TestComputeSegmentBonus_BondedValidator() {
 	s.Require().NoError(err)
 
 	tokensPerShare := val.TokensFromShares(sdkmath.LegacyOneDec())
-	expectedBonus := s.keeper.ComputeSegmentBonus(&pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
+	expectedBonus := s.keeper.ComputeSegmentBonus(pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
 
 	s.Require().True(expectedBonus.IsPositive(),
 		"bonus should be positive for a bonded validator with 30 days accrual")
@@ -52,13 +53,13 @@ func (s *KeeperSuite) TestComputeSegmentBonus_ZeroAmount() {
 	tokensPerShare := val.TokensFromShares(sdkmath.LegacyOneDec())
 
 	// Position with zero shares (100% slash on redelegation).
-	pos := types.Position{
-		Amount:           sdkmath.ZeroInt(),
-		DelegatedShares:  sdkmath.LegacyZeroDec(),
-		Validator:        "",
-		LastBonusAccrual: s.ctx.BlockTime(),
+	pos := types.PositionState{
+		Position: types.Position{
+			LastBonusAccrual: s.ctx.BlockTime(),
+		},
+		Delegation: &stakingtypes.Delegation{Shares: sdkmath.LegacyZeroDec()},
 	}
-	bonus := s.keeper.ComputeSegmentBonus(&pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
+	bonus := s.keeper.ComputeSegmentBonus(pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero for undelegated position with zero shares")
 }
@@ -69,11 +70,11 @@ func (s *KeeperSuite) TestComputeSegmentBonus_ZeroAmount() {
 func (s *KeeperSuite) TestComputeSegmentBonus_SharesWorthless() {
 	lockAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	pos := s.setupNewTierPosition(lockAmount, false)
-	valAddr := sdk.MustValAddressFromBech32(pos.Validator)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
-	s.Require().True(pos.DelegatedShares.IsPositive(), "should have shares")
+	s.Require().True(pos.Delegation.Shares.IsPositive(), "should have shares")
 
 	// Slash validator to zero -- shares remain but are now worthless.
 	s.slashValidatorDirect(valAddr, sdkmath.LegacyOneDec())
@@ -89,12 +90,12 @@ func (s *KeeperSuite) TestComputeSegmentBonus_SharesWorthless() {
 	blockTime := s.ctx.BlockTime().Add(30 * 24 * time.Hour)
 
 	// TokensFromShares returns zero because validator has no tokens.
-	tokens := val.TokensFromShares(pos.DelegatedShares)
+	tokens := val.TokensFromShares(pos.Delegation.Shares)
 	s.Require().True(tokens.IsZero(),
 		"tokens from shares should be zero for slashed validator")
 
 	tokensPerShare := val.TokensFromShares(sdkmath.LegacyOneDec())
-	bonus := s.keeper.ComputeSegmentBonus(&pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
+	bonus := s.keeper.ComputeSegmentBonus(pos, tier, pos.LastBonusAccrual, blockTime, tokensPerShare)
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero when shares are worthless (validator slashed to zero)")
 }
@@ -114,14 +115,17 @@ func (s *KeeperSuite) TestComputeSegmentBonus_ZeroSegmentDuration() {
 
 	tokensPerShare := val.TokensFromShares(sdkmath.LegacyOneDec())
 
-	pos := types.Position{
-		Amount:           sdkmath.NewInt(10000),
-		DelegatedShares:  sdkmath.LegacyNewDec(10000),
-		Validator:        valAddr.String(),
-		LastBonusAccrual: s.ctx.BlockTime(),
+	pos := types.PositionState{
+		Position: types.Position{
+			LastBonusAccrual: s.ctx.BlockTime(),
+		},
+		Delegation: &stakingtypes.Delegation{
+			ValidatorAddress: valAddr.String(),
+			Shares:           sdkmath.LegacyNewDec(10000),
+		},
 	}
 	// segmentStart == segmentEnd -> zero duration -> zero bonus.
-	bonus := s.keeper.ComputeSegmentBonus(&pos, tier, s.ctx.BlockTime(), s.ctx.BlockTime(), tokensPerShare)
+	bonus := s.keeper.ComputeSegmentBonus(pos, tier, s.ctx.BlockTime(), s.ctx.BlockTime(), tokensPerShare)
 	s.Require().True(bonus.IsZero(),
 		"bonus should be zero when segment duration is zero")
 }
@@ -138,17 +142,19 @@ func (s *KeeperSuite) TestComputeSegmentBonus_CappedAtExitUnlockAt() {
 	tokensPerShare := sdkmath.LegacyNewDec(1)
 	exitUnlockAt := now.Add(10 * 24 * time.Hour) // 10 days from now
 
-	pos := types.Position{
-		DelegatedShares: sdkmath.LegacyNewDec(1000),
-		ExitUnlockAt:    exitUnlockAt,
+	pos := types.PositionState{
+		Position: types.Position{
+			ExitUnlockAt: exitUnlockAt,
+		},
+		Delegation: &stakingtypes.Delegation{Shares: sdkmath.LegacyNewDec(1000)},
 	}
 
 	// Segment that extends 365 days past ExitUnlockAt.
 	segmentEnd := exitUnlockAt.Add(365 * 24 * time.Hour)
-	bonusCapped := s.keeper.ComputeSegmentBonus(&pos, tier, now, segmentEnd, tokensPerShare)
+	bonusCapped := s.keeper.ComputeSegmentBonus(pos, tier, now, segmentEnd, tokensPerShare)
 
 	// Compare against exact 10-day bonus (capped at ExitUnlockAt).
-	bonusExact := s.keeper.ComputeSegmentBonus(&pos, tier, now, exitUnlockAt, tokensPerShare)
+	bonusExact := s.keeper.ComputeSegmentBonus(pos, tier, now, exitUnlockAt, tokensPerShare)
 
 	s.Require().Equal(bonusExact.String(), bonusCapped.String(),
 		"bonus should be capped at ExitUnlockAt regardless of segment end; capped=%s, exact=%s",
@@ -156,7 +162,7 @@ func (s *KeeperSuite) TestComputeSegmentBonus_CappedAtExitUnlockAt() {
 	s.Require().True(bonusCapped.IsPositive(), "capped bonus should still be positive")
 
 	// Segment that starts AFTER ExitUnlockAt should yield zero.
-	bonusAfter := s.keeper.ComputeSegmentBonus(&pos, tier, exitUnlockAt, segmentEnd, tokensPerShare)
+	bonusAfter := s.keeper.ComputeSegmentBonus(pos, tier, exitUnlockAt, segmentEnd, tokensPerShare)
 	s.Require().True(bonusAfter.IsZero(),
 		"segment starting at ExitUnlockAt should yield zero bonus")
 }
@@ -191,11 +197,11 @@ func (s *KeeperSuite) TestComputeSegmentBonus_CorrectAmount() {
 	shares := sdkmath.LegacyNewDec(1000)
 	tokensPerShare := sdkmath.LegacyNewDec(2) // 1 share = 2 tokens
 
-	pos := types.Position{
-		DelegatedShares: shares,
+	pos := types.PositionState{
+		Delegation: &stakingtypes.Delegation{Shares: shares},
 	}
 
-	bonus := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), tokensPerShare)
+	bonus := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(oneYear), tokensPerShare)
 
 	// Expected: 1000 shares × 2 tokens/share × 0.04 apy × 1 year = 80
 	s.Require().Equal(sdkmath.NewInt(80).String(), bonus.String(),
@@ -203,31 +209,31 @@ func (s *KeeperSuite) TestComputeSegmentBonus_CorrectAmount() {
 
 	// Half year should yield half.
 	halfYear := oneYear / 2
-	bonusHalf := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(halfYear), tokensPerShare)
+	bonusHalf := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(halfYear), tokensPerShare)
 	s.Require().Equal(sdkmath.NewInt(40).String(), bonusHalf.String(),
 		"bonus for half a year should be exactly 40")
 
 	// Double the shares should double the bonus.
-	pos.DelegatedShares = sdkmath.LegacyNewDec(2000)
-	bonusDoubleShares := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), tokensPerShare)
+	pos.Delegation.Shares = sdkmath.LegacyNewDec(2000)
+	bonusDoubleShares := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(oneYear), tokensPerShare)
 	s.Require().Equal(sdkmath.NewInt(160).String(), bonusDoubleShares.String(),
 		"bonus for 2000 shares should be double: 160")
 
 	// Double the rate should double the bonus.
-	pos.DelegatedShares = sdkmath.LegacyNewDec(1000)
+	pos.Delegation.Shares = sdkmath.LegacyNewDec(1000)
 	doubleRate := sdkmath.LegacyNewDec(4) // 1 share = 4 tokens
-	bonusDoubleRate := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), doubleRate)
+	bonusDoubleRate := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(oneYear), doubleRate)
 	s.Require().Equal(sdkmath.NewInt(160).String(), bonusDoubleRate.String(),
 		"bonus with doubled rate should be 160")
 
 	// Zero APY should yield zero.
 	tier.BonusApy = sdkmath.LegacyZeroDec()
-	bonusZeroApy := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), tokensPerShare)
+	bonusZeroApy := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(oneYear), tokensPerShare)
 	s.Require().True(bonusZeroApy.IsZero(), "zero APY should yield zero bonus")
 
 	// Zero shares should yield zero.
 	tier.BonusApy = sdkmath.LegacyNewDecWithPrec(4, 2)
-	pos.DelegatedShares = sdkmath.LegacyZeroDec()
-	bonusZeroShares := s.keeper.ComputeSegmentBonus(&pos, tier, now, now.Add(oneYear), tokensPerShare)
+	pos.Delegation.Shares = sdkmath.LegacyZeroDec()
+	bonusZeroShares := s.keeper.ComputeSegmentBonus(pos, tier, now, now.Add(oneYear), tokensPerShare)
 	s.Require().True(bonusZeroShares.IsZero(), "zero shares should yield zero bonus")
 }

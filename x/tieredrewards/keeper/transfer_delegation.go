@@ -79,7 +79,7 @@ func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, 
 		return math.LegacyDec{}, types.ErrTinyTransferDelegationAmount
 	}
 
-	// Re-fetch validator after unbond since tokens and exchange rate changed.
+	// Re-fetch updated validator
 	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, err
@@ -97,7 +97,7 @@ func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, 
 // delegator address back to the owner on the same validator. The position's
 // delegation is unbonded and re-delegated from the owner's address. No
 // unbonding period.
-func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Position, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
+func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.PositionState, valAddr sdk.ValAddress, amount math.Int) (math.LegacyDec, math.LegacyDec, math.Int, error) {
 	owner, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
@@ -111,11 +111,11 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 	}
 
 	// Defensive
-	redelegating, err := k.stillRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
-	if redelegating {
+	if isRedelegating {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrapf(types.ErrActiveRedelegation, "position %d has an active redelegation", pos.Id)
 	}
 
@@ -130,13 +130,13 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrValidatorNotBonded
 	}
 
-	tokenValue, err := k.reconcileAmountFromShares(ctx, valAddr, pos.DelegatedShares)
+	positionAmount, err := k.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}
 
-	unbondedShares := pos.DelegatedShares
-	if !pos.ExitWithFullDelegation(amount, tokenValue) {
+	unbondedShares := pos.Delegation.Shares
+	if !pos.ExitWithFullDelegation(amount, positionAmount) {
 		unbondedShares, err = k.stakingKeeper.ValidateUnbondAmount(ctx, posDelAddr, valAddr, amount)
 		if err != nil {
 			return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
@@ -152,7 +152,7 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, types.ErrTinyTransferDelegationAmount
 	}
 
-	// Re-fetch validator after unbond since tokens and exchange rate changed.
+	// Re-fetch updated validator
 	validator, err = k.stakingKeeper.GetValidator(ctx, valAddr)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err

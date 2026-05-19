@@ -13,17 +13,17 @@ import (
 )
 
 func positionVotingPower(
-	pos types.Position,
+	pos types.PositionState,
 	bondedVals map[string]v1.ValidatorGovInfo,
 ) math.LegacyDec {
 	if !pos.IsDelegated() {
 		return math.LegacyZeroDec()
 	}
-	val, ok := bondedVals[pos.Validator]
+	val, ok := bondedVals[pos.Delegation.ValidatorAddress]
 	if !ok || val.DelegatorShares.IsZero() {
 		return math.LegacyZeroDec()
 	}
-	return pos.DelegatedShares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
+	return pos.Delegation.Shares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 }
 
 // getCurrentValidators gets the current bonded validators from the staking keeper. Same implementation as in gov keeper.
@@ -52,19 +52,20 @@ func (k Keeper) getCurrentValidators(ctx context.Context) (map[string]v1.Validat
 }
 
 // getVotingPowerByOwner returns the tier governance voting power for an address.
-// Power is derived from delegated position shares via validator exchange rates.
+// Power is derived from each position's delegation.
 func (k Keeper) getVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress) (math.LegacyDec, error) {
-	positions, err := k.GetPositionsByOwner(ctx, owner)
+	states, err := k.GetPositionStatesByOwner(ctx, owner)
+	if err != nil {
+		return math.LegacyZeroDec(), err
+	}
+
+	vals, err := k.getCurrentValidators(ctx)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}
 
 	power := math.LegacyZeroDec()
-	vals, err := k.getCurrentValidators(ctx)
-	if err != nil {
-		return math.LegacyZeroDec(), err
-	}
-	for _, p := range positions {
+	for _, p := range states {
 		power = power.Add(positionVotingPower(p, vals))
 	}
 	return power, nil
@@ -78,8 +79,12 @@ func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, 
 		return math.LegacyZeroDec(), err
 	}
 
-	err = k.Positions.Walk(ctx, nil, func(_ uint64, pos types.Position) (bool, error) {
-		total = total.Add(positionVotingPower(pos, vals))
+	err = k.Positions.Walk(ctx, nil, func(posId uint64, _ types.Position) (bool, error) {
+		state, err := k.getPositionState(ctx, posId)
+		if err != nil {
+			return true, err
+		}
+		total = total.Add(positionVotingPower(state, vals))
 		return false, nil
 	})
 	if err != nil {
