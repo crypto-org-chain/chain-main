@@ -12,6 +12,10 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "ledger: marks tests as ledger hardware test")
     config.addinivalue_line("markers", "grpc: marks grpc tests")
     config.addinivalue_line("markers", "upgrade: marks upgrade tests")
+    config.addinivalue_line(
+        "markers",
+        "upgrade_v7: marks v7 upgrade orphan-rewards_pool regression test",
+    )
     config.addinivalue_line("markers", "normal: marks normal tests")
     config.addinivalue_line("markers", "ibc: marks ibc tests")
     config.addinivalue_line("markers", "inflation: marks inflation tests")

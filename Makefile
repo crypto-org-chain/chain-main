@@ -283,13 +283,16 @@ make-proto:
 ###############################################################################
 # nix installation: https://nixos.org/download.html
 nix-integration-test: check-network make-proto
-	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine and not hybrid and not tieredrewards'"
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m 'not upgrade and not upgrade_v7 and not ledger and not slow and not ibc and not byzantine and not gov and not grpc and not solomachine and not hybrid and not tieredrewards'"
 
 nix-integration-test-solomachine: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m solomachine"
 
 nix-integration-test-upgrade: check-network
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade"
+
+nix-integration-test-upgrade-v7: check-network
+	nix-shell ./integration_tests/shell.nix --run "pytest -v -m upgrade_v7"
 
 nix-integration-test-ledger: check-network 
 	nix-shell ./integration_tests/shell.nix --run "pytest -v -m ledger"

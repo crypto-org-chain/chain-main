@@ -531,6 +531,36 @@ def query_module_address(cluster, module_name):
     return rsp["account"]["value"]["address"]
 
 
+def unwrap_account(rsp):
+    """Normalize `cli.account(addr)` output across SDK versions / encodings.
+
+    Handles three shapes:
+      1. Amino (chain-main default):
+           {"account": {"type": "cosmos-sdk/BaseAccount",
+                         "value": {"address": "...", ...}}}
+      2. Proto Any wrapped:
+           {"account": {"@type": "/cosmos.auth.v1beta1.BaseAccount",
+                         "address": "...", ...}}
+      3. Proto Any top-level:
+           {"@type": "/cosmos.auth.v1beta1.BaseAccount", "address": "...", ...}
+
+    Returns a flat dict with a single "@type" key — the value is either the
+    amino type string ("cosmos-sdk/BaseAccount") or the proto type URL,
+    depending on what the binary emitted. Callers compare against the
+    appropriate string for the binary they're talking to.
+    """
+    if isinstance(rsp.get("account"), dict):
+        rsp = rsp["account"]
+
+    # Amino: hoist value's fields to top level and rename `type` → `@type`.
+    if "type" in rsp and isinstance(rsp.get("value"), dict):
+        flat = dict(rsp["value"])
+        flat["@type"] = rsp["type"]
+        return flat
+
+    return rsp
+
+
 def query_delegations(cluster, delegator_addr):
     rsp = query_command(cluster, "staking", "delegations", delegator_addr)
     return rsp.get("delegation_responses") or []

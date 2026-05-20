@@ -52,11 +52,12 @@ from .tieredrewards_helpers import (
 from .utils import (
     cluster_fixture,
     module_address,
+    unwrap_account,
     wait_for_new_blocks,
     wait_for_port,
 )
 
-pytestmark = pytest.mark.upgrade
+pytestmark = pytest.mark.upgrade_v7
 
 REWARDS_POOL_NAME = "rewards_pool"
 
@@ -124,9 +125,12 @@ def test_v7_upgrade_heals_orphan_rewards_pool(cosmovisor_cluster):
     cli = cluster.cosmos_cli()
 
     # 2. Sanity: v6 created a BaseAccount at the address with the funds.
-    pre_acct = cli.account(pool_addr)
+    #    chain-maind emits amino-style account JSON (e.g. cosmos-sdk/BaseAccount),
+    #    wrapped under "account" with fields nested in "value" — unwrap_account
+    #    flattens that.
+    pre_acct = unwrap_account(cli.account(pool_addr))
     assert (
-        pre_acct["@type"] == "/cosmos.auth.v1beta1.BaseAccount"
+        pre_acct["@type"] == "cosmos-sdk/BaseAccount"
     ), f"expected BaseAccount on v6, got {pre_acct}"
     assert cluster.balance(pool_addr, denom="basecro") == prefund_amount
 
@@ -137,9 +141,9 @@ def test_v7_upgrade_heals_orphan_rewards_pool(cosmovisor_cluster):
     # 4. Post-upgrade: the address must now hold a ModuleAccount, and the
     # bank balance must survive the conversion.
     cli = cluster.cosmos_cli()
-    post_acct = cli.account(pool_addr)
+    post_acct = unwrap_account(cli.account(pool_addr))
     assert (
-        post_acct["@type"] == "/cosmos.auth.v1beta1.ModuleAccount"
+        post_acct["@type"] == "cosmos-sdk/ModuleAccount"
     ), f"expected ModuleAccount after v7, got {post_acct}"
     assert post_acct["name"] == REWARDS_POOL_NAME, post_acct
     assert (
