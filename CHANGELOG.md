@@ -4,6 +4,12 @@
 
 *May 8, 2026*
 
+## v7.2.0
+
+### Bugfixes
+
+- [#1302](https://github.com/crypto-org-chain/chain-main/pull/1302) fix(upgrade): migrate rewards pool base account to module account.
+
 ## v7.1.0
 
 ### Improvements
@@ -15,7 +21,6 @@
 ### Bugfixes
 
 - [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): fix: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. Disallow AddToTierPosition if position is undelegated.
-- [#1302](https://github.com/crypto-org-chain/chain-main/pull/1302) fix(upgrade): migrate rewards pool base account to module account.
 
 
 *Apr 25, 2026*
