@@ -54,26 +54,31 @@ func convertBaseAccountToModuleAccount(
 	ctx sdk.Context,
 	app *ChainApp,
 	name string,
-) {
+	perms ...string,
+) error {
 	addr := authtypes.NewModuleAddress(name)
 	acc := app.AccountKeeper.GetAccount(ctx, addr)
 	if acc == nil {
-		return
+		return nil
 	}
 	if _, ok := acc.(sdk.ModuleAccountI); ok {
-		return
+		return nil
 	}
 
-	base := authtypes.NewBaseAccountWithAddress(addr)
-	base.AccountNumber = acc.GetAccountNumber()
-	base.Sequence = acc.GetSequence()
-	modAcc := authtypes.NewModuleAccount(base, name)
-	app.AccountKeeper.SetModuleAccount(ctx, modAcc)
+	baseAcc, ok := acc.(*authtypes.BaseAccount)
+	if !ok {
+		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, name, acc)
+	}
 
-	ctx.Logger().Info("converted orphan BaseAccount to ModuleAccount",
+	macc := authtypes.NewModuleAccount(baseAcc, name, perms...)
+	if err := macc.Validate(); err != nil {
+		return fmt.Errorf("module account %q: %w", name, err)
+	}
+	app.AccountKeeper.SetModuleAccount(ctx, macc)
+	ctx.Logger().Info("converted base account to module account",
 		"module", name,
-		"address", addr.String(),
-		"account_number", base.AccountNumber)
+		"address", addr.String())
+	return nil
 }
 
 // registerV7UpgradeHandler registers the "v7" plan for chains that have
@@ -85,7 +90,9 @@ func (app *ChainApp) registerV7UpgradeHandler() {
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		convertBaseAccountToModuleAccount(sdkCtx, app, tieredrewardstypes.RewardsPoolName)
+		if err := convertBaseAccountToModuleAccount(sdkCtx, app, tieredrewardstypes.RewardsPoolName); err != nil {
+			return map[string]uint64{}, err
+		}
 
 		sdkCtx.Logger().Info("start to run module migrations...")
 
