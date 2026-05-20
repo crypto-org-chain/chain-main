@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
@@ -49,6 +50,37 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	app.registerV7TestnetUpgradeHandler()
 }
 
+func convertBaseAccountToModuleAccount(
+	ctx sdk.Context,
+	app *ChainApp,
+	name string,
+	perms ...string,
+) error {
+	addr := authtypes.NewModuleAddress(name)
+	acc := app.AccountKeeper.GetAccount(ctx, addr)
+	if acc == nil {
+		return nil
+	}
+	if _, ok := acc.(sdk.ModuleAccountI); ok {
+		return nil
+	}
+
+	baseAcc, ok := acc.(*authtypes.BaseAccount)
+	if !ok {
+		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, name, acc)
+	}
+
+	macc := authtypes.NewModuleAccount(baseAcc, name, perms...)
+	if err := macc.Validate(); err != nil {
+		return fmt.Errorf("module account %q: %w", name, err)
+	}
+	app.AccountKeeper.SetModuleAccount(ctx, macc)
+	ctx.Logger().Info("converted base account to module account",
+		"module", name,
+		"address", addr.String())
+	return nil
+}
+
 // registerV7UpgradeHandler registers the "v7" plan for chains that have
 // not yet run it (mainnet). Testnet has already upgraded past v7 and will
 // not re-run this handler.
@@ -57,6 +89,10 @@ func (app *ChainApp) registerV7UpgradeHandler() {
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+		if err := convertBaseAccountToModuleAccount(sdkCtx, app, tieredrewardstypes.RewardsPoolName); err != nil {
+			return map[string]uint64{}, err
+		}
 
 		sdkCtx.Logger().Info("start to run module migrations...")
 
