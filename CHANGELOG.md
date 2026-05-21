@@ -2,13 +2,11 @@
 
 ## UNRELEASED
 
+### Improvements
+
+- [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
+
 *May 8, 2026*
-
-## v7.2.0
-
-### Bugfixes
-
-- [#1302](https://github.com/crypto-org-chain/chain-main/pull/1302) fix(upgrade): migrate rewards pool base account to module account.
 
 ## v7.1.0
 
