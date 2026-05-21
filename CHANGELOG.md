@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Improvements
+
+- [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
+
 *May 8, 2026*
 
 ## v7.1.0

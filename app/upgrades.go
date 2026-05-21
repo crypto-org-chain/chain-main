@@ -18,9 +18,37 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
+
+func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, perms ...string) error {
+	addr := ak.GetModuleAddress(moduleName)
+	if addr == nil {
+		return fmt.Errorf("module %q is not registered in maccPerms", moduleName)
+	}
+	acc := ak.GetAccount(ctx, addr)
+	// creation of module account should be handled by the module itself
+	if acc == nil {
+		return nil
+	}
+	if _, ok := acc.(sdk.ModuleAccountI); ok {
+		return nil
+	}
+	baseAcc, ok := acc.(*authtypes.BaseAccount)
+	if !ok {
+		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, moduleName, acc)
+	}
+	macc := authtypes.NewModuleAccount(baseAcc, moduleName, perms...)
+	if err := macc.Validate(); err != nil {
+		return fmt.Errorf("module account %q: %w", moduleName, err)
+	}
+	ak.SetModuleAccount(ctx, macc)
+	ctx.Logger().Info("converted base account to module account", "module", moduleName, "address", addr.String())
+	return nil
+}
 
 // CircuitSuperAdmins maps chain IDs to their super admin addresses
 var CircuitSuperAdmins = map[string][]string{
