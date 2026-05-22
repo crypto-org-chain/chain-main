@@ -769,6 +769,35 @@ def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_top
     return owner_addr
 
 
+def _dump_node_logs(cluster, label, tail_lines=200):
+    """Read and print the last `tail_lines` of each node's supervisor
+    stdout/stderr logfile. Used after a v7.3.0 upgrade failure to surface
+    the actual panic/error from the new binary, which otherwise just shows
+    up as `exit status 1` in the supervisor output.
+    """
+    for i in range(2):
+        try:
+            info = cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node{i}")
+        except Exception as exc:
+            print(f"[{label}] node{i}: getProcessInfo failed: {exc}", flush=True)
+            continue
+        for stream in ("stderr_logfile", "stdout_logfile"):
+            path = info.get(stream)
+            if not path:
+                continue
+            try:
+                with open(path) as fp:
+                    lines = fp.readlines()
+            except OSError as exc:
+                print(f"[{label}] node{i} {stream}={path}: read failed: {exc}", flush=True)
+                continue
+            tail = "".join(lines[-tail_lines:])
+            print(
+                f"[{label}] node{i} {stream}={path} (tail {min(tail_lines, len(lines))} of {len(lines)} lines):\n{tail}",
+                flush=True,
+            )
+
+
 def propose_n_execute_v7_3_upgrade(cluster):
 
     target_height = cluster.block_height() + 30
@@ -816,7 +845,24 @@ def propose_n_execute_v7_3_upgrade(cluster):
     cluster.reload_supervisor()
     cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{V7_3_PLAN}/bin/chain-maind"
 
-    wait_for_block(cluster, target_height + 2)
+    print(
+        f"[v7.3.0] post-swap: waiting for block {target_height + 2} on v7.3.0 binary",
+        flush=True,
+    )
+    try:
+        wait_for_block(cluster, target_height + 2)
+    except TimeoutError:
+        print(
+            "[v7.3.0] TIMEOUT after binary swap; v7.3.0 binary likely panicked. "
+            "Dumping node logs for the upgrade-handler error:",
+            flush=True,
+        )
+        _dump_node_logs(cluster, "v7.3.0 post-swap")
+        raise
+    print(
+        f"[v7.3.0] v7.3.0 binary producing blocks; height={cluster.block_height()}",
+        flush=True,
+    )
     return target_height
 
 
