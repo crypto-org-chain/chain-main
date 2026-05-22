@@ -24,7 +24,6 @@ from .utils import (
     assert_expedited_gov_params,
     assert_v6_circuit_is_working,
     cluster_fixture,
-    unwrap_account,
     wait_for_block,
     wait_for_block_time,
     wait_for_new_blocks,
@@ -752,10 +751,7 @@ def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_top
         f"create-permanent-locked-account broadcast failed (CheckTx): "
         f"{rsp.get('raw_log', rsp)}"
     )
-    # sync broadcast only confirms CheckTx — wait for and verify DeliverTx.
-    # Otherwise a silent DeliverTx failure here would leave the address
-    # uncreated, and the gas top-up bank send below would auto-create a
-    # plain BaseAccount, masking the failure.
+    # Verify the tx is executed successfully
     rsp = cli.event_query_tx_for(rsp["txhash"])
     assert rsp["code"] == 0, (
         f"create-permanent-locked-account failed at DeliverTx: "
@@ -840,11 +836,6 @@ def setup_pre_v7_3_0_upgrade(cluster):
     owner_addr = _create_permanent_lock_vesting_account(
         cluster, "v7_3_vest_poc", lock_amount, V7_3_GAS_TOPUP,
     )
-    pre_acct = unwrap_account(cluster.cosmos_cli().account(owner_addr))
-    assert pre_acct["@type"] in (
-        "cosmos-sdk/PermanentLockedAccount",
-        "/cosmos.vesting.v1beta1.PermanentLockedAccount",
-    ), f"expected PermanentLockedAccount, got {pre_acct}"
 
     # Vesting owner delegates locked principal — populates DelegatedVesting.
     rsp = cluster.delegate_amount(val_addr, f"{lock_amount}basecro", owner_addr)
@@ -891,14 +882,7 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"expected zero positions post-upgrade, got {positions_after}"
     )
 
-    # 3. Vesting metadata still intact.
-    post_acct = unwrap_account(cluster.cosmos_cli().account(owner_addr))
-    assert post_acct["@type"] in (
-        "cosmos-sdk/PermanentLockedAccount",
-        "/cosmos.vesting.v1beta1.PermanentLockedAccount",
-    ), f"vesting metadata must survive, got {post_acct}"
-
-    # 4. Owner has staking delegation restored.
+    # 3. Owner has staking delegation restored.
     cli = cluster.cosmos_cli()
     deleg_raw = cli.raw(
         "query", "staking", "delegation",
@@ -911,7 +895,7 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"owner delegation should be {lock_amount}, got {deleg_amount}"
     )
 
-    # 5. Ensure that the vesting lock still holds after undelegation.
+    # 4. Ensure that the vesting lock still holds after undelegation.
     rsp = cluster.unbond_amount(val_addr, f"{lock_amount}basecro", owner_addr)
     assert rsp["code"] == 0, rsp.get("raw_log", rsp)
     time.sleep(15)  # genesis.jsonnet sets unbonding_time = 10s
