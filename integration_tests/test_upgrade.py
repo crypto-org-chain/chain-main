@@ -726,8 +726,6 @@ V7_3_GAS_TOPUP = 50_000_000   # basecro — gas budget for the vesting owner
 
 
 def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_topup):
-    """Create a PermanentLockedAccount with `locked_amount` locked plus
-    `gas_topup` spendable for gas. Returns the bech32 address."""
     cli = cluster.cosmos_cli()
     cli.raw(
         "keys", "add", name,
@@ -743,7 +741,7 @@ def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_top
         owner_addr,
         f"{locked_amount}basecro",
         "-y",
-        from_=cluster.address("community"),
+        from_=cluster.address("signer1"),
         keyring_backend="test",
         chain_id=cli.chain_id,
         home=cli.data_dir,
@@ -765,7 +763,7 @@ def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_top
     )
 
     rsp = cluster.transfer(
-        cluster.address("community"),
+        cluster.address("signer1"),
         owner_addr,
         f"{gas_topup}basecro",
     )
