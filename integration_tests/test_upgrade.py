@@ -13,7 +13,9 @@ from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
 from .tieredrewards_helpers import (
+    DENOM,
     commit_delegation,
+    fund_pool,
     get_node_validator_addr,
     query_position,
     query_positions_by_owner,
@@ -900,6 +902,11 @@ def setup_pre_v7_3_0_upgrade(cluster):
     positions = query_positions_by_owner(cluster, owner_addr).get("positions", [])
     assert len(positions) == 1, f"expected 1 position pre-upgrade, got {positions}"
     pos_id = int(positions[0]["id"])
+
+    # Fund the rewards pool
+    rsp = fund_pool(cluster, "signer1", f"50000000{DENOM}")
+    assert rsp["code"] == 0, f"fund_pool failed: {rsp.get('raw_log', rsp)}"
+    wait_for_new_blocks(cluster, 1)
 
     return {
         "owner_addr": owner_addr,
