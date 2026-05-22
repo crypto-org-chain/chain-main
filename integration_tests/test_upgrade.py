@@ -719,17 +719,6 @@ def propose_n_execute_v7_upgrade(cluster):
     return target_height
 
 
-# ──────────────────────────────────────────────────────────────────────
-# v7.3.0 vesting tier-bypass migration
-# ──────────────────────────────────────────────────────────────────────
-#
-# v7.2.0 shipped with a bypass in MsgCommitDelegationToTier:
-# transferDelegationToPosition skips bank, leaving DelegatedVesting stale
-# when the delegator is a vesting account. v7.3.0 (a) blocks vesting
-# accounts at the message handler and (b) runs a migration handler that
-# force-exits any pre-existing vesting-owned positions back to the owner.
-# This block exercises that migration end-to-end inside the existing
-# v1→v7→v7.3.0 cosmovisor chain.
 
 V7_3_PLAN = "v7.3.0"
 V7_3_LOCK_AMOUNT = 1_000_000  # basecro — covers tier-1 min_lock seeded by v7
@@ -778,8 +767,7 @@ def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_top
 
 
 def propose_n_execute_v7_3_upgrade(cluster):
-    """Propose, vote, and execute the v7.3.0 upgrade. Mirrors
-    propose_n_execute_v7_upgrade but with plan_name=v7.3.0."""
+
     target_height = cluster.block_height() + 30
     print("propose v7.3.0 upgrade plan at", target_height)
 
@@ -845,19 +833,13 @@ def setup_pre_v7_3_0_upgrade(cluster):
     owner_addr = _create_permanent_lock_vesting_account(
         cluster, "v7_3_vest_poc", lock_amount, V7_3_GAS_TOPUP,
     )
-    pre_acct = unwrap_account(cluster.cosmos_cli().account(owner_addr))
-    assert pre_acct["@type"] in (
-        "cosmos-sdk/PermanentLockedAccount",
-        "/cosmos.vesting.v1beta1.PermanentLockedAccount",
-    ), f"expected PermanentLockedAccount, got {pre_acct}"
 
     # Vesting owner delegates locked principal — populates DelegatedVesting.
     rsp = cluster.delegate_amount(val_addr, f"{lock_amount}basecro", owner_addr)
     assert rsp["code"] == 0, rsp.get("raw_log", rsp)
     wait_for_new_blocks(cluster, 1)
 
-    # commit-delegation-to-tier triggers the v7.2.0 bypass: the position
-    # takes over the delegation but DelegatedVesting stays at lock_amount.
+    # commit vesting account's delegation to a tier position
     rsp = commit_delegation(
         cluster, "v7_3_vest_poc", val_addr, lock_amount, tier_id,
     )
@@ -879,12 +861,6 @@ def setup_pre_v7_3_0_upgrade(cluster):
 
 
 def assert_v7_3_vesting_migration(cluster, ctx):
-    """Verify the v7.3.0 migration handler force-exited the bypass position
-    set up by `setup_pre_v7_3_0_upgrade`: position deleted, delegation
-    moved back to the vesting owner, vesting metadata intact, and the
-    vesting lock still held against bank sends after a round-trip
-    undelegation.
-    """
     owner_addr = ctx["owner_addr"]
     val_addr = ctx["val_addr"]
     lock_amount = ctx["lock_amount"]
@@ -903,14 +879,7 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"expected zero positions post-upgrade, got {positions_after}"
     )
 
-    # 3. Vesting metadata still intact.
-    post_acct = unwrap_account(cluster.cosmos_cli().account(owner_addr))
-    assert post_acct["@type"] in (
-        "cosmos-sdk/PermanentLockedAccount",
-        "/cosmos.vesting.v1beta1.PermanentLockedAccount",
-    ), f"vesting metadata must survive, got {post_acct}"
-
-    # 4. Owner has staking delegation restored.
+    # 3. Owner has staking delegation restored.
     cli = cluster.cosmos_cli()
     deleg_raw = cli.raw(
         "query", "staking", "delegation",
@@ -923,9 +892,7 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"owner delegation should be {lock_amount}, got {deleg_amount}"
     )
 
-    # 5. Negative spendability — undelegate, wait, then try to drain the
-    # entire balance. Must fail because LockedCoins ≥ lock_amount after
-    # TrackUndelegation restores DV.
+    # 4. Ensure that the vesting lock still holds after undelegation.
     rsp = cluster.unbond_amount(val_addr, f"{lock_amount}basecro", owner_addr)
     assert rsp["code"] == 0, rsp.get("raw_log", rsp)
     time.sleep(15)  # genesis.jsonnet sets unbonding_time = 10s

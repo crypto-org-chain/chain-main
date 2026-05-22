@@ -89,27 +89,6 @@ def module_address(name):
     data = hashlib.sha256(ModuleAccount(name).value.encode()).digest()[:20]
     return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
-
-def unwrap_account(rsp):
-    """Flatten the amino-style account JSON returned by `cli.account(addr)`.
-
-    The CLI returns either a flat proto-JSON dict (with `@type`) or an
-    amino-wrapped one shaped like `{"type": ..., "value": {...}}`. Normalize
-    to the proto shape so callers can read `acct["@type"]` uniformly.
-    """
-    if "@type" in rsp:
-        return rsp
-    if "account" in rsp:
-        rsp = rsp["account"]
-    if "@type" in rsp:
-        return rsp
-    if "type" in rsp and "value" in rsp:
-        out = dict(rsp["value"])
-        out["@type"] = rsp["type"]
-        return out
-    return rsp
-
-
 def get_sync_info(s):
     return s.get("SyncInfo") or s.get("sync_info")
 
