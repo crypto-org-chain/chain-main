@@ -11,8 +11,24 @@ import (
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
+
+// makeOwnerVesting overwrites the auth account at the position owner address
+// with a PermanentLockedAccount (vesting account). Used for testing validation that blocks vesting accounts.
+func (s *KeeperSuite) makeOwnerVesting(ownerAddr sdk.AccAddress, lockedCoins sdk.Coins) {
+	s.T().Helper()
+	existing := s.app.AccountKeeper.GetAccount(s.ctx, ownerAddr)
+	s.Require().NotNil(existing)
+	base := authtypes.NewBaseAccountWithAddress(ownerAddr)
+	s.Require().NoError(base.SetAccountNumber(existing.GetAccountNumber()))
+	s.Require().NoError(base.SetSequence(existing.GetSequence()))
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(base, lockedCoins)
+	s.Require().NoError(err)
+	s.app.AccountKeeper.SetAccount(s.ctx, vestingAcc)
+}
 
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
@@ -325,4 +341,29 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ManyPositionsSameValidator() {
 		s.Require().NoError(err)
 		s.Require().False(pos.IsDelegated(), "position %d should be undelegated", i)
 	}
+}
+
+func (s *KeeperSuite) TestMsgTierUndelegate_VestingOwnerBlocked() {
+	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	_, bondDenom := s.getStakingData()
+
+	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
+	s.makeOwnerVesting(ownerAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
+	s.advancePastExitDuration()
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+	})
+	s.Require().ErrorIs(err, types.ErrVestingAccountBlocked)
+
+	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     sdkmath.NewInt(1000),
+	})
+	s.Require().NoError(err, "ExitTierWithDelegation must remain available to vesting owners")
 }

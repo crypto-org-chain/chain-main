@@ -683,3 +683,33 @@ func (s *KeeperSuite) TestMsgWithdrawFromTier_ClearsWithdrawAddrRouting() {
 		"withdraw-addr mapping should be cleared on position deletion; "+
 			"GetDelegatorWithdrawAddr should fall back to the delegator itself")
 }
+
+func (s *KeeperSuite) TestMsgWithdrawFromTier_VestingOwnerBlocked() {
+	lockAmount := sdkmath.NewInt(1000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
+	_, bondDenom := s.getStakingData()
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+
+	s.advancePastExitDuration()
+	s.fundRewardsPool(sdkmath.NewInt(1000000), bondDenom)
+
+	// Undelegate while owner is still a regular account.
+	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
+
+	// Now overwrite the owner with a PermanentLockedAccount and verify the
+	// withdraw guard rejects the call.
+	s.makeOwnerVesting(ownerAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount)))
+
+	_, err = msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
+		Owner:      ownerAddr.String(),
+		PositionId: pos.Id,
+	})
+	s.Require().ErrorIs(err, types.ErrVestingAccountBlocked)
+}

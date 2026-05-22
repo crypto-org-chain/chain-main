@@ -92,7 +92,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	if err := ms.validateNewPosition(tier, msg.Amount); err != nil {
+	if err := ms.validateCommitDelegationToTier(ctx, tier, msg); err != nil {
 		return nil, err
 	}
 

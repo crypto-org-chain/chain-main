@@ -7,15 +7,19 @@ import (
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
+	tieredrewardskeeper "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 type AppTestSuite struct {
@@ -223,4 +227,87 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 		err = app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName)
 		suite.Require().ErrorContains(err, "cannot convert to module account")
 	})
+}
+
+func (suite *AppTestSuite) TestV730UpgradeHandlerExitsVestedAccountPositions() {
+	suite.SetupTest()
+
+	// 1. Set up tier 1 with a permissive min lock for the test.
+	suite.Require().NoError(suite.app.TieredRewardsKeeper.SetTier(suite.ctx, tieredrewardstypes.Tier{
+		Id:            1,
+		ExitDuration:  365 * 24 * time.Hour,
+		BonusApy:      math.LegacyMustNewDecFromStr("0.02"),
+		MinLockAmount: math.NewInt(1_000_000),
+	}))
+
+	// 2. Find a bonded validator.
+	vals, err := suite.app.StakingKeeper.GetBondedValidatorsByPower(suite.ctx)
+	suite.Require().NoError(err)
+	suite.Require().NotEmpty(vals)
+	val := vals[0]
+	valAddr, err := sdk.ValAddressFromBech32(val.GetOperator())
+	suite.Require().NoError(err)
+	bondDenom, err := suite.app.StakingKeeper.BondDenom(suite.ctx)
+	suite.Require().NoError(err)
+
+	amount := math.NewInt(1_000_000)
+	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, amount))
+	msgServer := tieredrewardskeeper.NewMsgServerImpl(suite.app.TieredRewardsKeeper)
+
+	// commitForOwner mints funds, delegates, and commits via the message
+	// handler. Owner must be a non-vesting account at this point because
+	// the v7.3.0 guard rejects vesting accounts.
+	commitForOwner := func(owner sdk.AccAddress) uint64 {
+		suite.Require().NoError(banktestutil.FundAccount(suite.ctx, suite.app.BankKeeper, owner, coins))
+		_, err := suite.app.StakingKeeper.Delegate(suite.ctx, owner, amount, stakingtypes.Unbonded, val, true)
+		suite.Require().NoError(err)
+		resp, err := msgServer.CommitDelegationToTier(suite.ctx, &tieredrewardstypes.MsgCommitDelegationToTier{
+			DelegatorAddress: owner.String(),
+			ValidatorAddress: valAddr.String(),
+			Id:               1,
+			Amount:           amount,
+		})
+		suite.Require().NoError(err)
+		return resp.PositionId
+	}
+
+	// 3. Set up two positions: one owned by a regular account, one owned
+	//    by what will become a permanent-locked vesting account.
+	regularOwner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	regularBase, ok := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, regularOwner).(*authtypes.BaseAccount)
+	suite.Require().True(ok)
+	suite.app.AccountKeeper.SetAccount(suite.ctx, regularBase)
+	regularPosID := commitForOwner(regularOwner)
+
+	vestingOwner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	vestingBase, ok := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, vestingOwner).(*authtypes.BaseAccount)
+	suite.Require().True(ok)
+	suite.app.AccountKeeper.SetAccount(suite.ctx, vestingBase)
+	vestingPosID := commitForOwner(vestingOwner)
+
+	// Now wrap vestingOwner as a PermanentLockedAccount in place. Account
+	// number / sequence carry over to satisfy the auth uniqueness index.
+	existing := suite.app.AccountKeeper.GetAccount(suite.ctx, vestingOwner)
+	vestingBase = authtypes.NewBaseAccountWithAddress(vestingOwner)
+	suite.Require().NoError(vestingBase.SetAccountNumber(existing.GetAccountNumber()))
+	suite.Require().NoError(vestingBase.SetSequence(existing.GetSequence()))
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(vestingBase, coins)
+	suite.Require().NoError(err)
+	suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
+
+	// 4. Run the exit function.
+	suite.Require().NoError(app.ExitVestedAccountsPositions(suite.ctx, suite.app))
+
+	// 5. Vesting position deleted, owner has staking delegation back.
+	_, err = suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, vestingPosID)
+	suite.Require().Error(err, "vesting-owned position must be deleted")
+
+	vestingDeleg, err := suite.app.StakingKeeper.GetDelegation(suite.ctx, vestingOwner, valAddr)
+	suite.Require().NoError(err, "vesting owner must have staking delegation back")
+	suite.Require().True(vestingDeleg.Shares.IsPositive())
+
+	// 6. Regular-owner position untouched.
+	regularPos, err := suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, regularPosID)
+	suite.Require().NoError(err, "regular position must survive")
+	suite.Require().Equal(regularOwner.String(), regularPos.Owner)
 }
