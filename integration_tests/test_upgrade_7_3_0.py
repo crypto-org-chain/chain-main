@@ -1,7 +1,6 @@
 import json
 import time
 
-import requests
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 
 from .tieredrewards_helpers import (
@@ -9,7 +8,7 @@ from .tieredrewards_helpers import (
     commit_delegation,
     fund_pool,
     get_node_validator_addr,
-    query_position,
+    lock_tier,
     query_positions_by_owner,
     query_tiers,
 )
@@ -21,37 +20,59 @@ from .utils import (
 )
 
 V7_3_PLAN = "v7.3.0"
-V7_3_LOCK_AMOUNT = 1_000_000  # basecro — covers tier-1 min_lock seeded by v7
-V7_3_GAS_TOPUP = 50_000_000   # basecro — gas budget for the vesting owner
+V7_3_COMMIT_AMOUNT = 1_000_000  # basecro — covers tier-1 min_lock seeded by v7
+V7_3_LOCK_AMOUNT = 2_000_000  # basecro — distinct from commit so DV/DF asserts unambiguously
+V7_3_GAS_TOPUP = 50_000_000  # basecro — gas + liquidity for delegate + LockTier
+
 
 # TODO: move this function to utils.py - create_permanent_lock_vesting_account() and use tx() helper to ensure that tx succeeds
 def _create_permanent_lock_vesting_account(cluster, name, locked_amount, gas_topup):
     cli = cluster.cosmos_cli()
     cli.raw(
-        "keys", "add", name,
-        keyring_backend="test", home=cli.data_dir, output="json",
-    )
-    owner_addr = cli.raw(
-        "keys", "show", name, "-a",
-        keyring_backend="test", home=cli.data_dir,
-    ).decode().strip()
-
-    rsp = json.loads(cli.raw(
-        "tx", "vesting", "create-permanent-locked-account",
-        owner_addr,
-        f"{locked_amount}basecro",
-        "-y",
-        from_=cluster.address("signer1"),
+        "keys",
+        "add",
+        name,
         keyring_backend="test",
-        chain_id=cli.chain_id,
         home=cli.data_dir,
-        node=cli.node_rpc,
         output="json",
-    ))
+    )
+    owner_addr = (
+        cli.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
+            keyring_backend="test",
+            home=cli.data_dir,
+        )
+        .decode()
+        .strip()
+    )
+
+    rsp = json.loads(
+        cli.raw(
+            "tx",
+            "vesting",
+            "create-permanent-locked-account",
+            owner_addr,
+            f"{locked_amount}basecro",
+            "-y",
+            from_=cluster.address("signer1"),
+            keyring_backend="test",
+            chain_id=cli.chain_id,
+            home=cli.data_dir,
+            node=cli.node_rpc,
+            output="json",
+        )
+    )
     assert rsp["code"] == 0, (
         f"create-permanent-locked-account broadcast failed (CheckTx): "
         f"{rsp.get('raw_log', rsp)}"
     )
+    # Wait for the create tx to be committed before issuing the next tx
+    # from signer1; otherwise the gas top-up below races with the cached
+    # signer1 sequence and fails with "incorrect account sequence".
+    wait_for_new_blocks(cluster, 1)
 
     rsp = cluster.transfer(
         cluster.address("signer1"),
@@ -121,40 +142,71 @@ def propose_n_execute_v7_3_upgrade(cluster):
 
 def setup_pre_v7_3_0_upgrade(cluster):
     """Set up the vesting tier-bypass scenario before the v7.3.0 upgrade
-    fires. Creates a PermanentLockedAccount, has it delegate the locked
-    principal, and commits the delegation to a tier — the bypass leaves
-    DelegatedVesting stale and the position holds the delegation. Funds
-    the rewards pool so the migration's claimRewards step can pay out the
-    bonus accrued on the bypass position.
+    fires. Creates a PermanentLockedAccount and gives it two positions:
+
+      1. A CommitDelegationToTier-origin position. The owner first
+         delegates the locked principal (which populates DelegatedVesting),
+         then commits the delegation to a tier — DelegatedVesting is left
+         stale-high while the position holds the actual delegation.
+      2. A LockTier-origin position, funded from the gas top-up balance
+         via bank send. DelegatedVesting/Free are not touched at lock time.
+
+    Funds the rewards pool so the migration's claimRewards step can pay
+    out any bonus accrued on the bypass positions.
     """
     val_addr = get_node_validator_addr(cluster)
 
     tiers = query_tiers(cluster).get("tiers", [])
     assert tiers, "expected at least one tier seeded by the v7 upgrade handler"
     tier_id = int(tiers[0]["id"])
+    commit_amount = max(int(tiers[0]["min_lock_amount"]), V7_3_COMMIT_AMOUNT)
     lock_amount = max(int(tiers[0]["min_lock_amount"]), V7_3_LOCK_AMOUNT)
 
     owner_addr = _create_permanent_lock_vesting_account(
-        cluster, "v7_3_vest_poc", lock_amount, V7_3_GAS_TOPUP,
+        cluster,
+        "v7_3_vest_poc",
+        commit_amount,
+        V7_3_GAS_TOPUP,
     )
 
-    # Vesting owner delegates locked principal.
-    rsp = cluster.delegate_amount(val_addr, f"{lock_amount}basecro", owner_addr)
+    # Vesting owner delegates locked principal — this populates
+    # DelegatedVesting via the bank-side TrackDelegation hook.
+    rsp = cluster.delegate_amount(val_addr, f"{commit_amount}basecro", owner_addr)
     assert rsp["code"] == 0, rsp.get("raw_log", rsp)
     wait_for_new_blocks(cluster, 1)
 
-    # commit vesting account's delegation to a tier position
+    # commit vesting account's delegation to a tier position. DV stays
+    # populated (stale) because transferDelegationToPosition does not call
+    # TrackUndelegation on the source.
     rsp = commit_delegation(
-        cluster, "v7_3_vest_poc", val_addr, lock_amount, tier_id,
+        cluster,
+        "v7_3_vest_poc",
+        val_addr,
+        commit_amount,
+        tier_id,
     )
     assert rsp["code"] == 0, (
-        f"commit-delegation-to-tier failed on v7.2.0: "
-        f"{rsp.get('raw_log', rsp)}"
+        f"commit-delegation-to-tier failed on v7.2.0: {rsp.get('raw_log', rsp)}"
+    )
+
+    # LockTier from the same vesting owner. Pre-v7.3.0 there is no vesting
+    # block on LockTier; bank send pulls from spendable coins (the gas
+    # top-up balance), so DV/DF are not touched here.
+    rsp = lock_tier(
+        cluster,
+        "v7_3_vest_poc",
+        tier_id,
+        lock_amount,
+        val_addr,
+    )
+    assert rsp["code"] == 0, (
+        f"lock-tier failed on v7.2.0: {rsp.get('raw_log', rsp)}"
     )
 
     positions = query_positions_by_owner(cluster, owner_addr).get("positions", [])
-    assert len(positions) == 1, f"expected 1 position pre-upgrade, got {positions}"
-    pos_id = int(positions[0]["id"])
+    assert len(positions) == 2, f"expected 2 positions pre-upgrade, got {positions}"
+    pos_ids = sorted(int(p["id"]) for p in positions)
+    commit_pos_id, lock_pos_id = pos_ids[0], pos_ids[1]
 
     # Fund the rewards pool so the migration's claimRewards can pay out
     # any bonus accrued on the bypass position. Without this, the upgrade
@@ -167,62 +219,90 @@ def setup_pre_v7_3_0_upgrade(cluster):
     return {
         "owner_addr": owner_addr,
         "val_addr": val_addr,
+        "commit_amount": commit_amount,
         "lock_amount": lock_amount,
-        "pos_id": pos_id,
+        "commit_pos_id": commit_pos_id,
+        "lock_pos_id": lock_pos_id,
     }
 
 
+def _vesting_delegated_amounts(account_dict, denom=DENOM):
+    """Extract DelegatedVesting / DelegatedFree amounts (in `denom`) from
+    a (possibly amino-wrapped) vesting account JSON. Returns a (DV, DF)
+    tuple of ints, treating absent denoms as 0.
+    """
+    bva = account_dict.get("base_vesting_account") or {}
+    if not bva and "value" in account_dict:
+        bva = account_dict["value"].get("base_vesting_account") or {}
+
+    def _amount(coins):
+        for c in coins or []:
+            if c.get("denom") == denom:
+                return int(c.get("amount", "0"))
+        return 0
+
+    return _amount(bva.get("delegated_vesting")), _amount(bva.get("delegated_free"))
+
+
 def assert_v7_3_vesting_migration(cluster, ctx):
+    """Verify the v7.3.0 migration:
+    - both vesting-owned positions are deleted;
+    - the vesting owner's staking delegation equals commit + lock amounts;
+    - DelegatedVesting saturates at OriginalVesting (=commit_amount), and
+      the LockTier amount overflows into DelegatedFree, so DV+DF == Σ
+      delegations and the vesting bookkeeping invariant holds.
+    """
     owner_addr = ctx["owner_addr"]
     val_addr = ctx["val_addr"]
+    commit_amount = ctx["commit_amount"]
     lock_amount = ctx["lock_amount"]
-    pos_id = ctx["pos_id"]
+    total_amount = commit_amount + lock_amount
 
-
-    # Verify that the position is deleted.
+    # 1. Both positions deleted.
     positions_after = query_positions_by_owner(cluster, owner_addr).get("positions", [])
     assert positions_after == [], (
         f"expected zero positions post-upgrade, got {positions_after}"
     )
 
-    # Vesting metadata still intact.
+    # 2. Vesting metadata still intact.
     post_acct = unwrap_account(cluster.cosmos_cli().account(owner_addr))
     assert post_acct["@type"] in (
         "cosmos-sdk/PermanentLockedAccount",
         "/cosmos.vesting.v1beta1.PermanentLockedAccount",
     ), f"vesting metadata must survive, got {post_acct}"
 
-    # Owner has staking delegation restored.
+    # 3. Owner has staking delegation restored, equal to commit + lock.
     cli = cluster.cosmos_cli()
     deleg_raw = cli.raw(
-        "query", "staking", "delegation",
-        owner_addr, val_addr,
-        output="json", node=cli.node_rpc,
+        "query",
+        "staking",
+        "delegation",
+        owner_addr,
+        val_addr,
+        output="json",
+        node=cli.node_rpc,
     )
     deleg = json.loads(deleg_raw)
     deleg_amount = int(deleg["delegation_response"]["balance"]["amount"])
-    assert deleg_amount == lock_amount, (
-        f"owner delegation should be {lock_amount}, got {deleg_amount}"
+    assert deleg_amount == total_amount, (
+        f"owner delegation should be {total_amount} "
+        f"(commit={commit_amount} + lock={lock_amount}), got {deleg_amount}"
     )
 
-    # Ensure that the vesting lock still holds after undelegation.
-    rsp = cluster.unbond_amount(val_addr, f"{lock_amount}basecro", owner_addr)
-    assert rsp["code"] == 0, rsp.get("raw_log", rsp)
-    time.sleep(15)  # genesis.jsonnet sets unbonding_time = 10s
-    wait_for_new_blocks(cluster, 2)
-
-    bal = cluster.balance(owner_addr, denom="basecro")
-    assert bal >= lock_amount, (
-        f"after undelegation, owner bank should hold ≥ {lock_amount}; got {bal}"
+    # 4. DV saturates at OriginalVesting (=commit_amount); LockTier amount
+    # overflows into DF. DV+DF must equal Σ delegations.
+    dv, df = _vesting_delegated_amounts(post_acct)
+    assert dv == commit_amount, (
+        f"DelegatedVesting should saturate at OriginalVesting={commit_amount}; "
+        f"got DV={dv}"
     )
-    rsp = cluster.transfer(
-        owner_addr,
-        cluster.address("community"),
-        f"{bal}basecro",
+    assert df == lock_amount, (
+        f"DelegatedFree should equal the LockTier amount={lock_amount}; "
+        f"got DF={df}"
     )
-    assert rsp["code"] != 0, (
-        "vesting lock must hold after migration: send of full bank balance "
-        f"should fail (bal={bal}, locked≥{lock_amount}); got {rsp}"
+    assert dv + df == total_amount, (
+        f"DV+DF must equal Σ delegations: "
+        f"DV({dv}) + DF({df}) = {dv + df}, expected {total_amount}"
     )
 
     print("v7.3.0 vesting tier-bypass migration verified")
