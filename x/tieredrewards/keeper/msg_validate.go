@@ -25,14 +25,11 @@ func (k Keeper) blockVestingAccount(ctx context.Context, address string) error {
 	return nil
 }
 
-func (k Keeper) validateCommitDelegationToTier(ctx context.Context, tier types.Tier, msg *types.MsgCommitDelegationToTier) error {
-	if err := k.blockVestingAccount(ctx, msg.DelegatorAddress); err != nil {
+func (k Keeper) validateNewPosition(ctx context.Context, owner string, amount math.Int, tier types.Tier) error {
+	if err := k.blockVestingAccount(ctx, owner); err != nil {
 		return err
 	}
-	return k.validateNewPosition(tier, msg.Amount)
-}
 
-func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
 	if tier.IsCloseOnly() {
 		return types.ErrTierIsCloseOnly
 	}
@@ -60,11 +57,6 @@ func (k Keeper) validateUndelegatePosition(ctx context.Context, pos types.Positi
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if !pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
 		return types.ErrExitLockDurationNotReached
-	}
-
-	// Forces exit via ExitTierWithDelegation to prevent bypassing vesting schedules via WithdrawFromTier.
-	if err := k.blockVestingAccount(ctx, owner); err != nil {
-		return err
 	}
 
 	// skip check for zero amount as we want those positions to be able to close their position properly
@@ -212,11 +204,6 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 	}
 	if isUnbonding {
 		return types.ErrPositionUnbonding
-	}
-
-	// Blocks withdrawals to prevent bypassing vesting scheules.
-	if err := k.blockVestingAccount(ctx, owner); err != nil {
-		return err
 	}
 
 	return nil

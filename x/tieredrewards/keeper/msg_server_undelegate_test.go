@@ -342,28 +342,3 @@ func (s *KeeperSuite) TestMsgTierUndelegate_ManyPositionsSameValidator() {
 		s.Require().False(pos.IsDelegated(), "position %d should be undelegated", i)
 	}
 }
-
-func (s *KeeperSuite) TestMsgTierUndelegate_VestingOwnerBlocked() {
-	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
-	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	_, bondDenom := s.getStakingData()
-
-	s.fundRewardsPool(sdkmath.NewInt(10000), bondDenom)
-	s.makeOwnerVesting(ownerAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, sdkmath.NewInt(1000))))
-	s.advancePastExitDuration()
-
-	msgServer := keeper.NewMsgServerImpl(s.keeper)
-
-	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{
-		Owner:      pos.Owner,
-		PositionId: pos.Id,
-	})
-	s.Require().ErrorIs(err, types.ErrVestingAccountBlocked)
-
-	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
-		Owner:      pos.Owner,
-		PositionId: pos.Id,
-		Amount:     sdkmath.NewInt(1000),
-	})
-	s.Require().NoError(err, "ExitTierWithDelegation must remain available to vesting owners")
-}

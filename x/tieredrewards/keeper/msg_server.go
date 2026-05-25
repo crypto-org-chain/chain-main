@@ -30,7 +30,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	if err := ms.validateNewPosition(tier, msg.Amount); err != nil {
+	if err := ms.validateNewPosition(ctx, msg.Owner, msg.Amount, tier); err != nil {
 		return nil, err
 	}
 
@@ -92,7 +92,7 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
-	if err := ms.validateCommitDelegationToTier(ctx, tier, msg); err != nil {
+	if err := ms.validateNewPosition(ctx, msg.DelegatorAddress, msg.Amount, tier); err != nil {
 		return nil, err
 	}
 
