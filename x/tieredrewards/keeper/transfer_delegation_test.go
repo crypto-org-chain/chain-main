@@ -485,7 +485,6 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	s.Require().Equal(delBefore.Shares.Add(pos.Delegation.Shares), delAfter.Shares, "owner delegation shares should increase by the amount transferred")
 }
 
-
 // Can be deleted after v7.3.0 upgrade
 func (s *KeeperSuite) TestTransferDelegationFromPosition_VestingOwnerForcedExitWithDelegation() {
 	s.setupTier(1)
