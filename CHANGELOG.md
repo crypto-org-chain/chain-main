@@ -8,7 +8,7 @@
 
 ### Bugfixes
 
-- [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from committing to a tier position.
+- [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
 
 *May 8, 2026*
 
