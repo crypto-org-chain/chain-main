@@ -25,6 +25,7 @@ func (k Keeper) ForceFullExitWithDelegation(ctx context.Context, posID uint64) e
 			"position_id", posID,
 			"owner", posState.Owner,
 		)
+		return nil
 	}
 	logger.Info("force-exit: position state loaded",
 		"position_id", posID,
