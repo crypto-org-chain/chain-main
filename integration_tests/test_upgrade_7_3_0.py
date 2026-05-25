@@ -20,9 +20,10 @@ from .utils import (
 )
 
 V7_3_PLAN = "v7.3.0"
-V7_3_COMMIT_AMOUNT = 1_000_000  # basecro — covers tier-1 min_lock seeded by v7
-V7_3_LOCK_AMOUNT = 2_000_000  # basecro — distinct from commit so DV/DF asserts unambiguously
-V7_3_GAS_TOPUP = 50_000_000  # basecro — gas + liquidity for delegate + LockTier
+COMMIT_AMOUNT = 1_000_000  
+LOCK_AMOUNT = 2_000_000  
+GAS_BUFFER = 50_000_000
+FUND_ACCOUNT_AMOUNT = COMMIT_AMOUNT + LOCK_AMOUNT + GAS_BUFFER
 
 
 # TODO: move this function to utils.py - create_permanent_lock_vesting_account() and use tx() helper to ensure that tx succeeds
@@ -159,14 +160,14 @@ def setup_pre_v7_3_0_upgrade(cluster):
     tiers = query_tiers(cluster).get("tiers", [])
     assert tiers, "expected at least one tier seeded by the v7 upgrade handler"
     tier_id = int(tiers[0]["id"])
-    commit_amount = max(int(tiers[0]["min_lock_amount"]), V7_3_COMMIT_AMOUNT)
-    lock_amount = max(int(tiers[0]["min_lock_amount"]), V7_3_LOCK_AMOUNT)
+    commit_amount = max(int(tiers[0]["min_lock_amount"]), COMMIT_AMOUNT)
+    lock_amount = max(int(tiers[0]["min_lock_amount"]), LOCK_AMOUNT)
 
     owner_addr = _create_permanent_lock_vesting_account(
         cluster,
         "v7_3_vest_poc",
         commit_amount,
-        V7_3_GAS_TOPUP,
+        FUND_ACCOUNT_AMOUNT,
     )
 
     # Vesting owner delegates locked principal — this populates
