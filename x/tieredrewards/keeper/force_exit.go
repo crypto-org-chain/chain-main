@@ -4,7 +4,6 @@ package keeper
 import (
 	"context"
 	"fmt"
-	"math"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -126,7 +125,7 @@ func (k Keeper) alignVestingDelegationTracking(ctx context.Context, ownerAddr sd
 		return fmt.Errorf("bond denom: %w", err)
 	}
 
-	delegations, err := k.stakingKeeper.GetDelegatorDelegations(ctx, ownerAddr, math.MaxUint16)
+	delegations, err := k.stakingKeeper.GetDelegatorDelegations(ctx, ownerAddr, 1000)
 	if err != nil {
 		return fmt.Errorf("get delegator delegations: %w", err)
 	}

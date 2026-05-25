@@ -16,7 +16,6 @@ from .utils import (
 )
 
 V7_3_PLAN = "v7.3.0"
-GAS_BUFFER = 50_000_000
 
 
 def _vesting_delegated_amounts(account_dict, denom=DENOM):

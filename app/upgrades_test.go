@@ -230,6 +230,7 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 	})
 }
 
+// Can be deleted after v7.3.0 upgrade
 func (suite *AppTestSuite) TestV730UpgradeHandlerExitsVestedAccountPositions() {
 	suite.SetupTest()
 

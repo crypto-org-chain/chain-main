@@ -2,7 +2,6 @@
 package keeper_test
 
 import (
-	"math"
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
@@ -23,7 +22,7 @@ import (
 // invariant DV + DF == Σ delegations after force-exit.
 func (s *KeeperSuite) totalDelegated(addr sdk.AccAddress) sdkmath.Int {
 	s.T().Helper()
-	delegations, err := s.app.StakingKeeper.GetDelegatorDelegations(s.ctx, addr, math.MaxUint16)
+	delegations, err := s.app.StakingKeeper.GetDelegatorDelegations(s.ctx, addr, 1000)
 	s.Require().NoError(err)
 	total := sdkmath.ZeroInt()
 	for _, d := range delegations {
@@ -251,6 +250,8 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_LockOrigin() 
 
 	// Alignment must have topped up DV+DF by lockedAmount; otherwise a later
 	// normal Undelegate would underflow vesting accounting.
+	s.Require().Equal(lockedAmount, s.delegatedVesting(owner).AmountOf(bondDenom))
+	s.Require().Equal(lockedAmount, s.delegatedFree(owner).AmountOf(bondDenom))
 	s.Require().Equal(ownerDel, s.trackedTotal(owner, bondDenom),
 		"alignment must satisfy DV + DF == Σ delegations for LockTier-origin positions")
 }
@@ -294,6 +295,8 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_Mixed() {
 	delAfterFirst := s.totalDelegated(owner)
 	s.Require().Equal(commitAmount, delAfterFirst,
 		"after first exit, only the commit-origin delegation is back")
+	s.Require().Equal(commitAmount, s.delegatedVesting(owner).AmountOf(bondDenom))
+	s.Require().True(s.delegatedFree(owner).AmountOf(bondDenom).IsZero())
 	s.Require().Equal(delAfterFirst, s.trackedTotal(owner, bondDenom),
 		"after commit-origin exit, DV+DF should already match Σ delegations")
 
@@ -303,6 +306,8 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_Mixed() {
 	finalDel := s.totalDelegated(owner)
 	s.Require().Equal(totalAmount, finalDel,
 		"after both exits, owner must hold the sum of both position amounts as delegation")
+	s.Require().Equal(commitAmount, s.delegatedVesting(owner).AmountOf(bondDenom))
+	s.Require().True(lockAmount.Equal(s.delegatedFree(owner).AmountOf(bondDenom)))
 	s.Require().Equal(finalDel, s.trackedTotal(owner, bondDenom),
 		"final DV + DF must equal Σ delegations regardless of position-origin mix")
 
