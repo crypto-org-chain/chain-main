@@ -12,21 +12,21 @@ import (
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 )
 
-func (k Keeper) blockVestingAccount(ctx context.Context, address string) error {
+func (k Keeper) validateNonVestingAccount(ctx context.Context, address string) error {
 	addr, err := sdk.AccAddressFromBech32(address)
 	if err != nil {
 		return err
 	}
 	if acc := k.accountKeeper.GetAccount(ctx, addr); acc != nil {
 		if _, ok := acc.(sdkvesting.VestingAccount); ok {
-			return types.ErrVestingAccountBlocked
+			return types.ErrVestingAccountNotAllowed
 		}
 	}
 	return nil
 }
 
 func (k Keeper) validateNewPosition(ctx context.Context, owner string, amount math.Int, tier types.Tier) error {
-	if err := k.blockVestingAccount(ctx, owner); err != nil {
+	if err := k.validateNonVestingAccount(ctx, owner); err != nil {
 		return err
 	}
 

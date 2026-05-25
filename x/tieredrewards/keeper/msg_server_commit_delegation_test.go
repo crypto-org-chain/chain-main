@@ -363,7 +363,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
 
-func (s *KeeperSuite) TestMsgCommitDelegationToTier_VestingAccountBlocked() {
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_VestingAccountNotAllowed() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
 	val := vals[0]
@@ -390,5 +390,5 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_VestingAccountBlocked() {
 		Id:               1,
 		Amount:           lockedAmount,
 	})
-	s.Require().ErrorIs(err, types.ErrVestingAccountBlocked)
+	s.Require().ErrorIs(err, types.ErrVestingAccountNotAllowed)
 }

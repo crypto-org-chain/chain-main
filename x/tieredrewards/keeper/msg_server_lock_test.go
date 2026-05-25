@@ -232,7 +232,7 @@ func (s *KeeperSuite) TestMsgLockTier_ValidatorNotBonded() {
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
 
-func (s *KeeperSuite) TestMsgLockTier_VestingAccountBlocked() {
+func (s *KeeperSuite) TestMsgLockTier_VestingAccountNotAllowed() {
 	s.setupTier(1)
 	vals, bondDenom := s.getStakingData()
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
@@ -255,5 +255,5 @@ func (s *KeeperSuite) TestMsgLockTier_VestingAccountBlocked() {
 		Amount:           lockedAmount,
 		ValidatorAddress: valAddr.String(),
 	})
-	s.Require().ErrorIs(err, types.ErrVestingAccountBlocked)
+	s.Require().ErrorIs(err, types.ErrVestingAccountNotAllowed)
 }
