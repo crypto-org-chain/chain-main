@@ -65,12 +65,13 @@ def setup_pre_v7_3_0_upgrade(cluster):
         f"{commit_amount}basecro",
     )
 
-    # Fund account with gas
+    # Fund account for lock tier
     gas_topup = 50_000_000
+    topup = lock_amount + gas_topup
     rsp = cluster.transfer(
         cluster.address("signer1"),
         owner_addr,
-        f"{gas_topup}basecro",
+        f"{topup}basecro",
     )
     assert rsp["code"] == 0, f"gas top-up failed: {rsp.get('raw_log', rsp)}"
     wait_for_new_blocks(cluster, 1)
