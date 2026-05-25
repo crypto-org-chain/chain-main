@@ -16,6 +16,7 @@ import (
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -250,63 +251,122 @@ func (suite *AppTestSuite) TestV730UpgradeHandlerExitsVestedAccountPositions() {
 	bondDenom, err := suite.app.StakingKeeper.BondDenom(suite.ctx)
 	suite.Require().NoError(err)
 
-	amount := math.NewInt(1_000_000)
-	coins := sdk.NewCoins(sdk.NewCoin(bondDenom, amount))
+	// Two distinct amounts so the DV/DF split assertion is unambiguous.
+	commitAmount := math.NewInt(1_000_000)
+	lockAmount := math.NewInt(2_000_000)
+	totalAmount := commitAmount.Add(lockAmount)
+
 	msgServer := tieredrewardskeeper.NewMsgServerImpl(suite.app.TieredRewardsKeeper)
 
 	// commitForOwner mints funds, delegates, and commits via the message
 	// handler. Owner must be a non-vesting account at this point because
 	// the v7.3.0 guard rejects vesting accounts.
-	commitForOwner := func(owner sdk.AccAddress) uint64 {
+	commitForOwner := func(owner sdk.AccAddress, amt math.Int) uint64 {
+		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, amt))
 		suite.Require().NoError(banktestutil.FundAccount(suite.ctx, suite.app.BankKeeper, owner, coins))
-		_, err := suite.app.StakingKeeper.Delegate(suite.ctx, owner, amount, stakingtypes.Unbonded, val, true)
+		_, err := suite.app.StakingKeeper.Delegate(suite.ctx, owner, amt, stakingtypes.Unbonded, val, true)
 		suite.Require().NoError(err)
 		resp, err := msgServer.CommitDelegationToTier(suite.ctx, &tieredrewardstypes.MsgCommitDelegationToTier{
 			DelegatorAddress: owner.String(),
 			ValidatorAddress: valAddr.String(),
 			Id:               1,
-			Amount:           amount,
+			Amount:           amt,
 		})
 		suite.Require().NoError(err)
 		return resp.PositionId
 	}
 
-	// 3. Set up two positions: one owned by a regular account, one owned
-	//    by what will become a permanent-locked vesting account.
+	// lockForOwner mints funds and creates a LockTier-origin position. As
+	// with commitForOwner, the owner must still be a non-vesting account.
+	// LockTier sends bank coins to the position delegator (not via the
+	// owner's existing delegation), so the owner's DelegatedVesting/Free
+	// are not touched at this stage.
+	lockForOwner := func(owner sdk.AccAddress, amt math.Int) uint64 {
+		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, amt))
+		suite.Require().NoError(banktestutil.FundAccount(suite.ctx, suite.app.BankKeeper, owner, coins))
+		resp, err := msgServer.LockTier(suite.ctx, &tieredrewardstypes.MsgLockTier{
+			Owner:            owner.String(),
+			Id:               1,
+			Amount:           amt,
+			ValidatorAddress: valAddr.String(),
+		})
+		suite.Require().NoError(err)
+		return resp.PositionId
+	}
+
+	// 3. Regular account with one commit-origin position; must survive the
+	// migration unchanged.
 	regularOwner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
 	regularBase, ok := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, regularOwner).(*authtypes.BaseAccount)
 	suite.Require().True(ok)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, regularBase)
-	regularPosID := commitForOwner(regularOwner)
+	regularPosID := commitForOwner(regularOwner, commitAmount)
 
+	// 4. Vesting owner with TWO positions: a CommitDelegationToTier-origin
+	// one and a LockTier-origin one. Order matters: position IDs are
+	// assigned in creation order, and the migration walks positions by ID,
+	// so the commit-origin position is exited first, then the lock-origin.
 	vestingOwner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
 	vestingBase, ok := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, vestingOwner).(*authtypes.BaseAccount)
 	suite.Require().True(ok)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, vestingBase)
-	vestingPosID := commitForOwner(vestingOwner)
+	commitPosID := commitForOwner(vestingOwner, commitAmount)
+	lockPosID := lockForOwner(vestingOwner, lockAmount)
 
-	// Now wrap vestingOwner as a PermanentLockedAccount in place. Account
-	// number / sequence carry over to satisfy the auth uniqueness index.
+	// Sanity: pre-wrap, owner has no on-chain delegation (commit moved its
+	// share to the position; lock never touched the owner's stake).
+	_, err = suite.app.StakingKeeper.GetDelegation(suite.ctx, vestingOwner, valAddr)
+	suite.Require().Error(err, "owner must have no direct delegation before migration")
+
+	// Wrap vestingOwner as a PermanentLockedAccount with OriginalVesting =
+	// commitAmount (deliberately less than totalAmount). This exercises
+	// the DV-saturation path: the alignment will fill DV up to
+	// OriginalVesting and overflow the rest into DF, so the post-migration
+	// state is DV=commitAmount, DF=lockAmount.
 	existing := suite.app.AccountKeeper.GetAccount(suite.ctx, vestingOwner)
 	vestingBase = authtypes.NewBaseAccountWithAddress(vestingOwner)
 	suite.Require().NoError(vestingBase.SetAccountNumber(existing.GetAccountNumber()))
 	suite.Require().NoError(vestingBase.SetSequence(existing.GetSequence()))
-	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(vestingBase, coins)
+	originalVestingCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, commitAmount))
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(vestingBase, originalVestingCoins)
 	suite.Require().NoError(err)
 	suite.app.AccountKeeper.SetAccount(suite.ctx, vestingAcc)
 
-	// 4. Run the exit function.
+	// 5. Run the exit function.
 	suite.Require().NoError(app.ExitVestedAccountsPositions(suite.ctx, suite.app))
 
-	// 5. Vesting position deleted, owner has staking delegation back.
-	_, err = suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, vestingPosID)
-	suite.Require().Error(err, "vesting-owned position must be deleted")
+	// 6. Both vesting-owned positions must be deleted.
+	_, err = suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, commitPosID)
+	suite.Require().Error(err, "commit-origin vesting position must be deleted")
+	_, err = suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, lockPosID)
+	suite.Require().Error(err, "lock-origin vesting position must be deleted")
 
+	// 7. The owner must hold a single delegation equal to the sum of both
+	// position amounts. transferDelegationFromPosition routes both onto
+	// the same validator, so they collapse into one delegation entry.
 	vestingDeleg, err := suite.app.StakingKeeper.GetDelegation(suite.ctx, vestingOwner, valAddr)
 	suite.Require().NoError(err, "vesting owner must have staking delegation back")
-	suite.Require().True(vestingDeleg.Shares.IsPositive())
+	valAfter, err := suite.app.StakingKeeper.GetValidator(suite.ctx, valAddr)
+	suite.Require().NoError(err)
+	delegatedTokens := valAfter.TokensFromShares(vestingDeleg.Shares).TruncateInt()
+	suite.Require().Equal(totalAmount.String(), delegatedTokens.String(),
+		"returned delegation must equal sum of both position amounts")
 
-	// 6. Regular-owner position untouched.
+	// 8. DelegatedVesting + DelegatedFree must equal Σ delegations.
+	// Specifically: DV saturates at OriginalVesting (=commitAmount), and
+	// the remaining lockAmount overflows into DF.
+	vacc, ok := suite.app.AccountKeeper.GetAccount(suite.ctx, vestingOwner).(sdkvesting.VestingAccount)
+	suite.Require().True(ok, "owner must still be a vesting account after migration")
+	dv := vacc.GetDelegatedVesting().AmountOf(bondDenom)
+	df := vacc.GetDelegatedFree().AmountOf(bondDenom)
+	suite.Require().Equal(commitAmount.String(), dv.String(),
+		"DelegatedVesting must saturate at OriginalVesting (=commitAmount)")
+	suite.Require().Equal(lockAmount.String(), df.String(),
+		"DelegatedFree must absorb the overflow (=lockAmount)")
+	suite.Require().Equal(totalAmount.String(), dv.Add(df).String(),
+		"DV + DF must equal Σ delegations")
+
+	// 9. Regular-owner position untouched.
 	regularPos, err := suite.app.TieredRewardsKeeper.Positions.Get(suite.ctx, regularPosID)
 	suite.Require().NoError(err, "regular position must survive")
 	suite.Require().Equal(regularOwner.String(), regularPos.Owner)
