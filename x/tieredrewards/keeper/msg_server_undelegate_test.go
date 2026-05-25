@@ -11,24 +11,8 @@ import (
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
-
-// makeOwnerVesting overwrites the auth account at the position owner address
-// with a PermanentLockedAccount (vesting account). Used for testing validation that blocks vesting accounts.
-func (s *KeeperSuite) makeOwnerVesting(ownerAddr sdk.AccAddress, lockedCoins sdk.Coins) {
-	s.T().Helper()
-	existing := s.app.AccountKeeper.GetAccount(s.ctx, ownerAddr)
-	s.Require().NotNil(existing)
-	base := authtypes.NewBaseAccountWithAddress(ownerAddr)
-	s.Require().NoError(base.SetAccountNumber(existing.GetAccountNumber()))
-	s.Require().NoError(base.SetSequence(existing.GetSequence()))
-	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(base, lockedCoins)
-	s.Require().NoError(err)
-	s.app.AccountKeeper.SetAccount(s.ctx, vestingAcc)
-}
 
 func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	pos := s.setupNewTierPosition(sdkmath.NewInt(1000), true)
