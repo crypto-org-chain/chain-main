@@ -250,8 +250,10 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_LockOrigin() 
 
 	// Alignment must have topped up DV+DF by lockedAmount; otherwise a later
 	// normal Undelegate would underflow vesting accounting.
-	s.Require().Equal(lockedAmount, s.delegatedVesting(owner).AmountOf(bondDenom))
-	s.Require().Equal(lockedAmount, s.delegatedFree(owner).AmountOf(bondDenom))
+	s.Require().Equal(lockedAmount, s.delegatedVesting(owner).AmountOf(bondDenom),
+		"DV must saturate at OriginalVesting (= lockedAmount)")
+	s.Require().True(s.delegatedFree(owner).AmountOf(bondDenom).IsZero(),
+		"DF must be zero — the deficit fits entirely within OriginalVesting")
 	s.Require().Equal(ownerDel, s.trackedTotal(owner, bondDenom),
 		"alignment must satisfy DV + DF == Σ delegations for LockTier-origin positions")
 }
