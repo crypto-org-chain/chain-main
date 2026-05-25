@@ -19,7 +19,8 @@ import (
 // Shares are unbonded at the source and re-delegated from the destination
 // with no unbonding period.
 //
-// Contract: Owner must not be a vesting account.
+// Only bonded validators are allowed. Blocks transfer if the delegator has an
+// active incoming redelegation to the validator.
 func (k Keeper) transferDelegationToPosition(ctx context.Context, owner string, posDelAddr sdk.AccAddress, validatorAddr string, amount math.Int) (math.LegacyDec, error) {
 	if !amount.IsPositive() {
 		return math.LegacyDec{}, errorsmod.Wrap(
