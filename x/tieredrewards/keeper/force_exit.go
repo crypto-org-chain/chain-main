@@ -13,18 +13,36 @@ import (
 )
 
 func (k Keeper) ForceFullExitWithDelegation(ctx context.Context, posID uint64) error {
+	logger := k.logger(ctx)
+	logger.Info("force-exit: begin", "position_id", posID)
+
 	posState, err := k.getPositionState(ctx, posID)
 	if err != nil {
 		return fmt.Errorf("get position %d: %w", posID, err)
 	}
 	if !posState.IsDelegated() {
-		k.logger(ctx).Error("position is not delegated; cannot force full exit", "position_id", posID)
+		logger.Error("force-exit: position is not delegated; cannot force full exit",
+			"position_id", posID,
+			"owner", posState.Owner,
+		)
 	}
+	logger.Info("force-exit: position state loaded",
+		"position_id", posID,
+		"owner", posState.Owner,
+		"tier_id", posState.TierId,
+		"validator", posState.Delegation.ValidatorAddress,
+		"shares", posState.Delegation.Shares.String(),
+	)
 
-	posState, _, _, err = k.claimRewards(ctx, posState)
+	posState, baseRewards, bonusRewards, err := k.claimRewards(ctx, posState)
 	if err != nil {
 		return fmt.Errorf("claim rewards for position %d: %w", posID, err)
 	}
+	logger.Info("force-exit: claimed rewards",
+		"position_id", posID,
+		"base_rewards", baseRewards.String(),
+		"bonus_rewards", bonusRewards.String(),
+	)
 
 	valAddr, err := sdk.ValAddressFromBech32(posState.Delegation.ValidatorAddress)
 	if err != nil {
@@ -35,10 +53,20 @@ func (k Keeper) ForceFullExitWithDelegation(ctx context.Context, posID uint64) e
 	if err != nil {
 		return fmt.Errorf("reconcile amount for position %d: %w", posID, err)
 	}
+	logger.Info("force-exit: reconciled position amount",
+		"position_id", posID,
+		"amount", positionAmount.String(),
+		"validator", valAddr.String(),
+	)
 
 	if _, _, _, err := k.transferDelegationFromPosition(ctx, posState, valAddr, positionAmount); err != nil {
 		return fmt.Errorf("transfer delegation back to owner for position %d: %w", posID, err)
 	}
+	logger.Info("force-exit: delegation transferred back to owner",
+		"position_id", posID,
+		"owner", posState.Owner,
+		"amount", positionAmount.String(),
+	)
 
 	ownerAddr, err := sdk.AccAddressFromBech32(posState.Owner)
 	if err != nil {
@@ -51,8 +79,12 @@ func (k Keeper) ForceFullExitWithDelegation(ctx context.Context, posID uint64) e
 	if err := k.deletePosition(ctx, posState.Position, &ValidatorTransition{PreviousAddress: valAddr.String()}); err != nil {
 		return fmt.Errorf("delete position %d: %w", posID, err)
 	}
+	logger.Info("force-exit: position deleted",
+		"position_id", posID,
+		"owner", posState.Owner,
+	)
 
-	sdk.UnwrapSDKContext(ctx).Logger().Info("forced full tier exit",
+	logger.Info("force-exit: complete",
 		"position_id", posID,
 		"owner", posState.Owner,
 		"amount", positionAmount.String(),
@@ -72,12 +104,19 @@ func (k Keeper) ForceFullExitWithDelegation(ctx context.Context, posID uint64) e
 // gap. The diff-based top-up handles both, regardless of position origin or the
 // order in which positions are exited.
 func (k Keeper) alignVestingDelegationTracking(ctx context.Context, ownerAddr sdk.AccAddress) error {
+	logger := k.logger(ctx)
 	acc := k.accountKeeper.GetAccount(ctx, ownerAddr)
 	if acc == nil {
+		logger.Info("vesting-alignment: owner account not found, skipping",
+			"owner", ownerAddr.String(),
+		)
 		return nil
 	}
 	vacc, ok := acc.(sdkvesting.VestingAccount)
 	if !ok {
+		logger.Info("vesting-alignment: owner is not a vesting account, skipping",
+			"owner", ownerAddr.String(),
+		)
 		return nil
 	}
 
@@ -103,8 +142,22 @@ func (k Keeper) alignVestingDelegationTracking(ctx context.Context, ownerAddr sd
 		actualDelegated = actualDelegated.Add(val.TokensFromShares(d.Shares).TruncateInt())
 	}
 
-	tracked := vacc.GetDelegatedVesting().AmountOf(bondDenom).Add(vacc.GetDelegatedFree().AmountOf(bondDenom))
+	dv := vacc.GetDelegatedVesting().AmountOf(bondDenom)
+	df := vacc.GetDelegatedFree().AmountOf(bondDenom)
+	tracked := dv.Add(df)
+	logger.Info("vesting-alignment: pre-state",
+		"owner", ownerAddr.String(),
+		"delegated_vesting", dv.String(),
+		"delegated_free", df.String(),
+		"tracked_total", tracked.String(),
+		"actual_delegations", actualDelegated.String(),
+	)
+
 	if !actualDelegated.GT(tracked) {
+		logger.Info("vesting-alignment: no top-up needed",
+			"owner", ownerAddr.String(),
+			"gap", actualDelegated.Sub(tracked).String(),
+		)
 		return nil
 	}
 	deficit := actualDelegated.Sub(tracked)
@@ -117,5 +170,16 @@ func (k Keeper) alignVestingDelegationTracking(ctx context.Context, ownerAddr sd
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	vacc.TrackDelegation(sdkCtx.BlockTime(), coins, coins)
 	k.accountKeeper.SetAccount(ctx, vacc)
+
+	newDV := vacc.GetDelegatedVesting().AmountOf(bondDenom)
+	newDF := vacc.GetDelegatedFree().AmountOf(bondDenom)
+	logger.Info("vesting-alignment: applied top-up",
+		"owner", ownerAddr.String(),
+		"deficit", deficit.String(),
+		"delegated_vesting_before", dv.String(),
+		"delegated_vesting_after", newDV.String(),
+		"delegated_free_before", df.String(),
+		"delegated_free_after", newDF.String(),
+	)
 	return nil
 }
