@@ -20,10 +20,7 @@ from .utils import (
 )
 
 V7_3_PLAN = "v7.3.0"
-COMMIT_AMOUNT = 1_000_000  
-LOCK_AMOUNT = 2_000_000  
 GAS_BUFFER = 50_000_000
-FUND_ACCOUNT_AMOUNT = COMMIT_AMOUNT + LOCK_AMOUNT + GAS_BUFFER
 
 
 # TODO: move this function to utils.py - create_permanent_lock_vesting_account() and use tx() helper to ensure that tx succeeds
@@ -160,14 +157,17 @@ def setup_pre_v7_3_0_upgrade(cluster):
     tiers = query_tiers(cluster).get("tiers", [])
     assert tiers, "expected at least one tier seeded by the v7 upgrade handler"
     tier_id = int(tiers[0]["id"])
-    commit_amount = max(int(tiers[0]["min_lock_amount"]), COMMIT_AMOUNT)
-    lock_amount = max(int(tiers[0]["min_lock_amount"]), LOCK_AMOUNT)
+    amount = int(tiers[0]["min_lock_amount"])
+    commit_amount = amount
+    lock_amount = amount
+
+    fund_amount = lock_amount + GAS_BUFFER
 
     owner_addr = _create_permanent_lock_vesting_account(
         cluster,
         "v7_3_vest_poc",
         commit_amount,
-        FUND_ACCOUNT_AMOUNT,
+        fund_amount,
     )
 
     # Vesting owner delegates locked principal — this populates
