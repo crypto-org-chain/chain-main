@@ -32,4 +32,5 @@ var (
 	ErrInvalidTierID                    = errors.Register(ModuleName, 27, "tier id must be non-zero")
 	ErrValidatorPositionCountStore      = errors.Register(ModuleName, 28, "validator position count store operation failed")
 	ErrInvalidPositionID                = errors.Register(ModuleName, 29, "invalid position id")
+	ErrVestingAccountNotAllowed         = errors.Register(ModuleName, 30, "vesting accounts are not allowed to create tier positions")
 )

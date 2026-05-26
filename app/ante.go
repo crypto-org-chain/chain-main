@@ -4,6 +4,7 @@ import (
 	ibcante "github.com/cosmos/ibc-go/v10/modules/core/ante"
 	"github.com/cosmos/ibc-go/v10/modules/core/keeper"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
+	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	newsdkerrors "cosmossdk.io/errors"
 	circuitante "cosmossdk.io/x/circuit/ante"
@@ -11,6 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -46,6 +48,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewTxTimeoutHeightDecorator(),
 		ante.NewValidateMemoDecorator(options.AccountKeeper),
 		NewValidateMsgTransferDecorator(),
+		NewRejectVestingTierMsgDecorator(options.AccountKeeper),
 		ante.NewConsumeGasForTxSizeDecorator(options.AccountKeeper),
 		ante.NewDeductFeeDecorator(options.AccountKeeper, options.BankKeeper, options.FeegrantKeeper, options.TxFeeChecker),
 		// SetPubKeyDecorator must be called before all signature verification decorators
@@ -104,6 +107,56 @@ func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 
 		if len(transfer.Receiver) > MaximumReceiverLength {
 			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "receiver length must be less than %d", MaximumReceiverLength)
+		}
+	}
+
+	return next(ctx, tx, simulate)
+}
+
+// RejectVestingTierMsgDecorator rejects MsgLockTier and MsgCommitDelegationToTier
+// from vesting accounts at mempool admission only. The check is gated on
+// CheckTx (and ReCheckTx, defensively) so DeliverTx behavior is unchanged —
+// this is a non-consensus, node-local filter that can be rolled out to
+// validators independently. Once every validator runs the new binary, no
+// proposer accepts these messages from vesting accounts and the bypass is
+// permanently closed without a coordinated upgrade.
+type RejectVestingTierMsgDecorator struct {
+	ak ante.AccountKeeper
+}
+
+func NewRejectVestingTierMsgDecorator(ak ante.AccountKeeper) RejectVestingTierMsgDecorator {
+	return RejectVestingTierMsgDecorator{ak: ak}
+}
+
+func (d RejectVestingTierMsgDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
+	if !ctx.IsCheckTx() && !ctx.IsReCheckTx() {
+		return next(ctx, tx, simulate)
+	}
+
+	for _, msg := range tx.GetMsgs() {
+		var addr string
+		switch m := msg.(type) {
+		case *tieredrewardstypes.MsgLockTier:
+			addr = m.Owner
+		case *tieredrewardstypes.MsgCommitDelegationToTier:
+			addr = m.DelegatorAddress
+		default:
+			continue
+		}
+
+		accAddr, err := sdk.AccAddressFromBech32(addr)
+		if err != nil {
+			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid address: %s", addr)
+		}
+
+		acc := d.ak.GetAccount(ctx, accAddr)
+		if acc == nil {
+			// Skip and let downstream decorators surface the error.
+			continue
+		}
+
+		if _, ok := acc.(sdkvesting.VestingAccount); ok {
+			return ctx, tieredrewardstypes.ErrVestingAccountNotAllowed
 		}
 	}
 

@@ -1,6 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## v7.3.0
+
+### Bugfixes
+
+- [#1306](https://github.com/crypto-org-chain/chain-main/pull/1306) fix(x/tieredrewards): reject `MsgLockTier` and `MsgCommitDelegationToTier` from vesting accounts at checkTx.
 
 *May 8, 2026*
 
