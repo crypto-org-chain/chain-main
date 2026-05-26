@@ -107,14 +107,14 @@ func (k Keeper) alignVestingDelegationTracking(ctx context.Context, ownerAddr sd
 	logger := k.logger(ctx)
 	acc := k.accountKeeper.GetAccount(ctx, ownerAddr)
 	if acc == nil {
-		logger.Info("vesting-alignment: owner account not found, skipping",
+		logger.Error("vesting-alignment: owner account not found, skipping",
 			"owner", ownerAddr.String(),
 		)
 		return nil
 	}
 	vacc, ok := acc.(sdkvesting.VestingAccount)
 	if !ok {
-		logger.Info("vesting-alignment: owner is not a vesting account, skipping",
+		logger.Error("vesting-alignment: owner is not a vesting account, skipping",
 			"owner", ownerAddr.String(),
 		)
 		return nil
