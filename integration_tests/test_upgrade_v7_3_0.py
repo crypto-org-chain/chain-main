@@ -4,6 +4,7 @@ from .tieredrewards_helpers import (
     fund_pool,
     get_node_validator_addr,
     lock_tier,
+    query_positions,
     query_positions_by_owner,
     query_tiers,
 )
@@ -15,6 +16,7 @@ from .utils import (
 )
 
 V7_3_PLAN = "v7.3.0"
+VESTING_TYPE_MARKERS = ("Vesting", "PermanentLocked")
 
 
 def _vesting_delegated_amounts(account_dict, denom=DENOM):
@@ -172,5 +174,94 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"DV+DF must equal Σ delegations: "
         f"DV({dv}) + DF({df}) = {dv + df}, expected {total_amount}"
     )
-
     print("v7.3.0 vesting tier-bypass migration verified")
+
+
+def assert_no_vesting_positions(cluster):
+    cli = cluster.cosmos_cli()
+    all_positions = query_positions(cluster).get("positions", [])
+    for entry in all_positions:
+        pos = entry.get("position") or entry
+        owner = pos["owner"]
+        acct = unwrap_account(cli.account(owner))
+        atype = acct.get("@type", "")
+        assert not any(
+            marker in atype for marker in VESTING_TYPE_MARKERS
+        ), f"vesting-owned position survived migration: owner={owner} type={atype}"
+
+    print("v7.3.0 no vesting positions verified")
+
+
+def assert_v7_3_vesting_filter_active(cluster):
+    """Post-upgrade vesting-account filter smoke test:
+
+    1. A fresh PermanentLockedAccount must NOT be able to create a new
+       tier position via either MsgLockTier or MsgCommitDelegationToTier
+       (rejected by validateNewPosition in the keeper).
+    2. A regular base account must STILL be able to create a tier
+       position (regression check that the filter only fires on vesting
+       accounts).
+    """
+    val_addr = get_node_validator_addr(cluster)
+    tiers = query_tiers(cluster).get("tiers", [])
+    assert tiers, "expected at least one tier"
+    tier_id = int(tiers[0]["id"])
+    amount = int(tiers[0]["min_lock_amount"])
+    gas_topup = 50_000_000
+
+    # ── 1a. MsgCommitDelegationToTier from a vesting account is rejected ──
+    vesting_addr = create_permanent_lock_vesting_account(
+        cluster,
+        f"{amount}basecro",
+        name="permanent-locked-account-post-upgrade",
+    )
+    rsp = cluster.transfer(
+        cluster.address("signer1"),
+        vesting_addr,
+        f"{amount + gas_topup}basecro",
+    )
+    assert rsp["code"] == 0, f"top-up failed: {rsp.get('raw_log', rsp)}"
+    wait_for_new_blocks(cluster, 1)
+
+    # Self-delegate first so commit_delegation has a delegation to commit.
+    rsp = cluster.delegate_amount(val_addr, f"{amount}basecro", vesting_addr)
+    assert rsp["code"] == 0, rsp.get("raw_log", rsp)
+    wait_for_new_blocks(cluster, 1)
+
+    rsp = commit_delegation(cluster, vesting_addr, val_addr, amount, tier_id)
+    assert (
+        rsp["code"] != 0
+    ), f"commit_delegation from vesting account must be rejected, got {rsp}"
+    raw_log = (rsp.get("raw_log") or "").lower()
+    assert (
+        "vesting accounts are not allowed to execute this action" in raw_log
+    ), f"expected vesting rejection, got raw_log={raw_log!r}"
+
+    # ── 1b. MsgLockTier from a vesting account is rejected ──
+    rsp = lock_tier(cluster, vesting_addr, tier_id, amount, val_addr)
+    assert (
+        rsp["code"] != 0
+    ), f"lock_tier from vesting account must be rejected, got {rsp}"
+    raw_log = (rsp.get("raw_log") or "").lower()
+    assert (
+        "vesting accounts are not allowed to execute this action" in raw_log
+    ), f"expected vesting rejection, got raw_log={raw_log!r}"
+
+    # ── 2. Regular base account can still lock-tier ──
+    base_addr = cluster.address("signer2")
+    before = {
+        int(p["id"])
+        for p in query_positions_by_owner(cluster, base_addr).get("positions", [])
+    }
+    rsp = lock_tier(cluster, base_addr, tier_id, amount, val_addr)
+    assert (
+        rsp["code"] == 0
+    ), f"lock_tier from base account must succeed: {rsp.get('raw_log', rsp)}"
+    after = {
+        int(p["id"])
+        for p in query_positions_by_owner(cluster, base_addr).get("positions", [])
+    }
+    new_ids = after - before
+    assert len(new_ids) == 1, f"expected exactly one new position, got {new_ids}"
+
+    print("v7.3.0 vesting filter verified: vesting blocked, base allowed")

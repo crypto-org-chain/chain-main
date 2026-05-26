@@ -388,9 +388,10 @@ def find_balance(balances, denom):
     return 0
 
 
-def create_permanent_lock_vesting_account(cluster, vested_amount, funder="signer1"):
+def create_permanent_lock_vesting_account(
+    cluster, vested_amount, funder="signer1", name="permanent-locked-account"
+):
     cli = cluster.cosmos_cli()
-    name = "permanent-locked-account"
     cli.raw(
         "keys",
         "add",
