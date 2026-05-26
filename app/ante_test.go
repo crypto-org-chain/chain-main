@@ -84,6 +84,7 @@ func (s *AnteTestSuite) runDecorator(ctx sdk.Context, msgs ...sdk.Msg) error {
 
 func (s *AnteTestSuite) TestRejectVestingTierMsgDecorator() {
 	checkTxCtx := s.ctx.WithIsCheckTx(true)
+	reCheckTxCtx := s.ctx.WithIsReCheckTx(true)
 	deliverTxCtx := s.ctx.WithIsCheckTx(false)
 
 	regular := s.makeBaseAccount()
@@ -176,6 +177,28 @@ func (s *AnteTestSuite) TestRejectVestingTierMsgDecorator() {
 			ctx:     checkTxCtx,
 			msgs:    []sdk.Msg{lockTier("not-a-bech32-address")},
 			wantErr: sdkerrors.ErrInvalidAddress,
+		},
+		{
+			// ReCheckTx is mempool re-validation between blocks. Defensive:
+			// today the SDK guarantees IsCheckTx() returns true on ReCheckTx
+			// too, but the decorator gates explicitly on both flags so this
+			// behavior is locked in even if the SDK invariant changes.
+			name:    "ReCheckTx + vesting account + MsgLockTier → rejected",
+			ctx:     reCheckTxCtx,
+			msgs:    []sdk.Msg{lockTier(vesting)},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			name:    "ReCheckTx + vesting account + MsgCommitDelegationToTier → rejected",
+			ctx:     reCheckTxCtx,
+			msgs:    []sdk.Msg{commit(vesting)},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			name:    "ReCheckTx + base account + MsgLockTier → allowed",
+			ctx:     reCheckTxCtx,
+			msgs:    []sdk.Msg{lockTier(regular)},
+			wantErr: nil,
 		},
 	}
 

@@ -115,11 +115,11 @@ func (vtd ValidateMsgTransferDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, s
 
 // RejectVestingTierMsgDecorator rejects MsgLockTier and MsgCommitDelegationToTier
 // from vesting accounts at mempool admission only. The check is gated on
-// CheckTx so DeliverTx behavior is unchanged — this is a non-consensus,
-// node-local filter that can be rolled out to validators independently. Once
-// every validator runs the new binary, no proposer accepts these messages
-// from vesting accounts and the bypass is permanently closed without a
-// coordinated upgrade.
+// CheckTx (and ReCheckTx, defensively) so DeliverTx behavior is unchanged —
+// this is a non-consensus, node-local filter that can be rolled out to
+// validators independently. Once every validator runs the new binary, no
+// proposer accepts these messages from vesting accounts and the bypass is
+// permanently closed without a coordinated upgrade.
 type RejectVestingTierMsgDecorator struct {
 	ak ante.AccountKeeper
 }
@@ -129,7 +129,7 @@ func NewRejectVestingTierMsgDecorator(ak ante.AccountKeeper) RejectVestingTierMs
 }
 
 func (d RejectVestingTierMsgDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	if !ctx.IsCheckTx() {
+	if !ctx.IsCheckTx() && !ctx.IsReCheckTx() {
 		return next(ctx, tx, simulate)
 	}
 
