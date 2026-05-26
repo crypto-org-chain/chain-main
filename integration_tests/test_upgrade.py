@@ -190,8 +190,6 @@ def upgrade(cluster, plan_name, title=None, summary=None):
 
     return target_height
 
-    return target_height
-
 
 def init_cosmovisor(data):
     """

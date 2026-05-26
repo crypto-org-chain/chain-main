@@ -77,11 +77,11 @@ func ExitVestedAccountsPositions(ctx sdk.Context, app *ChainApp) error {
 	if err := app.TieredRewardsKeeper.Positions.Walk(ctx, nil, func(posID uint64, pos tieredrewardstypes.Position) (bool, error) {
 		ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 		if err != nil {
-			return false, nil
+			return false, fmt.Errorf("get owner address: %w", err)
 		}
 		acc := app.AccountKeeper.GetAccount(ctx, ownerAddr)
 		if acc == nil {
-			return false, nil
+			return false, fmt.Errorf("account not found: %s", ownerAddr.String())
 		}
 		if _, ok := acc.(sdkvesting.VestingAccount); ok {
 			toExitPositions = append(toExitPositions, posID)

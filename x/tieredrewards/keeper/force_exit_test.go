@@ -218,7 +218,6 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_LockOrigin() 
 	val := vals[0]
 	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
-	_ = val
 
 	lockedAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	// OriginalVesting equals the locked amount; the account is funded with
