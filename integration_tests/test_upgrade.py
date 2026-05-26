@@ -626,14 +626,15 @@ def assert_v7_tieredrewards_working(cluster):
     tier_list = tiers.get("tiers", [])
 
     # Lock tier smoke test
+    signer1_addr = cluster.address("signer1")
     validator_addr = get_node_validator_addr(cluster)
     tier_id = tier_list[0]["id"]
     lock_amount = max(int(tier_list[0]["min_lock_amount"]), 1000000)
-    rsp = lock_tier(cluster, community_addr, tier_id, lock_amount, validator_addr)
+    rsp = lock_tier(cluster, signer1_addr, tier_id, lock_amount, validator_addr)
     assert rsp["code"] == 0, f"lock-tier failed: {rsp.get('raw_log', rsp)}"
 
     # Query positions
-    rsp = query_positions_by_owner(cluster, community_addr)
+    rsp = query_positions_by_owner(cluster, signer1_addr)
     positions = rsp.get("positions", [])
     assert len(positions) == 1, f"expected 1 position, got {len(positions)}: {rsp}"
 
