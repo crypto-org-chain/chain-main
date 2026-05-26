@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## v7.3.0
 
 ### Bugfixes
 
