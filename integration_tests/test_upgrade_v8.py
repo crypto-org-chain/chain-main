@@ -15,7 +15,7 @@ from .utils import (
     wait_for_new_blocks,
 )
 
-V7_3_PLAN = "v7.3.0"
+V8_PLAN = "v8"
 VESTING_TYPE_MARKERS = ("Vesting", "PermanentLocked")
 
 
@@ -37,8 +37,8 @@ def _vesting_delegated_amounts(account_dict, denom=DENOM):
     return _amount(bva.get("delegated_vesting")), _amount(bva.get("delegated_free"))
 
 
-def setup_pre_v7_3_0_upgrade(cluster):
-    """Set up the vesting tier-bypass scenario before the v7.3.0 upgrade
+def setup_pre_v8_upgrade(cluster):
+    """Set up the vesting tier-bypass scenario before the v8 upgrade
     fires. Creates a PermanentLockedAccount and gives it two positions:
 
       1. A CommitDelegationToTier-origin position. The owner first
@@ -125,8 +125,8 @@ def setup_pre_v7_3_0_upgrade(cluster):
     }
 
 
-def assert_v7_3_vesting_migration(cluster, ctx):
-    """Verify the v7.3.0 migration:
+def assert_v8_vesting_migration(cluster, ctx):
+    """Verify the v8 migration:
     - both vesting-owned positions are deleted;
     - the vesting owner's staking delegation equals commit + lock amounts;
     - DelegatedVesting saturates at OriginalVesting (=commit_amount), and
@@ -174,7 +174,7 @@ def assert_v7_3_vesting_migration(cluster, ctx):
         f"DV+DF must equal Σ delegations: "
         f"DV({dv}) + DF({df}) = {dv + df}, expected {total_amount}"
     )
-    print("v7.3.0 vesting tier-bypass migration verified")
+    print("v8 vesting tier-bypass migration verified")
 
 
 def assert_no_vesting_positions(cluster):
@@ -189,10 +189,10 @@ def assert_no_vesting_positions(cluster):
             marker in atype for marker in VESTING_TYPE_MARKERS
         ), f"vesting-owned position survived migration: owner={owner} type={atype}"
 
-    print("v7.3.0 no vesting positions verified")
+    print("v8 no vesting positions verified")
 
 
-def assert_v7_3_vesting_filter_active(cluster):
+def assert_v8_vesting_filter_active(cluster):
     """Post-upgrade vesting-account filter smoke test:
 
     1. A fresh PermanentLockedAccount must NOT be able to create a new
@@ -264,4 +264,4 @@ def assert_v7_3_vesting_filter_active(cluster):
     new_ids = after - before
     assert len(new_ids) == 1, f"expected exactly one new position, got {new_ids}"
 
-    print("v7.3.0 vesting filter verified: vesting blocked, base allowed")
+    print("v8 vesting filter verified: vesting blocked, base allowed")

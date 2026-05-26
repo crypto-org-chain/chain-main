@@ -34,7 +34,7 @@ let
   v7_2 = fetchBinary "7.2.0" "sha256-yjIQcvGTsT6iUTCgIH1Qp3QaSZzDpY5WS2uFqbPKejw=";
   current = pkgs.callPackage ../. { };
 in
-# Full upgrade path: v1.1.0 (genesis) → ... → v7.3.0 (current).
+# Full upgrade path: v1.1.0 (genesis) → ... → v8 (current).
 # To add a new protocol version: add a fetchBinary entry above and append it here.
 pkgs.linkFarm "upgrade-test-all-package" [
   {
@@ -66,7 +66,7 @@ pkgs.linkFarm "upgrade-test-all-package" [
     path = v7_2;
   }
   {
-    name = "v7.3.0";
+    name = "v8";
     path = current;
   }
 ]

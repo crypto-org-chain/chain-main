@@ -230,8 +230,8 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 	})
 }
 
-// Can be deleted after v7.3.0 upgrade
-func (suite *AppTestSuite) TestV730UpgradeHandlerExitsVestedAccountPositions() {
+// Can be deleted after v8 upgrade
+func (suite *AppTestSuite) TestV8UpgradeHandlerExitsVestedAccountPositions() {
 	suite.SetupTest()
 
 	// 1. Set up tier 1 with a permissive min lock for the test.
@@ -261,7 +261,7 @@ func (suite *AppTestSuite) TestV730UpgradeHandlerExitsVestedAccountPositions() {
 
 	// commitForOwner mints funds, delegates, and commits via the message
 	// handler. Owner must be a non-vesting account at this point because
-	// the v7.3.0 guard rejects vesting accounts.
+	// the v8 guard rejects vesting accounts.
 	commitForOwner := func(owner sdk.AccAddress, amt math.Int) uint64 {
 		coins := sdk.NewCoins(sdk.NewCoin(bondDenom, amt))
 		suite.Require().NoError(banktestutil.FundAccount(suite.ctx, suite.app.BankKeeper, owner, coins))

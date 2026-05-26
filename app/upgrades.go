@@ -47,27 +47,27 @@ func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, m
 }
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	app.registerV730UpgradeHandler()
+	app.registerV8UpgradeHandler()
 }
 
-func (app *ChainApp) registerV730UpgradeHandler() {
-	planName := "v7.3.0"
+func (app *ChainApp) registerV8UpgradeHandler() {
+	planName := "v8"
 
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		sdkCtx.Logger().Info("v7.3.0: exiting vested accounts positions...")
+		sdkCtx.Logger().Info("v8: exiting vested accounts positions...")
 		if err := ExitVestedAccountsPositions(sdkCtx, app); err != nil {
-			return map[string]uint64{}, fmt.Errorf("v7.3.0 exiting vested accounts positions: %w", err)
+			return map[string]uint64{}, fmt.Errorf("v8 exiting vested accounts positions: %w", err)
 		}
-		sdkCtx.Logger().Info("v7.3.0: exiting vested accounts positions completed")
+		sdkCtx.Logger().Info("v8: exiting vested accounts positions completed")
 
-		sdkCtx.Logger().Info("v7.3.0: running module migrations...")
+		sdkCtx.Logger().Info("v8: running module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
 			return map[string]uint64{}, err
 		}
-		sdkCtx.Logger().Info("v7.3.0: upgrade completed", "plan", plan.Name, "version_map", m)
+		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
 }
@@ -92,13 +92,13 @@ func ExitVestedAccountsPositions(ctx sdk.Context, app *ChainApp) error {
 	}
 
 	for _, posID := range toExitPositions {
-		ctx.Logger().Info("v7.3.0 exiting vested accounts position", "position_id", posID)
+		ctx.Logger().Info("v8 exiting vested accounts position", "position_id", posID)
 		if err := app.TieredRewardsKeeper.ForceFullExitWithDelegation(ctx, posID); err != nil {
 			return fmt.Errorf("force-exit position %d: %w", posID, err)
 		}
 	}
 
-	ctx.Logger().Info("v7.3.0 exiting vested accounts positions: done", "positions_exited", len(toExitPositions))
+	ctx.Logger().Info("v8 exiting vested accounts positions: done", "positions_exited", len(toExitPositions))
 	return nil
 }
 

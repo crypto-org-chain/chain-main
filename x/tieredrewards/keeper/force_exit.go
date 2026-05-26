@@ -1,4 +1,4 @@
-// Can be deleted after v7.3.0 upgrade
+// Can be deleted after v8 upgrade
 package keeper
 
 import (
