@@ -9,6 +9,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/suite"
+	protov2 "google.golang.org/protobuf/proto"
 
 	"cosmossdk.io/math"
 
@@ -18,7 +19,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	protov2 "google.golang.org/protobuf/proto"
 )
 
 // tx is a minimal sdk.Tx implementation sufficient for AnteHandle
