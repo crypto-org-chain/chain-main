@@ -11,6 +11,16 @@ from dateutil.parser import isoparse
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
+from .test_upgrade_v7 import (
+    assert_v7_inflation_module_is_working,
+    assert_v7_tieredrewards_working,
+)
+from .test_upgrade_v8 import (
+    assert_v8_no_vesting_positions,
+    assert_v8_vesting_filter_active,
+    assert_v8_vesting_migration,
+    setup_pre_v8_upgrade,
+)
 from .utils import (
     approve_proposal,
     assert_expedited_gov_params,
@@ -38,6 +48,152 @@ def edit_chain_program(chain_id, ini_path, callback):
             ini[section].update(callback(i, old))
     with ini_path.open("w") as fp:
         ini.write(fp)
+
+
+def _apply_passed_upgrade(cluster, plan_name, target_height):
+    """Common steps after a software-upgrade proposal has passed and the
+    upgrade height has fired: assert nodes stopped, validate
+    upgrade-info.json on each node, repoint the supervisor + cluster CLI
+    at cosmovisor/upgrades/<plan_name>/bin/chain-maind, and wait for the
+    new binary to produce blocks. Both `upgrade` (post-v0.50 SDK gov) and
+    `upgrade_pre_v50` (legacy gov) share this tail.
+    """
+    for i in range(2):
+        assert (
+            cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node{i}")["state"]
+            != "RUNNING"
+        ), f"node{i} should be stopped after upgrade height"
+
+    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
+    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
+    expected = {"name": plan_name, "height": target_height}
+    assert js1 == js2
+    assert expected.items() <= js1.items()
+
+    edit_chain_program(
+        cluster.chain_id,
+        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
+        lambda i, _: {
+            "command": (
+                f"%(here)s/node{i}/cosmovisor/upgrades/{plan_name}/bin/chain-maind "
+                f"start --home %(here)s/node{i}"
+            )
+        },
+    )
+    cluster.reload_supervisor()
+    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
+
+    wait_for_block(cluster, target_height + 2, 600)
+
+
+def upgrade_pre_v50(
+    cluster,
+    plan_name,
+    target_height,
+    gte_cosmos_sdk_v0_46=True,
+    broadcast_mode="sync",
+):
+    print("upgrade height", target_height, plan_name)
+    kind = "software-upgrade"
+    proposal = {
+        "name": plan_name,
+        "title": "upgrade test",
+        "description": "ditto",
+        "upgrade-height": target_height,
+        "deposit": "0.1cro",
+    }
+    wait_tx = broadcast_mode == "sync"
+    if gte_cosmos_sdk_v0_46:
+        rsp = cluster.gov_propose_legacy(
+            "community",
+            kind,
+            proposal,
+            no_validate=True,
+            wait_tx=wait_tx,
+            broadcast_mode=broadcast_mode,
+        )
+    else:
+        rsp = cluster.gov_propose_before_cosmos_sdk_v0_46(
+            "community",
+            kind,
+            proposal,
+            wait_tx=wait_tx,
+            broadcast_mode=broadcast_mode,
+        )
+    assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
+    # get proposal_id
+    if gte_cosmos_sdk_v0_46:
+        proposal_id = get_proposal_id_legacy(rsp)
+    else:
+        ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
+        assert ev["proposal_type"] == "SoftwareUpgrade", rsp
+        proposal_id = ev["proposal_id"]
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
+    for i in range(2):
+        rsp = cluster.gov_vote(
+            "validator",
+            proposal_id,
+            "yes",
+            i=i,
+            event_query_tx=wait_tx,
+            broadcast_mode=broadcast_mode,
+        )
+        assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
+
+    proposal = cluster.query_proposal(proposal_id)
+    wait_for_block_time(
+        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=1)
+    )
+    proposal = cluster.query_proposal(proposal_id)
+    assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
+
+    # wait for upgrade plan activated
+    wait_for_block(cluster, target_height, 600)
+    # wait a little bit
+    time.sleep(0.5)
+
+    _apply_passed_upgrade(cluster, plan_name, target_height)
+
+
+def upgrade(cluster, plan_name, title=None, summary=None):
+    """Submit, pass, and execute a software-upgrade proposal targeting
+    `plan_name` at block_height + 30. After the upgrade height fires:
+    asserts both nodes stopped, validates upgrade-info.json on each,
+    repoints the supervisor + cluster CLI at
+    cosmovisor/upgrades/<plan_name>/bin/chain-maind, and waits for the
+    new binary to produce blocks. Returns the upgrade height.
+
+    Uses the post-v0.50 cosmos-sdk gov proposal API. For pre-v0.50
+    chains (v1-v6 in this repo's upgrade chain), use upgrade_pre_v50.
+    """
+    title = title or f"{plan_name} upgrade"
+    summary = summary or f"Upgrade to {plan_name}"
+
+    target_height = cluster.block_height() + 30
+    print(f"propose {plan_name} upgrade plan at", target_height)
+
+    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
+        "community",
+        "software-upgrade",
+        {
+            "name": plan_name,
+            "title": title,
+            "summary": summary,
+            "upgrade-height": target_height,
+            "deposit": "0.1cro",
+        },
+    )
+    assert rsp["code"] == 0, rsp["raw_log"]
+
+    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
+
+    wait_for_block(cluster, target_height)
+    time.sleep(1)
+
+    _apply_passed_upgrade(cluster, plan_name, target_height)
+
+    return target_height
 
 
 def init_cosmovisor(data):
@@ -173,113 +329,6 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def upgrade(
-    cluster,
-    plan_name,
-    target_height,
-    gte_cosmos_sdk_v0_46=True,
-    broadcast_mode="sync",
-):
-    print("upgrade height", target_height, plan_name)
-    kind = "software-upgrade"
-    proposal = {
-        "name": plan_name,
-        "title": "upgrade test",
-        "description": "ditto",
-        "upgrade-height": target_height,
-        "deposit": "0.1cro",
-    }
-    wait_tx = broadcast_mode == "sync"
-    if gte_cosmos_sdk_v0_46:
-        rsp = cluster.gov_propose_legacy(
-            "community",
-            kind,
-            proposal,
-            no_validate=True,
-            wait_tx=wait_tx,
-            broadcast_mode=broadcast_mode,
-        )
-    else:
-        rsp = cluster.gov_propose_before_cosmos_sdk_v0_46(
-            "community",
-            kind,
-            proposal,
-            wait_tx=wait_tx,
-            broadcast_mode=broadcast_mode,
-        )
-    assert rsp["code"] == 0, "error submitting upgrade proposal: " + rsp["raw_log"]
-    # get proposal_id
-    if gte_cosmos_sdk_v0_46:
-        proposal_id = get_proposal_id_legacy(rsp)
-    else:
-        ev = find_log_event_attrs_legacy(rsp["logs"], "submit_proposal")
-        assert ev["proposal_type"] == "SoftwareUpgrade", rsp
-        proposal_id = ev["proposal_id"]
-    proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_VOTING_PERIOD", proposal
-    for i in range(2):
-        rsp = cluster.gov_vote(
-            "validator",
-            proposal_id,
-            "yes",
-            i=i,
-            event_query_tx=wait_tx,
-            broadcast_mode=broadcast_mode,
-        )
-        assert rsp["code"] == 0, "error voting proposal: " + rsp["raw_log"]
-
-    proposal = cluster.query_proposal(proposal_id)
-    wait_for_block_time(
-        cluster, isoparse(proposal["voting_end_time"]) + timedelta(seconds=1)
-    )
-    proposal = cluster.query_proposal(proposal_id)
-    assert proposal["status"] == "PROPOSAL_STATUS_PASSED", proposal
-
-    # wait for upgrade plan activated
-    wait_for_block(cluster, target_height, 600)
-    # wait a little bit
-    time.sleep(0.5)
-
-    # check nodes are all stopped
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
-        != "RUNNING"
-    )
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")["state"]
-        != "RUNNING"
-    )
-
-    # check upgrade-info.json file is written
-    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
-    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
-    expected = {
-        "name": plan_name,
-        "height": target_height,
-    }
-    assert js1 == js2
-    assert expected.items() <= js1.items()
-
-    # use the upgrade-test binary
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/{plan_name}/bin/chain-maind "
-                f"start --home %(here)s/node{i}"
-            )
-        },
-    )
-    cluster.reload_supervisor()
-
-    # update the cli cmd to correct binary
-    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
-
-    # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2, 600)
-
-
 def test_manual_upgrade_all(cosmovisor_cluster):
     # test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
@@ -298,7 +347,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v2 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(
+    upgrade_pre_v50(
         cluster,
         "v2.0.0",
         target_height,
@@ -381,7 +430,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v3 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(
+    upgrade_pre_v50(
         cluster,
         "v3.0.0",
         target_height,
@@ -422,7 +471,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v4.2 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(
+    upgrade_pre_v50(
         cluster,
         "v4.2.0",
         target_height,
@@ -475,7 +524,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     # v5 upgrade
     target_height = cluster.block_height() + 15
-    upgrade(cluster, "v5.0.0", target_height, broadcast_mode="block")
+    upgrade_pre_v50(cluster, "v5.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
 
     acct = cli.account("cro1jgt29q28ehyc6p0fd5wqhwswfxv59lhppz3v65")
@@ -514,7 +563,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     consensus_validator_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "ValidatorParams")
     )
-    upgrade(cluster, "v6.0.0", target_height, broadcast_mode="block")
+    upgrade_pre_v50(cluster, "v6.0.0", target_height, broadcast_mode="block")
     cli = cluster.cosmos_cli()
     with pytest.raises(AssertionError):
         cli.query_params("icaauth")
@@ -568,141 +617,21 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     assert_v6_circuit_is_working(cli, cluster)
 
-    # v7 upgrade
-    propose_n_execute_v7_upgrade(cluster)
+    # v7 upgrade (lands on v7.2.0)
+    upgrade(cluster, "v7", summary="Upgrade to v7 with inflation module")
     assert_v7_inflation_module_is_working(cluster)
     assert_v7_tieredrewards_working(cluster)
 
-
-def assert_v7_inflation_module_is_working(cluster):
-    cli = cluster.cosmos_cli()
-    rsp = json.loads(
-        cli.raw(
-            "query",
-            "inflation",
-            "params",
-            output="json",
-            node=cli.node_rpc,
-        )
+    # v8 upgrade
+    v8_ctx = setup_pre_v8_upgrade(cluster)
+    upgrade(
+        cluster,
+        "v8",
+        summary="v8 vesting account positions patch + migration",
     )
-
-    rsp = rsp["params"]
-
-    expected_max_supply = "10000000000000000000"  # 100B * 10^8
-    assert rsp["max_supply"] == expected_max_supply, rsp["max_supply"]
-
-    expected_burned_addresses = ["cro1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqtcgxmv"]
-    assert rsp["burned_addresses"] == expected_burned_addresses, rsp["burned_addresses"]
-
-    print("v7 upgrade completed successfully")
-
-
-def assert_v7_tieredrewards_working(cluster):
-    from .tieredrewards_helpers import (
-        get_node_validator_addr,
-        lock_tier,
-        query_positions_by_owner,
-        query_tiers,
-    )
-
-    # Bank send smoke test
-    community_addr = cluster.address("community")
-    reserve_addr = cluster.address("reserve")
-    old_balance = cluster.balance(reserve_addr, denom="basecro")
-    cluster.transfer(
-        community_addr,
-        reserve_addr,
-        "100000basecro",
-    )
-    new_balance = cluster.balance(reserve_addr, denom="basecro")
-    assert (
-        new_balance > old_balance
-    ), f"bank send failed: {old_balance} -> {new_balance}"
-
-    wait_for_new_blocks(cluster, 1)
-
-    # Tiers are already created by the upgrade handler.
-    tiers = query_tiers(cluster)
-    tier_list = tiers.get("tiers", [])
-
-    # Lock tier smoke test
-    validator_addr = get_node_validator_addr(cluster)
-    tier_id = tier_list[0]["id"]
-    lock_amount = max(int(tier_list[0]["min_lock_amount"]), 1000000)
-    rsp = lock_tier(cluster, reserve_addr, tier_id, lock_amount, validator_addr)
-    assert rsp["code"] == 0, f"lock-tier failed: {rsp.get('raw_log', rsp)}"
-
-    # Query positions
-    rsp = query_positions_by_owner(cluster, reserve_addr)
-    positions = rsp.get("positions", [])
-    assert len(positions) == 1, f"expected 1 position, got {len(positions)}: {rsp}"
-
-    wait_for_new_blocks(cluster, 1)
-
-    print("v7 tieredrewards smoke test passed")
-
-
-def propose_n_execute_v7_upgrade(cluster):
-    plan_name = "v7"
-    target_height = cluster.block_height() + 30
-    print("propose v7 upgrade plan at", target_height)
-
-    rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
-        "community",
-        "software-upgrade",
-        {
-            "name": plan_name,
-            "title": "v7 upgrade",
-            "summary": "Upgrade to v7 with inflation module",
-            "upgrade-height": target_height,
-            "deposit": "0.1cro",
-        },
-    )
-    assert rsp["code"] == 0, rsp["raw_log"]
-
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
-
-    wait_for_block(cluster, target_height)
-    time.sleep(1)
-
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node0")["state"]
-        != "RUNNING"
-    )
-    assert (
-        cluster.supervisor.getProcessInfo(f"{cluster.chain_id}-node1")["state"]
-        != "RUNNING"
-    )
-
-    js1 = json.load((cluster.home(0) / "data/upgrade-info.json").open())
-    js2 = json.load((cluster.home(1) / "data/upgrade-info.json").open())
-    expected = {
-        "name": "v7",
-        "height": target_height,
-    }
-    assert js1 == js2
-    assert expected.items() <= js1.items()
-
-    # use the upgrade-test binary
-    edit_chain_program(
-        cluster.chain_id,
-        cluster.data_dir / SUPERVISOR_CONFIG_FILE,
-        lambda i, _: {
-            "command": (
-                f"%(here)s/node{i}/cosmovisor/upgrades/{plan_name}/bin/chain-maind "
-                f"start --home %(here)s/node{i}"
-            )
-        },
-    )
-    cluster.reload_supervisor()
-
-    # update the cli cmd to correct binary
-    cluster.cmd = cluster.data_root / f"cosmovisor/upgrades/{plan_name}/bin/chain-maind"
-
-    # wait for it to generate new blocks
-    wait_for_block(cluster, target_height + 2)
-
-    return target_height
+    assert_v8_vesting_migration(cluster, v8_ctx)
+    assert_v8_no_vesting_positions(cluster)
+    assert_v8_vesting_filter_active(cluster)
 
 
 def test_cancel_upgrade(cluster):

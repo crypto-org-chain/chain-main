@@ -6,7 +6,11 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 )
 
 func (s *KeeperSuite) TestMsgLockTier_Basic() {
@@ -226,4 +230,30 @@ func (s *KeeperSuite) TestMsgLockTier_ValidatorNotBonded() {
 		ValidatorAddress: valAddr.String(),
 	})
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+}
+
+func (s *KeeperSuite) TestMsgLockTier_VestingAccountNotAllowed() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
+
+	lockedAmount := sdkmath.NewInt(1_000_000)
+	lockedCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, lockedAmount))
+
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	baseAcc, ok := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, owner).(*authtypes.BaseAccount)
+	s.Require().True(ok)
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(baseAcc, lockedCoins)
+	s.Require().NoError(err)
+	s.app.AccountKeeper.SetAccount(s.ctx, vestingAcc)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner, lockedCoins))
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.LockTier(s.ctx, &types.MsgLockTier{
+		Owner:            owner.String(),
+		Id:               1,
+		Amount:           lockedAmount,
+		ValidatorAddress: valAddr.String(),
+	})
+	s.Require().ErrorIs(err, types.ErrVestingAccountNotAllowed)
 }

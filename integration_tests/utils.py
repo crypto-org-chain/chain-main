@@ -90,6 +90,26 @@ def module_address(name):
     return bech32.bech32_encode("cro", bech32.convertbits(data, 8, 5))
 
 
+def unwrap_account(rsp):
+    """Flatten the amino-style account JSON returned by `cli.account(addr)`.
+
+    The CLI returns either a flat proto-JSON dict (with `@type`) or an
+    amino-wrapped one shaped like `{"type": ..., "value": {...}}`. Normalize
+    to the proto shape so callers can read `acct["@type"]` uniformly.
+    """
+    if "@type" in rsp:
+        return rsp
+    if "account" in rsp:
+        rsp = rsp["account"]
+    if "@type" in rsp:
+        return rsp
+    if "type" in rsp and "value" in rsp:
+        out = dict(rsp["value"])
+        out["@type"] = rsp["type"]
+        return out
+    return rsp
+
+
 def get_sync_info(s):
     return s.get("SyncInfo") or s.get("sync_info")
 
@@ -366,6 +386,46 @@ def find_balance(balances, denom):
         if balance["denom"] == denom:
             return int(balance["amount"])
     return 0
+
+
+def create_permanent_lock_vesting_account(
+    cluster, vested_amount, funder="signer1", name="permanent-locked-account"
+):
+    cli = cluster.cosmos_cli()
+    cli.raw(
+        "keys",
+        "add",
+        name,
+        keyring_backend="test",
+        home=cli.data_dir,
+        output="json",
+    )
+    owner_addr = (
+        cli.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
+            keyring_backend="test",
+            home=cli.data_dir,
+        )
+        .decode()
+        .strip()
+    )
+
+    rsp = cli.tx(
+        "vesting",
+        "create-permanent-locked-account",
+        owner_addr,
+        vested_amount,
+        from_=cluster.address(funder),
+        chain_id=cli.chain_id,
+    )
+    assert (
+        rsp["code"] == 0
+    ), f"create-permanent-locked-account failed: {rsp.get('raw_log', rsp)}"
+
+    return owner_addr
 
 
 def transfer(cli, from_, to, coins, *k_options, i=0, **kv_options):

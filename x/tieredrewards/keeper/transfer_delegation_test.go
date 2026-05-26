@@ -6,12 +6,26 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 
+	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+// delegatedVesting returns the DelegatedVesting field of a vesting account,
+// for use in tests that need to assert tracking behavior.
+func (s *KeeperSuite) delegatedVesting(addr sdk.AccAddress) sdk.Coins {
+	s.T().Helper()
+	acc, ok := s.app.AccountKeeper.GetAccount(s.ctx, addr).(interface {
+		GetDelegatedVesting() sdk.Coins
+	})
+	s.Require().True(ok, "account must be a vesting account")
+	return acc.GetDelegatedVesting()
+}
 
 // --- transferDelegationToPosition tests ---
 func (s *KeeperSuite) TestTransferDelegationToPosition_PartialTransfer() {
@@ -469,4 +483,66 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_OwnerHasExistingDelegat
 	delAfter, err := s.app.StakingKeeper.GetDelegation(s.ctx, ownerAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(delBefore.Shares.Add(pos.Delegation.Shares), delAfter.Shares, "owner delegation shares should increase by the amount transferred")
+}
+
+// Can be deleted after v8 upgrade
+func (s *KeeperSuite) TestTransferDelegationFromPosition_VestingOwnerForcedExitWithDelegation() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	val := vals[0]
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
+
+	lockedAmount := sdkmath.NewInt(1_000_000)
+	lockedCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, lockedAmount))
+
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	baseAcc, ok := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, owner).(*authtypes.BaseAccount)
+	s.Require().True(ok)
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(baseAcc, lockedCoins)
+	s.Require().NoError(err)
+	s.app.AccountKeeper.SetAccount(s.ctx, vestingAcc)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner, lockedCoins))
+
+	// 1. Create a delegation from the vesting account.
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, lockedAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+	s.Require().Equal(lockedCoins.String(), s.delegatedVesting(owner).String())
+
+	// 2. Transfer the delegation to the position.
+	posDelAddr := types.GetDelegatorAddress(0)
+	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
+	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, owner.String(), posDelAddr, valAddr.String(), lockedAmount)
+	s.Require().NoError(err)
+	_, err = s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
+	s.Require().Error(err, "owner delegation should be gone after bypass commit")
+	s.Require().Equal(lockedCoins.String(), s.delegatedVesting(owner).String(),
+		"vesting account's delegation should remain unchanged(stale)")
+
+	// 3. Force exit - Transfer the delegation back to the owner.
+	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
+	s.Require().NoError(err)
+	posState := types.PositionState{
+		Position:   types.Position{Id: 0, Owner: owner.String()},
+		Delegation: &posDel,
+	}
+	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, posState, valAddr, lockedAmount)
+	s.Require().NoError(err)
+
+	ownerDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(ownerDel.Shares.IsPositive())
+	s.Require().Equal(lockedCoins.String(), s.delegatedVesting(owner).String(),
+		"vesting account's delegation should remain unchanged")
+
+	// 4: Sanity check when vesting account undelegates.
+	_, _, err = s.app.StakingKeeper.Undelegate(s.ctx, owner, valAddr, ownerDel.Shares)
+	s.Require().NoError(err)
+	s.completeStakingUnbonding(valAddr, owner)
+
+	s.Require().Equal(lockedCoins.String(),
+		s.app.BankKeeper.GetAllBalances(s.ctx, owner).String(),
+		"owner's bank balance should hold the full returned principal")
+	s.Require().True(s.app.BankKeeper.SpendableCoins(s.ctx, owner).IsZero(),
+		"vesting lock must hold — SpendableCoins must be zero after the round trip")
 }

@@ -6,6 +6,10 @@
 
 - [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
 
+### Bugfixes
+
+- [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
+
 *May 8, 2026*
 
 ## v7.1.0

@@ -633,7 +633,7 @@ func New(
 	app.ModuleManager.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		minttypes.ModuleName,
-		tieredrewardstypes.ModuleName, // has to be before distribution module to calculate how much more base rewards to distribute
+		tieredrewardstypes.ModuleName, // has to be after mint module and before distribution module to calculate how much more base rewards to distribute
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,

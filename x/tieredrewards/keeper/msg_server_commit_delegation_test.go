@@ -8,6 +8,8 @@ import (
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -359,4 +361,34 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {
 		Amount:           sdkmath.NewInt(1000),
 	})
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
+}
+
+func (s *KeeperSuite) TestMsgCommitDelegationToTier_VestingAccountNotAllowed() {
+	s.setupTier(1)
+	vals, bondDenom := s.getStakingData()
+	val := vals[0]
+	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
+
+	lockedAmount := sdkmath.NewInt(1_000_000)
+	lockedCoins := sdk.NewCoins(sdk.NewCoin(bondDenom, lockedAmount))
+
+	owner := sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address())
+	baseAcc, ok := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, owner).(*authtypes.BaseAccount)
+	s.Require().True(ok)
+	vestingAcc, err := vestingtypes.NewPermanentLockedAccount(baseAcc, lockedCoins)
+	s.Require().NoError(err)
+	s.app.AccountKeeper.SetAccount(s.ctx, vestingAcc)
+	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, owner, lockedCoins))
+
+	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, lockedAmount, stakingtypes.Unbonded, val, true)
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+		DelegatorAddress: owner.String(),
+		ValidatorAddress: valAddr.String(),
+		Id:               1,
+		Amount:           lockedAmount,
+	})
+	s.Require().ErrorIs(err, types.ErrVestingAccountNotAllowed)
 }
