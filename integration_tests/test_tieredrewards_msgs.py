@@ -31,6 +31,7 @@ from .tieredrewards_helpers import (
 from .utils import (
     cluster_fixture,
     find_log_event_attrs,
+    query_staking_delegation,
     wait_for_block_time,
     wait_for_new_blocks,
 )
@@ -146,19 +147,8 @@ def test_commit_delegation(cluster):
     wait_for_new_blocks(cluster, 1)
 
     # Record staking shares before commit
-    del_before = json.loads(
-        cli.raw(
-            "q",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            output="json",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    shares_before = Decimal(del_before["delegation_response"]["delegation"]["shares"])
+    del_before = query_staking_delegation(cluster, owner, validator)
+    shares_before = Decimal(del_before["delegation"]["shares"])
 
     # Commit to tier
     commit_amount = TIER_1_MIN * 2
@@ -172,19 +162,8 @@ def test_commit_delegation(cluster):
     assert int(pos["amount"]) == commit_amount
 
     # Staking delegation should have decreased
-    del_after = json.loads(
-        cli.raw(
-            "q",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            output="json",
-            home=cli.data_dir,
-            node=cli.node_rpc,
-        )
-    )
-    shares_after = Decimal(del_after["delegation_response"]["delegation"]["shares"])
+    del_after = query_staking_delegation(cluster, owner, validator)
+    shares_after = Decimal(del_after["delegation"]["shares"])
     assert shares_after < shares_before
 
 
@@ -654,19 +633,8 @@ def test_exit_tier_with_delegation(cluster):
     assert ev is not None, "EventExitTierWithDelegation not found"
 
     # User should have a staking delegation on the validator
-    cli = cluster.cosmos_cli(0)
-    del_resp = json.loads(
-        cli.raw(
-            "query",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            node=cli.node_rpc,
-            output="json",
-        )
-    )
-    shares = del_resp["delegation_response"]["delegation"]["shares"]
+    del_resp = query_staking_delegation(cluster, owner, validator)
+    shares = del_resp["delegation"]["shares"]
     assert (
         int(shares.split(".")[0]) > 0
     ), "owner should have staking delegation after exit"
@@ -708,19 +676,8 @@ def test_exit_tier_with_delegation_partial(cluster):
     assert pos_after["validator"] != "", "position should still be delegated"
 
     # User should have a staking delegation
-    cli = cluster.cosmos_cli(0)
-    del_resp = json.loads(
-        cli.raw(
-            "query",
-            "staking",
-            "delegation",
-            owner,
-            validator,
-            node=cli.node_rpc,
-            output="json",
-        )
-    )
-    shares = del_resp["delegation_response"]["delegation"]["shares"]
+    del_resp = query_staking_delegation(cluster, owner, validator)
+    shares = del_resp["delegation"]["shares"]
     assert (
         int(shares.split(".")[0]) > 0
     ), "owner should have staking delegation after partial exit"

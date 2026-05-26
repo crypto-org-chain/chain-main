@@ -1,5 +1,3 @@
-import json
-
 from .tieredrewards_helpers import (
     DENOM,
     commit_delegation,
@@ -11,6 +9,7 @@ from .tieredrewards_helpers import (
 )
 from .utils import (
     create_permanent_lock_vesting_account,
+    query_staking_delegation,
     unwrap_account,
     wait_for_new_blocks,
 )
@@ -152,18 +151,8 @@ def assert_v7_3_vesting_migration(cluster, ctx):
     ), f"vesting metadata must survive, got {post_acct}"
 
     # Owner has staking delegation restored, equal to commit + lock.
-    cli = cluster.cosmos_cli()
-    deleg_raw = cli.raw(
-        "query",
-        "staking",
-        "delegation",
-        owner_addr,
-        val_addr,
-        output="json",
-        node=cli.node_rpc,
-    )
-    deleg = json.loads(deleg_raw)
-    deleg_amount = int(deleg["delegation_response"]["balance"]["amount"])
+    deleg = query_staking_delegation(cluster, owner_addr, val_addr)
+    deleg_amount = int(deleg["balance"]["amount"])
     assert deleg_amount == total_amount, (
         f"owner delegation should be {total_amount} "
         f"(commit={commit_amount} + lock={lock_amount}), got {deleg_amount}"
