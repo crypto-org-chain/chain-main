@@ -151,7 +151,8 @@ func (d RejectVestingTierMsgDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, si
 
 		acc := d.ak.GetAccount(ctx, accAddr)
 		if acc == nil {
-			return ctx, newsdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "account not found: %s", accAddr.String())
+			// Skip and let downstream decorators surface the error.
+			continue
 		}
 
 		if _, ok := acc.(sdkvesting.VestingAccount); ok {

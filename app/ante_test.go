@@ -165,12 +165,10 @@ func (s *AnteTestSuite) TestRejectVestingTierMsgDecorator() {
 			wantErr: nil,
 		},
 		{
-			// Account doesn't exist yet — decorator now treats this as a
-			// hard error so the message handler doesn't have to chase it.
-			name:    "CheckTx + non-existent account + MsgLockTier → rejected (invalid address)",
+			name:    "CheckTx + non-existent account + MsgLockTier → allowed (deferred)",
 			ctx:     checkTxCtx,
 			msgs:    []sdk.Msg{lockTier(sdk.AccAddress(secp256k1.GenPrivKey().PubKey().Address()).String())},
-			wantErr: sdkerrors.ErrInvalidAddress,
+			wantErr: nil,
 		},
 		{
 			name:    "CheckTx + malformed address + MsgLockTier → rejected (invalid address)",
