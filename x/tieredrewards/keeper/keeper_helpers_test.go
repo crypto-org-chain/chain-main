@@ -18,6 +18,16 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// peekNextPositionId returns what the next position ID will be without
+// advancing the sequence; used to compute the position's delegator address
+// before the position is actually created.
+func (s *KeeperSuite) peekNextPositionId() uint64 {
+	s.T().Helper()
+	id, err := s.keeper.NextPositionId.Peek(s.ctx)
+	s.Require().NoError(err)
+	return id
+}
+
 // fundRewardsPool funds the rewards pool with the given amount.
 func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
 	s.T().Helper()
@@ -318,7 +328,7 @@ func (s *KeeperSuite) convertPosDelAccToVestingAcc(delAddr sdk.AccAddress, bondD
 	existing := s.app.AccountKeeper.GetAccount(s.ctx, delAddr)
 	s.Require().NotNil(existing)
 	baseAcc, ok := existing.(*authtypes.BaseAccount)
-	s.Require().True(ok, "expected BaseAccount at position delegation address")
+	s.Require().True(ok, "expected BaseAccount at position delegator address")
 
 	plva, err := vestingtypes.NewPermanentLockedAccount(
 		baseAcc, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)),

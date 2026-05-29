@@ -72,7 +72,7 @@ func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAd
 func (k Keeper) getDelegation(ctx context.Context, pos types.Position) (*stakingtypes.Delegation, error) {
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 	// A position has at most one delegation.
 	dels, err := k.stakingKeeper.GetDelegatorDelegations(ctx, delAddr, 1)
@@ -89,7 +89,7 @@ func (k Keeper) getDelegation(ctx context.Context, pos types.Position) (*staking
 func (k Keeper) isRedelegating(ctx context.Context, pos types.Position) (bool, error) {
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 	reds, err := k.stakingKeeper.GetRedelegations(ctx, delAddr, 1)
 	if err != nil {
@@ -101,7 +101,7 @@ func (k Keeper) isRedelegating(ctx context.Context, pos types.Position) (bool, e
 func (k Keeper) isUnbonding(ctx context.Context, pos types.Position) (bool, error) {
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {

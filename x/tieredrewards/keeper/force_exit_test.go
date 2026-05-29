@@ -112,16 +112,6 @@ func (s *KeeperSuite) createLockTierPositionV1(
 	return state
 }
 
-// peekNextPositionId returns what the next position ID will be without
-// advancing the sequence; used to compute the position's delegator address
-// before the position is actually created.
-func (s *KeeperSuite) peekNextPositionId() uint64 {
-	s.T().Helper()
-	id, err := s.keeper.NextPositionId.Peek(s.ctx)
-	s.Require().NoError(err)
-	return id
-}
-
 // newVestingOwnerWithBalance creates a fresh PermanentLockedAccount address
 // funded with `balance` of bondDenom and returns the address.
 func (s *KeeperSuite) newVestingOwnerWithBalance(bondDenom string, originalVesting, balance sdkmath.Int) sdk.AccAddress {

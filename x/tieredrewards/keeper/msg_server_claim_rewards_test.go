@@ -727,7 +727,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_OwnerReceivesRewards() {
 
 	// Pre-claim: posDelAddr should already be empty (delegation consumes the funds).
 	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
-		"position's delegation address must hold no bondDenom pre-claim")
+		"position's delegator address must hold no bondDenom pre-claim")
 
 	// Let time pass so bonus accrues, then accrue base rewards on the validator.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)

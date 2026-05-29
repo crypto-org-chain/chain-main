@@ -176,7 +176,7 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	completionTime, _, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
@@ -239,7 +239,7 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	completionTime, unbondingID, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
@@ -304,7 +304,7 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
@@ -488,7 +488,7 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	balances := ms.bankKeeper.SpendableCoins(ctx, delAddr)
@@ -564,7 +564,7 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 
 		delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 		if err != nil {
-			return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+			return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 		}
 
 		// sweeps any remaining dust if any (usually zero)

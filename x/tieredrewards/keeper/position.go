@@ -92,7 +92,7 @@ func (k Keeper) createPositionDelegatorAccount(ctx context.Context, owner sdk.Ac
 	for nonce := uint64(0); nonce < MaxPositionAddressDerivationAttempts; nonce++ {
 		addr := types.DerivePositionDelegatorAddress(headerHash, owner, id, nonce)
 		if k.accountKeeper.GetAccount(ctx, addr) != nil {
-			k.logger(ctx).Info("position delegation address already exists", "address", addr.String())
+			k.logger(ctx).Error("position delegator address already exists", "address", addr.String())
 			continue
 		}
 		acc := k.accountKeeper.NewAccountWithAddress(ctx, addr)
@@ -100,7 +100,7 @@ func (k Keeper) createPositionDelegatorAccount(ctx context.Context, owner sdk.Ac
 		return addr, nil
 	}
 	return nil, errorsmod.Wrapf(types.ErrPositionAddressDerivation,
-		"could not derive a free position address within %d attempts (id=%d, owner=%s)",
+		"could not derive a free position delegator address within %d attempts (id=%d, owner=%s)",
 		MaxPositionAddressDerivationAttempts, id, owner.String())
 }
 
@@ -209,7 +209,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	del, err := k.getDelegation(ctx, pos)

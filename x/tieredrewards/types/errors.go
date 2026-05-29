@@ -33,5 +33,5 @@ var (
 	ErrValidatorPositionCountStore      = errors.Register(ModuleName, 28, "validator position count store operation failed")
 	ErrInvalidPositionID                = errors.Register(ModuleName, 29, "invalid position id")
 	ErrVestingAccountNotAllowed         = errors.Register(ModuleName, 30, "vesting accounts are not allowed to execute this action")
-	ErrPositionAddressDerivation        = errors.Register(ModuleName, 31, "could not derive a free position delegation address")
+	ErrPositionAddressDerivation        = errors.Register(ModuleName, 31, "could not derive a free position delegator address")
 )

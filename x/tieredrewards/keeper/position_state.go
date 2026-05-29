@@ -43,7 +43,7 @@ func (k Keeper) getDelegatedAmount(ctx context.Context, pos types.PositionState)
 func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (math.Int, error) {
 	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {
@@ -56,7 +56,7 @@ func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (m
 	if err != nil {
 		return math.Int{}, err
 	}
-	return k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount, nil
+	return k.bankKeeper.SpendableCoins(ctx, delAddr).AmountOf(bondDenom), nil
 }
 
 // GetPositionStatesByOwner returns each owned position paired with its

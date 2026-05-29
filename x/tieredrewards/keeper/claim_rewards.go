@@ -25,7 +25,7 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos types.PositionState) (
 	}
 	posDelAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, posDelAddr, valAddr)
 	if err != nil {

@@ -56,8 +56,8 @@ func (s *KeeperSuite) TestMigrate1to2_ExitsVestedOwnerPositions() {
 	))
 	regularPos := s.createLockTierPositionV1(regularOwner, valAddr, amount)
 
-	// Vesting owner with two tier positions (commit-origin and lock-origin);
-	// both must be deleted by the migration.
+	// Vesting owner with two tier positions.
+	// Both must be deleted by the migration.
 	vestingOwner := s.newVestingOwnerWithBalance(bondDenom, amount, amount.MulRaw(3))
 	commitPos := s.createCommitPositionV1(vestingOwner, val, valAddr, amount)
 	lockPos := s.createLockTierPositionV1(vestingOwner, valAddr, amount)
@@ -74,7 +74,7 @@ func (s *KeeperSuite) TestMigrate1to2_ExitsVestedOwnerPositions() {
 	s.Require().Error(err, "lock-origin vesting position must be deleted")
 
 	// Regular position survives, with DelegatorAddress equal to the legacy
-	// derivation (set at creation time and idempotent under backfill).
+	// derivation.
 	survived, err := s.keeper.Positions.Get(s.ctx, regularPos.Id)
 	s.Require().NoError(err, "regular position must survive")
 	s.Require().Equal(regularOwner.String(), survived.Owner)
