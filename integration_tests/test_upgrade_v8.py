@@ -234,9 +234,7 @@ def _setup_precreated_delegator_scenario(cluster):
     ), f"lock-tier on pre-poisoned address failed: {rsp.get('raw_log', rsp)}"
 
     positions = query_positions_by_owner(cluster, owner_addr).get("positions", [])
-    assert (
-        len(positions) == 1
-    ), f"expected 1 precreate-victim position, got {positions}"
+    assert len(positions) == 1, f"expected 1 precreate-victim position, got {positions}"
     actual_pos_id = int(positions[0]["id"])
     assert actual_pos_id == next_pos_id, (
         f"expected position id {next_pos_id} (the front-run target), "
@@ -369,9 +367,9 @@ def assert_v8_precreated_delegator_lifecycle(cluster, ctx):
         "chainmain.tieredrewards.v1.EventPositionUndelegated",
         lambda attrs: "completion_time" in attrs,
     )
-    completion_time = isoparse(
-        unbond_data["completion_time"].strip('"')
-    ) + timedelta(seconds=1)
+    completion_time = isoparse(unbond_data["completion_time"].strip('"')) + timedelta(
+        seconds=1
+    )
     wait_for_block_time(cluster, completion_time)
     wait_for_new_blocks(cluster, 1)
 
