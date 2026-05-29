@@ -13,6 +13,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 // HandlerOptions extend the SDK's AnteHandler options by requiring the IBC
@@ -133,7 +134,7 @@ func (d RejectVestingTierMsgDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, si
 		return next(ctx, tx, simulate)
 	}
 
-	for _, msg := range tx.GetMsgs() {
+	for _, msg := range flattenAuthzMsgs(tx.GetMsgs()) {
 		var addr string
 		switch m := msg.(type) {
 		case *tieredrewardstypes.MsgLockTier:
@@ -161,4 +162,24 @@ func (d RejectVestingTierMsgDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, si
 	}
 
 	return next(ctx, tx, simulate)
+}
+
+func flattenAuthzMsgs(msgs []sdk.Msg) []sdk.Msg {
+	out := make([]sdk.Msg, 0, len(msgs))
+	queue := append([]sdk.Msg(nil), msgs...)
+	for len(queue) > 0 {
+		m := queue[0]
+		queue = queue[1:]
+		exec, ok := m.(*authz.MsgExec)
+		if !ok {
+			out = append(out, m)
+			continue
+		}
+		inner, err := exec.GetMessages()
+		if err != nil {
+			continue
+		}
+		queue = append(queue, inner...)
+	}
+	return out
 }
