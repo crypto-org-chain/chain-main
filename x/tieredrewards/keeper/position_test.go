@@ -401,12 +401,10 @@ func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
 // happy path: with no pre-existing accounts, the helper returns the nonce-0
 // address and reserves a BaseAccount there.
 func (s *KeeperSuite) TestCreatePositionDelegatorAccount_FreshAddressOnFirstAttempt() {
-	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
-
-	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, testutil.TestOwner, 1)
 	s.Require().NoError(err)
 
-	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, 0)
+	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), testutil.TestOwner, 1, 0)
 	s.Require().Equal(expected, addr)
 
 	acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
@@ -417,19 +415,17 @@ func (s *KeeperSuite) TestCreatePositionDelegatorAccount_FreshAddressOnFirstAtte
 // collision retry loop advances the nonce and finds a free address when the
 // nonce slot is occupied by a pre-existing account.
 func (s *KeeperSuite) TestCreatePositionDelegatorAccount_BoundedCollisionLoop() {
-	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
-
 	// Pre-create accounts at nonce 0, 1, 2 to force the loop to iterate.
 	for nonce := uint64(0); nonce < 3; nonce++ {
-		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, nonce)
+		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), testutil.TestOwner, 1, nonce)
 		blockerAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, blockerAddr)
 		s.app.AccountKeeper.SetAccount(s.ctx, blockerAcc)
 	}
 
-	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, testutil.TestOwner, 1)
 	s.Require().NoError(err)
 
-	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, 3)
+	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), testutil.TestOwner, 1, 3)
 	s.Require().Equal(expected, addr,
 		"loop must advance past pre-existing accounts and return the next free nonce")
 }
@@ -439,14 +435,12 @@ func (s *KeeperSuite) TestCreatePositionDelegatorAccount_BoundedCollisionLoop() 
 // [0, MaxPositionAddressDerivationAttempts) is occupied, the helper errors
 // rather than spinning forever.
 func (s *KeeperSuite) TestCreatePositionDelegatorAccount_ErrorOnExhaustion() {
-	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
-
 	for nonce := uint64(0); nonce < keeper.MaxPositionAddressDerivationAttempts; nonce++ {
-		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, nonce)
+		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), testutil.TestOwner, 1, nonce)
 		blockerAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, blockerAddr)
 		s.app.AccountKeeper.SetAccount(s.ctx, blockerAcc)
 	}
 
-	_, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	_, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, testutil.TestOwner, 1)
 	s.Require().ErrorIs(err, types.ErrPositionAddressDerivation)
 }
