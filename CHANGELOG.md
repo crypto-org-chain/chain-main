@@ -5,6 +5,7 @@
 ### Bugfixes
 
 - [#1306](https://github.com/crypto-org-chain/chain-main/pull/1306) fix(x/tieredrewards): reject `MsgLockTier` and `MsgCommitDelegationToTier` from vesting accounts at checkTx.
+- [#1307](https://github.com/crypto-org-chain/chain-main/pull/1307) fix(x/tieredrewards): reject authz `MsgExec`-wrapped `MsgLockTier` and `MsgCommitDelegationToTier` from vesting accounts at checkTx.
 
 *May 8, 2026*
 

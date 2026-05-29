@@ -18,6 +18,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
+	"github.com/cosmos/cosmos-sdk/x/authz"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
@@ -71,6 +72,13 @@ func (s *AnteTestSuite) makeVestingAccount() string {
 	s.Require().NoError(err)
 	s.app.AccountKeeper.SetAccount(s.ctx, vacc)
 	return addr.String()
+}
+
+func (s *AnteTestSuite) makeExec(grantee string, inner ...sdk.Msg) sdk.Msg {
+	granteeAddr, err := sdk.AccAddressFromBech32(grantee)
+	s.Require().NoError(err)
+	m := authz.NewMsgExec(granteeAddr, inner)
+	return &m
 }
 
 func (s *AnteTestSuite) runDecorator(ctx sdk.Context, msgs ...sdk.Msg) error {
@@ -197,6 +205,63 @@ func (s *AnteTestSuite) TestRejectVestingTierMsgDecorator() {
 			ctx:     reCheckTxCtx,
 			msgs:    []sdk.Msg{lockTier(regular)},
 			wantErr: nil,
+		},
+		{
+			// authz bypass: vesting owner has a grantee submit MsgExec wrapping
+			// MsgLockTier. The decorator must descend into MsgExec and still
+			// reject based on the inner message's owner.
+			name:    "CheckTx + MsgExec wrapping vesting MsgLockTier → rejected",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, lockTier(vesting))},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			name:    "CheckTx + MsgExec wrapping vesting MsgCommitDelegationToTier → rejected",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, commit(vesting))},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			// Single-level unwrap is bypassable by adding another wrap; the
+			// decorator must recurse to arbitrary depth.
+			name:    "CheckTx + nested MsgExec wrapping vesting MsgLockTier → rejected",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, s.makeExec(regular, lockTier(vesting)))},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			name:    "CheckTx + MsgExec wrapping base MsgLockTier → allowed",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, lockTier(regular))},
+			wantErr: nil,
+		},
+		{
+			name:    "CheckTx + MsgExec wrapping unrelated MsgSend → allowed",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, unrelated)},
+			wantErr: nil,
+		},
+		{
+			// MsgExec mixed with a non-wrapped vesting MsgLockTier: still rejected.
+			name:    "CheckTx + MsgExec(unrelated) + bare vesting MsgLockTier → rejected",
+			ctx:     checkTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, unrelated), lockTier(vesting)},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
+		},
+		{
+			// Load-bearing: DeliverTx must NEVER reject — divergence here
+			// would halt consensus. Same invariant applies to MsgExec-wrapped
+			// payloads.
+			name:    "DeliverTx + MsgExec wrapping vesting MsgLockTier → allowed (consensus safety)",
+			ctx:     deliverTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, lockTier(vesting))},
+			wantErr: nil,
+		},
+		{
+			name:    "ReCheckTx + nested MsgExec wrapping vesting MsgLockTier → rejected",
+			ctx:     reCheckTxCtx,
+			msgs:    []sdk.Msg{s.makeExec(regular, s.makeExec(regular, lockTier(vesting)))},
+			wantErr: tieredrewardstypes.ErrVestingAccountNotAllowed,
 		},
 	}
 
