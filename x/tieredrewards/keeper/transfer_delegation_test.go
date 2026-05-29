@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -47,7 +48,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_PartialTransfer() {
 
 	delTotalTokensBefore := valBefore.TokensFromShares(del.Shares).TruncateInt()
 	delHalfTokens := delTotalTokensBefore.Quo(sdkmath.NewInt(2))
-	posDelAddr := types.GetDelegatorAddress(1)
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1))
 
 	newShares, err := s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), posDelAddr, valAddr.String(), delHalfTokens)
 	s.Require().NoError(err)
@@ -91,7 +92,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_FullTransfer() {
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	delTokensBefore := valBefore.TokensFromShares(del.Shares).TruncateInt()
-	posDelAddr := types.GetDelegatorAddress(1)
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1))
 
 	newShares, err := s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), posDelAddr, valAddr.String(), delTokensBefore)
 	s.Require().NoError(err)
@@ -120,7 +121,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_ZeroAmount() {
 	s.Require().NoError(err)
 	val := vals[0]
 
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), types.GetDelegatorAddress(1), val.GetOperator(), sdkmath.ZeroInt())
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), val.GetOperator(), sdkmath.ZeroInt())
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
@@ -148,13 +149,13 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_TinyAmount() {
 	validator.Tokens = sdkmath.NewIntWithDecimal(1, 19)
 	s.Require().NoError(s.app.StakingKeeper.SetValidator(s.ctx, validator))
 
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), types.GetDelegatorAddress(1), valAddr.String(), sdkmath.OneInt())
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), valAddr.String(), sdkmath.OneInt())
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrTinyTransferDelegationAmount)
 }
 
 func (s *KeeperSuite) TestTransferDelegationToPosition_InvalidValidator() {
-	_, err := s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), types.GetDelegatorAddress(1), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
+	_, err := s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress([]byte("test_delegator_addr1")).String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), sdk.ValAddress([]byte("nonexistent_val_addr")).String(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrTransferDelegationSrcNotFound)
 }
@@ -175,7 +176,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_InsufficientTokens() {
 	s.Require().NoError(err)
 	excessTokens := validator.TokensFromShares(del.Shares).TruncateInt().Add(sdkmath.NewInt(1000000))
 
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), types.GetDelegatorAddress(1), valAddr.String(), excessTokens)
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), valAddr.String(), excessTokens)
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, sdkerrors.ErrInvalidRequest)
 }
@@ -185,7 +186,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_PositionCannotTransferToS
 	s.Require().NoError(err)
 	val := vals[0]
 
-	posDelAddr := types.GetDelegatorAddress(1)
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1))
 
 	_, err = s.keeper.TransferDelegationToPosition(s.ctx, posDelAddr.String(), posDelAddr, val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
@@ -199,7 +200,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_NoDelegation() {
 
 	randomAddr := sdk.AccAddress([]byte("addr_with_no_delegation"))
 
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, randomAddr.String(), types.GetDelegatorAddress(1), val.GetOperator(), sdkmath.NewInt(1000))
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, randomAddr.String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err, "should fail when delegator has no delegation")
 }
 
@@ -208,7 +209,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_InvalidFromAddress() {
 	s.Require().NoError(err)
 	val := vals[0]
 
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, "invalid_address", types.GetDelegatorAddress(1), val.GetOperator(), sdkmath.NewInt(1000))
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, "invalid_address", sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), val.GetOperator(), sdkmath.NewInt(1000))
 	s.Require().Error(err)
 }
 
@@ -246,7 +247,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_RejectsActiveRedelegation
 	s.Require().NoError(err)
 
 	// Transfer at the second validator must be blocked to prevent slash escape.
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), types.GetDelegatorAddress(1), secondValAddr.String(), sdkmath.NewInt(50_000))
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, sdk.AccAddress(delAddr).String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), secondValAddr.String(), sdkmath.NewInt(50_000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrActiveRedelegation)
 }
@@ -285,7 +286,7 @@ func (s *KeeperSuite) TestTransferDelegationToPosition_RejectsUnbondedValidator(
 	s.Require().False(val.IsBonded(), "jailed validator should not be bonded")
 
 	// Transfer on the now-jailed (unbonding) validator must fail.
-	_, err = s.keeper.TransferDelegationToPosition(s.ctx, dstAccAddr.String(), types.GetDelegatorAddress(1), dstValAddr.String(), sdkmath.NewInt(50_000))
+	_, err = s.keeper.TransferDelegationToPosition(s.ctx, dstAccAddr.String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), dstValAddr.String(), sdkmath.NewInt(50_000))
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, types.ErrValidatorNotBonded)
 }
@@ -300,7 +301,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Basic() {
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Record validator tokens before transfer.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -336,7 +337,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_Partial() {
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Compute token value from shares for the half amount.
 	valBefore, err := s.app.StakingKeeper.GetValidator(s.ctx, valAddr)
@@ -509,7 +510,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_VestingOwnerForcedExitW
 	s.Require().Equal(lockedCoins.String(), s.delegatedVesting(owner).String())
 
 	// 2. Transfer the delegation to the position.
-	posDelAddr := types.GetDelegatorAddress(0)
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 0))
 	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
 	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
 	_, err = s.keeper.TransferDelegationToPosition(s.ctx, owner.String(), posDelAddr, valAddr.String(), lockedAmount)
@@ -523,7 +524,7 @@ func (s *KeeperSuite) TestTransferDelegationFromPosition_VestingOwnerForcedExitW
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 	posState := types.PositionState{
-		Position:   types.Position{Id: 0, Owner: owner.String()},
+		Position:   types.Position{Id: 0, Owner: owner.String(), DelegatorAddress: posDelAddr.String()},
 		Delegation: &posDel,
 	}
 	_, _, _, err = s.keeper.TransferDelegationFromPosition(s.ctx, posState, valAddr, lockedAmount)

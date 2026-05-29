@@ -6,9 +6,11 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
@@ -16,7 +18,7 @@ func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.Posit
 	if err != nil {
 		return types.PositionState{}, err
 	}
-	del, err := k.getDelegation(ctx, posId)
+	del, err := k.getDelegation(ctx, pos)
 	if err != nil {
 		return types.PositionState{}, err
 	}
@@ -39,7 +41,10 @@ func (k Keeper) getDelegatedAmount(ctx context.Context, pos types.PositionState)
 }
 
 func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (math.Int, error) {
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+	}
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {
 		return math.Int{}, err

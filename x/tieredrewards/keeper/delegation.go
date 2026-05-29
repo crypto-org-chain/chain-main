@@ -6,9 +6,11 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -67,9 +69,13 @@ func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAd
 	return k.stakingKeeper.BeginRedelegation(ctx, delAddr, srcValAddr, dstValAddr, shares)
 }
 
-func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingtypes.Delegation, error) {
+func (k Keeper) getDelegation(ctx context.Context, pos types.Position) (*stakingtypes.Delegation, error) {
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+	}
 	// A position has at most one delegation.
-	dels, err := k.stakingKeeper.GetDelegatorDelegations(ctx, types.GetDelegatorAddress(positionId), 1)
+	dels, err := k.stakingKeeper.GetDelegatorDelegations(ctx, delAddr, 1)
 	if err != nil {
 		return nil, err
 	}
@@ -80,16 +86,24 @@ func (k Keeper) getDelegation(ctx context.Context, positionId uint64) (*stakingt
 	return &d, nil
 }
 
-func (k Keeper) isRedelegating(ctx context.Context, positionId uint64) (bool, error) {
-	reds, err := k.stakingKeeper.GetRedelegations(ctx, types.GetDelegatorAddress(positionId), 1)
+func (k Keeper) isRedelegating(ctx context.Context, pos types.Position) (bool, error) {
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+	}
+	reds, err := k.stakingKeeper.GetRedelegations(ctx, delAddr, 1)
 	if err != nil {
 		return false, err
 	}
 	return len(reds) > 0, nil
 }
 
-func (k Keeper) isUnbonding(ctx context.Context, positionId uint64) (bool, error) {
-	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, types.GetDelegatorAddress(positionId), 1)
+func (k Keeper) isUnbonding(ctx context.Context, pos types.Position) (bool, error) {
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+	}
+	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {
 		return false, err
 	}

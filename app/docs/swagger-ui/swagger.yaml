@@ -25261,6 +25261,8 @@ paths:
                   created_at_time:
                     type: string
                     format: date-time
+                  delegator_address:
+                    type: string
                 description: >-
                   PositionResponse is the query-facing representation of a
                   position.
@@ -25339,6 +25341,8 @@ paths:
                     created_at_time:
                       type: string
                       format: date-time
+                    delegator_address:
+                      type: string
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
@@ -25496,6 +25500,8 @@ paths:
                     created_at_time:
                       type: string
                       format: date-time
+                    delegator_address:
+                      type: string
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
@@ -25657,6 +25663,8 @@ paths:
                     created_at_time:
                       type: string
                       format: date-time
+                    delegator_address:
+                      type: string
                   description: >-
                     PositionResponse is the query-facing representation of a
                     position.
@@ -25853,6 +25861,20 @@ paths:
                     description: >-
                       created_at_time is the block time when this position was
                       created.
+                  delegator_address:
+                    type: string
+                    description: >-
+                      delegator_address is the per-position account address that
+                      acts as the
+
+                      delegator in x/staking, holds the principal during the
+                      lock period, and
+
+                      is the withdraw source registered with x/distribution.
+                      Persisted at
+
+                      creation; consumers must read this rather than recompute
+                      it.
                 description: Position represents a single lock position in the tier.
             description: >-
               QueryRawTierPositionResponse is the response type for the
@@ -25963,6 +25985,20 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
+                    delegator_address:
+                      type: string
+                      description: >-
+                        delegator_address is the per-position account address
+                        that acts as the
+
+                        delegator in x/staking, holds the principal during the
+                        lock period, and
+
+                        is the withdraw source registered with x/distribution.
+                        Persisted at
+
+                        creation; consumers must read this rather than recompute
+                        it.
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -26154,6 +26190,20 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
+                    delegator_address:
+                      type: string
+                      description: >-
+                        delegator_address is the per-position account address
+                        that acts as the
+
+                        delegator in x/staking, holds the principal during the
+                        lock period, and
+
+                        is the withdraw source registered with x/distribution.
+                        Persisted at
+
+                        creation; consumers must read this rather than recompute
+                        it.
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -26349,6 +26399,20 @@ paths:
                       description: >-
                         created_at_time is the block time when this position was
                         created.
+                    delegator_address:
+                      type: string
+                      description: >-
+                        delegator_address is the per-position account address
+                        that acts as the
+
+                        delegator in x/staking, holds the principal during the
+                        lock period, and
+
+                        is the withdraw source registered with x/distribution.
+                        Persisted at
+
+                        creation; consumers must read this rather than recompute
+                        it.
                   description: Position represents a single lock position in the tier.
               pagination:
                 type: object
@@ -46765,6 +46829,17 @@ definitions:
         type: string
         format: date-time
         description: created_at_time is the block time when this position was created.
+      delegator_address:
+        type: string
+        description: >-
+          delegator_address is the per-position account address that acts as the
+
+          delegator in x/staking, holds the principal during the lock period,
+          and
+
+          is the withdraw source registered with x/distribution. Persisted at
+
+          creation; consumers must read this rather than recompute it.
     description: Position represents a single lock position in the tier.
   chainmain.tieredrewards.v1.PositionResponse:
     type: object
@@ -46796,6 +46871,8 @@ definitions:
       created_at_time:
         type: string
         format: date-time
+      delegator_address:
+        type: string
     description: PositionResponse is the query-facing representation of a position.
   chainmain.tieredrewards.v1.QueryAllTierPositionsResponse:
     type: object
@@ -46832,6 +46909,8 @@ definitions:
             created_at_time:
               type: string
               format: date-time
+            delegator_address:
+              type: string
           description: PositionResponse is the query-facing representation of a position.
       pagination:
         type: object
@@ -46980,6 +47059,19 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
+            delegator_address:
+              type: string
+              description: >-
+                delegator_address is the per-position account address that acts
+                as the
+
+                delegator in x/staking, holds the principal during the lock
+                period, and
+
+                is the withdraw source registered with x/distribution. Persisted
+                at
+
+                creation; consumers must read this rather than recompute it.
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47073,6 +47165,19 @@ definitions:
             type: string
             format: date-time
             description: created_at_time is the block time when this position was created.
+          delegator_address:
+            type: string
+            description: >-
+              delegator_address is the per-position account address that acts as
+              the
+
+              delegator in x/staking, holds the principal during the lock
+              period, and
+
+              is the withdraw source registered with x/distribution. Persisted
+              at
+
+              creation; consumers must read this rather than recompute it.
         description: Position represents a single lock position in the tier.
     description: >-
       QueryRawTierPositionResponse is the response type for the
@@ -47144,6 +47249,19 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
+            delegator_address:
+              type: string
+              description: >-
+                delegator_address is the per-position account address that acts
+                as the
+
+                delegator in x/staking, holds the principal during the lock
+                period, and
+
+                is the withdraw source registered with x/distribution. Persisted
+                at
+
+                creation; consumers must read this rather than recompute it.
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47241,6 +47359,19 @@ definitions:
               description: >-
                 created_at_time is the block time when this position was
                 created.
+            delegator_address:
+              type: string
+              description: >-
+                delegator_address is the per-position account address that acts
+                as the
+
+                delegator in x/staking, holds the principal during the lock
+                period, and
+
+                is the withdraw source registered with x/distribution. Persisted
+                at
+
+                creation; consumers must read this rather than recompute it.
           description: Position represents a single lock position in the tier.
       pagination:
         type: object
@@ -47376,6 +47507,8 @@ definitions:
           created_at_time:
             type: string
             format: date-time
+          delegator_address:
+            type: string
         description: PositionResponse is the query-facing representation of a position.
     description: >-
       QueryTierPositionResponse is the response type for the Query/TierPosition
@@ -47415,6 +47548,8 @@ definitions:
             created_at_time:
               type: string
               format: date-time
+            delegator_address:
+              type: string
           description: PositionResponse is the query-facing representation of a position.
       pagination:
         type: object
@@ -47480,6 +47615,8 @@ definitions:
             created_at_time:
               type: string
               format: date-time
+            delegator_address:
+              type: string
           description: PositionResponse is the query-facing representation of a position.
       pagination:
         type: object

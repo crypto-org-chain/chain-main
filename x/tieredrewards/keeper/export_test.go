@@ -15,8 +15,8 @@ import (
 // Test-only wrappers for black-box tests (package keeper_test) that need access
 // to unexported keeper APIs. These are compiled only when running tests.
 
-func (k Keeper) GetDelegation(ctx context.Context, positionId uint64) (*stakingtypes.Delegation, error) {
-	return k.getDelegation(ctx, positionId)
+func (k Keeper) GetDelegation(ctx context.Context, pos types.Position) (*stakingtypes.Delegation, error) {
+	return k.getDelegation(ctx, pos)
 }
 
 func (k Keeper) SetPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
@@ -104,17 +104,22 @@ func (k Keeper) CreateDelegatedPosition(
 	owner string,
 	tier types.Tier,
 	valAddr sdk.ValAddress,
+	delAddr sdk.AccAddress,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
-	return k.createDelegatedPosition(ctx, owner, tier, valAddr, triggerExitImmediately)
+	return k.createDelegatedPosition(ctx, owner, tier, valAddr, delAddr, triggerExitImmediately)
 }
 
-func (k Keeper) IsUnbonding(ctx context.Context, positionId uint64) (bool, error) {
-	return k.isUnbonding(ctx, positionId)
+func (k Keeper) CreatePositionDelegatorAccount(ctx context.Context, owner sdk.AccAddress, id uint64) (sdk.AccAddress, error) {
+	return k.createPositionDelegatorAccount(ctx, owner, id)
 }
 
-func (k Keeper) IsRedelegating(ctx context.Context, positionId uint64) (bool, error) {
-	return k.isRedelegating(ctx, positionId)
+func (k Keeper) IsUnbonding(ctx context.Context, pos types.Position) (bool, error) {
+	return k.isUnbonding(ctx, pos)
+}
+
+func (k Keeper) IsRedelegating(ctx context.Context, pos types.Position) (bool, error) {
+	return k.isRedelegating(ctx, pos)
 }
 
 func (k Keeper) ComputeSegmentBonus(pos types.PositionState, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {

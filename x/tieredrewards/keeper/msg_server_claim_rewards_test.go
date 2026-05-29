@@ -720,7 +720,7 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_OwnerReceivesRewards() {
 	pos := s.setupNewTierPosition(lockAmount, false)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())

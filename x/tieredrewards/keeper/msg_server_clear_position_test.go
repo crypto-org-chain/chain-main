@@ -174,7 +174,7 @@ func (s *KeeperSuite) TestMsgClearPosition_RejectsAfterUnbondingCompleted() {
 	_, err := msgServer.TierUndelegate(s.ctx, &types.MsgTierUndelegate{Owner: delAddr.String(), PositionId: 0})
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	_, err = msgServer.ClearPosition(s.ctx, &types.MsgClearPosition{
 		Owner:      delAddr.String(),
@@ -200,9 +200,7 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	})
 	s.Require().NoError(err)
 
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
-	_ = posDelAddr
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegation mapping should exist after TierRedelegate")
 
@@ -221,7 +219,7 @@ func (s *KeeperSuite) TestMsgClearPosition_AllowsPendingRedelegationWhenStillDel
 	s.Require().True(pos.IsDelegated(), "position should remain delegated on the destination validator")
 	s.Require().Equal(dstValAddr.String(), pos.Delegation.ValidatorAddress)
 
-	isRedelegating, err = s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err = s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "clearing exit should not delete pending redelegation tracking")
 }
@@ -261,7 +259,7 @@ func (s *KeeperSuite) TestClearPositionAfterRedelegationSlashAllSharesBurnt() {
 
 	// Redelegation mapping stays active here, but the clear failure reason is that
 	// the slash isRedelegating already cleared delegation from the position.
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegation mapping should remain active for this corner case")
 

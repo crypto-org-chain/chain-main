@@ -5,9 +5,11 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // claimBaseRewards claims the outstanding base rewards held
@@ -21,7 +23,10 @@ func (k Keeper) claimBaseRewards(ctx context.Context, pos types.PositionState) (
 	if err != nil {
 		return nil, err
 	}
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+	}
 	rewards, err := k.distributionKeeper.WithdrawDelegationRewards(ctx, posDelAddr, valAddr)
 	if err != nil {
 		return nil, err
@@ -228,7 +233,7 @@ func (k Keeper) processEventsAndClaimBonus(ctx context.Context, pos *types.Posit
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return nil, err
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
 	if err := k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.RewardsPoolName, ownerAddr, bonusCoins); err != nil {

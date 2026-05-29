@@ -41,7 +41,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	delegatedPosSeqsByVal := make(map[string][]uint64)
 
 	for _, pos := range data.Positions {
-		del, err := k.getDelegation(ctx, pos.Id)
+		del, err := k.getDelegation(ctx, pos)
 		if err != nil {
 			panic(fmt.Errorf("failed to get delegation for position %d: %w", pos.Id, err))
 		}
@@ -83,7 +83,14 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 				entry.UnbondingId, entry.PositionId, err,
 			))
 		}
-		expectedDelAddr := types.GetDelegatorAddress(entry.PositionId).String()
+		pos, err := k.getPosition(ctx, entry.PositionId)
+		if err != nil {
+			panic(fmt.Errorf(
+				"redelegation mapping references unknown position %d: %w",
+				entry.PositionId, err,
+			))
+		}
+		expectedDelAddr := pos.DelegatorAddress
 		if red.DelegatorAddress != expectedDelAddr {
 			panic(fmt.Errorf(
 				"redelegation mapping (unbonding_id=%d, position_id=%d) delegator mismatch: staking has %q, expected %q",

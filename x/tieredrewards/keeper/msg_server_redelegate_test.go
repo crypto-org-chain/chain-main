@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -37,7 +38,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh destination validator")
 
 	// Verify the redelegating-position reverse mapping was populated.
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegating position mapping should be populated after TierRedelegate")
 }
@@ -352,7 +353,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -395,7 +396,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().True(posAfter.Delegation.Shares.IsPositive())
 
 	// Reverse mapping should contain the entry (unlike the fully-Unbonded case).
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegation mapping should exist for unbonding src redelegate")
 
@@ -425,7 +426,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	_, bondDenom := s.getStakingData()
 	s.fundRewardsPool(sdkmath.NewInt(10_000_000), bondDenom)
 	freshAddr := s.fundRandomAddr(bondDenom, sdkmath.NewInt(sdk.DefaultPowerReduction.Int64()*2))
-	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, types.GetDelegatorAddress(1), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
+	s.Require().NoError(s.keeper.LockFunds(s.ctx, freshAddr, sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1)), sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())))
 
 	s.setupTier(1)
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
@@ -467,7 +468,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err)
 
 	// No mapping for the unbonded-src validator
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().False(isRedelegating, "no reverse mapping should be written when src is fully unbonded")
 

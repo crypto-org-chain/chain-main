@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -64,7 +65,7 @@ func (s *KeeperSuite) makeCommitOriginPosition(
 	_, err := s.app.StakingKeeper.Delegate(s.ctx, owner, amount, stakingtypes.Unbonded, val, true)
 	s.Require().NoError(err)
 
-	posDelAddr := types.GetDelegatorAddress(s.peekNextPositionId())
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(owner, s.peekNextPositionId()))
 	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
 	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
 
@@ -73,7 +74,7 @@ func (s *KeeperSuite) makeCommitOriginPosition(
 
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, false)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, posDelAddr, false)
 	s.Require().NoError(err)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 	s.Require().NoError(s.app.DistrKeeper.SetWithdrawAddr(s.ctx, posDelAddr, owner))
@@ -90,7 +91,7 @@ func (s *KeeperSuite) makeLockTierOriginPosition(
 	owner sdk.AccAddress, valAddr sdk.ValAddress, amount sdkmath.Int,
 ) types.PositionState {
 	s.T().Helper()
-	posDelAddr := types.GetDelegatorAddress(s.peekNextPositionId())
+	posDelAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(owner, s.peekNextPositionId()))
 	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
 	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
 
@@ -103,7 +104,7 @@ func (s *KeeperSuite) makeLockTierOriginPosition(
 
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, false)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, posDelAddr, false)
 	s.Require().NoError(err)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 	s.Require().NoError(s.app.DistrKeeper.SetWithdrawAddr(s.ctx, posDelAddr, owner))

@@ -43,12 +43,12 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().ErrorIs(err, collections.ErrNotFound)
 
 	// The position should have a pending unbonding delegation entry in staking.
-	ubds, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, types.GetDelegatorAddress(pos.Id), 1)
+	ubds, err := s.app.StakingKeeper.GetUnbondingDelegations(s.ctx, sdk.MustAccAddressFromBech32(pos.DelegatorAddress), 1)
 	s.Require().NoError(err)
 	s.Require().NotEmpty(ubds, "position should have a pending unbonding delegation entry")
 
 	// No redelegating-position mapping should exist for a plain undelegate.
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Id)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
 	s.Require().NoError(err)
 	s.Require().False(isRedelegating, "undelegate must not populate the redelegating-position mapping")
 }
@@ -176,7 +176,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_UpdatesAmount() {
 	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	resp, err := msgServer.WithdrawFromTier(s.ctx, &types.MsgWithdrawFromTier{
 		Owner:      addr.String(),

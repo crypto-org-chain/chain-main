@@ -177,7 +177,7 @@ def assert_v8_vesting_migration(cluster, ctx):
     print("v8 vesting tier-bypass migration verified")
 
 
-def assert_v8_no_vesting_positions(cluster):
+def assert_v8_no_vesting_owned_positions(cluster):
     cli = cluster.cosmos_cli()
     all_positions = query_positions(cluster).get("positions", [])
     for entry in all_positions:

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -13,19 +14,24 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var testPositionOwner = sdk.AccAddress([]byte("test_pos_owner______")).String()
+var (
+	testPositionOwnerAddr = sdk.AccAddress([]byte("test_pos_owner______"))
+	testPositionOwner     = testPositionOwnerAddr.String()
+)
 
 func newTestPosition(id uint64, owner string, tierId uint32) types.Position {
-	return types.NewPosition(id, owner, tierId, 100, 0, time.Time{}, false, time.Now())
+	ownerAddr := sdk.MustAccAddressFromBech32(owner)
+	return types.NewPosition(id, owner, tierId, testutil.DelegatorAddress(ownerAddr, id), 100, 0, time.Time{}, false, time.Now())
 }
 
 func newDelegatedTestPosition(id uint64, owner string, tierId uint32, now time.Time) types.Position {
-	return types.NewPosition(id, owner, tierId, 100, 0, now, true, now)
+	ownerAddr := sdk.MustAccAddressFromBech32(owner)
+	return types.NewPosition(id, owner, tierId, testutil.DelegatorAddress(ownerAddr, id), 100, 0, now, true, now)
 }
 
-func (s *KeeperSuite) seedStakingDelegationForPosition(posId uint64, valAddr sdk.ValAddress, amount sdkmath.Int) {
+func (s *KeeperSuite) seedStakingDelegationForPosition(posId uint64, owner sdk.AccAddress, valAddr sdk.ValAddress, amount sdkmath.Int) {
 	s.T().Helper()
-	delAddr := types.GetDelegatorAddress(posId)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(owner, posId))
 	_, bondDenom := s.getStakingData()
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, amount))))
@@ -187,10 +193,12 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_Basic() {
 
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(freshAddr, s.peekNextPositionId()))
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, delAddr, false)
 	s.Require().NoError(err)
 	s.Require().Equal(uint32(1), pos.TierId)
 	s.Require().Equal(freshAddr.String(), pos.Owner)
+	s.Require().Equal(delAddr.String(), pos.DelegatorAddress)
 	s.Require().False(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().True(pos.LastKnownBonded, "LastKnownBonded should be true for newly delegated position")
 	s.Require().False(pos.LastBonusAccrual.IsZero(), "LastBonusAccrual should be set at creation")
@@ -206,7 +214,8 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_WithTriggerExitImmediately() {
 
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, true)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(freshAddr, s.peekNextPositionId()))
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, delAddr, true)
 	s.Require().NoError(err)
 	s.Require().True(pos.IsExiting(s.ctx.BlockTime()))
 	s.Require().False(pos.ExitTriggeredAt.IsZero())
@@ -225,10 +234,12 @@ func (s *KeeperSuite) TestCreateDelegatedPosition_IncrementingIds() {
 
 	freshAddr := s.fundRandomAddr("stake", sdkmath.NewInt(100_000))
 
-	pos1, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
+	delAddr1 := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(freshAddr, s.peekNextPositionId()))
+	pos1, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, delAddr1, false)
 	s.Require().NoError(err)
 
-	pos2, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, false)
+	delAddr2 := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(freshAddr, s.peekNextPositionId()))
+	pos2, err := s.keeper.CreateDelegatedPosition(s.ctx, freshAddr.String(), tier, valAddr, delAddr2, false)
 	s.Require().NoError(err)
 
 	s.Require().True(pos2.Id > pos1.Id)
@@ -257,7 +268,7 @@ func (s *KeeperSuite) TestSetPosition_IncrementsValidatorCounter_NewDelegated() 
 	s.Require().Equal(uint64(0), count)
 
 	const posId uint64 = 1
-	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddr, sdkmath.NewInt(1000))
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
@@ -280,7 +291,7 @@ func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
 	valAddrA := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	const posId uint64 = 1
-	s.seedStakingDelegationForPosition(posId, valAddrA, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddrA, sdkmath.NewInt(1000))
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
@@ -292,13 +303,13 @@ func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
 	s.Require().Equal(uint64(1), countA)
 
 	// Flip the live staking delegation to valB.
-	delA, err := s.keeper.GetDelegation(s.ctx, posId)
+	delA, err := s.keeper.GetDelegation(s.ctx, pos)
 	s.Require().NoError(err)
 	s.Require().NotNil(delA)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *delA))
 
 	valAddrB, _ := s.createSecondValidator()
-	s.seedStakingDelegationForPosition(posId, valAddrB, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddrB, sdkmath.NewInt(1000))
 
 	// setPosition with Previous: valA and live current=valB → decrement A, increment B.
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: valAddrA.String()}))
@@ -317,7 +328,7 @@ func (s *KeeperSuite) TestSetPosition_NilUpdateSkipsValidatorDiff() {
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	const posId uint64 = 1
-	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddr, sdkmath.NewInt(1000))
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
@@ -342,7 +353,7 @@ func (s *KeeperSuite) TestDeletePosition_RejectsWhileDelegated() {
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	const posId uint64 = 1
-	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddr, sdkmath.NewInt(1000))
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
@@ -365,14 +376,14 @@ func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
 	valAddr := sdk.MustValAddressFromBech32(vals[0].GetOperator())
 
 	const posId uint64 = 1
-	s.seedStakingDelegationForPosition(posId, valAddr, sdkmath.NewInt(1000))
+	s.seedStakingDelegationForPosition(posId, testPositionOwnerAddr, valAddr, sdkmath.NewInt(1000))
 
 	now := s.ctx.BlockTime()
 	pos := newDelegatedTestPosition(posId, testPositionOwner, 1, now)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 
 	// Drop the staking delegation so deletePosition's no-delegation precondition holds.
-	del, err := s.keeper.GetDelegation(s.ctx, posId)
+	del, err := s.keeper.GetDelegation(s.ctx, pos)
 	s.Require().NoError(err)
 	s.Require().NotNil(del)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))
@@ -382,4 +393,60 @@ func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
 	count, err := s.keeper.GetPositionCountForValidator(s.ctx, valAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(uint64(1), count, "nil update must not alter validator counter on delete")
+}
+
+// --- createPositionDelegatorAccount tests ---
+
+// TestCreatePositionDelegatorAccount_FreshAddressOnFirstAttempt verifies the
+// happy path: with no pre-existing accounts, the helper returns the nonce-0
+// address and reserves a BaseAccount there.
+func (s *KeeperSuite) TestCreatePositionDelegatorAccount_FreshAddressOnFirstAttempt() {
+	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
+
+	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	s.Require().NoError(err)
+
+	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, 0)
+	s.Require().Equal(expected, addr)
+
+	acc := s.app.AccountKeeper.GetAccount(s.ctx, addr)
+	s.Require().NotNil(acc, "BaseAccount must be reserved at the chosen address")
+}
+
+// TestCreatePositionDelegatorAccount_BoundedCollisionLoop confirms the
+// collision retry loop advances the nonce and finds a free address when the
+// nonce slot is occupied by a pre-existing account.
+func (s *KeeperSuite) TestCreatePositionDelegatorAccount_BoundedCollisionLoop() {
+	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
+
+	// Pre-create accounts at nonce 0, 1, 2 to force the loop to iterate.
+	for nonce := uint64(0); nonce < 3; nonce++ {
+		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, nonce)
+		blockerAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, blockerAddr)
+		s.app.AccountKeeper.SetAccount(s.ctx, blockerAcc)
+	}
+
+	addr, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	s.Require().NoError(err)
+
+	expected := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, 3)
+	s.Require().Equal(expected, addr,
+		"loop must advance past pre-existing accounts and return the next free nonce")
+}
+
+// TestCreatePositionDelegatorAccount_ErrorOnExhaustion verifies that the
+// loop's bound prevents unbounded gas consumption: when every nonce in
+// [0, MaxPositionAddressDerivationAttempts) is occupied, the helper errors
+// rather than spinning forever.
+func (s *KeeperSuite) TestCreatePositionDelegatorAccount_ErrorOnExhaustion() {
+	owner := s.fundRandomAddr("stake", sdkmath.NewInt(0))
+
+	for nonce := uint64(0); nonce < keeper.MaxPositionAddressDerivationAttempts; nonce++ {
+		blockerAddr := types.DerivePositionDelegatorAddress(s.ctx.HeaderHash(), owner, 1, nonce)
+		blockerAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, blockerAddr)
+		s.app.AccountKeeper.SetAccount(s.ctx, blockerAcc)
+	}
+
+	_, err := s.keeper.CreatePositionDelegatorAccount(s.ctx, owner, 1)
+	s.Require().ErrorIs(err, types.ErrPositionAddressDerivation)
 }

@@ -29,7 +29,7 @@ var (
 	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
-const ConsensusVersion = 1
+const ConsensusVersion = 2
 
 type AppModuleBasic struct {
 	cdc codec.Codec
@@ -101,6 +101,11 @@ func (am AppModule) Name() string {
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServerImpl(am.keeper))
+
+	migrator := keeper.NewMigrator(am.keeper)
+	if err := cfg.RegisterMigration(types.ModuleName, 1, migrator.Migrate1to2); err != nil {
+		panic(fmt.Errorf("failed to register tieredrewards migration v1->v2: %w", err))
+	}
 }
 
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
