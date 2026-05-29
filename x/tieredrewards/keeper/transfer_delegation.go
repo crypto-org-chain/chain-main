@@ -105,7 +105,7 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 
 	posDelAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
 	if err != nil {
-		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegation address")
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegatior address")
 	}
 
 	// Defensive
