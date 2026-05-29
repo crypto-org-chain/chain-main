@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
-
 	"cosmossdk.io/math"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
@@ -15,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
@@ -56,12 +53,6 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		sdkCtx.Logger().Info("v8: exiting vested accounts positions...")
-		if err := ExitVestedAccountsPositions(sdkCtx, app); err != nil {
-			return map[string]uint64{}, fmt.Errorf("v8 exiting vested accounts positions: %w", err)
-		}
-		sdkCtx.Logger().Info("v8: exiting vested accounts positions completed")
-
 		sdkCtx.Logger().Info("v8: running module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
@@ -70,36 +61,6 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
-}
-
-func ExitVestedAccountsPositions(ctx sdk.Context, app *ChainApp) error {
-	var toExitPositions []uint64
-	if err := app.TieredRewardsKeeper.Positions.Walk(ctx, nil, func(posID uint64, pos tieredrewardstypes.Position) (bool, error) {
-		ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
-		if err != nil {
-			return false, fmt.Errorf("get owner address: %w", err)
-		}
-		acc := app.AccountKeeper.GetAccount(ctx, ownerAddr)
-		if acc == nil {
-			return false, fmt.Errorf("account not found: %s", ownerAddr.String())
-		}
-		if _, ok := acc.(sdkvesting.VestingAccount); ok {
-			toExitPositions = append(toExitPositions, posID)
-		}
-		return false, nil
-	}); err != nil {
-		return fmt.Errorf("walk positions: %w", err)
-	}
-
-	for _, posID := range toExitPositions {
-		ctx.Logger().Info("v8 exiting vested accounts position", "position_id", posID)
-		if err := app.TieredRewardsKeeper.ForceFullExitWithDelegation(ctx, posID); err != nil {
-			return fmt.Errorf("force-exit position %d: %w", posID, err)
-		}
-	}
-
-	ctx.Logger().Info("v8 exiting vested accounts positions: done", "positions_exited", len(toExitPositions))
-	return nil
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {

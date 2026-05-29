@@ -15,5 +15,5 @@ func NewMigrator(k Keeper) Migrator {
 }
 
 func (m Migrator) Migrate1to2(ctx sdk.Context) error {
-	return v2.Migrate(ctx, m.keeper.Positions)
+	return v2.Migrate(ctx, m.keeper.Positions, m.keeper.accountKeeper, m.keeper)
 }
