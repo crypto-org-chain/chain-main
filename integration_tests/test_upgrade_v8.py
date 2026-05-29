@@ -1,17 +1,30 @@
+from datetime import timedelta
+
+import requests
+from dateutil.parser import isoparse
+
 from .tieredrewards_helpers import (
     DENOM,
+    GAS_ALLOWANCE,
     commit_delegation,
     fund_pool,
     get_node_validator_addr,
     lock_tier,
+    position_delegator_address,
+    query_position,
     query_positions,
     query_positions_by_owner,
     query_tiers,
+    tier_undelegate,
+    trigger_exit,
+    withdraw,
 )
 from .utils import (
     create_permanent_lock_vesting_account,
+    find_log_event_attrs,
     query_staking_delegation,
     unwrap_account,
+    wait_for_block_time,
     wait_for_new_blocks,
 )
 
@@ -37,7 +50,7 @@ def _vesting_delegated_amounts(account_dict, denom=DENOM):
     return _amount(bva.get("delegated_vesting")), _amount(bva.get("delegated_free"))
 
 
-def setup_pre_v8_upgrade(cluster):
+def _setup_vesting_bypass_scenario(cluster):
     """Set up the vesting tier-bypass scenario before the v8 upgrade
     fires. Creates a PermanentLockedAccount and gives it two positions:
 
@@ -125,6 +138,131 @@ def setup_pre_v8_upgrade(cluster):
     }
 
 
+def _next_position_id(cluster):
+    """Predict the next position id by querying all positions and using
+    max(id) + 1. Safe in a sequential test where no other LockTier runs
+    between the prediction and the LockTier we're about to send.
+    """
+    entries = query_positions(cluster).get("positions", [])
+    ids = [int((entry.get("position") or entry)["id"]) for entry in entries]
+    return (max(ids) if ids else 0) + 1
+
+
+def _setup_precreated_delegator_scenario(cluster):
+    """Set up the position-delegator-precreate scenario before the v8
+    upgrade fires.
+
+    On v7.2.0, the position delegator address is deterministic from the
+    position id — `tieredrewards/position/<id>` module address. An
+    attacker can pre-create a `PermanentLockedAccount` at that address;
+    when LockTier runs, it sends principal to the existing vesting
+    account and delegates from it (vesting accounts can delegate). The
+    position is created normally, but the v7.2.0 cleanup sweep on
+    withdraw uses GetAllBalances and would fail because the locked
+    vesting balance is not spendable, trapping the user's principal.
+
+    After v8 upgrade:
+      * The position must expose `delegator_address` and it must match
+        the predicted (and pre-poisoned) v1 module address.
+      * The full withdraw lifecycle must succeed despite the locked
+        vesting balance, because the v8 cleanup uses SpendableCoins.
+      * The locked dust must remain at the delegator address after
+        withdraw.
+    """
+    val_addr = get_node_validator_addr(cluster)
+    tiers = query_tiers(cluster).get("tiers", [])
+    assert tiers, "expected at least one tier seeded by the v7 upgrade handler"
+    tier_id = int(tiers[0]["id"])
+    lock_amount = int(tiers[0]["min_lock_amount"])
+
+    # Predict next position id; pre-create a PermanentLockedAccount at
+    # the v1 delegator address that LockTier will pick.
+    next_pos_id = _next_position_id(cluster)
+    predicted_del_addr = position_delegator_address(next_pos_id)
+    dust = 1
+    cli = cluster.cosmos_cli()
+    rsp = cli.tx(
+        "vesting",
+        "create-permanent-locked-account",
+        predicted_del_addr,
+        f"{dust}{DENOM}",
+        from_=cluster.address("signer1"),
+        chain_id=cli.chain_id,
+    )
+    assert (
+        rsp["code"] == 0
+    ), f"front-run vesting-account create failed: {rsp.get('raw_log', rsp)}"
+    wait_for_new_blocks(cluster, 1)
+
+    # Create a fresh base-account owner and fund it with principal + gas.
+    name = "precreate-victim"
+    cli.raw(
+        "keys",
+        "add",
+        name,
+        keyring_backend="test",
+        home=cli.data_dir,
+        output="json",
+    )
+    owner_addr = (
+        cli.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
+            keyring_backend="test",
+            home=cli.data_dir,
+        )
+        .decode()
+        .strip()
+    )
+
+    gas_topup = 50_000_000
+    rsp = cluster.transfer(
+        cluster.address("signer1"),
+        owner_addr,
+        f"{lock_amount + gas_topup}{DENOM}",
+    )
+    assert rsp["code"] == 0, f"owner top-up failed: {rsp.get('raw_log', rsp)}"
+    wait_for_new_blocks(cluster, 1)
+
+    # LockTier — picks up `predicted_del_addr` because the v7.2.0
+    # derivation is deterministic from the position id alone.
+    rsp = lock_tier(cluster, owner_addr, tier_id, lock_amount, val_addr)
+    assert (
+        rsp["code"] == 0
+    ), f"lock-tier on pre-poisoned address failed: {rsp.get('raw_log', rsp)}"
+
+    positions = query_positions_by_owner(cluster, owner_addr).get("positions", [])
+    assert (
+        len(positions) == 1
+    ), f"expected 1 precreate-victim position, got {positions}"
+    actual_pos_id = int(positions[0]["id"])
+    assert actual_pos_id == next_pos_id, (
+        f"expected position id {next_pos_id} (the front-run target), "
+        f"got {actual_pos_id} — front-run prediction stale"
+    )
+
+    return {
+        "precreate_owner_addr": owner_addr,
+        "precreate_val_addr": val_addr,
+        "precreate_pos_id": next_pos_id,
+        "precreate_predicted_del_addr": predicted_del_addr,
+        "precreate_lock_amount": lock_amount,
+        "precreate_dust": dust,
+    }
+
+
+def setup_pre_v8_upgrade(cluster):
+    """Top-level pre-v8 setup. Composes the vesting-bypass scenario and
+    the precreated-delegator scenario, returning a merged ctx dict for
+    the post-upgrade assertions to consume.
+    """
+    ctx = _setup_vesting_bypass_scenario(cluster)
+    ctx.update(_setup_precreated_delegator_scenario(cluster))
+    return ctx
+
+
 def assert_v8_vesting_migration(cluster, ctx):
     """Verify the v8 migration:
     - both vesting-owned positions are deleted;
@@ -175,6 +313,96 @@ def assert_v8_vesting_migration(cluster, ctx):
         f"DV({dv}) + DF({df}) = {dv + df}, expected {total_amount}"
     )
     print("v8 vesting tier-bypass migration verified")
+
+
+def assert_v8_precreated_delegator_lifecycle(cluster, ctx):
+    """Verify post-v8 that the position whose delegator address was
+    front-run with a PermanentLockedAccount on v7.2.0:
+
+    1. Exposes the new `delegator_address` field on the gRPC/REST
+       PositionResponse, and it matches the front-run v1 module address.
+    2. Completes its full withdraw lifecycle (trigger_exit →
+       tier_undelegate → wait unbonding → withdraw) successfully — the
+       v8 SpendableCoins-based cleanup ignores the locked vesting
+       balance instead of refusing the send.
+    3. Preserves the locked vesting dust at the delegator address after
+       withdraw — it was never spendable, so the sweep skipped it.
+    """
+    owner = ctx["precreate_owner_addr"]
+    pos_id = ctx["precreate_pos_id"]
+    predicted_del_addr = ctx["precreate_predicted_del_addr"]
+    lock_amount = ctx["precreate_lock_amount"]
+    dust = ctx["precreate_dust"]
+
+    # 1. delegator_address is exposed and matches the v1 derivation.
+    pos_resp = query_position(cluster, pos_id)
+    pos = pos_resp.get("position") or pos_resp
+    assert (
+        "delegator_address" in pos
+    ), f"PositionResponse missing delegator_address: {pos}"
+    assert pos["delegator_address"] == predicted_del_addr, (
+        f"delegator_address {pos['delegator_address']!r} does not match "
+        f"front-run v1 address {predicted_del_addr!r}"
+    )
+
+    # The pre-poisoned vesting account is still there with its dust.
+    bal_before = cluster.balance(predicted_del_addr, denom=DENOM)
+    assert (
+        bal_before >= dust
+    ), f"expected at least {dust}{DENOM} at {predicted_del_addr}, got {bal_before}"
+
+    # 2. Drive the full withdraw lifecycle.
+    rsp = trigger_exit(cluster, owner, pos_id)
+    assert rsp["code"] == 0, f"trigger_exit failed: {rsp.get('raw_log', rsp)}"
+
+    pos_resp = query_position(cluster, pos_id)
+    pos = pos_resp.get("position") or pos_resp
+    exit_unlock_at = isoparse(pos["exit_unlock_at"])
+    wait_for_block_time(cluster, exit_unlock_at)
+    wait_for_new_blocks(cluster, 1)
+
+    rsp = tier_undelegate(cluster, owner, pos_id)
+    assert rsp["code"] == 0, f"tier_undelegate failed: {rsp.get('raw_log', rsp)}"
+
+    unbond_data = find_log_event_attrs(
+        rsp["events"],
+        "chainmain.tieredrewards.v1.EventPositionUndelegated",
+        lambda attrs: "completion_time" in attrs,
+    )
+    completion_time = isoparse(
+        unbond_data["completion_time"].strip('"')
+    ) + timedelta(seconds=1)
+    wait_for_block_time(cluster, completion_time)
+    wait_for_new_blocks(cluster, 1)
+
+    balance_before = cluster.balance(owner, denom=DENOM)
+    rsp = withdraw(cluster, owner, pos_id)
+    assert rsp["code"] == 0, (
+        "withdraw on a position whose delegator address holds locked vesting "
+        "dust must succeed under v8 (SpendableCoins-based sweep); "
+        f"got: {rsp.get('raw_log', rsp)}"
+    )
+    balance_after = cluster.balance(owner, denom=DENOM)
+    assert balance_after >= balance_before + lock_amount - GAS_ALLOWANCE, (
+        f"owner balance should increase by ~lock_amount={lock_amount} after withdraw; "
+        f"before={balance_before}, after={balance_after}"
+    )
+
+    # Position deleted.
+    try:
+        query_position(cluster, pos_id)
+        assert False, f"position {pos_id} should be deleted after withdraw"
+    except requests.HTTPError as exc:
+        assert exc.response.status_code in (404, 500)
+        assert "not found" in exc.response.text.lower()
+
+    # 3. The locked vesting dust survives the sweep.
+    bal_after = cluster.balance(predicted_del_addr, denom=DENOM)
+    assert bal_after >= dust, (
+        f"locked vesting dust must remain at delegator address; "
+        f"before={bal_before}, after={bal_after}"
+    )
+    print("v8 precreated-delegator lifecycle verified")
 
 
 def assert_v8_no_vesting_owned_positions(cluster):
