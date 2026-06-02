@@ -387,6 +387,7 @@ def find_balance(balances, denom):
             return int(balance["amount"])
     return 0
 
+
 def create_new_address(cluster, name="new-address"):
     cli = cluster.cosmos_cli()
     cli.raw(
@@ -394,16 +395,21 @@ def create_new_address(cluster, name="new-address"):
         "add",
         name,
         keyring_backend="test",
+        home=cli.data_dir,
+        output="json",
     )
-    return cli.raw(
-        "keys",
-        "show",
-        name,
-        "-a",
-        keyring_backend="test",
+    return (
+        cli.raw(
+            "keys",
+            "show",
+            name,
+            "-a",
+            keyring_backend="test",
+            home=cli.data_dir,
+        )
+        .decode()
+        .strip()
     )
-    .decode()
-    .strip()
 
 
 def create_permanent_lock_vesting_account(
