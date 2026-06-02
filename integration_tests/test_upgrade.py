@@ -18,8 +18,8 @@ from .test_upgrade_v7 import (
 from .test_upgrade_v8 import (
     assert_v8_no_vesting_owned_positions,
     assert_v8_precreated_position_delegator_vesting_acc_lifecycle,
-    assert_v8_vesting_filter_active,
     assert_v8_vesting_acc_owned_positions_exited,
+    assert_v8_vesting_filter_active,
     setup_pre_v8_upgrade,
 )
 from .utils import (
