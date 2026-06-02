@@ -79,8 +79,7 @@ def _create_vesting_acc_owned_positions(cluster):
     )
 
     # Fund account for lock tier
-    gas_topup = 50_000_000
-    topup = lock_amount + gas_topup
+    topup = lock_amount + GAS_ALLOWANCE
     rsp = cluster.transfer(
         cluster.address("signer1"),
         owner_addr,
@@ -308,8 +307,8 @@ def assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, ctx):
     # The pre-poisoned vesting account is still there with its dust.
     bal_before = cluster.balance(predicted_del_addr, denom=DENOM)
     assert (
-        bal_before >= dust
-    ), f"expected at least {dust}{DENOM} at {predicted_del_addr}, got {bal_before}"
+        bal_before == dust
+    ), f"expected {dust}{DENOM} at {predicted_del_addr}, got {bal_before}"
 
     # Shorten exit duration to 5s for faster test execution.
     tier_id = int(pos["tier_id"])
@@ -381,7 +380,7 @@ def assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, ctx):
 
     # 3. The locked vesting dust survives the sweep.
     bal_after = cluster.balance(predicted_del_addr, denom=DENOM)
-    assert bal_after >= dust, (
+    assert bal_after == dust, (
         f"locked vesting dust must remain at delegator address; "
         f"before={bal_before}, after={bal_after}"
     )
