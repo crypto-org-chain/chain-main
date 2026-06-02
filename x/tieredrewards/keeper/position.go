@@ -99,9 +99,7 @@ func (k Keeper) createPositionDelegatorAccount(ctx context.Context, owner sdk.Ac
 		k.accountKeeper.SetAccount(ctx, acc)
 		return addr, nil
 	}
-	return nil, errorsmod.Wrapf(types.ErrPositionAddressDerivation,
-		"could not derive a free position delegator address within %d attempts (id=%d, owner=%s)",
-		MaxPositionAddressDerivationAttempts, id, owner.String())
+	return nil, errorsmod.Wrapf(types.ErrPositionAddressDerivation, "could not create a free position delegator account")
 }
 
 // routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
