@@ -59,6 +59,22 @@ func TestPosition_Validate(t *testing.T) {
 			errContains: "invalid owner address",
 		},
 		{
+			name: "empty delegator address",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = ""
+			},
+			wantErr:     true,
+			errContains: "invalid delegator address",
+		},
+		{
+			name: "invalid delegator address",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = "not_a_valid_address"
+			},
+			wantErr:     true,
+			errContains: "invalid delegator address",
+		},
+		{
 			name: "exit_unlock_at set without exit_triggered_at",
 			modify: func(p *types.Position) {
 				p.ExitUnlockAt = time.Now().Add(time.Hour)

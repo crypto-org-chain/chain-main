@@ -31,6 +31,10 @@ func (p Position) Validate() error {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
+	if _, err := sdk.AccAddressFromBech32(p.DelegatorAddress); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
+
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
 		return fmt.Errorf("exit_unlock_at must not be set for a position that is not exiting")
 	}
