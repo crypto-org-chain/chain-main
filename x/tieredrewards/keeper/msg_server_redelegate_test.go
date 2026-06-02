@@ -38,7 +38,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_Basic() {
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh destination validator")
 
 	// Verify the redelegating-position reverse mapping was populated.
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegating position mapping should be populated after TierRedelegate")
 }
@@ -396,7 +396,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondingSrc() {
 	s.Require().True(posAfter.Delegation.Shares.IsPositive())
 
 	// Reverse mapping should contain the entry (unlike the fully-Unbonded case).
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().True(isRedelegating, "redelegation mapping should exist for unbonding src redelegate")
 
@@ -468,7 +468,7 @@ func (s *KeeperSuite) TestMsgTierRedelegate_FromUnbondedSrc_NoMapping() {
 	s.Require().NoError(err)
 
 	// No mapping for the unbonded-src validator
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().False(isRedelegating, "no reverse mapping should be written when src is fully unbonded")
 

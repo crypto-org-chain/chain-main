@@ -117,7 +117,7 @@ func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerA
 
 // setPosition validates and persists pos and reconciles the relevant indexes.
 func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
-	del, err := k.getDelegation(ctx, pos)
+	del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
-	del, err := k.getDelegation(ctx, pos)
+	del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}

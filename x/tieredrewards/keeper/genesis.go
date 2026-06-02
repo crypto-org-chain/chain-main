@@ -41,7 +41,7 @@ func (k Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	delegatedPosSeqsByVal := make(map[string][]uint64)
 
 	for _, pos := range data.Positions {
-		del, err := k.getDelegation(ctx, pos)
+		del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 		if err != nil {
 			panic(fmt.Errorf("failed to get delegation for position %d: %w", pos.Id, err))
 		}

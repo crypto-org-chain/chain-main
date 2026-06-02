@@ -303,7 +303,7 @@ func (s *KeeperSuite) TestSetPosition_SwapValidatorDecrementsAndIncrements() {
 	s.Require().Equal(uint64(1), countA)
 
 	// Flip the live staking delegation to valB.
-	delA, err := s.keeper.GetDelegation(s.ctx, pos)
+	delA, err := s.keeper.GetDelegation(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().NotNil(delA)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *delA))
@@ -383,7 +383,7 @@ func (s *KeeperSuite) TestDeletePosition_NilUpdateSkipsValidatorDiff() {
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
 
 	// Drop the staking delegation so deletePosition's no-delegation precondition holds.
-	del, err := s.keeper.GetDelegation(s.ctx, pos)
+	del, err := s.keeper.GetDelegation(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().NotNil(del)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))

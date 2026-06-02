@@ -380,7 +380,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.Require().NoError(err)
 
 	// Verify unbonding mapping exists.
-	isUnbonding, err := s.keeper.IsUnbonding(s.ctx, pos.Position)
+	isUnbonding, err := s.keeper.IsUnbonding(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().True(isUnbonding, "unbonding delegation should exist after TierUndelegate")
 
@@ -398,7 +398,7 @@ func (s *KeeperSuite) TestWithdrawFromTier_FailsWithPendingUnbonding() {
 	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	// Verify IsUnbonding reads false once the UD is cleared.
-	isUnbonding, err = s.keeper.IsUnbonding(s.ctx, pos.Position)
+	isUnbonding, err = s.keeper.IsUnbonding(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().False(isUnbonding, "no pending unbonding delegation should remain after completion")
 

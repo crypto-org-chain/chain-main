@@ -48,7 +48,7 @@ func (s *KeeperSuite) TestMsgTierUndelegate_Basic() {
 	s.Require().NotEmpty(ubds, "position should have a pending unbonding delegation entry")
 
 	// No redelegating-position mapping should exist for a plain undelegate.
-	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.Position)
+	isRedelegating, err := s.keeper.IsRedelegating(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().False(isRedelegating, "undelegate must not populate the redelegating-position mapping")
 }

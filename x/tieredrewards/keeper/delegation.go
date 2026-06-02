@@ -69,8 +69,8 @@ func (k Keeper) redelegate(ctx context.Context, delAddr sdk.AccAddress, srcValAd
 	return k.stakingKeeper.BeginRedelegation(ctx, delAddr, srcValAddr, dstValAddr, shares)
 }
 
-func (k Keeper) getDelegation(ctx context.Context, pos types.Position) (*stakingtypes.Delegation, error) {
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+func (k Keeper) getDelegation(ctx context.Context, delegatorAddress string) (*stakingtypes.Delegation, error) {
+	delAddr, err := sdk.AccAddressFromBech32(delegatorAddress)
 	if err != nil {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
@@ -86,8 +86,8 @@ func (k Keeper) getDelegation(ctx context.Context, pos types.Position) (*staking
 	return &d, nil
 }
 
-func (k Keeper) isRedelegating(ctx context.Context, pos types.Position) (bool, error) {
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+func (k Keeper) isRedelegating(ctx context.Context, delegatorAddress string) (bool, error) {
+	delAddr, err := sdk.AccAddressFromBech32(delegatorAddress)
 	if err != nil {
 		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
@@ -98,8 +98,8 @@ func (k Keeper) isRedelegating(ctx context.Context, pos types.Position) (bool, e
 	return len(reds) > 0, nil
 }
 
-func (k Keeper) isUnbonding(ctx context.Context, pos types.Position) (bool, error) {
-	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+func (k Keeper) isUnbonding(ctx context.Context, delegatorAddress string) (bool, error) {
+	delAddr, err := sdk.AccAddressFromBech32(delegatorAddress)
 	if err != nil {
 		return false, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}

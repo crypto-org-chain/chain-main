@@ -301,7 +301,7 @@ func (s *KeeperSuite) getPositionAmount(pos types.PositionState) sdkmath.Int {
 func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types.PositionState {
 	s.T().Helper()
 
-	del, err := s.keeper.GetDelegation(s.ctx, pos.Position)
+	del, err := s.keeper.GetDelegation(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().NotNil(del)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))

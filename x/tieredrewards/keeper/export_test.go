@@ -15,8 +15,8 @@ import (
 // Test-only wrappers for black-box tests (package keeper_test) that need access
 // to unexported keeper APIs. These are compiled only when running tests.
 
-func (k Keeper) GetDelegation(ctx context.Context, pos types.Position) (*stakingtypes.Delegation, error) {
-	return k.getDelegation(ctx, pos)
+func (k Keeper) GetDelegation(ctx context.Context, delegatorAddress string) (*stakingtypes.Delegation, error) {
+	return k.getDelegation(ctx, delegatorAddress)
 }
 
 func (k Keeper) SetPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
@@ -114,12 +114,12 @@ func (k Keeper) CreatePositionDelegatorAccount(ctx context.Context, owner sdk.Ac
 	return k.createPositionDelegatorAccount(ctx, owner, id)
 }
 
-func (k Keeper) IsUnbonding(ctx context.Context, pos types.Position) (bool, error) {
-	return k.isUnbonding(ctx, pos)
+func (k Keeper) IsUnbonding(ctx context.Context, delegatorAddress string) (bool, error) {
+	return k.isUnbonding(ctx, delegatorAddress)
 }
 
-func (k Keeper) IsRedelegating(ctx context.Context, pos types.Position) (bool, error) {
-	return k.isRedelegating(ctx, pos)
+func (k Keeper) IsRedelegating(ctx context.Context, delegatorAddress string) (bool, error) {
+	return k.isRedelegating(ctx, delegatorAddress)
 }
 
 func (k Keeper) ComputeSegmentBonus(pos types.PositionState, tier types.Tier, segmentStart, segmentEnd time.Time, tokensPerShare math.LegacyDec) math.Int {
