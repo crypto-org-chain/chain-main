@@ -48,7 +48,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_Basic_PartialCommit() {
 	s.Require().Equal(uint64(0), pos.LastEventSeq, "LastEventSeq should be 0 for fresh validator")
 
 	// The position's delegator address holds the delegation.
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(posDel.Shares.Equal(halfShares))
@@ -94,7 +94,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_FullCommit() {
 	s.Require().Error(err, "user delegation should be removed after full commit")
 
 	// The position's delegator address holds the delegation.
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
@@ -273,7 +273,7 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
 	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, owner, bondDenom).Amount.IsZero(),
 		"owner should have 0 liquid bondDenom after fully delegating")
 
-	_, err = msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
+	resp, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
 		DelegatorAddress: owner.String(),
 		ValidatorAddress: valAddr.String(),
 		Id:               1,
@@ -281,7 +281,9 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_ExactlyFundedOwner() {
 	})
 	s.Require().NoError(err, "commit must not require liquid funds on top of the delegation")
 
-	posDelAddr := types.GetDelegatorAddress(0)
+	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	posDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 	s.Require().True(posDel.Shares.IsPositive(), "position's delegator account must hold the transferred delegation")
@@ -321,14 +323,8 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount(
 	_, err = s.app.StakingKeeper.Delegate(s.ctx, owner, commitAmount, stakingtypes.Unbonded, val, true)
 	s.Require().NoError(err)
 
-	// Predict the next position's delegator address and confirm no auth
-	// account exists yet — if one did, the commit path's idempotent guard
-	// would mask the behavior we want to verify.
 	nextId, err := s.keeper.NextPositionId.Peek(s.ctx)
 	s.Require().NoError(err)
-	predictedDelAddr := types.GetDelegatorAddress(nextId)
-	s.Require().Nil(s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr),
-		"auth account must not exist before commit")
 
 	resp, err := msgServer.CommitDelegationToTier(s.ctx, &types.MsgCommitDelegationToTier{
 		DelegatorAddress: owner.String(),
@@ -342,9 +338,11 @@ func (s *KeeperSuite) TestMsgCommitDelegationToTier_CreatesDelegatorAuthAccount(
 	// After commit the auth account for the position's delegator address must
 	// exist; otherwise any later undelegation + CompleteUnbonding would fail
 	// silently in the staking EndBlocker.
-	acc := s.app.AccountKeeper.GetAccount(s.ctx, predictedDelAddr)
+	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+	delAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	acc := s.app.AccountKeeper.GetAccount(s.ctx, delAddr)
 	s.Require().NotNil(acc, "auth account must be created by CommitDelegationToTier")
-	s.Require().Equal(predictedDelAddr, acc.GetAddress())
 }
 
 func (s *KeeperSuite) TestMsgCommitDelegationToTier_ValidatorNotBonded() {

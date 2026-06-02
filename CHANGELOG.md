@@ -9,6 +9,7 @@
 ### Bugfixes
 
 - [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
+- [#1308](https://github.com/crypto-org-chain/chain-main/pull/1308) fix(x/tieredrewards)!: harden position delegator address derivation against pre-creation squatting. 
 
 *May 8, 2026*
 

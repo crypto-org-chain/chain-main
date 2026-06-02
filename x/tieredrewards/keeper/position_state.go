@@ -6,9 +6,12 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	errorsmod "cosmossdk.io/errors"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.PositionState, error) {
@@ -16,7 +19,7 @@ func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.Posit
 	if err != nil {
 		return types.PositionState{}, err
 	}
-	del, err := k.getDelegation(ctx, posId)
+	del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return types.PositionState{}, err
 	}
@@ -25,21 +28,24 @@ func (k Keeper) getPositionState(ctx context.Context, posId uint64) (types.Posit
 
 func (k Keeper) getPositionAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
 	if pos.IsDelegated() {
-		return k.getDelegatedAmount(ctx, pos)
+		return k.getDelegatedAmount(ctx, pos.Delegation)
 	}
-	return k.getUndelegatedAmount(ctx, pos.Position)
+	return k.getUndelegatedAmount(ctx, pos.DelegatorAddress)
 }
 
-func (k Keeper) getDelegatedAmount(ctx context.Context, pos types.PositionState) (math.Int, error) {
-	valAddr, err := sdk.ValAddressFromBech32(pos.Delegation.ValidatorAddress)
+func (k Keeper) getDelegatedAmount(ctx context.Context, del *stakingtypes.Delegation) (math.Int, error) {
+	valAddr, err := sdk.ValAddressFromBech32(del.ValidatorAddress)
 	if err != nil {
 		return math.Int{}, err
 	}
-	return k.reconcileAmountFromShares(ctx, valAddr, pos.Delegation.Shares)
+	return k.reconcileAmountFromShares(ctx, valAddr, del.Shares)
 }
 
-func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (math.Int, error) {
-	delAddr := types.GetDelegatorAddress(pos.Id)
+func (k Keeper) getUndelegatedAmount(ctx context.Context, delegatorAddress string) (math.Int, error) {
+	delAddr, err := sdk.AccAddressFromBech32(delegatorAddress)
+	if err != nil {
+		return math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 	ubds, err := k.stakingKeeper.GetUnbondingDelegations(ctx, delAddr, 1)
 	if err != nil {
 		return math.Int{}, err
@@ -51,7 +57,7 @@ func (k Keeper) getUndelegatedAmount(ctx context.Context, pos types.Position) (m
 	if err != nil {
 		return math.Int{}, err
 	}
-	return k.bankKeeper.GetBalance(ctx, delAddr, bondDenom).Amount, nil
+	return k.bankKeeper.SpendableCoins(ctx, delAddr).AmountOf(bondDenom), nil
 }
 
 // GetPositionStatesByOwner returns each owned position paired with its

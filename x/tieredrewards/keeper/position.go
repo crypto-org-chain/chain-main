@@ -36,6 +36,7 @@ func (k Keeper) createDelegatedPosition(
 	owner string,
 	tier types.Tier,
 	valAddr sdk.ValAddress,
+	delAddr sdk.AccAddress,
 	triggerExitImmediately bool,
 ) (types.Position, error) {
 	id, err := k.NextPositionId.Next(ctx)
@@ -52,9 +53,7 @@ func (k Keeper) createDelegatedPosition(
 	blockTime := sdkCtx.BlockTime()
 	blockHeight := uint64(sdkCtx.BlockHeight())
 
-	pos := types.NewPosition(id, owner, tier.Id, blockHeight, lastEventSeq, blockTime, true, blockTime)
-
-	delAddr := types.GetDelegatorAddress(id)
+	pos := types.NewPosition(id, owner, tier.Id, delAddr.String(), blockHeight, lastEventSeq, blockTime, true, blockTime)
 
 	ownerAddr, err := sdk.AccAddressFromBech32(owner)
 	if err != nil {
@@ -81,14 +80,26 @@ func (k Keeper) lockFunds(ctx context.Context, ownerAddr, delAddr sdk.AccAddress
 	return k.bankKeeper.SendCoins(ctx, ownerAddr, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)))
 }
 
-// createDelegatorAccount creates a BaseAccount for the position's delegation.
-// This is required so that undelegation can complete successfully because it checks for the existence of the account in bank keeper trackUndelegation method.
-func (k Keeper) createDelegatorAccount(ctx context.Context, delAddr sdk.AccAddress) {
-	if k.accountKeeper.GetAccount(ctx, delAddr) != nil {
-		return
+// MaxPositionAddressDerivationAttempts caps the collision retry loop in
+// createPositionDelegatorAccount.
+const MaxPositionAddressDerivationAttempts = 10
+
+// createPositionDelegatorAccount derives a fresh delegator address for a new
+// position.
+func (k Keeper) createPositionDelegatorAccount(ctx context.Context, owner sdk.AccAddress, id uint64) (sdk.AccAddress, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	headerHash := sdkCtx.HeaderHash()
+	for nonce := uint64(0); nonce < MaxPositionAddressDerivationAttempts; nonce++ {
+		addr := types.DerivePositionDelegatorAddress(headerHash, owner, id, nonce)
+		if k.accountKeeper.GetAccount(ctx, addr) != nil {
+			k.logger(ctx).Warn("position delegator address already exists", "address", addr.String())
+			continue
+		}
+		acc := k.accountKeeper.NewAccountWithAddress(ctx, addr)
+		k.accountKeeper.SetAccount(ctx, acc)
+		return addr, nil
 	}
-	acc := k.accountKeeper.NewAccountWithAddress(ctx, delAddr)
-	k.accountKeeper.SetAccount(ctx, acc)
+	return nil, errorsmod.Wrapf(types.ErrPositionAddressDerivation, "could not create a free position delegator account")
 }
 
 // routeBaseRewardsToOwner routes base rewards for the position's delegation directly to the position owner.
@@ -104,7 +115,7 @@ func (k Keeper) removeBaseRewardsRouting(ctx context.Context, posDelAddr, ownerA
 
 // setPosition validates and persists pos and reconciles the relevant indexes.
 func (k Keeper) setPosition(ctx context.Context, pos types.Position, update *ValidatorTransition) error {
-	del, err := k.getDelegation(ctx, pos.Id)
+	del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}
@@ -194,15 +205,18 @@ func (k Keeper) deletePosition(ctx context.Context, pos types.Position, update *
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	del, err := k.getDelegation(ctx, pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
+
+	del, err := k.getDelegation(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}
 	if del != nil {
 		return errorsmod.Wrapf(types.ErrPositionDelegated, "cannot delete position %d: still has active delegation to %s", pos.Id, del.ValidatorAddress)
 	}
-
-	delAddr := types.GetDelegatorAddress(pos.Id)
 
 	if err := k.removeBaseRewardsRouting(ctx, delAddr, owner); err != nil {
 		return err

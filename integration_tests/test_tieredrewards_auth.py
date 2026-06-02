@@ -12,7 +12,6 @@ from .tieredrewards_helpers import (
     MSG_UPDATE_PARAMS,
     MSG_UPDATE_TIER,
     TIER_3_ID,
-    approve_tieredrewards_proposal,
     before_ids,
     claim_rewards,
     fund_pool,
@@ -27,6 +26,7 @@ from .tieredrewards_helpers import (
     withdraw,
 )
 from .utils import (
+    approve_proposal,
     cluster_fixture,
     find_log_event_attrs,
     query_command,
@@ -77,7 +77,7 @@ def test_add_tier(cluster):
         title="Add Tier 3 (close_only)",
         summary="Add testing tier",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_ADD_TIER}")
 
     result = query_tiers(cluster)
     tier3 = next(
@@ -120,7 +120,7 @@ def test_add_tier_already_exists(cluster):
         summary="Should fail",
     )
     # Proposal passes vote but execution fails — expect FAILED status
-    approve_tieredrewards_proposal(
+    approve_proposal(
         cluster, rsp, msg=f",{MSG_ADD_TIER}", expect_status="PROPOSAL_STATUS_FAILED"
     )
 
@@ -157,7 +157,7 @@ def test_update_tier_open_close_only(cluster):
         title="Update Tier 3",
         summary="Open Tier 3 and set bonus_apy to 6%",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     result = query_tiers(cluster)
     tier3 = next(
@@ -231,7 +231,7 @@ def test_update_tier_apy_claims_rewards(cluster):
         title="Update Tier 3 APY to 3%",
         summary="Triggers reward claim at old 6% rate",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     balance_after = cluster.balance(owner, DENOM)
     pool_after = pool_balance(cluster)
@@ -284,7 +284,7 @@ def test_update_tier_non_apy_no_claim(cluster):
         title="Update Tier 3 exit_duration",
         summary="Only exit_duration changes, no APY change",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     # No rewards should have been paid out to the owner.
     assert (
@@ -351,7 +351,7 @@ def test_update_tier_min_lock_affects_new_positions(cluster):
         title="Increase Tier 3 min_lock",
         summary="min_lock_amount 2M -> 10M",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     # Same 5M lock now fails under the new minimum
     rsp = lock_tier(cluster, owner, TIER_3_ID, 5_000_000, validator=validator)
@@ -380,7 +380,7 @@ def test_delete_tier_with_positions_fails(cluster):
         summary="Should fail — has active positions",
     )
     # Proposal passes vote but execution fails — expect FAILED status
-    approve_tieredrewards_proposal(
+    approve_proposal(
         cluster, rsp, msg=f",{MSG_DELETE_TIER}", expect_status="PROPOSAL_STATUS_FAILED"
     )
 
@@ -442,7 +442,7 @@ def test_delete_tier_after_withdraw(cluster):
         title="Delete Tier 3",
         summary="No active positions remaining",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_DELETE_TIER}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_DELETE_TIER}")
 
     result = query_tiers(cluster)
     ids = {int(t["id"]) for t in result.get("tiers", [])}
@@ -469,7 +469,7 @@ def test_update_params(cluster):
         title="Set rate to 0.23",
         summary="Set target_base_rewards_rate to 0.23",
     )
-    approve_tieredrewards_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
 
     updated = query_command(cluster, MODULE, "params")["params"]
     assert (

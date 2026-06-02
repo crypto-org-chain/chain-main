@@ -208,7 +208,9 @@ func (s *KeeperSuite) TestMsgLockTier_RoutesBaseRewardsToOwner() {
 	})
 	s.Require().NoError(err)
 
-	posDelAddr := types.GetDelegatorAddress(resp.PositionId)
+	pos, err := s.keeper.GetPosition(s.ctx, resp.PositionId)
+	s.Require().NoError(err)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	withdrawAddr, err := s.app.DistrKeeper.GetDelegatorWithdrawAddr(s.ctx, posDelAddr)
 	s.Require().NoError(err)
 	s.Require().Equal(freshAddr.String(), withdrawAddr.String())

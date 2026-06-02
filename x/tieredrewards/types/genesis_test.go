@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
@@ -21,7 +22,7 @@ func genesisTier(id uint32) types.Tier {
 
 func genesisPosition(id uint64, tierId uint32) types.Position {
 	now := time.Now()
-	return types.NewPosition(id, testOwner, tierId, 100, 0, now, true, now)
+	return types.NewPosition(id, testOwner, tierId, testutil.DelegatorAddress(testOwnerAddr, id), 100, 0, now, true, now)
 }
 
 func validFullGenesis() types.GenesisState {

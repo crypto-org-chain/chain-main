@@ -16,9 +16,10 @@ from .test_upgrade_v7 import (
     assert_v7_tieredrewards_working,
 )
 from .test_upgrade_v8 import (
-    assert_v8_no_vesting_positions,
+    assert_v8_no_vesting_owned_positions,
+    assert_v8_precreated_position_delegator_vesting_acc_lifecycle,
+    assert_v8_vesting_acc_owned_positions_exited,
     assert_v8_vesting_filter_active,
-    assert_v8_vesting_migration,
     setup_pre_v8_upgrade,
 )
 from .utils import (
@@ -629,8 +630,9 @@ def test_manual_upgrade_all(cosmovisor_cluster):
         "v8",
         summary="v8 vesting account positions patch + migration",
     )
-    assert_v8_vesting_migration(cluster, v8_ctx)
-    assert_v8_no_vesting_positions(cluster)
+    assert_v8_vesting_acc_owned_positions_exited(cluster, v8_ctx)
+    assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, v8_ctx)
+    assert_v8_no_vesting_owned_positions(cluster)
     assert_v8_vesting_filter_active(cluster)
 
 

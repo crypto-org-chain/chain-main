@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	migration "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/migrations/v2"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -53,18 +54,18 @@ func (s *KeeperSuite) trackedTotal(addr sdk.AccAddress, bondDenom string) sdkmat
 	return dv.Add(df)
 }
 
-// makeCommitOriginPosition simulates the CommitDelegationToTier path for a
+// createCommitPositionV1 simulates the CommitDelegationToTier path for a
 // vesting owner: the owner first delegates normally (so DV+DF reflects the
 // delegation), then transferDelegationToPosition moves the delegation into a
 // tier position. This leaves DV+DF stale-high relative to actual delegations.
-func (s *KeeperSuite) makeCommitOriginPosition(
+func (s *KeeperSuite) createCommitPositionV1(
 	owner sdk.AccAddress, val stakingtypes.Validator, valAddr sdk.ValAddress, amount sdkmath.Int,
 ) types.PositionState {
 	s.T().Helper()
 	_, err := s.app.StakingKeeper.Delegate(s.ctx, owner, amount, stakingtypes.Unbonded, val, true)
 	s.Require().NoError(err)
 
-	posDelAddr := types.GetDelegatorAddress(s.peekNextPositionId())
+	posDelAddr := sdk.MustAccAddressFromBech32(migration.LegacyDelegatorAddress(s.peekNextPositionId()))
 	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
 	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
 
@@ -73,24 +74,23 @@ func (s *KeeperSuite) makeCommitOriginPosition(
 
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, false)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, posDelAddr, false)
 	s.Require().NoError(err)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
-	s.Require().NoError(s.app.DistrKeeper.SetWithdrawAddr(s.ctx, posDelAddr, owner))
 
 	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	return state
 }
 
-// makeLockTierOriginPosition simulates the LockTier path for a vesting owner:
+// createLockTierPositionV1 simulates the LockTier path for a vesting owner:
 // bank-send spendable coins from owner into the position delegator, then
 // delegate from the position delegator. The owner's DV/DF are not touched.
-func (s *KeeperSuite) makeLockTierOriginPosition(
+func (s *KeeperSuite) createLockTierPositionV1(
 	owner sdk.AccAddress, valAddr sdk.ValAddress, amount sdkmath.Int,
 ) types.PositionState {
 	s.T().Helper()
-	posDelAddr := types.GetDelegatorAddress(s.peekNextPositionId())
+	posDelAddr := sdk.MustAccAddressFromBech32(migration.LegacyDelegatorAddress(s.peekNextPositionId()))
 	posDelAcc := s.app.AccountKeeper.NewAccountWithAddress(s.ctx, posDelAddr)
 	s.app.AccountKeeper.SetAccount(s.ctx, posDelAcc)
 
@@ -103,24 +103,13 @@ func (s *KeeperSuite) makeLockTierOriginPosition(
 
 	tier, err := s.keeper.GetTier(s.ctx, 1)
 	s.Require().NoError(err)
-	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, false)
+	pos, err := s.keeper.CreateDelegatedPosition(s.ctx, owner.String(), tier, valAddr, posDelAddr, false)
 	s.Require().NoError(err)
 	s.Require().NoError(s.keeper.SetPosition(s.ctx, pos, &keeper.ValidatorTransition{PreviousAddress: ""}))
-	s.Require().NoError(s.app.DistrKeeper.SetWithdrawAddr(s.ctx, posDelAddr, owner))
 
 	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	return state
-}
-
-// peekNextPositionId returns what the next position ID will be without
-// advancing the sequence; used to compute the position's delegator address
-// before the position is actually created.
-func (s *KeeperSuite) peekNextPositionId() uint64 {
-	s.T().Helper()
-	id, err := s.keeper.NextPositionId.Peek(s.ctx)
-	s.Require().NoError(err)
-	return id
 }
 
 // newVestingOwnerWithBalance creates a fresh PermanentLockedAccount address
@@ -169,7 +158,7 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_CommitOrigin(
 	lockedAmount := sdkmath.NewInt(sdk.DefaultPowerReduction.Int64())
 	owner := s.newVestingOwnerWithBalance(bondDenom, lockedAmount, lockedAmount)
 
-	pos := s.makeCommitOriginPosition(owner, val, valAddr, lockedAmount)
+	pos := s.createCommitPositionV1(owner, val, valAddr, lockedAmount)
 	initialDV := s.delegatedVesting(owner).AmountOf(bondDenom)
 	initialDF := s.delegatedFree(owner).AmountOf(bondDenom)
 	s.Require().Equal(lockedAmount, initialDV,
@@ -226,7 +215,7 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_LockOrigin() 
 	// without touching DelegatedVesting/DelegatedFree.
 	owner := s.newVestingOwnerWithBalance(bondDenom, lockedAmount, lockedAmount.MulRaw(2))
 
-	pos := s.makeLockTierOriginPosition(owner, valAddr, lockedAmount)
+	pos := s.createLockTierPositionV1(owner, valAddr, lockedAmount)
 
 	// Pre-migration: DV/DF are zero (LockTier didn't touch them); owner has
 	// no on-chain delegation.
@@ -279,8 +268,8 @@ func (s *KeeperSuite) TestForceFullExitWithDelegation_VestingOwner_Mixed() {
 	// initial Delegate() call that establishes the commit-origin position.
 	owner := s.newVestingOwnerWithBalance(bondDenom, commitAmount, totalAmount)
 
-	commitPos := s.makeCommitOriginPosition(owner, val, valAddr, commitAmount)
-	lockPos := s.makeLockTierOriginPosition(owner, valAddr, lockAmount)
+	commitPos := s.createCommitPositionV1(owner, val, valAddr, commitAmount)
+	lockPos := s.createLockTierPositionV1(owner, valAddr, lockAmount)
 
 	// Pre-migration sanity: DV+DF reflects only the commit-origin amount.
 	s.Require().Equal(commitAmount, s.trackedTotal(owner, bondDenom),

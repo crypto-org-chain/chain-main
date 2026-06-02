@@ -8,6 +8,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 var _ types.MsgServer = msgServer{}
@@ -48,7 +49,10 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 	if err != nil {
 		return nil, err
 	}
-	delAddr := types.GetDelegatorAddress(id)
+	delAddr, err := ms.createPositionDelegatorAccount(ctx, ownerAddr, id)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
 		return nil, err
@@ -58,7 +62,7 @@ func (ms msgServer) LockTier(ctx context.Context, msg *types.MsgLockTier) (*type
 		return nil, err
 	}
 
-	pos, err := ms.createDelegatedPosition(ctx, msg.Owner, tier, valAddr, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.Owner, tier, valAddr, delAddr, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -101,21 +105,26 @@ func (ms msgServer) CommitDelegationToTier(ctx context.Context, msg *types.MsgCo
 		return nil, err
 	}
 
+	delegatorAddr, err := sdk.AccAddressFromBech32(msg.DelegatorAddress)
+	if err != nil {
+		return nil, err
+	}
+
 	id, err := ms.NextPositionId.Peek(ctx)
 	if err != nil {
 		return nil, err
 	}
-	delAddr := types.GetDelegatorAddress(id)
 
-	// required for future undelegation to complete successfully
-	// account is not created automatically because no funds are transferred from the owner to the position in this scenario
-	ms.createDelegatorAccount(ctx, delAddr)
+	delAddr, err := ms.createPositionDelegatorAccount(ctx, delegatorAddr, id)
+	if err != nil {
+		return nil, err
+	}
 
 	if _, err := ms.transferDelegationToPosition(ctx, msg.DelegatorAddress, delAddr, msg.ValidatorAddress, msg.Amount); err != nil {
 		return nil, err
 	}
 
-	pos, err := ms.createDelegatedPosition(ctx, msg.DelegatorAddress, tier, valAddr, msg.TriggerExitImmediately)
+	pos, err := ms.createDelegatedPosition(ctx, msg.DelegatorAddress, tier, valAddr, delAddr, msg.TriggerExitImmediately)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +174,10 @@ func (ms msgServer) TierUndelegate(ctx context.Context, msg *types.MsgTierUndele
 		return nil, err
 	}
 
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 
 	completionTime, _, err := ms.undelegate(ctx, delAddr, valAddr, pos.Delegation.Shares)
 	if err != nil {
@@ -225,7 +237,10 @@ func (ms msgServer) TierRedelegate(ctx context.Context, msg *types.MsgTierRedele
 		return nil, err
 	}
 
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 
 	completionTime, unbondingID, err := ms.redelegate(ctx, delAddr, srcValAddr, dstValAddr, pos.Delegation.Shares)
 	if err != nil {
@@ -287,7 +302,10 @@ func (ms msgServer) AddToTierPosition(ctx context.Context, msg *types.MsgAddToTi
 		return nil, err
 	}
 
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 
 	if err := ms.lockFunds(ctx, ownerAddr, delAddr, msg.Amount); err != nil {
 		return nil, err
@@ -465,13 +483,15 @@ func (ms msgServer) WithdrawFromTier(ctx context.Context, msg *types.MsgWithdraw
 
 	ownerAddr, err := sdk.AccAddressFromBech32(pos.Owner)
 	if err != nil {
-		return nil, err
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 
-	// sweep all balances from position's delegator to the owner
-	balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
+	balances := ms.bankKeeper.SpendableCoins(ctx, delAddr)
 	if !balances.IsZero() {
 		if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, balances); err != nil {
 			return nil, err
@@ -537,15 +557,18 @@ func (ms msgServer) ExitTierWithDelegation(ctx context.Context, msg *types.MsgEx
 	fullExit := pos.ExitWithFullDelegation(msg.Amount, positionAmount)
 
 	if fullExit {
-		// sweep all balances from position's delegator to the owner
 		ownerAddr, err := sdk.AccAddressFromBech32(msg.Owner)
 		if err != nil {
 			return nil, err
 		}
 
-		delAddr := types.GetDelegatorAddress(pos.Id)
+		delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+		if err != nil {
+			return nil, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+		}
 
-		balances := ms.bankKeeper.GetAllBalances(ctx, delAddr)
+		// sweeps any remaining dust if any (usually zero)
+		balances := ms.bankKeeper.SpendableCoins(ctx, delAddr)
 		if !balances.IsZero() {
 			if err := ms.bankKeeper.SendCoins(ctx, delAddr, ownerAddr, balances); err != nil {
 				return nil, err

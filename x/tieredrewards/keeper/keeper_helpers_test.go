@@ -10,11 +10,23 @@ import (
 
 	secp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	banktestutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
+
+// peekNextPositionId returns what the next position ID will be without
+// advancing the sequence; used to compute the position's delegator address
+// before the position is actually created.
+func (s *KeeperSuite) peekNextPositionId() uint64 {
+	s.T().Helper()
+	id, err := s.keeper.NextPositionId.Peek(s.ctx)
+	s.Require().NoError(err)
+	return id
+}
 
 // fundRewardsPool funds the rewards pool with the given amount.
 func (s *KeeperSuite) fundRewardsPool(amount sdkmath.Int, denom string) {
@@ -289,7 +301,7 @@ func (s *KeeperSuite) getPositionAmount(pos types.PositionState) sdkmath.Int {
 func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types.PositionState {
 	s.T().Helper()
 
-	del, err := s.keeper.GetDelegation(s.ctx, pos.Id)
+	del, err := s.keeper.GetDelegation(s.ctx, pos.DelegatorAddress)
 	s.Require().NoError(err)
 	s.Require().NotNil(del)
 	s.Require().NoError(s.app.StakingKeeper.RemoveDelegation(s.ctx, *del))
@@ -301,4 +313,26 @@ func (s *KeeperSuite) slashRedelegationCompletely(pos types.PositionState) types
 	updated, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
 	return updated
+}
+
+func (s *KeeperSuite) convertPosDelAccToVestingAcc(delAddr sdk.AccAddress, bondDenom string, amount sdkmath.Int) {
+	s.T().Helper()
+
+	// Source the dust into the address from the rewards pool.
+	s.fundRewardsPool(amount, bondDenom)
+	s.Require().NoError(s.app.BankKeeper.SendCoinsFromModuleToAccount(
+		s.ctx, types.RewardsPoolName, delAddr, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)),
+	))
+
+	// Replace the BaseAccount with a vesting account
+	existing := s.app.AccountKeeper.GetAccount(s.ctx, delAddr)
+	s.Require().NotNil(existing)
+	baseAcc, ok := existing.(*authtypes.BaseAccount)
+	s.Require().True(ok, "expected BaseAccount at position delegator address")
+
+	plva, err := vestingtypes.NewPermanentLockedAccount(
+		baseAcc, sdk.NewCoins(sdk.NewCoin(bondDenom, amount)),
+	)
+	s.Require().NoError(err)
+	s.app.AccountKeeper.SetAccount(s.ctx, plva)
 }
