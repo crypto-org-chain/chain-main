@@ -92,7 +92,7 @@ func (k Keeper) createPositionDelegatorAccount(ctx context.Context, owner sdk.Ac
 	for nonce := uint64(0); nonce < MaxPositionAddressDerivationAttempts; nonce++ {
 		addr := types.DerivePositionDelegatorAddress(headerHash, owner, id, nonce)
 		if k.accountKeeper.GetAccount(ctx, addr) != nil {
-			k.logger(ctx).Error("position delegator address already exists", "address", addr.String())
+			k.logger(ctx).Warn("position delegator address already exists", "address", addr.String())
 			continue
 		}
 		acc := k.accountKeeper.NewAccountWithAddress(ctx, addr)
