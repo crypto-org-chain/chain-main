@@ -57,6 +57,9 @@ func backfillDelegatorAddress(ctx context.Context, positions collections.Map[uin
 	for _, kv := range kvs {
 		pos := kv.Value
 		pos.DelegatorAddress = LegacyDelegatorAddress(pos.Id)
+		if _, err := sdk.AccAddressFromBech32(pos.DelegatorAddress); err != nil {
+			return fmt.Errorf("backfill produced invalid delegator address for position %d: %w", pos.Id, err)
+		}
 		if err := positions.Set(ctx, pos.Id, pos); err != nil {
 			return err
 		}
