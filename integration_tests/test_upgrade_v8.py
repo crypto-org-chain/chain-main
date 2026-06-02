@@ -6,6 +6,7 @@ from dateutil.parser import isoparse
 from .tieredrewards_helpers import (
     DENOM,
     GAS_ALLOWANCE,
+    MSG_UPDATE_TIER,
     commit_delegation,
     fund_pool,
     get_node_validator_addr,
@@ -20,9 +21,11 @@ from .tieredrewards_helpers import (
     withdraw,
 )
 from .utils import (
+    approve_proposal,
     create_permanent_lock_vesting_account,
     find_log_event_attrs,
     query_staking_delegation,
+    submit_gov_proposal,
     unwrap_account,
     wait_for_block_time,
     wait_for_new_blocks,
@@ -348,6 +351,29 @@ def assert_v8_precreated_delegator_lifecycle(cluster, ctx):
     assert (
         bal_before >= dust
     ), f"expected at least {dust}{DENOM} at {predicted_del_addr}, got {bal_before}"
+
+    # Shorten exit duration to 5s for faster test execution.
+    tier_id = int(pos["tier_id"])
+    tiers = query_tiers(cluster).get("tiers", [])
+    tier = next((t for t in tiers if int(t["id"]) == tier_id), None)
+    assert tier is not None, f"tier {tier_id} not found"
+    rsp = submit_gov_proposal(
+        cluster,
+        "community",
+        MSG_UPDATE_TIER,
+        {
+            "tier": {
+                "id": tier_id,
+                "exit_duration": "5s",
+                "bonus_apy": tier["bonus_apy"],
+                "min_lock_amount": tier["min_lock_amount"],
+                "close_only": tier.get("close_only", False),
+            }
+        },
+        title=f"Shorten Tier {tier_id} exit_duration",
+        summary="Shorten exit_duration to 5s for v8 upgrade test",
+    )
+    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
 
     # 2. Drive the full withdraw lifecycle.
     rsp = trigger_exit(cluster, owner, pos_id)
