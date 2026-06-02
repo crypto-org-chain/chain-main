@@ -22,6 +22,7 @@ from .tieredrewards_helpers import (
 )
 from .utils import (
     approve_proposal,
+    create_new_address,
     create_permanent_lock_vesting_account,
     find_log_event_attrs,
     query_staking_delegation,
@@ -53,16 +54,11 @@ def _vesting_delegated_amounts(account_dict, denom=DENOM):
     return _amount(bva.get("delegated_vesting")), _amount(bva.get("delegated_free"))
 
 
-def _setup_vesting_bypass_scenario(cluster):
-    """Set up the vesting tier-bypass scenario before the v8 upgrade
-    fires. Creates a PermanentLockedAccount and gives it two positions:
-
-      1. A CommitDelegationToTier-origin position. The owner first
-         delegates the locked principal (which populates DelegatedVesting),
-         then commits the delegation to a tier — DelegatedVesting is left
-         stale-high while the position holds the actual delegation.
-      2. A LockTier-origin position, funded from the gas top-up balance
-         via bank send. DelegatedVesting/Free are not touched at lock time.
+def _create_vesting_acc_owned_positions(cluster):
+    """
+    Creates a PermanentLockedAccount and establishes two distinct positions:
+    1. A position initialized via CommitDelegationToTier.
+    2. A position initialized via LockTier.
 
     Funds the rewards pool so the migration's claimRewards step can pay
     out any bonus accrued on the bypass positions.
@@ -151,26 +147,13 @@ def _next_position_id(cluster):
     return (max(ids) if ids else 0) + 1
 
 
-def _setup_precreated_delegator_scenario(cluster):
+def _precreate_position_delegator_vesting_acc(cluster):
     """Set up the position-delegator-precreate scenario before the v8
     upgrade fires.
 
     On v7.2.0, the position delegator address is deterministic from the
     position id — `tieredrewards/position/<id>` module address. An
-    attacker can pre-create a `PermanentLockedAccount` at that address;
-    when LockTier runs, it sends principal to the existing vesting
-    account and delegates from it (vesting accounts can delegate). The
-    position is created normally, but the v7.2.0 cleanup sweep on
-    withdraw uses GetAllBalances and would fail because the locked
-    vesting balance is not spendable, trapping the user's principal.
-
-    After v8 upgrade:
-      * The position must expose `delegator_address` and it must match
-        the predicted (and pre-poisoned) v1 module address.
-      * The full withdraw lifecycle must succeed despite the locked
-        vesting balance, because the v8 cleanup uses SpendableCoins.
-      * The locked dust must remain at the delegator address after
-        withdraw.
+    attacker can pre-create a `PermanentLockedAccount` at that address
     """
     val_addr = get_node_validator_addr(cluster)
     tiers = query_tiers(cluster).get("tiers", [])
@@ -199,32 +182,12 @@ def _setup_precreated_delegator_scenario(cluster):
 
     # Create a fresh base-account owner and fund it with principal + gas.
     name = "precreate-victim"
-    cli.raw(
-        "keys",
-        "add",
-        name,
-        keyring_backend="test",
-        home=cli.data_dir,
-        output="json",
-    )
-    owner_addr = (
-        cli.raw(
-            "keys",
-            "show",
-            name,
-            "-a",
-            keyring_backend="test",
-            home=cli.data_dir,
-        )
-        .decode()
-        .strip()
-    )
+    owner_addr = create_new_address(cluster, name)
 
-    gas_topup = 50_000_000
     rsp = cluster.transfer(
         cluster.address("signer1"),
         owner_addr,
-        f"{lock_amount + gas_topup}{DENOM}",
+        f"{lock_amount + GAS_ALLOWANCE}{DENOM}",
     )
     assert rsp["code"] == 0, f"owner top-up failed: {rsp.get('raw_log', rsp)}"
     wait_for_new_blocks(cluster, 1)
@@ -255,16 +218,12 @@ def _setup_precreated_delegator_scenario(cluster):
 
 
 def setup_pre_v8_upgrade(cluster):
-    """Top-level pre-v8 setup. Composes the vesting-bypass scenario and
-    the precreated-delegator scenario, returning a merged ctx dict for
-    the post-upgrade assertions to consume.
-    """
-    ctx = _setup_vesting_bypass_scenario(cluster)
-    ctx.update(_setup_precreated_delegator_scenario(cluster))
+    ctx = _create_vesting_acc_owned_positions(cluster)
+    ctx.update(_precreate_position_delegator_vesting_acc(cluster))
     return ctx
 
 
-def assert_v8_vesting_migration(cluster, ctx):
+def assert_v8_vesting_acc_owned_positions_exited(cluster, ctx):
     """Verify the v8 migration:
     - both vesting-owned positions are deleted;
     - the vesting owner's staking delegation equals commit + lock amounts;
@@ -316,7 +275,7 @@ def assert_v8_vesting_migration(cluster, ctx):
     print("v8 vesting tier-bypass migration verified")
 
 
-def assert_v8_precreated_delegator_lifecycle(cluster, ctx):
+def assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, ctx):
     """Verify post-v8 that the position whose delegator address was
     front-run with a PermanentLockedAccount on v7.2.0:
 
@@ -459,7 +418,6 @@ def assert_v8_vesting_filter_active(cluster):
     assert tiers, "expected at least one tier"
     tier_id = int(tiers[0]["id"])
     amount = int(tiers[0]["min_lock_amount"])
-    gas_topup = 50_000_000
 
     # ── 1a. MsgCommitDelegationToTier from a vesting account is rejected ──
     vesting_addr = create_permanent_lock_vesting_account(
@@ -470,7 +428,7 @@ def assert_v8_vesting_filter_active(cluster):
     rsp = cluster.transfer(
         cluster.address("signer1"),
         vesting_addr,
-        f"{amount + gas_topup}basecro",
+        f"{amount + GAS_ALLOWANCE}basecro",
     )
     assert rsp["code"] == 0, f"top-up failed: {rsp.get('raw_log', rsp)}"
     wait_for_new_blocks(cluster, 1)

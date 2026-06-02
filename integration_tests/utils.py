@@ -387,31 +387,30 @@ def find_balance(balances, denom):
             return int(balance["amount"])
     return 0
 
-
-def create_permanent_lock_vesting_account(
-    cluster, vested_amount, funder="signer1", name="permanent-locked-account"
-):
+def create_new_address(cluster, name="new-address"):
     cli = cluster.cosmos_cli()
     cli.raw(
         "keys",
         "add",
         name,
         keyring_backend="test",
-        home=cli.data_dir,
-        output="json",
     )
-    owner_addr = (
-        cli.raw(
-            "keys",
-            "show",
-            name,
-            "-a",
-            keyring_backend="test",
-            home=cli.data_dir,
-        )
-        .decode()
-        .strip()
+    return cli.raw(
+        "keys",
+        "show",
+        name,
+        "-a",
+        keyring_backend="test",
     )
+    .decode()
+    .strip()
+
+
+def create_permanent_lock_vesting_account(
+    cluster, vested_amount, funder="signer1", name="permanent-locked-account"
+):
+    owner_addr = create_new_address(cluster, name)
+    cli = cluster.cosmos_cli()
 
     rsp = cli.tx(
         "vesting",
