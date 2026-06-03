@@ -17,6 +17,8 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
+const UpgradeV8PlanName = "v8"
+
 func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, perms ...string) error {
 	addr := ak.GetModuleAddress(moduleName)
 	if addr == nil {
@@ -47,10 +49,9 @@ func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
 	app.registerV8UpgradeHandler()
 }
 
+// registerV8UpgradeHandler registers the "v8" plan
 func (app *ChainApp) registerV8UpgradeHandler() {
-	planName := "v8"
-
-	app.UpgradeKeeper.SetUpgradeHandler(planName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+	app.UpgradeKeeper.SetUpgradeHandler(UpgradeV8PlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 		sdkCtx.Logger().Info("v8: running module migrations...")
@@ -58,6 +59,7 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 		if err != nil {
 			return map[string]uint64{}, err
 		}
+
 		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})

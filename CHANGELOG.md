@@ -11,6 +11,10 @@
 - [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
 - [#1308](https://github.com/crypto-org-chain/chain-main/pull/1308) fix(x/tieredrewards)!: harden position delegator address derivation against pre-creation squatting. 
 
+### Chores
+
+- [#1298](https://github.com/crypto-org-chain/chain-main/pull/1298) disable ICS-721
+
 *May 8, 2026*
 
 ## v7.1.0
@@ -24,7 +28,6 @@
 ### Bugfixes
 
 - [#1297](https://github.com/crypto-org-chain/chain-main/pull/1297) feat(x/tieredrewards): fix: remove UpdateBonusCheckpoints call from AddToTierPosition and ExitDelegationFromTier. Disallow AddToTierPosition if position is undelegated.
-
 
 *Apr 25, 2026*
 
