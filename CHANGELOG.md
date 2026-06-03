@@ -10,6 +10,7 @@
 
 - [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
 - [#1308](https://github.com/crypto-org-chain/chain-main/pull/1308) fix(x/tieredrewards)!: harden position delegator address derivation against pre-creation squatting. 
+- [#1309](https://github.com/crypto-org-chain/chain-main/pull/1309) fix(x/tieredrewards): block `MsgExitTierWithDelegation` when the position's delegator address is a vesting account to ensure that delegator vesting state is preserved when position exits through `MsgWithdrawFromTier`.
 
 *May 8, 2026*
 

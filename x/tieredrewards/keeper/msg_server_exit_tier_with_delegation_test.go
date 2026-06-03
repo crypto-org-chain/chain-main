@@ -570,52 +570,27 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDu
 		"position's delegator account should be empty after sweep")
 }
 
-func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExit_PreservesLockedVestingAmount() {
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_VestingDelegatorAddress_Rejected() {
 	lockAmount := sdkmath.NewInt(10_000)
 	pos := s.setupNewTierPosition(lockAmount, true)
-	owner := sdk.MustAccAddressFromBech32(pos.Owner)
-	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	_, bondDenom := s.getStakingData()
 
 	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
 	s.advancePastExitDuration()
 
-	// simulates that position's delegator address is a vesting account
-	// before the position was even created (possible from v1 legacy positions)
 	dustAmount := sdkmath.NewInt(10)
 	s.convertPosDelAccToVestingAcc(posDelAddr, bondDenom, dustAmount)
-
-	totalBefore := s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount
-	spendableBefore := s.app.BankKeeper.SpendableCoins(s.ctx, posDelAddr).AmountOf(bondDenom)
-	s.Require().True(totalBefore.Equal(dustAmount),
-		"total balance should be just the locked dust — principal lives in the bonded pool, not at delAddr")
-	s.Require().True(spendableBefore.IsZero(),
-		"spendable should be zero — only locked vesting dust at the delegator address")
 
 	positionAmount, err := s.keeper.GetPositionAmount(s.ctx, pos)
 	s.Require().NoError(err)
 
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
-	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+	_, err = msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
 		Owner:      pos.Owner,
 		PositionId: pos.Id,
 		Amount:     positionAmount,
 	})
-	s.Require().NoError(err)
-	s.Require().True(resp.FullExit, "full exit expected")
+	s.Require().ErrorIs(err, types.ErrVestingDelegatorAddress)
 
-	_, err = s.keeper.GetPositionState(s.ctx, pos.Id)
-	s.Require().ErrorIs(err, types.ErrPositionNotFound)
-
-	// Owner has the staking delegation back.
-	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
-	s.Require().NoError(err)
-	s.Require().True(del.Shares.Equal(pos.Delegation.Shares),
-		"owner should hold the full delegation shares")
-
-	// Sweep was a no-op - delegation is merely transferred to the owner.
-	posDelBalAfter := s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount
-	s.Require().True(posDelBalAfter.Equal(dustAmount),
-		"the planted locked dust must remain at the delegator address")
 }

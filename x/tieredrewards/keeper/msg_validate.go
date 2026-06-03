@@ -227,6 +227,21 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return types.ErrExitLockDurationNotReached
 	}
 
+	delAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return err
+	}
+	
+	if acc := k.accountKeeper.GetAccount(ctx, delAddr); acc != nil {
+		if _, ok := acc.(sdkvesting.VestingAccount); ok {
+			return errorsmod.Wrapf(
+				types.ErrVestingDelegatorAddress, 
+				"position %d: exit position via withdraw instead", 
+				pos.Id,
+			)
+		}
+	}
+
 	positionAmount, err := k.getPositionAmount(ctx, pos)
 	if err != nil {
 		return err
