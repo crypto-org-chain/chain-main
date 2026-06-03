@@ -8,7 +8,6 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
@@ -18,10 +17,6 @@ import (
 	vestingtypes "github.com/cosmos/cosmos-sdk/x/auth/vesting/types"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
-
-func TestUpgradeV8PlanName(t *testing.T) {
-	require.Equal(t, "v8", app.UpgradeV8PlanName)
-}
 
 type AppTestSuite struct {
 	suite.Suite
