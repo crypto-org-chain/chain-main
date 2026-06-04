@@ -273,7 +273,7 @@ def cosmovisor_cluster(worker_index, pytestconfig, tmp_path_factory):
 
 # Plain cluster using the default (current) chain-maind. Used by
 # test_manual_export to exercise the export → reset → re-import flow
-# without paying the cost of nix-build upgrade-test.nix and the v1.1.0
+# without paying the cost of nix-build upgrade-test.nix and the
 # cosmovisor layout, which are irrelevant to what the test validates.
 @pytest.fixture(scope="function")
 def export_cluster(worker_index, tmp_path_factory):
