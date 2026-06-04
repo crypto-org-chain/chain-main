@@ -14,7 +14,7 @@
 ### Chores
 
 - [#1298](https://github.com/crypto-org-chain/chain-main/pull/1298) disable ICS-721
-- [#1310](https://github.com/crypto-org-chain/chain-main/pull/1310) chore(integration_tests): build upgrade-test binaries from source via flakes instead of prebuilt Linux tarballs for local run convenience.
+- [#1310](https://github.com/crypto-org-chain/chain-main/pull/1310) chore(integration_tests): build upgrade-test binaries from source via flakes instead of prebuilt Linux tarballs.
 
 *May 8, 2026*
 
