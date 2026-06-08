@@ -10,6 +10,7 @@
 
 - [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
 - [#1308](https://github.com/crypto-org-chain/chain-main/pull/1308) fix(x/tieredrewards)!: harden position delegator address derivation against pre-creation squatting. 
+- [#1311](https://github.com/crypto-org-chain/chain-main/pull/1311) fix(ci): upgrade nixPkgs to latest 25.11 latest patch.
 
 ### Chores
 
