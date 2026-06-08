@@ -14,7 +14,6 @@ import (
 
 func (k Keeper) getTier(ctx context.Context, id uint32) (types.Tier, error) {
 	tier, err := k.Tiers.Get(ctx, id)
-	// Test
 	if err != nil {
 		if stderrors.Is(err, collections.ErrNotFound) {
 			return types.Tier{}, errorsmod.Wrapf(types.ErrTierNotFound, "tier id %d", id)
