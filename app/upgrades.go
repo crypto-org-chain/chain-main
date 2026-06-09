@@ -60,6 +60,12 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 			return map[string]uint64{}, err
 		}
 
+		// Sanitize NFT denoms whose stored Name fails ValidateDenomName (the
+		// empty name left by the historical IBC NFT transfer bug) so genesis
+		// export/import does not panic in ValidateGenesis.
+		fixed := app.NFTKeeper.FixInvalidDenomNames(sdkCtx)
+		sdkCtx.Logger().Info("v8: sanitized invalid nft denom names", "fixed", fixed)
+
 		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
