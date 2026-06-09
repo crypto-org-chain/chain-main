@@ -60,6 +60,9 @@ func (app *ChainApp) registerV8UpgradeHandler() {
 			return map[string]uint64{}, err
 		}
 
+		fixed := app.NFTKeeper.FixInvalidDenomNames(sdkCtx)
+		sdkCtx.Logger().Info("v8: sanitized invalid nft denom names", "fixed", fixed)
+
 		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})

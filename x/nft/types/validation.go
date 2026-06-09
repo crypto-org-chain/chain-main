@@ -3,6 +3,7 @@
 package types
 
 import (
+	"encoding/hex"
 	"regexp"
 	"strings"
 
@@ -42,6 +43,9 @@ func ValidateDenomIDWithIBC(denomID string) error {
 	if strings.HasPrefix(denomID, IBCPrefix) {
 		if len(denomID) != IBCDenomLen {
 			return sdkerrors.Wrapf(ErrInvalidDenom, "the length of ibc denom(%s) only accepts value [%d]", denomID, IBCDenomLen)
+		}
+		if _, err := hex.DecodeString(denomID[len(IBCPrefix):]); err != nil {
+			return sdkerrors.Wrapf(ErrInvalidDenom, "the hash of ibc denom(%s) must be valid hex", denomID)
 		}
 
 		return nil
