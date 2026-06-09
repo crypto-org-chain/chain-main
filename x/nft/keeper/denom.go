@@ -88,6 +88,12 @@ func (k Keeper) FixInvalidDenomNames(ctx sdk.Context) int {
 		if types.ValidateDenomName(denom.Name) == nil {
 			continue
 		}
+		// Skip if Id is already a name index entry for another denom;
+		// overwriting it would break that denom's GetDenomByName lookup.
+		if k.HasDenomNm(ctx, denom.Id) {
+			ctx.Logger().Error("FixInvalidDenomNames: cannot use id as name, already taken", "id", denom.Id)
+			continue
+		}
 		store.Delete(types.KeyDenomName(denom.Name))
 		denom.Name = denom.Id
 		store.Set(types.KeyDenomID(denom.Id), k.cdc.MustMarshal(&denom))

@@ -25,6 +25,8 @@ func TestValidateGenesis(t *testing.T) {
 		{"ibc voucher id accepted", mkState("ibc/"+
 			"0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF", "ibc-voucher"), false},
 		{"empty name rejected", mkState("validid", "   "), true},
+		{"non-hex ibc id rejected", mkState("ibc/"+
+			"gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg"[:64], "name"), true},
 		{"invalid id rejected", mkState("Bad ID", "name"), true},
 		{"too-short id rejected", mkState("ab", "name"), true},
 	}

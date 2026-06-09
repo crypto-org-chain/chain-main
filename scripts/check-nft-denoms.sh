@@ -29,7 +29,7 @@ name_ok() {
 id_ok() {
   local id="$1"
   if [[ "$id" == ibc/* ]]; then
-    [[ ${#id} -eq 68 ]]            # "ibc/" + 64 hex
+    [[ ${#id} -eq 68 && "${id#ibc/}" =~ ^[0-9a-fA-F]{64}$ ]]   # "ibc/" + 64 hex
   else
     [[ ${#id} -ge 3 && ${#id} -le 64 && "$id" =~ ^[a-z][a-z0-9]*$ ]]
   fi
