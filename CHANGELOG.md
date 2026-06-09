@@ -19,6 +19,10 @@
 
 *May 8, 2026*
 
+### Bugfixes
+
+- [#1312](https://github.com/crypto-org-chain/chain-main/pull/1312) fix(x/nft): validate denom `Id` (IBC-aware) instead of `Name` in genesis, so denoms with free-form names round-trip through export/import; add `FixInvalidDenomNames` migration helper for legacy empty-name denoms.
+
 ## v7.1.0
 
 ### Improvements

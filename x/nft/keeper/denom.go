@@ -77,6 +77,26 @@ func (k Keeper) GetDenoms(ctx sdk.Context) (denoms []types.Denom) {
 	return denoms
 }
 
+// FixInvalidDenomNames rewrites denoms whose Name fails ValidateDenomName
+// (e.g. the empty name left by the historical IBC NFT transfer bug) to use the
+// Id as Name, so exported genesis re-imports without panicking. Returns the
+// count fixed; intended to run once in an upgrade handler.
+func (k Keeper) FixInvalidDenomNames(ctx sdk.Context) int {
+	store := ctx.KVStore(k.storeKey)
+	fixed := 0
+	for _, denom := range k.GetDenoms(ctx) {
+		if types.ValidateDenomName(denom.Name) == nil {
+			continue
+		}
+		store.Delete(types.KeyDenomName(denom.Name))
+		denom.Name = denom.Id
+		store.Set(types.KeyDenomID(denom.Id), k.cdc.MustMarshal(&denom))
+		store.Set(types.KeyDenomName(denom.Name), []byte(denom.Id))
+		fixed++
+	}
+	return fixed
+}
+
 // IsDenomCreator checks if address is the creator of Denom
 // Return the Denom if true, an error otherwise
 func (k Keeper) IsDenomCreator(ctx sdk.Context, denomID string, address sdk.AccAddress) (types.Denom, error) {
