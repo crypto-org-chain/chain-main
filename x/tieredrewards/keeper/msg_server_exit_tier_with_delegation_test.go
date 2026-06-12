@@ -372,7 +372,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_PartialAfterSlash() {
 	s.Require().NoError(err)
 	s.Require().True(posAfter.IsDelegated())
 
-	posDelAddr := types.GetDelegatorAddress(posAfter.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(posAfter.DelegatorAddress)
 	posStakingDel, err := s.app.StakingKeeper.GetDelegation(s.ctx, posDelAddr, valAddr)
 	s.Require().NoError(err)
 
@@ -429,7 +429,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitAfterSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Slash 10% to create a non-1:1 exchange rate.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -485,7 +485,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitNearTotalSlash() {
 
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Slash 99% — position token value goes very low but shares remain.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)
@@ -540,7 +540,7 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDu
 	s.advancePastExitDuration()
 
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 
 	// Inject dust directly onto the position's delegator account.
 	dustDenom := "dust"
@@ -568,4 +568,54 @@ func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExitSweepsNonBondDenomDu
 
 	s.Require().True(s.app.BankKeeper.GetAllBalances(s.ctx, posDelAddr).IsZero(),
 		"position's delegator account should be empty after sweep")
+}
+
+func (s *KeeperSuite) TestMsgExitTierWithDelegation_FullExit_PreservesLockedVestingAmount() {
+	lockAmount := sdkmath.NewInt(10_000)
+	pos := s.setupNewTierPosition(lockAmount, true)
+	owner := sdk.MustAccAddressFromBech32(pos.Owner)
+	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
+	_, bondDenom := s.getStakingData()
+
+	s.fundRewardsPool(sdkmath.NewInt(1_000_000), bondDenom)
+	s.advancePastExitDuration()
+
+	// simulates that position's delegator address is a vesting account
+	// before the position was even created (possible from v1 legacy positions)
+	dustAmount := sdkmath.NewInt(10)
+	s.convertPosDelAccToVestingAcc(posDelAddr, bondDenom, dustAmount)
+
+	totalBefore := s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount
+	spendableBefore := s.app.BankKeeper.SpendableCoins(s.ctx, posDelAddr).AmountOf(bondDenom)
+	s.Require().True(totalBefore.Equal(dustAmount),
+		"total balance should be just the locked dust — principal lives in the bonded pool, not at delAddr")
+	s.Require().True(spendableBefore.IsZero(),
+		"spendable should be zero — only locked vesting dust at the delegator address")
+
+	positionAmount, err := s.keeper.GetPositionAmount(s.ctx, pos)
+	s.Require().NoError(err)
+
+	msgServer := keeper.NewMsgServerImpl(s.keeper)
+	resp, err := msgServer.ExitTierWithDelegation(s.ctx, &types.MsgExitTierWithDelegation{
+		Owner:      pos.Owner,
+		PositionId: pos.Id,
+		Amount:     positionAmount,
+	})
+	s.Require().NoError(err)
+	s.Require().True(resp.FullExit, "full exit expected")
+
+	_, err = s.keeper.GetPositionState(s.ctx, pos.Id)
+	s.Require().ErrorIs(err, types.ErrPositionNotFound)
+
+	// Owner has the staking delegation back.
+	del, err := s.app.StakingKeeper.GetDelegation(s.ctx, owner, valAddr)
+	s.Require().NoError(err)
+	s.Require().True(del.Shares.Equal(pos.Delegation.Shares),
+		"owner should hold the full delegation shares")
+
+	// Sweep was a no-op - delegation is merely transferred to the owner.
+	posDelBalAfter := s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount
+	s.Require().True(posDelBalAfter.Equal(dustAmount),
+		"the planted locked dust must remain at the delegator address")
 }

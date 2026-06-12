@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	sdkmath "cosmossdk.io/math"
@@ -21,7 +22,8 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	val := vals[0]
 	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
-	owner := sdk.AccAddress([]byte("genesis_test_owner__")).String()
+	ownerAddr := sdk.AccAddress([]byte("genesis_test_owner__"))
+	owner := ownerAddr.String()
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
@@ -31,7 +33,7 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	// their validator via stakingKeeper.GetDelegatorDelegations. Position 3 is
 	// intentionally left undelegated.
 	for _, id := range []uint64{1, 2} {
-		delAddr := types.GetDelegatorAddress(id)
+		delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(ownerAddr, id))
 		s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 			sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
 		_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
@@ -40,10 +42,11 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 
 	// Seed an active staking redelegation for position 1.
 	dstValAddr, _ := s.createSecondValidator()
-	del1, err := s.app.StakingKeeper.GetDelegation(s.ctx, types.GetDelegatorAddress(1), valAddr)
+	delAddr1 := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(ownerAddr, 1))
+	del1, err := s.app.StakingKeeper.GetDelegation(s.ctx, delAddr1, valAddr)
 	s.Require().NoError(err)
 	_, unbondingID1, err := s.app.StakingKeeper.BeginRedelegation(
-		s.ctx, types.GetDelegatorAddress(1), valAddr, dstValAddr, del1.Shares,
+		s.ctx, delAddr1, valAddr, dstValAddr, del1.Shares,
 	)
 	s.Require().NoError(err)
 	s.Require().NotZero(unbondingID1)
@@ -63,11 +66,11 @@ func (s *KeeperSuite) TestInitExportGenesis_FullRoundTrip() {
 	}
 
 	// Two delegated positions on the same validator.
-	pos1 := types.NewPosition(1, owner, 1, 100, 0, now, true, now)
-	pos2 := types.NewPosition(2, owner, 2, 101, 0, now, true, now)
+	pos1 := types.NewPosition(1, owner, 1, testutil.DelegatorAddress(ownerAddr, 1), 100, 0, now, true, now)
+	pos2 := types.NewPosition(2, owner, 2, testutil.DelegatorAddress(ownerAddr, 2), 101, 0, now, true, now)
 
 	// Undelegated, exit-triggered position.
-	pos3 := types.NewPosition(3, owner, 1, 102, 0, time.Time{}, false, now)
+	pos3 := types.NewPosition(3, owner, 1, testutil.DelegatorAddress(ownerAddr, 3), 102, 0, time.Time{}, false, now)
 	pos3.TriggerExit(now.Add(-time.Hour), time.Hour*24)
 
 	genesisState := &types.GenesisState{
@@ -154,7 +157,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 	lockAmount := sdkmath.NewInt(1000)
 
 	// Only pos2 is delegated.
-	delAddr := types.GetDelegatorAddress(2)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(owner, 2))
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
 	_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
@@ -174,14 +177,14 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 	}
 
 	// Undelegated with exit triggered, tier 1.
-	pos1 := types.NewPosition(1, owner.String(), 1, 100, 0, time.Time{}, false, now)
+	pos1 := types.NewPosition(1, owner.String(), 1, testutil.DelegatorAddress(owner, 1), 100, 0, time.Time{}, false, now)
 	pos1.TriggerExit(now.Add(-time.Hour), time.Hour*24)
 
 	// Delegated, tier 1.
-	pos2 := types.NewPosition(2, owner.String(), 1, 101, 0, now, true, now)
+	pos2 := types.NewPosition(2, owner.String(), 1, testutil.DelegatorAddress(owner, 2), 101, 0, now, true, now)
 
 	// Undelegated, no exit, tier 2.
-	pos3 := types.NewPosition(3, owner.String(), 2, 102, 0, time.Time{}, false, now)
+	pos3 := types.NewPosition(3, owner.String(), 2, testutil.DelegatorAddress(owner, 3), 102, 0, time.Time{}, false, now)
 
 	genesisState := &types.GenesisState{
 		Params:         types.DefaultParams(),
@@ -214,7 +217,8 @@ func (s *KeeperSuite) TestInitExportGenesis_SecondaryIndexesRebuilt() {
 // TestInitExportGenesis_SequenceContinuity verifies that NextPositionId from
 // genesis state is preserved, even when it's higher than the max position ID.
 func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
-	owner := sdk.AccAddress([]byte("genesis_seq_owner___")).String()
+	ownerAddr := sdk.AccAddress([]byte("genesis_seq_owner___"))
+	owner := ownerAddr.String()
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
@@ -226,7 +230,7 @@ func (s *KeeperSuite) TestInitExportGenesis_SequenceContinuity() {
 	}
 
 	// Single undelegated, exit-triggered position with a non-contiguous id.
-	pos5 := types.NewPosition(5, owner, 1, 10, 0, time.Time{}, false, now)
+	pos5 := types.NewPosition(5, owner, 1, testutil.DelegatorAddress(ownerAddr, 5), 10, 0, time.Time{}, false, now)
 	pos5.TriggerExit(now.Add(-time.Hour), time.Hour*24)
 
 	genesisState := &types.GenesisState{
@@ -279,7 +283,8 @@ func (s *KeeperSuite) TestInitGenesis_PanicsOnPhantomRedelegationMapping() {
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
-	owner := sdk.AccAddress([]byte("genesis_phantom_own_")).String()
+	ownerAddr := sdk.AccAddress([]byte("genesis_phantom_own_"))
+	owner := ownerAddr.String()
 	tier := types.Tier{
 		Id:            1,
 		ExitDuration:  time.Hour * 24,
@@ -287,7 +292,7 @@ func (s *KeeperSuite) TestInitGenesis_PanicsOnPhantomRedelegationMapping() {
 		MinLockAmount: sdkmath.NewInt(100),
 	}
 	// Undelegated position
-	pos := types.NewPosition(1, owner, 1, 100, 0, time.Time{}, false, now)
+	pos := types.NewPosition(1, owner, 1, testutil.DelegatorAddress(ownerAddr, 1), 100, 0, time.Time{}, false, now)
 
 	genesisState := &types.GenesisState{
 		Params:         types.DefaultParams(),
@@ -313,12 +318,13 @@ func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegationMapping() {
 	val := vals[0]
 	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
-	owner := sdk.AccAddress([]byte("genesis_valid_owner_")).String()
+	ownerAddr := sdk.AccAddress([]byte("genesis_valid_owner_"))
+	owner := ownerAddr.String()
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
 	lockAmount := sdkmath.NewInt(1000)
-	delAddr := types.GetDelegatorAddress(1)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(ownerAddr, 1))
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
 	_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
@@ -338,7 +344,7 @@ func (s *KeeperSuite) TestInitGenesis_AcceptsValidRedelegationMapping() {
 		BonusApy:      sdkmath.LegacyNewDecWithPrec(4, 2),
 		MinLockAmount: sdkmath.NewInt(100),
 	}
-	pos := types.NewPosition(1, owner, 1, 100, 0, now, true, now)
+	pos := types.NewPosition(1, owner, 1, testutil.DelegatorAddress(ownerAddr, 1), 100, 0, now, true, now)
 
 	genesisState := &types.GenesisState{
 		Params:         types.DefaultParams(),
@@ -362,14 +368,15 @@ func (s *KeeperSuite) TestInitGenesis_PanicsOnRedelegationMappingDelegatorMismat
 	val := vals[0]
 	valAddr := sdk.MustValAddressFromBech32(val.GetOperator())
 
-	owner := sdk.AccAddress([]byte("genesis_mismatch_own")).String()
+	ownerAddr := sdk.AccAddress([]byte("genesis_mismatch_own"))
+	owner := ownerAddr.String()
 	now := time.Date(2025, 6, 15, 12, 0, 0, 0, time.UTC)
 	s.ctx = s.ctx.WithBlockTime(now)
 
 	// Real staking redelegation issued by GetDelegatorAddress(1) — i.e. owned
 	// by position 1.
 	lockAmount := sdkmath.NewInt(1000)
-	delAddr := types.GetDelegatorAddress(1)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(ownerAddr, 1))
 	s.Require().NoError(banktestutil.FundAccount(s.ctx, s.app.BankKeeper, delAddr,
 		sdk.NewCoins(sdk.NewCoin(bondDenom, lockAmount))))
 	_, err := s.app.StakingKeeper.Delegate(s.ctx, delAddr, lockAmount, stakingtypes.Unbonded, val, true)
@@ -388,8 +395,8 @@ func (s *KeeperSuite) TestInitGenesis_PanicsOnRedelegationMappingDelegatorMismat
 		BonusApy:      sdkmath.LegacyNewDecWithPrec(4, 2),
 		MinLockAmount: sdkmath.NewInt(100),
 	}
-	pos1 := types.NewPosition(1, owner, 1, 100, 0, now, true, now)
-	pos2 := types.NewPosition(2, owner, 1, 100, 0, time.Time{}, false, now)
+	pos1 := types.NewPosition(1, owner, 1, testutil.DelegatorAddress(ownerAddr, 1), 100, 0, now, true, now)
+	pos2 := types.NewPosition(2, owner, 1, testutil.DelegatorAddress(ownerAddr, 2), 100, 0, time.Time{}, false, now)
 
 	// Mapping pairs the real unbondingId (owned by position 1) with position 2.
 	genesisState := &types.GenesisState{
@@ -405,7 +412,7 @@ func (s *KeeperSuite) TestInitGenesis_PanicsOnRedelegationMappingDelegatorMismat
 	s.Require().PanicsWithError(
 		fmt.Sprintf(
 			"redelegation mapping (unbonding_id=%d, position_id=2) delegator mismatch: staking has %q, expected %q",
-			unbondingID, delAddr.String(), types.GetDelegatorAddress(2).String(),
+			unbondingID, delAddr.String(), sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(ownerAddr, 2)).String(),
 		),
 		func() { s.keeper.InitGenesis(s.ctx, genesisState) },
 	)

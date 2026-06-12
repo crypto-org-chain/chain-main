@@ -8,15 +8,16 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
-func NewPosition(id uint64, owner string, tierId uint32, createdAtHeight, lastEventSeq uint64, lastBonusAccrual time.Time, lastKnownBonded bool, createdAtTime time.Time) Position {
+func NewPosition(id uint64, owner string, tierId uint32, delegatorAddress string, createdAtHeight, lastEventSeq uint64, lastBonusAccrual time.Time, lastKnownBonded bool, createdAtTime time.Time) Position {
 	return Position{
 		Id:               id,
 		Owner:            owner,
 		TierId:           tierId,
+		DelegatorAddress: delegatorAddress,
 		CreatedAtHeight:  createdAtHeight,
 		CreatedAtTime:    createdAtTime,
 		LastEventSeq:     lastEventSeq,
@@ -28,6 +29,10 @@ func NewPosition(id uint64, owner string, tierId uint32, createdAtHeight, lastEv
 func (p Position) Validate() error {
 	if _, err := sdk.AccAddressFromBech32(p.Owner); err != nil {
 		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
+	}
+
+	if _, err := sdk.AccAddressFromBech32(p.DelegatorAddress); err != nil {
+		return errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
 	}
 
 	if p.ExitTriggeredAt.IsZero() && !p.ExitUnlockAt.IsZero() {
@@ -98,6 +103,8 @@ func (p *Position) UpdateLastKnownBonded(bonded bool) {
 	p.LastKnownBonded = bonded
 }
 
-func GetDelegatorAddress(id uint64) sdk.AccAddress {
-	return authtypes.NewModuleAddress(fmt.Sprintf("tieredrewards/position/%d", id))
+func DerivePositionDelegatorAddress(headerHash []byte, owner sdk.AccAddress, id, nonce uint64) sdk.AccAddress {
+	idBz := sdk.Uint64ToBigEndian(id)
+	nonceBz := sdk.Uint64ToBigEndian(nonce)
+	return sdk.AccAddress(address.Module("tieredrewards/position", headerHash, owner, idBz, nonceBz))
 }

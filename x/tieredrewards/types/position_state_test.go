@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
@@ -14,7 +15,7 @@ import (
 
 func validDelegation() *stakingtypes.Delegation {
 	return &stakingtypes.Delegation{
-		DelegatorAddress: types.GetDelegatorAddress(1).String(),
+		DelegatorAddress: testutil.DelegatorAddress(testOwnerAddr, 1),
 		ValidatorAddress: testValidator,
 		Shares:           sdkmath.LegacyNewDec(1000),
 	}
@@ -97,14 +98,14 @@ func TestPositionState_Validate(t *testing.T) {
 			errContains: "last_known_bonded must be false when position is undelegated",
 		},
 		{
-			name: "delegation.DelegatorAddress does not match GetDelegatorAddress(pos.Id)",
+			name: "delegation.DelegatorAddress does not match position's delegator_address",
 			build: func() types.PositionState {
 				del := validDelegation()
-				del.DelegatorAddress = types.GetDelegatorAddress(999).String()
+				del.DelegatorAddress = testutil.DelegatorAddress(testOwnerAddr, 999)
 				return types.PositionState{Position: validDelegatedPosition(), Delegation: del}
 			},
 			wantErr:     true,
-			errContains: "does not match expected",
+			errContains: "does not match position delegator_address",
 		},
 	}
 

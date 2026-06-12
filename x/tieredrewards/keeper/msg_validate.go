@@ -9,9 +9,27 @@ import (
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkvesting "github.com/cosmos/cosmos-sdk/x/auth/vesting/exported"
 )
 
-func (k Keeper) validateNewPosition(tier types.Tier, amount math.Int) error {
+func (k Keeper) validateNonVestingAccount(ctx context.Context, address string) error {
+	addr, err := sdk.AccAddressFromBech32(address)
+	if err != nil {
+		return err
+	}
+	if acc := k.accountKeeper.GetAccount(ctx, addr); acc != nil {
+		if _, ok := acc.(sdkvesting.VestingAccount); ok {
+			return types.ErrVestingAccountNotAllowed
+		}
+	}
+	return nil
+}
+
+func (k Keeper) validateNewPosition(ctx context.Context, owner string, amount math.Int, tier types.Tier) error {
+	if err := k.validateNonVestingAccount(ctx, owner); err != nil {
+		return err
+	}
+
 	if tier.IsCloseOnly() {
 		return types.ErrTierIsCloseOnly
 	}
@@ -73,7 +91,7 @@ func (k Keeper) validateRedelegatePosition(ctx context.Context, pos types.Positi
 		return types.ErrTierIsCloseOnly
 	}
 
-	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}
@@ -128,7 +146,7 @@ func (k Keeper) validateClearPosition(ctx context.Context, pos types.PositionSta
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if pos.CompletedExitLockDuration(sdkCtx.BlockTime()) {
-		isUnbonding, err := k.isUnbonding(ctx, pos.Id)
+		isUnbonding, err := k.isUnbonding(ctx, pos.DelegatorAddress)
 		if err != nil {
 			return err
 		}
@@ -180,7 +198,7 @@ func (k Keeper) validateWithdrawFromTier(ctx context.Context, pos types.Position
 		return types.ErrPositionDelegated
 	}
 
-	isUnbonding, err := k.isUnbonding(ctx, pos.Id)
+	isUnbonding, err := k.isUnbonding(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}
@@ -218,7 +236,7 @@ func (k Keeper) validateExitTierWithDelegation(ctx context.Context, pos types.Po
 		return errorsmod.Wrapf(types.ErrInvalidAmount, "amount %s exceeds position token value %s", amount, positionAmount)
 	}
 
-	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
@@ -822,10 +823,11 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 	// not registered in staking — positionVotingPower must short-circuit.
 	fakeValAddr := sdk.ValAddress([]byte("not_in_bonded_map___"))
 	now := s.ctx.BlockTime()
+	bogusOwnerAddr := sdk.MustAccAddressFromBech32(realPos.Owner)
 	bogusPos := types.PositionState{
-		Position: types.NewPosition(999, realPos.Owner, 1, 1, 0, now, true, now),
+		Position: types.NewPosition(999, realPos.Owner, 1, testutil.DelegatorAddress(bogusOwnerAddr, 999), 1, 0, now, true, now),
 		Delegation: &stakingtypes.Delegation{
-			DelegatorAddress: types.GetDelegatorAddress(999).String(),
+			DelegatorAddress: testutil.DelegatorAddress(bogusOwnerAddr, 999),
 			ValidatorAddress: fakeValAddr.String(),
 			Shares:           sdkmath.LegacyNewDec(5000),
 		},

@@ -15,7 +15,7 @@ import (
 )
 
 // transferDelegationToPosition transfers delegation shares from
-// the original owner to a position's delegation address on the same validator.
+// the original owner to a position's delegator address on the same validator.
 // Shares are unbonded at the source and re-delegated from the destination
 // with no unbonding period.
 //
@@ -103,7 +103,10 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid owner address")
 	}
 
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr, err := sdk.AccAddressFromBech32(pos.DelegatorAddress)
+	if err != nil {
+		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, errorsmod.Wrap(sdkerrors.ErrInvalidAddress, "invalid delegator address")
+	}
 
 	// Defensive
 	if !pos.IsDelegated() {
@@ -111,7 +114,7 @@ func (k Keeper) transferDelegationFromPosition(ctx context.Context, pos types.Po
 	}
 
 	// Defensive
-	isRedelegating, err := k.isRedelegating(ctx, pos.Id)
+	isRedelegating, err := k.isRedelegating(ctx, pos.DelegatorAddress)
 	if err != nil {
 		return math.LegacyDec{}, math.LegacyDec{}, math.Int{}, err
 	}

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/collections"
@@ -315,7 +316,7 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 	s.Require().NoError(err)
 	s.Require().True(has)
 
-	delAddr := types.GetDelegatorAddress(positionId)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, positionId))
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
 	err = hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{unbondingID})
@@ -329,7 +330,7 @@ func (s *KeeperSuite) TestAfterRedelegationCompleted_DeletesMapping() {
 func (s *KeeperSuite) TestAfterRedelegationCompleted_NoMapping_NoOp() {
 	hooks := s.keeper.Hooks()
 
-	delAddr := types.GetDelegatorAddress(1)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, 1))
 	valSrc := sdk.ValAddress([]byte("validator_src_______"))
 	valDst := sdk.ValAddress([]byte("validator_dst_______"))
 	err := hooks.AfterRedelegationCompleted(s.ctx, delAddr, valSrc, valDst, []uint64{99})

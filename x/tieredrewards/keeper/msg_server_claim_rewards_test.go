@@ -720,14 +720,14 @@ func (s *KeeperSuite) TestMsgClaimTierRewards_OwnerReceivesRewards() {
 	pos := s.setupNewTierPosition(lockAmount, false)
 	ownerAddr := sdk.MustAccAddressFromBech32(pos.Owner)
 	valAddr := sdk.MustValAddressFromBech32(pos.Delegation.ValidatorAddress)
-	posDelAddr := types.GetDelegatorAddress(pos.Id)
+	posDelAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	_, bondDenom := s.getStakingData()
 	msgServer := keeper.NewMsgServerImpl(s.keeper)
 	s.setValidatorCommission(valAddr, sdkmath.LegacyZeroDec())
 
 	// Pre-claim: posDelAddr should already be empty (delegation consumes the funds).
 	s.Require().True(s.app.BankKeeper.GetBalance(s.ctx, posDelAddr, bondDenom).Amount.IsZero(),
-		"position's delegation address must hold no bondDenom pre-claim")
+		"position's delegator address must hold no bondDenom pre-claim")
 
 	// Let time pass so bonus accrues, then accrue base rewards on the validator.
 	s.ctx = s.ctx.WithBlockHeight(s.ctx.BlockHeight() + 1)

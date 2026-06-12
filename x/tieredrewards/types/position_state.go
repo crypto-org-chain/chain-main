@@ -27,11 +27,10 @@ func (p PositionState) Validate() error {
 		if _, err := sdk.ValAddressFromBech32(p.Delegation.ValidatorAddress); err != nil {
 			return fmt.Errorf("invalid validator address: %w", err)
 		}
-		expectedDelAddr := GetDelegatorAddress(p.Id).String()
-		if p.Delegation.DelegatorAddress != expectedDelAddr {
+		if p.Delegation.DelegatorAddress != p.DelegatorAddress {
 			return fmt.Errorf(
-				"delegation delegator address %q does not match expected %q for position %d",
-				p.Delegation.DelegatorAddress, expectedDelAddr, p.Id,
+				"delegation delegator address %q does not match position delegator_address %q (position %d)",
+				p.Delegation.DelegatorAddress, p.DelegatorAddress, p.Id,
 			)
 		}
 		if !p.Delegation.Shares.IsPositive() {
@@ -65,15 +64,16 @@ func (p *PositionState) ClearExit(blockTime time.Time) {
 
 func (p PositionState) ToPositionResponse(positionAmount math.Int) PositionResponse {
 	resp := PositionResponse{
-		Id:              p.Id,
-		Owner:           p.Owner,
-		TierId:          p.TierId,
-		Amount:          positionAmount,
-		DelegatedShares: math.LegacyZeroDec(),
-		ExitTriggeredAt: p.ExitTriggeredAt,
-		ExitUnlockAt:    p.ExitUnlockAt,
-		CreatedAtHeight: p.CreatedAtHeight,
-		CreatedAtTime:   p.CreatedAtTime,
+		Id:               p.Id,
+		Owner:            p.Owner,
+		TierId:           p.TierId,
+		Amount:           positionAmount,
+		DelegatedShares:  math.LegacyZeroDec(),
+		ExitTriggeredAt:  p.ExitTriggeredAt,
+		ExitUnlockAt:     p.ExitUnlockAt,
+		CreatedAtHeight:  p.CreatedAtHeight,
+		CreatedAtTime:    p.CreatedAtTime,
+		DelegatorAddress: p.DelegatorAddress,
 	}
 	if p.IsDelegated() {
 		resp.Validator = p.Delegation.ValidatorAddress

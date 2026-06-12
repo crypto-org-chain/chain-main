@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/keeper"
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
 	"cosmossdk.io/collections"
@@ -212,7 +213,7 @@ func (s *KeeperSuite) TestRedelegationMapping_SurvivesZombieCompletion() {
 	s.Require().NoError(s.keeper.RedelegationMappings.Set(s.ctx, freshID, positionId))
 
 	// AfterRedelegationCompleted fires for the matured zombie only.
-	delAddr := types.GetDelegatorAddress(positionId)
+	delAddr := sdk.MustAccAddressFromBech32(testutil.DelegatorAddress(testutil.TestOwner, positionId))
 	src := sdk.ValAddress([]byte("old_src_val_________"))
 	dst := sdk.ValAddress([]byte("old_dst_val_________"))
 	err := s.keeper.Hooks().AfterRedelegationCompleted(s.ctx, delAddr, src, dst, []uint64{zombieID})

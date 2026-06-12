@@ -6,7 +6,7 @@ import bech32
 import requests
 from pystarport.ports import api_port
 
-from .utils import approve_proposal, module_address
+from .utils import module_address
 
 # ──────────────────────────────────────────────
 # Constants
@@ -157,6 +157,10 @@ def query_position(cluster, position_id, i=0):
     return rest_get(cluster, f"/chainmain/tieredrewards/v1/position/{position_id}", i)
 
 
+def query_positions(cluster, i=0):
+    return rest_get(cluster, "/chainmain/tieredrewards/v1/positions", i)
+
+
 def position_delegator_address(pos_id, prefix="cro"):
     data = hashlib.sha256(f"tieredrewards/position/{pos_id}".encode()).digest()[:20]
     return bech32.bech32_encode(prefix, bech32.convertbits(data, 8, 5))
@@ -184,15 +188,6 @@ def query_estimate_rewards(cluster, position_id, i=0):
 def pool_balance(cluster):
     pool_addr = module_address(REWARDS_POOL_NAME)
     return cluster.balance(pool_addr, DENOM)
-
-
-def approve_tieredrewards_proposal(cluster, rsp, msg, expect_status=None):
-    return approve_proposal(
-        cluster,
-        rsp,
-        msg=msg,
-        expect_status=expect_status,
-    )
 
 
 def get_validator_addr(cluster, i=0):

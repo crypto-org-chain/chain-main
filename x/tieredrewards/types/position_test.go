@@ -4,21 +4,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/testutil"
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/stretchr/testify/require"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 var (
-	testOwner     = sdk.AccAddress([]byte("test_owner__________")).String()
+	testOwnerAddr = sdk.AccAddress([]byte("test_owner__________"))
+	testOwner     = testOwnerAddr.String()
 	testValidator = sdk.ValAddress([]byte("test_validator______")).String()
 )
 
 func validDelegatedPosition() types.Position {
 	now := time.Now()
-	return types.NewPosition(1, testOwner, 1, 100, 0, now, true, now)
+	pos := types.NewPosition(1, testOwner, 1, testutil.DelegatorAddress(testOwnerAddr, 1), 100, 0, now, true, now)
+	return pos
 }
 
 func TestPosition_Validate(t *testing.T) {
@@ -55,6 +57,22 @@ func TestPosition_Validate(t *testing.T) {
 			},
 			wantErr:     true,
 			errContains: "invalid owner address",
+		},
+		{
+			name: "empty delegator address",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = ""
+			},
+			wantErr:     true,
+			errContains: "invalid delegator address",
+		},
+		{
+			name: "invalid delegator address",
+			modify: func(p *types.Position) {
+				p.DelegatorAddress = "not_a_valid_address"
+			},
+			wantErr:     true,
+			errContains: "invalid delegator address",
 		},
 		{
 			name: "exit_unlock_at set without exit_triggered_at",
@@ -118,49 +136,66 @@ func TestPosition_Validate(t *testing.T) {
 	}
 }
 
-// TestGetDelegatorAddress_Deterministic verifies that GetDelegatorAddress
-// is a pure function of the position id — repeated calls produce the same
-// address.
-func TestGetDelegatorAddress_Deterministic(t *testing.T) {
+// TestDerivePositionDelegatorAddress_Deterministic asserts the v2 derivation
+// is a pure function of its inputs.
+func TestDerivePositionDelegatorAddress_Deterministic(t *testing.T) {
 	t.Parallel()
 
-	for _, id := range []uint64{0, 1, 42, 1_000_000, 1 << 63} {
-		first := types.GetDelegatorAddress(id)
-		second := types.GetDelegatorAddress(id)
-		require.Equal(t, first, second, "GetDelegatorAddress must be deterministic for position id %d", id)
-		require.Len(t, first, 20, "derived address must be 20 bytes")
-	}
+	headerHash := []byte{0xab, 0xcd, 0xef, 0x01, 0x02, 0x03}
+	owner := sdk.AccAddress([]byte("owner_______________"))
+
+	first := types.DerivePositionDelegatorAddress(headerHash, owner, 7, 0)
+	second := types.DerivePositionDelegatorAddress(headerHash, owner, 7, 0)
+	require.Equal(t, first, second, "derivation must be deterministic for fixed inputs")
 }
 
-// TestGetDelegatorAddress_UniquePerID verifies that distinct position ids
-// produce distinct delegator addresses.
-func TestGetDelegatorAddress_UniquePerID(t *testing.T) {
+// TestDerivePositionDelegatorAddress_DiffersByHeaderHash confirms that two
+// different block hashes produce different addresses for the same (owner, id, nonce).
+// This is the property that makes pre-block poisoning infeasible.
+func TestDerivePositionDelegatorAddress_DiffersByHeaderHash(t *testing.T) {
 	t.Parallel()
 
-	const n = 1000
-	seen := make(map[string]uint64, n)
-	for i := uint64(0); i < n; i++ {
-		addr := types.GetDelegatorAddress(i)
-		key := string(addr)
-		if prev, dup := seen[key]; dup {
-			t.Fatalf("collision: position %d and %d derived to the same delegator address %s", prev, i, addr.String())
-		}
-		seen[key] = i
-	}
-	require.Len(t, seen, n, "expected %d unique delegator addresses", n)
+	owner := sdk.AccAddress([]byte("owner_______________"))
+	a := types.DerivePositionDelegatorAddress([]byte{0x01}, owner, 1, 0)
+	b := types.DerivePositionDelegatorAddress([]byte{0x02}, owner, 1, 0)
+	require.NotEqual(t, a, b, "different headerHash values must yield different addresses")
 }
 
-// TestGetDelegatorAddress_DistinctFromModuleAccount verifies that a position's
-// delegator address never collides with the tieredrewards module account or
-// the rewards-pool account.
-func TestGetDelegatorAddress_DistinctFromModuleAccount(t *testing.T) {
+// TestDerivePositionDelegatorAddress_DiffersByOwner asserts that the same
+// (headerHash, id, nonce) for two different owners produces different addresses.
+func TestDerivePositionDelegatorAddress_DiffersByOwner(t *testing.T) {
 	t.Parallel()
 
-	poolAddr := authtypes.NewModuleAddress(types.RewardsPoolName)
+	headerHash := []byte{0xff}
+	ownerA := sdk.AccAddress([]byte("owner_a_____________"))
+	ownerB := sdk.AccAddress([]byte("owner_b_____________"))
+	a := types.DerivePositionDelegatorAddress(headerHash, ownerA, 1, 0)
+	b := types.DerivePositionDelegatorAddress(headerHash, ownerB, 1, 0)
+	require.NotEqual(t, a, b, "different owners must yield different addresses")
+}
 
-	for _, id := range []uint64{0, 1, 42} {
-		delAddr := types.GetDelegatorAddress(id)
-		require.False(t, delAddr.Equals(poolAddr),
-			"position %d delegator address must differ from the rewards pool address", id)
-	}
+// TestDerivePositionDelegatorAddress_DiffersById asserts uniqueness across ids
+// for fixed (headerHash, owner, nonce).
+func TestDerivePositionDelegatorAddress_DiffersById(t *testing.T) {
+	t.Parallel()
+
+	headerHash := []byte{0xff}
+	owner := sdk.AccAddress([]byte("owner_______________"))
+	a := types.DerivePositionDelegatorAddress(headerHash, owner, 1, 0)
+	b := types.DerivePositionDelegatorAddress(headerHash, owner, 2, 0)
+	require.NotEqual(t, a, b, "different ids must yield different addresses")
+}
+
+// TestDerivePositionDelegatorAddress_DiffersByNonce confirms that incrementing
+// the collision nonce yields a fresh address — required for the keeper's
+// collision-handling loop to make progress on the (improbable) chance of
+// preimage collision.
+func TestDerivePositionDelegatorAddress_DiffersByNonce(t *testing.T) {
+	t.Parallel()
+
+	headerHash := []byte{0xff}
+	owner := sdk.AccAddress([]byte("owner_______________"))
+	a := types.DerivePositionDelegatorAddress(headerHash, owner, 1, 0)
+	b := types.DerivePositionDelegatorAddress(headerHash, owner, 1, 1)
+	require.NotEqual(t, a, b, "different nonces must yield different addresses")
 }

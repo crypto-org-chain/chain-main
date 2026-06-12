@@ -75,7 +75,7 @@ func (s *KeeperSuite) TestLoadPosition_UnbondingComplete() {
 	})
 	s.Require().NoError(err)
 
-	s.completeStakingUnbonding(valAddr, types.GetDelegatorAddress(pos.Id))
+	s.completeStakingUnbonding(valAddr, sdk.MustAccAddressFromBech32(pos.DelegatorAddress))
 
 	pos, err = s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -140,7 +140,7 @@ func (s *KeeperSuite) TestPositionAmount_PartiallySlashedUnbonding() {
 	s.Require().NoError(err)
 
 	slashAmount := s.getPositionAmount(pos).QuoRaw(2)
-	s.slashUnbondingEntry(types.GetDelegatorAddress(pos.Id), valAddr, slashAmount)
+	s.slashUnbondingEntry(sdk.MustAccAddressFromBech32(pos.DelegatorAddress), valAddr, slashAmount)
 
 	state, err := s.keeper.GetPositionState(s.ctx, pos.Id)
 	s.Require().NoError(err)
@@ -166,7 +166,7 @@ func (s *KeeperSuite) TestPositionAmount_IncludesOnlyBondDenom() {
 	})
 	s.Require().NoError(err)
 
-	delAddr := types.GetDelegatorAddress(pos.Id)
+	delAddr := sdk.MustAccAddressFromBech32(pos.DelegatorAddress)
 	s.completeStakingUnbonding(valAddr, delAddr)
 
 	// Sprinkle stray dust of a different denom.
