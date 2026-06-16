@@ -11,7 +11,7 @@
 - [#1305](https://github.com/crypto-org-chain/chain-main/pull/1305) fix(x/tieredrewards): block vesting accounts from creating tier positions.
 - [#1308](https://github.com/crypto-org-chain/chain-main/pull/1308) fix(x/tieredrewards)!: harden position delegator address derivation against pre-creation squatting. 
 - [#1311](https://github.com/crypto-org-chain/chain-main/pull/1311) fix(ci): upgrade nixPkgs to latest 25.11 latest patch.
-- [#1312](https://github.com/crypto-org-chain/chain-main/pull/1312) fix(x/nft): validate denom `Id` (IBC-aware) instead of `Name` in genesis, so denoms with free-form names round-trip through export/import; add `FixInvalidDenomNames` and run it in the `v8` upgrade handler to sanitize legacy empty-name denoms.
+- [#1312](https://github.com/crypto-org-chain/chain-main/pull/1312) fix(x/nft): validate denom `Id` (IBC-aware) instead of `Name` in genesis, so denoms with free-form names round-trip through export/import.
 
 ### Chores
 
