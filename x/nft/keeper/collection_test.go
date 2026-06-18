@@ -1,5 +1,4 @@
-// Copyright (c) 2016-2021 Shanghai Bianjie AI Technology Inc. (licensed under the Apache License, Version 2.0)
-// Modifications Copyright (c) 2021-present Cronos.org (licensed under the Apache License, Version 2.0)
+// Cronos.com Chain Copyright 2018-present Cronos.com
 package keeper_test
 
 import (
