@@ -1,6 +1,8 @@
 # Changelog
 
-## UNRELEASED
+*Jun 22, 2026*
+
+## v8.0.0
 
 ### Improvements
 
