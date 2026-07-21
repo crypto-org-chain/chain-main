@@ -39,3 +39,22 @@ The Makefile assembles `build_tags` including `netgo`, `ledger` (when `LEDGER_EN
 - Commits/PRs follow Conventional Commits (`fix(x/nft): ...`, `chore(ci): ...`) — see `CONTRIBUTING.md`.
 - User-facing changes get a `CHANGELOG.md` entry.
 - Go code is linted with `golangci-lint` (config in `.golangci.yml`); Python with flake8/isort (`.flake8`, `.isort.cfg`).
+
+## Go coding style
+
+Follow the [Uber Go Style Guide](https://github.com/uber-go/guide/blob/master/style.md). Formatting is enforced by `gofumpt` (with extra rules) and `gci` import ordering — always run `make lint-fix` before committing. Import groups, in order: standard library, third party, `cosmossdk.io`, then `github.com/cosmos/cosmos-sdk`.
+
+Key guidelines the linters do not fully enforce:
+
+- **Errors**: wrap with `fmt.Errorf("...: %w", err)`; check with `errors.Is`/`errors.As` (`errorlint` enforces this). Error strings are lowercase and unpunctuated. Error vars are named `errFoo`; error types `FooError`.
+- **Don't panic** in library/module code — return errors. Panic only for truly irrecoverable states (e.g. invariant violations in `app` wiring).
+- **Type assertions**: always use the comma-ok form (`v, ok := x.(T)`) to avoid panics.
+- **Reduce nesting**: handle errors and special cases early with `return`/`continue`; avoid unnecessary `else` after a `return`.
+- **Initialize structs with field names**; omit zero-value fields.
+- **Enums** using `iota` start at one (or a sentinel) so the zero value is meaningful.
+- **Interfaces**: verify compliance at compile time with `var _ Iface = (*Impl)(nil)` where it adds clarity; pass interfaces by value, not pointer.
+- **Naming**: keep initialisms consistent-case (`ID`, `URL`, `RPC`); don't shadow built-ins (`len`, `error`, `min`); prefer clear, short names.
+- **Avoid mutable globals and `init()` side effects** — prefer dependency injection via the app/keeper constructors.
+- **Copy slices and maps at boundaries** when storing or returning caller-supplied references.
+- **Tests**: prefer table-driven tests; use `t.Helper()` in test helpers (`thelper` enforces this).
+- **Performance**: prefer `strconv` over `fmt` for conversions; pre-size slices/maps with `make(..., cap)` when the size is known.
