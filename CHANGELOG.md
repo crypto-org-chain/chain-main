@@ -5,6 +5,7 @@
 ### Improvements
 
 - [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
+- feat(upgrade): add `v9` plan that pauses vesting on the 70B CRO reserve account created by the `v5.0.0` handler. The unvested remainder is pushed ~50 years out by stretching the single in-progress vesting period; already-vested coins are untouched, and resuming requires a follow-up upgrade.
 
 ### Bugfixes
 
