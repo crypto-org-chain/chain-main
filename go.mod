@@ -265,7 +265,7 @@ replace github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-or
 
 replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261005155903-3365aaa5b864
 
-replace github.com/cometbft/cometbft => github.com/crypto-org-chain/cometbft v0.0.0-20261005192950-11965604580a
+replace github.com/cometbft/cometbft => github.com/crypto-org-chain/cometbft v0.0.0-20261005203508-e936f41e27f6
 
 replace (
 	// use cosmos fork of keyring
