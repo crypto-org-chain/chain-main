@@ -350,10 +350,10 @@ github.com/creachadair/tomledit v0.0.24 h1:5Xjr25R2esu1rKCbQEmjZYlrhFkDspoAbAKb6
 github.com/creachadair/tomledit v0.0.24/go.mod h1:9qHbShRWQzSCcn617cMzg4eab1vbLCOjOshAWSzWr8U=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/crypto-org-chain/cometbft v0.0.0-20261005203508-e936f41e27f6 h1:S7NvBnCrAomqAkW0Ot1zt7iGwG0ZtsQcjQDJ6PS5NWY=
-github.com/crypto-org-chain/cometbft v0.0.0-20261005203508-e936f41e27f6/go.mod h1:jtH//cs5e2U5dNiaYIPMBwWXZsedXJfIie77gVhuRaA=
-github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261005193628-3b0bfcd59498 h1:P9TWnHaWObUM9NiJLm2Yb+g59XV1OpcPvxG+VjqjAEw=
-github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261005193628-3b0bfcd59498/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/crypto-org-chain/cometbft v0.0.0-20261007140153-5cbc9c4af87e h1:8pqXBaU74TyCvSZ65qLEzgZyoUh/1lbqUADSW8AWS7g=
+github.com/crypto-org-chain/cometbft v0.0.0-20261007140153-5cbc9c4af87e/go.mod h1:jtH//cs5e2U5dNiaYIPMBwWXZsedXJfIie77gVhuRaA=
+github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261007140702-74750d6b782e h1:Sj4BgamfSIlOA9hG/RkXaNusD5gl0FwZkr5MtE+Vs4Q=
+github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261007140702-74750d6b782e/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881 h1:EDyxlMIC50plAgvz+IY4Bu6ymLb/6BhNtQLc96VLQ14=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881/go.mod h1:Cgi3xIJ4py34GX6pr653a3BpAD9bLeq4kqkupow1T4g=
 github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912125026-c998a90e2881 h1:dl6VKXDHfMGZmadlh51nCiJoCPTLSRksN8F+P3y3ZtE=
