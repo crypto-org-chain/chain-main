@@ -228,8 +228,9 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.38.22"
-    hash = "sha256-gb7oIMAGVUwPV6PMoZ+Hi+VZNm16Fo/ZfGRS3mJCUFo="
+    version = "v0.0.0-20261007140153-5cbc9c4af87e"
+    hash = "sha256-Ek5w9OnCLfkQ6+N2hX6zIIeIMxHxGPqL7pfOEQQ5tmk="
+    replaced = "github.com/crypto-org-chain/cometbft"
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.14.1"
     hash = "sha256-QvWMRGsdgCsSfL+DHp3w1Bm4jXa14SeT7oRK3PiNGV0="
@@ -243,8 +244,8 @@ schema = 3
     version = "v1.0.0-beta.5"
     hash = "sha256-Fy/PbsOsd6iq0Njy3DVWK6HqWsogI+MkE8QslHGWyVg="
   [mod."github.com/cosmos/cosmos-sdk"]
-    version = "v0.53.7-0.20260506074806-514ebca2262b"
-    hash = "sha256-Zs2oXoCt1kZhWIVS955GYjIQFy+wJd3ArR+8Cnhb8D4="
+    version = "v0.53.7-0.20261007140702-74750d6b782e"
+    hash = "sha256-v0Rk9rk+VzNDFlQIpOHqNiYcwpvvcKcQHv5a1UCpSc4="
     replaced = "github.com/crypto-org-chain/cosmos-sdk"
   [mod."github.com/cosmos/go-bip39"]
     version = "v1.0.0"
