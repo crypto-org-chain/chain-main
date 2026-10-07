@@ -1,4 +1,6 @@
 import pytest
+import requests
+from pystarport.ports import api_port
 
 from .utils import find_log_event_attrs, wait_for_block
 
@@ -76,6 +78,18 @@ def test_transfer(cluster):
     assert updated_community_addr_tx_count == initial_community_addr_tx_count + 1
     updated_reserve_addr_tx_count = len(cluster.query_all_txs(reserve_addr)["txs"])
     assert updated_reserve_addr_tx_count == initial_reserve_addr_tx_count + 1
+
+    # the tx emits message.sender twice; search must count and return it once
+    url = f"http://127.0.0.1:{api_port(cluster.base_port(0))}/cosmos/tx/v1beta1/txs"
+    query = f"message.sender='{community_addr}'"
+    all_txs = requests.get(url, params={"query": query, "limit": 100}).json()
+    hashes = [tx["txhash"] for tx in all_txs["tx_responses"]]
+    assert len(hashes) == len(set(hashes)) == int(all_txs["total"])
+    newest = requests.get(
+        url, params={"query": query, "limit": 1, "order_by": "ORDER_BY_DESC"}
+    ).json()
+    assert newest["total"] == all_txs["total"]
+    assert newest["tx_responses"][0]["txhash"] == rsp["txhash"]
 
 
 def test_liquid_supply(cluster):
