@@ -6,7 +6,7 @@
 
 ### Bugfixes
 
-- [#1324](https://github.com/crypto-org-chain/chain-main/pull/1324) fix: bound memory of tx search by event queries.
+- [#1326](https://github.com/crypto-org-chain/chain-main/pull/1326) fix: bound memory of tx search by event queries.
 
 *Jun 22, 2026*
 
