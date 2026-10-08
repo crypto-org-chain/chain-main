@@ -300,8 +300,6 @@ github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE
 github.com/coinbase/kryptology v1.8.0/go.mod h1:RYXOAPdzOGUe3qlSFkMGn58i3xUA8hmxYHksuq+8ciI=
 github.com/coinbase/rosetta-sdk-go v0.7.9 h1:lqllBjMnazTjIqYrOGv8h8jxjg9+hJazIGZr9ZvoCcA=
 github.com/coinbase/rosetta-sdk-go v0.7.9/go.mod h1:0/knutI7XGVqXmmH4OQD8OckFrbQ8yMsUZTG7FXCR2M=
-github.com/cometbft/cometbft v0.38.22 h1:T9BLO8f4DOhvQ5ic9ULq+4WjOlgxeKtFt2lR0IL5Qos=
-github.com/cometbft/cometbft v0.38.22/go.mod h1:jtH//cs5e2U5dNiaYIPMBwWXZsedXJfIie77gVhuRaA=
 github.com/cometbft/cometbft-db v0.14.1 h1:SxoamPghqICBAIcGpleHbmoPqy+crij/++eZz3DlerQ=
 github.com/cometbft/cometbft-db v0.14.1/go.mod h1:KHP1YghilyGV/xjD5DP3+2hyigWx0WTp9X+0Gnx0RxQ=
 github.com/consensys/bavard v0.1.8-0.20210406032232-f3452dc9b572/go.mod h1:Bpd0/3mZuaj6Sj+PqrmIquiOKy397AKGThQPaGzNXAQ=
@@ -352,8 +350,10 @@ github.com/creachadair/tomledit v0.0.24 h1:5Xjr25R2esu1rKCbQEmjZYlrhFkDspoAbAKb6
 github.com/creachadair/tomledit v0.0.24/go.mod h1:9qHbShRWQzSCcn617cMzg4eab1vbLCOjOshAWSzWr8U=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20260506074806-514ebca2262b h1:qZldAII2SsXD460JwW7f1ruJyg8ZCyAZ4ySQmuaRsZs=
-github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20260506074806-514ebca2262b/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
+github.com/crypto-org-chain/cometbft v0.0.0-20261007140153-5cbc9c4af87e h1:8pqXBaU74TyCvSZ65qLEzgZyoUh/1lbqUADSW8AWS7g=
+github.com/crypto-org-chain/cometbft v0.0.0-20261007140153-5cbc9c4af87e/go.mod h1:jtH//cs5e2U5dNiaYIPMBwWXZsedXJfIie77gVhuRaA=
+github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261007140702-74750d6b782e h1:Sj4BgamfSIlOA9hG/RkXaNusD5gl0FwZkr5MtE+Vs4Q=
+github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261007140702-74750d6b782e/go.mod h1:N6YuprhAabInbT3YGumGDKONbvPX5dNro7RjHvkQoKE=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881 h1:EDyxlMIC50plAgvz+IY4Bu6ymLb/6BhNtQLc96VLQ14=
 github.com/crypto-org-chain/cronos-store/memiavl v0.0.0-20250912125026-c998a90e2881/go.mod h1:Cgi3xIJ4py34GX6pr653a3BpAD9bLeq4kqkupow1T4g=
 github.com/crypto-org-chain/cronos-store/store v0.0.0-20250912125026-c998a90e2881 h1:dl6VKXDHfMGZmadlh51nCiJoCPTLSRksN8F+P3y3ZtE=

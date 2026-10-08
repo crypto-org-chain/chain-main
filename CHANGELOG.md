@@ -1,5 +1,13 @@
 # Changelog
 
+*Oct 8, 2026*
+
+## v8.0.1
+
+### Bugfixes
+
+- [#1326](https://github.com/crypto-org-chain/chain-main/pull/1326) fix: bound memory of tx search by event queries.
+
 *Jun 22, 2026*
 
 ## v8.0.0
