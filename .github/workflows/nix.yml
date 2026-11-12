@@ -138,9 +138,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -202,9 +200,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-upgrade
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -239,9 +235,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-ledger
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -276,9 +270,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-solomachine
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -313,9 +305,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-slow-a
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -350,9 +340,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-slow-b1
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -387,9 +375,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-slow-b2
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -438,9 +424,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-ibc
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -475,9 +459,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-byzantine
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -512,9 +494,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-gov
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -550,9 +530,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-grpc
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
@@ -587,9 +565,7 @@ jobs:
       - name: Run integration tests
         run: make nix-integration-test-tieredrewards
       - name: Convert coverage data
-        run: |
-           nix profile add --inputs-from . nixpkgs#go_1_25
-           go tool covdata textfmt -i=coverage -o profile.txt
+        run: make nix-coverage-profile
       - name: Upload coverage report
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
