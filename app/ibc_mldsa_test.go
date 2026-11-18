@@ -14,6 +14,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	commitmenttypes "github.com/cosmos/ibc-go/v10/modules/core/23-commitment/types"
 	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -21,6 +22,7 @@ import (
 const counterpartyChainID = "counterparty-1"
 
 func (suite *AppTestSuite) mlDsaKey() crypto.PrivKey {
+	suite.T().Helper()
 	key, err := mldsa65.GenPrivKey()
 	suite.Require().NoError(err)
 	return key
@@ -29,13 +31,14 @@ func (suite *AppTestSuite) mlDsaKey() crypto.PrivKey {
 func (suite *AppTestSuite) signedHeader(
 	valSet *cmttypes.ValidatorSet, signers map[string]cmttypes.PrivValidator, height int64, blockTime time.Time,
 ) *cmtproto.SignedHeader {
+	suite.T().Helper()
 	unusedHash := tmhash.Sum([]byte{0x00})
-	header := cmttypes.Header{
+	signedHeader, err := ibctesting.CommitHeader(cmttypes.Header{
 		Version:            cmtversion.Consensus{Block: version.BlockProtocol, App: 2},
 		ChainID:            counterpartyChainID,
 		Height:             height,
 		Time:               blockTime,
-		LastBlockID:        cmttypes.BlockID{Hash: make([]byte, tmhash.Size), PartSetHeader: cmttypes.PartSetHeader{Total: 1, Hash: make([]byte, tmhash.Size)}},
+		LastBlockID:        ibctesting.MakeBlockID(make([]byte, tmhash.Size), 1, make([]byte, tmhash.Size)),
 		LastCommitHash:     unusedHash,
 		DataHash:           unusedHash,
 		ValidatorsHash:     valSet.Hash(),
@@ -45,46 +48,41 @@ func (suite *AppTestSuite) signedHeader(
 		LastResultsHash:    unusedHash,
 		EvidenceHash:       unusedHash,
 		ProposerAddress:    valSet.Proposer.Address,
-	}
-
-	// MakeExtCommit expects signers in validator set order.
-	privVals := make([]cmttypes.PrivValidator, len(valSet.Validators))
-	for i, val := range valSet.Validators {
-		privVals[i] = signers[val.Address.String()]
-	}
-	blockID := cmttypes.BlockID{
-		Hash:          header.Hash(),
-		PartSetHeader: cmttypes.PartSetHeader{Total: 3, Hash: unusedHash},
-	}
-	voteSet := cmttypes.NewVoteSet(counterpartyChainID, height, 1, cmtproto.PrecommitType, valSet)
-	extCommit, err := cmttypes.MakeExtCommit(blockID, height, 1, voteSet, privVals, blockTime, false)
+	}, valSet, signers)
 	suite.Require().NoError(err)
-
-	return &cmtproto.SignedHeader{Header: header.ToProto(), Commit: extCommit.ToCommit().ToProto()}
+	return signedHeader
 }
 
-// Relays a counterparty header with ML-DSA-65 validators through the MsgCreateClient and
-// MsgUpdateClient handlers, as a relayer tx would reach them.
 func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
 	testCases := []struct {
 		name     string
 		keys     func() []crypto.PrivKey
+		height   int64
 		malleate func(*ibctm.Header)
 		expErr   string
 	}{
 		{
 			name:     "ML-DSA-65 validators",
 			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey(), suite.mlDsaKey()} },
+			height:   2,
+			malleate: func(*ibctm.Header) {},
+		},
+		{
+			name:     "ML-DSA-65 validators, non-adjacent height",
+			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey(), suite.mlDsaKey()} },
+			height:   5,
 			malleate: func(*ibctm.Header) {},
 		},
 		{
 			name:     "ed25519 and ML-DSA-65 validators",
 			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{ed25519.GenPrivKey(), suite.mlDsaKey()} },
+			height:   2,
 			malleate: func(*ibctm.Header) {},
 		},
 		{
-			name: "tampered ML-DSA-65 signature",
-			keys: func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey()} },
+			name:   "tampered ML-DSA-65 signature",
+			keys:   func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey()} },
+			height: 2,
 			malleate: func(h *ibctm.Header) {
 				h.SignedHeader.Commit.Signatures[0].Signature[0] ^= 0xff
 			},
@@ -123,7 +121,7 @@ func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
 			valSetProto, err := valSet.ToProto()
 			suite.Require().NoError(err)
 			header := &ibctm.Header{
-				SignedHeader:      suite.signedHeader(valSet, signers, 2, trustedTime.Add(time.Second)),
+				SignedHeader:      suite.signedHeader(valSet, signers, tc.height, trustedTime.Add(time.Second)),
 				ValidatorSet:      valSetProto,
 				TrustedHeight:     trustedHeight,
 				TrustedValidators: valSetProto,
@@ -140,7 +138,7 @@ func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
 			}
 			suite.Require().NoError(err)
 
-			_, found := suite.app.IBCKeeper.ClientKeeper.GetClientConsensusState(suite.ctx, created.ClientId, clienttypes.NewHeight(1, 2))
+			_, found := suite.app.IBCKeeper.ClientKeeper.GetClientConsensusState(suite.ctx, created.ClientId, header.GetHeight())
 			suite.Require().True(found)
 		})
 	}
