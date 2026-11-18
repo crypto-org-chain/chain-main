@@ -4,6 +4,7 @@
 
 ### Improvements
 
+- [#1328](https://github.com/crypto-org-chain/chain-main/pull/1328) feat: bump cometbft to v0.38.26 to verify ML-DSA-65 IBC headers.
 - [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
 
 ### Bugfixes

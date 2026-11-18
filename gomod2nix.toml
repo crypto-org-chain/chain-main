@@ -197,6 +197,9 @@ schema = 3
   [mod."github.com/chzyer/readline"]
     version = "v1.5.1"
     hash = "sha256-6wKd6/JZ9/O7FwSyNKE3KOt8fVPZEunqbTHQUxlOUNc="
+  [mod."github.com/cloudflare/circl"]
+    version = "v1.6.3"
+    hash = "sha256-XZm4EastgX67Dgm5BpOEW/PY4aLcHM/O8+Xbz26PuTY="
   [mod."github.com/cloudwego/base64x"]
     version = "v0.1.6"
     hash = "sha256-VzYJsGubsDk3FAMH6e0Xk0Cl4HtUFHHmWkVASUYidsI="
@@ -228,8 +231,8 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.0.0-20261007140153-5cbc9c4af87e"
-    hash = "sha256-Ek5w9OnCLfkQ6+N2hX6zIIeIMxHxGPqL7pfOEQQ5tmk="
+    version = "v0.0.0-20261118212213-f1468b9a6baf"
+    hash = "sha256-iAtYv2HCcf36v8RCV9iL2hArKetFfoArYioP6y00PxA="
     replaced = "github.com/crypto-org-chain/cometbft"
   [mod."github.com/cometbft/cometbft-db"]
     version = "v0.14.1"
