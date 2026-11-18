@@ -21,7 +21,7 @@ import (
 
 const counterpartyChainID = "counterparty-1"
 
-func (suite *AppTestSuite) mlDsaKey() crypto.PrivKey {
+func (suite *AppTestSuite) mlDSAKey() crypto.PrivKey {
 	suite.T().Helper()
 	key, err := mldsa65.GenPrivKey()
 	suite.Require().NoError(err)
@@ -53,40 +53,43 @@ func (suite *AppTestSuite) signedHeader(
 	return signedHeader
 }
 
-func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
+func (suite *AppTestSuite) TestUpdateClientWithMLDSAValidators() {
+	tamper := func(h *ibctm.Header) { h.SignedHeader.Commit.Signatures[0].Signature[0] ^= 0xff }
 	testCases := []struct {
 		name     string
-		keys     func() []crypto.PrivKey
+		keys     []crypto.PrivKey
 		height   int64
 		malleate func(*ibctm.Header)
 		expErr   string
 	}{
 		{
-			name:     "ML-DSA-65 validators",
-			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey(), suite.mlDsaKey()} },
-			height:   2,
-			malleate: func(*ibctm.Header) {},
-		},
-		{
-			name:     "ML-DSA-65 validators, non-adjacent height",
-			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey(), suite.mlDsaKey()} },
-			height:   5,
-			malleate: func(*ibctm.Header) {},
-		},
-		{
-			name:     "ed25519 and ML-DSA-65 validators",
-			keys:     func() []crypto.PrivKey { return []crypto.PrivKey{ed25519.GenPrivKey(), suite.mlDsaKey()} },
-			height:   2,
-			malleate: func(*ibctm.Header) {},
-		},
-		{
-			name:   "tampered ML-DSA-65 signature",
-			keys:   func() []crypto.PrivKey { return []crypto.PrivKey{suite.mlDsaKey()} },
+			name:   "ML-DSA-65 validators",
+			keys:   []crypto.PrivKey{suite.mlDSAKey(), suite.mlDSAKey()},
 			height: 2,
-			malleate: func(h *ibctm.Header) {
-				h.SignedHeader.Commit.Signatures[0].Signature[0] ^= 0xff
-			},
-			expErr: "wrong signature",
+		},
+		{
+			name:   "ML-DSA-65 validators, non-adjacent height",
+			keys:   []crypto.PrivKey{suite.mlDSAKey(), suite.mlDSAKey()},
+			height: 5,
+		},
+		{
+			name:   "ed25519 and ML-DSA-65 validators",
+			keys:   []crypto.PrivKey{ed25519.GenPrivKey(), suite.mlDSAKey()},
+			height: 2,
+		},
+		{
+			name:     "tampered ML-DSA-65 signature",
+			keys:     []crypto.PrivKey{suite.mlDSAKey()},
+			height:   2,
+			malleate: tamper,
+			expErr:   "wrong signature",
+		},
+		{
+			name:     "tampered ML-DSA-65 signature, non-adjacent height",
+			keys:     []crypto.PrivKey{suite.mlDSAKey()},
+			height:   5,
+			malleate: tamper,
+			expErr:   "wrong signature",
 		},
 	}
 
@@ -95,7 +98,7 @@ func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
 			suite.SetupTest()
 			relayer := sdk.AccAddress(ed25519.GenPrivKey().PubKey().Address()).String()
 
-			keys := tc.keys()
+			keys := tc.keys
 			vals := make([]*cmttypes.Validator, len(keys))
 			signers := make(map[string]cmttypes.PrivValidator, len(keys))
 			for i, key := range keys {
@@ -126,7 +129,9 @@ func (suite *AppTestSuite) TestUpdateClientWithMlDsaValidators() {
 				TrustedHeight:     trustedHeight,
 				TrustedValidators: valSetProto,
 			}
-			tc.malleate(header)
+			if tc.malleate != nil {
+				tc.malleate(header)
+			}
 
 			updateMsg, err := clienttypes.NewMsgUpdateClient(created.ClientId, header, relayer)
 			suite.Require().NoError(err)
