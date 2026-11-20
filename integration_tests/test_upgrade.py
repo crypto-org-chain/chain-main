@@ -22,6 +22,7 @@ from .test_upgrade_v8 import (
     assert_vesting_filter_active,
     setup_pre_v8_upgrade,
 )
+from .test_upgrade_v9 import assert_v9_mldsa_client_update, setup_pre_v9_upgrade
 from .utils import (
     approve_proposal,
     assert_expedited_gov_params,
@@ -330,7 +331,7 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def test_manual_upgrade_all(cosmovisor_cluster):
+def test_manual_upgrade_all(cosmovisor_cluster, tmp_path):
     # test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
     edit_chain_program(
@@ -431,12 +432,14 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_vesting_filter_active(cluster, "permanent-locked-account-post-upgrade")
 
     # v9 upgrade
+    v9_ctx = setup_pre_v9_upgrade(cluster, tmp_path)
     upgrade(cluster, "v9", summary="v9 CometBFT v0.38.26 for ML-DSA-65 IBC headers")
     status = cluster.status()
     node_info = status.get("NodeInfo") or status.get("node_info")
     assert node_info["version"] == "0.38.26", node_info
     wait_for_new_blocks(cluster, 2)
     assert_vesting_filter_active(cluster, "permanent-locked-account-post-v9")
+    assert_v9_mldsa_client_update(cluster, v9_ctx, tmp_path)
 
 
 def test_cancel_upgrade(cluster):

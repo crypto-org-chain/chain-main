@@ -1,0 +1,1 @@
+{"@type":"/ibc.lightclients.tendermint.v1.ConsensusState","timestamp":"2026-01-01T00:00:00Z","root":{"hash":"oXLO3K5HR0thXFTVEKXYSo3qMDLpWFh0MLQTU4vj8zM="},"next_validators_hash":"9646359C224B9094FD8DB69BEE10266227400FD4A613D410C39DCE489686F9F6"}
