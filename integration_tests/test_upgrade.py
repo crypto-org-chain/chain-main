@@ -19,7 +19,7 @@ from .test_upgrade_v8 import (
     assert_v8_no_vesting_owned_positions,
     assert_v8_precreated_position_delegator_vesting_acc_lifecycle,
     assert_v8_vesting_acc_owned_positions_exited,
-    assert_v8_vesting_filter_active,
+    assert_vesting_filter_active,
     setup_pre_v8_upgrade,
 )
 from .utils import (
@@ -428,7 +428,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_v8_vesting_acc_owned_positions_exited(cluster, v8_ctx)
     assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, v8_ctx)
     assert_v8_no_vesting_owned_positions(cluster)
-    assert_v8_vesting_filter_active(cluster)
+    assert_vesting_filter_active(cluster, "permanent-locked-account-post-upgrade")
 
     # v9 upgrade
     upgrade(cluster, "v9", summary="v9 CometBFT v0.38.26 for ML-DSA-65 IBC headers")
@@ -436,7 +436,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     node_info = status.get("NodeInfo") or status.get("node_info")
     assert node_info["version"] == "0.38.26", node_info
     wait_for_new_blocks(cluster, 2)
-    assert_v8_vesting_filter_active(cluster, "permanent-locked-account-post-v9")
+    assert_vesting_filter_active(cluster, "permanent-locked-account-post-v9")
 
 
 def test_cancel_upgrade(cluster):
