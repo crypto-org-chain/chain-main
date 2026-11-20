@@ -430,6 +430,12 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_v8_no_vesting_owned_positions(cluster)
     assert_v8_vesting_filter_active(cluster)
 
+    # v9 upgrade
+    upgrade(cluster, "v9", summary="v9 CometBFT v0.38.26 for ML-DSA-65 IBC headers")
+    status = cluster.status()
+    node_info = status.get("NodeInfo") or status.get("node_info")
+    assert node_info["version"] == "0.38.26", node_info
+
 
 def test_cancel_upgrade(cluster):
     """
