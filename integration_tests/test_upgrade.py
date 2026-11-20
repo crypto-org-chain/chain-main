@@ -435,6 +435,8 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     status = cluster.status()
     node_info = status.get("NodeInfo") or status.get("node_info")
     assert node_info["version"] == "0.38.26", node_info
+    wait_for_new_blocks(cluster, 2)
+    assert_v8_vesting_filter_active(cluster)
 
 
 def test_cancel_upgrade(cluster):
