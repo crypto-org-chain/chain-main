@@ -36,6 +36,10 @@ from .utils import (
 
 pytestmark = pytest.mark.upgrade
 
+# Blocks are ~1s and the cosmovisor voting period is 20s, so this leaves
+# ~20 blocks for the submit tx and any queries before it under load.
+UPGRADE_HEIGHT_MARGIN = 40
+
 
 def edit_chain_program(chain_id, ini_path, callback):
     # edit node process config in supervisor
@@ -160,7 +164,7 @@ def upgrade_pre_v50(
 
 def upgrade(cluster, plan_name, title=None, summary=None):
     """Submit, pass, and execute a software-upgrade proposal targeting
-    `plan_name` at block_height + 30. After the upgrade height fires:
+    `plan_name` at block_height + UPGRADE_HEIGHT_MARGIN. After the upgrade height fires:
     asserts both nodes stopped, validates upgrade-info.json on each,
     repoints the supervisor + cluster CLI at
     cosmovisor/upgrades/<plan_name>/bin/chain-maind, and waits for the
@@ -172,7 +176,7 @@ def upgrade(cluster, plan_name, title=None, summary=None):
     title = title or f"{plan_name} upgrade"
     summary = summary or f"Upgrade to {plan_name}"
 
-    target_height = cluster.block_height() + 30
+    target_height = cluster.block_height() + UPGRADE_HEIGHT_MARGIN
     print(f"propose {plan_name} upgrade plan at", target_height)
 
     rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
@@ -296,7 +300,7 @@ def test_cosmovisor(cosmovisor_cluster):
     """
     cluster = cosmovisor_cluster
     height = cluster.block_height()
-    target_height = height + 15
+    target_height = height + UPGRADE_HEIGHT_MARGIN
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
     rsp = cluster.gov_propose_legacy(
@@ -349,7 +353,7 @@ def test_manual_upgrade_all(cosmovisor_cluster, tmp_path):
 
     cli = cluster.cosmos_cli()
     # v6 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + UPGRADE_HEIGHT_MARGIN
     gov_param_before_v6 = cli.query_params("gov")
     consensus_block_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "BlockParams")
