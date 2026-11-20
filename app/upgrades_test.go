@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"cosmossdk.io/math"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -134,6 +135,16 @@ func (suite *AppTestSuite) TestUpdateExpeditedParams() {
 			tc.exp(params)
 		})
 	}
+}
+
+func (suite *AppTestSuite) TestV9UpgradeHandler() {
+	suite.SetupTest()
+	plan := upgradetypes.Plan{Name: app.UpgradeV9PlanName, Height: suite.ctx.BlockHeight()}
+	suite.Require().NoError(suite.app.UpgradeKeeper.ApplyUpgrade(suite.ctx, plan))
+
+	name, _, err := suite.app.UpgradeKeeper.GetLastCompletedUpgrade(suite.ctx)
+	suite.Require().NoError(err)
+	suite.Require().Equal(app.UpgradeV9PlanName, name)
 }
 
 // TestEnsureModuleAccountIfExists tests that the conversion of orphan BaseAccounts (left at module
