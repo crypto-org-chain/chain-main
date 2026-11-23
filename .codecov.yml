@@ -29,6 +29,12 @@ coverage:
         informational: true
     changes: false
 
+# Unit-test and upgrade jobs only run on matching path changes, so reuse the
+# last uploaded coverage for a skipped flag instead of reporting it as a drop.
+flag_management:
+  default_rules:
+    carryforward: true
+
 comment:
   layout: "reach, diff, flags, files"
   behavior: default
