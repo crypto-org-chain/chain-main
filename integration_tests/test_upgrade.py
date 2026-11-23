@@ -19,9 +19,10 @@ from .test_upgrade_v8 import (
     assert_v8_no_vesting_owned_positions,
     assert_v8_precreated_position_delegator_vesting_acc_lifecycle,
     assert_v8_vesting_acc_owned_positions_exited,
-    assert_v8_vesting_filter_active,
+    assert_vesting_filter_active,
     setup_pre_v8_upgrade,
 )
+from .test_upgrade_v9 import assert_v9_mldsa_client_update, setup_pre_v9_upgrade
 from .utils import (
     approve_proposal,
     assert_expedited_gov_params,
@@ -34,6 +35,10 @@ from .utils import (
 )
 
 pytestmark = pytest.mark.upgrade
+
+# Blocks are ~1s and the cosmovisor voting period is 20s, so this leaves
+# ~20 blocks for the submit tx and any queries before it under load.
+UPGRADE_HEIGHT_MARGIN = 40
 
 
 def edit_chain_program(chain_id, ini_path, callback):
@@ -159,7 +164,7 @@ def upgrade_pre_v50(
 
 def upgrade(cluster, plan_name, title=None, summary=None):
     """Submit, pass, and execute a software-upgrade proposal targeting
-    `plan_name` at block_height + 30. After the upgrade height fires:
+    `plan_name` at block_height + UPGRADE_HEIGHT_MARGIN. After the upgrade height fires:
     asserts both nodes stopped, validates upgrade-info.json on each,
     repoints the supervisor + cluster CLI at
     cosmovisor/upgrades/<plan_name>/bin/chain-maind, and waits for the
@@ -171,7 +176,7 @@ def upgrade(cluster, plan_name, title=None, summary=None):
     title = title or f"{plan_name} upgrade"
     summary = summary or f"Upgrade to {plan_name}"
 
-    target_height = cluster.block_height() + 30
+    target_height = cluster.block_height() + UPGRADE_HEIGHT_MARGIN
     print(f"propose {plan_name} upgrade plan at", target_height)
 
     rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
@@ -295,7 +300,7 @@ def test_cosmovisor(cosmovisor_cluster):
     """
     cluster = cosmovisor_cluster
     height = cluster.block_height()
-    target_height = height + 15
+    target_height = height + UPGRADE_HEIGHT_MARGIN
     print("upgrade height", target_height)
     plan_name = "v2.0.0"
     rsp = cluster.gov_propose_legacy(
@@ -330,7 +335,7 @@ def test_cosmovisor(cosmovisor_cluster):
     wait_for_block(cluster, target_height + 2, 480)
 
 
-def test_manual_upgrade_all(cosmovisor_cluster):
+def test_manual_upgrade_all(cosmovisor_cluster, tmp_path):
     # test_manual_upgrade(cosmovisor_cluster)
     cluster = cosmovisor_cluster
     edit_chain_program(
@@ -348,7 +353,7 @@ def test_manual_upgrade_all(cosmovisor_cluster):
 
     cli = cluster.cosmos_cli()
     # v6 upgrade
-    target_height = cluster.block_height() + 15
+    target_height = cluster.block_height() + UPGRADE_HEIGHT_MARGIN
     gov_param_before_v6 = cli.query_params("gov")
     consensus_block_param_before_v6 = json.loads(
         cli.query_params_subspace("baseapp", "BlockParams")
@@ -428,7 +433,17 @@ def test_manual_upgrade_all(cosmovisor_cluster):
     assert_v8_vesting_acc_owned_positions_exited(cluster, v8_ctx)
     assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, v8_ctx)
     assert_v8_no_vesting_owned_positions(cluster)
-    assert_v8_vesting_filter_active(cluster)
+    assert_vesting_filter_active(cluster, "permanent-locked-account-post-upgrade")
+
+    # v9 upgrade
+    v9_ctx = setup_pre_v9_upgrade(cluster, tmp_path)
+    upgrade(cluster, "v9", summary="v9 CometBFT v0.38.26 for ML-DSA-65 IBC headers")
+    status = cluster.status()
+    node_info = status.get("NodeInfo") or status.get("node_info")
+    assert node_info["version"] == "0.38.26", node_info
+    wait_for_new_blocks(cluster, 2)
+    assert_vesting_filter_active(cluster, "permanent-locked-account-post-v9")
+    assert_v9_mldsa_client_update(cluster, v9_ctx, tmp_path)
 
 
 def test_cancel_upgrade(cluster):

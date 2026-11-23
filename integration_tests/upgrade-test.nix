@@ -18,6 +18,9 @@ let
   # v7.2.0
   v7_2 =
     (fetchFlake "crypto-org-chain/chain-main" "ee286fd84c4d43d7452bc366f27dc464cadb164a").default;
+  # v8.0.1
+  v8_0_1 =
+    (fetchFlake "crypto-org-chain/chain-main" "cfdc54570b2976fc4fe3206386b9d2c92c827a6d").default;
   current = pkgs.callPackage ../. { };
 in
 
@@ -36,6 +39,10 @@ pkgs.linkFarm "upgrade-test-package" [
   }
   {
     name = "v8";
+    path = v8_0_1;
+  }
+  {
+    name = "v9";
     path = current;
   }
 ]

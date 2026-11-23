@@ -18,7 +18,7 @@ require (
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/tx v0.14.0
 	cosmossdk.io/x/upgrade v0.2.0
-	github.com/cometbft/cometbft v0.38.22
+	github.com/cometbft/cometbft v0.38.26
 	github.com/cosmos/cosmos-db v1.1.3
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.53.4
@@ -95,6 +95,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
@@ -265,7 +266,7 @@ replace github.com/crypto-org-chain/cronos-store/memiavl => github.com/crypto-or
 
 replace github.com/cosmos/cosmos-sdk => github.com/crypto-org-chain/cosmos-sdk v0.53.7-0.20261007140702-74750d6b782e
 
-replace github.com/cometbft/cometbft => github.com/crypto-org-chain/cometbft v0.0.0-20261007140153-5cbc9c4af87e
+replace github.com/cometbft/cometbft => github.com/crypto-org-chain/cometbft v0.0.0-20261123150034-0779372a98e8
 
 replace (
 	// use cosmos fork of keyring

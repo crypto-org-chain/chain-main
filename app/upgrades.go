@@ -17,7 +17,7 @@ import (
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 )
 
-const UpgradeV8PlanName = "v8"
+const UpgradeV9PlanName = "v9"
 
 func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, perms ...string) error {
 	addr := ak.GetModuleAddress(moduleName)
@@ -46,21 +46,22 @@ func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, m
 }
 
 func (app *ChainApp) RegisterUpgradeHandlers(cdc codec.BinaryCodec) {
-	app.registerV8UpgradeHandler()
+	app.registerV9UpgradeHandler()
 }
 
-// registerV8UpgradeHandler registers the "v8" plan
-func (app *ChainApp) registerV8UpgradeHandler() {
-	app.UpgradeKeeper.SetUpgradeHandler(UpgradeV8PlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+// The v9 binary must replace v8 at one height: its CometBFT accepts ML-DSA-65 keys and larger
+// commit signatures that v8 rejects, so mixed binaries diverge on the same block.
+func (app *ChainApp) registerV9UpgradeHandler() {
+	app.UpgradeKeeper.SetUpgradeHandler(UpgradeV9PlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		sdkCtx.Logger().Info("v8: running module migrations...")
+		sdkCtx.Logger().Info("v9: running module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
 			return map[string]uint64{}, err
 		}
 
-		sdkCtx.Logger().Info("v8: upgrade completed", "plan", plan.Name, "version_map", m)
+		sdkCtx.Logger().Info("v9: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
 }
