@@ -332,6 +332,10 @@ nix-integration-test-grpc: check-network make-proto
 nix-integration-test-all: check-network make-proto
 	nix-shell ./integration_tests/shell.nix --run "pytest -v"
 
+# Use the shell's Go so covdata matches the toolchain that built chain-maind-test.
+nix-coverage-profile:
+	nix-shell ./integration_tests/shell.nix --run "go tool covdata textfmt -i=coverage -o profile.txt"
+
 
 nix-build-%: check-network check-os
 	@if [ -e ~/.nix/remote-build-env ]; then \
