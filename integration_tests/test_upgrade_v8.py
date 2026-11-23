@@ -402,7 +402,7 @@ def assert_v8_no_vesting_owned_positions(cluster):
     print("v8 no vesting positions verified")
 
 
-def assert_v8_vesting_filter_active(cluster):
+def assert_vesting_filter_active(cluster, vesting_key_name):
     """Post-upgrade vesting-account filter smoke test:
 
     1. A fresh PermanentLockedAccount must NOT be able to create a new
@@ -422,7 +422,7 @@ def assert_v8_vesting_filter_active(cluster):
     vesting_addr = create_permanent_lock_vesting_account(
         cluster,
         f"{amount}basecro",
-        name="permanent-locked-account-post-upgrade",
+        name=vesting_key_name,
     )
     rsp = cluster.transfer(
         cluster.address("signer1"),
@@ -473,4 +473,4 @@ def assert_v8_vesting_filter_active(cluster):
     new_ids = after - before
     assert len(new_ids) == 1, f"expected exactly one new position, got {new_ids}"
 
-    print("v8 vesting filter verified: vesting blocked, base allowed")
+    print("vesting filter verified: vesting blocked, base allowed")
