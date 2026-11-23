@@ -231,7 +231,7 @@ schema = 3
     version = "v0.7.9"
     hash = "sha256-ZWIXIXcHGjeCNgMrpXymry8/8esDDauGFfF/+gEoO1Y="
   [mod."github.com/cometbft/cometbft"]
-    version = "v0.0.0-20261118212213-f1468b9a6baf"
+    version = "v0.0.0-20261123150034-0779372a98e8"
     hash = "sha256-iAtYv2HCcf36v8RCV9iL2hArKetFfoArYioP6y00PxA="
     replaced = "github.com/crypto-org-chain/cometbft"
   [mod."github.com/cometbft/cometbft-db"]
