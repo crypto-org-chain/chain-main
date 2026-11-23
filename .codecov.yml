@@ -4,10 +4,9 @@ codecov:
   # while other jobs are still running / will soon replace its data.
   require_ci_to_pass: yes
   notify:
-    # 11 unconditional integration uploads; upgrade and unit-test uploads 
-    # are conditional. For all of them before computing the final status — 
-    # otherwise codecov reports off an incomplete subset and shows spurious 
-    #drops.
+    # Wait for the 11 unconditional integration uploads before computing the
+    # final status, otherwise codecov reports off an incomplete subset and
+    # shows spurious drops. Upgrade and unit-test uploads are conditional.
     after_n_builds: 11
 
 coverage:
@@ -29,11 +28,15 @@ coverage:
         informational: true
     changes: false
 
-# Unit-test and upgrade jobs only run on matching path changes, so reuse the
-# last uploaded coverage for a skipped flag instead of reporting it as a drop.
+# Unit-test and upgrade jobs only run on matching path changes, so reuse their
+# last uploaded coverage when skipped instead of reporting a drop. The other
+# flags always upload, so a missing report there stays visible.
 flag_management:
-  default_rules:
-    carryforward: true
+  individual_flags:
+    - name: unit_tests
+      carryforward: true
+    - name: integration_tests_upgrade
+      carryforward: true
 
 comment:
   layout: "reach, diff, flags, files"
