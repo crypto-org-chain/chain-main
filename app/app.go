@@ -622,7 +622,7 @@ func New(
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
-	// bank goes first as the SDK v0.54 upgrade guide requires; its EndBlock does nothing without an object store key.
+	// The SDK upgrade guide puts bank first from v0.54 on; its EndBlock only acts once an object store key is set, which this app does not do.
 	app.ModuleManager.SetOrderEndBlockers(
 		banktypes.ModuleName,
 		govtypes.ModuleName,

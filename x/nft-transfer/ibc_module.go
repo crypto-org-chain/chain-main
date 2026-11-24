@@ -31,16 +31,8 @@ func NewIBCModule(k *keeper.Keeper) IBCModule {
 	}
 }
 
-// ValidateTransferChannelParams does validation of a newly created nft-transfer channel. A nft-transfer
-// channel must be UNORDERED, use the correct port (by default 'nft'), and use the current
-// supported version. Only 2^32 channels are allowed to be created.
-func ValidateTransferChannelParams(
-	ctx sdk.Context,
-	keeper keeper.Keeper,
-	order channeltypes.Order,
-	portID string,
-	channelID string,
-) error {
+// ValidateTransferChannelParams requires a newly created nft-transfer channel to be UNORDERED and within the first 2^32 channels.
+func ValidateTransferChannelParams(order channeltypes.Order, channelID string) error {
 	// NOTE: for escrow address security only 2^32 channels are allowed to be created
 	// Issue: https://github.com/cosmos/cosmos-sdk/issues/7737
 	channelSequence, err := channeltypes.ParseChannelSequence(channelID)
@@ -67,7 +59,7 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	if err := ValidateTransferChannelParams(ctx, *im.keeper, order, portID, channelID); err != nil {
+	if err := ValidateTransferChannelParams(order, channelID); err != nil {
 		return "", err
 	}
 
@@ -92,7 +84,7 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	if err := ValidateTransferChannelParams(ctx, *im.keeper, order, portID, channelID); err != nil {
+	if err := ValidateTransferChannelParams(order, channelID); err != nil {
 		return "", err
 	}
 
