@@ -234,7 +234,8 @@ def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
         return "proposal_id" in attrs
 
     ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
-    assert ev["proposal_messages"] == msg, rsp
+    # binaries before v9 prefix the message list with a comma
+    assert ev["proposal_messages"].lstrip(",") == msg.lstrip(","), rsp
     return ev["proposal_id"]
 
 
