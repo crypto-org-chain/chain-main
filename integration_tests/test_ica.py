@@ -137,7 +137,7 @@ def test_ica(cluster, tmp_path):
     # rsp = cli_controller.submit_gov_proposal(proposal, from_=signer)
     # assert rsp["code"] == 0, rsp["raw_log"]
     # approve_proposal(
-    #     controller, rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit"
+    #     controller, rsp, msg="/ibc.core.channel.v1.MsgChannelUpgradeInit"
     # )
     # wait_for_check_channel_ready(
     #     cli_controller, controller_connection, channel_id, "STATE_FLUSHCOMPLETE"

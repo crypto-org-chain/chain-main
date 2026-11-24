@@ -229,13 +229,13 @@ def find_log_event_attrs(events, ev_type, cond=None):
     return None
 
 
-def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
+def get_proposal_id(rsp, msg="/cosmos.staking.v1beta1.MsgUpdateParams"):
     def cb(attrs):
         return "proposal_id" in attrs
 
     ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
     # binaries before v9 prefix the message list with a comma
-    assert ev["proposal_messages"].lstrip(",") == msg.lstrip(","), rsp
+    assert ev["proposal_messages"].lstrip(",") == msg, rsp
     return ev["proposal_id"]
 
 
@@ -243,7 +243,7 @@ def approve_proposal(
     cluster,
     rsp,
     vote_option="yes",
-    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+    msg="/cosmos.staking.v1beta1.MsgUpdateParams",
     wait_tx=True,
     broadcast_mode="sync",
     expect_status=None,
@@ -1128,7 +1128,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         "should be able to submit x/circuit authorization proposal: " + rsp["raw_log"]
     )
 
-    approve_proposal(cluster, rsp, msg=",/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
+    approve_proposal(cluster, rsp, msg="/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
 
     rsp = json.loads(
         cli.raw(

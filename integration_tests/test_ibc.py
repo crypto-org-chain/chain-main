@@ -55,7 +55,7 @@ def test_ibc(cluster, tmp_path):
     # rsp = src_chain.submit_gov_proposal(proposal, from_=community)
     # assert rsp["code"] == 0, rsp["raw_log"]
     # approve_proposal(
-    #     cluster["ibc-0"], rsp, msg=",/ibc.core.channel.v1.MsgChannelUpgradeInit"
+    #     cluster["ibc-0"], rsp, msg="/ibc.core.channel.v1.MsgChannelUpgradeInit"
     # )
     # wait_for_check_channel_ready(src_chain, connid, channel_id, "STATE_FLUSHCOMPLETE")
     # wait_for_check_channel_ready(src_chain, connid, channel_id)

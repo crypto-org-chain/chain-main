@@ -168,7 +168,7 @@ def _setup_redeleg_slash(
         title=f"{slash_fraction} downtime slash",
         summary="slash via redelegation for test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     before = before_ids(cluster, owner)
     # lock in tier 2 (exit duration = 60s) so that position will still be exiting
@@ -1143,7 +1143,7 @@ def test_unbonding_slash_then_withdraw(slashing_cluster):
         title="50% downtime slash",
         summary="partial slash during unbonding for test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     lock_amount = TIER_2_MIN * 2
 
@@ -1336,7 +1336,7 @@ def test_slash_all_then_withdraw(slashing_cluster):
         title="100% downtime slash",
         summary="slash to zero for test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
@@ -1462,7 +1462,7 @@ def test_slash_all_during_unbonding_then_withdraw(slashing_cluster):
         title="100% downtime slash",
         summary="slash during unbonding for test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     # Lock with immediate exit on v2
     before = before_ids(cluster, owner)
@@ -1587,7 +1587,7 @@ def test_clear_position_slashed_all_exiting(slashing_cluster):
         title="100% downtime slash",
         summary="direct slash during exit for clear test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     # Lock on validator 2
     before = before_ids(cluster, owner)
@@ -1651,7 +1651,7 @@ def test_clear_position_slashed_all_exit_elapsed(slashing_cluster):
         title="100% downtime slash",
         summary="direct slash for clear elapsed test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_SLASHING_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_SLASHING_UPDATE_PARAMS)
 
     # Lock on validator 2
     before = before_ids(cluster, owner)

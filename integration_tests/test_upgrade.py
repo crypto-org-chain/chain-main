@@ -192,7 +192,7 @@ def upgrade(cluster, plan_name, title=None, summary=None):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     wait_for_block(cluster, target_height)
     time.sleep(1)
@@ -470,7 +470,7 @@ def test_cancel_upgrade(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     print("cancel upgrade plan")
     rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
@@ -483,7 +483,7 @@ def test_cancel_upgrade(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgCancelUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgCancelUpgrade")
 
     # wait for blocks after upgrade, should success since upgrade is canceled
     wait_for_block(cluster, upgrade_height + 2)

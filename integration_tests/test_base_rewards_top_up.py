@@ -230,7 +230,7 @@ def test_zero_rate_no_topup(cluster):
         "community", "submit-proposal", proposal_src
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_PARAMS}")
+    approve_proposal(cluster, rsp, msg=MSG_UPDATE_PARAMS)
 
     # Verify rate is 0
     updated_params = query_command(cluster, TIEREDREWARDS_MODULE, PARAMS)["params"]

@@ -97,7 +97,7 @@ def test_max_supply_update_via_governance(cluster):
     assert rsp["code"] == 0, rsp["raw_log"]
 
     # Vote on proposal
-    approve_proposal(cluster, rsp, msg=f",{MSG}")
+    approve_proposal(cluster, rsp, msg=MSG)
 
     # Verify max supply has been updated
     updated_max_supply_rsp = query_command(cluster, INFLATION_MODULE, PARAMS)["params"]
@@ -128,7 +128,7 @@ def test_begin_blocker_halt_on_excess_supply(cluster):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    approve_proposal(cluster, rsp, msg=f",{MSG}")
+    approve_proposal(cluster, rsp, msg=MSG)
 
     # Panic will not cause supervisor to stop,
     # so we poll node0's log for the panic string instead.
