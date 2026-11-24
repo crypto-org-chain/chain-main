@@ -239,6 +239,11 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 		return err
 	}
 
+	// The restarted chain must send CometBFT the validator update again before a pending rotation is applied.
+	if err := app.StakingKeeper.PrepareConsKeyRotationsForZeroHeightExport(ctx); err != nil {
+		return err
+	}
+
 	/* Handle slashing state. */
 
 	// reset start height on signing infos

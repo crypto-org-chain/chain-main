@@ -65,6 +65,11 @@ func (app *ChainApp) registerV9UpgradeHandler() {
 			return map[string]uint64{}, fmt.Errorf("v9 key rotation fee pool: %w", err)
 		}
 
+		// The end blocker reads a pending-slot index that v8 never wrote; without the rebuild, queued unbondings never mature.
+		if err := app.StakingKeeper.PopulateQueuePendingSlots(ctx); err != nil {
+			return map[string]uint64{}, fmt.Errorf("v9 staking queue pending slots: %w", err)
+		}
+
 		sdkCtx.Logger().Info("v9: running module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {

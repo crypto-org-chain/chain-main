@@ -203,6 +203,14 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 		granter         = sdk.AccAddress("granter_____________")
 		grantee         = sdk.AccAddress("grantee_____________")
 		grantExpiration time.Time
+
+		queueMaturity = time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+		queueHeight   = int64(100)
+		delegator     = sdk.AccAddress("delegator___________").String()
+		validatorSrc  = sdk.ValAddress("validator_src_______").String()
+		validatorDst  = sdk.ValAddress("validator_dst_______").String()
+		unbonding     = stakingtypes.DVPair{DelegatorAddress: delegator, ValidatorAddress: validatorSrc}
+		redelegation  = stakingtypes.DVVTriplet{DelegatorAddress: delegator, ValidatorSrcAddress: validatorSrc, ValidatorDstAddress: validatorDst}
 	)
 	// Takes the place of whatever account the fee pool address holds, keeping account numbers unique.
 	baseAccountAtFeePool := func() *authtypes.BaseAccount {
@@ -311,6 +319,37 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 				allowance, err := suite.app.FeeGrantKeeper.GetAllowance(expired, granter, grantee)
 				suite.Require().Error(err)
 				suite.Require().Nil(allowance)
+			},
+		},
+		{
+			name: "staking queue entries written on v8 still mature",
+			malleate: func() {
+				// Raw writes skip the pending-slot index, as the v8 binary did.
+				store := suite.ctx.KVStore(suite.app.GetKey(stakingtypes.StoreKey))
+				cdc := suite.app.AppCodec()
+				store.Set(stakingtypes.GetUnbondingDelegationTimeKey(queueMaturity), cdc.MustMarshal(&stakingtypes.DVPairs{Pairs: []stakingtypes.DVPair{unbonding}}))
+				store.Set(stakingtypes.GetRedelegationTimeKey(queueMaturity), cdc.MustMarshal(&stakingtypes.DVVTriplets{Triplets: []stakingtypes.DVVTriplet{redelegation}}))
+				store.Set(stakingtypes.GetValidatorQueueKey(queueMaturity, queueHeight), cdc.MustMarshal(&stakingtypes.ValAddresses{Addresses: []string{validatorSrc}}))
+
+				cacheCtx, _ := suite.ctx.CacheContext()
+				unbondings, err := suite.app.StakingKeeper.DequeueAllMatureUBDQueue(cacheCtx, queueMaturity)
+				suite.Require().NoError(err)
+				suite.Require().Empty(unbondings)
+				redelegations, err := suite.app.StakingKeeper.DequeueAllMatureRedelegationQueue(cacheCtx, queueMaturity)
+				suite.Require().NoError(err)
+				suite.Require().Empty(redelegations)
+			},
+			check: func() {
+				validatorSlots, err := suite.app.StakingKeeper.GetValidatorQueuePendingSlots(suite.ctx)
+				suite.Require().NoError(err)
+				suite.Require().Equal([]stakingtypes.TimeHeightQueueSlot{{Time: queueMaturity, Height: queueHeight}}, validatorSlots)
+
+				unbondings, err := suite.app.StakingKeeper.DequeueAllMatureUBDQueue(suite.ctx, queueMaturity)
+				suite.Require().NoError(err)
+				suite.Require().Equal([]stakingtypes.DVPair{unbonding}, unbondings)
+				redelegations, err := suite.app.StakingKeeper.DequeueAllMatureRedelegationQueue(suite.ctx, queueMaturity)
+				suite.Require().NoError(err)
+				suite.Require().Equal([]stakingtypes.DVVTriplet{redelegation}, redelegations)
 			},
 		},
 		{
