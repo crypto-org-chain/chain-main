@@ -187,6 +187,7 @@ func InitTestnet(
 	telemetryConfig.PrometheusRetentionTime = 60
 	telemetryConfig.EnableHostnameLabel = false
 	telemetryConfig.GlobalLabels = [][]string{{"chain_id", chainID}}
+	appConfig := newAppConfig(*chainmainConfig)
 
 	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
@@ -367,7 +368,7 @@ func InitTestnet(
 			return err
 		}
 
-		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), newAppConfig(*chainmainConfig))
+		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
 	if err = initGenFiles(

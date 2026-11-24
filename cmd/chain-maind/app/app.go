@@ -119,11 +119,8 @@ func newAppConfig(srvCfg serverconfig.Config) any {
 	}
 }
 
-// initAppConfig helps to override default appConfig template and configs.
-// return "", nil if no custom configuration is required for the application.
+// initAppConfig returns the app.toml template and the default config it renders.
 func initAppConfig() (string, any) {
-	// Optionally allow the chain developer to overwrite the SDK's default
-	// server config.
 	srvCfg := serverconfig.DefaultConfig()
 	srvCfg.GRPC.Address = "127.0.0.1:9090"
 

@@ -62,7 +62,7 @@ func testnetArgs(home string, validators int, extra ...string) []string {
 	return append(args, extra...)
 }
 
-func (s *GenesisCmdTestSuite) TestGenesisIsValid() {
+func (s *GenesisCmdTestSuite) TestGeneratedGenesis() {
 	const validators = 2
 	testnet := func(home string) []string { return testnetArgs(home, validators) }
 	testnetGenesis := filepath.Join("node0", ".chain-maind", "config", "genesis.json")
@@ -70,7 +70,7 @@ func (s *GenesisCmdTestSuite) TestGenesisIsValid() {
 	testCases := []struct {
 		name        string
 		args        func(home string) []string
-		genesisFile string
+		genesisPath string
 		expAccounts int
 	}{
 		{
@@ -78,17 +78,19 @@ func (s *GenesisCmdTestSuite) TestGenesisIsValid() {
 			args: func(home string) []string {
 				return []string{"init", "node", "--chain-id", "test", "--home", home}
 			},
-			genesisFile: filepath.Join("config", "genesis.json"),
+			genesisPath: filepath.Join("config", "genesis.json"),
+			expAccounts: 0,
 		},
-		{name: "testnet first run", args: testnet, genesisFile: testnetGenesis, expAccounts: validators},
-		{name: "testnet rerun in the same process", args: testnet, genesisFile: testnetGenesis, expAccounts: validators},
+		{name: "testnet first run", args: testnet, genesisPath: testnetGenesis, expAccounts: validators},
+		// A rerun must not carry accounts over from the run before it.
+		{name: "testnet rerun in the same process", args: testnet, genesisPath: testnetGenesis, expAccounts: validators},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			home := s.T().TempDir()
 			s.Require().NoError(s.execute(tc.args(home)...))
-			genesisFile := filepath.Join(home, tc.genesisFile)
+			genesisFile := filepath.Join(home, tc.genesisPath)
 
 			s.Require().NoError(s.execute("genesis", "validate", genesisFile, "--home", home))
 
@@ -135,7 +137,20 @@ func (s *GenesisCmdTestSuite) TestTestnetRejectsInvalidUnbondingTime() {
 		s.Require().NoError(flag.Value.Set(flag.DefValue))
 	}()
 
-	home := s.T().TempDir()
-	err = s.execute(testnetArgs(home, 1, "--"+flagUnbondingTime, "soon")...)
-	s.Require().ErrorContains(err, flagUnbondingTime)
+	testCases := []struct {
+		name          string
+		unbondingTime string
+	}{
+		{name: "not a duration", unbondingTime: "soon"},
+		{name: "missing unit", unbondingTime: "10"},
+		{name: "empty", unbondingTime: ""},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			home := s.T().TempDir()
+			err := s.execute(testnetArgs(home, 1, "--"+flagUnbondingTime, tc.unbondingTime)...)
+			s.Require().ErrorContains(err, "failed to parse "+flagUnbondingTime+": time: ")
+		})
+	}
 }

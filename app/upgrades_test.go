@@ -446,8 +446,7 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			skipHeights: []int{upgradeHeight},
 			expErr:      mismatch,
 		},
-		{name: "iavl loads with the group store left unmounted", upgradeInfo: v9Plan},
-		{name: "iavl loads with the group store left unmounted and no upgrade info"},
+		{name: "iavl ignores the store upgrade and keeps the group data on disk", upgradeInfo: v9Plan},
 	}
 
 	for _, tc := range testCases {
@@ -507,6 +506,14 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			suite.Require().NoError(restarted.LoadLatestVersion())
 			suite.Require().Equal(int64(upgradeHeight), restarted.LastBlockHeight())
 			suite.Require().NoError(restarted.Close())
+
+			if !tc.memiavl {
+				// The IAVL store loader deletes only mounted stores, and v9 no longer mounts this one.
+				groupData, err := dbm.IteratePrefix(db, []byte("s/k:"+groupStore+"/"))
+				suite.Require().NoError(err)
+				suite.Require().True(groupData.Valid())
+				suite.Require().NoError(groupData.Close())
+			}
 		})
 	}
 }
