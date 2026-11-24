@@ -331,6 +331,9 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 				store.Set(stakingtypes.GetRedelegationTimeKey(queueMaturity), cdc.MustMarshal(&stakingtypes.DVVTriplets{Triplets: []stakingtypes.DVVTriplet{redelegation}}))
 				store.Set(stakingtypes.GetValidatorQueueKey(queueMaturity, queueHeight), cdc.MustMarshal(&stakingtypes.ValAddresses{Addresses: []string{validatorSrc}}))
 
+				validatorSlots, err := suite.app.StakingKeeper.GetValidatorQueuePendingSlots(suite.ctx)
+				suite.Require().NoError(err)
+				suite.Require().Empty(validatorSlots)
 				cacheCtx, _ := suite.ctx.CacheContext()
 				unbondings, err := suite.app.StakingKeeper.DequeueAllMatureUBDQueue(cacheCtx, queueMaturity)
 				suite.Require().NoError(err)
