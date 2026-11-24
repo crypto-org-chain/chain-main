@@ -539,7 +539,7 @@ schema = 3
     hash = "sha256-rWJ194dlIICbTNPZrgUxMNk2IUypJkMMilg/UVp3XOQ="
   [mod."github.com/linxGnu/grocksdb"]
     version = "v1.10.8"
-    hash = "sha256-VqE3XvRToxis+8sGM/BOia3JnzO3CIpFunv50TQhgWM="
+    hash = "sha256-Y7mPTbTkCrk67pUYhZGMuK9hvRazDRoJ3sGfuvvjthU="
   [mod."github.com/lufia/plan9stats"]
     version = "v0.0.0-20260802145828-341c2f0c90b5"
     hash = "sha256-t4JiFzSWx+CGX5TBXo0BWDxyIMsmVtSVH+6425bKsrM="

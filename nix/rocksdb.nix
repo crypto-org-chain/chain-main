@@ -46,13 +46,13 @@ in
 
 stdenv.mkDerivation rec {
   pname = "rocksdb";
-  version = "9.11.2";
+  version = "10.9.1";
 
   src = fetchFromGitHub {
     owner = "facebook";
     repo = pname;
     rev = "v${version}";
-    sha256 = "sha256-D/FZJw1zwDXvCRHxCxyNxarHlDi5xtt8MddUOr4Pv2c=";
+    sha256 = "sha256-AdYt97tcZdj4Kyq0mGl+JreOybKn04tSVvdyaFQWuy4=";
   };
 
   nativeBuildInputs = [
