@@ -144,8 +144,12 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		genesisPatch := map[string]any{
 			"app_state": map[string]any{
 				"staking": map[string]any{
-					"params": map[string]string{
+					"params": map[string]any{
 						"bond_denom": config.BaseCoinUnit,
+						// Staking genesis validation rejects a fee in any denom but the bond denom.
+						"key_rotation_fee": map[string]string{
+							"denom": config.BaseCoinUnit,
+						},
 					},
 				},
 				"gov": map[string]any{
