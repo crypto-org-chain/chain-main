@@ -194,7 +194,11 @@ func InitTestnet(
 		return fmt.Errorf("failed to parse coins: %w", err)
 	}
 
-	stakingCoin, err := parseStakingCoin(coins, stakingAmount)
+	baseDenom, err := sdk.GetBaseDenom()
+	if err != nil {
+		return fmt.Errorf("failed to get base denom: %w", err)
+	}
+	stakingCoin, err := parseStakingCoin(baseDenom, coins, stakingAmount)
 	if err != nil {
 		return err
 	}
@@ -372,7 +376,7 @@ func InitTestnet(
 	}
 
 	if err = initGenFiles(
-		clientCtx, mbm, chainID, genAccounts, genBalances,
+		clientCtx, mbm, chainID, baseDenom, genAccounts, genBalances,
 		genFiles, numValidators, unbondingTime); err != nil {
 		return err
 	}
@@ -391,7 +395,7 @@ func InitTestnet(
 }
 
 func initGenFiles(
-	clientCtx client.Context, mbm module.BasicManager, chainID string,
+	clientCtx client.Context, mbm module.BasicManager, chainID, baseDenom string,
 	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
 	genFiles []string, numValidators int,
 	unbondingTime time.Duration,
@@ -402,10 +406,6 @@ func initGenFiles(
 
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
-	baseDenom, err := sdk.GetBaseDenom()
-	if err != nil {
-		return err
-	}
 	stakingGenState.Params.BondDenom = baseDenom
 	stakingGenState.Params.KeyRotationFee.Denom = baseDenom
 	stakingGenState.Params.UnbondingTime = unbondingTime
@@ -555,11 +555,7 @@ func writeFile(name, dir string, contents []byte) error {
 	return nil
 }
 
-func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
-	baseDenom, err := sdk.GetBaseDenom()
-	if err != nil {
-		return sdk.Coin{}, fmt.Errorf("failed to get base denom: %w", err)
-	}
+func parseStakingCoin(baseDenom string, coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 	stakingCoin := sdk.Coin{
 		Denom:  baseDenom,
 		Amount: sdkmath.ZeroInt(),

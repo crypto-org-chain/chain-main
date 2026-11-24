@@ -26,6 +26,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
+	storeiavl "github.com/cosmos/cosmos-sdk/store/v2/iavl"
 	"github.com/cosmos/cosmos-sdk/store/v2/prefix"
 	"github.com/cosmos/cosmos-sdk/store/v2/rootmulti"
 	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
@@ -424,6 +425,8 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 		upgradeInfo *upgradetypes.Plan
 		skipHeights []int
 		expErr      string
+		// expGroupData is set when the IAVL database must still hold the group store's latest version.
+		expGroupData bool
 	}{
 		{name: "memiavl deletes the group store at the upgrade height", memiavl: true, upgradeInfo: v9Plan},
 		{name: "memiavl refuses the group store without upgrade info", memiavl: true, expErr: mismatch},
@@ -446,7 +449,8 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			skipHeights: []int{upgradeHeight},
 			expErr:      mismatch,
 		},
-		{name: "iavl ignores the store upgrade and keeps the group data on disk", upgradeInfo: v9Plan},
+		{name: "iavl ignores the store upgrade and keeps the group data", upgradeInfo: v9Plan, expGroupData: true},
+		{name: "iavl starts without upgrade info and keeps the group data", expGroupData: true},
 	}
 
 	for _, tc := range testCases {
@@ -468,7 +472,8 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 				v8Store.MountStoreWithDB(key, storetypes.StoreTypeIAVL, nil)
 			}
 			suite.Require().NoError(v8Store.LoadLatestVersion())
-			v8Store.GetKVStore(groupKey).Set([]byte("key"), []byte("value"))
+			groupDataKey, groupDataValue := []byte("key"), []byte("value")
+			v8Store.GetKVStore(groupKey).Set(groupDataKey, groupDataValue)
 			v8CommitID := v8Store.Commit()
 			if closer, ok := v8Store.(io.Closer); ok {
 				suite.Require().NoError(closer.Close())
@@ -507,12 +512,16 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			suite.Require().Equal(int64(upgradeHeight), restarted.LastBlockHeight())
 			suite.Require().NoError(restarted.Close())
 
-			if !tc.memiavl {
-				// The IAVL store loader deletes only mounted stores, and v9 no longer mounts this one.
-				groupData, err := dbm.IteratePrefix(db, []byte("s/k:"+groupStore+"/"))
+			if tc.expGroupData {
+				// A deleted store leaves stale nodes behind, so read the tree's latest version instead of raw keys.
+				groupDB := dbm.NewPrefixDB(db, []byte("s/k:"+groupStore+"/"))
+				groupData, err := storeiavl.LoadStore(
+					groupDB, log.NewNopLogger(), groupKey, storetypes.CommitID{},
+					storeiavl.DefaultIAVLCacheSize, false,
+				)
 				suite.Require().NoError(err)
-				suite.Require().True(groupData.Valid())
-				suite.Require().NoError(groupData.Close())
+				suite.Require().Equal(v8CommitID.Version, groupData.LastCommitID().Version)
+				suite.Require().Equal(groupDataValue, groupData.Get(groupDataKey))
 			}
 		})
 	}

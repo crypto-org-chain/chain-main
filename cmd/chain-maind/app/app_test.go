@@ -79,7 +79,6 @@ func (s *GenesisCmdTestSuite) TestGeneratedGenesis() {
 				return []string{"init", "node", "--chain-id", "test", "--home", home}
 			},
 			genesisPath: filepath.Join("config", "genesis.json"),
-			expAccounts: 0,
 		},
 		{name: "testnet first run", args: testnet, genesisPath: testnetGenesis, expAccounts: validators},
 		// A rerun must not carry accounts over from the run before it.
