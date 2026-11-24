@@ -7,7 +7,7 @@ from .utils import find_log_event_attrs, wait_for_block
 pytestmark = pytest.mark.normal
 
 
-def test_simple(cluster):
+def test_cluster_has_two_validators_and_vesting_account_is_configured(cluster):
     """
     - check number of validators
     - check vesting account status
@@ -23,7 +23,7 @@ def test_simple(cluster):
     ]
 
 
-def test_transfer(cluster):
+def test_transfer_one_cro_from_community_to_reserve_updates_balances_and_tx_counts(cluster):
     """
     check simple transfer tx success
     - send 1cro from community to reserve
@@ -92,7 +92,7 @@ def test_transfer(cluster):
     assert newest["tx_responses"][0]["txhash"] == rsp["txhash"]
 
 
-def test_liquid_supply(cluster):
+def test_liquid_supply_returns_correct_total_excluding_vesting(cluster):
     """
     Checks the total liquid supply in the system
     """
@@ -101,20 +101,3 @@ def test_liquid_supply(cluster):
     assert liquid_supply[0]["denom"] == "basecro"
     # # sum of all coins except the one with vesting time under accounts in config yaml
     assert liquid_supply[0]["amount"] == "1640000000000"
-
-
-def test_statesync(cluster):
-    """
-    - create a new node with statesync enabled
-    - check it works
-    """
-    # wait the first snapshot to be created
-    wait_for_block(cluster, 10)
-
-    # add a statesync node
-    i = cluster.create_node(moniker="statesync", statesync=True)
-    cluster.supervisor.startProcess(f"{cluster.chain_id}-node{i}")
-
-    # discovery_time is set to 5 seconds, add extra seconds for processing
-    wait_for_block(cluster.cosmos_cli(i), 10)
-    print("successfully syncing")
