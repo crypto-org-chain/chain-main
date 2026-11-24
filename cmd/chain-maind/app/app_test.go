@@ -3,6 +3,7 @@ package app_test
 import (
 	"encoding/json"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	cmtcli "github.com/cometbft/cometbft/libs/cli"
@@ -20,6 +21,17 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// NewRootCmd seals the SDK config and registers denoms, so it can run only once per process.
+var newRootCmd = sync.OnceValues(func() (*cobra.Command, params.EncodingConfig) {
+	rootCmd, encodingConfig := cmd.NewRootCmd()
+	rootCmd.PersistentFlags().String(flags.FlagLogLevel, "info", "")
+	rootCmd.PersistentFlags().String(flags.FlagLogFormat, "plain", "")
+	rootCmd.PersistentFlags().Bool(flags.FlagLogNoColor, false, "")
+	rootCmd.PersistentFlags().String(flags.FlagVerboseLogLevel, "debug", "")
+	cmtcli.PrepareBaseCmd(rootCmd, cmd.EnvPrefix, app.DefaultNodeHome)
+	return rootCmd, encodingConfig
+})
+
 type GenesisCmdTestSuite struct {
 	suite.Suite
 
@@ -31,14 +43,8 @@ func TestGenesisCmdTestSuite(t *testing.T) {
 	suite.Run(t, new(GenesisCmdTestSuite))
 }
 
-// NewRootCmd seals the SDK config and registers denoms, so it can run only once per process.
 func (s *GenesisCmdTestSuite) SetupSuite() {
-	s.rootCmd, s.encodingConfig = cmd.NewRootCmd()
-	s.rootCmd.PersistentFlags().String(flags.FlagLogLevel, "info", "")
-	s.rootCmd.PersistentFlags().String(flags.FlagLogFormat, "plain", "")
-	s.rootCmd.PersistentFlags().Bool(flags.FlagLogNoColor, false, "")
-	s.rootCmd.PersistentFlags().String(flags.FlagVerboseLogLevel, "debug", "")
-	cmtcli.PrepareBaseCmd(s.rootCmd, cmd.EnvPrefix, app.DefaultNodeHome)
+	s.rootCmd, s.encodingConfig = newRootCmd()
 }
 
 func (s *GenesisCmdTestSuite) execute(args ...string) error {
