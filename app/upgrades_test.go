@@ -224,10 +224,17 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 		return suite.app.BankKeeper.BurnCoins(ctx, feePool, fee)
 	}
 
+	checkFeePoolIsBurner := func() {
+		moduleAccount, ok := suite.app.AccountKeeper.GetAccount(suite.ctx, feePoolAddr).(sdk.ModuleAccountI)
+		suite.Require().True(ok)
+		suite.Require().Equal(feePool, moduleAccount.GetName())
+		suite.Require().Equal([]string{authtypes.Burner}, moduleAccount.GetPermissions())
+		suite.Require().NoError(burnFromFeePool(suite.ctx))
+	}
+
 	testCases := []struct {
 		name     string
 		malleate func()
-		expErr   string
 		check    func()
 	}{
 		{
@@ -313,23 +320,20 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 				cacheCtx, _ := suite.ctx.CacheContext()
 				suite.Require().Panics(func() { _ = burnFromFeePool(cacheCtx) })
 			},
-			check: func() {
-				moduleAccount, ok := suite.app.AccountKeeper.GetAccount(suite.ctx, feePoolAddr).(sdk.ModuleAccountI)
-				suite.Require().True(ok)
-				suite.Require().Equal(feePool, moduleAccount.GetName())
-				suite.Require().Equal([]string{authtypes.Burner}, moduleAccount.GetPermissions())
-				suite.Require().NoError(burnFromFeePool(suite.ctx))
-			},
+			check: checkFeePoolIsBurner,
 		},
 		{
-			name: "vesting account at the key rotation fee pool address aborts the upgrade",
+			// Anyone can create this account on v8, so it must not halt the upgrade.
+			name: "vesting account at the key rotation fee pool address becomes a burner module account",
 			malleate: func() {
 				locked := sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(1)))
 				vesting, err := vestingtypes.NewPermanentLockedAccount(baseAccountAtFeePool(), locked)
 				suite.Require().NoError(err)
 				suite.app.AccountKeeper.SetAccount(suite.ctx, vesting)
+				cacheCtx, _ := suite.ctx.CacheContext()
+				suite.Require().Panics(func() { _ = burnFromFeePool(cacheCtx) })
 			},
-			expErr: "cannot convert to module account",
+			check: checkFeePoolIsBurner,
 		},
 	}
 
@@ -344,12 +348,7 @@ func (suite *AppTestSuite) TestV9UpgradeHandler() {
 			tc.malleate()
 
 			plan := upgradetypes.Plan{Name: app.UpgradeV9PlanName, Height: suite.ctx.BlockHeight()}
-			err := suite.app.UpgradeKeeper.ApplyUpgrade(suite.ctx, plan)
-			if tc.expErr != "" {
-				suite.Require().ErrorContains(err, tc.expErr)
-				return
-			}
-			suite.Require().NoError(err)
+			suite.Require().NoError(suite.app.UpgradeKeeper.ApplyUpgrade(suite.ctx, plan))
 
 			name, _, err := suite.app.UpgradeKeeper.GetLastCompletedUpgrade(suite.ctx)
 			suite.Require().NoError(err)
@@ -469,8 +468,6 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 	}
 }
 
-// TestEnsureModuleAccountIfExists tests that the conversion of orphan BaseAccounts (left at module
-// addresses by external pre-funding) into proper ModuleAccounts works as expected.
 func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 	suite.Run("module not registered in maccPerms returns error", func() {
 		suite.SetupTest()
@@ -509,51 +506,41 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 		suite.Require().Equal(before.GetSequence(), after.GetSequence())
 	})
 
-	suite.Run("BaseAccount at module address is converted to ModuleAccount", func() {
-		suite.SetupTest()
-		moduleName := tieredrewardstypes.RewardsPoolName
-		addr := suite.app.AccountKeeper.GetModuleAddress(moduleName)
-
-		// Replace the auto-created ModuleAccount with a BaseAccount to simulate
-		// an orphan address pre-funded before the module was registered.
-		const accNum, seq = uint64(999), uint64(7)
-		base := authtypes.NewBaseAccountWithAddress(addr)
-		suite.Require().NoError(base.SetAccountNumber(accNum))
-		suite.Require().NoError(base.SetSequence(seq))
-		suite.app.AccountKeeper.SetAccount(suite.ctx, base)
-
-		suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName))
-
-		converted := suite.app.AccountKeeper.GetAccount(suite.ctx, addr)
-		modAcc, ok := converted.(sdk.ModuleAccountI)
-		suite.Require().True(ok, "account at module address must be a ModuleAccount after conversion")
-		suite.Require().Equal(moduleName, modAcc.GetName())
-		// AccountNumber and Sequence must be preserved so any earlier on-chain
-		// references to the address remain consistent.
-		suite.Require().Equal(accNum, modAcc.GetAccountNumber())
-		suite.Require().Equal(seq, modAcc.GetSequence())
-	})
-
-	suite.Run("non-BaseAccount type is rejected with an error", func() {
-		suite.SetupTest()
-		moduleName := tieredrewardstypes.RewardsPoolName
-		addr := suite.app.AccountKeeper.GetModuleAddress(moduleName)
-
-		// Set a vesting account at the module address — this is the kind of
-		// shape we shouldn't blindly convert (vesting metadata would be lost).
-		// Take over the existing module account's number/sequence to avoid
-		// the account-number uniqueness constraint at write time.
-		existing := suite.app.AccountKeeper.GetAccount(suite.ctx, addr)
-		suite.Require().NotNil(existing)
-		base := authtypes.NewBaseAccountWithAddress(addr)
-		suite.Require().NoError(base.SetAccountNumber(existing.GetAccountNumber()))
-		suite.Require().NoError(base.SetSequence(existing.GetSequence()))
-		coins := sdk.NewCoins(sdk.NewCoin("basecro", math.NewInt(1)))
-		vest, err := vestingtypes.NewPermanentLockedAccount(base, coins)
+	asVesting := func(base *authtypes.BaseAccount) sdk.AccountI {
+		locked := sdk.NewCoins(sdk.NewCoin("basecro", math.NewInt(1)))
+		vesting, err := vestingtypes.NewPermanentLockedAccount(base, locked)
 		suite.Require().NoError(err)
-		suite.app.AccountKeeper.SetAccount(suite.ctx, vest)
+		return vesting
+	}
+	conversions := []struct {
+		name string
+		wrap func(*authtypes.BaseAccount) sdk.AccountI
+	}{
+		{name: "BaseAccount at module address is converted to ModuleAccount", wrap: func(base *authtypes.BaseAccount) sdk.AccountI { return base }},
+		{name: "vesting account at module address is converted to ModuleAccount", wrap: asVesting},
+	}
+	for _, tc := range conversions {
+		suite.Run(tc.name, func() {
+			suite.SetupTest()
+			moduleName := tieredrewardstypes.RewardsPoolName
+			addr := suite.app.AccountKeeper.GetModuleAddress(moduleName)
 
-		err = app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName)
-		suite.Require().ErrorContains(err, "cannot convert to module account")
-	})
+			// Reuse the module account's number: auth indexes accounts by a unique account number.
+			existing := suite.app.AccountKeeper.GetAccount(suite.ctx, addr)
+			suite.Require().NotNil(existing)
+			const seq = uint64(7)
+			base := authtypes.NewBaseAccountWithAddress(addr)
+			suite.Require().NoError(base.SetAccountNumber(existing.GetAccountNumber()))
+			suite.Require().NoError(base.SetSequence(seq))
+			suite.app.AccountKeeper.SetAccount(suite.ctx, tc.wrap(base))
+
+			suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName))
+
+			modAcc, ok := suite.app.AccountKeeper.GetAccount(suite.ctx, addr).(sdk.ModuleAccountI)
+			suite.Require().True(ok, "account at module address must be a ModuleAccount after conversion")
+			suite.Require().Equal(moduleName, modAcc.GetName())
+			suite.Require().Equal(existing.GetAccountNumber(), modAcc.GetAccountNumber())
+			suite.Require().Equal(seq, modAcc.GetSequence())
+		})
+	}
 }

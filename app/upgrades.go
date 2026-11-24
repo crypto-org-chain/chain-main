@@ -39,16 +39,14 @@ func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, m
 	if _, ok := acc.(sdk.ModuleAccountI); ok {
 		return nil
 	}
-	baseAcc, ok := acc.(*authtypes.BaseAccount)
-	if !ok {
-		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, moduleName, acc)
-	}
+	// Any other type converts too: anyone can create a vesting account here before the upgrade, and no key controls a module address.
+	baseAcc := authtypes.NewBaseAccount(addr, nil, acc.GetAccountNumber(), acc.GetSequence())
 	macc := authtypes.NewModuleAccount(baseAcc, moduleName, perms...)
 	if err := macc.Validate(); err != nil {
 		return fmt.Errorf("module account %q: %w", moduleName, err)
 	}
 	ak.SetModuleAccount(ctx, macc)
-	ctx.Logger().Info("converted base account to module account", "module", moduleName, "address", addr.String())
+	ctx.Logger().Info("converted account to module account", "module", moduleName, "address", addr.String(), "previous_type", fmt.Sprintf("%T", acc))
 	return nil
 }
 

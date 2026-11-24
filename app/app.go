@@ -622,7 +622,7 @@ func New(
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
-	// bank must run first: its EndBlock credits virtual-account balances that later EndBlockers may read.
+	// bank goes first as the SDK v0.54 upgrade guide requires; its EndBlock does nothing without an object store key.
 	app.ModuleManager.SetOrderEndBlockers(
 		banktypes.ModuleName,
 		govtypes.ModuleName,
