@@ -26,19 +26,7 @@ const (
 	groupStoreKey = "group"
 )
 
-// ConvertiblePolicy reports whether a non-module account found at a module address may be replaced by a module account.
-type ConvertiblePolicy func(acc sdk.AccountI) bool
-
-// ConvertBaseAccountOnly refuses any account that carries state beyond a base account, such as a vesting schedule.
-func ConvertBaseAccountOnly(acc sdk.AccountI) bool {
-	_, ok := acc.(*authtypes.BaseAccount)
-	return ok
-}
-
-// ConvertAnyAccount drops the account's public key and any vesting schedule; use it only where anyone could have created the account.
-func ConvertAnyAccount(sdk.AccountI) bool { return true }
-
-func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, convertible ConvertiblePolicy, perms ...string) error {
+func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, perms ...string) error {
 	addr := ak.GetModuleAddress(moduleName)
 	if addr == nil {
 		return fmt.Errorf("module %q is not registered in maccPerms", moduleName)
@@ -51,9 +39,7 @@ func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, m
 	if _, ok := acc.(sdk.ModuleAccountI); ok {
 		return nil
 	}
-	if !convertible(acc) {
-		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, moduleName, acc)
-	}
+	// Any other type converts too: anyone can create a vesting account here before the upgrade, and no key controls a module address.
 	baseAcc := authtypes.NewBaseAccount(addr, nil, acc.GetAccountNumber(), acc.GetSequence())
 	macc := authtypes.NewModuleAccount(baseAcc, moduleName, perms...)
 	if err := macc.Validate(); err != nil {
@@ -74,8 +60,8 @@ func (app *ChainApp) registerV9UpgradeHandler() {
 	app.UpgradeKeeper.SetUpgradeHandler(UpgradeV9PlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-		// The pool address was not blocked before v9, so anyone could create an account there, vesting included; staking panics on burn unless it is a module account.
-		if err := EnsureModuleAccountIfExists(sdkCtx, app.AccountKeeper, stakingtypes.KeyRotationFeePoolName, ConvertAnyAccount, authtypes.Burner); err != nil {
+		// The pool address was not blocked before v9; staking panics on burn if a plain account sits there.
+		if err := EnsureModuleAccountIfExists(sdkCtx, app.AccountKeeper, stakingtypes.KeyRotationFeePoolName, authtypes.Burner); err != nil {
 			return map[string]uint64{}, fmt.Errorf("v9 key rotation fee pool: %w", err)
 		}
 
