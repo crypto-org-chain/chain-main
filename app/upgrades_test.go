@@ -513,7 +513,7 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 	suite.Run("module not registered in maccPerms returns error", func() {
 		suite.SetupTest()
-		err := app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, "definitely_not_a_module")
+		err := app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, "definitely_not_a_module", app.ConvertAnyAccount)
 		suite.Require().ErrorContains(err, "not registered in maccPerms")
 	})
 
@@ -528,7 +528,7 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 		}
 		suite.Require().Nil(suite.app.AccountKeeper.GetAccount(suite.ctx, addr))
 
-		suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName))
+		suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName, app.ConvertAnyAccount))
 		// Helper must not create the account itself — that's the responsibility
 		// of the module's InitGenesis path.
 		suite.Require().Nil(suite.app.AccountKeeper.GetAccount(suite.ctx, addr))
@@ -540,7 +540,7 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 		before := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, moduleName)
 		suite.Require().NotNil(before)
 
-		suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName))
+		suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName, app.ConvertBaseAccountOnly))
 
 		after := suite.app.AccountKeeper.GetModuleAccount(suite.ctx, moduleName)
 		suite.Require().Equal(before.GetAddress(), after.GetAddress())
@@ -554,12 +554,17 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 		suite.Require().NoError(err)
 		return vesting
 	}
+	asBase := func(base *authtypes.BaseAccount) sdk.AccountI { return base }
 	conversions := []struct {
-		name string
-		wrap func(*authtypes.BaseAccount) sdk.AccountI
+		name        string
+		wrap        func(*authtypes.BaseAccount) sdk.AccountI
+		convertible app.ConvertiblePolicy
+		expErr      string
 	}{
-		{name: "BaseAccount at module address is converted to ModuleAccount", wrap: func(base *authtypes.BaseAccount) sdk.AccountI { return base }},
-		{name: "vesting account at module address is converted to ModuleAccount", wrap: asVesting},
+		{name: "BaseAccount is converted under ConvertBaseAccountOnly", wrap: asBase, convertible: app.ConvertBaseAccountOnly},
+		{name: "BaseAccount is converted under ConvertAnyAccount", wrap: asBase, convertible: app.ConvertAnyAccount},
+		{name: "vesting account is converted under ConvertAnyAccount", wrap: asVesting, convertible: app.ConvertAnyAccount},
+		{name: "vesting account is refused under ConvertBaseAccountOnly", wrap: asVesting, convertible: app.ConvertBaseAccountOnly, expErr: "cannot convert to module account"},
 	}
 	for _, tc := range conversions {
 		suite.Run(tc.name, func() {
@@ -576,7 +581,14 @@ func (suite *AppTestSuite) TestEnsureModuleAccountIfExists() {
 			suite.Require().NoError(base.SetSequence(seq))
 			suite.app.AccountKeeper.SetAccount(suite.ctx, tc.wrap(base))
 
-			suite.Require().NoError(app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName))
+			err := app.EnsureModuleAccountIfExists(suite.ctx, suite.app.AccountKeeper, moduleName, tc.convertible)
+			if tc.expErr != "" {
+				suite.Require().ErrorContains(err, tc.expErr)
+				_, isModule := suite.app.AccountKeeper.GetAccount(suite.ctx, addr).(sdk.ModuleAccountI)
+				suite.Require().False(isModule, "a refused account must be left as it was")
+				return
+			}
+			suite.Require().NoError(err)
 
 			modAcc, ok := suite.app.AccountKeeper.GetAccount(suite.ctx, addr).(sdk.ModuleAccountI)
 			suite.Require().True(ok, "account at module address must be a ModuleAccount after conversion")
