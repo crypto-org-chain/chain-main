@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/9cf79b5735b34d25bb8ee55c90356e72696e7cb3";
+    nixpkgs.url = "github:NixOS/nixpkgs/d7fed073bedb1782de1f26683422ccd5b0207cd9";
     flake-utils.url = "github:numtide/flake-utils";
     nix-bundle-exe = {
       url = "github:3noch/nix-bundle-exe";
