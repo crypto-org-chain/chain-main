@@ -425,8 +425,6 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 		upgradeInfo *upgradetypes.Plan
 		skipHeights []int
 		expErr      string
-		// expGroupData is set when the IAVL database must still hold the group store's latest version.
-		expGroupData bool
 	}{
 		{name: "memiavl deletes the group store at the upgrade height", memiavl: true, upgradeInfo: v9Plan},
 		{name: "memiavl refuses the group store without upgrade info", memiavl: true, expErr: mismatch},
@@ -449,8 +447,8 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			skipHeights: []int{upgradeHeight},
 			expErr:      mismatch,
 		},
-		{name: "iavl ignores the store upgrade and keeps the group data", upgradeInfo: v9Plan, expGroupData: true},
-		{name: "iavl starts without upgrade info and keeps the group data", expGroupData: true},
+		{name: "iavl ignores the store upgrade and keeps the group data", upgradeInfo: v9Plan},
+		{name: "iavl starts without upgrade info and keeps the group data"},
 	}
 
 	for _, tc := range testCases {
@@ -512,7 +510,7 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			suite.Require().Equal(int64(upgradeHeight), restarted.LastBlockHeight())
 			suite.Require().NoError(restarted.Close())
 
-			if tc.expGroupData {
+			if !tc.memiavl {
 				// A deleted store leaves stale nodes behind, so read the tree's latest version instead of raw keys.
 				groupDB := dbm.NewPrefixDB(db, []byte("s/k:"+groupStore+"/"))
 				groupData, err := storeiavl.LoadStore(
