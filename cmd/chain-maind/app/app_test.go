@@ -18,6 +18,8 @@ import (
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -52,23 +54,57 @@ func (s *GenesisCmdTestSuite) execute(args ...string) error {
 	return s.rootCmd.ExecuteContext(svrcmd.CreateExecuteContext(s.T().Context()))
 }
 
-func (s *GenesisCmdTestSuite) TestInitGenesisIsValid() {
-	home := s.T().TempDir()
-	genesisFile := filepath.Join(home, "config", "genesis.json")
+func (s *GenesisCmdTestSuite) TestGenesisIsValid() {
+	testCases := []struct {
+		name string
+		// generate writes a genesis file under home and returns its path.
+		generate func(home string) string
+	}{
+		{
+			name: "init",
+			generate: func(home string) string {
+				s.Require().NoError(s.execute("init", "node", "--chain-id", "test", "--home", home))
+				return filepath.Join(home, "config", "genesis.json")
+			},
+		},
+		{
+			name: "testnet",
+			generate: func(home string) string {
+				s.Require().NoError(s.execute("testnet", "--v", "2", "-o", home, "--keyring-backend", "test", "--home", home))
+				return filepath.Join(home, "node0", ".chain-maind", "config", "genesis.json")
+			},
+		},
+	}
 
-	s.Require().NoError(s.execute("init", "node", "--chain-id", "test", "--home", home))
-	s.Require().NoError(s.execute("genesis", "validate", genesisFile, "--home", home))
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			home := s.T().TempDir()
+			genesisFile := tc.generate(home)
 
-	appGenesis, err := genutiltypes.AppGenesisFromFile(genesisFile)
-	s.Require().NoError(err)
-	var appState map[string]json.RawMessage
-	s.Require().NoError(json.Unmarshal(appGenesis.AppState, &appState))
-	var staking stakingtypes.GenesisState
-	s.Require().NoError(s.encodingConfig.Marshaler.UnmarshalJSON(appState[stakingtypes.ModuleName], &staking))
+			s.Require().NoError(s.execute("genesis", "validate", genesisFile, "--home", home))
 
-	s.Require().Equal(config.BaseCoinUnit, staking.Params.BondDenom)
-	s.Require().Equal(
-		sdk.NewCoin(config.BaseCoinUnit, stakingtypes.DefaultKeyRotationFeeAmount),
-		staking.Params.KeyRotationFee,
-	)
+			appGenesis, err := genutiltypes.AppGenesisFromFile(genesisFile)
+			s.Require().NoError(err)
+			var appState map[string]json.RawMessage
+			s.Require().NoError(json.Unmarshal(appGenesis.AppState, &appState))
+			var staking stakingtypes.GenesisState
+			s.Require().NoError(s.encodingConfig.Marshaler.UnmarshalJSON(appState[stakingtypes.ModuleName], &staking))
+			var gov govv1.GenesisState
+			s.Require().NoError(s.encodingConfig.Marshaler.UnmarshalJSON(appState[govtypes.ModuleName], &gov))
+
+			s.Require().Equal(config.BaseCoinUnit, staking.Params.BondDenom)
+			s.Require().Equal(
+				sdk.NewCoin(config.BaseCoinUnit, stakingtypes.DefaultKeyRotationFeeAmount),
+				staking.Params.KeyRotationFee,
+			)
+			s.Require().Equal(
+				sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinDepositTokens)),
+				sdk.NewCoins(gov.Params.MinDeposit...),
+			)
+			s.Require().Equal(
+				sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinExpeditedDepositTokens)),
+				sdk.NewCoins(gov.Params.ExpeditedMinDeposit...),
+			)
+		})
+	}
 }

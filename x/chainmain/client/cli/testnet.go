@@ -17,6 +17,7 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmtypes "github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
+	memiavlcfg "github.com/crypto-org-chain/cronos-store/store/config"
 	"github.com/spf13/cobra"
 
 	sdkmath "cosmossdk.io/math"
@@ -151,12 +152,6 @@ Example:
 
 const nodeDirPerm = 0o755
 
-var (
-	genAccounts []authtypes.GenesisAccount
-	genBalances []banktypes.Balance
-	genFiles    []string
-)
-
 // InitTestnet Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
@@ -178,6 +173,9 @@ func InitTestnet(
 ) error {
 	nodeIDs := make([]string, numValidators)
 	valPubKeys := make([]crypto.PubKey, numValidators)
+	genAccounts := make([]authtypes.GenesisAccount, 0, numValidators)
+	genBalances := make([]banktypes.Balance, 0, numValidators)
+	genFiles := make([]string, 0, numValidators)
 
 	chainmainConfig := srvconfig.DefaultConfig()
 	chainmainConfig.MinGasPrices = minGasPrices
@@ -187,6 +185,11 @@ func InitTestnet(
 	telemetryConfig.PrometheusRetentionTime = 60
 	telemetryConfig.EnableHostnameLabel = false
 	telemetryConfig.GlobalLabels = [][]string{{"chain_id", chainID}}
+	// The root command installs an app.toml template with a memiavl section, so the rendered config needs one.
+	appConfig := struct {
+		*srvconfig.Config
+		MemIAVL memiavlcfg.MemIAVLConfig
+	}{chainmainConfig, memiavlcfg.DefaultMemIAVLConfig()}
 
 	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
@@ -329,7 +332,7 @@ func InitTestnet(
 		genAccounts = append(genAccounts, genAccount)
 
 		createValMsg, err2 := stakingtypes.NewMsgCreateValidator(
-			addr.String(),
+			sdk.ValAddress(addr).String(),
 			valPubKeys[i],
 			stakingCoin,
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
@@ -367,7 +370,7 @@ func InitTestnet(
 			return err
 		}
 
-		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), chainmainConfig)
+		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
 	if err = initGenFiles(
@@ -406,6 +409,7 @@ func initGenFiles(
 		return err
 	}
 	stakingGenState.Params.BondDenom = baseDenom
+	stakingGenState.Params.KeyRotationFee.Denom = baseDenom
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
 	appGenState[stakingtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenState)
@@ -414,6 +418,7 @@ func initGenFiles(
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 	govGenState.Params.MinDeposit[0].Denom = baseDenom
+	govGenState.Params.ExpeditedMinDeposit[0].Denom = baseDenom
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state

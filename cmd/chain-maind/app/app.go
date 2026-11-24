@@ -16,7 +16,6 @@ import (
 	chainmaincli "github.com/crypto-org-chain/chain-main/v8/x/chainmain/client/cli"
 	memiavlcfg "github.com/crypto-org-chain/cronos-store/store/config"
 	"github.com/imdario/mergo"
-	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/log/v2"
@@ -153,8 +152,9 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 					},
 				},
 				"gov": map[string]any{
-					"deposit_params": map[string]any{
-						"min_deposit": sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinDepositTokens)),
+					"params": map[string]any{
+						"min_deposit":           sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinDepositTokens)),
+						"expedited_min_deposit": sdk.NewCoins(sdk.NewCoin(config.BaseCoinUnit, govv1.DefaultMinExpeditedDepositTokens)),
 					},
 				},
 				"mint": map[string]any{
@@ -321,11 +321,6 @@ func txCommand() *cobra.Command {
 
 // newApp is an AppCreator
 func newApp(logger log.Logger, db dbm.DB, appOpts servertypes.AppOptions) servertypes.Application {
-	skipUpgradeHeights := make(map[int64]bool)
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
-		skipUpgradeHeights[int64(h)] = true
-	}
-
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 	return app.New(logger, db, true, appOpts, baseappOptions...)
 }
