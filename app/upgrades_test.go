@@ -447,6 +447,7 @@ func (suite *AppTestSuite) TestV9StoreUpgrades() {
 			expErr:      mismatch,
 		},
 		{name: "iavl loads with the group store left unmounted", upgradeInfo: v9Plan},
+		{name: "iavl loads with the group store left unmounted and no upgrade info"},
 	}
 
 	for _, tc := range testCases {
