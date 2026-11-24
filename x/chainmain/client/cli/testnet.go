@@ -17,7 +17,6 @@ import (
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmtypes "github.com/cometbft/cometbft/types"
 	tmtime "github.com/cometbft/cometbft/types/time"
-	memiavlcfg "github.com/crypto-org-chain/cronos-store/store/config"
 	"github.com/spf13/cobra"
 
 	sdkmath "cosmossdk.io/math"
@@ -55,10 +54,12 @@ var (
 	flagUnbondingTime     = "unbonding-time"
 )
 
-// AddTestnetCmd get cmd to initialize all files for cometbft testnet and application
+// AddTestnetCmd get cmd to initialize all files for cometbft testnet and application.
+// newAppConfig wraps the SDK server config in the type the installed app.toml template renders.
 func AddTestnetCmd(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
+	newAppConfig func(srvconfig.Config) any,
 ) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
@@ -121,7 +122,7 @@ Example:
 			}
 
 			return InitTestnet(
-				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
+				clientCtx, cmd, config, mbm, genBalIterator, newAppConfig, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, int(numValidators),
 			)
 		},
@@ -159,6 +160,7 @@ func InitTestnet(
 	nodeConfig *tmconfig.Config,
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
+	newAppConfig func(srvconfig.Config) any,
 	outputDir,
 	chainID,
 	minGasPrices,
@@ -185,11 +187,6 @@ func InitTestnet(
 	telemetryConfig.PrometheusRetentionTime = 60
 	telemetryConfig.EnableHostnameLabel = false
 	telemetryConfig.GlobalLabels = [][]string{{"chain_id", chainID}}
-	// The root command installs an app.toml template with a memiavl section, so the rendered config needs one.
-	appConfig := struct {
-		*srvconfig.Config
-		MemIAVL memiavlcfg.MemIAVLConfig
-	}{chainmainConfig, memiavlcfg.DefaultMemIAVLConfig()}
 
 	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
@@ -222,7 +219,7 @@ func InitTestnet(
 		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeStrErr)
 	}
 	unbondingTime, unbondingTimeErr := time.ParseDuration(unbondingTimeStr)
-	if unbondingTimeStrErr != nil {
+	if unbondingTimeErr != nil {
 		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeErr)
 	}
 
@@ -370,7 +367,7 @@ func InitTestnet(
 			return err
 		}
 
-		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
+		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), newAppConfig(*chainmainConfig))
 	}
 
 	if err = initGenFiles(
@@ -560,7 +557,7 @@ func writeFile(name, dir string, contents []byte) error {
 func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 	baseDenom, err := sdk.GetBaseDenom()
 	if err != nil {
-		return sdk.Coin{}, nil
+		return sdk.Coin{}, fmt.Errorf("failed to get base denom: %w", err)
 	}
 	stakingCoin := sdk.Coin{
 		Denom:  baseDenom,

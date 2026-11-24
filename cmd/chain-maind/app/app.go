@@ -105,28 +105,29 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	return rootCmd, encodingConfig
 }
 
+// appConfig must have a field for every section of the template initAppConfig returns.
+type appConfig struct {
+	serverconfig.Config
+
+	MemIAVL memiavlcfg.MemIAVLConfig `mapstructure:"memiavl"`
+}
+
+func newAppConfig(srvCfg serverconfig.Config) any {
+	return appConfig{
+		Config:  srvCfg,
+		MemIAVL: memiavlcfg.DefaultMemIAVLConfig(),
+	}
+}
+
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, any) {
-	// The following code snippet is just for reference.
-
-	type CustomAppConfig struct {
-		serverconfig.Config
-
-		MemIAVL memiavlcfg.MemIAVLConfig `mapstructure:"memiavl"`
-	}
-
 	// Optionally allow the chain developer to overwrite the SDK's default
 	// server config.
 	srvCfg := serverconfig.DefaultConfig()
 	srvCfg.GRPC.Address = "127.0.0.1:9090"
 
-	customAppConfig := CustomAppConfig{
-		Config:  *srvCfg,
-		MemIAVL: memiavlcfg.DefaultMemIAVLConfig(),
-	}
-
-	return serverconfig.DefaultConfigTemplate + memiavlcfg.DefaultConfigTemplate, customAppConfig
+	return serverconfig.DefaultConfigTemplate + memiavlcfg.DefaultConfigTemplate, newAppConfig(*srvCfg)
 }
 
 func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, basicManager module.BasicManager) {
@@ -232,7 +233,7 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		initCmd,
 		chainmaincli.AddGenesisAccountCmd(app.DefaultNodeHome),
 		tmcli.NewCompletionCmd(rootCmd, true),
-		chainmaincli.AddTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}),
+		chainmaincli.AddTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}, newAppConfig),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
