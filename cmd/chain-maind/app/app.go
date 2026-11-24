@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +10,6 @@ import (
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
-	rosettaCmd "github.com/cosmos/rosetta/cmd"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 	"github.com/crypto-org-chain/chain-main/v8/app/params"
 	"github.com/crypto-org-chain/chain-main/v8/config"
@@ -21,7 +19,7 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -54,7 +52,7 @@ func NewRootCmd() (*cobra.Command, params.EncodingConfig) {
 	config.SetConfig()
 
 	tempApp := app.New(
-		log.NewNopLogger(), dbm.NewMemDB(), nil, true,
+		log.NewNopLogger(), dbm.NewMemDB(), true,
 		simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 	)
 	encodingConfig := tempApp.EncodingConfig()
@@ -248,9 +246,6 @@ func initRootCmd(rootCmd *cobra.Command, encodingConfig params.EncodingConfig, b
 		keys.Commands(),
 	)
 
-	// add rosetta
-	rootCmd.AddCommand(rosettaCmd.RosettaCommand(encodingConfig.InterfaceRegistry, encodingConfig.Marshaler))
-
 	// versiondb changeset commands
 	changeSetCmd := ChangeSetCmd()
 	if changeSetCmd != nil {
@@ -321,21 +316,21 @@ func txCommand() *cobra.Command {
 }
 
 // newApp is an AppCreator
-func newApp(logger log.Logger, db dbm.DB, traceStore io.Writer, appOpts servertypes.AppOptions) servertypes.Application {
+func newApp(logger log.Logger, db dbm.DB, appOpts servertypes.AppOptions) servertypes.Application {
 	skipUpgradeHeights := make(map[int64]bool)
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
 		skipUpgradeHeights[int64(h)] = true
 	}
 
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
-	return app.New(logger, db, traceStore, true, appOpts, baseappOptions...)
+	return app.New(logger, db, true, appOpts, baseappOptions...)
 }
 
 // exportAppStateAndTMValidators creates a new chain app (optionally at a given height)
 // and exports state.
 func exportAppStateAndTMValidators(
 	logger log.Logger, db dbm.DB,
-	traceStore io.Writer, height int64,
+	height int64,
 	forZeroHeight bool, jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 	modulesToExport []string,
@@ -345,13 +340,13 @@ func exportAppStateAndTMValidators(
 
 	var a *app.ChainApp
 	if height != -1 {
-		a = app.New(logger, db, traceStore, false, appOpts)
+		a = app.New(logger, db, false, appOpts)
 
 		if err := a.LoadHeight(height); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
 	} else {
-		a = app.New(logger, db, traceStore, true, appOpts)
+		a = app.New(logger, db, true, appOpts)
 	}
 
 	return a.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)

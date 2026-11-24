@@ -9,7 +9,7 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/testutil"
 	"github.com/stretchr/testify/require"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -40,7 +40,6 @@ func TestExportAppStateAndValidators(t *testing.T) {
 			chainApp2 := app.New(
 				log.NewLogger(os.Stdout),
 				db,
-				nil,
 				true,
 				simtestutil.NewAppOptionsWithFlagHome(app.DefaultNodeHome),
 				baseapp.SetChainID(testutil.ChainID),

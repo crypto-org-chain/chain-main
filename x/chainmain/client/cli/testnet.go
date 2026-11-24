@@ -182,10 +182,11 @@ func InitTestnet(
 	chainmainConfig := srvconfig.DefaultConfig()
 	chainmainConfig.MinGasPrices = minGasPrices
 	chainmainConfig.API.Enable = true
-	chainmainConfig.Telemetry.Enabled = true
-	chainmainConfig.Telemetry.PrometheusRetentionTime = 60
-	chainmainConfig.Telemetry.EnableHostnameLabel = false
-	chainmainConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
+	telemetryConfig := &chainmainConfig.Telemetry //nolint:staticcheck // TODO: switch to OpenTelemetry
+	telemetryConfig.Enabled = true
+	telemetryConfig.PrometheusRetentionTime = 60
+	telemetryConfig.EnableHostnameLabel = false
+	telemetryConfig.GlobalLabels = [][]string{{"chain_id", chainID}}
 
 	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
@@ -502,7 +503,8 @@ func collectGenFiles(
 		genFile := nodeConfig.GenesisFile()
 
 		// overwrite each validator's genesis file to have a canonical genesis time
-		if err := genutil.ExportGenesisFileWithTime(genFile, chainID, nil, appState, genTime); err != nil {
+		genDoc.AppState = appState
+		if err := genutil.ExportGenesisFileWithTime(genFile, genDoc, genTime); err != nil {
 			return err
 		}
 	}

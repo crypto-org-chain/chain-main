@@ -33,7 +33,7 @@ func (k Keeper) topUpBaseRewards(ctx context.Context) error {
 		return nil
 	}
 
-	totalBonded, err := k.stakingKeeper.TotalBondedTokens(ctx)
+	totalBonded, err := k.stakingKeeper.TotalValidatorPower(ctx)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get total bonded tokens: %v", err))
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 func BeginBlocker(ctx context.Context, k keeper.Keeper) error {
-	defer telemetry.ModuleMeasureSince(types.ModuleName, telemetry.Now(), telemetry.MetricKeyBeginBlocker)
+	defer telemetry.ModuleMeasureSince(types.ModuleName, telemetry.Now(), telemetry.MetricKeyBeginBlocker) //nolint:staticcheck // TODO: switch to OpenTelemetry
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		panic("could not get params: " + err.Error())

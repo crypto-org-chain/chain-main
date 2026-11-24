@@ -9,7 +9,7 @@ import (
 
 	tmbytes "github.com/cometbft/cometbft/libs/bytes"
 	tmtypes "github.com/cometbft/cometbft/types"
-	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
+	host "github.com/lfdt-ibc/ibc-go/v11/modules/core/24-host"
 
 	sdkerrors "cosmossdk.io/errors"
 )

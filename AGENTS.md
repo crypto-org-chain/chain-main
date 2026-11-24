@@ -6,7 +6,7 @@ Guidance for AI coding agents working in this repository. Keep this file factual
 
 Crypto.org Chain (`chain-main`) — a Cosmos SDK based blockchain. The daemon binary is `chain-maind` (entrypoint `./cmd/chain-maind`).
 
-- Go module: `github.com/crypto-org-chain/chain-main/v8` (Go 1.25.x)
+- Go module: `github.com/crypto-org-chain/chain-main/v8` (Go 1.26.x)
 - Built on the Cosmos SDK (`cosmossdk.io/*`, `github.com/cosmos/cosmos-sdk`)
 
 ## Layout

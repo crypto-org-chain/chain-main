@@ -13,7 +13,7 @@ import (
 )
 
 type StakingKeeper interface {
-	TotalBondedTokens(context.Context) (math.Int, error)
+	TotalValidatorPower(context.Context) (math.Int, error)
 	BondDenom(ctx context.Context) (string, error)
 	ValidatorByConsAddr(context.Context, sdk.ConsAddress) (stakingtypes.ValidatorI, error)
 	GetValidator(ctx context.Context, addr sdk.ValAddress) (stakingtypes.Validator, error)

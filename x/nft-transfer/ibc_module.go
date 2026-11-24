@@ -5,11 +5,11 @@ import (
 	"math"
 	"strings"
 
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
+	channeltypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/04-channel/types"
+	porttypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/05-port/types"
+	ibcexported "github.com/lfdt-ibc/ibc-go/v11/modules/core/exported"
 
 	newsdkerrors "cosmossdk.io/errors"
 
@@ -21,11 +21,11 @@ var _ porttypes.IBCModule = IBCModule{}
 
 // IBCModule implements the ICS26 interface for transfer given the transfer keeper.
 type IBCModule struct {
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // NewIBCModule creates a new IBCModule given the keeper
-func NewIBCModule(k keeper.Keeper) IBCModule {
+func NewIBCModule(k *keeper.Keeper) IBCModule {
 	return IBCModule{
 		keeper: k,
 	}
@@ -67,7 +67,7 @@ func (im IBCModule) OnChanOpenInit(
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
+	if err := ValidateTransferChannelParams(ctx, *im.keeper, order, portID, channelID); err != nil {
 		return "", err
 	}
 
@@ -92,7 +92,7 @@ func (im IBCModule) OnChanOpenTry(
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	if err := ValidateTransferChannelParams(ctx, im.keeper, order, portID, channelID); err != nil {
+	if err := ValidateTransferChannelParams(ctx, *im.keeper, order, portID, channelID); err != nil {
 		return "", err
 	}
 
@@ -269,4 +269,13 @@ func (im IBCModule) OnTimeoutPacket(
 	)
 
 	return nil
+}
+
+// SetICS4Wrapper implements the IBCModule interface
+func (im IBCModule) SetICS4Wrapper(wrapper porttypes.ICS4Wrapper) {
+	if wrapper == nil {
+		panic("ICS4Wrapper cannot be nil")
+	}
+
+	im.keeper.WithICS4Wrapper(wrapper)
 }

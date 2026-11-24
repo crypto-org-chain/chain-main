@@ -24,7 +24,7 @@ type TierVotingPowerProvider interface {
 
 // GovTallyStakingKeeper is the subset of staking keeper needed by the custom tally function.
 type GovTallyStakingKeeper interface {
-	ValidatorAddressCodec() addresscodec.Codec
+	bondedValidatorSource
 	IterateDelegations(ctx context.Context, delegator sdk.AccAddress, fn func(index int64, delegation stakingtypes.DelegationI) (stop bool)) error
 }
 
@@ -46,8 +46,12 @@ func NewCustomTallyTierVotesFn(
 		ctx context.Context,
 		k govkeeper.Keeper,
 		proposal v1.Proposal,
-		validators map[string]v1.ValidatorGovInfo,
-	) (totalVoterPower math.LegacyDec, results map[v1.VoteOption]math.LegacyDec, err error) {
+	) (totalVoterPower math.LegacyDec, totalValPower math.Int, results map[v1.VoteOption]math.LegacyDec, err error) {
+		validators, totalValPower, err := bondedValidatorGovInfos(ctx, sk)
+		if err != nil {
+			return math.LegacyZeroDec(), math.ZeroInt(), nil, err
+		}
+
 		totalVotingPower := math.LegacyZeroDec()
 
 		results = make(map[v1.VoteOption]math.LegacyDec)
@@ -130,7 +134,7 @@ func NewCustomTallyTierVotesFn(
 			return false, nil
 		})
 		if err != nil {
-			return math.LegacyZeroDec(), nil, fmt.Errorf("error while iterating votes: %w", err)
+			return math.LegacyZeroDec(), math.ZeroInt(), nil, fmt.Errorf("error while iterating votes: %w", err)
 		}
 
 		// Second pass: attribute remaining validator shares to the validator's own vote.
@@ -149,18 +153,18 @@ func NewCustomTallyTierVotesFn(
 			votingPower := sharesAfterDeductions.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 
 			if err := distributeVotingPower(val.Vote, votingPower, results); err != nil {
-				return math.LegacyZeroDec(), nil, fmt.Errorf("invalid vote weight for validator %s: %w", valAddrStr, err)
+				return math.LegacyZeroDec(), math.ZeroInt(), nil, fmt.Errorf("invalid vote weight for validator %s: %w", valAddrStr, err)
 			}
 			totalVotingPower = totalVotingPower.Add(votingPower)
 		}
 
 		for _, key := range votesToRemove {
 			if err := k.Votes.Remove(ctx, key); err != nil {
-				return math.LegacyDec{}, nil, fmt.Errorf("error while removing vote (%d/%s): %w", key.K1(), key.K2(), err)
+				return math.LegacyDec{}, math.ZeroInt(), nil, fmt.Errorf("error while removing vote (%d/%s): %w", key.K1(), key.K2(), err)
 			}
 		}
 
-		return totalVotingPower, results, nil
+		return totalVotingPower, totalValPower, results, nil
 	}
 }
 

@@ -50,18 +50,25 @@ func (rawStringCodec) BytesToString(bz []byte) (string, error) {
 	return string(bz), nil
 }
 
-type mockGovTallyStakingKeeper struct{}
+type mockGovTallyStakingKeeper struct {
+	bonded []stakingtypes.Validator
+}
 
 func (mockGovTallyStakingKeeper) ValidatorAddressCodec() addresscodec.Codec {
 	return rawStringCodec{}
 }
 
-func (mockGovTallyStakingKeeper) IterateDelegations(_ context.Context, _ sdk.AccAddress, _ func(int64, stakingtypes.DelegationI) bool) error {
+func (m mockGovTallyStakingKeeper) IterateBondedValidatorsByPower(_ context.Context, fn func(int64, stakingtypes.ValidatorI) bool) error {
+	for i, val := range m.bonded {
+		if fn(int64(i), val) {
+			break
+		}
+	}
 	return nil
 }
 
-func (mockGovTallyStakingKeeper) GetValidator(_ context.Context, _ sdk.ValAddress) (stakingtypes.Validator, error) {
-	return stakingtypes.Validator{}, stakingtypes.ErrNoValidatorFound
+func (mockGovTallyStakingKeeper) IterateDelegations(_ context.Context, _ sdk.AccAddress, _ func(int64, stakingtypes.DelegationI) bool) error {
+	return nil
 }
 
 type mockGovTallyAccountKeeper struct{}
@@ -94,7 +101,7 @@ func noVoteOpts() []*v1.WeightedVoteOption {
 	return []*v1.WeightedVoteOption{{Option: v1.OptionNo, Weight: "1.000000000000000000"}}
 }
 
-// buildValidatorsMap replicates gov's getCurrentValidators: bonded validators
+// buildValidatorsMap replicates the tally's validator snapshot: bonded validators
 // with zero deductions and no vote.
 func (s *KeeperSuite) buildValidatorsMap() map[string]v1.ValidatorGovInfo {
 	validators := make(map[string]v1.ValidatorGovInfo)
@@ -106,7 +113,7 @@ func (s *KeeperSuite) buildValidatorsMap() map[string]v1.ValidatorGovInfo {
 			}
 			validators[val.GetOperator()] = v1.NewValidatorGovInfo(
 				valBz,
-				val.GetBondedTokens(),
+				val.GetValidatorPower(),
 				val.GetDelegatorShares(),
 				sdkmath.LegacyZeroDec(),
 				v1.WeightedVoteOptions{},
@@ -130,7 +137,7 @@ func (s *KeeperSuite) insertVote(proposalID uint64, voter sdk.AccAddress, opts [
 }
 
 // callCustomTally builds and invokes the custom tally function.
-func (s *KeeperSuite) callCustomTally(proposalID uint64, validators map[string]v1.ValidatorGovInfo) (
+func (s *KeeperSuite) callCustomTally(proposalID uint64) (
 	sdkmath.LegacyDec, map[v1.VoteOption]sdkmath.LegacyDec,
 ) {
 	s.T().Helper()
@@ -138,8 +145,15 @@ func (s *KeeperSuite) callCustomTally(proposalID uint64, validators map[string]v
 		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: proposalID}
-	totalPower, results, err := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	totalPower, totalValPower, results, err := tallyFn(s.ctx, s.app.GovKeeper, proposal)
 	s.Require().NoError(err)
+
+	bondedPower := sdkmath.ZeroInt()
+	for _, val := range s.buildValidatorsMap() {
+		bondedPower = bondedPower.Add(val.BondedTokens)
+	}
+	s.Require().True(bondedPower.Equal(totalValPower),
+		"quorum denominator must be the bonded validator power: want %s, got %s", bondedPower, totalValPower)
 	return totalPower, results
 }
 
@@ -250,7 +264,7 @@ func (s *KeeperSuite) TestQueryAndGovTallyWiring_TierPowerConsistency() {
 	s.insertVote(testProposalID, yesVoter, yesVoteOpts())
 	s.insertVote(testProposalID, noVoter, noVoteOpts())
 
-	tallyTotal, results := s.callCustomTally(testProposalID, validators)
+	tallyTotal, results := s.callCustomTally(testProposalID)
 	s.Require().True(tallyTotal.Equal(expectedAddedPower),
 		"tally total should equal independently expected tier power; got %s, want %s",
 		tallyTotal, expectedAddedPower)
@@ -276,7 +290,7 @@ func (s *KeeperSuite) TestCustomTally_TierOnlyVoter() {
 	expected := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expected.IsPositive(), "tier power should be positive")
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.Equal(expected),
 		"voter with no staking should have power = tier power; got %s, want %s", totalPower, expected)
@@ -301,7 +315,7 @@ func (s *KeeperSuite) TestCustomTally_StakingPlusTier() {
 	expectedTier := s.tierPowerFor(delAddr, validators)
 	expectedTotal := expectedStaking.Add(expectedTier)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.Equal(expectedTotal),
 		"total should be staking + tier; got %s, want %s", totalPower, expectedTotal)
@@ -323,7 +337,7 @@ func (s *KeeperSuite) TestCustomTally_WeightedVoteSplitsPower() {
 	tierPower := s.tierPowerFor(delAddr, validators)
 	s.Require().True(tierPower.IsPositive())
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.Equal(tierPower),
 		"total should equal tier power; got %s, want %s", totalPower, tierPower)
@@ -350,9 +364,8 @@ func (s *KeeperSuite) TestCustomTally_InvalidVoteWeight_ReturnsError() {
 		s.keeper, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: testProposalID}
-	validators := s.buildValidatorsMap()
 
-	_, _, err := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	_, _, _, err := tallyFn(s.ctx, s.app.GovKeeper, proposal)
 	s.Require().Error(err)
 	s.Require().ErrorContains(err, "invalid vote weight")
 
@@ -374,23 +387,18 @@ func (s *KeeperSuite) TestCustomTally_InvalidValidatorVoteWeight_PreservesVote()
 	})
 	s.Require().NoError(err)
 
-	validators := map[string]v1.ValidatorGovInfo{
-		validatorVoter: v1.NewValidatorGovInfo(
-			[]byte(validatorVoter),
-			sdkmath.NewInt(100),
-			sdkmath.LegacyNewDec(100),
-			sdkmath.LegacyZeroDec(),
-			nil,
-		),
-	}
-
 	tallyFn := keeper.NewCustomTallyTierVotesFn(
 		mockTierVotingPower{positions: map[string][]types.PositionState{}},
-		mockGovTallyStakingKeeper{},
+		mockGovTallyStakingKeeper{bonded: []stakingtypes.Validator{{
+			OperatorAddress: validatorVoter,
+			Status:          stakingtypes.Bonded,
+			Tokens:          sdkmath.NewInt(100),
+			DelegatorShares: sdkmath.LegacyNewDec(100),
+		}}},
 		mockGovTallyAccountKeeper{},
 	)
 
-	_, _, err = tallyFn(s.ctx, s.app.GovKeeper, v1.Proposal{Id: testProposalID}, validators)
+	_, _, _, err = tallyFn(s.ctx, s.app.GovKeeper, v1.Proposal{Id: testProposalID})
 	s.Require().Error(err)
 	s.Require().ErrorContains(err, "invalid vote weight for validator")
 
@@ -414,8 +422,7 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 	s.Require().NoError(err)
 
 	s.insertVote(testProposalID, delAddr, yesVoteOpts())
-	validators := s.buildValidatorsMap()
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	// No staking delegation, no delegated tier → zero
 	s.Require().True(totalPower.IsZero(),
@@ -429,11 +436,11 @@ func (s *KeeperSuite) TestCustomTally_UndelegatedTierIgnored() {
 	delAddr2 := sdk.MustAccAddressFromBech32(pos2.Owner)
 
 	s.insertVote(testProposalID, delAddr2, yesVoteOpts())
-	validators = s.buildValidatorsMap()
+	validators := s.buildValidatorsMap()
 	tierPower := s.tierPowerFor(delAddr2, validators)
 	s.Require().True(tierPower.IsPositive(), "delegated tier should give positive power")
 
-	totalPower, _ = s.callCustomTally(testProposalID, validators)
+	totalPower, _ = s.callCustomTally(testProposalID)
 	s.Require().True(totalPower.Equal(tierPower),
 		"after delegating, tier power should appear; got %s, want %s", totalPower, tierPower)
 }
@@ -457,7 +464,7 @@ func (s *KeeperSuite) TestCustomTally_MultipleVoters() {
 	delTier := s.tierPowerFor(delAddr, validators)
 	otherTier := s.tierPowerFor(otherAddr, validators)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	expectedTotal := delStaking.Add(delTier).Add(otherTier)
 	s.Require().True(totalPower.Equal(expectedTotal),
@@ -486,8 +493,7 @@ func (s *KeeperSuite) TestCustomTally_VotesRemovedAfterTally() {
 	s.Require().True(has1)
 	s.Require().True(has2)
 
-	validators := s.buildValidatorsMap()
-	s.callCustomTally(testProposalID, validators)
+	s.callCustomTally(testProposalID)
 
 	// Votes should be gone
 	has1, _ = s.app.GovKeeper.Votes.Has(s.ctx, collections.Join(testProposalID, addr1))
@@ -543,7 +549,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
 		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	expectedYes := delStakingPower.Add(positionAmount)
 	expectedNo := valSelfPower.Add(valRemainingPower)
@@ -562,8 +568,7 @@ func (s *KeeperSuite) TestCustomTally_ValidatorVoteAlongsideTier() {
 // No votes at all → zero totals, empty results.
 func (s *KeeperSuite) TestCustomTally_NoVotes() {
 	s.setupTier(1)
-	validators := s.buildValidatorsMap()
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.IsZero())
 	s.Require().True(results[v1.OptionYes].IsZero())
@@ -610,7 +615,7 @@ func (s *KeeperSuite) TestCustomTally_DoubleCountPrevented() {
 	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
 		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	expectedYes := positionAmount
 	expectedNo := valSelfPower.Add(valRemainingPower)
@@ -651,7 +656,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingTierPositionIncluded() {
 	s.Require().True(expectedPower.IsPositive(),
 		"exiting but delegated position should have positive power")
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.Equal(expectedPower),
 		"exiting tier should contribute voting power; got %s, want %s", totalPower, expectedPower)
@@ -681,9 +686,8 @@ func (s *KeeperSuite) TestCustomTally_TierKeeperError() {
 		errMock, s.app.StakingKeeper, s.app.AccountKeeper,
 	)
 	proposal := v1.Proposal{Id: testProposalID}
-	validators := s.buildValidatorsMap()
 
-	_, _, tallyErr := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	_, _, _, tallyErr := tallyFn(s.ctx, s.app.GovKeeper, proposal)
 	s.Require().Error(tallyErr, "tally should propagate tier keeper error")
 	s.Require().ErrorContains(tallyErr, "error getting tier positions for")
 }
@@ -719,7 +723,7 @@ func (s *KeeperSuite) TestCustomTally_MultiplePositionsSameValidator() {
 	expected := s.tierPowerFor(delAddr, validators)
 	s.Require().True(expected.IsPositive(), "two delegated positions should give positive power")
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	s.Require().True(totalPower.Equal(expected),
 		"total power should equal sum of both positions; got %s, want %s", totalPower, expected)
@@ -752,7 +756,7 @@ func (s *KeeperSuite) TestCustomTally_TierPositionOnUnbondingValidatorNotCounted
 	s.Require().NoError(err)
 	s.Require().Len(tierPositions, 1)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 	s.Require().True(totalPower.IsZero(),
 		"tier position on unbonding validator should not count; got %s", totalPower)
 	s.Require().True(results[v1.OptionYes].IsZero(),
@@ -796,7 +800,7 @@ func (s *KeeperSuite) TestCustomTally_ExitingPositionDoubleCountPrevented() {
 	valRemainingPower := valInfo.DelegatorShares.Sub(totalDeductions).
 		MulInt(valInfo.BondedTokens).Quo(valInfo.DelegatorShares)
 
-	totalPower, results := s.callCustomTally(testProposalID, validators)
+	totalPower, results := s.callCustomTally(testProposalID)
 
 	expectedYes := positionAmount
 	expectedNo := valSelfPower.Add(valRemainingPower)
@@ -854,7 +858,7 @@ func (s *KeeperSuite) TestCustomTally_TierPositionValidatorNotInMap() {
 
 	tallyFn := keeper.NewCustomTallyTierVotesFn(mock, s.app.StakingKeeper, s.app.AccountKeeper)
 	proposal := v1.Proposal{Id: testProposalID}
-	totalPower, results, err := tallyFn(s.ctx, s.app.GovKeeper, proposal, validators)
+	totalPower, _, results, err := tallyFn(s.ctx, s.app.GovKeeper, proposal)
 	s.Require().NoError(err)
 
 	// Total must equal the real position's contribution;

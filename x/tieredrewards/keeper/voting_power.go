@@ -5,6 +5,7 @@ import (
 
 	"github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 
+	addresscodec "cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,29 +27,37 @@ func positionVotingPower(
 	return pos.Delegation.Shares.MulInt(val.BondedTokens).Quo(val.DelegatorShares)
 }
 
-// getCurrentValidators gets the current bonded validators from the staking keeper. Same implementation as in gov keeper.
-// decided against importing gov keeper just for this function.
-func (k Keeper) getCurrentValidators(ctx context.Context) (map[string]v1.ValidatorGovInfo, error) {
-	currValidators := make(map[string]v1.ValidatorGovInfo)
-	if err := k.stakingKeeper.IterateBondedValidatorsByPower(ctx, func(index int64, validator stakingtypes.ValidatorI) (stop bool) {
-		valBz, err := k.stakingKeeper.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
+// bondedValidatorSource is the staking keeper subset needed to snapshot bonded validators.
+type bondedValidatorSource interface {
+	ValidatorAddressCodec() addresscodec.Codec
+	IterateBondedValidatorsByPower(ctx context.Context, fn func(index int64, validator stakingtypes.ValidatorI) (stop bool)) error
+}
+
+// bondedValidatorGovInfos returns the bonded validators by operator address and their total power, as the gov tally does.
+func bondedValidatorGovInfos(ctx context.Context, sk bondedValidatorSource) (map[string]v1.ValidatorGovInfo, math.Int, error) {
+	validators := make(map[string]v1.ValidatorGovInfo)
+	totalPower := math.ZeroInt()
+	if err := sk.IterateBondedValidatorsByPower(ctx, func(_ int64, validator stakingtypes.ValidatorI) (stop bool) {
+		valBz, err := sk.ValidatorAddressCodec().StringToBytes(validator.GetOperator())
 		if err != nil {
 			return false
 		}
-		currValidators[validator.GetOperator()] = v1.NewValidatorGovInfo(
+		power := validator.GetValidatorPower()
+		validators[validator.GetOperator()] = v1.NewValidatorGovInfo(
 			valBz,
-			validator.GetBondedTokens(),
+			power,
 			validator.GetDelegatorShares(),
 			math.LegacyZeroDec(),
 			v1.WeightedVoteOptions{},
 		)
+		totalPower = totalPower.Add(power)
 
 		return false
 	}); err != nil {
-		return nil, err
+		return nil, math.ZeroInt(), err
 	}
 
-	return currValidators, nil
+	return validators, totalPower, nil
 }
 
 // getVotingPowerByOwner returns the tier governance voting power for an address.
@@ -59,7 +68,7 @@ func (k Keeper) getVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress)
 		return math.LegacyZeroDec(), err
 	}
 
-	vals, err := k.getCurrentValidators(ctx)
+	vals, _, err := bondedValidatorGovInfos(ctx, k.stakingKeeper)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}
@@ -74,7 +83,7 @@ func (k Keeper) getVotingPowerByOwner(ctx context.Context, owner sdk.AccAddress)
 func (k Keeper) totalDelegatedVotingPower(ctx context.Context) (math.LegacyDec, error) {
 	total := math.LegacyZeroDec()
 
-	vals, err := k.getCurrentValidators(ctx)
+	vals, _, err := bondedValidatorGovInfos(ctx, k.stakingKeeper)
 	if err != nil {
 		return math.LegacyZeroDec(), err
 	}
