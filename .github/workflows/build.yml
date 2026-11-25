@@ -50,7 +50,7 @@ jobs:
     needs: [member]
     permissions:
       pull-requests: write
-    timeout-minutes: 10
+    timeout-minutes: 20
     if: needs.member.outputs.valid == 'true'
     outputs:
       repo_name: ${{ steps.pr_data.outputs.repo_name }}
