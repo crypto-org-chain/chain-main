@@ -95,7 +95,7 @@ func (s *KeeperSuite) TestBeginBlocker_TopUpFromPool() {
 	s.Require().NoError(err)
 
 	// Calculate expected shortfall (fee collector is 0, so full target is the shortfall)
-	totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+	totalBonded, err := s.app.StakingKeeper.TotalValidatorPower(s.ctx)
 	s.Require().NoError(err)
 	mintParams, err := s.app.MintKeeper.GetParams(s.ctx)
 	s.Require().NoError(err)
@@ -220,7 +220,7 @@ func (s *KeeperSuite) TestBeginBlocker_DustGoesToLastValidator() {
 	s.Require().NoError(err)
 
 	// Compute the shortfall (= topUp amount) and verify it's not divisible by total power, so dust will exist
-	totalBonded, err := s.app.StakingKeeper.TotalBondedTokens(s.ctx)
+	totalBonded, err := s.app.StakingKeeper.TotalValidatorPower(s.ctx)
 	s.Require().NoError(err)
 	mintParams, err := s.app.MintKeeper.GetParams(s.ctx)
 	s.Require().NoError(err)

@@ -155,6 +155,17 @@ def wait_for_block_time(cli, t, timeout=120):
         time.sleep(0.5)
 
 
+def wait_for_node_synced(cluster, i, timeout=240):
+    def synced():
+        try:
+            return not get_sync_info(cluster.status(i))["catching_up"]
+        except AssertionError as e:
+            print(f"get sync status failed: {e}", file=sys.stderr)
+            return False
+
+    wait_for_fn(f"node{i} synced", synced, timeout=timeout)
+
+
 def wait_for_port(port, host="127.0.0.1", timeout=40.0):
     start_time = time.perf_counter()
     while True:
@@ -229,12 +240,13 @@ def find_log_event_attrs(events, ev_type, cond=None):
     return None
 
 
-def get_proposal_id(rsp, msg=",/cosmos.staking.v1beta1.MsgUpdateParams"):
+def get_proposal_id(rsp, msg="/cosmos.staking.v1beta1.MsgUpdateParams"):
     def cb(attrs):
         return "proposal_id" in attrs
 
     ev = find_log_event_attrs(rsp["events"], "submit_proposal", cb)
-    assert ev["proposal_messages"] == msg, rsp
+    # binaries before v9 prefix the message list with a comma
+    assert ev["proposal_messages"].lstrip(",") == msg, rsp
     return ev["proposal_id"]
 
 
@@ -242,7 +254,7 @@ def approve_proposal(
     cluster,
     rsp,
     vote_option="yes",
-    msg=",/cosmos.staking.v1beta1.MsgUpdateParams",
+    msg="/cosmos.staking.v1beta1.MsgUpdateParams",
     wait_tx=True,
     broadcast_mode="sync",
     expect_status=None,
@@ -1127,7 +1139,7 @@ def assert_v6_circuit_is_working(cli, cluster):
         "should be able to submit x/circuit authorization proposal: " + rsp["raw_log"]
     )
 
-    approve_proposal(cluster, rsp, msg=",/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
+    approve_proposal(cluster, rsp, msg="/cosmos.circuit.v1.MsgAuthorizeCircuitBreaker")
 
     rsp = json.loads(
         cli.raw(

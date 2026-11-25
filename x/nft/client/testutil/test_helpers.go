@@ -10,13 +10,13 @@ import (
 	apptestutil "github.com/crypto-org-chain/chain-main/v8/testutil"
 	nftcli "github.com/crypto-org-chain/chain-main/v8/x/nft/client/cli"
 
-	"cosmossdk.io/log"
-	pruningtypes "cosmossdk.io/store/pruning/types"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/v2/pruning/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
@@ -28,7 +28,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 	ctx := val.GetCtx()
 	appConfig := val.GetAppConfig()
 	return app.New(
-		ctx.Logger, dbm.NewMemDB(), nil, true,
+		ctx.Logger, dbm.NewMemDB(), true,
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
 		baseapp.SetMinGasPrices(appConfig.MinGasPrices),
@@ -38,7 +38,7 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 
 func NewChainMainTestNetworkFixture() network.TestFixture {
 	chainApp := app.New(
-		log.NewNopLogger(), dbm.NewMemDB(), nil, true,
+		log.NewNopLogger(), dbm.NewMemDB(), true,
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetChainID(apptestutil.ChainID),
 	)

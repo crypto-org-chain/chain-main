@@ -192,7 +192,7 @@ def upgrade(cluster, plan_name, title=None, summary=None):
     )
     assert rsp["code"] == 0, rsp["raw_log"]
 
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     wait_for_block(cluster, target_height)
     time.sleep(1)
@@ -437,10 +437,11 @@ def test_manual_upgrade_all(cosmovisor_cluster, tmp_path):
 
     # v9 upgrade
     v9_ctx = setup_pre_v9_upgrade(cluster, tmp_path)
-    upgrade(cluster, "v9", summary="v9 CometBFT v0.38.26 for ML-DSA-65 IBC headers")
+    upgrade(cluster, "v9", summary="v9 Cosmos SDK v0.55 and CometBFT v0.40")
     status = cluster.status()
     node_info = status.get("NodeInfo") or status.get("node_info")
-    assert node_info["version"] == "0.38.26", node_info
+    # CometBFT v0.40.0 still reports 0.39.0
+    assert node_info["version"] == "0.39.0", node_info
     wait_for_new_blocks(cluster, 2)
     assert_vesting_filter_active(cluster, "permanent-locked-account-post-v9")
     assert_v9_mldsa_client_update(cluster, v9_ctx, tmp_path)
@@ -469,7 +470,7 @@ def test_cancel_upgrade(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade")
 
     print("cancel upgrade plan")
     rsp = cluster.gov_propose_since_cosmos_sdk_v0_50(
@@ -482,7 +483,7 @@ def test_cancel_upgrade(cluster):
         },
     )
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=",/cosmos.upgrade.v1beta1.MsgCancelUpgrade")
+    approve_proposal(cluster, rsp, msg="/cosmos.upgrade.v1beta1.MsgCancelUpgrade")
 
     # wait for blocks after upgrade, should success since upgrade is canceled
     wait_for_block(cluster, upgrade_height + 2)

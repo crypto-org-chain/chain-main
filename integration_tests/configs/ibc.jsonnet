@@ -1,4 +1,5 @@
 local genesis = import 'genesis.jsonnet';
+local hermes = import 'hermes.libsonnet';
 local default = {
   accounts: [
     {
@@ -44,6 +45,7 @@ local validator = import 'validator.jsonnet';
     validators: [validator { base_port: port } for port in [26750, 26760]],
   },
   relayer: {
+    chains: hermes.chains($),
     mode: {
       clients: {
         enabled: true,

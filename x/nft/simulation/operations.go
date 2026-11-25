@@ -8,11 +8,10 @@ import (
 	"github.com/crypto-org-chain/chain-main/v8/x/nft/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft/types"
 
-	simappparams "cosmossdk.io/simapp/params"
-
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
 )
@@ -111,7 +110,7 @@ func SimulateMsgTransferNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.Ba
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
+			TxGen:           moduletestutil.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             msg,
 			Context:         ctx,
@@ -159,7 +158,7 @@ func SimulateMsgEditNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
+			TxGen:           moduletestutil.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             msg,
 			Context:         ctx,
@@ -208,7 +207,7 @@ func SimulateMsgMintNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
+			TxGen:           moduletestutil.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             msg,
 			Context:         ctx,
@@ -249,7 +248,7 @@ func SimulateMsgBurnNFT(k keeper.Keeper, ak types.AccountKeeper, bk types.BankKe
 		txCtx := simulation.OperationInput{
 			R:               r,
 			App:             app,
-			TxGen:           simappparams.MakeTestEncodingConfig().TxConfig,
+			TxGen:           moduletestutil.MakeTestEncodingConfig().TxConfig,
 			Cdc:             nil,
 			Msg:             msg,
 			Context:         ctx,

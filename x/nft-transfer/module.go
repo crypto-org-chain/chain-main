@@ -7,12 +7,12 @@ import (
 	"math/rand"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/client/cli"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/keeper"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/simulation"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	porttypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/05-port/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -81,11 +81,11 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 // AppModule represents the AppModule for this module
 type AppModule struct {
 	AppModuleBasic
-	keeper keeper.Keeper
+	keeper *keeper.Keeper
 }
 
 // NewAppModule creates a new nft-transfer module
-func NewAppModule(k keeper.Keeper) AppModule {
+func NewAppModule(k *keeper.Keeper) AppModule {
 	return AppModule{
 		keeper: k,
 	}

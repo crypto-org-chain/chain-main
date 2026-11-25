@@ -7,6 +7,7 @@ from dateutil.parser import isoparse
 from .utils import (
     approve_proposal,
     assert_expedited_gov_params,
+    find_log_event_attrs,
     get_default_expedited_params,
     get_proposal_id,
     module_address,
@@ -133,7 +134,9 @@ def test_community_pool_spend_proposal(cluster, tmp_path):
     proposal.write_text(json.dumps(proposal_src))
     rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    proposal_id = get_proposal_id(rsp, f",{msg}")
+    proposal_id = get_proposal_id(rsp, msg)
+    ev = find_log_event_attrs(rsp["events"], "submit_proposal")
+    assert ev["proposal_messages"] == msg, ev
 
     # vote
     rsp = cluster.gov_vote("validator", proposal_id, "yes")
@@ -249,7 +252,7 @@ def test_host_enabled(cluster, tmp_path):
     proposal.write_text(json.dumps(proposal_src))
     rsp = cli.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{type}")
+    approve_proposal(cluster, rsp, msg=type)
     print("check params have been updated now")
     assert_expedited_gov_params(cli, param0)
 
@@ -274,7 +277,7 @@ def test_host_enabled(cluster, tmp_path):
     proposal.write_text(json.dumps(proposal_src))
     rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    msg = ",/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams"
+    msg = "/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams"
     approve_proposal(cluster, rsp, msg=msg)
     p = cli.query_host_params()
     assert not p["host_enabled"]
@@ -307,6 +310,6 @@ def test_gov_voting(cluster, tmp_path):
     proposal.write_text(json.dumps(proposal_src))
     rsp = cluster.submit_gov_proposal(proposal, from_="community")
     assert rsp["code"] == 0, rsp["raw_log"]
-    approve_proposal(cluster, rsp, msg=f",{type}")
+    approve_proposal(cluster, rsp, msg=type)
     p = cli.query_params("gov")
     assert p["voting_period"] == updated

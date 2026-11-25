@@ -48,6 +48,12 @@
                 amount: '2000000000000',
               },
             ],
+            expedited_min_deposit: [
+              {
+                denom: 'basecro',
+                amount: '10000000000000',
+              },
+            ],
           },
         },
         mint: {

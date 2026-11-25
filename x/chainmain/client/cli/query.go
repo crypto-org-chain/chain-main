@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	ibctypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 	"github.com/crypto-org-chain/chain-main/v8/config"
 	"github.com/crypto-org-chain/chain-main/v8/x/chainmain/types"
+	ibctypes "github.com/lfdt-ibc/ibc-go/v11/modules/apps/transfer/types"
 	"github.com/spf13/cobra"
 
 	"github.com/cosmos/cosmos-sdk/client"

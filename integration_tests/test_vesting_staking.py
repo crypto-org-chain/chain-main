@@ -65,7 +65,7 @@ def test_staking_vesting_redelegate(cluster):
     # assert int(old_output) + 2 == int(output)
     assert cluster.staking_pool() == old_bonded + 2009999499
     account = cluster.account(signer1_address)["account"]
-    assert account["type"] == "cosmos-sdk/DelayedVestingAccount"
+    assert account["type"] == "/cosmos.vesting.v1beta1.DelayedVestingAccount"
     assert account["value"]["base_vesting_account"]["original_vesting"] == [
         {"denom": "basecro", "amount": "20000000000"}
     ]

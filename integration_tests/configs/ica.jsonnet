@@ -1,3 +1,4 @@
+local hermes = import 'hermes.libsonnet';
 local ibc = import 'ibc.jsonnet';
 local genesis = {
   genesis+: {
@@ -19,6 +20,7 @@ local genesis = {
   'ica-controller-1': ibc['ibc-0'] + genesis,
   'ica-host-1': ibc['ibc-1'] + genesis,
   relayer: {
+    chains: hermes.chains($),
     mode: {
       clients: {
         enabled: true,

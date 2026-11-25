@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"maps"
 	"net/http"
@@ -15,23 +14,6 @@ import (
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
-	ica "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts"
-	icacontroller "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/controller"
-	icacontrollerkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/controller/keeper"
-	icacontrollertypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/controller/types"
-	icahost "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host"
-	icahostkeeper "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/keeper"
-	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
-	icatypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/types"
-	transfer "github.com/cosmos/ibc-go/v10/modules/apps/transfer"
-	ibctransferkeeper "github.com/cosmos/ibc-go/v10/modules/apps/transfer/keeper"
-	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
-	ibc "github.com/cosmos/ibc-go/v10/modules/core"
-	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
-	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
-	ibckeeper "github.com/cosmos/ibc-go/v10/modules/core/keeper"
-	solom "github.com/cosmos/ibc-go/v10/modules/light-clients/06-solomachine"
-	ibctm "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint"
 	"github.com/crypto-org-chain/chain-main/v8/app/docs"
 	appparams "github.com/crypto-org-chain/chain-main/v8/app/params"
 	"github.com/crypto-org-chain/chain-main/v8/x/chainmain"
@@ -52,26 +34,30 @@ import (
 	memiavlstore "github.com/crypto-org-chain/cronos-store/store"
 	memiavlrootmulti "github.com/crypto-org-chain/cronos-store/store/rootmulti"
 	"github.com/gorilla/mux"
+	ica "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts"
+	icacontroller "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/controller"
+	icacontrollerkeeper "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/controller/keeper"
+	icacontrollertypes "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/controller/types"
+	icahost "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/host"
+	icahostkeeper "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/host/keeper"
+	icahosttypes "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/host/types"
+	icatypes "github.com/lfdt-ibc/ibc-go/v11/modules/apps/27-interchain-accounts/types"
+	transfer "github.com/lfdt-ibc/ibc-go/v11/modules/apps/transfer"
+	ibctransferkeeper "github.com/lfdt-ibc/ibc-go/v11/modules/apps/transfer/keeper"
+	ibctransfertypes "github.com/lfdt-ibc/ibc-go/v11/modules/apps/transfer/types"
+	ibc "github.com/lfdt-ibc/ibc-go/v11/modules/core"
+	porttypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/05-port/types"
+	ibcexported "github.com/lfdt-ibc/ibc-go/v11/modules/core/exported"
+	ibckeeper "github.com/lfdt-ibc/ibc-go/v11/modules/core/keeper"
+	solom "github.com/lfdt-ibc/ibc-go/v11/modules/light-clients/06-solomachine"
+	ibctm "github.com/lfdt-ibc/ibc-go/v11/modules/light-clients/07-tendermint"
 	"github.com/spf13/cast"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/circuit"
-	circuitkeeper "cosmossdk.io/x/circuit/keeper"
-	circuittypes "cosmossdk.io/x/circuit/types"
-	"cosmossdk.io/x/evidence"
-	evidencekeeper "cosmossdk.io/x/evidence/keeper"
-	evidencetypes "cosmossdk.io/x/evidence/types"
-	"cosmossdk.io/x/feegrant"
-	feegrantkeeper "cosmossdk.io/x/feegrant/keeper"
-	feegrantmodule "cosmossdk.io/x/feegrant/module"
-	"cosmossdk.io/x/upgrade"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -81,12 +67,16 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/contrib/x/circuit"
+	circuitkeeper "github.com/cosmos/cosmos-sdk/contrib/x/circuit/keeper"
+	circuittypes "github.com/cosmos/cosmos-sdk/contrib/x/circuit/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	mempool "github.com/cosmos/cosmos-sdk/types/mempool"
@@ -114,6 +104,12 @@ import (
 	distr "github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/cosmos/cosmos-sdk/x/evidence"
+	evidencekeeper "github.com/cosmos/cosmos-sdk/x/evidence/keeper"
+	evidencetypes "github.com/cosmos/cosmos-sdk/x/evidence/types"
+	"github.com/cosmos/cosmos-sdk/x/feegrant"
+	feegrantkeeper "github.com/cosmos/cosmos-sdk/x/feegrant/keeper"
+	feegrantmodule "github.com/cosmos/cosmos-sdk/x/feegrant/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -121,9 +117,6 @@ import (
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/group"
-	groupkeeper "github.com/cosmos/cosmos-sdk/x/group/keeper"
-	groupmodule "github.com/cosmos/cosmos-sdk/x/group/module"
 	"github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
@@ -133,6 +126,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/cosmos-sdk/x/upgrade"
+	upgradekeeper "github.com/cosmos/cosmos-sdk/x/upgrade/keeper"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 // FIXME remove this line, dummy
@@ -151,15 +147,16 @@ var (
 
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:         nil,
-		distrtypes.ModuleName:              nil,
-		minttypes.ModuleName:               {authtypes.Minter},
-		stakingtypes.BondedPoolName:        {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName:     {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:                {authtypes.Burner},
-		ibctransfertypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
-		icatypes.ModuleName:                nil,
-		tieredrewardstypes.RewardsPoolName: nil,
+		authtypes.FeeCollectorName:          nil,
+		distrtypes.ModuleName:               nil,
+		minttypes.ModuleName:                {authtypes.Minter},
+		stakingtypes.BondedPoolName:         {authtypes.Burner, authtypes.Staking},
+		stakingtypes.NotBondedPoolName:      {authtypes.Burner, authtypes.Staking},
+		stakingtypes.KeyRotationFeePoolName: {authtypes.Burner},
+		govtypes.ModuleName:                 {authtypes.Burner},
+		ibctransfertypes.ModuleName:         {authtypes.Minter, authtypes.Burner},
+		icatypes.ModuleName:                 nil,
+		tieredrewardstypes.RewardsPoolName:  nil,
 		// Legacy, not used anymore. Created by the previous implementation which uses this module to staking on behalf of users.
 		tieredrewardstypes.ModuleName: {authtypes.Staking},
 	}
@@ -214,14 +211,13 @@ type ChainApp struct {
 	GovKeeper             govkeeper.Keeper
 	UpgradeKeeper         upgradekeeper.Keeper
 	IBCKeeper             *ibckeeper.Keeper // IBC Keeper must be a pointer in the app, so we can SetRouter on it correctly
-	ICAControllerKeeper   icacontrollerkeeper.Keeper
-	ICAHostKeeper         icahostkeeper.Keeper
+	ICAControllerKeeper   *icacontrollerkeeper.Keeper
+	ICAHostKeeper         *icahostkeeper.Keeper
 	AuthzKeeper           authzkeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	FeeGrantKeeper        feegrantkeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
-	GroupKeeper           groupkeeper.Keeper
-	TransferKeeper        ibctransferkeeper.Keeper
+	TransferKeeper        *ibctransferkeeper.Keeper
 	chainmainKeeper       chainmainkeeper.Keeper
 	SupplyKeeper          supplykeeper.Keeper
 	NFTKeeper             nftkeeper.Keeper
@@ -255,7 +251,6 @@ func init() {
 func New(
 	logger log.Logger,
 	db dbm.DB,
-	traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
@@ -281,7 +276,6 @@ func New(
 		app.SetProcessProposal(handler.ProcessProposalHandler())
 	})
 	bApp := baseapp.NewBaseApp(appName, logger, db, encodingConfig.TxConfig.TxDecoder(), baseAppOptions...)
-	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 
@@ -407,9 +401,6 @@ func New(
 
 	app.AuthzKeeper = authzkeeper.NewKeeper(runtime.NewKVStoreService(keys[authzkeeper.StoreKey]), appCodec, app.MsgServiceRouter(), app.AccountKeeper)
 
-	groupConfig := group.DefaultConfig()
-	app.GroupKeeper = groupkeeper.NewKeeper(keys[group.StoreKey], appCodec, app.MsgServiceRouter(), app.AccountKeeper, groupConfig)
-
 	app.chainmainKeeper = *chainmainkeeper.NewKeeper(
 		appCodec, keys[chainmaintypes.StoreKey], keys[chainmaintypes.MemStoreKey],
 	)
@@ -422,8 +413,7 @@ func New(
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[ibcexported.StoreKey]),
-		nil,
-		app.UpgradeKeeper,
+		&app.UpgradeKeeper,
 		authAddr,
 	)
 	// register the proposal types
@@ -444,9 +434,9 @@ func New(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper, app.BankKeeper,
-		app.StakingKeeper, app.DistrKeeper,
+		app.DistrKeeper,
 		app.MsgServiceRouter(), govConfig, authAddr,
-		govkeeper.WithCustomCalculateVoteResultsAndVotingPowerFn(customVoteTallyFn),
+		customVoteTallyFn,
 	)
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
@@ -457,8 +447,8 @@ func New(
 
 	// Create Transfer Keepers
 	app.TransferKeeper = ibctransferkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]), nil,
-		app.IBCKeeper.ChannelKeeper,
+		appCodec, app.AccountKeeper.AddressCodec(),
+		runtime.NewKVStoreService(keys[ibctransfertypes.StoreKey]),
 		app.IBCKeeper.ChannelKeeper,
 		app.MsgServiceRouter(),
 		app.AccountKeeper, app.BankKeeper,
@@ -469,21 +459,19 @@ func New(
 	var transferStack porttypes.IBCModule = transfer.NewIBCModule(app.TransferKeeper)
 
 	app.ICAControllerKeeper = icacontrollerkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[icacontrollertypes.StoreKey]), nil,
-		app.IBCKeeper.ChannelKeeper,
+		appCodec, runtime.NewKVStoreService(keys[icacontrollertypes.StoreKey]),
 		app.IBCKeeper.ChannelKeeper,
 		app.MsgServiceRouter(),
 		authAddr,
 	)
 	app.ICAHostKeeper = icahostkeeper.NewKeeper(
-		appCodec, runtime.NewKVStoreService(keys[icahosttypes.StoreKey]), nil,
-		app.IBCKeeper.ChannelKeeper,
+		appCodec, runtime.NewKVStoreService(keys[icahosttypes.StoreKey]),
 		app.IBCKeeper.ChannelKeeper,
 		app.AccountKeeper, app.MsgServiceRouter(),
 		app.GRPCQueryRouter(),
 		authAddr,
 	)
-	icaModule := ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper)
+	icaModule := ica.NewAppModule(app.ICAControllerKeeper, app.ICAHostKeeper)
 
 	var icaControllerStack porttypes.IBCModule = icacontroller.NewIBCMiddleware(app.ICAControllerKeeper)
 
@@ -530,23 +518,22 @@ func New(
 			app.AccountKeeper, app.StakingKeeper, app,
 			encodingConfig.TxConfig,
 		),
-		auth.NewAppModule(appCodec, app.AccountKeeper, nil, nil),
+		auth.NewAppModule(appCodec, app.AccountKeeper, nil),
 		vesting.NewAppModule(app.AccountKeeper, app.BankKeeper),
-		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, nil),
+		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper),
 		feegrantmodule.NewAppModule(appCodec, app.AccountKeeper, app.BankKeeper, app.FeeGrantKeeper, app.interfaceRegistry),
-		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, nil),
-		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil, nil),
+		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper),
+		mint.NewAppModule(appCodec, app.MintKeeper, app.AccountKeeper, nil),
 		slashing.NewAppModule(
 			appCodec,
 			app.SlashingKeeper,
 			app.AccountKeeper,
 			app.BankKeeper,
 			app.StakingKeeper,
-			nil,
 			app.interfaceRegistry,
 		),
-		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, nil),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, nil),
+		distr.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper),
+		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper),
 		upgrade.NewAppModule(&app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		evidence.NewAppModule(app.EvidenceKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
@@ -555,7 +542,6 @@ func New(
 		solom.NewAppModule(smLightClientModule),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		authzmodule.NewAppModule(appCodec, app.AuthzKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
-		groupmodule.NewAppModule(appCodec, app.GroupKeeper, app.AccountKeeper, app.BankKeeper, app.interfaceRegistry),
 		transferModule,
 		icaModule,
 		chainmain.NewAppModule(app.chainmainKeeper),
@@ -596,7 +582,6 @@ func New(
 		genutiltypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		group.ModuleName,
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
@@ -628,7 +613,6 @@ func New(
 		genutiltypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		group.ModuleName,
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
@@ -638,13 +622,14 @@ func New(
 		consensusparamtypes.ModuleName,
 		circuittypes.ModuleName,
 	)
+	// bank goes first as the SDK v0.54 upgrade guide requires; its EndBlock does nothing without an object store key.
 	app.ModuleManager.SetOrderEndBlockers(
+		banktypes.ModuleName,
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibcexported.ModuleName,
 		ibctransfertypes.ModuleName,
 		authtypes.ModuleName,
-		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		minttypes.ModuleName,
@@ -652,7 +637,6 @@ func New(
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		group.ModuleName,
 		upgradetypes.ModuleName,
 		vestingtypes.ModuleName,
 		icatypes.ModuleName,
@@ -683,7 +667,6 @@ func New(
 		evidencetypes.ModuleName,
 		authz.ModuleName,
 		feegrant.ModuleName,
-		group.ModuleName,
 		ibctransfertypes.ModuleName,
 		icatypes.ModuleName,
 		chainmaintypes.ModuleName,
@@ -710,7 +693,7 @@ func New(
 	// transactions
 	overrideModules := map[string]module.AppModuleSimulation{
 		// Use custom RandomGenesisAccounts so that auth module could create random EthAccounts in genesis state when genesis.json not specified
-		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, nil),
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts),
 	}
 	app.sm = module.NewSimulationManagerFromAppModules(app.ModuleManager.Modules, overrideModules)
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.ModuleManager.Modules))
@@ -979,7 +962,9 @@ func (app *ChainApp) RegisterTendermintService(clientCtx client.Context) {
 }
 
 func (app *ChainApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
-	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg, func() int64 {
+		return app.CommitMultiStore().EarliestVersion()
+	})
 }
 
 // RegisterSwaggerAPI registers swagger route with API Server
@@ -1022,7 +1007,6 @@ func StoreKeys() (
 		icacontrollertypes.StoreKey,
 		icahosttypes.StoreKey,
 		authzkeeper.StoreKey,
-		group.StoreKey,
 		chainmaintypes.StoreKey,
 		supplytypes.StoreKey,
 		inflationtypes.StoreKey,

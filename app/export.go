@@ -7,9 +7,8 @@ import (
 
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	storetypes "cosmossdk.io/store/types"
-
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	"github.com/cosmos/cosmos-sdk/x/staking"
@@ -237,6 +236,11 @@ func (app *ChainApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs 
 	}
 
 	if _, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx); err != nil {
+		return err
+	}
+
+	// The restarted chain must send CometBFT the validator update again before a pending rotation is applied.
+	if err := app.StakingKeeper.PrepareConsKeyRotationsForZeroHeightExport(ctx); err != nil {
 		return err
 	}
 

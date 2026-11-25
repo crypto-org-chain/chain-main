@@ -10,7 +10,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -71,7 +71,6 @@ func SetupWithDBAndOpts(
 	appOptions[flags.FlagHome] = app.DefaultNodeHome
 	app := app.New(log.NewNopLogger(),
 		db,
-		nil,
 		true,
 		appOptions,
 		baseapp.SetChainID(ChainID),

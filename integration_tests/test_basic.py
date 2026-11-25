@@ -17,7 +17,7 @@ def test_simple(cluster):
     # check vesting account
     addr = cluster.address("reserve")
     account = cluster.account(addr)["account"]
-    assert account["type"] == "cosmos-sdk/DelayedVestingAccount"
+    assert account["type"] == "/cosmos.vesting.v1beta1.DelayedVestingAccount"
     assert account["value"]["base_vesting_account"]["original_vesting"] == [
         {"denom": "basecro", "amount": "20000000000"}
     ]

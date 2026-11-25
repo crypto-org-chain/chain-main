@@ -8,7 +8,7 @@ import (
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/crypto-org-chain/chain-main/v8/app"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -23,5 +23,5 @@ func TestVersionDB(t *testing.T) {
 	appOptions[server.FlagInvCheckPeriod] = getSimulatorUintFlag("Period")
 	appOptions["versiondb.enable"] = true
 	logger := log.NewNopLogger()
-	_ = app.New(logger, db, nil, false, appOptions, nil...)
+	_ = app.New(logger, db, false, appOptions, nil...)
 }

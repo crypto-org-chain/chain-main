@@ -5,7 +5,7 @@ import (
 
 	dbm "github.com/cosmos/cosmos-db"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -23,7 +23,7 @@ type GenesisState map[string]json.RawMessage
 // NewDefaultGenesisState generates the default state for the application.
 func NewDefaultGenesisState(cdc codec.JSONCodec) GenesisState {
 	tempApp := New(
-		log.NewNopLogger(), dbm.NewMemDB(), nil, true,
+		log.NewNopLogger(), dbm.NewMemDB(), true,
 		simtestutil.NewAppOptionsWithFlagHome(DefaultNodeHome),
 	)
 	return tempApp.BasicModuleManager.DefaultGenesis(cdc)

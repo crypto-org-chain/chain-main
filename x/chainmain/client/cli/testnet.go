@@ -54,10 +54,12 @@ var (
 	flagUnbondingTime     = "unbonding-time"
 )
 
-// AddTestnetCmd get cmd to initialize all files for cometbft testnet and application
+// AddTestnetCmd get cmd to initialize all files for cometbft testnet and application.
+// newAppConfig wraps the SDK server config in the type the installed app.toml template renders.
 func AddTestnetCmd(
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
+	newAppConfig func(srvconfig.Config) any,
 ) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "testnet",
@@ -120,7 +122,7 @@ Example:
 			}
 
 			return InitTestnet(
-				clientCtx, cmd, config, mbm, genBalIterator, outputDir, chainID, minGasPrices,
+				clientCtx, cmd, config, mbm, genBalIterator, newAppConfig, outputDir, chainID, minGasPrices,
 				nodeDirPrefix, nodeDaemonHome, startingIPAddress, keyringBackend, algo, amount, stakingAmount, int(numValidators),
 			)
 		},
@@ -151,12 +153,6 @@ Example:
 
 const nodeDirPerm = 0o755
 
-var (
-	genAccounts []authtypes.GenesisAccount
-	genBalances []banktypes.Balance
-	genFiles    []string
-)
-
 // InitTestnet Initialize the testnet
 func InitTestnet(
 	clientCtx client.Context,
@@ -164,6 +160,7 @@ func InitTestnet(
 	nodeConfig *tmconfig.Config,
 	mbm module.BasicManager,
 	genBalIterator banktypes.GenesisBalancesIterator,
+	newAppConfig func(srvconfig.Config) any,
 	outputDir,
 	chainID,
 	minGasPrices,
@@ -178,21 +175,30 @@ func InitTestnet(
 ) error {
 	nodeIDs := make([]string, numValidators)
 	valPubKeys := make([]crypto.PubKey, numValidators)
+	genAccounts := make([]authtypes.GenesisAccount, 0, numValidators)
+	genBalances := make([]banktypes.Balance, 0, numValidators)
+	genFiles := make([]string, 0, numValidators)
 
 	chainmainConfig := srvconfig.DefaultConfig()
 	chainmainConfig.MinGasPrices = minGasPrices
 	chainmainConfig.API.Enable = true
-	chainmainConfig.Telemetry.Enabled = true
-	chainmainConfig.Telemetry.PrometheusRetentionTime = 60
-	chainmainConfig.Telemetry.EnableHostnameLabel = false
-	chainmainConfig.Telemetry.GlobalLabels = [][]string{{"chain_id", chainID}}
+	telemetryConfig := &chainmainConfig.Telemetry //nolint:staticcheck // TODO: switch to OpenTelemetry
+	telemetryConfig.Enabled = true
+	telemetryConfig.PrometheusRetentionTime = 60
+	telemetryConfig.EnableHostnameLabel = false
+	telemetryConfig.GlobalLabels = [][]string{{"chain_id", chainID}}
+	appConfig := newAppConfig(*chainmainConfig)
 
 	coins, err := sdk.ParseCoinsNormalized(amount)
 	if err != nil {
 		return fmt.Errorf("failed to parse coins: %w", err)
 	}
 
-	stakingCoin, err := parseStakingCoin(coins, stakingAmount)
+	baseDenom, err := sdk.GetBaseDenom()
+	if err != nil {
+		return fmt.Errorf("failed to get base denom: %w", err)
+	}
+	stakingCoin, err := parseStakingCoin(baseDenom, coins, stakingAmount)
 	if err != nil {
 		return err
 	}
@@ -218,7 +224,7 @@ func InitTestnet(
 		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeStrErr)
 	}
 	unbondingTime, unbondingTimeErr := time.ParseDuration(unbondingTimeStr)
-	if unbondingTimeStrErr != nil {
+	if unbondingTimeErr != nil {
 		return fmt.Errorf("failed to parse %v: %w", flagUnbondingTime, unbondingTimeErr)
 	}
 
@@ -328,7 +334,7 @@ func InitTestnet(
 		genAccounts = append(genAccounts, genAccount)
 
 		createValMsg, err2 := stakingtypes.NewMsgCreateValidator(
-			addr.String(),
+			sdk.ValAddress(addr).String(),
 			valPubKeys[i],
 			stakingCoin,
 			stakingtypes.NewDescription(nodeDirName, "", "", "", ""),
@@ -366,11 +372,11 @@ func InitTestnet(
 			return err
 		}
 
-		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), chainmainConfig)
+		srvconfig.WriteConfigFile(filepath.Join(nodeDir, "config/app.toml"), appConfig)
 	}
 
 	if err = initGenFiles(
-		clientCtx, mbm, chainID, genAccounts, genBalances,
+		clientCtx, mbm, chainID, baseDenom, genAccounts, genBalances,
 		genFiles, numValidators, unbondingTime); err != nil {
 		return err
 	}
@@ -389,7 +395,7 @@ func InitTestnet(
 }
 
 func initGenFiles(
-	clientCtx client.Context, mbm module.BasicManager, chainID string,
+	clientCtx client.Context, mbm module.BasicManager, chainID, baseDenom string,
 	genAccounts []authtypes.GenesisAccount, genBalances []banktypes.Balance,
 	genFiles []string, numValidators int,
 	unbondingTime time.Duration,
@@ -400,11 +406,8 @@ func initGenFiles(
 
 	var stakingGenState stakingtypes.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[stakingtypes.ModuleName], &stakingGenState)
-	baseDenom, err := sdk.GetBaseDenom()
-	if err != nil {
-		return err
-	}
 	stakingGenState.Params.BondDenom = baseDenom
+	stakingGenState.Params.KeyRotationFee.Denom = baseDenom
 	stakingGenState.Params.UnbondingTime = unbondingTime
 
 	appGenState[stakingtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&stakingGenState)
@@ -413,6 +416,7 @@ func initGenFiles(
 	var govGenState govv1.GenesisState
 	clientCtx.Codec.MustUnmarshalJSON(appGenState[govtypes.ModuleName], &govGenState)
 	govGenState.Params.MinDeposit[0].Denom = baseDenom
+	govGenState.Params.ExpeditedMinDeposit[0].Denom = baseDenom
 	appGenState[govtypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&govGenState)
 
 	// set mint in the genesis state
@@ -502,7 +506,8 @@ func collectGenFiles(
 		genFile := nodeConfig.GenesisFile()
 
 		// overwrite each validator's genesis file to have a canonical genesis time
-		if err := genutil.ExportGenesisFileWithTime(genFile, chainID, nil, appState, genTime); err != nil {
+		genDoc.AppState = appState
+		if err := genutil.ExportGenesisFileWithTime(genFile, genDoc, genTime); err != nil {
 			return err
 		}
 	}
@@ -550,11 +555,7 @@ func writeFile(name, dir string, contents []byte) error {
 	return nil
 }
 
-func parseStakingCoin(coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
-	baseDenom, err := sdk.GetBaseDenom()
-	if err != nil {
-		return sdk.Coin{}, nil
-	}
+func parseStakingCoin(baseDenom string, coins sdk.Coins, stakingAmount string) (sdk.Coin, error) {
 	stakingCoin := sdk.Coin{
 		Denom:  baseDenom,
 		Amount: sdkmath.ZeroInt(),

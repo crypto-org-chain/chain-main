@@ -1,13 +1,13 @@
 package keeper
 
 import (
-	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 	"github.com/crypto-org-chain/chain-main/v8/x/nft-transfer/types"
+	host "github.com/lfdt-ibc/ibc-go/v11/modules/core/24-host"
 
-	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"cosmossdk.io/log/v2"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -30,8 +30,8 @@ func NewKeeper(
 	channelKeeper types.ChannelKeeper,
 	nftKeeper types.NFTKeeper,
 	authKeeper types.AccountKeeper,
-) Keeper {
-	return Keeper{
+) *Keeper {
+	return &Keeper{
 		cdc:           cdc,
 		storeKey:      key,
 		ics4Wrapper:   ics4Wrapper,
@@ -39,6 +39,11 @@ func NewKeeper(
 		nftKeeper:     nftKeeper,
 		authKeeper:    authKeeper,
 	}
+}
+
+// WithICS4Wrapper replaces the wrapper used to send packets, so middleware added above this module still sees them.
+func (k *Keeper) WithICS4Wrapper(wrapper types.ICS4Wrapper) {
+	k.ics4Wrapper = wrapper
 }
 
 // Logger returns a module-specific logger.

@@ -3,10 +3,10 @@ package types
 import (
 	context "context"
 
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	nftexported "github.com/crypto-org-chain/chain-main/v8/x/nft/exported"
 	nfttypes "github.com/crypto-org-chain/chain-main/v8/x/nft/types"
+	clienttypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/02-client/types"
+	channeltypes "github.com/lfdt-ibc/ibc-go/v11/modules/core/04-channel/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -331,7 +331,7 @@ def assert_v8_precreated_position_delegator_vesting_acc_lifecycle(cluster, ctx):
         title=f"Shorten Tier {tier_id} exit_duration",
         summary="Shorten exit_duration to 5s for v8 upgrade test",
     )
-    approve_proposal(cluster, rsp, msg=f",{MSG_UPDATE_TIER}")
+    approve_proposal(cluster, rsp, msg=MSG_UPDATE_TIER)
 
     # 2. Drive the full withdraw lifecycle.
     rsp = trigger_exit(cluster, owner, pos_id)

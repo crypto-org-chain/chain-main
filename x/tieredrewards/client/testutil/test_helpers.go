@@ -12,14 +12,14 @@ import (
 	tieredrewardstypes "github.com/crypto-org-chain/chain-main/v8/x/tieredrewards/types"
 	"github.com/spf13/cobra"
 
-	"cosmossdk.io/log"
+	"cosmossdk.io/log/v2"
 	sdkmath "cosmossdk.io/math"
-	pruningtypes "cosmossdk.io/store/pruning/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	pruningtypes "github.com/cosmos/cosmos-sdk/store/v2/pruning/types"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	clitestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	"github.com/cosmos/cosmos-sdk/testutil/network"
@@ -46,7 +46,6 @@ func GetApp(val network.ValidatorI) servertypes.Application {
 	return app.New(
 		ctx.Logger,
 		dbm.NewMemDB(),
-		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetPruning(pruningtypes.NewPruningOptionsFromString(appConfig.Pruning)),
@@ -59,7 +58,6 @@ func NewChainMainTestNetworkFixture() network.TestFixture {
 	chainApp := app.New(
 		log.NewNopLogger(),
 		dbm.NewMemDB(),
-		nil,
 		true,
 		simtestutil.EmptyAppOptions{},
 		baseapp.SetChainID(apptestutil.ChainID),

@@ -4,6 +4,7 @@
 
 ### Improvements
 
+- [#1329](https://github.com/crypto-org-chain/chain-main/pull/1329) feat!: bump cosmos-sdk to v0.55.1, cometbft to v0.40.0 and ibc-go to v11 in the v9 upgrade, see `doc/upgrade/v9.md`.
 - [#1328](https://github.com/crypto-org-chain/chain-main/pull/1328) feat!: v9 upgrade with cometbft v0.38.26 to verify ML-DSA-65 IBC headers.
 - [#1304](https://github.com/crypto-org-chain/chain-main/pull/1304) feat(upgrade): add module account converter for upgrade.
 

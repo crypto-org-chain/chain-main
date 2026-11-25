@@ -11,6 +11,7 @@ local default = {
   ],
   genesis: {},
 };
+local hermes = import 'hermes.libsonnet';
 local validator = import 'validator.jsonnet';
 
 {
@@ -23,5 +24,7 @@ local validator = import 'validator.jsonnet';
   'ibc-2': default {
     validators: [validator { base_port: port } for port in [26850, 26860]],
   },
-  relayer: {},
+  relayer: {
+    chains: hermes.chains($),
+  },
 }

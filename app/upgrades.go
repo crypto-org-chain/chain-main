@@ -6,18 +6,25 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	storetypes "github.com/cosmos/cosmos-sdk/store/v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
-const UpgradeV9PlanName = "v9"
+const (
+	UpgradeV9PlanName = "v9"
+
+	// x/group was removed in v9; its store key outlives the package.
+	groupStoreKey = "group"
+)
 
 func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, moduleName string, perms ...string) error {
 	addr := ak.GetModuleAddress(moduleName)
@@ -32,16 +39,14 @@ func EnsureModuleAccountIfExists(ctx sdk.Context, ak authkeeper.AccountKeeper, m
 	if _, ok := acc.(sdk.ModuleAccountI); ok {
 		return nil
 	}
-	baseAcc, ok := acc.(*authtypes.BaseAccount)
-	if !ok {
-		return fmt.Errorf("account at %s for module %q is %T, cannot convert to module account", addr, moduleName, acc)
-	}
+	// Any other type converts too: anyone can create a vesting account here before the upgrade, and no key controls a module address.
+	baseAcc := authtypes.NewBaseAccount(addr, nil, acc.GetAccountNumber(), acc.GetSequence())
 	macc := authtypes.NewModuleAccount(baseAcc, moduleName, perms...)
 	if err := macc.Validate(); err != nil {
 		return fmt.Errorf("module account %q: %w", moduleName, err)
 	}
 	ak.SetModuleAccount(ctx, macc)
-	ctx.Logger().Info("converted base account to module account", "module", moduleName, "address", addr.String())
+	ctx.Logger().Info("converted account to module account", "module", moduleName, "address", addr.String(), "previous_type", fmt.Sprintf("%T", acc))
 	return nil
 }
 
@@ -55,6 +60,16 @@ func (app *ChainApp) registerV9UpgradeHandler() {
 	app.UpgradeKeeper.SetUpgradeHandler(UpgradeV9PlanName, func(ctx context.Context, plan upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+		// The pool address was not blocked before v9; staking panics on burn if a plain account sits there.
+		if err := EnsureModuleAccountIfExists(sdkCtx, app.AccountKeeper, stakingtypes.KeyRotationFeePoolName, authtypes.Burner); err != nil {
+			return map[string]uint64{}, fmt.Errorf("v9 key rotation fee pool: %w", err)
+		}
+
+		// The end blocker reads a pending-slot index that v8 never wrote; without the rebuild, queued unbondings never mature.
+		if err := app.StakingKeeper.PopulateQueuePendingSlots(ctx); err != nil {
+			return map[string]uint64{}, fmt.Errorf("v9 staking queue pending slots: %w", err)
+		}
+
 		sdkCtx.Logger().Info("v9: running module migrations...")
 		m, err := app.ModuleManager.RunMigrations(ctx, app.configurator, fromVM)
 		if err != nil {
@@ -64,6 +79,16 @@ func (app *ChainApp) registerV9UpgradeHandler() {
 		sdkCtx.Logger().Info("v9: upgrade completed", "plan", plan.Name, "version_map", m)
 		return m, nil
 	})
+
+	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		panic(fmt.Sprintf("failed to read upgrade info from disk %s", err))
+	}
+	if upgradeInfo.Name == UpgradeV9PlanName && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+		// memiavl refuses to load a tree that is no longer mounted, so x/group's store must be deleted.
+		storeUpgrades := storetypes.StoreUpgrades{Deleted: []string{groupStoreKey}}
+		app.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &storeUpgrades))
+	}
 }
 
 func UpdateExpeditedParams(ctx context.Context, gov govkeeper.Keeper) error {

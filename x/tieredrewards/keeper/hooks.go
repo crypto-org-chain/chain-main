@@ -157,6 +157,11 @@ func (h Hooks) AfterValidatorCreated(_ context.Context, _ sdk.ValAddress) error 
 	return nil
 }
 
+// AfterValidatorConsKeyUpdated is a no-op: positions and validator events are keyed by operator address.
+func (h Hooks) AfterValidatorConsKeyUpdated(_ context.Context, _, _ sdk.ConsAddress, _ sdk.ValAddress) error {
+	return nil
+}
+
 func (h Hooks) BeforeValidatorModified(_ context.Context, _ sdk.ValAddress) error {
 	return nil
 }
