@@ -155,6 +155,17 @@ def wait_for_block_time(cli, t, timeout=120):
         time.sleep(0.5)
 
 
+def wait_for_node_synced(cluster, i, timeout=240):
+    def synced():
+        try:
+            return not get_sync_info(cluster.status(i))["catching_up"]
+        except AssertionError as e:
+            print(f"get sync status failed: {e}", file=sys.stderr)
+            return False
+
+    wait_for_fn(f"node{i} synced", synced, timeout=timeout)
+
+
 def wait_for_port(port, host="127.0.0.1", timeout=40.0):
     start_time = time.perf_counter()
     while True:

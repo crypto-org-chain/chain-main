@@ -12,6 +12,7 @@ from .utils import (
     wait_for_block,
     wait_for_block_time,
     wait_for_new_blocks,
+    wait_for_node_synced,
     wait_for_port,
 )
 
@@ -135,10 +136,8 @@ def test_join_validator(cluster):
     count1 = len(cluster.validators())
 
     # wait for the new node to sync
-    wait_for_block(cluster.cosmos_cli(i), cluster.block_height())
-
-    # wait for the new node to sync
     wait_for_block(cluster.cosmos_cli(i), cluster.block_height(0))
+    wait_for_node_synced(cluster, i)
     # create validator tx
     assert cluster.create_validator("1cro", {}, i)["code"] == 0
     time.sleep(2)

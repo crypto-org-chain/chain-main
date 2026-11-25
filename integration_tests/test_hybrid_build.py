@@ -7,7 +7,7 @@ import pytest
 from pystarport.cluster import SUPERVISOR_CONFIG_FILE
 from pystarport.ports import rpc_port
 
-from .utils import cluster_fixture, wait_for_block, wait_for_port
+from .utils import cluster_fixture, wait_for_block, wait_for_node_synced, wait_for_port
 
 
 def safe_stop_process(supervisor, process_name):
@@ -184,6 +184,7 @@ def start_node_with_binary(cluster, node_idx: int, binary: str):
 
     # Wait for node to be ready
     wait_for_port(rpc_port(cluster.base_port(node_idx)))
+    wait_for_node_synced(cluster, node_idx)
     print(f"node{node_idx} started successfully")
 
 

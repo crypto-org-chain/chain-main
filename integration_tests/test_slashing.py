@@ -9,6 +9,7 @@ from .utils import (
     cluster_fixture,
     wait_for_block_time,
     wait_for_new_blocks,
+    wait_for_node_synced,
     wait_for_port,
 )
 
@@ -48,6 +49,9 @@ def test_slashing(cluster):
     assert tokens2 == int(tokens1 * 0.99), "slash amount is not correct"
 
     assert val.get("jailed"), "validator is jailed"
+
+    # a node rejects broadcasts while it is block syncing
+    wait_for_node_synced(cluster, 2)
 
     # try to unjail
     rsp = cluster.unjail(addr, i=2)
